@@ -131,7 +131,6 @@ endif()
 #add_subdirectory(3rdparty/stormlib)
 
 #CascLib
-
 add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -147,6 +146,10 @@ set(CASC_BUILD_STATIC_LIB 1)
 set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
 set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
 add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
+
+# Protobuf
+set(protobuf_BUILD_TESTS OFF)
+add_subdirectory(3rdparty/protobuf-cpp/protobuf-3.21.5 EXCLUDE_FROM_ALL)
 
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -211,12 +214,19 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imageButton2/imageButton2.h
 		src/exporters/dataExporter/DataExporterClass.cpp
 		src/exporters/dataExporter/DataExporterClass.h
+		src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.cc
+		src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.h
 		src/database/CEmptySqliteDB.cpp
 		src/database/CEmptySqliteDB.h
 		src/ui/imguiLib/stateSaver/stateSaver.h
 		src/ui/imguiLib/stateSaver/stateSaver.cpp
-		src/database/sqlite_import/SqliteUpdater.cpp
-		src/database/sqlite_import/SqliteUpdater.h src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h)
+		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp
+		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h
+		src/ui/imguiLib/fileBrowser/buildDefinition.h
+		src/database/product_db_parser/productDbParser.cpp
+		src/database/product_db_parser/productDbParser.h
+		src/database/buildInfoParser/buildInfoParser.cpp
+		src/database/buildInfoParser/buildInfoParser.h)
 
 
 
@@ -255,13 +265,13 @@ find_package( Threads REQUIRED )
 #    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
 #endif()
 
-
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
 if (Vulkan_FOUND)
 	add_definitions(-DLINK_VULKAN)
 endif()
+
 
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
@@ -318,6 +328,8 @@ target_link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
 target_link_libraries(AWebWoWViewerCpp zlibstatic)
+target_link_libraries(AWebWoWViewerCpp libprotobuf-lite)
+
 
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 if (NOT MSVC)

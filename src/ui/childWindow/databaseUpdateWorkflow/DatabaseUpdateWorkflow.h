@@ -11,7 +11,7 @@
 
 class DatabaseUpdateWorkflow {
 public:
-    DatabaseUpdateWorkflow(std::shared_ptr<WoWFilesCacheStorage> storage);
+    DatabaseUpdateWorkflow(std::shared_ptr<WoWFilesCacheStorage> storage, bool isClassic);
 
     void render();
     bool isDatabaseUpdated() { return m_databaseUpdated;};
@@ -28,6 +28,7 @@ private:
 
 private:
     std::shared_ptr<WoWFilesCacheStorage> m_storage;
+    bool m_isClassic = false;
 
     void defineDialogs();
 

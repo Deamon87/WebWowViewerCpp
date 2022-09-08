@@ -15,24 +15,23 @@
 struct RequiredTableStruct {
     int fileDataId;
     std::string tableName;
+    bool notInClassic;
 };
 
-std::array<RequiredTableStruct, 15> requiredTables = {{
-    {1353545, "AreaTable"},
-    {1375579, "Light"},
-    {1375580, "LightData"},
-    {1334669, "LightParams"},
-    {1308501, "LightSkybox"},
-    {1371380, "LiquidType"},
-    {2261065, "LiquidTypeXTexture"},
-    {1132538, "LiquidMaterial"},
-    {1308058, "LiquidObject"},
-    {1371380, "LiquidType"},
-    {2261065, "LiquidTypeXTexture"},
-    {1349477, "Map"},
-    {1355528, "WMOAreaTable"},
-    {1310253, "ZoneLight"},
-    {1310256, "ZoneLightPoint"},
+std::array<RequiredTableStruct, 13> requiredTables = {{
+    {1353545, "AreaTable", false},
+    {1375579, "Light", false},
+    {1375580, "LightData", false},
+    {1334669, "LightParams", false},
+    {1308501, "LightSkybox", false},
+    {1132538, "LiquidMaterial", false},
+    {1308058, "LiquidObject", false},
+    {1371380, "LiquidType", false},
+    {2261065, "LiquidTypeXTexture", true},
+    {1349477, "Map", false},
+    {1355528, "WMOAreaTable", false},
+    {1310253, "ZoneLight", false},
+    {1310256, "ZoneLightPoint", false},
 }};
 
 
@@ -43,8 +42,9 @@ static const std::string POPUP_UPDATING_DBD = "Updating DBD files";
 static const std::string POPUP_UPDATING_DATABASE_DB2 = "Updating database from DB2";
 static const std::string POPUP_UPDATED_DATABASE_DB2 = "Database updated succesfully";
 
-DatabaseUpdateWorkflow::DatabaseUpdateWorkflow(std::shared_ptr<WoWFilesCacheStorage> storage) {
+DatabaseUpdateWorkflow::DatabaseUpdateWorkflow(std::shared_ptr<WoWFilesCacheStorage> storage, bool isClassic) {
     m_storage = storage;
+    m_isClassic = isClassic;
 }
 
 void DatabaseUpdateWorkflow::render() {
@@ -215,7 +215,6 @@ void DatabaseUpdateWorkflow::db2UpdateLogic() {
                 }
             } else {
                 std::cout << "Could not find DBD file for table " << tableName << std::endl;
-
             }
 
 
@@ -263,5 +262,11 @@ void DatabaseUpdateWorkflow::db2UpdateLogic() {
 
     if (m_db2FailedMessage.empty() && checkDB2Lambda()) {
         m_currentDB2File++;
+        if (m_isClassic) {
+            while (m_currentDB2File < requiredTables.size() && requiredTables[m_currentDB2File].notInClassic) {
+                m_currentDB2File++;
+            }
+        }
+
     }
 }

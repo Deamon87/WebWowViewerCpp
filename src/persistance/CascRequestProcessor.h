@@ -8,25 +8,21 @@
 #include "RequestProcessor.h"
 #include <iostream>
 
-    #include "../../3rdparty/casclib/src/CascLib.h"
-
+#include "fileBrowser/buildDefinition.h"
 
 class CascRequestProcessor : public RequestProcessor {
 public:
-    CascRequestProcessor(const char *path) : m_cascDir(path){
-        if (CascOpenStorage(path, 0xFFFFFFFF, &this->m_storage)) {
-            std::cout << "Opened CascStorage at "<< path << std::endl;
-        } else {
-            std::cout << "Could not open CascStorage at "<< path << std::endl;
-            throw  "Could not open CascStorage";
-        }
-    }
+    CascRequestProcessor(std::string &path, BuildDefinition &buildDef);
+    ~CascRequestProcessor() override;
 private:
-    std::string m_cascDir;
+    std::string m_cascDir = "";
 
-    void* m_storage;
+    void* m_storage = nullptr;
+    void* m_storageOnline = nullptr;
 protected:
     void processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) override;
+private:
+    HFileContent tryGetFile(void *cascStorage, void *fileNameToPass, uint32_t openFlags);
 };
 
 

@@ -63,9 +63,9 @@ void FrontendUI::composeUI() {
         ImGui::EndPopup();
     }
 
-    if (ImGui::BeginPopupModal("Casc succesed"))
+    if (ImGui::BeginPopupModal("Casc succeed"))
     {
-        ImGui::Text("CASC storage succefully opened");
+        ImGui::Text("CASC storage successfully opened");
         if (ImGui::Button("Ok", ImVec2(-1, 23))) {
             ImGui::CloseCurrentPopup();
         }
@@ -78,17 +78,15 @@ void FrontendUI::composeUI() {
     createFileDialog.Display();
 
     if (fileDialog.HasSelected()) {
-        std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+        std::cout << "Selected filename " << fileDialog.GetSelected().string() << std::endl;
         std::string cascPath = fileDialog.GetSelected().string();
-        std::string product = fileDialog.getProductBuild();
-        if (!product.empty())
-            cascPath = cascPath + ":"+product;
+        BuildDefinition buildDef = fileDialog.getProductBuild();
 
-        if (!openCascCallback(cascPath)) {
+        if (!tryOpenCasc(cascPath, buildDef)) {
             ImGui::OpenPopup("Casc failed");
             cascOpened = false;
         } else {
-            ImGui::OpenPopup("Casc succesed");
+            ImGui::OpenPopup("Casc succeed");
             cascOpened = true;
         }
         fileDialog.ClearSelected();
@@ -107,7 +105,7 @@ void FrontendUI::composeUI() {
     if (m_databaseUpdateWorkflow != nullptr) {
         if (m_databaseUpdateWorkflow->isDatabaseUpdated()) {
             m_databaseUpdateWorkflow = nullptr;
-            m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+            createDatabaseHandler();
         } else {
             m_databaseUpdateWorkflow->render();
         }
@@ -329,7 +327,11 @@ void FrontendUI::showMapSelectionDialog() {
 
                             isWmoMap = false;
                             adtSelectionMinimap = {};
-                            getAdtSelectionMinimap(mapRec.WdtFileID);
+                            if (mapRec.WdtFileID > 0) {
+                                getAdtSelectionMinimap(mapRec.WdtFileID);
+                            } else {
+                                getAdtSelectionMinimap("world/maps/"+mapRec.MapDirectory+"/"+mapRec.MapDirectory+".wdt");
+                            }
 
                         }
                         prevMapId = mapRec.ID;
@@ -366,7 +368,12 @@ void FrontendUI::showMapSelectionDialog() {
                         worldPosX = 0;
                         worldPosY = 0;
                         if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
-                            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                            if (prevMapRec.WdtFileID > 0) {
+                                openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                            } else {
+                                //Try to open map by fileName
+                                openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f, 0);
+                            }
                             showSelectMap = false;
                         }
                     }
@@ -436,7 +443,11 @@ void FrontendUI::showAdtSelectionMinimap() {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
         if (ImGui::Button("Go")) {
 
-            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            if (prevMapRec.WdtFileID > 0) {
+                openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            } else {
+                openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200);
+            }
             showSelectMap = false;
 
             ImGui::CloseCurrentPopup();
@@ -472,7 +483,10 @@ void FrontendUI::showMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
-                m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(m_api->cacheStorage);
+                m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(
+                        m_api->cacheStorage,
+                        contains(fileDialog.getProductBuild().productName, "classic")
+                    );
             }
             ImGui::EndMenu();
         }
@@ -677,7 +691,7 @@ void FrontendUI::showQuickLinksDialog() {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
 //    }
     if (ImGui::Button("Nyalotha map", ImVec2(-1, 0))) {
-        openSceneByfdid(2217, 2842322, -11595, 9280, 260);
+        openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260);
     }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1247268);
@@ -1406,6 +1420,12 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
 }
 
+void FrontendUI::getAdtSelectionMinimap(int wdtFileDataId) {
+    m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
+}
+void FrontendUI::getAdtSelectionMinimap(std::string wdtFilePath) {
+    m_wdtFile = m_api->cacheStorage->getWdtFileCache()->get(wdtFilePath);
+}
 
 void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
     if (m_api->databaseHandler == nullptr)  return;
@@ -1669,11 +1689,12 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     return sceneScenario;
 }
 
-bool FrontendUI::openCascCallback(std::string cascPath) {
+bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     HRequestProcessor newProcessor = nullptr;
     std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
+
     try {
-        newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
+        newProcessor = std::make_shared<CascRequestProcessor>(cascPath, buildDef);
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
         newProcessor->setThreaded(true);
         newProcessor->setFileRequester(newStorage.get());
@@ -1687,17 +1708,6 @@ bool FrontendUI::openCascCallback(std::string cascPath) {
     return true;
 }
 
-void FrontendUI::openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z) {
-    if (m_api->cacheStorage) {
-//            storage->actuallDropCache();
-    }
-
-    currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(x, y, z);
-    m_api->camera->setMovementSpeed(movementSpeed);
-}
-
 void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
     currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
     m_api->camera->setCameraPos(0, 0, 0);
@@ -1705,11 +1715,17 @@ void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
 
 void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
     currentScene = std::make_shared<Map>(m_api, mapId, mapName);
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x,y,z);
+    m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
     currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x,y,z);
+    m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
     currentScene = std::make_shared<M2Scene>(m_api, m2Fdid, -1);
@@ -1745,6 +1761,8 @@ int FrontendUI::getCameraNumCallback() {
 
     return 0;
 }
+
+
 
 bool FrontendUI::setNewCameraCallback(int cameraNum) {
     if (currentScene == nullptr) return false;
@@ -1788,6 +1806,7 @@ void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &camera
     cameraZ = currentCameraPos[2];
 }
 
+
 inline bool fileExistsNotNull (const std::string& name) {
 #ifdef ANDROID
     return false;
@@ -1803,7 +1822,6 @@ inline bool fileExistsNotNull (const std::string& name) {
 
     return fileExists;
 }
-
 
 void FrontendUI::createDefaultprocessor() {
 
@@ -2315,9 +2333,23 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 }
 
 void FrontendUI::createDatabaseHandler() {
+    bool forceEmptyDatabase = false;
     if (fileExistsNotNull("./export.db3")) {
-        m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
-    } else {
+        try{
+            m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+        } catch(std::exception const& e) {
+            std::cout << "Failed to open database: " << e.what() << std::endl;
+            forceEmptyDatabase = true;
+        } catch(...) {
+            std::cout << "Exception occurred" << std::endl;
+        }
+    }
+
+    if (forceEmptyDatabase) {
         m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
     }
+
+    mapList = {};
+    mapListStringMap = {};
+    filteredMapList = {};
 }

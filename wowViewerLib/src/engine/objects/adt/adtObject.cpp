@@ -947,7 +947,13 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
         texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    HGTexture h_gblpTexture = nullptr;
+    if (texture != nullptr) {
+        h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    } else {
+        //TODO: idk. DEBUG?
+    }
+
     m_requestedTextures[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
