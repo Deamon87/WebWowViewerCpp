@@ -75,10 +75,10 @@ public:
     void setUIScale(float scale) {
         uiScale = scale;
     }
-    int getWindowWidth() {
+    int getWindowWidth() const {
         return windowWidth;
     }
-    int getWindowHeight() {
+    int getWindowHeight() const {
         return windowHeight;
     }
     void setWindowSize(int width, int height) {
@@ -109,7 +109,6 @@ private:
 
     bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
-    void openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z);
     void openWMOSceneByfdid(int WMOFdid);
     void openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds);
     void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
@@ -118,9 +117,8 @@ private:
     void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
 
-    void getAdtSelectionMinimap(int wdtFileDataId) {
-        m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
-    };
+    void getAdtSelectionMinimap(int wdtFileDataId);
+    void getAdtSelectionMinimap(std::string wdtFilePath);
     void getMapList(std::vector<MapRecord> &mapList);
     std::string getCurrentAreaName();
     bool fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists);

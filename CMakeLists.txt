@@ -220,10 +220,13 @@ set(SOURCE_FILES
 		src/database/CEmptySqliteDB.h
 		src/ui/imguiLib/stateSaver/stateSaver.h
 		src/ui/imguiLib/stateSaver/stateSaver.cpp
-		src/database/sqlite_import/SqliteUpdater.cpp
-		src/database/sqlite_import/SqliteUpdater.h
 		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp
-		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h src/ui/imguiLib/fileBrowser/buildDefinition.h src/database/product_db_parser/productDbParser.cpp src/database/product_db_parser/productDbParser.h src/database/buildInfoParser/buildInfoParser.cpp src/database/buildInfoParser/buildInfoParser.h)
+		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h
+		src/ui/imguiLib/fileBrowser/buildDefinition.h
+		src/database/product_db_parser/productDbParser.cpp
+		src/database/product_db_parser/productDbParser.h
+		src/database/buildInfoParser/buildInfoParser.cpp
+		src/database/buildInfoParser/buildInfoParser.h)
 
 
 

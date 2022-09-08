@@ -9,6 +9,39 @@
 #include "../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
 
 
+static DWORD GetLocaleValue_Copy(const std::string &szTag)
+{
+    DWORD Language = 0;
+
+    // Convert the string language to integer
+    Language = (Language << 0x08) | szTag[0];
+    Language = (Language << 0x08) | szTag[1];
+    Language = (Language << 0x08) | szTag[2];
+    Language = (Language << 0x08) | szTag[3];
+
+    // Language-specific action
+    switch(Language)
+    {
+        case 0x656e5553: return CASC_LOCALE_ENUS;
+        case 0x656e4742: return CASC_LOCALE_ENGB;
+        case 0x656e434e: return CASC_LOCALE_ENCN;
+        case 0x656e5457: return CASC_LOCALE_ENTW;
+        case 0x65734553: return CASC_LOCALE_ESES;
+        case 0x65734d58: return CASC_LOCALE_ESMX;
+        case 0x70744252: return CASC_LOCALE_PTBR;
+        case 0x70745054: return CASC_LOCALE_PTPT;
+        case 0x7a68434e: return CASC_LOCALE_ZHCN;
+        case 0x7a685457: return CASC_LOCALE_ZHTW;
+        case 0x6b6f4b52: return CASC_LOCALE_KOKR;
+        case 0x66724652: return CASC_LOCALE_FRFR;
+        case 0x64654445: return CASC_LOCALE_DEDE;
+        case 0x72755255: return CASC_LOCALE_RURU;
+        case 0x69744954: return CASC_LOCALE_ITIT;
+    }
+
+    return 0;
+}
+
 CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &buildDef) {
 
     m_cascDir = path;
@@ -16,10 +49,16 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
         path = path + ":"+buildDef.productName+":"+buildDef.region+":"+buildDef.buildConfig;
     }
 
+    uint32_t localMask = 0xFFFFFFFF;
+    if (!buildDef.installedLanguage.empty()) {
+        auto const &lan = buildDef.installedLanguage;
+        if (lan.length() >= 4)
+            localMask = GetLocaleValue_Copy(lan);
+    }
 
     bool openResult = false;
     bool openOnlineResult = false;
-    openResult = CascOpenStorage(path.c_str(), 0xFFFFFFFF, &this->m_storage);
+    openResult = CascOpenStorage(path.c_str(), localMask, &this->m_storage);
     if (openResult) {
         std::cout << "Opened local Casc Storage at "<< path << std::endl;
     } else {
@@ -70,7 +109,7 @@ HFileContent CascRequestProcessor::tryGetFile(void *cascStorage, void *fileNameT
     HANDLE fileHandle;
     HFileContent fileContent = nullptr;
     bool fileOpened = false;
-    if (CascOpenFile(cascStorage, fileNameToPass, 0, openFlags, &fileHandle)) {
+    if (CascOpenFile(cascStorage, fileNameToPass, 0xFFFFFFFF, openFlags, &fileHandle)) {
         DWORD fileSize1 = CascGetFileSize(fileHandle, nullptr);
         if (fileSize1 != CASC_INVALID_SIZE) {
             fileOpened = true;

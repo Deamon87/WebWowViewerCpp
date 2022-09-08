@@ -13,6 +13,7 @@ struct BuildDefinition {
     std::string buildConfig;
     std::string productName;
     std::string region;
+    std::string installedLanguage;
 
     bool operator ==( const BuildDefinition& value) const {
         return

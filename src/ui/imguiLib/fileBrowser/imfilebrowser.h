@@ -259,7 +259,6 @@ inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
     SetOfBuildDefs buildDefs;
 
     std::string buildFile = GetSelected() / ".build.info";
-//    std::cout<<buildFile<<std::endl;
     if (fileExistsNotNull1(buildFile)) {
         std::string buildFileContent;
         readWholeFileToString(buildFile, buildFileContent);
@@ -273,8 +272,8 @@ inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
         }
     }
 
+    /*
     std::string productDBFile = GetSelected() / ".product.db";
-//    std::cout<<buildFile<<std::endl;
     if (fileExistsNotNull1(productDBFile)) {
         std::string productFileContent;
         readWholeFileToString(productDBFile, productFileContent);
@@ -287,6 +286,7 @@ inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
             std::cout << "error while trying to read and parse .product.db";
         }
     }
+    */
 
 
     availableBuilds = std::vector<BuildDefinition>(buildDefs.begin(), buildDefs.end());
