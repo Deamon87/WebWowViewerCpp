@@ -146,6 +146,7 @@ void FrontendUI::showCurrentStatsDialog() {
                 ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
                             debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
             }
+            ImGui::Separator();
         }
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
@@ -171,6 +172,7 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
             ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
             ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
+            ImGui::Separator();
         }
 
         int currentFrame = m_api->hDevice->getDrawFrameNumber();
@@ -182,6 +184,7 @@ void FrontendUI::showCurrentStatsDialog() {
 
             ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
             ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+            ImGui::Separator();
         }
 
         if (ImGui::CollapsingHeader("Current fog params")) {
@@ -215,6 +218,7 @@ void FrontendUI::showCurrentStatsDialog() {
                             cullStageData->frameDepedantData->FogHeightCoefficients.x,
                             cullStageData->frameDepedantData->FogHeightCoefficients.y,
                             cullStageData->frameDepedantData->FogHeightCoefficients.z);
+                ImGui::Separator();
             }
         }
 
