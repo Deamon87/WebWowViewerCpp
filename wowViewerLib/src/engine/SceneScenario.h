@@ -46,9 +46,9 @@ struct CullStage {
 
     HFrameDepedantData frameDepedantData = std::make_shared<FrameDepedantData>();
 
-    std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
-    std::vector<std::shared_ptr<M2Object>> m2Array = {};
-    std::vector<std::shared_ptr<WmoObject>> wmoArray = {};
+    std::unordered_set<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
+    std::unordered_set<std::shared_ptr<M2Object>> m2Array = {};
+    std::unordered_set<std::shared_ptr<WmoObject>> wmoArray = {};
 };
 typedef std::shared_ptr<CullStage> HCullStage;
 

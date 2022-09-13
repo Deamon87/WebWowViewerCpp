@@ -38,7 +38,6 @@ public:
 
     friend class M2InstancingObject;
     friend class M2MeshBufferUpdater;
-    bool m_cullResult = false;
 private:
     void createAABB();
     bool m_loading = false;

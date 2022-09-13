@@ -71,7 +71,7 @@ private:
 
     bool getHasLiquidTypeXTexture() {
         if (!m_LiquidTypeXTextureChecked) {
-            m_hasLiquidTypeXTexture = !m_sqliteDatabase.tableExists("LiquidTypeXTexture");
+            m_hasLiquidTypeXTexture = m_sqliteDatabase.tableExists("LiquidTypeXTexture");
             m_LiquidTypeXTextureChecked = true;
         }
 

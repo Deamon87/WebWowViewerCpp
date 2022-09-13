@@ -9,18 +9,19 @@
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../camera/m2TiedCamera.h"
 
-void M2Scene::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+void M2Scene::getPotentialEntities(const mathfu::vec4 &cameraPos,
                                   HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
                                   std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                                  std::vector<std::shared_ptr<WmoObject>> &potentialWmo) {
-    potentialM2.push_back(m_m2Object);
+                                  std::unordered_set<std::shared_ptr<M2Object>> &potentialM2,
+                                  std::unordered_set<std::shared_ptr<WmoObject>> &potentialWmo) {
+    potentialM2.insert(m_m2Object);
 }
 
 void M2Scene::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
                                    std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                                   std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                   std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
-    m2ObjectsCandidates.push_back(m_m2Object);
+                                   std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                   std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
+    m2ObjectsCandidates.insert(m_m2Object);
 }
 
 void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,

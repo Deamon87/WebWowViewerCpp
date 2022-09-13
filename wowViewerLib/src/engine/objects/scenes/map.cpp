@@ -386,15 +386,12 @@ void Map::checkCulling(HCullStage cullStage) {
     int interiorGroupNum = -1;
     cullStage->m_currentWmoGroup = -1;
 
-    //Get center of near plane
-
-
     //Get potential WMO
-    std::vector<std::shared_ptr<WmoObject>> potentialWmo;
-    std::vector<std::shared_ptr<M2Object>> potentialM2;
+    std::unordered_set<std::shared_ptr<WmoObject>> potentialWmo;
+    std::unordered_set<std::shared_ptr<M2Object>> potentialM2;
 
-    getPotentialEntities(cameraPos, potentialM2, cullStage, lookAtMat4, camera4, frustumPlanes, frustumPoints,
-                         potentialWmo);
+    getPotentialEntities(cameraPos, cullStage, lookAtMat4, camera4, frustumPlanes, frustumPoints,
+                         potentialM2, potentialWmo);
 
     for (auto &checkingWmoObj : potentialWmo) {
         WmoGroupResult groupResult;
@@ -463,7 +460,7 @@ void Map::checkCulling(HCullStage cullStage) {
             cullStage->interiorViews,
             cullStage->exteriorView)) {
 
-            cullStage->wmoArray.push_back(cullStage->m_currentWMO);
+            cullStage->wmoArray.insert(cullStage->m_currentWMO);
         }
 
         if (cullStage->exteriorView.viewCreated) {
@@ -487,7 +484,7 @@ void Map::checkCulling(HCullStage cullStage) {
         }
 
         if (config->renderSkyDom) {
-            for (auto model : m_exteriorSkyBoxes) {
+            for (auto &model : m_exteriorSkyBoxes) {
                 if (model != nullptr) {
                     model->checkFrustumCulling(cameraPos,
                                                frustumPlanes,
@@ -508,30 +505,10 @@ void Map::checkCulling(HCullStage cullStage) {
     }
 
     //Collect M2s for update
-    cullStage->m2Array.clear();
-    auto inserter = std::back_inserter(cullStage->m2Array);
     for (auto &view : cullStage->interiorViews) {
-        std::copy(view.drawnM2s.begin(), view.drawnM2s.end(), inserter);
+        cullStage->m2Array.insert(view.drawnM2s.begin(), view.drawnM2s.end());
     }
-    std::copy(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end(), inserter);
-
-    //Sort and delete duplicates
-    if (cullStage->m2Array.size() > 2) {
-//        internal::parallel_sort(cullStage->m2Array.begin(), cullStage->m2Array.end(),
-//                                [](auto &first, auto &end) { return first < end; });
-#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
-        std::sort(std::execution::par_unseq, cullStage->m2Array.begin(), cullStage->m2Array.end() );
-#else
-        std::sort(cullStage->m2Array.begin(), cullStage->m2Array.end() );
-#endif
-        cullStage->m2Array.erase(unique(cullStage->m2Array.begin(), cullStage->m2Array.end()),
-                                 cullStage->m2Array.end());
-    }
-
-    std::sort( cullStage->wmoArray.begin(), cullStage->wmoArray.end() );
-    cullStage->wmoArray.erase( unique( cullStage->wmoArray.begin(), cullStage->wmoArray.end() ), cullStage->wmoArray.end() );
-
-    cullStage->adtArray = std::vector<std::shared_ptr<ADTObjRenderRes>>(cullStage->adtArray.begin(), cullStage->adtArray.end());
+    cullStage->m2Array.insert(cullStage->exteriorView.drawnM2s.begin(), cullStage->exteriorView.drawnM2s.end());
 
 //    //Limit M2 count based on distance/m2 height
 //    for (auto it = this->m2RenderedThisFrameArr.begin();
@@ -958,10 +935,11 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
     }
 }
 
-void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+void Map::getPotentialEntities(const mathfu::vec4 &cameraPos,
                                HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
                                std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                               std::vector<std::shared_ptr<WmoObject>> &potentialWmo) {
+                               std::unordered_set<std::shared_ptr<M2Object>> &potentialM2,
+                               std::unordered_set<std::shared_ptr<WmoObject>> &potentialWmo) {
     if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             int adt_x = worldCoordinateToAdtIndex(camera4.y);
@@ -1002,7 +980,7 @@ void Map::getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::s
                 wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
             }
 
-            potentialWmo.push_back(wmoMap);
+            potentialWmo.insert(wmoMap);
         }
     }
 }
@@ -1049,8 +1027,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
-    std::vector<std::shared_ptr<M2Object>> m2ObjectsCandidates;
-    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
+    std::unordered_set<std::shared_ptr<M2Object>> m2ObjectsCandidates;
+    std::unordered_set<std::shared_ptr<WmoObject>> wmoCandidates;
 
     if (m_wdlObject != nullptr) {
         m_wdlObject->checkFrustumCulling(
@@ -1063,16 +1041,10 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     getCandidatesEntities(hullLines, lookAtMat4, cameraPos, frustumPoints, cullStage, m2ObjectsCandidates,
                           wmoCandidates);
 
-    //Sort and delete duplicates
-    std::sort( wmoCandidates.begin(), wmoCandidates.end() );
-    wmoCandidates.erase( unique( wmoCandidates.begin(), wmoCandidates.end() ), wmoCandidates.end() );
-
     //Frustum cull
-    for (auto it = wmoCandidates.begin(); it != wmoCandidates.end(); ++it) {
-        auto wmoCandidate = *it;
-
+    for (auto &wmoCandidate : wmoCandidates) {
         if (!wmoCandidate->isLoaded()) {
-            cullStage->wmoArray.push_back(wmoCandidate);
+            cullStage->wmoArray.insert(wmoCandidate);
             continue;
         }
         wmoCandidate->resetTraversedWmoGroups();
@@ -1086,32 +1058,53 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             cullStage->interiorViews,
             cullStage->exteriorView)) {
 
-            cullStage->wmoArray.push_back(wmoCandidate);
+            cullStage->wmoArray.insert(wmoCandidate);
         }
     }
 
-    
+
 
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
         int numThreads = m_api->getConfig()->threadCount;
 
-        #pragma omp parallel for schedule(static, 1000) default( none) shared(m2ObjectsCandidates,cameraPos, cullStage, frustumPoints)
-        for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
-            auto m2ObjectCandidate = m2ObjectsCandidates[i];
-            bool frustumResult = m2ObjectCandidate->checkFrustumCulling(
-                cameraPos,
-                cullStage->exteriorView.frustumPlanes[0], //TODO:!
-                frustumPoints);
-        }
-    }
-//        bool frustumResult = true;
-    {
-        for (size_t i = 0; i < m2ObjectsCandidates.size(); i++) {
-            auto m2ObjectCandidate = m2ObjectsCandidates[i];
-            if (m2ObjectCandidate->m_cullResult) {
+        auto tempM2Array = std::vector(m2ObjectsCandidates.begin(), m2ObjectsCandidates.end());
+        auto tempM2CullResult = tbb::concurrent_vector<bool>(tempM2Array.size(), false);
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, tempM2Array.size(), tempM2Array.size() / numThreads),
+            [&](tbb::blocked_range<size_t> r) {
+              for (size_t i = r.begin(); i != r.end(); ++i) {
+                  auto& m2ObjectCandidate = tempM2Array[i];
+                  tempM2CullResult[i] = m2ObjectCandidate->checkFrustumCulling(
+                      cameraPos,
+                      cullStage->exteriorView.frustumPlanes[0], //TODO:!
+                      frustumPoints);
+              }
+            }
+        );
+
+//        tbb::parallel_for(size_t{0}, tempM2Array.size(), [&](size_t i)
+//        {
+//            auto& m2ObjectCandidate = tempM2Array[i];
+//            tempM2CullResult[i] = m2ObjectCandidate->checkFrustumCulling(
+//                cameraPos,
+//                cullStage->exteriorView.frustumPlanes[0], //TODO:!
+//                frustumPoints);
+//        });
+
+//        for (int i = 0; i < tempM2Array.size(); i++) {
+//            auto& m2ObjectCandidate = tempM2Array[i];
+//            tempM2CullResult[i] = m2ObjectCandidate->checkFrustumCulling(
+//                cameraPos,
+//                cullStage->exteriorView.frustumPlanes[0], //TODO:!
+//                frustumPoints);
+//        }
+
+        for (int i = 0; i < tempM2CullResult.size(); i++) {
+            if (tempM2CullResult[i]) {
+                auto &m2ObjectCandidate = tempM2Array[i];
                 cullStage->exteriorView.drawnM2s.insert(m2ObjectCandidate);
-                cullStage->m2Array.push_back(m2ObjectCandidate);
+                cullStage->m2Array.insert(m2ObjectCandidate);
             }
         }
     }
@@ -1119,8 +1112,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
 void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
                                 std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                                std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates)  {
+                                std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates)  {
     if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         //Get visible area that should be checked
         float minx = 99999, maxx = -99999;
@@ -1172,15 +1165,15 @@ void Map::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::ma
             }
 
         } else {
-            wmoCandidates.push_back(wmoMap);
+            wmoCandidates.insert(wmoMap);
         }
     }
 }
 
 void Map::checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
                           mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                          std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                          std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+                          std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                          std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
     if ((i < 0) || (i > 64)) return;
     if ((j < 0) || (j > 64)) return;
 
@@ -1223,7 +1216,7 @@ void Map::checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, ma
 
         if (result) {
             cullStage->exteriorView.drawnADTs.push_back(adtFrustRes);
-            cullStage->adtArray.push_back(adtFrustRes);
+            cullStage->adtArray.insert(adtFrustRes);
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -1285,8 +1278,8 @@ void Map::doPostLoad(HCullStage cullStage) {
     int processedThisFrame = 0;
     int groupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
-    for (int i = 0; i < cullStage->m2Array.size(); i++) {
-        auto m2Object = cullStage->m2Array[i];
+    for (auto &m2Object : cullStage->m2Array) {
+
         if (m2Object == nullptr) continue;
         m2Object->doPostLoad();
     }
@@ -1356,45 +1349,16 @@ void Map::update(HUpdateStage updateStage) {
     animTime_t deltaTime = updateStage->delta;
 
     Config* config = this->m_api->getConfig();
-//    if (config->getRenderM2()) {
-//        std::for_each(frameData->m2Array.begin(), frameData->m2Array.end(), [deltaTime, &cameraVec3, &lookAtMat](M2Object *m2Object) {
 
-//    #pragma
-    int numThreads = m_api->getConfig()->threadCount;
+    auto &m2Array = updateStage->cullResult->m2Array;
+    auto tempM2Array = std::vector(m2Array.begin(), m2Array.end());
     {
-
-        auto &m2Array = updateStage->cullResult->m2Array;
         m2UpdateframeCounter.beginMeasurement();
 
-//        auto n = m2Array.size();
-//        #pragma omp parallel for schedule(static, 1000) num_threads(numThreads) default(none) shared(m2Array,n, deltaTime, cameraVec3,lookAtMat)
-//        for (int i = 0; i < n; i++ ) {
-//            auto m2Object = m2Array[i];
-//            if (m2Object != nullptr) {
-//                m2Object->update(deltaTime, cameraVec3, lookAtMat);
-//            }
-//        }
-
-
-
-        //std::for_each(std::execution::par_unseq,
-        //    m2Array.begin(),
-        //    m2Array.end(), [&](const std::shared_ptr<M2Object> &m2Object) {
-        //        m2Object->update(deltaTime, cameraVec3, lookAtMat);
-        //});
-
-        /*
-        tbb::parallel_for(size_t(0), m2Array.size(), [&](size_t i) {
-            auto& m2Object = m2Array[i];
-            m2Object->update(deltaTime, cameraVec3, lookAtMat);
-        });
-        */
-
-
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2Array.size(), 200),
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, tempM2Array.size(), 200),
             [&](tbb::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i != r.end(); ++i) {
-                    auto& m2Object = m2Array[i];
+                    auto& m2Object = tempM2Array[i];
                     m2Object->update(deltaTime, cameraVec3, lookAtMat);
                 }
             }, tbb::simple_partitioner());
@@ -1403,9 +1367,6 @@ void Map::update(HUpdateStage updateStage) {
 
         m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
     }
-
-//        });
-//    }
 
     for (const auto &wmoObject : updateStage->cullResult->wmoArray) {
         if (wmoObject == nullptr) continue;
@@ -1417,11 +1378,15 @@ void Map::update(HUpdateStage updateStage) {
     }
 
     //2. Calc distance every 100 ms
-//    #pragma omp parallel for
-    for (const auto& m2Object : updateStage->cullResult->m2Array) {
-        if (m2Object == nullptr) continue;
-        m2Object->calcDistance(cameraVec3);
-    };
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, tempM2Array.size(), 200),
+          [&](tbb::blocked_range<size_t> r) {
+              for (size_t i = r.begin(); i != r.end(); ++i) {
+                  auto &m2Object = tempM2Array[i];
+                  if (m2Object == nullptr) continue;
+                  m2Object->calcDistance(cameraVec3);
+              }
+          }
+    );
 
     //Cleanup ADT every 10 seconds
     if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
@@ -1447,9 +1412,8 @@ void Map::update(HUpdateStage updateStage) {
 void Map::updateBuffers(HUpdateStage updateStage) {
     auto cullStage = updateStage->cullResult;
 
-    for (int i = 0; i < cullStage->m2Array.size(); i++) {
-        auto m2Object = cullStage->m2Array[i];
-        if (m2Object != nullptr) {
+    for (auto &m2Object : cullStage->m2Array) {
+         if (m2Object != nullptr) {
             m2Object->uploadGeneratorBuffers(cullStage->matricesForCulling->lookAtMat);
         }
     }
@@ -1463,7 +1427,6 @@ void Map::updateBuffers(HUpdateStage updateStage) {
         if (adtRes == nullptr) continue;
         adtRes->adtObject->uploadGeneratorBuffers(*adtRes.get());
     }
-
 }
 
 std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
@@ -1610,10 +1573,11 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
         }
     }
 
-    std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
-    for (auto &view : vector) {
-        std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
-    }
+    std::set<std::shared_ptr<M2Object>> m2ObjectsRendered;
+
+//    for (auto &view : vector) {
+//        (view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
+//    }
 
 //    std::unordered_set<std::shared_ptr<M2Object>> s;
 //    for (auto i : m2ObjectsRendered)
@@ -1625,15 +1589,15 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //    for( unsigned i = 0; i < size; ++i ) s.insert( m2ObjectsRendered[i] );
 //    m2ObjectsRendered.assign( s.begin(), s.end() );
 
-    if (m2ObjectsRendered.size() > 2) {
-        tbb::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
-                           [](auto &first, auto &end) { return first < end; }
-        );
-        m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
-    }
+//    if (m2ObjectsRendered.size() > 2) {
+//        tbb::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
+//                           [](auto &first, auto &end) { return first < end; }
+//        );
+//        m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
+//    }
 
     if (m_api->getConfig()->renderM2) {
-        for (auto &m2Object : m2ObjectsRendered) {
+        for (auto &m2Object : cullStage->m2Array) {
             if (m2Object == nullptr) continue;
             m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
             m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);

@@ -34,8 +34,8 @@ public:
         return m_localGroupBorder;
     }
     const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
-    const std::vector <std::shared_ptr<M2Object>> *getDoodads() const {
-        return &m_doodads;
+    const std::unordered_set <std::shared_ptr<M2Object>> &getDoodads() const {
+        return m_doodads;
     };
 
     void setWmoApi(IWmoApi *api);
@@ -86,7 +86,7 @@ private:
 
     SMOGroupInfo *m_main_groupInfo;
 
-    std::vector <std::shared_ptr<M2Object>> m_doodads = {};
+    std::unordered_set <std::shared_ptr<M2Object>> m_doodads = {};
 
     bool m_useLocalLightingForM2 = false;
 
@@ -100,7 +100,7 @@ private:
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
-    void checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates);
+    void checkDoodads(std::unordered_set<std::shared_ptr<M2Object>> &wmoM2Candidates);
 
     void postLoad();
     void createMeshes();

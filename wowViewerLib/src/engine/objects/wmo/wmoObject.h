@@ -164,7 +164,7 @@ public:
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        std::vector<std::shared_ptr<M2Object>> &m2Candidates);
+        std::unordered_set<std::shared_ptr<M2Object>> &m2Candidates);
 
     void addSplitChildWMOsToView(InteriorView &interiorView, int groupId);
 

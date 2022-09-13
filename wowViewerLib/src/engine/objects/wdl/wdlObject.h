@@ -57,8 +57,8 @@ public:
                                         std::vector<mathfu::vec3> &frustumPoints,
                                         std::vector<mathfu::vec3> &hullLines,
                                         mathfu::mat4 &lookAtMat4,
-                                        std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                        std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+                                        std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                        std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     void checkSkyScenes(const StateForConditions &state,
                         std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,

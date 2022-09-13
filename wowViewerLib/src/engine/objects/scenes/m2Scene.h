@@ -14,15 +14,16 @@ private:
     std::string m_m2Model;
     std::shared_ptr<M2Object> m_m2Object = nullptr;
 
-    void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+    void getPotentialEntities(const mathfu::vec4 &cameraPos,
                                       HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
                                       std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                                      std::vector<std::shared_ptr<WmoObject>> &potentialWmo) override;
+                                      std::unordered_set<std::shared_ptr<M2Object>> &potentialM2,
+                                      std::unordered_set<std::shared_ptr<WmoObject>> &potentialWmo) override;
 
     void getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                                       std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                       std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) override;
+                                       std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                       std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) override;
 
     void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;

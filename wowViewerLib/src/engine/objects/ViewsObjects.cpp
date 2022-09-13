@@ -34,43 +34,38 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
 }
 
 void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    std::vector<std::shared_ptr<M2Object>> candidates;
+    std::unordered_set<std::shared_ptr<M2Object>> candidates;
     for (auto &wmoGroup : wmosForM2) {
         auto doodads = wmoGroup->getDoodads();
-        std::copy(doodads->begin(), doodads->end(), std::back_inserter(candidates));
+        candidates.insert(doodads.begin(), doodads.end());
     }
 
-    //Delete duplicates
-#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
-    std::sort(std::execution::par_unseq, candidates.begin(), candidates.end() );
-#else
-    std::sort(candidates.begin(), candidates.end() );
-#endif
-    candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
 
-//    std::vector<bool> candidateResults = std::vector<bool>(candidates.size(), false);
+    auto candidatesArr = std::vector(candidates.begin(), candidates.end());
+    auto candCullRes = std::vector(candidatesArr.size(), false);
 
-    std::for_each(
-        candidates.begin(),
-        candidates.end(),
-        [this, &cameraPos](std::shared_ptr<M2Object> m2Candidate) {  // copies are safer, and the resulting code will be as quick.
-            if (m2Candidate == nullptr) return;
-            for (auto &frustumPlane : this->frustumPlanes) {
-                if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
-                    setM2Lights(m2Candidate);
 
-                    break;
-                }
-            }
-        });
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 200),
+                      [&](tbb::blocked_range<size_t> r) {
+                          for (size_t i = r.begin(); i != r.end(); ++i) {
+                              auto& m2ObjectCandidate = candidatesArr[i];
+                              if (m2ObjectCandidate == nullptr) return;
+                              for (auto &frustumPlane : this->frustumPlanes) {
+                                  bool result = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlane, {});
+                                  if (result) {
+                                      setM2Lights(m2ObjectCandidate);
+                                      candCullRes[i] = true;
+                                      break;
+                                  }
+                              }
+                          }
+                      }, tbb::simple_partitioner());
 
-//    drawnM2s = std::vector<M2Object *>();
+    //    drawnM2s = std::vector<M2Object *>();
     drawnM2s.reserve(drawnM2s.size() + candidates.size());
-    for (auto &m2Candidate : candidates) {
-        if (m2Candidate == nullptr) continue;
-        if (m2Candidate->m_cullResult) {
-            drawnM2s.insert(m2Candidate);
-        }
+    for (int i = 0; i < candCullRes.size(); i++) {
+        if (!candCullRes[i]) continue;
+        drawnM2s.insert(candidatesArr[i]);
     }
 }
 

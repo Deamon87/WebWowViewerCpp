@@ -6,8 +6,8 @@
 
 bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
                                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
-                                    mathfu::mat4 &lookAtMat4, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+                                    mathfu::mat4 &lookAtMat4, std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                    std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_wdlFile->getStatus() == FileStatus::FSLoaded) {
             this->loadingFinished();
@@ -17,14 +17,9 @@ bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu:
         }
     }
 
-    for (auto m2Object : m2Objects) {
-        m2ObjectsCandidates.push_back(m2Object);
-    }
-
-    for (auto wmoObject : wmoObjects) {
-        wmoCandidates.push_back(wmoObject);
-    }
-
+    m2ObjectsCandidates.insert(m2Objects.begin(), m2Objects.end());
+    wmoCandidates.insert(wmoObjects.begin(), wmoObjects.end());
+    
     return false;
 }
 

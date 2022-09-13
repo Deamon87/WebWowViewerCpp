@@ -605,8 +605,8 @@ int areIntersecting(
 bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points) {
     if (!MathHelper::isPointInsideAABB(aabb, p)) return false;
 
-    //Select point ouside of convex;
-    mathfu::vec2 outPnt = mathfu::vec2(aabb.max.x+10, aabb.max.y+10);
+    //Select point outside of convex;
+    mathfu::vec2 outPnt = mathfu::vec2(aabb.max.x+1000, aabb.max.y+1000);
 
     int intersections = 0;
     for (int i = 0; i < points.size() - 1; i++) {

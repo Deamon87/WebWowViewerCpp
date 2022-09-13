@@ -1217,11 +1217,9 @@ void FrontendUI::showSettingsDialog() {
         }
 
 
-//        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
-//            if (setThreadCount){
-//                setThreadCount(threadCount);
-//            }
-//        }
+        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
+            m_api->getConfig()->threadCount = threadCount;
+        }
 //        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
 //            if (setQuicksortCutoff){
 //                setQuicksortCutoff(quickSortCutoff);

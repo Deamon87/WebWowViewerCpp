@@ -694,17 +694,19 @@ void WmoGroupObject::loadDoodads() {
     if (this->m_geom->doodadRefsLen <= 0) return;
     if (m_wmoApi == nullptr) return;
 
-    m_doodads = std::vector<std::shared_ptr<M2Object>>(this->m_geom->doodadRefsLen, nullptr);
+    m_doodads = {};
+    m_doodads.reserve(this->m_geom->doodadRefsLen);
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
-        m_doodads[i] = newDoodad;
-        std::function<void()> event = [&, newDoodad]() -> void {
-            this->m_recalcBoundries = true;
-        };
-        if (m_doodads[i] != nullptr) {
-            m_doodads[i]->addPostLoadEvent(event);
+        m_doodads.insert(newDoodad);
+        if (newDoodad != nullptr) {
+            std::function<void()> event = [&, newDoodad]() -> void {
+                    this->m_recalcBoundries = true;
+            };
+
+            newDoodad->addPostLoadEvent(event);
         }
     }
 }
@@ -739,8 +741,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
-    for (int j = 0; j < this->m_doodads.size(); j++) {
-        std::shared_ptr<M2Object> m2Object = this->m_doodads[j];
+    for (auto &m2Object : this->m_doodads) {
         if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
 
         CAaBox m2AAbb = m2Object->getAABB();
@@ -1188,22 +1189,22 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(std::unordered_set<std::shared_ptr<M2Object>> &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
 
 
-    for (int i = 0; i < this->m_doodads.size(); i++) {
-        if (this->m_doodads[i] != nullptr) {
+    for (auto &doodad : this->m_doodads) {
+        if (doodad != nullptr) {
             if (this->getDontUseLocalLightingForM2()) {
-                this->m_doodads[i]->setUseLocalLighting(false);
+                doodad->setUseLocalLighting(false);
             } else {
-                this->m_doodads[i]->setUseLocalLighting(true);
-                this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
+                doodad->setUseLocalLighting(true);
+                doodad->setAmbientColorOverride(ambientColor, true);
             }
 
-            wmoM2Candidates.push_back(this->m_doodads[i]);
+            wmoM2Candidates.insert(doodad);
         }
     }
 }

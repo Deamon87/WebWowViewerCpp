@@ -777,6 +777,8 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaq
     adtRes.wasLoaded = true;
 
     size_t meshCount = adtMeshes.size();
+    opaqueMeshes.reserve(opaqueMeshes.size() + adtMeshes.size());
+    transparentMeshes.reserve(transparentMeshes.size() + waterMeshes.size());
     for (int i = 0; i < meshCount; i++) {
         if (adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
             adtMeshes[i]->setRenderOrder(renderOrder);
@@ -1017,8 +1019,8 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
                                 std::vector<mathfu::vec3> &frustumPoints,
                                 std::vector<mathfu::vec3> &hullLines,
                                 mathfu::mat4 &lookAtMat4,
-                                std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+                                std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
 
 
 
@@ -1183,8 +1185,8 @@ bool AdtObject::checkReferences(
                           std::vector<mathfu::vec3> &frustumPoints,
                           mathfu::mat4 &lookAtMat4,
                           int lodLevel,
-                          std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                          std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
+                          std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                          std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
     if (!m_loaded) return false;
 
@@ -1230,12 +1232,12 @@ bool AdtObject::checkReferences(
                     if (mcnkContent->mcrd_doodad_refs_len > 0) {
                         for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
                             uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                            m2ObjectsCandidates.push_back(this->objectLods[0].m2Objects[m2Ref]);
+                            m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
                         }
                     }
                 } else {
-                    for (auto m2Object : this->objectLods[1].m2Objects) {
-                        m2ObjectsCandidates.push_back(m2Object);
+                    for (auto &m2Object : this->objectLods[1].m2Objects) {
+                        m2ObjectsCandidates.insert(m2Object);
                     }
                 }
 
@@ -1243,12 +1245,12 @@ bool AdtObject::checkReferences(
                     if (mcnkContent->mcrw_object_refs_len > 0) {
                         for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
                             uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                            wmoCandidates.push_back(this->objectLods[0].wmoObjects[wmoRef]);
+                            wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
                         }
                     }
                 } else {
-                    for (auto wmoObject : this->objectLods[1].wmoObjects) {
-                        wmoCandidates.push_back(wmoObject);
+                    for (auto &wmoObject : this->objectLods[1].wmoObjects) {
+                        wmoCandidates.insert(wmoObject);
                     }
                 }
             }
@@ -1265,8 +1267,8 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                                     std::vector<mathfu::vec3> &frustumPoints,
                                     std::vector<mathfu::vec3> &hullLines,
                                     mathfu::mat4 &lookAtMat4,
-                                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+                                    std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                    std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_freeStrategy != nullptr)
             m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());

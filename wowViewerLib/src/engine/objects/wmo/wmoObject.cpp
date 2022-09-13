@@ -761,15 +761,13 @@ void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
 
 void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   std::vector<mathfu::vec4> &frustumPlane,
-                                  std::vector<std::shared_ptr<M2Object>> &m2Candidates) {
+                                  std::unordered_set<std::shared_ptr<M2Object>> &m2Candidates) {
     std::shared_ptr<WmoGroupObject> groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
-        const std::vector <std::shared_ptr<M2Object>> *doodads = groupWmoObject->getDoodads();
-
         mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
 
-        for (int j = 0; j < doodads->size(); j++) {
-            auto m2Object = doodads->at(j);
+        for (auto &m2Object : groupWmoObject->getDoodads()) {
+
             if (!m2Object) continue;
             if (groupWmoObject->getDontUseLocalLightingForM2()) {
                 m2Object->setUseLocalLighting(false);
@@ -778,7 +776,7 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                 m2Object->setAmbientColorOverride(ambientColor, true);
             }
 
-            m2Candidates.push_back(m2Object);
+            m2Candidates.insert(m2Object);
         }
     }
 }

@@ -64,14 +64,14 @@ public:
             std::vector<mathfu::vec3> &frustumPoints,
             std::vector<mathfu::vec3> &hullLines,
             mathfu::mat4 &lookAtMat4,
-            std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-            std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+            std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+            std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     bool
     checkReferences(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
                     mathfu::mat4 &lookAtMat4,
                     int lodLevel,
-                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::vector<std::shared_ptr<WmoObject>> &wmoCandidates,
+                    std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
     FreeStrategy &getFreeStrategy() {
@@ -188,8 +188,8 @@ private:
                     const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
                     std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
                     mathfu::mat4 &lookAtMat4,
-                    std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+                    std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                    std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
 };
 
 

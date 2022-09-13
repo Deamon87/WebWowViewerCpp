@@ -14,7 +14,6 @@
 #include "../iScene.h"
 #include "../objectCache.h"
 #include "../wdl/wdlObject.h"
-#include "../wowFrameData.h"
 #include "../../SceneScenario.h"
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
@@ -96,20 +95,21 @@ protected:
 
     animTime_t getCurrentSceneTime() override ;
 
-    virtual void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
+    virtual void getPotentialEntities(const mathfu::vec4 &cameraPos,
                               HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
                               std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                              std::vector<std::shared_ptr<WmoObject>> &potentialWmo);
+                              std::unordered_set<std::shared_ptr<M2Object>> &potentialM2,
+                              std::unordered_set<std::shared_ptr<WmoObject>> &potentialWmo);
 
     virtual void getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
                                        std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                                       std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                       std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+                                       std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                                       std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     void checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
                               mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                              std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                              std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+                              std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                              std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
 
     virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);

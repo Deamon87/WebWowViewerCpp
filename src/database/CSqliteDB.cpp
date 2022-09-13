@@ -144,7 +144,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
     ),
     getZoneLightPointsInfo(m_sqliteDatabase,
-        "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder;"
+        "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder DESC;"
     ),
     getMapList(m_sqliteDatabase, getHasWDTId() ? getMapListSQL : getMapListSQL_classic),
     getMapByIdStatement(m_sqliteDatabase, getHasWDTId() ? getMapByIDSQL : getMapByIDSQL_classic)
