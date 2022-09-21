@@ -8,18 +8,19 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
 
-void WmoScene::getPotentialEntities(const mathfu::vec4 &cameraPos,
-                                   HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
-                                   std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                                   std::unordered_set<std::shared_ptr<M2Object>> &potentialM2,
-                                   std::unordered_set<std::shared_ptr<WmoObject>> &potentialWmo) {
+void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
+                                    const mathfu::vec4 &cameraPos,
+                                    HCullStage &cullStage,
+                                    M2ObjectSetCont &potentialM2,
+                                    WMOObjectSetCont &potentialWmo) {
     potentialWmo.insert(this->m_wmoObject);
 }
 
-void WmoScene::getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
-                           std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                           std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                           std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
+void WmoScene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
+                                     const mathfu::vec4 &cameraPos,
+                                     HCullStage &cullStage,
+                                     M2ObjectSetCont &m2ObjectsCandidates,
+                                     WMOObjectSetCont &wmoCandidates) {
 
     wmoCandidates.insert(this->m_wmoObject);
 };

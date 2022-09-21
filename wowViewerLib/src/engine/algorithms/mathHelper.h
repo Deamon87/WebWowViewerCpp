@@ -19,6 +19,19 @@ public:
     static constexpr float CHUNKSIZE = TILESIZE / 16.0f;
     static constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
 
+    struct PlanesUndPoints {
+        std::vector<mathfu::vec4> planes;
+        std::vector<mathfu::vec3> points;
+        std::vector<mathfu::vec3> hullLines;
+    };
+
+    typedef struct {
+        mathfu::mat4 perspectiveMat;
+        mathfu::mat4 viewMat;
+        mathfu::vec4 farPlane;
+        std::vector<PlanesUndPoints> frustums;
+    } FrustumCullingData;
+
     typedef struct {
         double h;       // angle in degrees
         double s;       // a fraction between 0 and 1
@@ -33,6 +46,8 @@ public:
     static mathfu::vec2 convertV69ToV2(vector_2fp_6_9 &fp69);
 
     static CAaBox transformAABBWithMat4(mathfu::mat4 matrix, mathfu::vec4 min, mathfu::vec4 max);
+    static std::vector<mathfu::vec4> transformPlanesWithMat(std::vector<mathfu::vec4> planes, mathfu::mat4 mat);
+    static std::vector<mathfu::vec3> getIntersectionPointsFromPlanes(std::vector<mathfu::vec4> &planes);
     static std::vector<mathfu::vec4> getFrustumClipsFromMatrix(mathfu::mat4 &mat);
     static void fixNearPlane(std::vector<mathfu::vec4> &planes, mathfu::vec4 &camera) {
         mathfu::vec4 &nearPlane = planes[5];
@@ -41,8 +56,10 @@ public:
         nearPlane[3] -= dist;
     }
     static std::vector<mathfu::vec3> calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat);
-    static bool checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points);
-    static bool checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box);
+
+    static bool checkFrustum(const MathHelper::FrustumCullingData &frustumData, const CAaBox &box);
+    static bool checkFrustum(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box);
+    static bool checkFrustum2D(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box);
     static std::vector<mathfu::vec3> getHullPoints(std::vector<mathfu::vec3> &points);
     static std::vector<mathfu::vec3> getHullLines(std::vector<mathfu::vec3> &points);
 
@@ -72,7 +89,7 @@ public:
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(0,0,1)).ToMatrix();
     };
 
-    static const mathfu::mat4 &getAdtToWorldMat4() {
+    static inline const mathfu::mat4 &getAdtToWorldMat4() {
 
 //        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
 //        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));

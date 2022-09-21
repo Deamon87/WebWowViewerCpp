@@ -38,6 +38,17 @@ public:
 
 	~WmoObject();
 private:
+    struct PortalTraverseTempData {
+        FrameViewsHolder &viewsHolder;
+        bool exteriorWasCreatedBeforeTraversing;
+        mathfu::vec4 farPlane;
+        std::vector<HInteriorView> &ivPerWMOGroup;
+        mathfu::vec4 &cameraVec4;
+        mathfu::vec4 &cameraLocal;
+        mathfu::mat4 &transposeInverseModelMat;
+        std::vector<bool> &transverseVisitedPortals;
+    };
+
     HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
@@ -70,10 +81,6 @@ private:
 
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
-
-    // Portal culling stuff begin
-    std::vector<bool> transverseVisitedPortals;
-    // Portal culling stuff end
 
     HGMesh transformedAntiPortals;
 
@@ -137,47 +144,29 @@ public:
 
 public:
     //Portal culling
-//    bool startTraversingFromInteriorWMO (
-//        std::vector<WmoGroupResult> &wmoGroupsResult,
-//        mathfu::vec4 &cameraVec4,
-//        mathfu::mat4 &viewPerspectiveMat,
-//        std::vector<M2Object*> &m2RenderedThisFrame);
-//
-//    bool startTraversingFromExterior (
-//        mathfu::vec4 &cameraVec4,
-//        mathfu::mat4 &viewPerspectiveMat,
-//        std::vector<M2Object*> &m2RenderedThisFrame);
-
-    void resetTraversedWmoGroups();
     bool startTraversingWMOGroup(
         mathfu::vec4 &cameraVec4,
-        mathfu::mat4 &viewPerspectiveMat,
+        const MathHelper::FrustumCullingData &frustumData,
         int groupId,
         int globalLevel,
         int &renderOrder,
         bool traversingFromInterior,
-        std::vector<InteriorView> &interiorViews,
-        ExteriorView &exteriorView
+        FrameViewsHolder &viewsHolder
     );
 
     void checkGroupDoodads(
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        std::unordered_set<std::shared_ptr<M2Object>> &m2Candidates);
+        M2ObjectSetCont &m2Candidates);
 
     void addSplitChildWMOsToView(InteriorView &interiorView, int groupId);
 
 
-    void transverseGroupWMO (
+    void traverseGroupWmo (
         int groupId,
         bool traversingStartedFromInterior,
-        std::vector<InteriorView> &allInteriorViews, //GroupIndex as index
-        ExteriorView &exteriorView,
-        mathfu::vec4 &cameraVec4,
-        mathfu::vec4 &cameraLocal,
-        mathfu::mat4 &inverseTransposeModelMat,
-        std::vector<bool> &transverseVisitedPortals,
+        PortalTraverseTempData &traverseTempData,
         std::vector<mathfu::vec4> &localFrustumPlanes,
         int globalLevel,
         int localLevel
@@ -198,6 +187,16 @@ public:
     void createTransformedAntiPortalMesh();
     void updateTransformedAntiPortalPoints();
 };
+
+struct WMOObjectHasher
+{
+    size_t operator()(const std::shared_ptr<WmoObject>& val)const
+    {
+        return std::hash<std::shared_ptr<WmoObject>>()(val);
+    }
+};
+
+typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
 
 
 #endif //WEBWOWVIEWERCPP_WMOOBJECT_H

@@ -11,6 +11,7 @@ class M2Object;
 #include <array>
 #include <vector>
 #include <set>
+#include <tbb/concurrent_unordered_set.h>
 
 #include "../../persistance/header/adtFileHeader.h"
 
@@ -57,21 +58,21 @@ public:
 
     bool checkFrustumCulling(
             ADTObjRenderRes &adtFrustRes,
-            mathfu::vec4 &cameraPos,
+            const mathfu::vec4 &cameraPos,
             int adt_glob_x,
             int adt_glob_y,
-            std::vector<mathfu::vec4> &frustumPlanes,
-            std::vector<mathfu::vec3> &frustumPoints,
-            std::vector<mathfu::vec3> &hullLines,
-            mathfu::mat4 &lookAtMat4,
-            std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-            std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
+            const MathHelper::FrustumCullingData &frustumData,
+
+            M2ObjectSetCont&m2ObjectsCandidates,
+            WMOObjectSetCont &wmoCandidates);
 
     bool
-    checkReferences(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                    mathfu::mat4 &lookAtMat4,
+    checkReferences(ADTObjRenderRes &adtFrustRes,
+                    const mathfu::vec4 &cameraPos,
+                    const MathHelper::FrustumCullingData &frustumData,
                     int lodLevel,
-                    std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates, std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates,
+                    M2ObjectSetCont &m2ObjectsCandidates,
+                    WMOObjectSetCont &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
     FreeStrategy &getFreeStrategy() {
@@ -178,18 +179,19 @@ private:
     HGMesh createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
 
 
-    bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
-                                 std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines, int x,
-                                 int y, int x_len, int y_len);
+    bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,
+                                 const mathfu::vec4 &cameraPos,
+                                 const MathHelper::FrustumCullingData &frustumData,
+                                 int x, int y, int x_len, int y_len);
 
     bool
-    iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
-                    int curentLod, int lastFoundLod,
-                    const PointerChecker<MLND> &quadTree, int quadTreeInd, std::vector<mathfu::vec4> &frustumPlanes,
-                    std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
-                    mathfu::mat4 &lookAtMat4,
-                    std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                    std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
+    iterateQuadTree(ADTObjRenderRes &adtFrustRes, const mathfu::vec4 &camera, const mathfu::vec3 &pos, float x_offset, float y_offset, float cell_len,
+                    int currentLod, int lastFoundLod,
+                    const PointerChecker<MLND> &quadTree,
+                    int quadTreeInd,
+                    const MathHelper::FrustumCullingData &frustumData,
+                    M2ObjectSetCont &m2ObjectsCandidates,
+                    WMOObjectSetCont &wmoCandidates);
 };
 
 

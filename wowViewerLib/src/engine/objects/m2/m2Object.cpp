@@ -1038,7 +1038,7 @@ bool M2Object::isMainDataLoaded() {
     return true;
 }
 
-const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
+const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const MathHelper::FrustumCullingData &frustumData) {
     if (!this->m_hasAABB) {
         if (!this->isMainDataLoaded()) return false;
 
@@ -1068,7 +1068,7 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
     }
 
     //2. Check aabb is inside camera frustum
-    bool result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
+    bool result = MathHelper::checkFrustum(frustumData, aabb);
     return result;
 }
 

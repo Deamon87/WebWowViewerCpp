@@ -33,8 +33,8 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
 //    }
 }
 
-void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    std::unordered_set<std::shared_ptr<M2Object>> candidates;
+void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
+    M2ObjectSetCont candidates;
     for (auto &wmoGroup : wmosForM2) {
         auto doodads = wmoGroup->getDoodads();
         candidates.insert(doodads.begin(), doodads.end());
@@ -50,26 +50,24 @@ void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAt
                           for (size_t i = r.begin(); i != r.end(); ++i) {
                               auto& m2ObjectCandidate = candidatesArr[i];
                               if (m2ObjectCandidate == nullptr) return;
-                              for (auto &frustumPlane : this->frustumPlanes) {
-                                  bool result = m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumPlane, {});
+                              bool result = m2ObjectCandidate->checkFrustumCulling(cameraPos, this->frustumData);
                                   if (result) {
                                       setM2Lights(m2ObjectCandidate);
                                       candCullRes[i] = true;
                                       break;
                                   }
-                              }
                           }
                       }, tbb::simple_partitioner());
 
     //    drawnM2s = std::vector<M2Object *>();
-    drawnM2s.reserve(drawnM2s.size() + candidates.size());
+//    drawnM2s.reserve(drawnM2s.size() + candidates.size());
     for (int i = 0; i < candCullRes.size(); i++) {
         if (!candCullRes[i]) continue;
         drawnM2s.insert(candidatesArr[i]);
     }
 }
 
-void GeneralView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
+void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
@@ -78,7 +76,7 @@ static std::array<GBufferBinding, 3> DrawPortalBindings = {
     //24
 };
 
-void GeneralView::produceTransformedPortalMeshes(HApiContainer apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
+void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
 
     std::vector<uint16_t> indiciesArray;
     std::vector<float> verticles;
@@ -176,7 +174,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer apiContainer, std
     }
 }
 
-void InteriorView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
+void InteriorView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
     if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
 
     if (ownerGroupWMO->getDontUseLocalLightingForM2()) {
@@ -184,4 +182,26 @@ void InteriorView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
     } else {
         ownerGroupWMO->assignInteriorParams(m2Object);
     }
+}
+
+HExteriorView FrameViewsHolder::getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData) {
+    if (exteriorView == nullptr) {
+        exteriorView = std::make_shared<ExteriorView>();
+        exteriorView->frustumData = frustumData;
+    }
+
+    return exteriorView;
+}
+
+HInteriorView FrameViewsHolder::createInterior(const MathHelper::FrustumCullingData &frustumData) {
+    auto interior = std::make_shared<InteriorView>();
+    interior->frustumData = frustumData;
+
+    interiorViews.push_back(interior);
+
+    return interior;
+}
+
+HExteriorView FrameViewsHolder::getExterior() {
+    return exteriorView;
 }

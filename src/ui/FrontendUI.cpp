@@ -172,6 +172,19 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
             ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
             ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
+
+            ImGui::Text("Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
+            ImGui::Text("Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
+            ImGui::Text("Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
+            ImGui::Text("Elapsed time on cullUpdateLightsFromDBCounter: %.3f ms", m_api->getConfig()->cullUpdateLightsFromDBCounter);
+            ImGui::Text("Elapsed time on cullExterior: %.3f ms", m_api->getConfig()->cullExterior);
+            ImGui::Text("Elapsed time on cullExteriorWDLCull: %.3f ms", m_api->getConfig()->cullExteriorWDLCull);
+            ImGui::Text("Elapsed time on cullExteriorSetDecl: %.3f ms", m_api->getConfig()->cullExteriorSetDecl);
+            ImGui::Text("Elapsed time on cullExteriorGetCands: %.3f ms", m_api->getConfig()->cullExteriorGetCands);
+            ImGui::Text("Elapsed time on cullExterioFrustumWMO: %.3f ms", m_api->getConfig()->cullExterioFrustumWMO);
+            ImGui::Text("Elapsed time on cullExterioFrustumM2: %.3f ms", m_api->getConfig()->cullExterioFrustumM2);
+            ImGui::Text("Elapsed time on cullSkyDoms: %.3f ms", m_api->getConfig()->cullSkyDoms);
+            ImGui::Text("Elapsed time on cullCombineAllObjects: %.3f ms", m_api->getConfig()->cullCombineAllObjects);
             ImGui::Separator();
         }
 

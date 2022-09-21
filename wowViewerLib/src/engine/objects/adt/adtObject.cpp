@@ -11,6 +11,8 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../persistance/header/adtFileHeader.h"
+#include "tbb/parallel_for.h"
+#include "tbb/blocked_range2d.h"
 
 static GBufferBinding bufferBinding[5] = {
     {(uint32_t)adtShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 60, 0},
@@ -1011,16 +1013,16 @@ static const float perLodDist[5] = {9999999999.99f,
 };
 
 
-bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &camera, const mathfu::vec3 &pos,
+bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes,
+                                const mathfu::vec4 &camera,
+                                const mathfu::vec3 &pos,
                                 float x_offset, float y_offset, float cell_len,
-                                int curentLod, int lastFoundLod,
-                                const PointerChecker<MLND> &quadTree, int quadTreeInd,
-                                std::vector<mathfu::vec4> &frustumPlanes,
-                                std::vector<mathfu::vec3> &frustumPoints,
-                                std::vector<mathfu::vec3> &hullLines,
-                                mathfu::mat4 &lookAtMat4,
-                                std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
+                                int currentLod, int lastFoundLod,
+                                const PointerChecker<MLND> &quadTree,
+                                int quadTreeInd,
+                                const MathHelper::FrustumCullingData &frustumData,
+                                M2ObjectSetCont &m2ObjectsCandidates,
+                                WMOObjectSetCont &wmoCandidates) {
 
 
 
@@ -1028,7 +1030,7 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
     const MLND *quadTreeNode = nullptr;
     int foundLod = lastFoundLod;
 
-    if (quadTree == nullptr || quadTreeInd == -1 || curentLod == 4) {
+    if (quadTree == nullptr || quadTreeInd == -1 || currentLod == 4) {
         mathfu::vec2 aabb2D[2];
         aabb2D[0] = pos.xy() - mathfu::vec2(MathHelper::TILESIZE * (x_offset + cell_len), MathHelper::TILESIZE*(y_offset + cell_len));
         aabb2D[1] = pos.xy() -  mathfu::vec2(MathHelper::TILESIZE *x_offset, MathHelper::TILESIZE*y_offset);
@@ -1037,13 +1039,14 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
         //General frustum cull!
         bool atLeastOneIsDrawn = false;
 
-        atLeastOneIsDrawn = checkNonLodChunkCulling(adtFrustRes, camera, frustumPlanes, frustumPoints, hullLines,
+        atLeastOneIsDrawn = checkNonLodChunkCulling(adtFrustRes, camera, frustumData,
                                                          16.0f * x_offset, 16.0f * y_offset,
                                                          16.0f * cell_len, 16.0f * cell_len
         );
 
-        checkReferences(adtFrustRes, camera, frustumPlanes, frustumPoints,
-                        lookAtMat4, 5,
+        checkReferences(adtFrustRes, camera,
+                        frustumData,
+                         5,
                         m2ObjectsCandidates, wmoCandidates,
                         16.1f * x_offset, 16.1f * y_offset,
                         16.1f * cell_len, 16.1f * cell_len);
@@ -1052,7 +1055,7 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
     }
     quadTreeNode = &quadTree[quadTreeInd];
 
-    if (foundLod == curentLod) {
+    if (foundLod == currentLod) {
         quadTreeNode = &quadTree[quadTreeInd];
 
         mathfu::vec2 aabb2D[2];
@@ -1067,23 +1070,23 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
 
 
 
-    if (quadTreeNode != nullptr && foundLod > curentLod) {
+    if (quadTreeNode != nullptr && foundLod > currentLod) {
         //check all others
         float newCellLen = cell_len/2.0f;
         bool atLeastOneIsDrawn = false;
 
         //1. Node 1
-        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes, camera, pos, x_offset, y_offset , newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[0],
-                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes, camera, pos, x_offset, y_offset , newCellLen, currentLod + 1, foundLod, quadTree, quadTreeNode->indices[0],
+                                            frustumData, m2ObjectsCandidates, wmoCandidates);
         //2. Node 2
-        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,camera, pos, x_offset, y_offset + newCellLen, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[1],
-                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,camera, pos, x_offset, y_offset + newCellLen, newCellLen, currentLod + 1, foundLod, quadTree, quadTreeNode->indices[1],
+                                            frustumData, m2ObjectsCandidates, wmoCandidates);
         //3. Node 3
-        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,camera, pos, x_offset + newCellLen, y_offset, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[2],
-                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes,camera, pos, x_offset + newCellLen, y_offset, newCellLen, currentLod + 1, foundLod, quadTree, quadTreeNode->indices[2],
+                                            frustumData,  m2ObjectsCandidates, wmoCandidates);
         //4. Node 4
-        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes, camera, pos, x_offset+ newCellLen, y_offset+ newCellLen, newCellLen, curentLod + 1, foundLod, quadTree, quadTreeNode->indices[3],
-                                            frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates, wmoCandidates);
+        atLeastOneIsDrawn |= iterateQuadTree(adtFrustRes, camera, pos, x_offset+ newCellLen, y_offset+ newCellLen, newCellLen, currentLod + 1, foundLod, quadTree, quadTreeNode->indices[3],
+                                            frustumData,  m2ObjectsCandidates, wmoCandidates);
 
         return atLeastOneIsDrawn;
     } else {
@@ -1094,8 +1097,9 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
 
             lodCommands.push_back(command);
 
-            checkReferences(adtFrustRes, camera, frustumPlanes, frustumPoints,
-                            lookAtMat4, curentLod,
+            checkReferences(adtFrustRes, camera,
+                            frustumData,
+                            currentLod,
                             m2ObjectsCandidates, wmoCandidates,
                             16.0f * x_offset, 16.0f * y_offset,
                             16.0f * cell_len, 16.0f * cell_len);
@@ -1106,102 +1110,108 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &came
     }
 }
 
-bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes, mathfu::vec4 &cameraPos,
-                                        std::vector<mathfu::vec4> &frustumPlanes,
-                                        std::vector<mathfu::vec3> &frustumPoints,
-                                        std::vector<mathfu::vec3> &hullLines,
+bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,
+                                        const mathfu::vec4 &cameraPos,
+                                        const MathHelper::FrustumCullingData &frustumData,
 
                                         int x, int y, int x_len, int y_len) {
 
     bool atLeastOneIsDrawn = false;
-    for (int k = x; k < x + x_len; k++) {
-        for (int l = y; l < y + y_len; l++) {
-            int i = this->m_adtFile->mcnkMap[l][k];
-            if (i < 0)
-                continue;
+//    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
+//        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
+//            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
+    {
+        for (size_t k = x; k < x+x_len; k++) {
+            for (size_t l = y; l < y+y_len; ++l) {
+                int i = this->m_adtFile->mcnkMap[l][k];
+                if (i < 0)
+                    continue;
 
-            mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
+                mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
 
-            adtFrustRes.drawChunk[i] = false;
-            adtFrustRes.drawWaterChunk[i] = false;
+                adtFrustRes.drawChunk[i] = false;
+                adtFrustRes.drawWaterChunk[i] = false;
 
-            {
-                CAaBox &aabb = this->tileAabb[i];
-                //1. Check if camera position is inside Bounding Box
-                bool cameraOnChunk =
-                    (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
-                     cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
-                if (cameraOnChunk &&
-                    cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-                    ) {
-                    adtFrustRes.drawChunk[i] = true;
-                    atLeastOneIsDrawn = true;
+                {
+                    CAaBox &aabb = this->tileAabb[i];
+                    //1. Check if camera position is inside Bounding Box
+                    bool cameraOnChunk =
+                        (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
+                         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
+                    if (cameraOnChunk &&
+                        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+                        ) {
+                        adtFrustRes.drawChunk[i] = true;
+                        atLeastOneIsDrawn = true;
+                    }
+
+                    //2. Check aabb is inside camera frustum
+                    bool result = false;
+                    adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
+                    if (!adtFrustRes.drawChunk[i]) {
+                        result = MathHelper::checkFrustum(frustumData, aabb);
+                        bool frustum2DRes = MathHelper::checkFrustum2D(frustumData.frustums, aabb);
+                        adtFrustRes.checkRefs[i] = result || frustum2DRes;
+
+                        adtFrustRes.drawChunk[i] = result;
+                        atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                    }
                 }
 
-                //2. Check aabb is inside camera frustum
-                bool result = false;
-                adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
-                if (!adtFrustRes.drawChunk[i]) {
-                    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-                    bool frustum2DRes = MathHelper::checkFrustum2D(hullLines, aabb);
-                    adtFrustRes.checkRefs[i] = result || frustum2DRes;
+                //Do the same for Water tile
+                {
+                    CAaBox &aabb = this->waterTileAabb[i];
+                    bool cameraOnChunk =
+                        (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
+                         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
+                    if (cameraOnChunk &&
+                        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
+                        ) {
+                        adtFrustRes.drawWaterChunk[i] = true;
+                        atLeastOneIsDrawn = true;
+                    }
 
-                    adtFrustRes.drawChunk[i] = result;
-                    atLeastOneIsDrawn = atLeastOneIsDrawn || result;
-                }
-            }
-
-            //Do the same for Water tile
-            {
-                CAaBox &aabb = this->waterTileAabb[i];
-                bool cameraOnChunk =
-                    (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
-                     cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
-                if (cameraOnChunk &&
-                    cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-                    ) {
-                    adtFrustRes.drawWaterChunk[i] = true;
-                    atLeastOneIsDrawn = true;
-                }
-
-                //2. Check aabb is inside camera frustum
-                bool result = false;
-                if (!adtFrustRes.drawWaterChunk[i]) {
-                    result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-                    adtFrustRes.drawWaterChunk[i] = result;
-                    atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                    //2. Check aabb is inside camera frustum
+                    bool result = false;
+                    if (!adtFrustRes.drawWaterChunk[i]) {
+                        result = MathHelper::checkFrustum(frustumData, aabb);
+                        adtFrustRes.drawWaterChunk[i] = result;
+                        atLeastOneIsDrawn = atLeastOneIsDrawn || result;
+                    }
                 }
             }
         }
-    }
+    }//,tbb::auto_partitioner());
 
     return atLeastOneIsDrawn;
 }
 
 bool AdtObject::checkReferences(
                           ADTObjRenderRes &adtFrustRes,
-                          mathfu::vec4 &cameraPos,
-                          std::vector<mathfu::vec4> &frustumPlanes,
-                          std::vector<mathfu::vec3> &frustumPoints,
-                          mathfu::mat4 &lookAtMat4,
+                          const mathfu::vec4 &cameraPos,
+                          const MathHelper::FrustumCullingData &frustumData,
                           int lodLevel,
-                          std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                          std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates,
+                          M2ObjectSetCont &m2ObjectsCandidates,
+                          WMOObjectSetCont &wmoCandidates,
                           int x, int y, int x_len, int y_len) {
     if (!m_loaded) return false;
 
     if (m_freeStrategy != nullptr)
         m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
-    for (int k = x; k < x+x_len; k++) {
-        for (int l = y; l < y + y_len; l++) {
-            int i = this->m_adtFile->mcnkMap[k][l];
+//    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
+//        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
+//            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
+    {
+        for (size_t k = x; k < x+x_len; k++) {
+            for (size_t l = y; l < y+y_len; ++l) {
+                int i = this->m_adtFile->mcnkMap[k][l];
 
-            if (i < 0) continue;
+                if (i < 0) continue;
 
-            bool wotlk = false;
-            float chunkDist = 1.0;
-            if (wotlk) {
+                bool wotlk = false;
+                float chunkDist = 1.0;
+                if (wotlk) {
 //                SMChunk *mapTile = &m_adtFile->mapTile[i];
 //                mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
 //
@@ -1225,50 +1235,49 @@ bool AdtObject::checkReferences(
 //                uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
 //                wmoCandidates.insert(this->wmoObjects[j]);
 //            }
-            } else {
-                SMChunk *mapTile = &m_adtFile->mapTile[i];
-                mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
-                if (lodLevel >= 4) {
-                    if (mcnkContent->mcrd_doodad_refs_len > 0) {
-                        for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
-                            uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                            m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
+                } else {
+                    SMChunk *mapTile = &m_adtFile->mapTile[i];
+                    mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
+                    if (lodLevel >= 4) {
+                        if (mcnkContent->mcrd_doodad_refs_len > 0) {
+                            for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
+                                uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
+                                m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
+                            }
+                        }
+                    } else {
+                        for (auto &m2Object: this->objectLods[1].m2Objects) {
+                            m2ObjectsCandidates.insert(m2Object);
                         }
                     }
-                } else {
-                    for (auto &m2Object : this->objectLods[1].m2Objects) {
-                        m2ObjectsCandidates.insert(m2Object);
-                    }
-                }
 
-                if (lodLevel >= 4) {
-                    if (mcnkContent->mcrw_object_refs_len > 0) {
-                        for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
-                            uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                            wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
+                    if (lodLevel >= 4) {
+                        if (mcnkContent->mcrw_object_refs_len > 0) {
+                            for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
+                                uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
+                                wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
+                            }
                         }
-                    }
-                } else {
-                    for (auto &wmoObject : this->objectLods[1].wmoObjects) {
-                        wmoCandidates.insert(wmoObject);
+                    } else {
+                        for (auto &wmoObject: this->objectLods[1].wmoObjects) {
+                            wmoCandidates.insert(wmoObject);
+                        }
                     }
                 }
             }
         }
-    }
+    }//,tbb::auto_partitioner());
+
 	return true;
 }
 
 bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
-                                    mathfu::vec4 &cameraPos,
+                                    const mathfu::vec4 &cameraPos,
                                     int adt_glob_x,
                                     int adt_glob_y,
-                                    std::vector<mathfu::vec4> &frustumPlanes,
-                                    std::vector<mathfu::vec3> &frustumPoints,
-                                    std::vector<mathfu::vec3> &hullLines,
-                                    mathfu::mat4 &lookAtMat4,
-                                    std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                    std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates) {
+                                    const MathHelper::FrustumCullingData &frustumData,
+                                    M2ObjectSetCont&m2ObjectsCandidates,
+                                    WMOObjectSetCont &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_freeStrategy != nullptr)
             m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
@@ -1294,15 +1303,17 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                                              0, 0, 1.0,
                                              0, 0,
                                              m_adtFileLod->mlnds, 0,
-                                             frustumPlanes, frustumPoints, hullLines, lookAtMat4, m2ObjectsCandidates,
+                                             frustumData,
+                                             m2ObjectsCandidates,
                                              wmoCandidates);
     } else {
         //For old ADT without _lod.adt
         atLeastOneIsDrawn |= checkNonLodChunkCulling(adtFrustRes, cameraPos,
-                                frustumPlanes, frustumPoints, hullLines,
+                                frustumData,
                                 0, 0, 16, 16);
-        checkReferences(adtFrustRes, cameraPos, frustumPlanes, frustumPoints,
-                        lookAtMat4, 5,
+        checkReferences(adtFrustRes, cameraPos,
+                        frustumData,
+                         5,
                         m2ObjectsCandidates, wmoCandidates,
                         0, 0,
                         16, 16);

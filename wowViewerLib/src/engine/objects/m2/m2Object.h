@@ -9,6 +9,8 @@ class M2Object;
 #define _USE_MATH_DEFINES
 
 #include <cstdint>
+#include <tbb/concurrent_unordered_set.h>
+#include <unordered_set>
 #include "mathfu/glsl_mappings.h"
 #include "../../managers/particles/particleEmitter.h"
 #include "../../persistance/header/wmoFileHeader.h"
@@ -167,9 +169,6 @@ private:
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
     static float getTextureWeight(M2SkinProfile *skinData, M2Data *m2data, int batchIndex, int textureIndex, const std::vector<float> &transparencies) ;
 public:
-
-    void testExport();
-
     void setAlwaysDraw(bool value) {
         m_alwaysDraw = value;
     }
@@ -250,8 +249,7 @@ public:
     };
     bool getUseLocalLighting() { return m_useLocalDiffuseColor == 1; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
-                                   const std::vector<mathfu::vec4> &frustumPlanes,
-                                   const std::vector<mathfu::vec3> &frustumPoints);
+                                   const MathHelper::FrustumCullingData &frustumData);
 
     bool isMainDataLoaded();
     bool isGeomReqFilesLoaded();
@@ -296,5 +294,15 @@ public:
     void updateDynamicMeshes();
 };
 
+struct M2ObjectHasher
+{
+    size_t operator()(const std::shared_ptr<M2Object>& val)const
+    {
+        return std::hash<std::shared_ptr<M2Object>>()(val);
+    }
+};
+
+//typedef tbb::unordered_set<std::shared_ptr<M2Object>, M2ObjectHasher> M2ObjectSetCont;
+typedef std::unordered_set<std::shared_ptr<M2Object>> M2ObjectSetCont;
 
 #endif //WOWVIEWERLIB_M2OBJECT_H

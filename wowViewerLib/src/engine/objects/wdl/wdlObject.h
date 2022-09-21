@@ -52,19 +52,15 @@ public:
         return m_loaded;
     }
 
-    bool checkFrustumCulling(mathfu::vec4 &cameraPos,
-                                        std::vector<mathfu::vec4> &frustumPlanes,
-                                        std::vector<mathfu::vec3> &frustumPoints,
-                                        std::vector<mathfu::vec3> &hullLines,
-                                        mathfu::mat4 &lookAtMat4,
-                                        std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                        std::unordered_set<std::shared_ptr<WmoObject>> &wmoCandidates);
+    bool checkFrustumCulling(const MathHelper::FrustumCullingData &frustumData,
+                             mathfu::vec4 &cameraPos,
+                             M2ObjectSetCont &m2ObjectsCandidates,
+                             WMOObjectSetCont &wmoCandidates);
 
     void checkSkyScenes(const StateForConditions &state,
-                        std::unordered_set<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                        M2ObjectSetCont &m2ObjectsCandidates,
                         const mathfu::vec4 &cameraPos,
-                        const std::vector<mathfu::vec4> &frustumPlanes,
-                        const std::vector<mathfu::vec3> &frustumPoints);
+                        const MathHelper::FrustumCullingData &frustumData);
 };
 
 

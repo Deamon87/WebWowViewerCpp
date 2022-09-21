@@ -763,8 +763,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 
 void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                                        mathfu::vec4 &cameraPos,
-                                       std::vector<mathfu::vec4> &frustumPlanes,
-                                       std::vector<mathfu::vec3> &points) {
+                                       const MathHelper::FrustumCullingData &frustumData) {
     drawDoodads = false;
     drawGroup = false;
     if (!m_loaded) {
@@ -783,7 +782,7 @@ void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
         cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
-    drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
+    drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumData, bbArray);
 
     bbArray = this->m_volumeWorldGroupBorder;
     bool isInsideGroup = (
@@ -792,7 +791,7 @@ void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
         cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
-    drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
+    drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumData, bbArray);
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
@@ -825,14 +824,18 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
     return insidePortals;
 }
 
-void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP_NODE> &nodes, std::vector<int> &bspLeafIdList) {
+template<typename Y>
+void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vector<int> &bspLeafIdList) {
     if (nodeId == -1) return;
 
     if ((nodes[nodeId].planeType & 0x4)) {
         bspLeafIdList.push_back(nodeId);
     } else if (nodes[nodeId].planeType == 0) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
+        std::vector<MathHelper::PlanesUndPoints> left = {{.planes={mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{.planes={mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}}};
+
+        bool leftSide = MathHelper::checkFrustum( left, bbox);
+        bool rightSide = MathHelper::checkFrustum(right, bbox);
 
         if (leftSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
@@ -841,8 +844,11 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
     } else if (nodes[nodeId].planeType == 1) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
+        std::vector<MathHelper::PlanesUndPoints> left = {{.planes={mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{.planes={mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}}};
+
+        bool leftSide = MathHelper::checkFrustum(left, bbox);
+        bool rightSide = MathHelper::checkFrustum(right, bbox);
 
         if (leftSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
@@ -851,46 +857,11 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
     } else if (nodes[nodeId].planeType == 2) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
+        std::vector<MathHelper::PlanesUndPoints> left = {{.planes={mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{.planes={mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}}};
 
-        if (leftSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
-        }
-        if (rightSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
-        }
-    }
-}
-
-void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList) {
-    if (nodeId == -1) return;
-
-    if ((nodes[nodeId].planeType & 0x4)) {
-        bspLeafIdList.push_back(nodeId);
-    } else if (nodes[nodeId].planeType == 0) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
-
-        if (leftSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
-        }
-        if (rightSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
-        }
-    } else if (nodes[nodeId].planeType == 1) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
-
-        if (leftSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
-        }
-        if (rightSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
-        }
-    } else if (nodes[nodeId].planeType == 2) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
+        bool leftSide = MathHelper::checkFrustum(left, bbox);
+        bool rightSide = MathHelper::checkFrustum(right, bbox);
 
         if (leftSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
@@ -1189,7 +1160,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(std::unordered_set<std::shared_ptr<M2Object>> &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(M2ObjectSetCont &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();

@@ -52,8 +52,7 @@ public:
     void uploadGeneratorBuffers();
     void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                            mathfu::vec4 &cameraVec4,
-                           std::vector<mathfu::vec4> &frustumPlanes,
-                           std::vector<mathfu::vec3> &points);
+                           const MathHelper::FrustumCullingData &frustumData);
 
     mathfu::vec4 getAmbientColor();
     void assignInteriorParams(std::shared_ptr<M2Object> m2Object);
@@ -100,7 +99,7 @@ private:
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
-    void checkDoodads(std::unordered_set<std::shared_ptr<M2Object>> &wmoM2Candidates);
+    void checkDoodads(M2ObjectSetCont &wmoM2Candidates);
 
     void postLoad();
     void createMeshes();
@@ -118,8 +117,9 @@ private:
     );
 
 
-    static void queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList);
-    static void queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP_NODE> &nodes, std::vector<int> &bspLeafIdList);
+    template<typename Y>
+    static void queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vector<int> &bspLeafIdList);
+
 
     bool getTopAndBottomTriangleFromBsp(
         mathfu::vec4 &cameraLocal,

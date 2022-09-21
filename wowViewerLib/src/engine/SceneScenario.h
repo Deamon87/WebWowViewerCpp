@@ -41,14 +41,13 @@ struct CullStage {
     std::shared_ptr<WmoObject> m_currentWMO = nullptr;
     int m_currentWmoGroup = -1;
 
-    ExteriorView exteriorView = ExteriorView();
-    std::vector<InteriorView> interiorViews = {};
+    FrameViewsHolder viewsHolder;
 
     HFrameDepedantData frameDepedantData = std::make_shared<FrameDepedantData>();
 
     std::unordered_set<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
-    std::unordered_set<std::shared_ptr<M2Object>> m2Array = {};
-    std::unordered_set<std::shared_ptr<WmoObject>> wmoArray = {};
+    M2ObjectSetCont m2Array;
+    WMOObjectSetCont wmoArray;
 };
 typedef std::shared_ptr<CullStage> HCullStage;
 
