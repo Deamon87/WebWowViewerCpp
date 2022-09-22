@@ -300,7 +300,8 @@ bool MathHelper::checkFrustum(const MathHelper::FrustumCullingData &frustumData,
 
 bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box) {
     // check box outside/inside of frustum
-    _MM_ALIGN16 const mathfu::vec4 checkedCorners[8] = {
+
+    ALIGNED_(16) const mathfu::vec4 checkedCorners[8] = {
         mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0),
         mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0),
         mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0),
@@ -313,7 +314,7 @@ bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, cons
     for (auto &planeUndPoints : frustums) {
         auto const &planes = planeUndPoints.planes;
         auto const &points = planeUndPoints.points;
-        _MM_ALIGN16 uint64_t results[4];
+        ALIGNED_(16) uint64_t results[4];
 
 
         bool result = true;
@@ -364,7 +365,7 @@ bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, cons
                     }
 #endif
 
-                _mm_store_si128((__m128i *)&results[k*2], _mm_cmpgt_ps(zeros, dotResults));
+                _mm_store_si128((__m128i *)&results[k*2], (__m128i)_mm_cmpgt_ps(zeros, dotResults));
             }
 
             if (results[0] == 0xFFFFFFFFFFFFFFFF &&

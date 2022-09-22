@@ -5,7 +5,6 @@
 #ifndef WOWVIEWERLIB_MATHHELPER_H
 #define WOWVIEWERLIB_MATHHELPER_H
 
-
 #include "../persistance/header/commonFileStructs.h"
 #include "mathfu/glsl_mappings.h"
 #include <vector>

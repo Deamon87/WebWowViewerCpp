@@ -907,7 +907,7 @@ void GDeviceVLK::startUpdateForNextFrame() {
     vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkWaitForFences(device, 1, &inFlightFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &uploadFences[uploadFrame]);
-    this->waitInDrawStageAndDeps.endMeasurement("");
+    this->waitInDrawStageAndDeps.endMeasurement();
 
     if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
         std::cout << "failed to begin recording uploadCommandBuffer command buffer!" << std::endl;
