@@ -1057,7 +1057,6 @@ void WmoObject::traverseGroupWmo(
 
         bool visible = MathHelper::planeCull(portalVerticesVec, localFrustumPlanes);
 
-
         if (!visible && hackCondition) continue;
 
         traverseTempData.transverseVisitedPortals[relation->portal_index] = true;
