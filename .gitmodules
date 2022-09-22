@@ -29,9 +29,6 @@
 [submodule "3rdparty/SQLiteCpp"]
 	path = 3rdparty/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
-[submodule "wowViewerLib/3rdparty/tbb"]
-	path = wowViewerLib/3rdparty/tbb
-	url = https://github.com/Deamon87/tbb.git
 [submodule "3rdparty/filesystem_impl"]
 	path = 3rdparty/filesystem_impl
 	url = https://github.com/gulrak/filesystem.git
@@ -41,7 +38,9 @@
 [submodule "emscripten_port/3rdparty/zipper"]
 	path = emscripten_port/3rdparty/zipper
 	url = https://github.com/sebastiandev/zipper.git
-
 [submodule "3rdparty/DBImporter"]
 	path = 3rdparty/DBImporter
 	url = https://github.com/Deamon87/DBImporter.git
+[submodule "wowViewerLib/3rdparty/oneTbb"]
+	path = wowViewerLib/3rdparty/oneTbb
+	url = https://github.com/oneapi-src/oneTBB.git

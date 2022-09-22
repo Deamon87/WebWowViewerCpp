@@ -69,7 +69,7 @@ message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
 
 SET(TBB_BUILD_SHARED 0)
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb EXCLUDE_FROM_ALL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -263,7 +263,6 @@ set(SOURCE_FILES
         src/gapi/IDeviceFactory.cpp
         src/gapi/interface/meshes/IParticleMesh.h
         src/gapi/interface/syncronization/IGPUFence.h
-        src/engine/objects/wowFrameData.h
         src/engine/engineClassList.h
         src/engine/camera/planarCamera.cpp
         src/engine/camera/planarCamera.h
@@ -574,7 +573,7 @@ if (LINK_OPENMP)
 endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
-target_link_libraries(WoWViewerLib tbb_static)
+target_link_libraries(WoWViewerLib TBB::tbb Threads::Threads)
 #target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
 
 if (WIN32)

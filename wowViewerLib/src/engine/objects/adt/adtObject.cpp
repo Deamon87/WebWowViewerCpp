@@ -1199,12 +1199,12 @@ bool AdtObject::checkReferences(
     if (m_freeStrategy != nullptr)
         m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
-//    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
-//        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
-//            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
-    {
-        for (size_t k = x; k < x+x_len; k++) {
-            for (size_t l = y; l < y+y_len; ++l) {
+    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
+        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
+            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
+//    {
+//        for (size_t k = x; k < x+x_len; k++) {
+//            for (size_t l = y; l < y+y_len; ++l) {
                 int i = this->m_adtFile->mcnkMap[k][l];
 
                 if (i < 0) continue;
@@ -1266,7 +1266,7 @@ bool AdtObject::checkReferences(
                 }
             }
         }
-    }//,tbb::auto_partitioner());
+    },tbb::auto_partitioner());
 
 	return true;
 }

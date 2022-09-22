@@ -9,6 +9,7 @@ struct WmoGroupResult;
 class WmoGroupObject;
 #include <string>
 #include <unordered_set>
+#include <oneapi/tbb/concurrent_unordered_set.h>
 #include <unordered_map>
 #include <memory>
 #include "../../geometry/wmoMainGeom.h"
@@ -196,7 +197,8 @@ struct WMOObjectHasher
     }
 };
 
-typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
+//typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
+typedef oneapi::tbb::concurrent_unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
 
 
 #endif //WEBWOWVIEWERCPP_WMOOBJECT_H

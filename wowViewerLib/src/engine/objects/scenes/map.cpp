@@ -5,7 +5,6 @@
 #include <iostream>
 #include <set>
 #include <cmath>
-#include <execution>
 #include "map.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/grahamScan.h"
@@ -1127,16 +1126,19 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
         int numThreads = m_api->getConfig()->threadCount;
-//        tbb::parallel_for_each(tbb::blocked_range( m2ObjectsCandidates.begin(), m2ObjectsCandidates.end(), m2ObjectsCandidates.size()/numThreads), [&](std::shared_ptr<M2Object> &m2ObjectCandidate) {
-
         auto tmpVector = std::vector(m2ObjectsCandidates.begin(), m2ObjectsCandidates.end());
 
-        for(auto &m2ObjectCandidate : tmpVector)
+        oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, tmpVector.size(), 500),
+                                  [&](tbb::blocked_range<size_t> &r) {
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+
+            auto &m2ObjectCandidate = tmpVector[i];
+//        for(auto &m2ObjectCandidate : tmpVector)
             if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
                 exteriorView->drawnM2s.insert(m2ObjectCandidate);
                 cullStage->m2Array.insert(m2ObjectCandidate);
             }
-//        });
+        }}, tbb::auto_partitioner());
 
 
 //        tbb::parallel_for(size_t{0}, tempM2Array.size(), [&](size_t i)

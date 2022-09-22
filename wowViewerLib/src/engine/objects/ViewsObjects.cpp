@@ -5,7 +5,7 @@
 #include "ViewsObjects.h"
 #include "../../gapi/UniformBufferStructures.h"
 #include "../shader/ShaderDefinitions.h"
-#include <execution>
+#include "oneapi/tbb/parallel_for.h"
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     {
@@ -36,7 +36,7 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
     M2ObjectSetCont candidates;
     for (auto &wmoGroup : wmosForM2) {
-        auto doodads = wmoGroup->getDoodads();
+        auto &doodads = wmoGroup->getDoodads();
         candidates.insert(doodads.begin(), doodads.end());
     }
 
@@ -44,27 +44,19 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
     auto candidatesArr = std::vector(candidates.begin(), candidates.end());
     auto candCullRes = std::vector(candidatesArr.size(), false);
 
-
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 200),
+    oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 500),
                       [&](tbb::blocked_range<size_t> r) {
                           for (size_t i = r.begin(); i != r.end(); ++i) {
+//for (int i = 0; i < candidatesArr.size(); i++) {
                               auto& m2ObjectCandidate = candidatesArr[i];
                               if (m2ObjectCandidate == nullptr) return;
                               bool result = m2ObjectCandidate->checkFrustumCulling(cameraPos, this->frustumData);
                                   if (result) {
                                       setM2Lights(m2ObjectCandidate);
-                                      candCullRes[i] = true;
-                                      break;
+                                      drawnM2s.insert(candidatesArr[i]);
                                   }
                           }
-                      }, tbb::simple_partitioner());
-
-    //    drawnM2s = std::vector<M2Object *>();
-//    drawnM2s.reserve(drawnM2s.size() + candidates.size());
-    for (int i = 0; i < candCullRes.size(); i++) {
-        if (!candCullRes[i]) continue;
-        drawnM2s.insert(candidatesArr[i]);
-    }
+                      }, tbb::auto_partitioner());
 }
 
 void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {

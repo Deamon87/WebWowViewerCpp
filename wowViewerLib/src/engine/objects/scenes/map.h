@@ -34,8 +34,6 @@ private:
         }
     }
 protected:
-
-    tbb::task_scheduler_init taskScheduler;
     FrameCounter m2UpdateframeCounter;
 
 
@@ -148,10 +146,10 @@ protected:
     HADTBoundingBoxHolder m_adtBBHolder = nullptr;
 
 protected:
-    explicit Map() : taskScheduler(10){
+    explicit Map() {
     }
 public:
-    explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
+    explicit Map(HApiContainer api, int mapId, std::string mapName) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; this->mapName = mapName;

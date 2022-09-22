@@ -9,7 +9,7 @@ class M2Object;
 #define _USE_MATH_DEFINES
 
 #include <cstdint>
-#include <tbb/concurrent_unordered_set.h>
+#include <oneapi/tbb/concurrent_unordered_set.h>
 #include <unordered_set>
 #include "mathfu/glsl_mappings.h"
 #include "../../managers/particles/particleEmitter.h"
@@ -302,7 +302,7 @@ struct M2ObjectHasher
     }
 };
 
-//typedef tbb::unordered_set<std::shared_ptr<M2Object>, M2ObjectHasher> M2ObjectSetCont;
-typedef std::unordered_set<std::shared_ptr<M2Object>> M2ObjectSetCont;
+typedef oneapi::tbb::concurrent_unordered_set<std::shared_ptr<M2Object>, M2ObjectHasher> M2ObjectSetCont;
+//typedef std::unordered_set<std::shared_ptr<M2Object>> M2ObjectSetCont;
 
 #endif //WOWVIEWERLIB_M2OBJECT_H
