@@ -67,6 +67,7 @@ set(My_Vectorize_Compile_Options "")
 
 message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
+find_package(Threads REQUIRED)
 
 SET(TBB_BUILD_SHARED 0)
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
@@ -505,7 +506,6 @@ if (LINK_VULKAN)
                 set(VULKAN_IMPLEMENTATION "")
             ENDIF()
         ENDIF()
-        find_package(Threads REQUIRED)
     ENDIF()
 
     if (LINK_VULKAN)
@@ -574,6 +574,7 @@ endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 target_link_libraries(WoWViewerLib TBB::tbb Threads::Threads)
+target_link_libraries(WoWViewerLib Threads::Threads)
 #target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
 
 if (WIN32)
