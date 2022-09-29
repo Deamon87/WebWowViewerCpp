@@ -7,6 +7,7 @@
 
 #include "mathHelper.h"
 
+#include <xmmintrin.h>
 template<typename T>
 class ObjectCullingSEE {
 private:
