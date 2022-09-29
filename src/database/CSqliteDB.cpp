@@ -135,10 +135,10 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
 
     getLightData(m_sqliteDatabase, lightDataSQL),
     getLiquidObjectInfo(m_sqliteDatabase,
-        getHasLiquidTypeXTexture() ? liquidObjectInfoSQL : liquidObjectInfoSQL_classic
+        getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidObjectInfoSQL : liquidObjectInfoSQL_classic
     ),
     getLiquidTypeInfo(m_sqliteDatabase,
-        getHasLiquidTypeXTexture() ? liquidTypeSQL : liquidTypeSQL_classic
+        getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidTypeSQL : liquidTypeSQL_classic
     ),
     getZoneLightInfo(m_sqliteDatabase,
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
@@ -146,8 +146,8 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
     getZoneLightPointsInfo(m_sqliteDatabase,
         "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder DESC;"
     ),
-    getMapList(m_sqliteDatabase, getHasWDTId() ? getMapListSQL : getMapListSQL_classic),
-    getMapByIdStatement(m_sqliteDatabase, getHasWDTId() ? getMapByIDSQL : getMapByIDSQL_classic)
+    getMapList(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapListSQL : getMapListSQL_classic),
+    getMapByIdStatement(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapByIDSQL : getMapByIDSQL_classic)
 {
     char *sErrMsg = "";
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);

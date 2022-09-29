@@ -107,24 +107,24 @@ protected:
     animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(
-                              const MathHelper::FrustumCullingData &frustumData,
-                              const mathfu::vec4 &cameraPos,
-                              HCullStage &cullStage,
-                              M2ObjectSetCont &potentialM2,
-                              WMOObjectSetCont &potentialWmo);
+        const MathHelper::FrustumCullingData &frustumData,
+        const mathfu::vec4 &cameraPos,
+        HCullStage &cullStage,
+        M2ObjectListContainer &potentialM2,
+        WMOListContainer &potentialWmo);
 
     virtual void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                        const mathfu::vec4 &cameraPos,
                                        HCullStage &cullStage,
-                                       M2ObjectSetCont &m2ObjectsCandidates,
-                                       WMOObjectSetCont &wmoCandidates);
+                                       M2ObjectListContainer &m2ObjectsCandidates,
+                                       WMOListContainer &wmoCandidates);
 
     void checkADTCulling(int i, int j,
                          const MathHelper::FrustumCullingData &frustumData,
                          const mathfu::vec4 &cameraPos,
                          HCullStage &cullStage,
-                         M2ObjectSetCont &m2ObjectsCandidates,
-                         WMOObjectSetCont &wmoCandidates);
+                         M2ObjectListContainer &m2ObjectsCandidates,
+                         WMOListContainer &wmoCandidates);
 
     virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);

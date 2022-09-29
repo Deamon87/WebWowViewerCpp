@@ -298,6 +298,10 @@ bool MathHelper::checkFrustum(const MathHelper::FrustumCullingData &frustumData,
     return MathHelper::checkFrustum(frustumData.frustums, box);
 }
 
+
+
+
+
 bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box) {
     // check box outside/inside of frustum
 
@@ -379,7 +383,6 @@ bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, cons
                 continue;
 
 #else
-
             for (int j = 0; j < 8; j++) {
                 out += ((mathfu::vec4::DotProduct(planes[i], checkedCorners[j]) < 0.0) ? 1 : 0);
             }

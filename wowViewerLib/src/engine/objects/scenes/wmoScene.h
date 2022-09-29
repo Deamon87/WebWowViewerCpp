@@ -18,14 +18,14 @@ private:
     void getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                               const mathfu::vec4 &cameraPos,
                               HCullStage &cullStage,
-                              M2ObjectSetCont &potentialM2,
-                              WMOObjectSetCont &potentialWmo) override;
+                              M2ObjectListContainer &potentialM2,
+                              WMOListContainer &potentialWmo) override;
 
     void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
                                HCullStage &cullStage,
-                               M2ObjectSetCont &m2ObjectsCandidates,
-                               WMOObjectSetCont &wmoCandidates) override;
+                               M2ObjectListContainer &m2ObjectsCandidates,
+                               WMOListContainer &wmoCandidates) override;
 public:
 
     explicit WmoScene(HApiContainer api, std::string wmoModel) {

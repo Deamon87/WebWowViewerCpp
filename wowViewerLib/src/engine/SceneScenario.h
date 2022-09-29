@@ -23,6 +23,7 @@ class FrameScenario;
 #include "objects/ViewsObjects.h"
 #include "camera/CameraInterface.h"
 #include "DrawStage.h"
+#include "objects/wmo/wmoObject.h"
 
 struct CullStage {
 //Input:
@@ -45,9 +46,10 @@ struct CullStage {
 
     HFrameDepedantData frameDepedantData = std::make_shared<FrameDepedantData>();
 
-    std::unordered_set<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
-    M2ObjectSetCont m2Array;
-    WMOObjectSetCont wmoArray;
+    std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
+    M2ObjectListContainer m2Array;
+    WMOListContainer wmoArray;
+    WMOGroupListContainer wmoGroupArray;
 };
 typedef std::shared_ptr<CullStage> HCullStage;
 

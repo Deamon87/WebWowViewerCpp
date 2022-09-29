@@ -32,9 +32,8 @@ public:
 
 class GeneralView {
 public:
-    std::unordered_set<std::shared_ptr<WmoGroupObject>> drawnWmos = {}; //Wmos which draw their meshes
-    std::unordered_set<std::shared_ptr<WmoGroupObject>> wmosForM2 = {}; //Wmo which contribute M2s to the scene
-    M2ObjectSetCont drawnM2s;
+    WMOGroupListContainer wmoGroupArray;
+    M2ObjectListContainer m2List;
 
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> worldPortalVertices = {};
@@ -80,10 +79,8 @@ public:
     HExteriorView getExterior();
     HInteriorView createInterior(const MathHelper::FrustumCullingData &frustumData);
 
-    void iterateIteriorViews(std::function<void(HInteriorView &interiorView)> callback) {
-        for (auto &interiorView : interiorViews) {
-            callback(interiorView);
-        }
+    const std::vector<HInteriorView> &getInteriorViews() {
+        return interiorViews;
     }
 private:
     HExteriorView exteriorView = nullptr ;

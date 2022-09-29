@@ -5,11 +5,10 @@
 #ifndef WEBWOWVIEWERCPP_WMOGROUPOBJECT_H
 #define WEBWOWVIEWERCPP_WMOGROUPOBJECT_H
 
-class WmoObject;
 class WmoGroupObject;
+class WMOGroupListContainer;
 
 #include "../../persistance/header/wmoFileHeader.h"
-#include "wmoObject.h"
 #include "../iWmoApi.h"
 #include "../../../gapi/interface/meshes/IMesh.h"
 
@@ -34,7 +33,7 @@ public:
         return m_localGroupBorder;
     }
     const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
-    const std::unordered_set <std::shared_ptr<M2Object>> &getDoodads() const {
+    const std::vector <std::shared_ptr<M2Object>> &getDoodads() const {
         return m_doodads;
     };
 
@@ -85,7 +84,7 @@ private:
 
     SMOGroupInfo *m_main_groupInfo;
 
-    std::unordered_set <std::shared_ptr<M2Object>> m_doodads = {};
+    std::vector <std::shared_ptr<M2Object>> m_doodads = {};
 
     bool m_useLocalLightingForM2 = false;
 
@@ -99,7 +98,7 @@ private:
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
-    void checkDoodads(M2ObjectSetCont &wmoM2Candidates);
+    void checkDoodads(M2ObjectListContainer &wmoM2Candidates);
 
     void postLoad();
     void createMeshes();
@@ -156,6 +155,94 @@ enum liquid_types
 
     LIQUID_NAXX_SLIME = 21,
     // ...
+};
+
+
+class WMOGroupListContainer {
+private:
+    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToDraw;
+    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToCheckM2;
+    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToLoad;
+
+    bool toDrawCanHaveDuplicates = false;
+    bool toCheckM2CanHaveDuplicates = false;
+    bool toLoadCanHaveDuplicates = false;
+
+    void inline removeDuplicates(std::vector<std::shared_ptr<WmoGroupObject>> &array) {
+        if (array.size() < 1000) {
+            std::sort(array.begin(), array.end());
+        } else {
+            tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
+        }
+        array.erase(std::unique(array.begin(), array.end()), array.end());
+        return;
+    }
+
+public:
+    WMOGroupListContainer() {
+        wmoGroupToDraw.reserve(3000);
+        wmoGroupToCheckM2.reserve(3000);
+        wmoGroupToLoad.reserve(3000);
+    }
+
+    void addToDraw(const std::shared_ptr<WmoGroupObject> &toDraw) {
+        if (toDraw->getIsLoaded()) {
+            wmoGroupToDraw.push_back(toDraw);
+            toDrawCanHaveDuplicates = true;
+        } else {
+            wmoGroupToLoad.push_back(toDraw);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    void addToCheckM2(const std::shared_ptr<WmoGroupObject> &toCheckM2) {
+        if (toCheckM2->getIsLoaded()) {
+            wmoGroupToCheckM2.push_back(toCheckM2);
+            toCheckM2CanHaveDuplicates = true;
+        } else {
+            wmoGroupToLoad.push_back(toCheckM2);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+    void addToLoad(const std::shared_ptr<WmoGroupObject> &toLoad) {
+        if (!toLoad->getIsLoaded()) {
+            wmoGroupToLoad.push_back(toLoad);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    const std::vector<std::shared_ptr<WmoGroupObject>> &getToDraw() {
+        if (this->toDrawCanHaveDuplicates) {
+            removeDuplicates(wmoGroupToDraw);
+            toDrawCanHaveDuplicates = false;
+        }
+
+        return wmoGroupToDraw;
+    }
+
+    const std::vector<std::shared_ptr<WmoGroupObject>> &getToCheckM2() {
+        if (this->toCheckM2CanHaveDuplicates) {
+            removeDuplicates(wmoGroupToCheckM2);
+            toCheckM2CanHaveDuplicates = false;
+        }
+
+        return wmoGroupToCheckM2;
+    }
+
+    const std::vector<std::shared_ptr<WmoGroupObject>> &getToLoad() {
+        if (this->toLoadCanHaveDuplicates) {
+            removeDuplicates(wmoGroupToLoad);
+            toLoadCanHaveDuplicates = false;
+        }
+
+        return wmoGroupToLoad;
+    }
+
+    void addToLoad(WMOGroupListContainer &otherList) {
+        this->wmoGroupToLoad.insert(this->wmoGroupToLoad.end(), otherList.wmoGroupToLoad.begin(), otherList.wmoGroupToLoad.end());
+    }
 };
 
 #endif //WEBWOWVIEWERCPP_WMOGROUPOBJECT_H

@@ -57,22 +57,22 @@ public:
     bool getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeRiverColor);
 
     bool checkFrustumCulling(
-            ADTObjRenderRes &adtFrustRes,
-            const mathfu::vec4 &cameraPos,
-            int adt_glob_x,
-            int adt_glob_y,
-            const MathHelper::FrustumCullingData &frustumData,
+        ADTObjRenderRes &adtFrustRes,
+        const mathfu::vec4 &cameraPos,
+        int adt_glob_x,
+        int adt_glob_y,
+        const MathHelper::FrustumCullingData &frustumData,
 
-            M2ObjectSetCont&m2ObjectsCandidates,
-            WMOObjectSetCont &wmoCandidates);
+        M2ObjectListContainer&m2ObjectsCandidates,
+        WMOListContainer &wmoCandidates);
 
     bool
     checkReferences(ADTObjRenderRes &adtFrustRes,
                     const mathfu::vec4 &cameraPos,
                     const MathHelper::FrustumCullingData &frustumData,
                     int lodLevel,
-                    M2ObjectSetCont &m2ObjectsCandidates,
-                    WMOObjectSetCont &wmoCandidates,
+                    M2ObjectListContainer &m2ObjectsCandidates,
+                    WMOListContainer &wmoCandidates,
                     int x, int y, int x_len, int y_len);
 
     FreeStrategy &getFreeStrategy() {
@@ -190,8 +190,8 @@ private:
                     const PointerChecker<MLND> &quadTree,
                     int quadTreeInd,
                     const MathHelper::FrustumCullingData &frustumData,
-                    M2ObjectSetCont &m2ObjectsCandidates,
-                    WMOObjectSetCont &wmoCandidates);
+                    M2ObjectListContainer &m2ObjectsCandidates,
+                    WMOListContainer &wmoCandidates);
 };
 
 

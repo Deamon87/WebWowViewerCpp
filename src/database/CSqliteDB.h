@@ -65,31 +65,19 @@ private:
     StatementFieldHolder getMapList;
     StatementFieldHolder getMapByIdStatement;
 
-
-    bool m_hasLiquidTypeXTexture = false;
-    bool m_LiquidTypeXTextureChecked = false;
-
-    bool getHasLiquidTypeXTexture() {
-        if (!m_LiquidTypeXTextureChecked) {
-            m_hasLiquidTypeXTexture = m_sqliteDatabase.tableExists("LiquidTypeXTexture");
-            m_LiquidTypeXTextureChecked = true;
-        }
+    bool getHasLiquidTypeXTexture(SQLite::Database &sqliteDatabase) {
+        bool m_hasLiquidTypeXTexture = sqliteDatabase.tableExists("LiquidTypeXTexture") ? 1 : 0;
 
         return m_hasLiquidTypeXTexture;
     }
 
-    bool m_hasWdtId = false;
-    bool m_WdtIdChecked = false;
-
-    bool getHasWDTId() {
-        if (!m_WdtIdChecked) {
-            try {
-                m_sqliteDatabase.execAndGet("select WdtFileDataID from Map");
-                m_hasWdtId = true;
-            } catch (...) {
-                m_hasWdtId = false;
-            }
-            m_WdtIdChecked = true;
+    bool getHasWDTId(SQLite::Database &sqliteDatabase) {
+        bool m_hasWdtId;
+        try {
+            sqliteDatabase.execAndGet("select WdtFileDataID from Map");
+            m_hasWdtId = true;
+        } catch (...) {
+            m_hasWdtId = false;
         }
 
         return m_hasWdtId;

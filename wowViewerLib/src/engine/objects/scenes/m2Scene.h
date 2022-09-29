@@ -17,14 +17,14 @@ private:
     void getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                               const mathfu::vec4 &cameraPos,
                               HCullStage &cullStage,
-                              M2ObjectSetCont &potentialM2,
-                              WMOObjectSetCont &potentialWmo) override;
+                              M2ObjectListContainer &potentialM2,
+                              WMOListContainer &potentialWmo) override;
 
     void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
                                HCullStage &cullStage,
-                               M2ObjectSetCont &m2ObjectsCandidates,
-                               WMOObjectSetCont &wmoCandidates) override;
+                               M2ObjectListContainer &m2ObjectsCandidates,
+                               WMOListContainer &wmoCandidates) override;
 
     void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;

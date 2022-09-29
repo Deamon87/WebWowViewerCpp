@@ -1021,8 +1021,8 @@ bool AdtObject::iterateQuadTree(ADTObjRenderRes &adtFrustRes,
                                 const PointerChecker<MLND> &quadTree,
                                 int quadTreeInd,
                                 const MathHelper::FrustumCullingData &frustumData,
-                                M2ObjectSetCont &m2ObjectsCandidates,
-                                WMOObjectSetCont &wmoCandidates) {
+                                M2ObjectListContainer &m2ObjectsCandidates,
+                                WMOListContainer &wmoCandidates) {
 
 
 
@@ -1187,24 +1187,24 @@ bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,
 }
 
 bool AdtObject::checkReferences(
-                          ADTObjRenderRes &adtFrustRes,
-                          const mathfu::vec4 &cameraPos,
-                          const MathHelper::FrustumCullingData &frustumData,
-                          int lodLevel,
-                          M2ObjectSetCont &m2ObjectsCandidates,
-                          WMOObjectSetCont &wmoCandidates,
-                          int x, int y, int x_len, int y_len) {
+    ADTObjRenderRes &adtFrustRes,
+    const mathfu::vec4 &cameraPos,
+    const MathHelper::FrustumCullingData &frustumData,
+    int lodLevel,
+    M2ObjectListContainer &m2ObjectsCandidates,
+    WMOListContainer &wmoCandidates,
+    int x, int y, int x_len, int y_len) {
     if (!m_loaded) return false;
 
     if (m_freeStrategy != nullptr)
         m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
-    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
-        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
-            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
+//    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
+//        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
+//            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
 //    {
-//        for (size_t k = x; k < x+x_len; k++) {
-//            for (size_t l = y; l < y+y_len; ++l) {
+        for (size_t k = x; k < x+x_len; k++) {
+            for (size_t l = y; l < y+y_len; ++l) {
                 int i = this->m_adtFile->mcnkMap[k][l];
 
                 if (i < 0) continue;
@@ -1242,12 +1242,12 @@ bool AdtObject::checkReferences(
                         if (mcnkContent->mcrd_doodad_refs_len > 0) {
                             for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
                                 uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                                m2ObjectsCandidates.insert(this->objectLods[0].m2Objects[m2Ref]);
+                                m2ObjectsCandidates.addCandidate(this->objectLods[0].m2Objects[m2Ref]);
                             }
                         }
                     } else {
                         for (auto &m2Object: this->objectLods[1].m2Objects) {
-                            m2ObjectsCandidates.insert(m2Object);
+                            m2ObjectsCandidates.addCandidate(m2Object);
                         }
                     }
 
@@ -1255,18 +1255,18 @@ bool AdtObject::checkReferences(
                         if (mcnkContent->mcrw_object_refs_len > 0) {
                             for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
                                 uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                                wmoCandidates.insert(this->objectLods[0].wmoObjects[wmoRef]);
+                                wmoCandidates.addCand(this->objectLods[0].wmoObjects[wmoRef]);
                             }
                         }
                     } else {
                         for (auto &wmoObject: this->objectLods[1].wmoObjects) {
-                            wmoCandidates.insert(wmoObject);
+                            wmoCandidates.addCand(wmoObject);
                         }
                     }
                 }
             }
         }
-    },tbb::auto_partitioner());
+//    },tbb::auto_partitioner());
 
 	return true;
 }
@@ -1276,8 +1276,8 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                                     int adt_glob_x,
                                     int adt_glob_y,
                                     const MathHelper::FrustumCullingData &frustumData,
-                                    M2ObjectSetCont&m2ObjectsCandidates,
-                                    WMOObjectSetCont &wmoCandidates) {
+                                    M2ObjectListContainer &m2ObjectsCandidates,
+                                    WMOListContainer &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_freeStrategy != nullptr)
             m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());

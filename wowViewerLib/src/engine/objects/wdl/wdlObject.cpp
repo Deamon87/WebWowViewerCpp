@@ -6,8 +6,8 @@
 
 bool WdlObject::checkFrustumCulling(const MathHelper::FrustumCullingData &frustumData,
                                     mathfu::vec4 &cameraPos,
-                                    M2ObjectSetCont &m2ObjectsCandidates,
-                                    WMOObjectSetCont &wmoCandidates) {
+                                    M2ObjectListContainer &m2ObjectsCandidates,
+                                    WMOListContainer &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_wdlFile->getStatus() == FileStatus::FSLoaded) {
             this->loadingFinished();
@@ -17,9 +17,13 @@ bool WdlObject::checkFrustumCulling(const MathHelper::FrustumCullingData &frustu
         }
     }
 
-    m2ObjectsCandidates.insert(m2Objects.begin(), m2Objects.end());
-    wmoCandidates.insert(wmoObjects.begin(), wmoObjects.end());
-    
+    for (const auto &m2Object : m2Objects) {
+        m2ObjectsCandidates.addCandidate(m2Object);
+    }
+    for (const auto &wmoObject : wmoObjects) {
+        wmoCandidates.addCand(wmoObject);
+    }
+
     return false;
 }
 
@@ -129,7 +133,7 @@ WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
 }
 
 void WdlObject::checkSkyScenes(const StateForConditions &state,
-                               M2ObjectSetCont &m2ObjectsCandidates,
+                               M2ObjectListContainer &m2ObjectsCandidates,
                                const mathfu::vec4 &cameraPos,
                                const MathHelper::FrustumCullingData &frustumData
                                ) {
@@ -171,9 +175,7 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
 
         if (conditionPassed) {
             for (auto &m2Object : skyScene.m2Objects) {
-                if (m2Object->checkFrustumCulling(cameraPos, frustumData)) {
-                    m2ObjectsCandidates.insert(m2Object);
-                }
+                m2ObjectsCandidates.addToDraw(m2Object);
             }
         }
     }

@@ -12,17 +12,17 @@
 void M2Scene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                    const mathfu::vec4 &cameraPos,
                                    HCullStage &cullStage,
-                                   M2ObjectSetCont &potentialM2,
-                                   WMOObjectSetCont &potentialWmo)  {
-    potentialM2.insert(m_m2Object);
+                                   M2ObjectListContainer &potentialM2,
+                                   WMOListContainer &potentialWmo)  {
+    potentialM2.addCandidate(m_m2Object);
 }
 
 void M2Scene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
                                     HCullStage &cullStage,
-                                    M2ObjectSetCont &m2ObjectsCandidates,
-                                    WMOObjectSetCont &wmoCandidates) {
-    m2ObjectsCandidates.insert(m_m2Object);
+                                    M2ObjectListContainer &m2ObjectsCandidates,
+                                    WMOListContainer &wmoCandidates) {
+    m2ObjectsCandidates.addCandidate(m_m2Object);
 }
 
 void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
@@ -54,8 +54,7 @@ extern "C" {
 }
 
 void M2Scene::doPostLoad(HCullStage cullStage) {
-    if (m_m2Object->doPostLoad()) {
-
+    if (m_m2Object->isMainDataLoaded()) {
         CAaBox aabb = m_m2Object->getColissionAABB();
         if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
             aabb = m_m2Object->getAABB();

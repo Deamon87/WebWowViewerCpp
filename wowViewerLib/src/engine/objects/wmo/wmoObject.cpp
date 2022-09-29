@@ -320,7 +320,7 @@ void WmoObject::createWorldPortals() {
     }
 }
 
-bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
+bool WmoObject::doPostLoad() {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
             this->createGroupObjects();
@@ -351,22 +351,22 @@ bool WmoObject::doPostLoad(int &groupsProcessedThisFrame) {
         return false;
     }
 
-    for (auto &groupObject : groupObjects) {
-        if (groupsProcessedThisFrame > 3) return false;
-        groupObject->doPostLoad();
-    }
-    for (auto &groupObjectLod : groupObjectsLod1) {
-        if (groupsProcessedThisFrame > 3) return false;
-        if (groupObjectLod != nullptr) {
-            if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
-        }
-    }
-    for (auto &groupObjectLod2 : groupObjectsLod2) {
-        if (groupsProcessedThisFrame > 3) return false;
-        if (groupObjectLod2 != nullptr) {
-            if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
-        }
-    }
+//    for (auto &groupObject : groupObjects) {
+//        if (groupsProcessedThisFrame > 3) return false;
+//        groupObject->doPostLoad();
+//    }
+//    for (auto &groupObjectLod : groupObjectsLod1) {
+//        if (groupsProcessedThisFrame > 3) return false;
+//        if (groupObjectLod != nullptr) {
+//            if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
+//        }
+//    }
+//    for (auto &groupObjectLod2 : groupObjectsLod2) {
+//        if (groupsProcessedThisFrame > 3) return false;
+//        if (groupObjectLod2 != nullptr) {
+//            if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
+//        }
+//    }
 
     return false;
 }
@@ -761,7 +761,7 @@ void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
 
 void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   std::vector<mathfu::vec4> &frustumPlane,
-                                  M2ObjectSetCont &m2Candidates) {
+                                  M2ObjectListContainer &m2Candidates) {
     std::shared_ptr<WmoGroupObject> groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
         mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
@@ -776,7 +776,7 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                 m2Object->setAmbientColorOverride(ambientColor, true);
             }
 
-            m2Candidates.insert(m2Object);
+            m2Candidates.addCandidate(m2Object);
         }
     }
 }
@@ -838,8 +838,8 @@ bool WmoObject::startTraversingWMOGroup(
         if (interiorView == nullptr) {
             interiorView = viewsHolder.createInterior(frustumDataGlobal);
             ivPerWMOGroup[groupId] = interiorView;
-            interiorView->drawnWmos.insert(nextGroupObject);
-            interiorView->wmosForM2.insert(nextGroupObject);
+            interiorView->wmoGroupArray.addToDraw(nextGroupObject);
+            interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
         }
 
         if (nextGroupObject->getIsLoaded() && nextGroupObject->getWmoGroupGeom()->mogp->flags2.isSplitGroupParent) {
@@ -874,10 +874,10 @@ bool WmoObject::startTraversingWMOGroup(
                     bool drawDoodads, drawGroup;
                     this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumDataGlobal);
                     if (drawDoodads) {
-                        exteriorView->wmosForM2.insert(this->groupObjects[i]);
+                        exteriorView->wmoGroupArray.addToCheckM2(this->groupObjects[i]);
                     }
                     if (drawGroup) {
-                        exteriorView->drawnWmos.insert(this->groupObjects[i]);
+                        exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
 
                         this->traverseGroupWmo(
                             i,
@@ -896,7 +896,7 @@ bool WmoObject::startTraversingWMOGroup(
     for (int i = 0; i< mainGeom->groupsLen; i++) {
         if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
             auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
-            exteriorView->drawnWmos.insert(this->groupObjects[i]);
+            exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
         }
     }
 
@@ -944,8 +944,8 @@ void WmoObject::addSplitChildWMOsToView(InteriorView &interiorView, int groupId)
         if (!mogp->flags2.isSplitGroupChild)
             break;
 
-        interiorView.drawnWmos.insert(groupWmo);
-        interiorView.wmosForM2.insert(groupWmo);
+        interiorView.wmoGroupArray.addToDraw(groupWmo);
+        interiorView.wmoGroupArray.addToCheckM2(groupWmo);
 
         nextChildGroupIndex = mogp->nextSplitGroupChildIndex;
     }
@@ -976,8 +976,7 @@ void WmoObject::traverseGroupWmo(
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
         if (skyBox != nullptr) {
-            skyBox->checkFrustumCulling(traverseTempData.cameraVec4, {});
-            traverseTempData.ivPerWMOGroup[groupId]->drawnM2s.insert(skyBox);
+            traverseTempData.ivPerWMOGroup[groupId]->m2List.addToDraw(skyBox);
         }
     }
 
@@ -1012,6 +1011,7 @@ void WmoObject::traverseGroupWmo(
         mathfu::vec4 manualEquation = mathfu::vec4(crossProd.x, crossProd.y, crossProd.z, -distantce);
         */
         //Hacks to test!
+        /*
         if (!isInsidePortalThis)
         {
             std::vector<mathfu::vec3> worldSpacePortalVertices;
@@ -1040,6 +1040,7 @@ void WmoObject::traverseGroupWmo(
             }
             interiorView->worldPortalVertices.push_back(worldSpacePortalVertices);
         }
+         */
 
         if (!isInsidePortalThis && hackCondition) continue;
 
@@ -1132,8 +1133,8 @@ void WmoObject::traverseGroupWmo(
                 traverseTempData.ivPerWMOGroup[nextGroup] = interiorView;
 
                 interiorView->ownerGroupWMO = nextGroupObject;
-                interiorView->drawnWmos.insert(nextGroupObject);
-                interiorView->wmosForM2.insert(nextGroupObject);
+                interiorView->wmoGroupArray.addToDraw(nextGroupObject);
+                interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
                 interiorView->portalIndexes.push_back(relation->portal_index);
             }
 

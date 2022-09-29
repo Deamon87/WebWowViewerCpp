@@ -17,6 +17,11 @@
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
 
+#if (__AVX__ && __SSE2__)
+#include "../../algorithms/mathHelper_culling_sse.h"
+#endif
+#include "../../algorithms/mathHelper_culling.h"
+
 //#include "../../algorithms/quicksort-dualpivot.h"
 
 static GBufferBinding fullScreen[1] = {
@@ -359,13 +364,13 @@ void Map::checkCulling(HCullStage cullStage) {
     cullStage->adtArray = {};
     cullStage->adtArray.reserve(adtRenderedThisFramePrev);
 
-    size_t m2RenderedThisFramePrev = cullStage->m2Array.size();
+//    size_t m2RenderedThisFramePrev = cullStage->m2Array.gesize();
 //    cullStage->m2Array = {};
 //    cullStage->m2Array.reserve(m2RenderedThisFramePrev);
 
-    size_t wmoRenderedThisFramePrev = cullStage->wmoArray.size();
-//    cullStage->wmoArray = {};
-//    cullStage->wmoArray.reserve(wmoRenderedThisFramePrev);
+//    size_t wmoRenderedThisFramePrev = cullStage->wmoGroupArray.size();
+//    cullStage->wmoGroupArray = {};
+//    cullStage->wmoGroupArray.reserve(wmoRenderedThisFramePrev);
 
 
     mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat4;
@@ -403,8 +408,8 @@ void Map::checkCulling(HCullStage cullStage) {
     cullStage->m_currentWmoGroup = -1;
 
     //Get potential WMO
-    WMOObjectSetCont potentialWmo;
-    M2ObjectSetCont potentialM2;
+    WMOListContainer potentialWmo;
+    M2ObjectListContainer potentialM2;
 
     cullCreateVarsCounter.endMeasurement();
 
@@ -413,7 +418,7 @@ void Map::checkCulling(HCullStage cullStage) {
     //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
     getPotentialEntities(frustumData, cameraPos, cullStage, potentialM2, potentialWmo);
 
-    for (auto &checkingWmoObj : potentialWmo) {
+    for (auto &checkingWmoObj : potentialWmo.getCandidates()) {
         WmoGroupResult groupResult;
         bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
 
@@ -485,7 +490,7 @@ void Map::checkCulling(HCullStage cullStage) {
             m_viewRenderOrder,
             true,
             cullStage->viewsHolder)) {
-            cullStage->wmoArray.insert(cullStage->m_currentWMO);
+            cullStage->wmoArray.addCand(cullStage->m_currentWMO);
         }
 
         cullExterior.beginMeasurement();
@@ -510,13 +515,13 @@ void Map::checkCulling(HCullStage cullStage) {
     cullSkyDoms.beginMeasurement();
 
 
-    if ((cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
+    if ((cullStage->viewsHolder.getExterior() != nullptr || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
         auto exteriorView = cullStage->viewsHolder.getOrCreateExterior(frustumData);
 
         if (m_wdlObject != nullptr) {
             m_wdlObject->checkSkyScenes(
                 stateForConditions,
-                exteriorView->drawnM2s,
+                exteriorView->m2List,
                 cameraPos,
                 frustumData);
         }
@@ -524,9 +529,7 @@ void Map::checkCulling(HCullStage cullStage) {
         if (config->renderSkyDom) {
             for (auto &model : m_exteriorSkyBoxes) {
                 if (model != nullptr) {
-                    model->checkFrustumCulling(cameraPos,
-                                               frustumData);
-                    exteriorView->drawnM2s.insert(model);
+                    exteriorView->m2List.addToDraw(model);
                 }
             }
         }
@@ -543,18 +546,21 @@ void Map::checkCulling(HCullStage cullStage) {
                                                  exteriorView->m_transparentMeshes,
                                                  exteriorView->renderOrder);
             }
-            cullStage->m2Array.insert(exteriorView->drawnM2s.begin(), exteriorView->drawnM2s.end());
+            cullStage->m2Array.addDrawnAndToLoad(exteriorView->m2List);
+            cullStage->wmoGroupArray.addToLoad(exteriorView->wmoGroupArray);
         }
     }
 
     //Fill and collect M2 objects for views from WmoGroups
-    cullStage->viewsHolder.iterateIteriorViews([&](HInteriorView &interiorView) {
-        interiorView->addM2FromGroups(frustumData, cameraPos);
-    });
+    {
+        auto &interiorViews = cullStage->viewsHolder.getInteriorViews();
 
-    cullStage->viewsHolder.iterateIteriorViews([&](HInteriorView &interiorView) {
-        cullStage->m2Array.insert(interiorView->drawnM2s.begin(), interiorView->drawnM2s.end());
-    });
+        for (auto &interiorView: interiorViews) {
+            interiorView->addM2FromGroups(frustumData, cameraPos);
+            cullStage->m2Array.addDrawnAndToLoad(interiorView->m2List);
+            cullStage->wmoGroupArray.addToLoad(interiorView->wmoGroupArray);
+        }
+    }
 
     cullCombineAllObjects.endMeasurement();
 
@@ -998,8 +1004,8 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
                                HCullStage &cullStage,
-                               M2ObjectSetCont &potentialM2,
-                               WMOObjectSetCont &potentialWmo) {
+                               M2ObjectListContainer &potentialM2,
+                               WMOListContainer &potentialWmo) {
 
     if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
@@ -1039,7 +1045,7 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
                 wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
             }
 
-            potentialWmo.insert(wmoMap);
+            potentialWmo.addCand(wmoMap);
         }
     }
 }
@@ -1067,8 +1073,9 @@ void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAr
             }
         }
     }
-
 }
+
+
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         const MathHelper::FrustumCullingData &frustumData,
                         int viewRenderOrder,
@@ -1084,29 +1091,20 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     auto exteriorView = cullStage->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
 
-    cullExteriorSetDecl.beginMeasurement();
-    M2ObjectSetCont m2ObjectsCandidates;
-    WMOObjectSetCont wmoCandidates;
-
-    cullExteriorSetDecl.endMeasurement();
-
     cullExteriorWDLCull.beginMeasurement();
     if (m_wdlObject != nullptr) {
-        m_wdlObject->checkFrustumCulling(frustumData, cameraPos, m2ObjectsCandidates, wmoCandidates);
+        m_wdlObject->checkFrustumCulling(frustumData, cameraPos, exteriorView->m2List, cullStage->wmoArray);
     }
     cullExteriorWDLCull.endMeasurement();
 
     cullExteriorGetCands.beginMeasurement();
-    getCandidatesEntities(frustumData, cameraPos,  cullStage, m2ObjectsCandidates, wmoCandidates);
+    getCandidatesEntities(frustumData, cameraPos, cullStage, exteriorView->m2List, cullStage->wmoArray);
     cullExteriorGetCands.endMeasurement();
 
     cullExterioFrustumWMO.beginMeasurement();
     //Frustum cull
-    for (auto &wmoCandidate : wmoCandidates) {
-        if (!wmoCandidate->isLoaded()) {
-            cullStage->wmoArray.insert(wmoCandidate);
-            continue;
-        }
+    for (auto &wmoCandidate : cullStage->wmoArray.getCandidates()) {
+        if (!wmoCandidate->isLoaded()) continue;
 
         if (wmoCandidate->startTraversingWMOGroup(
             cameraPos,
@@ -1116,8 +1114,6 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             viewRenderOrder,
             false,
             cullStage->viewsHolder)) {
-
-            cullStage->wmoArray.insert(wmoCandidate);
         }
     }
     cullExterioFrustumWMO.endMeasurement();
@@ -1126,46 +1122,48 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
         int numThreads = m_api->getConfig()->threadCount;
-        auto tmpVector = std::vector(m2ObjectsCandidates.begin(), m2ObjectsCandidates.end());
+        auto results = std::vector<uint32_t>();
 
-        oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, tmpVector.size(), 500),
-                                  [&](tbb::blocked_range<size_t> &r) {
-                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+        auto &candidates = exteriorView->m2List.getCandidates();
+        if (candidates.size() > 0) {
+            results = std::vector<uint32_t>(candidates.size(), 0xFFFFFFFF);
 
-            auto &m2ObjectCandidate = tmpVector[i];
-//        for(auto &m2ObjectCandidate : tmpVector)
-            if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
-                exteriorView->drawnM2s.insert(m2ObjectCandidate);
-                cullStage->m2Array.insert(m2ObjectCandidate);
+            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 1000),
+                                      [&](tbb::blocked_range<size_t> &r) {
+//            for (size_t i = r.begin(); i != r.end(); ++i) {
+//                auto &m2ObjectCandidate = tmpVector[i];
+//                if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
+//                    exteriorView->drawnM2s.insert(m2ObjectCandidate);
+//                    cullStage->m2Array.insert(m2ObjectCandidate);
+//                }
+#if (__AVX__ && __SSE2__)
+                  ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(frustumData,
+                                                                    r.begin(), r.end(), candidates,
+                                                                    results);
+#else
+                  ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
+                                                                 r.begin(), r.end(), candidates,
+                                                                 results);
+#endif
+//            }
+            }, tbb::auto_partitioner());
+        }
+
+        for (int i = 0; i < candidates.size(); i++) {
+            if (!results[i]) {
+                auto &m2ObjectCandidate = candidates[i];
+                exteriorView->m2List.addToDraw(m2ObjectCandidate);
             }
-        }}, tbb::auto_partitioner());
-
-
-//        tbb::parallel_for(size_t{0}, tempM2Array.size(), [&](size_t i)
-//        {
-//            auto& m2ObjectCandidate = tempM2Array[i];
-//            tempM2CullResult[i] = m2ObjectCandidate->checkFrustumCulling(
-//                cameraPos,
-//                cullStage->exteriorView.frustumPlanes[0], //TODO:!
-//                frustumPoints);
-//        });
-
-//        for (int i = 0; i < tempM2Array.size(); i++) {
-//            auto& m2ObjectCandidate = tempM2Array[i];
-//            tempM2CullResult[i] = m2ObjectCandidate->checkFrustumCulling(
-//                cameraPos,
-//                cullStage->exteriorView.frustumPlanes[0], //TODO:!
-//                frustumPoints);
-//        }
+        }
+        cullExterioFrustumM2.endMeasurement();
     }
-    cullExterioFrustumM2.endMeasurement();
 }
 
 void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                 const mathfu::vec4 &cameraPos,
                                 HCullStage &cullStage,
-                                M2ObjectSetCont &m2ObjectsCandidates,
-                                WMOObjectSetCont &wmoCandidates)  {
+                                M2ObjectListContainer &m2ObjectsCandidates,
+                                WMOListContainer &wmoCandidates) {
     if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         //Get visible area that should be checked
         float minx = 99999, maxx = -99999;
@@ -1219,7 +1217,7 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
             }
 
         } else {
-            wmoCandidates.insert(wmoMap);
+            wmoCandidates.addCand(wmoMap);
         }
     }
 }
@@ -1227,8 +1225,8 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
 void Map::checkADTCulling(int i, int j,
                           const MathHelper::FrustumCullingData &frustumData,
                           const mathfu::vec4 &cameraPos, HCullStage &cullStage,
-                          M2ObjectSetCont&m2ObjectsCandidates,
-                          WMOObjectSetCont &wmoCandidates) {
+                          M2ObjectListContainer &m2ObjectsCandidates,
+                          WMOListContainer &wmoCandidates) {
     if ((i < 0) || (i > 64)) return;
     if ((j < 0) || (j > 64)) return;
 
@@ -1263,7 +1261,7 @@ void Map::checkADTCulling(int i, int j,
 
         if (result) {
             cullStage->viewsHolder.getExterior()->drawnADTs.push_back(adtFrustRes);
-            cullStage->adtArray.insert(adtFrustRes);
+            cullStage->adtArray.push_back(adtFrustRes);
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -1323,18 +1321,28 @@ void Map::createAdtFreeLamdas() {
 
 void Map::doPostLoad(HCullStage cullStage) {
     int processedThisFrame = 0;
-    int groupsProcessedThisFrame = 0;
+    int wmoProcessedThisFrame = 0;
+    int wmoGroupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
-    for (auto &m2Object : cullStage->m2Array) {
-
+    for (auto &m2Object : cullStage->m2Array.getToLoadMain()) {
         if (m2Object == nullptr) continue;
-        m2Object->doPostLoad();
+        m2Object->doLoadMainFile();
+    }
+    for (auto &m2Object : cullStage->m2Array.getToLoadGeom()) {
+        if (m2Object == nullptr) continue;
+        m2Object->doLoadGeom();
     }
 //    }
 
-    for (auto &wmoObject : cullStage->wmoArray) {
+    for (auto &wmoObject : cullStage->wmoArray.getToLoad()) {
         if (wmoObject == nullptr) continue;
-        wmoObject->doPostLoad(groupsProcessedThisFrame);
+        wmoObject->doPostLoad();
+    }
+    for (auto &wmoGroupObject : cullStage->wmoGroupArray.getToLoad()) {
+        if (wmoGroupObject == nullptr) continue;
+        wmoGroupObject->doPostLoad();
+        wmoGroupsProcessedThisFrame++;
+        if (wmoGroupsProcessedThisFrame > 20) break;
     }
 
     for (auto &adtObject : cullStage->adtArray) {
@@ -1397,15 +1405,14 @@ void Map::update(HUpdateStage updateStage) {
 
     Config* config = this->m_api->getConfig();
 
-    auto &m2Array = updateStage->cullResult->m2Array;
-    auto tempM2Array = std::vector(m2Array.begin(), m2Array.end());
+    auto &m2ToDraw = updateStage->cullResult->m2Array.getDrawn();
     {
         m2UpdateframeCounter.beginMeasurement();
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, tempM2Array.size(), 200),
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
             [&](tbb::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i != r.end(); ++i) {
-                    auto& m2Object = tempM2Array[i];
+                    auto& m2Object = m2ToDraw[i];
                     m2Object->update(deltaTime, cameraVec3, lookAtMat);
                 }
             }, tbb::simple_partitioner());
@@ -1415,9 +1422,9 @@ void Map::update(HUpdateStage updateStage) {
         m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
     }
 
-    for (const auto &wmoObject : updateStage->cullResult->wmoArray) {
-        if (wmoObject == nullptr) continue;
-        wmoObject->update();
+    for (const auto &wmoGroupObject : updateStage->cullResult->wmoGroupArray.getToDraw()) {
+        if (wmoGroupObject == nullptr) continue;
+        wmoGroupObject->update();
     }
 
     for (const auto &adtObjectRes : updateStage->cullResult->adtArray) {
@@ -1425,10 +1432,10 @@ void Map::update(HUpdateStage updateStage) {
     }
 
     //2. Calc distance every 100 ms
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, tempM2Array.size(), 200),
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
           [&](tbb::blocked_range<size_t> r) {
               for (size_t i = r.begin(); i != r.end(); ++i) {
-                  auto &m2Object = tempM2Array[i];
+                  auto &m2Object = m2ToDraw[i];
                   if (m2Object == nullptr) continue;
                   m2Object->calcDistance(cameraVec3);
               }
@@ -1459,16 +1466,16 @@ void Map::update(HUpdateStage updateStage) {
 void Map::updateBuffers(HUpdateStage updateStage) {
     auto cullStage = updateStage->cullResult;
 
-    for (auto &m2Object : cullStage->m2Array) {
+    for (auto &m2Object : cullStage->m2Array.getDrawn()) {
          if (m2Object != nullptr) {
             m2Object->uploadGeneratorBuffers(cullStage->matricesForCulling->lookAtMat);
         }
     }
 
-    for (auto &wmoObject : cullStage->wmoArray) {
-        if (wmoObject == nullptr) continue;
-        wmoObject->uploadGeneratorBuffers();
-    }
+//    for (auto &wmoGroupObject : cullStage->wmoGroupArray.getToDraw()) {
+//        if (wmoGroupObject == nullptr) continue;
+//        wmoGroupObject->uploadGeneratorBuffers();
+//    }
 
     for (auto &adtRes: cullStage->adtArray) {
         if (adtRes == nullptr) continue;
@@ -1603,13 +1610,13 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 
     // Put everything into one array and sort
     bool renderPortals = m_api->getConfig()->renderPortals;
-    auto lambda = [&](HInteriorView &view) {
+    for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
         view->collectMeshes(opaqueMeshes, transparentMeshes);
         if (renderPortals) {
             view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
         }
     };
-    cullStage->viewsHolder.iterateIteriorViews(lambda);
+
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
@@ -1626,7 +1633,7 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //        (view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
 //    }
 
-//    M2ObjectSetCont s;
+//    M2ObjectListContainer s;
 //    for (auto i : m2ObjectsRendered)
 //        s.insert(i);
 //    m2ObjectsRendered.assign( s.begin(), s.end() );
@@ -1644,7 +1651,7 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 //    }
 
     if (m_api->getConfig()->renderM2) {
-        for (auto &m2Object : cullStage->m2Array) {
+        for (auto &m2Object : cullStage->m2Array.getDrawn()) {
             if (m2Object == nullptr) continue;
             m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
             m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);

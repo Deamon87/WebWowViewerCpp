@@ -42,8 +42,8 @@ static const std::string POPUP_UPDATING_DBD = "Updating DBD files";
 static const std::string POPUP_UPDATING_DATABASE_DB2 = "Updating database from DB2";
 static const std::string POPUP_UPDATED_DATABASE_DB2 = "Database updated succesfully";
 
-DatabaseUpdateWorkflow::DatabaseUpdateWorkflow(std::shared_ptr<WoWFilesCacheStorage> storage, bool isClassic) {
-    m_storage = storage;
+DatabaseUpdateWorkflow::DatabaseUpdateWorkflow(HApiContainer &api, bool isClassic) {
+    m_api = api;
     m_isClassic = isClassic;
 }
 
@@ -239,7 +239,7 @@ void DatabaseUpdateWorkflow::db2UpdateLogic() {
         auto &l_addTableLambda = addTableLambda;
         auto &l_checkDB2Lambda = checkDB2Lambda;
 
-        auto dbFile = m_storage->getDb2Cache()->getFileId(requiredTables[m_currentDB2File].fileDataId);
+        auto dbFile = m_api->cacheStorage->getDb2Cache()->getFileId(requiredTables[m_currentDB2File].fileDataId);
         checkDB2Lambda = [dbFile, &l_addTableLambda, &l_currentDB2File, &l_db2FailedMessage, &l_checkDB2Lambda]() -> bool {
             if (dbFile->getStatus() == FileStatus::FSNotLoaded)
                 return false;

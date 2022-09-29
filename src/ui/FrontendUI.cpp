@@ -191,12 +191,26 @@ void FrontendUI::showCurrentStatsDialog() {
         int currentFrame = m_api->hDevice->getDrawFrameNumber();
         auto &cullStageData = m_cullstages[currentFrame];
 
-        if (ImGui::CollapsingHeader("Objects Drawn")) {
-            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
-            int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
+        if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
+            int m2ObjectsBeforeCullingExterior = 0;
+            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
+            }
+
+            int wmoGroupsInExterior = 0;
+            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
+            }
+
+            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
+            int wmoObjectsBeforeCull = cullStageData!= nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
 
             ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
-            ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+            ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
+            ImGui::Text("Interiors (aka group WMOs): %s", std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
+            ImGui::Text("M2 Objects Before Culling in Exterior: %s", std::to_string(m2ObjectsBeforeCullingExterior).c_str());
+            ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
+
             ImGui::Separator();
         }
 
@@ -501,7 +515,7 @@ void FrontendUI::showMainMenu() {
             ImGui::Separator();
             if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
                 m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(
-                        m_api->cacheStorage,
+                        m_api,
                         contains(fileDialog.getProductBuild().productName, "classic")
                     );
             }

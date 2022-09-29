@@ -700,7 +700,7 @@ void WmoGroupObject::loadDoodads() {
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
-        m_doodads.insert(newDoodad);
+        m_doodads.push_back(newDoodad);
         if (newDoodad != nullptr) {
             std::function<void()> event = [&, newDoodad]() -> void {
                     this->m_recalcBoundries = true;
@@ -1160,7 +1160,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(M2ObjectSetCont &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(M2ObjectListContainer &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
@@ -1175,7 +1175,7 @@ void WmoGroupObject::checkDoodads(M2ObjectSetCont &wmoM2Candidates) {
                 doodad->setAmbientColorOverride(ambientColor, true);
             }
 
-            wmoM2Candidates.insert(doodad);
+            wmoM2Candidates.addCandidate(doodad);
         }
     }
 }

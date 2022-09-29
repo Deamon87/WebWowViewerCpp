@@ -11,18 +11,18 @@
 void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
                                     HCullStage &cullStage,
-                                    M2ObjectSetCont &potentialM2,
-                                    WMOObjectSetCont &potentialWmo) {
-    potentialWmo.insert(this->m_wmoObject);
+                                    M2ObjectListContainer &potentialM2,
+                                    WMOListContainer &potentialWmo) {
+    potentialWmo.addCand(this->m_wmoObject);
 }
 
 void WmoScene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                      const mathfu::vec4 &cameraPos,
                                      HCullStage &cullStage,
-                                     M2ObjectSetCont &m2ObjectsCandidates,
-                                     WMOObjectSetCont &wmoCandidates) {
+                                     M2ObjectListContainer &m2ObjectsCandidates,
+                                     WMOListContainer &wmoCandidates) {
 
-    wmoCandidates.insert(this->m_wmoObject);
+    wmoCandidates.addCand(this->m_wmoObject);
 };
 
 void WmoScene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
@@ -59,7 +59,7 @@ void WmoScene::doPostLoad(HCullStage cullStage) {
     }
 //    }
 
-    for (auto &wmoObject : cullStage->wmoArray) {
+    for (auto &wmoObject : cullStage->wmoGroupArray) {
         if (wmoObject == nullptr) continue;
         if (wmoObject->doPostLoad(groupsProcessedThisFrame)) processedThisFrame++;
 

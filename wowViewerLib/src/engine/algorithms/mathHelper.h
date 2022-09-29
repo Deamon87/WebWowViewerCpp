@@ -12,11 +12,15 @@
 
 #define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
 
+template<typename T>
+inline const CAaBox &retrieveAABB(T &object);
+
+
 class MathHelper {
 public:
-    static constexpr float TILESIZE =  1600.0f/3.0f ;
-    static constexpr float CHUNKSIZE = TILESIZE / 16.0f;
-    static constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
+    static const constexpr float TILESIZE =  1600.0f/3.0f ;
+    static const constexpr float CHUNKSIZE = TILESIZE / 16.0f;
+    static const constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
 
     struct PlanesUndPoints {
         std::vector<mathfu::vec4> planes;
@@ -96,11 +100,11 @@ public:
 //        adtToWorldMat4 *= mathfu::mat4::FromTranslationVector(mathfu::vec3(32*TILESIZE, 0, 32*TILESIZE));
 //        adtToWorldMat4 *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
 
-        static mathfu::mat4 adtToWorldMat4 = {
+        static const mathfu::mat4 adtToWorldMat4 = {
                 {0, -1, 0, 0},
                 {0, 0, 1, 0},
                 {-1, 0, 0, 0},
-                {32*TILESIZE, 32*TILESIZE, 0, 1}};
+                {32*MathHelper::TILESIZE, 32*MathHelper::TILESIZE, 0, 1}};
 
         return adtToWorldMat4;
     }
@@ -139,7 +143,6 @@ inline bool feq(const float a, const float b, const float tolerance = ROUNDING_E
 {
     return (a + tolerance >= b) && (a - tolerance <= b);
 }
-
 
 inline int worldCoordinateToAdtIndex(float x) {
     return floor((32.0f - (x / MathHelper::TILESIZE)));

@@ -7,6 +7,11 @@
 #include "../shader/ShaderDefinitions.h"
 #include "oneapi/tbb/parallel_for.h"
 
+#if (__AVX__ && __SSE2__)
+#include "../algorithms/mathHelper_culling_sse.h"
+#endif
+#include "../algorithms/mathHelper_culling.h"
+
 void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     {
         auto inserter = std::back_inserter(opaqueMeshes);
@@ -23,7 +28,7 @@ void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<
 
 
 void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
-    for (auto& wmoGroup : drawnWmos) {
+    for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
         wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 
@@ -34,29 +39,37 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
 }
 
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
-    M2ObjectSetCont candidates;
-    for (auto &wmoGroup : wmosForM2) {
+    for (auto &wmoGroup : wmoGroupArray.getToCheckM2()) {
         auto &doodads = wmoGroup->getDoodads();
-        candidates.insert(doodads.begin(), doodads.end());
+        for (auto &m2object : doodads) {
+            this->m2List.addCandidate(m2object);
+        }
     }
 
+    auto candidatesArr = this->m2List.getCandidates();
+    auto candCullRes = std::vector<uint32_t>(candidatesArr.size(), 0xFFFFFFFF);
 
-    auto candidatesArr = std::vector(candidates.begin(), candidates.end());
-    auto candCullRes = std::vector(candidatesArr.size(), false);
-
-    oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 500),
+    oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 1000),
                       [&](tbb::blocked_range<size_t> r) {
-                          for (size_t i = r.begin(); i != r.end(); ++i) {
 //for (int i = 0; i < candidatesArr.size(); i++) {
-                              auto& m2ObjectCandidate = candidatesArr[i];
-                              if (m2ObjectCandidate == nullptr) return;
-                              bool result = m2ObjectCandidate->checkFrustumCulling(cameraPos, this->frustumData);
-                                  if (result) {
-                                      setM2Lights(m2ObjectCandidate);
-                                      drawnM2s.insert(candidatesArr[i]);
-                                  }
-                          }
-                      }, tbb::auto_partitioner());
+#if (__AVX__ && __SSE2__)
+        ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(this->frustumData, r.begin(),
+                                                                       r.end(), candidatesArr,
+                                                                       candCullRes);
+#else
+        ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
+                                                          r.begin(), r.end(), candidatesArr,
+                                                          candCullRes);
+#endif
+    }, tbb::auto_partitioner());
+
+    for (int i = 0; i < candCullRes.size(); i++) {
+        if (!candCullRes[i]) {
+            auto &m2ObjectCandidate = candidatesArr[i];
+            setM2Lights(m2ObjectCandidate);
+            this->m2List.addToDraw(m2ObjectCandidate);
+        }
+    }
 }
 
 void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {

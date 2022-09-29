@@ -54,11 +54,11 @@ public:
 
     bool checkFrustumCulling(const MathHelper::FrustumCullingData &frustumData,
                              mathfu::vec4 &cameraPos,
-                             M2ObjectSetCont &m2ObjectsCandidates,
-                             WMOObjectSetCont &wmoCandidates);
+                             M2ObjectListContainer &m2ObjectsCandidates,
+                             WMOListContainer &wmoCandidates);
 
     void checkSkyScenes(const StateForConditions &state,
-                        M2ObjectSetCont &m2ObjectsCandidates,
+                        M2ObjectListContainer &m2ObjectsCandidates,
                         const mathfu::vec4 &cameraPos,
                         const MathHelper::FrustumCullingData &frustumData);
 };

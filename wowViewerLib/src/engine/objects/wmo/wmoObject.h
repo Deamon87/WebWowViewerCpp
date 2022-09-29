@@ -22,15 +22,6 @@ class WmoGroupObject;
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"
 
-
-struct WmoGroupResult {
-    M2Range topBottom;
-    int groupIndex;
-    int WMOGroupID;
-    std::vector<int> bspLeafList;
-    int nodeId;
-};
-
 class WmoObject : public IWmoApi {
 
 public:
@@ -134,7 +125,7 @@ public:
 
     void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
 
-    bool doPostLoad(int &processedThisFrame);
+    bool doPostLoad();
     void update();
     void uploadGeneratorBuffers();
 
@@ -159,7 +150,7 @@ public:
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        M2ObjectSetCont &m2Candidates);
+        M2ObjectListContainer &m2Candidates);
 
     void addSplitChildWMOsToView(InteriorView &interiorView, int groupId);
 
@@ -198,7 +189,67 @@ struct WMOObjectHasher
 };
 
 //typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
-typedef oneapi::tbb::concurrent_unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
+class WMOListContainer {
+private:
+    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
+    std::vector<std::shared_ptr<WmoObject>> wmoToLoad;
+
+    bool candCanHaveDuplicates = false;
+    bool toLoadCanHaveDuplicates = false;
+
+    void inline removeDuplicates(std::vector<std::shared_ptr<WmoObject>> &array) {
+        if (array.size() < 1000) {
+            std::sort(array.begin(), array.end());
+        } else {
+            tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
+        }
+        array.erase(std::unique(array.begin(), array.end()), array.end());
+        return;
+    }
+
+public:
+    WMOListContainer() {
+        wmoCandidates.reserve(3000);
+        wmoToLoad.reserve(3000);
+    }
+
+    void addCand(const std::shared_ptr<WmoObject> &toDraw) {
+        if (toDraw->isLoaded()) {
+            wmoCandidates.push_back(toDraw);
+            candCanHaveDuplicates = true;
+        } else {
+            wmoToLoad.push_back(toDraw);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    void addToLoad(const std::shared_ptr<WmoObject> &toLoad) {
+        if (!toLoad->isLoaded()) {
+            wmoToLoad.push_back(toLoad);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    const std::vector<std::shared_ptr<WmoObject>> &getCandidates() {
+        if (this->candCanHaveDuplicates) {
+            removeDuplicates(wmoCandidates);
+            candCanHaveDuplicates = false;
+        }
+
+        return wmoCandidates;
+    }
+
+    const std::vector<std::shared_ptr<WmoObject>> &getToLoad() {
+        if (this->toLoadCanHaveDuplicates) {
+            removeDuplicates(wmoToLoad);
+            toLoadCanHaveDuplicates = false;
+        }
+
+        return wmoToLoad;
+    }
+};
 
 
 #endif //WEBWOWVIEWERCPP_WMOOBJECT_H
