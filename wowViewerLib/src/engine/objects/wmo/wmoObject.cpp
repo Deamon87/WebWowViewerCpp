@@ -816,14 +816,14 @@ bool WmoObject::startTraversingWMOGroup(
     auto globalPlane = frustumDataGlobal.frustums[0].planes[frustumDataGlobal.frustums[0].planes.size() - 2];
     auto altFarPlane = this->m_placementMatrix.Transpose() * globalPlane;
     PortalTraverseTempData traverseTempData = {
-        .viewsHolder = viewsHolder,
-        .exteriorWasCreatedBeforeTraversing = viewsHolder.getExterior() != nullptr,
-        .farPlane = frustumPlanesLocal[frustumPlanesLocal.size() - 1], //farPlane is always last one,
-        .ivPerWMOGroup = ivPerWMOGroup,
-        .cameraVec4 = cameraVec4,
-        .cameraLocal = cameraLocal,
-        .transposeInverseModelMat = transposeInverseModelMat,
-        .transverseVisitedPortals = transverseVisitedPortals
+        viewsHolder,
+        viewsHolder.getExterior() != nullptr,
+        frustumPlanesLocal[frustumPlanesLocal.size() - 1], //farPlane is always last one,
+        ivPerWMOGroup,
+        cameraVec4,
+        cameraLocal,
+        transposeInverseModelMat,
+        transverseVisitedPortals
     };
 
     if (traversingFromInterior && m_api->getConfig()->usePortalCulling) {

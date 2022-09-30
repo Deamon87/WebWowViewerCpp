@@ -831,8 +831,8 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vecto
     if ((nodes[nodeId].planeType & 0x4)) {
         bspLeafIdList.push_back(nodeId);
     } else if (nodes[nodeId].planeType == 0) {
-        std::vector<MathHelper::PlanesUndPoints> left = {{.planes={mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}}};
-        std::vector<MathHelper::PlanesUndPoints> right = {{.planes={mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> left = {{{mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{{mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}}};
 
         bool leftSide = MathHelper::checkFrustum( left, bbox);
         bool rightSide = MathHelper::checkFrustum(right, bbox);
@@ -844,8 +844,8 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vecto
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
     } else if (nodes[nodeId].planeType == 1) {
-        std::vector<MathHelper::PlanesUndPoints> left = {{.planes={mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}}};
-        std::vector<MathHelper::PlanesUndPoints> right = {{.planes={mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> left = {{{mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{{mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}}};
 
         bool leftSide = MathHelper::checkFrustum(left, bbox);
         bool rightSide = MathHelper::checkFrustum(right, bbox);
@@ -857,8 +857,8 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vecto
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
     } else if (nodes[nodeId].planeType == 2) {
-        std::vector<MathHelper::PlanesUndPoints> left = {{.planes={mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}}};
-        std::vector<MathHelper::PlanesUndPoints> right = {{.planes={mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> left = {{{mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{{mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}}};
 
         bool leftSide = MathHelper::checkFrustum(left, bbox);
         bool rightSide = MathHelper::checkFrustum(right, bbox);

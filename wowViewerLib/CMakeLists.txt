@@ -69,7 +69,8 @@ message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
 find_package(Threads REQUIRED)
 
-SET(TBB_BUILD_SHARED 0)
+SET(TBB_STRICTTBB_BUILD_SHARED 0)
+SET(TBB_STRICT 0)
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
