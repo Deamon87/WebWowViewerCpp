@@ -1089,7 +1089,7 @@ void WmoObject::traverseGroupWmo(
             //Near plane is this portal's plane, far plane is a global one
             auto nearPlane = mathfu::vec4(portalInfo->plane.planeVector);
             if (flip)
-                nearPlane*=-1;
+                nearPlane *= -1.0f;
 
             auto &farPlane = traverseTempData.farPlane;
             thisPortalPlanes.push_back(nearPlane);

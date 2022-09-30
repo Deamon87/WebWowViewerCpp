@@ -6,8 +6,11 @@
 #define AWEBWOWVIEWERCPP_MATHHELPER_CULLING_SSE_H
 
 #include "mathHelper.h"
-
+#if (__AVX__ && __SSE2__)
+#include <emmintrin.h>
+#include <immintrin.h>
 #include <xmmintrin.h>
+
 template<typename T>
 class ObjectCullingSEE {
 private:
@@ -151,5 +154,6 @@ public:
         }
     }
 };
+#endif
 
 #endif //AWEBWOWVIEWERCPP_MATHHELPER_CULLING_SSE_H
