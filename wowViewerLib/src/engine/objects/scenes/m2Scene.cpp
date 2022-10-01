@@ -54,47 +54,6 @@ extern "C" {
 }
 
 void M2Scene::doPostLoad(HCullStage cullStage) {
-    if (m_m2Object->isMainDataLoaded()) {
-        CAaBox aabb = m_m2Object->getColissionAABB();
-        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
-            aabb = m_m2Object->getAABB();
-        }
-
-        auto max = aabb.max;
-        auto min = aabb.min;
-
-        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 20000) {
-
-            mathfu::vec3 modelCenter = mathfu::vec3(
-                ((max.x + min.x) / 2.0f),
-                ((max.y + min.y) / 2.0f),
-                ((max.z + min.z) / 2.0f)
-            );
-
-            if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
-                m_api->camera->setCameraPos((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
-
-            } else {
-                m_api->camera->setCameraPos((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
-            }
-            m_api->camera->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
-        } else {
-            m_api->camera->setCameraPos(1.0,0,0);
-            m_api->camera->setCameraOffset(0,0,0);
-        }
-#ifdef __EMSCRIPTEN__
-        std::vector <int> availableAnimations;
-        m_m2Object->getAvailableAnimation(availableAnimations);
-
-        supplyAnimationList(&availableAnimations[0], availableAnimations.size());
-
-        std::vector<int> meshIds;
-        m_m2Object->getMeshIds(meshIds);
-
-        supplyMeshIds(&meshIds[0], meshIds.size());
-
-#endif
-        }
     Map::doPostLoad(cullStage);
 }
 
@@ -136,6 +95,50 @@ std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
     return std::make_shared<m2TiedCamera>(m_m2Object, cameraNum);
 }
 
+void updateCameraPosOnLoad(const HApiContainer &m_api, const std::shared_ptr<M2Object> &m2Object) {
+    if (m2Object->isMainDataLoaded()) {
+        CAaBox aabb = m2Object->getColissionAABB();
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
+            aabb = m2Object->getAABB();
+        }
+
+        auto max = aabb.max;
+        auto min = aabb.min;
+
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 20000) {
+
+            mathfu::vec3 modelCenter = mathfu::vec3(
+                ((max.x + min.x) / 2.0f),
+                ((max.y + min.y) / 2.0f),
+                ((max.z + min.z) / 2.0f)
+            );
+
+            if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
+                m_api->camera->setCameraPos((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+
+            } else {
+                m_api->camera->setCameraPos((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            }
+            m_api->camera->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
+        } else {
+            m_api->camera->setCameraPos(1.0,0,0);
+            m_api->camera->setCameraOffset(0,0,0);
+        }
+#ifdef __EMSCRIPTEN__
+        std::vector <int> availableAnimations;
+        m2Object->getAvailableAnimation(availableAnimations);
+
+        supplyAnimationList(&availableAnimations[0], availableAnimations.size());
+
+        std::vector<int> meshIds;
+        m2Object->getMeshIds(meshIds);
+
+        supplyMeshIds(&meshIds[0], meshIds.size());
+
+#endif
+    }
+}
+
 M2Scene::M2Scene(HApiContainer api, std::string m2Model, int cameraView) {
     m_api = api; m_m2Model = m2Model; m_cameraView = cameraView;
     m_sceneMode = SceneMode::smM2;
@@ -151,6 +154,10 @@ M2Scene::M2Scene(HApiContainer api, std::string m2Model, int cameraView) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
+    auto l_api = m_api;
+    m_m2Object->addPostLoadEvent([m2Object, l_api]() {
+        updateCameraPosOnLoad(l_api, m2Object);
+    });
 
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
@@ -169,6 +176,10 @@ M2Scene::M2Scene(HApiContainer api, int fileDataId, int cameraView) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
+    auto l_api = m_api;
+    m_m2Object->addPostLoadEvent([m2Object, l_api]() {
+        updateCameraPosOnLoad(l_api, m2Object);
+    });
 
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
@@ -183,5 +194,4 @@ void M2Scene::resetReplaceParticleColor() {
 
 void M2Scene::exportScene(IExporter* exporter) {
     exporter->addM2Object(m_m2Object);
-
 }

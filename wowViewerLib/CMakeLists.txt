@@ -25,7 +25,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(LINK_OGL2 0)
     set(LINK_GLEW 0)
 endif()
-
+if (MSVC)
+    add_compile_definitions(NOMINMAX)
+endif()
 
 if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)
@@ -67,7 +69,9 @@ set(My_Vectorize_Compile_Options "")
 
 message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
-find_package(Threads REQUIRED)
+if (NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+endif ()
 
 SET(TBB_STRICTTBB_BUILD_SHARED 0)
 SET(TBB_STRICT OFF CACHE BOOL "")

@@ -185,7 +185,7 @@ public:
         m_interiorAmbientWasSet = value;
     }
 
-    void addPostLoadEvent(std::function<void()> &value) {
+    void addPostLoadEvent(const std::function<void()> &value) {
         m_postLoadEvents.push_back(value);
     }
 
