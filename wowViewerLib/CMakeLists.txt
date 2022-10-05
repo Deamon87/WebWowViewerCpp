@@ -312,10 +312,14 @@ set(SOURCE_FILES
         src/include/string_utils.h
         src/include/string_utlis.cpp
         src/engine/persistance/db2File.cpp
-        src/engine/persistance/db2File.h src/engine/algorithms/mathHelper_culling_sse.cpp src/engine/algorithms/mathHelper_culling_sse.h src/engine/algorithms/mathHelper_culling.cpp src/engine/algorithms/mathHelper_culling.h)
+        src/engine/persistance/db2File.h
+        src/engine/algorithms/mathHelper_culling_sse.cpp
+        src/engine/algorithms/mathHelper_culling_sse.h
+        src/engine/algorithms/mathHelper_culling.cpp
+        src/engine/algorithms/mathHelper_culling.h)
 
 if (LINK_OGL2)
-set(OPENGL20_IMPLEMENTATION
+    set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
         src/gapi/ogl2.0/textures/GBlpTextureGL20.h
         src/gapi/ogl2.0/buffers/GVertexBufferDynamicGL20.cpp
@@ -579,7 +583,7 @@ endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 target_link_libraries(WoWViewerLib TBB::tbb )
-if (UNIX)
+if (UNIX AND NOT EMSCRIPTEN)
 target_link_libraries(WoWViewerLib Threads::Threads)
 endif()
 #target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")

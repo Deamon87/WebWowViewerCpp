@@ -547,7 +547,7 @@ void Map::checkCulling(HCullStage cullStage) {
                                                  exteriorView->renderOrder);
             }
             cullStage->m2Array.addDrawnAndToLoad(exteriorView->m2List);
-            cullStage->wmoGroupArray.addToLoad(exteriorView->wmoGroupArray);
+            cullStage->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
         }
     }
 
@@ -558,7 +558,7 @@ void Map::checkCulling(HCullStage cullStage) {
         for (auto &interiorView: interiorViews) {
             interiorView->addM2FromGroups(frustumData, cameraPos);
             cullStage->m2Array.addDrawnAndToLoad(interiorView->m2List);
-            cullStage->wmoGroupArray.addToLoad(interiorView->wmoGroupArray);
+            cullStage->wmoGroupArray.addToLoadAndDraw(interiorView->wmoGroupArray);
         }
     }
 

@@ -116,7 +116,7 @@ struct renderFrameBufferShader {
 
 struct wmoShader {
     enum class Attribute {
-        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aColor = 5, aColor2 = 6, wmoShaderAttributeEnd
+        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aTexCoord4 = 5, aColor = 6, aColor2 = 7, aColorSecond = 8, wmoShaderAttributeEnd
     };
 };
 
@@ -193,8 +193,10 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"aTexCoord", 2},
 {"aTexCoord2", 3},
 {"aTexCoord3", 4},
-{"aColor", 5},
-{"aColor2", 6},
+{"aTexCoord4", 5},
+{"aColor", 6},
+{"aColor2", 7},
+{"aColorSecond", 8},
 }},{"imguiShader",  {
 {"Position", 0},
 {"UV", 1},
@@ -669,7 +671,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"wmoShader",  {
     {
       2, {
-        {"_170_VertexShader_UseLitColor", false, 0, 1, 4, 0},
+        {"_178_VertexShader_UseLitColor", false, 0, 1, 4, 0},
       }
     },
     {
@@ -1046,35 +1048,35 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"wmoShader",  {
     {
       4, {
-        {"_622_UseLitColor_EnableAlpha_PixelShader_BlendMode", false, 0, 1, 4, 0},
-        {"_622_FogColor_AlphaTest", true, 16, 1, 4, 0},
+        {"_657_UseLitColor_EnableAlpha_PixelShader_BlendMode", false, 0, 1, 4, 0},
+        {"_657_FogColor_AlphaTest", true, 16, 1, 4, 0},
       }
     },
     {
       0, {
-        {"_501_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_501_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_501_scene_uViewUp", true, 128, 1, 4, 0},
-        {"_501_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
-        {"_501_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
-        {"_501_fogData_densityParams", true, 256, 1, 4, 0},
-        {"_501_fogData_heightPlane", true, 272, 1, 4, 0},
-        {"_501_fogData_color_and_heightRate", true, 288, 1, 4, 0},
-        {"_501_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
-        {"_501_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
-        {"_501_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
-        {"_501_fogData_sunPercentage", true, 352, 1, 4, 0},
+        {"_537_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_537_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_537_scene_uViewUp", true, 128, 1, 4, 0},
+        {"_537_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_537_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
+        {"_537_fogData_densityParams", true, 256, 1, 4, 0},
+        {"_537_fogData_heightPlane", true, 272, 1, 4, 0},
+        {"_537_fogData_color_and_heightRate", true, 288, 1, 4, 0},
+        {"_537_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_537_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_537_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_537_fogData_sunPercentage", true, 352, 1, 4, 0},
       }
     },
     {
       3, {
-        {"_489_intLight_uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
-        {"_489_intLight_uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
+        {"_525_intLight_uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
+        {"_525_intLight_uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
       }
     },
   }},

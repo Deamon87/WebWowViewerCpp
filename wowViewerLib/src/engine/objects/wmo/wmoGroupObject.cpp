@@ -158,7 +158,8 @@ enum class WmoPixelShader : int {
     MapObjTwoLayerDiffuseMod2xNA = 16,
     MapObjTwoLayerDiffuseAlpha = 17,
     MapObjLod = 18,
-    MapObjParallax = 19
+    MapObjParallax = 19,
+    MapObjUnkShader = 20
 };
 
 inline constexpr const int operator+(WmoPixelShader const val) { return static_cast<const int>(val); };
@@ -288,7 +289,7 @@ static const struct {
     //23 // TODO: stub for now
     {
         +WmoVertexShader::MapObjDiffuse_T1,
-        +WmoPixelShader::MapObjTwoLayerDiffuseMod2x,
+        +WmoPixelShader::MapObjUnkShader,
     },
 };
 
@@ -493,12 +494,27 @@ void WmoGroupObject::createMeshes() {
         HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
         HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
 
-        meshTemplate.texture.resize(3);
+        meshTemplate.texture = std::vector<std::shared_ptr<ITexture>>(9, nullptr);
         meshTemplate.texture[0] = texture1;
         meshTemplate.texture[1] = texture2;
         meshTemplate.texture[2] = texture3;
 
-        meshTemplate.textureCount = 3;
+        meshTemplate.textureCount = 9;
+
+        if (pixelShader == (int)WmoPixelShader::MapObjUnkShader) {
+//            meshTemplate.texture.resize(9);
+//            meshTemplate.textureCount = 9;
+
+            meshTemplate.texture[3] = m_wmoApi->getTexture(material.color_2, false);
+            meshTemplate.texture[4] = m_wmoApi->getTexture(material.flags_2, false);
+            meshTemplate.texture[5] = m_wmoApi->getTexture(material.runTimeData[0], false);
+            meshTemplate.texture[6] = m_wmoApi->getTexture(material.runTimeData[1], false);
+            meshTemplate.texture[7] = m_wmoApi->getTexture(material.runTimeData[2], false);
+            meshTemplate.texture[8] = m_wmoApi->getTexture(material.runTimeData[3], false);
+        }
+
+
+
 
         meshTemplate.ubo[0] = nullptr;
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
@@ -703,12 +719,14 @@ void WmoGroupObject::loadDoodads() {
         m_doodads.push_back(newDoodad);
         if (newDoodad != nullptr) {
             std::function<void()> event = [&, newDoodad]() -> void {
-                    this->m_recalcBoundries = true;
+                this->m_recalcBoundries = true;
             };
 
             newDoodad->addPostLoadEvent(event);
         }
     }
+
+    this->m_recalcBoundries = true;
 }
 
 void WmoGroupObject::createWorldGroupBB(CAaBox &bbox, mathfu::mat4 &placementMatrix) {
@@ -742,7 +760,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
     for (auto &m2Object : this->m_doodads) {
-        if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
+        if (m2Object == nullptr || !m2Object->isMainDataLoaded()) continue;
 
         CAaBox m2AAbb = m2Object->getAABB();
 

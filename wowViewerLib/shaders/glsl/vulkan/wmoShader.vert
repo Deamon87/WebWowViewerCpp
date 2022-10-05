@@ -14,8 +14,10 @@ layout (location = 1) in vec3 aNormal;
 layout (location = 2) in vec2 aTexCoord;
 layout (location = 3) in vec2 aTexCoord2;
 layout (location = 4) in vec2 aTexCoord3;
-layout (location = 5) in vec4 aColor;
-layout (location = 6) in vec4 aColor2;
+layout (location = 5) in vec2 aTexCoord4;
+layout (location = 6) in vec4 aColor;
+layout (location = 7) in vec4 aColor2;
+layout (location = 8) in vec4 aColorSecond;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
@@ -32,10 +34,12 @@ layout(std140, set=0, binding=2) uniform meshWideBlockVS {
 layout(location=0) out vec2 vTexCoord;
 layout(location=1) out vec2 vTexCoord2;
 layout(location=2) out vec2 vTexCoord3;
-layout(location=3) out vec4 vColor;
-layout(location=4) out vec4 vColor2;
-layout(location=5) out vec4 vPosition;
-layout(location=6) out vec3 vNormal;
+layout(location=3) out vec2 vTexCoord4;
+layout(location=4) out vec4 vColor;
+layout(location=5) out vec4 vColor2;
+layout(location=6) out vec4 vColorSecond;
+layout(location=7) out vec4 vPosition;
+layout(location=8) out vec3 vNormal;
 
 #include "../common/commonFunctions.glsl"
 
@@ -55,8 +59,12 @@ void main() {
     vPosition = vec4(cameraPoint.xyz, 0);
     vNormal = normalize(viewModelMatTransposed * aNormal);
 
+
     vColor = aColor.bgra;
     vColor2 = aColor2;
+    vColorSecond = aColorSecond;
+    vTexCoord4 = aTexCoord4;
+
     int uVertexShader = VertexShader_UseLitColor.x;
    if ( uVertexShader == -1 ) {
        vTexCoord = aTexCoord;
@@ -100,4 +108,5 @@ void main() {
        vTexCoord2 = vPosition.xy * -0.239999995;
        vTexCoord3 = aTexCoord3; //not used
    }
+
 }

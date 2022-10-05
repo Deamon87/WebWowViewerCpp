@@ -240,8 +240,12 @@ public:
         return wmoGroupToLoad;
     }
 
-    void addToLoad(WMOGroupListContainer &otherList) {
+    void addToLoadAndDraw(WMOGroupListContainer &otherList) {
+        this->wmoGroupToDraw.insert(this->wmoGroupToDraw.end(), otherList.wmoGroupToDraw.begin(), otherList.wmoGroupToDraw.end());
         this->wmoGroupToLoad.insert(this->wmoGroupToLoad.end(), otherList.wmoGroupToLoad.begin(), otherList.wmoGroupToLoad.end());
+
+        toDrawCanHaveDuplicates = true;
+        toLoadCanHaveDuplicates = true;
     }
 };
 

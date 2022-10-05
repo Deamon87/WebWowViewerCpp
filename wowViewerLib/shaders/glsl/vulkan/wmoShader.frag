@@ -6,14 +6,17 @@ precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
+#include "../common/commonFunctions.glsl"
 
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
 layout(location=2) in vec2 vTexCoord3;
-layout(location=3) in vec4 vColor;
-layout(location=4) in vec4 vColor2;
-layout(location=5) in vec4 vPosition;
-layout(location=6) in vec3 vNormal;
+layout(location=3) in vec2 vTexCoord4;
+layout(location=4) in vec4 vColor;
+layout(location=5) in vec4 vColor2;
+layout(location=6) in vec4 vColorSecond;
+layout(location=7) in vec4 vPosition;
+layout(location=8) in vec3 vNormal;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
@@ -79,6 +82,12 @@ vec3 calcSpec(float texAlpha) {
 layout(set=1, binding=5) uniform sampler2D uTexture;
 layout(set=1, binding=6) uniform sampler2D uTexture2;
 layout(set=1, binding=7) uniform sampler2D uTexture3;
+layout(set=1, binding=8) uniform sampler2D uTexture4;
+layout(set=1, binding=9) uniform sampler2D uTexture5;
+layout(set=1, binding=10) uniform sampler2D uTexture6;
+layout(set=1, binding=11) uniform sampler2D uTexture7;
+layout(set=1, binding=12) uniform sampler2D uTexture8;
+layout(set=1, binding=13) uniform sampler2D uTexture9;
 
 layout (location = 0) out vec4 outputColor;
 
@@ -235,7 +244,35 @@ void main() {
     } if (uPixelShader == 19) { //MapObjParallax
         matDiffuse = tex.rgb ;
         finalOpacity = tex.a;
-     }
+     } if (uPixelShader == 20) { //MapObjUnkShader
+        vec4 tex_0 = texture(uTexture, posToTexCoord(vPosition.xyz, vNormal.xyz));
+        vec4 tex_1 = texture(uTexture2, vTexCoord);
+        vec4 tex_2 = texture(uTexture3, vTexCoord2);
+        vec4 tex_3 = texture(uTexture4, vTexCoord3);
+        vec4 tex_4 = texture(uTexture5, vTexCoord4);
+
+        vec4 tex_5 = texture(uTexture6, vTexCoord).rgba;
+        vec4 tex_6 = texture(uTexture7, vTexCoord2).rgba;
+        vec4 tex_7 = texture(uTexture8, vTexCoord3).rgba;
+        vec4 tex_8 = texture(uTexture9, vTexCoord4).rgba;
+
+        float secondColorSum = dot(vColorSecond.bgr, vec3(1.0));
+        vec4 alphaVec = max(vec4(tex_5.a, tex_6.a, tex_7.a, tex_8.a), 0.004) * vec4(vColorSecond.bgr, 1.0 - clamp(secondColorSum, 0.0, 1.0));
+        float maxAlpha =max(alphaVec.r, max(alphaVec.g, max(alphaVec.g, alphaVec.a)));
+        vec4 alphaVec2 = clamp(vec4(maxAlpha) - alphaVec, vec4(0.0), vec4(1.0));
+        alphaVec2 = alphaVec2 * alphaVec;
+
+        vec4 alphaVec2Normalized = alphaVec2 * (1.0 / dot(alphaVec2, vec4(1.0)));
+
+        vec4 texMixed = tex_1 * alphaVec2Normalized.r +
+                        tex_2 * alphaVec2Normalized.b +
+                        tex_3 * alphaVec2Normalized.g +
+                        tex_4 * alphaVec2Normalized.a;
+
+        emissive = texMixed.w * tex_0.rgb * texMixed.rgb;
+        vec3 diffuseColor = vec3(0.0); //Probably is taken from MOMT or somewhere else
+        matDiffuse = (diffuseColor - texMixed.rgb) * vColorSecond.a + texMixed.rgb;
+    }
 
     finalColor = vec4(
         calcLight(

@@ -35,6 +35,24 @@ void GWMOShaderPermutationGL33::compileShader(const std::string &vertExtraDefStr
     if (hasUnf("uTexture3")) {
         glUniform1i(this->getUnf("uTexture3"), 2);
     }
+    if (hasUnf("uTexture4")) {
+        glUniform1i(this->getUnf("uTexture4"), 3);
+    }
+    if (hasUnf("uTexture5")) {
+        glUniform1i(this->getUnf("uTexture5"), 4);
+    }
+    if (hasUnf("uTexture6")) {
+        glUniform1i(this->getUnf("uTexture6"), 5);
+    }
+    if (hasUnf("uTexture7")) {
+        glUniform1i(this->getUnf("uTexture7"), 6);
+    }
+    if (hasUnf("uTexture8")) {
+        glUniform1i(this->getUnf("uTexture8"), 7);
+    }
+    if (hasUnf("uTexture9")) {
+        glUniform1i(this->getUnf("uTexture9"), 8);
+    }
 
     glUseProgram(0);
 }
