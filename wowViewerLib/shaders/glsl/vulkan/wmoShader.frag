@@ -258,8 +258,8 @@ void main() {
 
         float secondColorSum = dot(vColorSecond.bgr, vec3(1.0));
         vec4 alphaVec = max(vec4(tex_5.a, tex_6.a, tex_7.a, tex_8.a), 0.004) * vec4(vColorSecond.bgr, 1.0 - clamp(secondColorSum, 0.0, 1.0));
-        float maxAlpha =max(alphaVec.r, max(alphaVec.g, max(alphaVec.g, alphaVec.a)));
-        vec4 alphaVec2 = clamp(vec4(maxAlpha) - alphaVec, vec4(0.0), vec4(1.0));
+        float maxAlpha = max(alphaVec.r, max(alphaVec.g, max(alphaVec.r, alphaVec.a)));
+        vec4 alphaVec2 = (1.0 - clamp(vec4(maxAlpha) - alphaVec, 0.0, 1.0));
         alphaVec2 = alphaVec2 * alphaVec;
 
         vec4 alphaVec2Normalized = alphaVec2 * (1.0 / dot(alphaVec2, vec4(1.0)));
@@ -269,7 +269,7 @@ void main() {
                         tex_3 * alphaVec2Normalized.g +
                         tex_4 * alphaVec2Normalized.a;
 
-        emissive = texMixed.w * tex_0.rgb * texMixed.rgb;
+        emissive = (texMixed.w * tex_0.rgb) * texMixed.rgb;
         vec3 diffuseColor = vec3(0.0); //Probably is taken from MOMT or somewhere else
         matDiffuse = (diffuseColor - texMixed.rgb) * vColorSecond.a + texMixed.rgb;
     }

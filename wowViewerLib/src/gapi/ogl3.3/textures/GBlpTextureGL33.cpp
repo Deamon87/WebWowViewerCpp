@@ -70,7 +70,7 @@ void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmap
             break;
 
         default:
-            debuglog("Unknown texture format found in file: ")
+            debuglog("Unknown texture format found in file: " + this->m_texture->getTextureName())
             break;
     }
 //    }
