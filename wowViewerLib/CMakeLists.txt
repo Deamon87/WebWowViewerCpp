@@ -26,7 +26,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(LINK_GLEW 0)
 endif()
 if (MSVC)
-    add_compile_definitions(NOMINMAX)
+    add_definitions(-DNOMINMAX)
 endif()
 
 if (CMAKE_NDK_BUILD)
