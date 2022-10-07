@@ -105,7 +105,7 @@ void main() {
        vTexCoord3 = aTexCoord3; //not used
    } else if (uVertexShader == 8) { //MapObjParallax
        vTexCoord = aTexCoord;
-       vTexCoord2 = vPosition.xy * -0.239999995;
+       vTexCoord2 = aTexCoord2;
        vTexCoord3 = aTexCoord3;
    }
 

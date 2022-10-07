@@ -500,8 +500,11 @@ void WmoGroupObject::createMeshes() {
         meshTemplate.texture[2] = texture3;
 
         meshTemplate.textureCount = 9;
-
-        if (pixelShader == (int)WmoPixelShader::MapObjUnkShader) {
+        if (pixelShader == (int)WmoPixelShader::MapObjParallax) {
+            meshTemplate.texture[3] = m_wmoApi->getTexture(material.color_2, false);
+            meshTemplate.texture[4] = m_wmoApi->getTexture(material.flags_2, false);
+            meshTemplate.texture[5] = m_wmoApi->getTexture(material.runTimeData[0], false);
+        } else if (pixelShader == (int)WmoPixelShader::MapObjUnkShader) {
 //            meshTemplate.texture.resize(9);
 //            meshTemplate.textureCount = 9;
 
