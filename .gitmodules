@@ -43,4 +43,4 @@
 	url = https://github.com/Deamon87/DBImporter.git
 [submodule "wowViewerLib/3rdparty/oneTbb"]
 	path = wowViewerLib/3rdparty/oneTbb
-	url = https://github.com/oneapi-src/oneTBB.git
+	url = https://github.com/Deamon87/oneTBBWasm.git

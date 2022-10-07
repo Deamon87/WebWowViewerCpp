@@ -7,6 +7,7 @@
 
 #include "mathHelper.h"
 #if (__AVX__ && __SSE2__)
+#include <functional>
 #include <emmintrin.h>
 #include <immintrin.h>
 #include <xmmintrin.h>
