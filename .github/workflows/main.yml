@@ -75,17 +75,6 @@ jobs:
             generators: "Ninja"
           }
           - {
-            name: "Ubuntu_GCC_9",
-            os: ubuntu-latest,
-            artifact: "ubuntu_gcc9.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "gcc",
-            cxx: "g++",
-            archiver: "7z a",
-            generators: "Ninja"
-          }
-          - {
             name: "macOS Latest Clang",
             os: macos-latest,
             artifact: "macos_clang.7z",

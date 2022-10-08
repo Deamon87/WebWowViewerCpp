@@ -7,6 +7,11 @@
 #include <cmath>
 #include <array>
 
+#if (__AVX__ && __SSE2__)
+#include <emmintrin.h>
+#include <immintrin.h>
+#endif
+
 
 float MathHelper::fp69ToFloat(uint16_t x) {
     float result = (((x & 0x1FF) * 0.001953125f) + (float)(x >> 9));
@@ -25,7 +30,7 @@ mathfu::vec2 MathHelper::convertV69ToV2(vector_2fp_6_9 &fp69) {
     return mathfu::vec2(MathHelper::fp69ToFloat(fp69.x), MathHelper::fp69ToFloat(fp69.y));
 }
 
-CAaBox MathHelper::transformAABBWithMat4(mathfu::mat4 mat4, mathfu::vec4 min, mathfu::vec4 max) {
+CAaBox MathHelper::transformAABBWithMat4(const mathfu::mat4 &mat4, const mathfu::vec4 &min, const mathfu::vec4 &max) {
     //Adapted from http://dev.theomader.com/transform-bounding-boxes/
 
     mathfu::vec4 xa = mathfu::vec4(mat4[0], mat4[1], mat4[2], mat4[3])* min.x;
@@ -58,39 +63,52 @@ CAaBox MathHelper::transformAABBWithMat4(mathfu::mat4 mat4, mathfu::vec4 min, ma
     return CAaBox(bb_min_packed, bb_max_packed);
 }
 
-std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(mathfu::mat4 &mat) {
+std::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const std::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat) {
+    auto newPlanes = std::vector<mathfu::vec4>(planes.size());
+    for (int i = 0; i < planes.size(); i++) {
+        newPlanes[i] = (mat) * planes[i];
+    }
+
+    return newPlanes;
+}
+
+std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::mat4 &mat) {
+
+#define el(x, y) (y-1) + 4*(x - 1)
+
+    //The order of planes is changed to make it easier to get intersections in getIntersectionPointsFromPlanes
+    //And to be in line of how planes are created for portal verticies in portal culling
     std::vector<mathfu::vec4> planes(6);
     // Right clipping plane.
-
-    planes[0] = mathfu::vec4(mat[3] - mat[0],
-                                mat[7] - mat[4],
-                                mat[11] - mat[8],
-                                mat[15] - mat[12]);
-    // Left clipping plane.
-    planes[1] = mathfu::vec4(mat[3] + mat[0],
-                                mat[7] + mat[4],
-                                mat[11] + mat[8],
-                                mat[15] + mat[12]);
-    // Bottom clipping plane.
-    planes[2] = mathfu::vec4(mat[3] + mat[1],
-                                mat[7] + mat[5],
-                                mat[11] + mat[9],
-                                mat[15] + mat[13]);
+    planes[0] = mathfu::vec4(mat[el(1,4)] + mat[el(1,1)],
+                             mat[el(2,4)] + mat[el(2,1)],
+                             mat[el(3,4)] + mat[el(3,1)],
+                             mat[el(4,4)] + mat[el(4,1)]);
     // Top clipping plane.
-    planes[3] = mathfu::vec4(mat[3] - mat[1],
-                                mat[7] - mat[5],
-                                mat[11] - mat[9],
-                                mat[15] - mat[13]);
-    // Far clipping plane.
-    planes[4] = mathfu::vec4(mat[3] - mat[2],
-                                mat[7] - mat[6],
-                                mat[11] - mat[10],
-                                mat[15] - mat[14]);
+    planes[1] = mathfu::vec4(mat[el(1,4)] - mat[el(1,2)],
+                             mat[el(2,4)] - mat[el(2,2)],
+                             mat[el(3,4)] - mat[el(3,2)],
+                             mat[el(4,4)] - mat[el(4,2)]);
+    // Left clipping plane.
+    planes[2] = mathfu::vec4(mat[el(1,4)] - mat[el(1,1)],
+                             mat[el(2,4)] - mat[el(2,1)],
+                             mat[el(3,4)] - mat[el(3,1)],
+                             mat[el(4,4)] - mat[el(4,1)]);
+    // Bottom clipping plane.
+    planes[3] = mathfu::vec4(mat[el(1,4)] + mat[el(1,2)],
+                             mat[el(2,4)] + mat[el(2,2)],
+                             mat[el(3,4)] + mat[el(3,2)],
+                             mat[el(4,4)] + mat[el(4,2)]);
     // Near clipping plane.
-    planes[5] = mathfu::vec4(mat[3] + mat[2],
-                                mat[7] + mat[6],
-                                mat[11] + mat[10],
-                                mat[15] + mat[14]);
+    planes[4] = mathfu::vec4(mat[el(1,4)] + mat[el(1,3)],
+                             mat[el(2,4)] + mat[el(2,3)],
+                             mat[el(3,4)] + mat[el(3,3)],
+                             mat[el(4,4)] + mat[el(4,3)]);
+    // Far clipping plane.
+    planes[5] = mathfu::vec4(mat[el(1,4)] - mat[el(1,3)],
+                             mat[el(2,4)] - mat[el(2,3)],
+                             mat[el(3,4)] - mat[el(3,3)],
+                             mat[el(4,4)] - mat[el(4,3)]);
 
     for (int i = 0; i < 6; i++) {
         //Hand made normalize
@@ -106,13 +124,13 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
 
         static mathfu::vec4 vertices[] = {
                 {-1, -1, -1, 1}, //0
-                {1, -1, -1, 1},  //1
-                {1, -1, 1, 1},   //2
-                {-1, -1, 1, 1},  //3
-                {-1, 1, 1, 1},   //4
-                {1, 1, 1, 1},    //5
-                {1, 1, -1, 1},   //6
-                {-1, 1, -1, 1},  //7
+                {-1,  1, -1, 1}, //1
+                {1,   1, -1, 1}, //2
+                {1,  -1, -1, 1}, //3
+                {-1, -1,  1, 1}, //4
+                {-1,  1,  1, 1}, //5
+                {1,   1,  1, 1}, //6
+                {1,  -1,  1, 1}, //7
         };
 
         std::vector<mathfu::vec3> points(8);
@@ -121,7 +139,7 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
             mathfu::vec4 &vert = vertices[i];
 
             mathfu::vec4 resVec4 = perspectiveViewMatInv * vert;
-            resVec4 = resVec4 * (1/resVec4[3]);
+            resVec4 = resVec4 * (1.0f/resVec4.w);
             //vec4.transformMat4(resVec4, vert, perspectiveViewMat);
 
             points[i] = resVec4.xyz();
@@ -276,13 +294,18 @@ mathfu::vec3 MathHelper::getIntersection( mathfu::vec3 &tail1, mathfu::vec3 &hea
     else return mathfu::vec3(0,0,0);
 }
 
+bool MathHelper::checkFrustum(const MathHelper::FrustumCullingData &frustumData, const CAaBox &box) {
+    return MathHelper::checkFrustum(frustumData.frustums, box);
+}
 
-bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAaBox &box, const std::vector<mathfu::vec3> &points) {
+
+
+
+
+bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box) {
     // check box outside/inside of frustum
-//    mathfu::vec4 boxMin = mathfu::vec4(mathfu::vec3(box.min), 1.0);
-//    mathfu::vec4 boxMax = mathfu::vec4(mathfu::vec3(box.max), 1.0);
 
-    mathfu::vec4 checkedCorners[8] = {
+    ALIGNED_(16) const mathfu::vec4 checkedCorners[8] = {
         mathfu::vec4(box.min.x, box.min.y, box.min.z, 1.0),
         mathfu::vec4(box.max.x, box.min.y, box.min.z, 1.0),
         mathfu::vec4(box.min.x, box.max.y, box.min.z, 1.0),
@@ -292,42 +315,118 @@ bool MathHelper::checkFrustum(const std::vector<mathfu::vec4> &planes, const CAa
         mathfu::vec4(box.min.x, box.max.y, box.max.z, 1.0),
         mathfu::vec4(box.max.x, box.max.y, box.max.z, 1.0)
     };
+    for (auto &planeUndPoints : frustums) {
+        auto const &planes = planeUndPoints.planes;
+        auto const &points = planeUndPoints.points;
+        ALIGNED_(16) uint64_t results[4];
 
-    int num_planes = planes.size();
-    for (int i = 0; i < num_planes; i++) {
-        int out = 0;
 
-        for (int j = 0; j < 8; j++) {
-            out += ((mathfu::vec4::DotProduct(planes[i], checkedCorners[j]) < 0.0) ? 1 : 0);
+        bool result = true;
+        int num_planes = planes.size();
+        for (int i = 0; i < num_planes; i++) {
+            int out = 0;
+#if (__AVX__ && __SSE2__)
+            __m128 zeros = _mm_setzero_ps();
+            __m128 plane = _mm_load_ps(planes[i].data_);
+
+            for (int k = 0; k < 2; k++)
+            {
+                __m128 prod0 = _mm_mul_ps(plane, _mm_load_ps(checkedCorners[k*4 + 0].data_));
+                __m128 prod1 = _mm_mul_ps(plane, _mm_load_ps(checkedCorners[k*4 + 1].data_));
+                __m128 prod2 = _mm_mul_ps(plane, _mm_load_ps(checkedCorners[k*4 + 2].data_));
+                __m128 prod3 = _mm_mul_ps(plane, _mm_load_ps(checkedCorners[k*4 + 3].data_));
+
+                //Transpose
+                //1   2  3  4
+                //5   6  7  8
+                //9  10 11 12
+                //13 14 15 16
+
+                __m128 row_per0 = _mm_shuffle_ps(prod0, prod1, _MM_SHUFFLE(1, 0, 1, 0)); // 1 2 5 6
+                __m128 row_per1 = _mm_shuffle_ps(prod0, prod1, _MM_SHUFFLE(3, 2, 3, 2)); // 3 4 7 8
+                __m128 row_per2 = _mm_shuffle_ps(prod2, prod3, _MM_SHUFFLE(1, 0, 1, 0)); // 9 10 13 14
+                __m128 row_per3 = _mm_shuffle_ps(prod2, prod3, _MM_SHUFFLE(3, 2, 3, 2));  // 11 12 15 16
+
+                __m128 row_1 = _mm_shuffle_ps(row_per0, row_per2, _MM_SHUFFLE(2, 0, 2, 0));// 1 5 9 13
+                __m128 row_2 = _mm_shuffle_ps(row_per0, row_per2, _MM_SHUFFLE(3, 1, 3, 1));// 2 6 10 14
+                __m128 row_3 = _mm_shuffle_ps(row_per1, row_per3, _MM_SHUFFLE(2, 0, 2, 0));// 3 7 11 15
+                __m128 row_4 = _mm_shuffle_ps(row_per1, row_per3, _MM_SHUFFLE(3, 1, 3, 1));// 4 8 12 16
+
+                __m128 dotResults = _mm_add_ps(_mm_add_ps(_mm_add_ps(row_1, row_2), row_3), row_4);
+
+#if 0
+                //Debug check
+                _MM_ALIGN16 float dotResultsF[4];
+                float dotResultsCalc[4];
+                _mm_store_ps(dotResultsF, dotResults);
+                for (int j = 0; j < 4; j++) {
+                    dotResultsCalc[j] = mathfu::vec4::DotProduct(planes[i], checkedCorners[k*4 + j]) ;
+                }
+
+                for (int j = 0; j < 4; j++)
+                    if (dotResultsCalc[j] != dotResultsF[j]) {
+                        printf("error");
+                    }
+#endif
+
+                _mm_store_si128((__m128i *)&results[k*2], (__m128i)_mm_cmpgt_ps(zeros, dotResults));
+            }
+
+            if (results[0] == 0xFFFFFFFFFFFFFFFF &&
+                results[1] == 0xFFFFFFFFFFFFFFFF &&
+                results[2] == 0xFFFFFFFFFFFFFFFF &&
+                results[3] == 0xFFFFFFFFFFFFFFFF) {
+                result = false;
+            }
+
+            if (!result)
+                continue;
+
+#else
+            for (int j = 0; j < 8; j++) {
+                out += ((mathfu::vec4::DotProduct(planes[i], checkedCorners[j]) < 0.0) ? 1 : 0);
+            }
+
+            if (out == 8) {
+                result = false;
+                break;
+            }
+#endif
         }
 
-        if (out == 8) return false;
-    }
+        //So that we can add additional checks down the line
+        if (!result) continue;
 
 //     check frustum outside/inside box
-    if (points.size() > 0) {
-        int out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x > box.max.x) ? 1 : 0); if (out == 8) return false;
-            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x < box.min.x) ? 1 : 0); if (out == 8) return false;
-            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y > box.max.y) ? 1 : 0); if (out == 8) return false;
-            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y < box.min.y) ? 1 : 0); if (out == 8) return false;
-            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z > box.max.z) ? 1 : 0); if (out == 8) return false;
-            out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z < box.min.z) ? 1 : 0); if (out == 8) return false;
+//        if (points.size() > 0) {
+//            int out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x > box.max.x) ? 1 : 0); if (out == 8) continue;
+//                out = 0; for (int i = 0; i < 8; i++) out += ((points[i].x < box.min.x) ? 1 : 0); if (out == 8) continue;
+//                out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y > box.max.y) ? 1 : 0); if (out == 8) continue;
+//                out = 0; for (int i = 0; i < 8; i++) out += ((points[i].y < box.min.y) ? 1 : 0); if (out == 8) continue;
+//                out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z > box.max.z) ? 1 : 0); if (out == 8) continue;
+//                out = 0; for (int i = 0; i < 8; i++) out += ((points[i].z < box.min.z) ? 1 : 0); if (out == 8) continue;
+//        }
+        return true;
     }
 
-    return true;
+    return false;
 }
 
-bool MathHelper::checkFrustum2D(std::vector<mathfu::vec3> &planes, CAaBox &box) {
+bool MathHelper::checkFrustum2D(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box) {
 
     //var maxLines = window.lines != null ? window.lines : 1;
     //for (var i = 0; i < Math.min(num_planes, maxLines); i++) {
-    for (int i = 0; i < planes.size(); i++) {
-        int out = 0;
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.min.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.min.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        out += (((planes[i][0]*box.max.x+ planes[i][1]*box.max.y+ planes[i][2]) > 0.0 ) ? 1 : 0);
-        if (out == 4) return false;
+    for (auto &planeUndPoints : frustums) {
+        auto const &planes = planeUndPoints.hullLines;
+
+        for (int i = 0; i < planes.size(); i++) {
+            int out = 0;
+            out += (((planes[i][0] * box.min.x + planes[i][1] * box.min.y + planes[i][2]) > 0.0) ? 1 : 0);
+            out += (((planes[i][0] * box.max.x + planes[i][1] * box.min.y + planes[i][2]) > 0.0) ? 1 : 0);
+            out += (((planes[i][0] * box.min.x + planes[i][1] * box.max.y + planes[i][2]) > 0.0) ? 1 : 0);
+            out += (((planes[i][0] * box.max.x + planes[i][1] * box.max.y + planes[i][2]) > 0.0) ? 1 : 0);
+            if (out == 4) return false;
+        }
     }
 
     return true;
@@ -605,8 +704,8 @@ int areIntersecting(
 bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points) {
     if (!MathHelper::isPointInsideAABB(aabb, p)) return false;
 
-    //Select point ouside of convex;
-    mathfu::vec2 outPnt = mathfu::vec2(aabb.max.x+10, aabb.max.y+10);
+    //Select point outside of convex;
+    mathfu::vec2 outPnt = mathfu::vec2(aabb.max.x+1000, aabb.max.y+1000);
 
     int intersections = 0;
     for (int i = 0; i < points.size() - 1; i++) {
@@ -807,4 +906,35 @@ MathHelper::hsv MathHelper::rgb2hsv(mathfu::vec3 in) {
         out.h += 360.0;
 
     return out;
+}
+
+std::vector<mathfu::vec3>
+MathHelper::getIntersectionPointsFromPlanes(const std::vector<mathfu::vec4> &planes) {
+    std::vector<mathfu::vec3> points;
+    //For far and near plane
+    for (int x = planes.size()-2; x < planes.size(); x++) {
+        //Look for intersection for of any two planes other planes with two planes above
+        for (int y = 0; y < planes.size()-3; y++) {
+//        for (int z = y+1; z < planes.size()-2; z++)
+            int z = y + 1;
+            {
+                mathfu::mat3 mat = {
+                    planes[x].x, planes[x].y, planes[x].z,
+                    planes[y].x, planes[y].y, planes[y].z,
+                    planes[z].x, planes[z].y, planes[z].z
+                };
+                mat = mat.Transpose();
+                mathfu::mat3 inverseMat;
+                if (mat.InverseWithDeterminantCheck(&inverseMat)) {
+                    mathfu::vec3 point = inverseMat * mathfu::vec3(
+                        -planes[x].w,
+                        -planes[y].w,
+                        -planes[z].w);
+
+                    points.push_back(point);
+                }
+            }
+        }
+    }
+    return points;
 }

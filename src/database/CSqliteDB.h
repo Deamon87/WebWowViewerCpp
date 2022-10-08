@@ -65,17 +65,22 @@ private:
     StatementFieldHolder getMapList;
     StatementFieldHolder getMapByIdStatement;
 
+    bool getHasLiquidTypeXTexture(SQLite::Database &sqliteDatabase) {
+        bool m_hasLiquidTypeXTexture = sqliteDatabase.tableExists("LiquidTypeXTexture") ? 1 : 0;
 
-    bool m_isClassic = false;
-    bool m_isClassicChecked = false;
+        return m_hasLiquidTypeXTexture;
+    }
 
-    bool getIsClassic() {
-        if (!m_isClassicChecked) {
-            m_isClassic = !m_sqliteDatabase.tableExists("LiquidTypeXTexture");
-            m_isClassicChecked = true;
+    bool getHasWDTId(SQLite::Database &sqliteDatabase) {
+        bool m_hasWdtId;
+        try {
+            sqliteDatabase.execAndGet("select WdtFileDataID from Map");
+            m_hasWdtId = true;
+        } catch (...) {
+            m_hasWdtId = false;
         }
 
-        return m_isClassic;
+        return m_hasWdtId;
     }
 
     struct InnerLightResult {

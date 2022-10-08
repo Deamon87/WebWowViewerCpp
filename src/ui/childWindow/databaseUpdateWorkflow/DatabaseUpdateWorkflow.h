@@ -11,23 +11,20 @@
 
 class DatabaseUpdateWorkflow {
 public:
-    DatabaseUpdateWorkflow(std::shared_ptr<WoWFilesCacheStorage> storage, bool isClassic);
+    DatabaseUpdateWorkflow(HApiContainer &api, bool isClassic);
 
     void render();
     bool isDatabaseUpdated() { return m_databaseUpdated;};
 private:
     //Showing elements state.
     bool m_showDBDPrompt = true;
-
-
-
     bool m_needToUpdateDBD = false;
     bool m_needToUpdateDatabase = false;
     bool m_showOkModal = false;
     bool m_databaseUpdated = false;
 
 private:
-    std::shared_ptr<WoWFilesCacheStorage> m_storage;
+    HApiContainer m_api;
     bool m_isClassic = false;
 
     void defineDialogs();
@@ -48,7 +45,6 @@ private:
     std::function<bool(std::string, std::shared_ptr<Db2File>)> addTableLambda = nullptr;
     bool m_db2ThreadFinished = true;
     std::string m_db2FailedMessage = "";
-
 };
 
 

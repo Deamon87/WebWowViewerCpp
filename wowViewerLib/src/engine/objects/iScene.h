@@ -8,7 +8,6 @@
 #include "mathfu/glsl_mappings.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "../DrawStage.h"
-#include "wowFrameData.h"
 #include "../SceneScenario.h"
 #include "../../exporters/IExporter.h"
 

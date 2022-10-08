@@ -71,7 +71,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
                     frameCounter.beginMeasurement();
                     DoCulling();
-                    frameCounter.endMeasurement("Culling thread ");
+                    frameCounter.endMeasurement();
                     m_apiContainer->getConfig()->cullingTimePerFrame = frameCounter.getTimePerFrame();
 
                     this->cullingFinished.set_value(true);
@@ -102,7 +102,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
                         frameCounter.beginMeasurement();
                         DoUpdate();
-                        frameCounter.endMeasurement("Update thread ");
+                        frameCounter.endMeasurement();
 
                         m_apiContainer->getConfig()->updateTimePerFrame = frameCounter.getTimePerFrame();
 
@@ -181,7 +181,7 @@ void SceneComposer::DoUpdate() {
         updateStage->cullResult->scene->produceUpdateStage(updateStage);
     }
     logExecution
-    singleUpdateCNT.endMeasurement("single update ");
+    singleUpdateCNT.endMeasurement();
     logExecution
     meshesCollectCNT.beginMeasurement();
     logExecution
@@ -197,7 +197,7 @@ void SceneComposer::DoUpdate() {
     logExecution
     collectMeshes(frameScenario->getDrawStage(), meshes);
     logExecution
-    meshesCollectCNT.endMeasurement("collectMeshes ");
+    meshesCollectCNT.endMeasurement();
     logExecution
 
     updateBuffersCNT.beginMeasurement();
@@ -207,7 +207,7 @@ void SceneComposer::DoUpdate() {
         updateStage->cullResult->scene->updateBuffers(updateStage);
         logExecution
     }
-    updateBuffersCNT.endMeasurement("");
+    updateBuffersCNT.endMeasurement();
     logExecution
 
     updateBuffersDeviceCNT.beginMeasurement();
@@ -223,7 +223,7 @@ void SceneComposer::DoUpdate() {
     logExecution
     device->updateBuffers(uniformChunkVec, frameDepDataVec);
     logExecution
-    updateBuffersDeviceCNT.endMeasurement("");
+    updateBuffersDeviceCNT.endMeasurement();
     logExecution
     postLoadCNT.beginMeasurement();
     for (auto cullStage : frameScenario->cullStages) {
@@ -231,13 +231,13 @@ void SceneComposer::DoUpdate() {
         cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
         logExecution
     }
-    postLoadCNT.endMeasurement("");
+    postLoadCNT.endMeasurement();
     logExecution
     textureUploadCNT.beginMeasurement();
     logExecution
     device->uploadTextureForMeshes(meshes);
     logExecution
-    textureUploadCNT.endMeasurement("");
+    textureUploadCNT.endMeasurement();
 
     drawStageAndDepsCNT.beginMeasurement();
     if (device->getIsVulkanAxisSystem()) {
@@ -245,12 +245,12 @@ void SceneComposer::DoUpdate() {
             m_apiContainer->hDevice->drawStageAndDeps(frameScenario->getDrawStage());
         }
     }
-    drawStageAndDepsCNT.endMeasurement("");
+    drawStageAndDepsCNT.endMeasurement();
     logExecution
     endUpdateCNT.beginMeasurement();
     device->endUpdateForNextFrame();
     logExecution
-    endUpdateCNT.endMeasurement("");
+    endUpdateCNT.endMeasurement();
     logExecution
 
     auto config = m_apiContainer->getConfig();

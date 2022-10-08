@@ -14,8 +14,8 @@
 
 class WmoGroupGeom : public PersistentFile {
 public:
-    WmoGroupGeom(std::string fileName){};
-    WmoGroupGeom(int fileDataId){};
+    WmoGroupGeom(std::string fileName){m_fileName = fileName;};
+    WmoGroupGeom(int fileDataId){ m_fileDataId = fileDataId;};
 
     void process(HFileContent wmoGroupFile, const std::string &fileName) override;
 
@@ -28,6 +28,9 @@ public:
 
     HGVertexBufferBindings getVertexBindings(const HGDevice &device);
     HGVertexBufferBindings getWaterVertexBindings(const HGDevice &device);
+
+    int getFileDataId() const {return m_fileDataId;}
+    const std::string &getFileName() const {return m_fileName;}
 private:
     int normalOffset = 0;
     int textOffset = 0;
@@ -42,6 +45,9 @@ private:
     HGVertexBuffer getVBO(const HGDevice &device);
     HGIndexBuffer getIBO(const HGDevice &device);
 public:
+    std::string m_fileName = "";
+    int m_fileDataId = 0;
+
     HFileContent m_wmoGroupFile;
 
     SMOHeader *mohd = nullptr;
@@ -55,7 +61,7 @@ public:
     int mopyLen = 0;
 
     PointerChecker<C3Vector> verticles = (verticesLen);
-    int verticesLen;
+    int verticesLen = 0;
 
     PointerChecker<C3Vector> normals = (normalsLen);
     int normalsLen = 0;
@@ -70,12 +76,18 @@ public:
     PointerChecker<C2Vector> textCoords3 = (textureCoordsLen3);
     int textureCoordsLen3 = 0;
 
+    PointerChecker<C2Vector> textCoords4 = (textureCoordsLen4);
+    int textureCoordsLen4 = 0;
+
     PointerChecker<CImVector> colorArray = cvLen;
     int cvLen = 0;
 
     PointerChecker<CImVector> colorArray2 = cvLen2;
     int cvLen2 = 0;
     int mocvRead = 0;
+
+    PointerChecker<CImVector> colorSecondArray = cvSecondLen;
+    int cvSecondLen = 0;
 
     PointerChecker<uint16_t> doodadRefs = (doodadRefsLen);
     int doodadRefsLen = 0;

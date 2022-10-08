@@ -25,7 +25,9 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     set(LINK_OGL2 0)
     set(LINK_GLEW 0)
 endif()
-
+if (MSVC)
+    add_definitions(-DNOMINMAX)
+endif()
 
 if (CMAKE_NDK_BUILD)
     set(LINK_GLEW 0)
@@ -67,9 +69,17 @@ set(My_Vectorize_Compile_Options "")
 
 message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
+if (NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+endif ()
 
-SET(TBB_BUILD_SHARED 0)
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb EXCLUDE_FROM_ALL)
+SET(TBB_STRICTTBB_BUILD_SHARED 0)
+SET(TBB_STRICT OFF CACHE BOOL "")
+SET(TBB_TEST 0 CACHE BOOL "")
+if (EMSCRIPTEN)
+    add_definitions("-D__TBB_RESUMABLE_TASKS_USE_THREADS")
+endif ()
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -263,7 +273,6 @@ set(SOURCE_FILES
         src/gapi/IDeviceFactory.cpp
         src/gapi/interface/meshes/IParticleMesh.h
         src/gapi/interface/syncronization/IGPUFence.h
-        src/engine/objects/wowFrameData.h
         src/engine/engineClassList.h
         src/engine/camera/planarCamera.cpp
         src/engine/camera/planarCamera.h
@@ -307,10 +316,14 @@ set(SOURCE_FILES
         src/include/string_utils.h
         src/include/string_utlis.cpp
         src/engine/persistance/db2File.cpp
-        src/engine/persistance/db2File.h)
+        src/engine/persistance/db2File.h
+        src/engine/algorithms/mathHelper_culling_sse.cpp
+        src/engine/algorithms/mathHelper_culling_sse.h
+        src/engine/algorithms/mathHelper_culling.cpp
+        src/engine/algorithms/mathHelper_culling.h)
 
 if (LINK_OGL2)
-set(OPENGL20_IMPLEMENTATION
+    set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
         src/gapi/ogl2.0/textures/GBlpTextureGL20.h
         src/gapi/ogl2.0/buffers/GVertexBufferDynamicGL20.cpp
@@ -506,7 +519,6 @@ if (LINK_VULKAN)
                 set(VULKAN_IMPLEMENTATION "")
             ENDIF()
         ENDIF()
-        find_package(Threads REQUIRED)
     ENDIF()
 
     if (LINK_VULKAN)
@@ -574,7 +586,10 @@ if (LINK_OPENMP)
 endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
-target_link_libraries(WoWViewerLib tbb_static)
+target_link_libraries(WoWViewerLib TBB::tbb )
+if (UNIX AND NOT EMSCRIPTEN)
+target_link_libraries(WoWViewerLib Threads::Threads)
+endif()
 #target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
 
 if (WIN32)

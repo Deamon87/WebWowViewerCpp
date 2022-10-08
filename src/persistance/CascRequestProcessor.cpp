@@ -46,7 +46,7 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
 
     m_cascDir = path;
     if (!buildDef.productName.empty()) {
-        path = path + ":"+buildDef.productName+":"+buildDef.region+":"+buildDef.buildConfig;
+        path = path + "*"+buildDef.productName+"**"+buildDef.region;
     }
 
     uint32_t localMask = 0xFFFFFFFF;

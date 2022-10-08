@@ -135,19 +135,19 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
 
     getLightData(m_sqliteDatabase, lightDataSQL),
     getLiquidObjectInfo(m_sqliteDatabase,
-  getIsClassic() ? liquidObjectInfoSQL_classic : liquidObjectInfoSQL
+        getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidObjectInfoSQL : liquidObjectInfoSQL_classic
     ),
     getLiquidTypeInfo(m_sqliteDatabase,
-        getIsClassic() ? liquidTypeSQL_classic : liquidTypeSQL
+        getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidTypeSQL : liquidTypeSQL_classic
     ),
     getZoneLightInfo(m_sqliteDatabase,
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
     ),
     getZoneLightPointsInfo(m_sqliteDatabase,
-        "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder;"
+        "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder DESC;"
     ),
-    getMapList(m_sqliteDatabase, !getIsClassic() ? getMapListSQL : getMapListSQL_classic),
-    getMapByIdStatement(m_sqliteDatabase, !getIsClassic() ? getMapByIDSQL : getMapByIDSQL_classic)
+    getMapList(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapListSQL : getMapListSQL_classic),
+    getMapByIdStatement(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapByIDSQL : getMapByIDSQL_classic)
 {
     char *sErrMsg = "";
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
@@ -245,13 +245,13 @@ AreaRecord CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId) {
 
 template <int T>
 float getFloatFromInt(int value) {
-    if (T == 0) {
+    if constexpr (T == 0) {
         return (value & 0xFF) / 255.0f;
     }
-    if (T == 1) {
+    if constexpr (T == 1) {
         return ((value >> 8) & 0xFF) / 255.0f;
     }
-    if (T == 2) {
+    if constexpr (T == 2) {
         return ((value >> 16) & 0xFF) / 255.0f;
     }
 }
@@ -276,7 +276,7 @@ void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlpha
                                     getFloatFromInt<2>(lastLdRes) *
                                     (1.0f - timeAlphaBlend)) * innerAlpha;
 }
-void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
+inline void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<0>(lastLdRes) *
                   (1.0f - timeAlphaBlend)) * innerAlpha;
@@ -288,23 +288,23 @@ void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, 
                   (1.0f - timeAlphaBlend)) * innerAlpha;
 }
 
-void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, float timeAlphaBlend, float innerAlpha) {
+inline void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF += (currLdRes * timeAlphaBlend + lastLdRes * (1.0f - timeAlphaBlend)) * innerAlpha;
 }
 
-void addOnlyOne(float *colorF, int currLdRes, float innerAlpha) {
+inline void addOnlyOne(float *colorF, int currLdRes, float innerAlpha) {
     colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
     colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
     colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
 }
 
-void addOnlyOne(std::array<float, 3> &colorF, int currLdRes, float innerAlpha) {
+inline void addOnlyOne(std::array<float, 3> &colorF, int currLdRes, float innerAlpha) {
     colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
     colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
     colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
 }
 
-void addOnlyOne(float &colorF, float currLdRes, float innerAlpha) {
+inline void addOnlyOne(float &colorF, float currLdRes, float innerAlpha) {
     colorF += currLdRes * innerAlpha;
 }
 void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {

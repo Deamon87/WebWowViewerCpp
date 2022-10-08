@@ -19,7 +19,7 @@ struct BuildDefinition {
         return
             (buildVersion == value.buildVersion) &&
             (buildConfig == value.buildConfig) &&
-            (region == value.region);
+            (region == value.region) &&
             (productName == value.productName);
     }
 };

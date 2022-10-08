@@ -90,7 +90,6 @@ if (TRUE)
 	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
 
-	set(ZLIB_LIBRARY "$<TARGET_FILE:zlibstatic>" CACHE BOOL "")
 endif()
 
 
@@ -327,7 +326,7 @@ endif()
 target_link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
-target_link_libraries(AWebWoWViewerCpp zlibstatic)
+#target_link_libraries(AWebWoWViewerCpp zlibstatic)
 target_link_libraries(AWebWoWViewerCpp libprotobuf-lite)
 
 

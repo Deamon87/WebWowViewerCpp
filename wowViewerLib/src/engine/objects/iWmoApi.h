@@ -17,6 +17,14 @@ struct PortalInfo_t {
     CAaBox aaBox;
 };
 
+struct WmoGroupResult {
+    M2Range topBottom;
+    int groupIndex;
+    int WMOGroupID;
+    std::vector<int> bspLeafList;
+    int nodeId;
+};
+
 class IWmoApi {
 public:
     virtual std::shared_ptr<M2Object> getDoodad(int index) = 0;

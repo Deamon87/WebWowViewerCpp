@@ -241,8 +241,8 @@ typedef std::shared_ptr<IDevice> HGDevice;
 
 #include <cassert>
 
-#define _DEBUG
-#ifdef _DEBUG
+#define IDEVICE_DEBUG
+#ifdef IDEVICE_DEBUG
 #define TEST(expr) do { \
             if(!(expr)) { \
                 assert(0 && #expr); \

@@ -13,7 +13,7 @@ class FrameCounter {
 public:
     FrameCounter(){};
     void beginMeasurement();
-    void endMeasurement(const std::string &source);
+    void endMeasurement();
 
     double getTimePerFrame() {
         return timePerFrame;

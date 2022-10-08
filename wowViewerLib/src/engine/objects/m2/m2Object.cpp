@@ -833,25 +833,54 @@ void M2Object::debugDumpAnimationSequences() {
 
 }
 
-//Returns true when it finished loading
-bool M2Object::doPostLoad(){
+void M2Object::doLoadMainFile(){
+    if (!this->m_loaded && !this->m_loading) {
+        this->startLoading();
+    }
+
+    if (m_m2Geom == nullptr) return;
+    if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return;
+    this->createAABB();
+}
+
+void M2Object:: doLoadGeom(){
     //0. If loading procedures were already done - exit
-    if (this->m_loaded) return false;
+    if (this->m_loaded) return;
 
     //1. Check if .m2 files is loaded
-    if (m_m2Geom == nullptr) return false;
-    if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
-    this->createAABB();
+    if (m_m2Geom == nullptr) return;
+    if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return;
 
-    if (m_skinGeom == nullptr || m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
-    if (m_m2Geom->m_skid > 0 && (m_skelGeom == nullptr || m_skelGeom->getStatus() != FileStatus::FSLoaded)) {
-        return false;
+
+    if (m_skinGeom == nullptr) {
+        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
+        if (m_m2Geom->skinFileDataIDs.size() > 0) {
+            assert(m_m2Geom->skinFileDataIDs.size() > 0);
+            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
+        } else if (!useFileId){
+            assert(m_nameTemplate.size() > 0);
+            std::string skinFileName = m_nameTemplate + "00.skin";
+            m_skinGeom = skinGeomCache->get(skinFileName);
+        }
+        return;
     }
-    if (m_m2Geom->m_skid > 0 && m_skelGeom->getStatus() == FileStatus::FSLoaded &&
-        m_skelGeom->m_skpd!= nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0 && (
-            m_parentSkelGeom == nullptr || m_parentSkelGeom->getStatus() != FileStatus::FSLoaded
-        )) {
-        return false;
+    if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return;
+
+    if (m_m2Geom->m_skid > 0) {
+        auto skelCache = m_api->cacheStorage->getSkelCache();
+        if (m_skelGeom == nullptr) {
+            auto skelCache = m_api->cacheStorage->getSkelCache();
+            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
+            return;
+        }
+        if (m_skelGeom->getStatus() == FileStatus::FSLoaded && m_parentSkelGeom == nullptr) {
+            if (m_skelGeom->m_skpd != nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0) {
+                m_parentSkelGeom = skelCache->getFileId(m_skelGeom->m_skpd->parent_skel_file_id);
+                return;
+            }
+        }
+        if (m_parentSkelGeom != nullptr && m_parentSkelGeom->getStatus() != FileStatus::FSLoaded)
+            return;
     }
 
     //3. Do post load procedures
@@ -873,6 +902,7 @@ bool M2Object::doPostLoad(){
 
 
     this->m_loaded = true;
+    this->m_geomLoaded = true;
     this->m_loading = false;
 
     for ( auto &item : m_postLoadEvents) {
@@ -880,7 +910,7 @@ bool M2Object::doPostLoad(){
     }
     m_postLoadEvents.clear();
 
-    return true;
+    return;
 }
 //deltaTime = miliseconds
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
@@ -991,56 +1021,14 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat) {
     }
 }
 
-bool M2Object::isGeomReqFilesLoaded() {
-    if (!this->isMainDataLoaded()) return false;
-
-    if (m_skinGeom == nullptr) {
-        Cache<SkinGeom> *skinGeomCache = m_api->cacheStorage->getSkinGeomCache();
-        if (m_m2Geom->skinFileDataIDs.size() > 0) {
-            assert(m_m2Geom->skinFileDataIDs.size() > 0);
-            m_skinGeom = skinGeomCache->getFileId(m_m2Geom->skinFileDataIDs[0]);
-        } else if (!useFileId){
-            assert(m_nameTemplate.size() > 0);
-            std::string skinFileName = m_nameTemplate + "00.skin";
-            m_skinGeom = skinGeomCache->get(skinFileName);
-        }
-        return false;
-    }
-    if (m_skinGeom->getStatus() != FileStatus::FSLoaded) return false;
-
-    if (m_m2Geom->m_skid > 0) {
-        auto skelCache = m_api->cacheStorage->getSkelCache();
-        if (m_skelGeom == nullptr) {
-            auto skelCache = m_api->cacheStorage->getSkelCache();
-            m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
-            return false;
-        }
-        if (m_skelGeom->getStatus() == FileStatus::FSLoaded && m_parentSkelGeom == nullptr) {
-            if (m_skelGeom->m_skpd != nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0) {
-                m_parentSkelGeom = skelCache->getFileId(m_skelGeom->m_skpd->parent_skel_file_id);
-                return false;
-            }
-        }
-        if (m_parentSkelGeom != nullptr && m_parentSkelGeom->getStatus() != FileStatus::FSLoaded)
-            return false;
-    }
-
-    return true;
-}
-
 bool M2Object::isMainDataLoaded() {
-    if (!this->m_loaded && !this->m_loading) {
-        this->startLoading();
-    }
     if (m_m2Geom == nullptr) return false;
     if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
 
     return true;
 }
 
-const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const std::vector<mathfu::vec4> &frustumPlanes, const std::vector<mathfu::vec3> &frustumPoints) {
-    m_cullResult = false;
-
+const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const MathHelper::FrustumCullingData &frustumData) {
     if (!this->m_hasAABB) {
         if (!this->isMainDataLoaded()) return false;
 
@@ -1052,7 +1040,6 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
     }
 
     if (m_alwaysDraw) {
-        m_cullResult = true;
         return true;
     }
     if (m_boolSkybox ) {
@@ -1067,13 +1054,11 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const s
         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y &&
         cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
     ) {
-        m_cullResult = true;
         return true;
     }
 
     //2. Check aabb is inside camera frustum
-    bool result = MathHelper::checkFrustum(frustumPlanes, aabb, frustumPoints);
-    m_cullResult = result;
+    bool result = MathHelper::checkFrustum(frustumData, aabb);
     return result;
 }
 
@@ -1567,8 +1552,6 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
-    if (!this->isGeomReqFilesLoaded()) return;
-
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;

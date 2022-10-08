@@ -146,6 +146,7 @@ void FrontendUI::showCurrentStatsDialog() {
                 ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
                             debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
             }
+            ImGui::Separator();
         }
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
@@ -171,17 +172,46 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
             ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
             ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
+
+            ImGui::Text("Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
+            ImGui::Text("Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
+            ImGui::Text("Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
+            ImGui::Text("Elapsed time on cullUpdateLightsFromDBCounter: %.3f ms", m_api->getConfig()->cullUpdateLightsFromDBCounter);
+            ImGui::Text("Elapsed time on cullExterior: %.3f ms", m_api->getConfig()->cullExterior);
+            ImGui::Text("Elapsed time on cullExteriorWDLCull: %.3f ms", m_api->getConfig()->cullExteriorWDLCull);
+            ImGui::Text("Elapsed time on cullExteriorSetDecl: %.3f ms", m_api->getConfig()->cullExteriorSetDecl);
+            ImGui::Text("Elapsed time on cullExteriorGetCands: %.3f ms", m_api->getConfig()->cullExteriorGetCands);
+            ImGui::Text("Elapsed time on cullExterioFrustumWMO: %.3f ms", m_api->getConfig()->cullExterioFrustumWMO);
+            ImGui::Text("Elapsed time on cullExterioFrustumM2: %.3f ms", m_api->getConfig()->cullExterioFrustumM2);
+            ImGui::Text("Elapsed time on cullSkyDoms: %.3f ms", m_api->getConfig()->cullSkyDoms);
+            ImGui::Text("Elapsed time on cullCombineAllObjects: %.3f ms", m_api->getConfig()->cullCombineAllObjects);
+            ImGui::Separator();
         }
 
         int currentFrame = m_api->hDevice->getDrawFrameNumber();
         auto &cullStageData = m_cullstages[currentFrame];
 
-        if (ImGui::CollapsingHeader("Objects Drawn")) {
-            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
-            int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
+        if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
+            int m2ObjectsBeforeCullingExterior = 0;
+            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
+            }
+
+            int wmoGroupsInExterior = 0;
+            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
+            }
+
+            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
+            int wmoObjectsBeforeCull = cullStageData!= nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
 
             ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
-            ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+            ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
+            ImGui::Text("Interiors (aka group WMOs): %s", std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
+            ImGui::Text("M2 Objects Before Culling in Exterior: %s", std::to_string(m2ObjectsBeforeCullingExterior).c_str());
+            ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
+
+            ImGui::Separator();
         }
 
         if (ImGui::CollapsingHeader("Current fog params")) {
@@ -215,6 +245,7 @@ void FrontendUI::showCurrentStatsDialog() {
                             cullStageData->frameDepedantData->FogHeightCoefficients.x,
                             cullStageData->frameDepedantData->FogHeightCoefficients.y,
                             cullStageData->frameDepedantData->FogHeightCoefficients.z);
+                ImGui::Separator();
             }
         }
 
@@ -484,7 +515,7 @@ void FrontendUI::showMainMenu() {
             ImGui::Separator();
             if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
                 m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(
-                        m_api->cacheStorage,
+                        m_api,
                         contains(fileDialog.getProductBuild().productName, "classic")
                     );
             }
@@ -1213,11 +1244,9 @@ void FrontendUI::showSettingsDialog() {
         }
 
 
-//        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
-//            if (setThreadCount){
-//                setThreadCount(threadCount);
-//            }
-//        }
+        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
+            m_api->getConfig()->threadCount = threadCount;
+        }
 //        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
 //            if (setQuicksortCutoff){
 //                setQuicksortCutoff(quickSortCutoff);

@@ -159,6 +159,19 @@ public:
     double drawStageAndDepsCNT = 0;
     double endUpdateCNT = 0;
 
+    double cullCreateVarsCounter = 0;
+    double cullGetCurrentWMOCounter = 0;
+    double cullGetCurrentZoneCounter = 0;
+    double cullUpdateLightsFromDBCounter = 0;
+    double cullExterior = 0;
+    double cullExteriorSetDecl = 0;
+    double cullExteriorWDLCull = 0;
+    double cullExteriorGetCands = 0;
+    double cullExterioFrustumWMO = 0;
+    double cullExterioFrustumM2 = 0;
+    double cullSkyDoms = 0;
+    double cullCombineAllObjects = 0;
+
     HRiverColorOverrideHolder colorOverrideHolder = nullptr;
 };
 
