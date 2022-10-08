@@ -302,12 +302,12 @@ void main() {
         vec4 alphaVec2Normalized = alphaVec2 * (1.0 / dot(alphaVec2, vec4(1.0)));
 
         vec4 texMixed = tex_2 * alphaVec2Normalized.r +
-                        tex_3 * alphaVec2Normalized.b +
-                        tex_4 * alphaVec2Normalized.g +
+                        tex_3 * alphaVec2Normalized.g +
+                        tex_4 * alphaVec2Normalized.b +
                         tex_5 * alphaVec2Normalized.a;
 
         emissive = (texMixed.w * tex_1.rgb) * texMixed.rgb;
-        vec3 diffuseColor = vec3(0.0); //Probably is taken from MOMT or somewhere else
+        vec3 diffuseColor = vec3(0,0,0); //<= it's unknown where this color comes from. But it's not MOMT chunk
         matDiffuse = (diffuseColor - texMixed.rgb) * vColorSecond.a + texMixed.rgb;
     }
 
