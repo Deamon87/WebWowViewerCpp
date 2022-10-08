@@ -937,8 +937,10 @@ void WmoObject::addSplitChildWMOsToView(InteriorView &interiorView, int groupId)
     int nextChildGroupIndex = parentMogp->parentSplitOrFirstChildGroupIndex;
     while (nextChildGroupIndex != -1) {
         auto &groupWmo = groupObjects[nextChildGroupIndex];
-        if (!groupWmo->getIsLoaded())
+        if (!groupWmo->getIsLoaded()) {
+            interiorView.wmoGroupArray.addToLoad(groupWmo);
             return;
+        }
 
         auto &mogp = groupWmo->getWmoGroupGeom()->mogp;
         if (!mogp->flags2.isSplitGroupChild)
