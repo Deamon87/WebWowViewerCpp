@@ -75,6 +75,10 @@ endif ()
 
 SET(TBB_STRICTTBB_BUILD_SHARED 0)
 SET(TBB_STRICT OFF CACHE BOOL "")
+SET(TBB_TEST 0 CACHE BOOL "")
+if (EMSCRIPTEN)
+    add_definitions("-D__TBB_RESUMABLE_TASKS_USE_THREADS")
+endif ()
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)

@@ -243,10 +243,10 @@ void main() {
         finalOpacity = tex.a;
     } if (uPixelShader == 19) { //MapObjParallax
         vec4 tex_6 = texture(uTexture6, vTexCoord2).rgba;
-        vec3 crossDy = cross(dFdyCoarse(vPosition.xyz), vNormal);
-        vec3 crossDx = cross(vNormal, dFdxCoarse(vPosition.xyz));
-        vec2 dTexCoord2Dx = dFdyCoarse(vTexCoord2);
-        vec2 dTexCoord2Dy = dFdxCoarse(vTexCoord2);
+        vec3 crossDy = cross(dFdy(vPosition.xyz), vNormal);
+        vec3 crossDx = cross(vNormal, dFdx(vPosition.xyz));
+        vec2 dTexCoord2Dx = dFdx(vTexCoord2);
+        vec2 dTexCoord2Dy = dFdy(vTexCoord2);
 
         vec3 sum1 = dTexCoord2Dy.x * crossDx + dTexCoord2Dx.x * crossDy;
         vec3 sum2 = dTexCoord2Dy.y * crossDx + dTexCoord2Dx.y * crossDy;
