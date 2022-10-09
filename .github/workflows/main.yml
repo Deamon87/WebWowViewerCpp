@@ -120,7 +120,7 @@ jobs:
           echo github.event.action: ${{ github.event.action }}
           echo github.event_name: ${{ github.event_name }}
       - name: Install dependencies on windows
-        if: startsWith(matrix.config.os, 'windows')
+        if: startsWith(matrix.config.name, 'windows')
         run: |
           choco install ninja cmake
           ninja --version
@@ -143,7 +143,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: cmake ninja mingw-w64-{{matrix.config.msys_toolchain_prefix}}x86_64-toolchain
+          install: cmake ninja mingw-w64-${{ matrix.config.msys_toolchain_prefix }}x86_64-toolchain
 
       - name: Setup emsdk
         if: startsWith(matrix.config.name, 'emscripten')
