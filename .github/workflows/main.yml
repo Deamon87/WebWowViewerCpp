@@ -29,67 +29,81 @@ jobs:
       fail-fast: false
       matrix:
         config:
+#          - {
+#            name: "Windows Latest MSVC",
+#            os: windows-latest,
+#            artifact: "windows_msvc.7z",
+#            build_type: "Release",
+#            cmake_defines: "",
+#            cc: "cl",
+#            cxx: "cl",
+#            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
+#            archiver: "7z a",
+#            generators: "Visual Studio 17 2022",
+#            build_parameters: "-m:2"
+#          }
           - {
-            name: "Windows Latest MSVC",
-            os: windows-latest,
-            artifact: "windows_msvc.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "cl",
-            cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
-            archiver: "7z a",
-            generators: "Visual Studio 17 2022",
-            build_parameters: "-m:2"
-          }
-          - {
-              name: "Windows Latest MinGW",
+              name: "MSYS2 Windows Latest Clang",
               os: windows-latest,
-              artifact: "windows_mingw.7z",
+              artifact: "windows_msys_clang.7z",
+              build_type: "Release",
+              cmake_defines: "",
+              cc: "clang",
+              cxx: "clang++",
+              archiver: "7z a",
+              generators: "Ninja",
+              build_parameters: "-j 2",
+              msys_toolchain_prefix: "clang-"
+            }
+          - {
+              name: "MSYS2 Windows Latest GCC",
+              os: windows-latest,
+              artifact: "windows_msys_clang.7z",
               build_type: "Release",
               cmake_defines: "",
               cc: "gcc",
-              cxx: "g++",
+              cxx: "gcc++",
               archiver: "7z a",
               generators: "Ninja",
-              build_parameters: "-j 2"
+              build_parameters: "-j 2",
+              msys_toolchain_prefix: ""
             }
-          - {
-            name: "Ubuntu_Latest_GCC",
-            os: ubuntu-latest,
-            artifact: "ubuntu_gcc.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "gcc",
-            cxx: "g++",
-            archiver: "7z a",
-            generators: "Ninja",
-            build_parameters: "-j 2"
-          }
-          - {
-            name: "Emscripten",
-            os: ubuntu-latest,
-            artifact: "emscripten.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "emcc",
-            cxx: "em++",
-            archiver: "7z a",
-            generators: "Ninja",
-            build_parameters: "-j 2"
-          }
-          - {
-            name: "macOS Latest Clang",
-            os: macos-latest,
-            artifact: "macos_clang.7z",
-            build_type: "Release",
-            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
-            cc: "clang",
-            cxx: "clang++",
-            archiver: "7za a",
-            generators: "Ninja",
-            build_parameters: "-j 3"
-          }
+#          - {
+#            name: "Ubuntu Latest GCC",
+#            os: ubuntu-latest,
+#            artifact: "ubuntu_gcc.7z",
+#            build_type: "Release",
+#            cmake_defines: "",
+#            cc: "gcc",
+#            cxx: "g++",
+#            archiver: "7z a",
+#            generators: "Ninja",
+#            build_parameters: "-j 2"
+#          }
+#          - {
+#            name: "Emscripten",
+#            os: ubuntu-latest,
+#            artifact: "emscripten.7z",
+#            build_type: "Release",
+#            cmake_defines: "",
+#            cc: "emcc",
+#            cxx: "em++",
+#            archiver: "7z a",
+#            generators: "Ninja",
+#            build_parameters: "-j 2"
+#          }
+#          - {
+#            name: "macOS Latest Clang",
+#            os: macos-latest,
+#            artifact: "macos_clang.7z",
+#            build_type: "Release",
+#            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
+#            cc: "clang",
+#            cxx: "clang++",
+#            archiver: "7za a",
+#            generators: "Ninja",
+#            build_parameters: "-j 3"
+#          }
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
@@ -111,7 +125,6 @@ jobs:
           choco install ninja cmake
           ninja --version
           cmake --version
-        # cmd "${{ matrix.config.environment_script }}"
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
@@ -125,6 +138,13 @@ jobs:
           cmake --version
           gcc --version
           cd ..
+      - name: Install deps for MSYS2
+        if: startsWith(matrix.config.name, 'MSYS2')
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: cmake ninja mingw-w64-{{matrix.config.msys_toolchain_prefix}}x86_64-toolchain
+
       - name: Setup emsdk
         if: startsWith(matrix.config.name, 'emscripten')
         uses: mymindstorm/setup-emsdk@v11
@@ -188,6 +208,9 @@ jobs:
           brew install p7zip cmake ninja
           ninja --version
           cmake --version
+      - name: Enter MSYS2
+        if: startsWith(matrix.config.name, 'MSYS2')
+        run: msys2
 
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
