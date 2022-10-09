@@ -39,7 +39,8 @@ jobs:
             cxx: "cl",
             environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
             archiver: "7z a",
-            generators: "Visual Studio 17 2022"
+            generators: "Visual Studio 17 2022",
+            build_parameters: "-m:2"
           }
           - {
               name: "Windows Latest MinGW",
@@ -50,7 +51,8 @@ jobs:
               cc: "gcc",
               cxx: "g++",
               archiver: "7z a",
-              generators: "Ninja"
+              generators: "Ninja",
+              build_parameters: "-j 2"
             }
           - {
             name: "Ubuntu_Latest_GCC",
@@ -61,7 +63,8 @@ jobs:
             cc: "gcc",
             cxx: "g++",
             archiver: "7z a",
-            generators: "Ninja"
+            generators: "Ninja",
+            build_parameters: "-j 2"
           }
           - {
             name: "Emscripten",
@@ -72,7 +75,8 @@ jobs:
             cc: "emcc",
             cxx: "em++",
             archiver: "7z a",
-            generators: "Ninja"
+            generators: "Ninja",
+            build_parameters: "-j 2"
           }
           - {
             name: "macOS Latest Clang",
@@ -83,7 +87,8 @@ jobs:
             cc: "clang",
             cxx: "clang++",
             archiver: "7za a",
-            generators: "Ninja"
+            generators: "Ninja",
+            build_parameters: "-j 3"
           }
 
     steps:
@@ -200,8 +205,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
             ${{ matrix.config.cmake_defines}} \
-            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC} \
-            -DCMAKE_MAKE_PROGRAM=ninja
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         shell: bash
@@ -224,7 +228,7 @@ jobs:
       - name: Build
         shell: bash
         working-directory: build
-        run: cmake --build . --config ${{ matrix.config.build_type }}
+        run: cmake --build . --config ${{ matrix.config.build_type }} -- ${{ matrix.config.build_parameters }}
 
       - name: Install Strip
         shell: bash
