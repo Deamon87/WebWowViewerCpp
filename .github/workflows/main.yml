@@ -37,7 +37,6 @@ jobs:
 #            cmake_defines: "",
 #            cc: "cl",
 #            cxx: "cl",
-#            shell: "bash",
 #            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
 #            archiver: "7z a",
 #            generators: "Visual Studio 17 2022",
@@ -51,7 +50,6 @@ jobs:
               cmake_defines: "",
               cc: "clang",
               cxx: "clang++",
-              shell: "msys2 {0}",
               archiver: "7z a",
               generators: "Ninja",
               build_parameters: "-j 2",
@@ -65,7 +63,6 @@ jobs:
               cmake_defines: "",
               cc: "gcc",
               cxx: "gcc++",
-              shell: "msys2 {0}",
               archiver: "7z a",
               generators: "Ninja",
               build_parameters: "-j 2",
@@ -79,7 +76,6 @@ jobs:
 #            cmake_defines: "",
 #            cc: "gcc",
 #            cxx: "g++",
-#            shell: "bash",
 #            archiver: "7z a",
 #            generators: "Ninja",
 #            build_parameters: "-j 2"
@@ -92,7 +88,6 @@ jobs:
 #            cmake_defines: "",
 #            cc: "emcc",
 #            cxx: "em++",
-#            shell: "bash",
 #            archiver: "7z a",
 #            generators: "Ninja",
 #            build_parameters: "-j 2"
@@ -105,7 +100,6 @@ jobs:
 #            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
 #            cc: "clang",
 #            cxx: "clang++",
-#            shell: "bash",
 #            archiver: "7za a",
 #            generators: "Ninja",
 #            build_parameters: "-j 3"
@@ -216,7 +210,24 @@ jobs:
           cmake --version
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
-        shell: ${{ matrix.config.shell }}
+        shell: bash
+        run: |
+          mkdir build
+          mkdir instdir
+          cd instdir
+          INSTALL_LOC="$(pwd)"
+          cd ..
+          cd build
+          cmake \
+            -S ../ \
+            -B . \
+            -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
+            -G "${{ matrix.config.generators }}" \
+            ${{ matrix.config.cmake_defines}} \
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
+      - name: Configure standalone MSYS
+        if: ${{ !startsWith(matrix.config.name, 'MSYS2') }}
+        shell: msys2 Zz{0}
         run: |
           mkdir build
           mkdir instdir
@@ -251,7 +262,14 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Build
-        shell: ${{ matrix.config.shell }}
+        if: ${{ !startsWith(matrix.config.name, 'MSYS2') }}
+        shell: bash
+        working-directory: build
+        run: cmake --build . --config ${{ matrix.config.build_type }} -- ${{ matrix.config.build_parameters }}
+
+      - name: Build MSYS2
+        if: ${{ startsWith(matrix.config.name, 'MSYS2') }}
+        shell: msys2 Zz{0}
         working-directory: build
         run: cmake --build . --config ${{ matrix.config.build_type }} -- ${{ matrix.config.build_parameters }}
 
