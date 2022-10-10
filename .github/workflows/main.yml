@@ -37,6 +37,7 @@ jobs:
 #            cmake_defines: "",
 #            cc: "cl",
 #            cxx: "cl",
+#            shell: "bash",
 #            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
 #            archiver: "7z a",
 #            generators: "Visual Studio 17 2022",
@@ -50,6 +51,7 @@ jobs:
               cmake_defines: "",
               cc: "clang",
               cxx: "clang++",
+              shell: "msys2 {0}",
               archiver: "7z a",
               generators: "Ninja",
               build_parameters: "-j 2",
@@ -63,6 +65,7 @@ jobs:
               cmake_defines: "",
               cc: "gcc",
               cxx: "gcc++",
+              shell: "msys2 {0}",
               archiver: "7z a",
               generators: "Ninja",
               build_parameters: "-j 2",
@@ -76,6 +79,7 @@ jobs:
 #            cmake_defines: "",
 #            cc: "gcc",
 #            cxx: "g++",
+#            shell: "bash",
 #            archiver: "7z a",
 #            generators: "Ninja",
 #            build_parameters: "-j 2"
@@ -88,6 +92,7 @@ jobs:
 #            cmake_defines: "",
 #            cc: "emcc",
 #            cxx: "em++",
+#            shell: "bash",
 #            archiver: "7z a",
 #            generators: "Ninja",
 #            build_parameters: "-j 2"
@@ -100,6 +105,7 @@ jobs:
 #            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
 #            cc: "clang",
 #            cxx: "clang++",
+#            shell: "bash",
 #            archiver: "7za a",
 #            generators: "Ninja",
 #            build_parameters: "-j 3"
@@ -143,7 +149,7 @@ jobs:
         uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          install: cmake ninja mingw-w64-${{ matrix.config.msys_toolchain_prefix }}x86_64-toolchain
+          install: cmake ninja mingw-w64-${{ matrix.config.msys_toolchain_prefix }}x86_64-toolchain mingw64-w64-x86_64-libssp
 
       - name: Setup emsdk
         if: startsWith(matrix.config.name, 'emscripten')
@@ -208,13 +214,9 @@ jobs:
           brew install p7zip cmake ninja
           ninja --version
           cmake --version
-      - name: Enter MSYS2
-        if: startsWith(matrix.config.name, 'MSYS2')
-        run: msys2
-
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
-        shell: bash
+        shell: ${{ matrix.config.shell }}
         run: |
           mkdir build
           mkdir instdir
@@ -249,7 +251,7 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Build
-        shell: bash
+        shell: ${{ matrix.config.shell }}
         working-directory: build
         run: cmake --build . --config ${{ matrix.config.build_type }} -- ${{ matrix.config.build_parameters }}
 
