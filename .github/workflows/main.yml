@@ -209,7 +209,7 @@ jobs:
           ninja --version
           cmake --version
       - name: Configure standalone
-        if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
+        if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'MSYS2') }}
         shell: bash
         run: |
           mkdir build
@@ -226,7 +226,7 @@ jobs:
             ${{ matrix.config.cmake_defines}} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure standalone MSYS
-        if: ${{ !startsWith(matrix.config.name, 'MSYS2') }}
+        if: ${{ startsWith(matrix.config.name, 'MSYS2') }}
         shell: msys2 Zz{0}
         run: |
           mkdir build
