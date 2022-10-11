@@ -227,7 +227,7 @@ jobs:
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure standalone MSYS
         if: ${{ startsWith(matrix.config.name, 'MSYS2') }}
-        shell: msys2 Zz{0}
+        shell: msys2 {0}
         run: |
           mkdir build
           mkdir instdir
@@ -269,7 +269,7 @@ jobs:
 
       - name: Build MSYS2
         if: ${{ startsWith(matrix.config.name, 'MSYS2') }}
-        shell: msys2 Zz{0}
+        shell: msys2 {0}
         working-directory: build
         run: cmake --build . --config ${{ matrix.config.build_type }} -- ${{ matrix.config.build_parameters }}
 
