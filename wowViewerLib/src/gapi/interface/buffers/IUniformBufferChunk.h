@@ -18,9 +18,10 @@ private:
 protected:
     size_t m_offset = 0;
     size_t m_size = 0;
+    size_t m_realSize = 0;
     void *m_ptr = nullptr;
 public:
-    IUniformBufferChunk(size_t size) : m_size(size) {}
+    IUniformBufferChunk(size_t size, size_t realSize = 0) : m_size(size), m_realSize(realSize) {}
     virtual ~IUniformBufferChunk() = default;
 
     void setOffset(size_t offset) {
@@ -41,6 +42,9 @@ public:
     }
     size_t getSize() {
         return m_size;
+    }
+    size_t getRealSize() {
+        return m_realSize;
     }
     size_t getOffset() {
         return m_offset;

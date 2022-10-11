@@ -50,14 +50,12 @@ void main() {
 
 
     mat4 viewModelMat = scene.uLookAtMat * uPlacementMat;
-    mat3 viewModelMatTransposed =
-        blizzTranspose(scene.uLookAtMat) *
-        blizzTranspose(uPlacementMat);
+    mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
 
 
     gl_Position = scene.uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, 0);
-    vNormal = normalize(viewModelMatTransposed * aNormal);
+    vNormal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
 
 
     vColor = aColor.bgra;

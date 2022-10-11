@@ -67,15 +67,12 @@ void main() {
 
     vec4 lDiffuseColor = color_Transparency;
 
-    mat4 cameraMatrix = scene.uLookAtMat * placementMat  * boneTransformMat ;
-    vec4 cameraPoint = cameraMatrix * aPositionVec4;
-    mat3 viewModelMatTransposed =
-        blizzTranspose(scene.uLookAtMat) *
-        blizzTranspose(placementMat) *
-        blizzTranspose(boneTransformMat);
+    mat4 viewModelMat = scene.uLookAtMat * placementMat  * boneTransformMat ;
+    vec4 cameraPoint = viewModelMat * aPositionVec4;
+    mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
 
 //    vec3 normal = normalize(mat3(cameraMatrix) * aNormal);
-    vec3 normal = normalize(viewModelMatTransposed * aNormal);
+    vec3 normal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
     vec4 combinedColor = clamp(lDiffuseColor /*+ vc_matEmissive*/, 0.000000, 1.000000);
     vec4 combinedColorHalved = combinedColor * 0.5;
 

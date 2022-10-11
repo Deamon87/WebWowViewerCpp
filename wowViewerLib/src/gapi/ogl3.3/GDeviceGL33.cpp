@@ -332,10 +332,12 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 #ifdef SINGLE_BUFFER_UPLOAD
 void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
+    int fullTargetSize = 0;
     for (int i = 0; i < bufferChunks.size(); i++) {
         auto &bufferVec = bufferChunks[i];
         for (auto &buffer : *bufferVec) {
-            fullSize += buffer->getSize();
+            fullTargetSize = std::max<int>(fullTargetSize, fullSize + buffer->getSize());
+            fullSize += ((buffer->getRealSize() > 0) ? buffer->getRealSize() : buffer->getSize());
             int offsetDiff = fullSize % uniformBufferOffsetAlign;
             if (offsetDiff != 0) {
                 int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
@@ -344,6 +346,8 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
             }
         }
     }
+    fullSize = fullTargetSize;
+
     if (fullSize > aggregationBufferForUpload.size()) {
         aggregationBufferForUpload.resize(fullSize);
     }
@@ -351,6 +355,7 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
     uploadAmountInBytes = 0;
     //2. Create buffers and update them
     int currentSize = 0;
+    int targetSize = 0;
     int buffersIndex = 0;
 
     HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
@@ -369,7 +374,8 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
             for (auto &buffer : *bufferVec) {
                 buffer->setOffset(currentSize);
                 buffer->setPointer(&pointerForUpload[currentSize]);
-                currentSize += buffer->getSize();
+                targetSize = std::max<int>(targetSize, currentSize + buffer->getSize());
+                currentSize += ((buffer->getRealSize() > 0) ? buffer->getRealSize() : buffer->getSize());
 
                 int offsetDiff = currentSize % uniformBufferOffsetAlign;
                 if (offsetDiff != 0) {
@@ -379,7 +385,7 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
                 }
             }
         }
-        assert(currentSize == fullSize);
+        assert(targetSize == fullSize);
 
         for (int i = 0; i < bufferChunks.size(); i++) {
             auto &bufferVec = bufferChunks[i];
@@ -790,9 +796,9 @@ HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<I
     return h_frameBuffer;
 };
 
-HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
+HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size, size_t realSize) {
     HGUniformBufferChunk h_uniformBuffer;
-    h_uniformBuffer.reset(new GUniformBufferChunk33(size));
+    h_uniformBuffer.reset(new GUniformBufferChunk33(size, realSize));
 
     return h_uniformBuffer;
 };
