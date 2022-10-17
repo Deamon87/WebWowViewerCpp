@@ -36,30 +36,26 @@ if (CMAKE_NDK_BUILD MATCHES 1)
 	endif()
 endif() 
 
-
-
 if (WIN32 AND MSVC)
     if(CMAKE_SIZEOF_VOID_P EQUAL 8)
         set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} /DWIN64")
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /DWIN64")
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} /DWIN64")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /DWIN64")
-    endif()
+	endif()
+
+	add_definitions(-DWIN32_LEAN_AND_MEAN)
  endif()
 message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
-#set(CMAKE_BUILD_TYPE Release)
-#set(CMAKE_C_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC ")
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC  ")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	message("This is clang")
-	#Force clang to use libc++
-	set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} ")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libstdc++")
-	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}  ")
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libstdc++")
-#	link_libraries(libstdc++fs)
 
+	#Do not force libstdc++ on MacOS system
+	if (NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libstdc++")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libstdc++")
+	endif()
 
 	#set(_GLIBCXX_USE_C99_CHECK 0)
 	#set(_GLIBCXX_USE_C99_DYNAMIC 0)
@@ -71,84 +67,69 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	link_libraries(stdc++fs)
-#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -pthread")
-#	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -pthread ")
-#	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20")
 endif()
 
 
 if(WIN32)
 	link_libraries(wsock32 ws2_32)
 endif()
-#if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#	link_libraries(libws2_32.a)
-#endif()
 
-#set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG -pthread")
+# DB Importer
+set(DBIMPORTER_LINK_SQLITE OFF)
+set(DBIMPORTER_SQLITE_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/include")
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/DBImporter EXCLUDE_FROM_ALL)
 
 #ZLib library
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/zlib EXCLUDE_FROM_ALL)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/zlib)
-set(BUILD_SHARED_LIBS OFF)
-if (MSVC)
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+
+if (TRUE)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
 	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
-	if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlibd.lib")
-	else()
-		set(ZLIB_LIBRARY "${CMAKE_BINARY_DIR}/3rdparty/zlib/zlib.lib")
-	endif()
-	set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/3rdparty/zlib)
+
 endif()
 
 
-#libpng
-if (MSVC)
-	#set(PNG_BUILD_ZLIB ON)
-	set(PNG_BUILD_ZLIB OFF)
-else()
-	set(PNG_BUILD_ZLIB OFF)
-endif()
-
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
-include_directories(${CMAKE_SOURCE_DIR}/3rdparty/libpng)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/sqlite3)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/3rdparty/libpng)
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	set(BUILD_SHARED_LIBS OFF)
-	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+	add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/glfw EXCLUDE_FROM_ALL)
 endif()
 
 #c++ 17 FS implementation
-add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl)
+add_subdirectory(${CMAKE_SOURCE_DIR}/3rdparty/filesystem_impl EXCLUDE_FROM_ALL)
 
-#bz2renderFlag
-set(BUILD_SHARED_LIBS OFF)
-add_subdirectory(3rdparty/bzip)
-
-#file(WRITE 3rdparty/libressl/ssl/version "1.1.1")
-#file(WRITE 3rdparty/libressl/crypto/version "1.1.1")
-#file(WRITE 3rdparty/libressl/tls/version "1.1.1")
-#add_subdirectory(3rdparty/libressl ${CMAKE_CURRENT_BINARY_DIR}/libressl)
+include(FetchContent)
 
 #cpr
-include(FetchContent)
-FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG c8d33915dbd88ad6c92b258869b03aba06587ff9) # the commit hash for 1.5.0
-FetchContent_MakeAvailable(cpr)
+check_include_file("limits.h" HAVE_LIMITS_H)
+add_compile_definitions(HAVE_LIMITS_H)
+SET(CMAKE_USE_LIBSSH2 0)
+SET(CPR_BUILD_TESTS 0)
+SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
+FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
 
-
-#PolyM
-#add_subdirectory(3rdparty/PolyM) 
-#include_directories(3rdparty/PolyM)
+FetchContent_GetProperties(cpr)
+message("cpr_POPULATED = ${cpr_POPULATED}")
+if(NOT cpr_POPULATED)
+	# Fetch the content using previously declared details
+	FetchContent_Populate(cpr)
+	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
+	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
+	# Bring the populated content into the build
+	set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+endif()
 
 #StormLib
 #add_subdirectory(3rdparty/stormlib)
 
 #CascLib
-
 add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -163,7 +144,11 @@ endif()
 set(CASC_BUILD_STATIC_LIB 1)
 set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
 set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
-add_subdirectory(3rdparty/casclib)
+add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
+
+# Protobuf
+set(protobuf_BUILD_TESTS OFF)
+add_subdirectory(3rdparty/protobuf-cpp/protobuf-3.21.5 EXCLUDE_FROM_ALL)
 
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -211,8 +196,8 @@ set(SOURCE_FILES
 		src/exporters/gltfExporter/GLTFExporter.cpp
 		src/exporters/gltfExporter/GLTFExporter.h
 
-		src/ui/childWindow/mapConstructionWindow.cpp
-		src/ui/childWindow/mapConstructionWindow.h
+        src/ui/childWindow/mapConstructionWindow/mapConstructionWindow.cpp
+        src/ui/childWindow/mapConstructionWindow/mapConstructionWindow.h
 		src/ui/imguiLib/groupPanel/groupPanel.cpp
 		src/ui/imguiLib/groupPanel/groupPanel.h
 
@@ -228,10 +213,19 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imageButton2/imageButton2.h
 		src/exporters/dataExporter/DataExporterClass.cpp
 		src/exporters/dataExporter/DataExporterClass.h
+		src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.cc
+		src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.h
 		src/database/CEmptySqliteDB.cpp
 		src/database/CEmptySqliteDB.h
 		src/ui/imguiLib/stateSaver/stateSaver.h
-		src/ui/imguiLib/stateSaver/stateSaver.cpp)
+		src/ui/imguiLib/stateSaver/stateSaver.cpp
+		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp
+		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h
+		src/ui/imguiLib/fileBrowser/buildDefinition.h
+		src/database/product_db_parser/productDbParser.cpp
+		src/database/product_db_parser/productDbParser.h
+		src/database/buildInfoParser/buildInfoParser.cpp
+		src/database/buildInfoParser/buildInfoParser.h)
 
 
 
@@ -270,11 +264,14 @@ find_package( Threads REQUIRED )
 #    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
 #endif()
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp)
-
-#add_definitions(-DLINK_VULKAN)
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+if (Vulkan_FOUND)
+	add_definitions(-DLINK_VULKAN)
+endif()
+
+
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
@@ -290,25 +287,27 @@ add_dependencies(AWebWoWViewerCpp casc_static)
 
 #TODO: platform dependant!!
 add_dependencies(AWebWoWViewerCpp glfw)
-check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17) 
-if(HAVE_FLAG_STD_CXX17)
-	# Have -std=c++17, use it
-	message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
-	#    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
-	#    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
-	set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
-else()
-	check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
-	if(HAVE_FLAG_STD_CXX1Z)
-		#        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
-		#        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+if (NOT MSVC)
+	check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
+	if(HAVE_FLAG_STD_CXX17)
+		# Have -std=c++17, use it
+		message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
+		#    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
+		#    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
 	else()
-		message(ERROR "No supported flags")
+		check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
+		if(HAVE_FLAG_STD_CXX1Z)
+			#        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+			#        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+			set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
+			set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+		else()
+			message(ERROR "No supported flags")
+		endif()
 	endif()
-endif() 
+endif()
 
 if (MSVC)
 	include(CheckCXXCompilerFlag)
@@ -324,10 +323,12 @@ if (MSVC)
 	endif()
 endif()
 
-link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
+target_link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
 target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
-target_link_libraries(AWebWoWViewerCpp zlibstatic)
+#target_link_libraries(AWebWoWViewerCpp zlibstatic)
+target_link_libraries(AWebWoWViewerCpp libprotobuf-lite)
+
 
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
 if (NOT MSVC)
@@ -360,11 +361,10 @@ else()
 	target_link_libraries(AWebWoWViewerCpp android)
 	target_link_libraries(AWebWoWViewerCpp log)
 endif()
-#target_link_libraries(AWebWoWViewerCpp polym)
+
 #target_link_libraries(AWebWoWViewerCpp storm)
 target_link_libraries(AWebWoWViewerCpp casc_static)
-
-target_link_libraries(AWebWoWViewerCpp png_static)
+target_link_libraries(AWebWoWViewerCpp DBImporterLib)
 target_link_libraries(AWebWoWViewerCpp cpr::cpr)
 
 target_link_libraries(AWebWoWViewerCpp ${glew_lib})
@@ -374,10 +374,37 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 	target_link_libraries(AWebWoWViewerCpp opengl32)
 	target_link_libraries(AWebWoWViewerCpp -lm)
 	target_link_libraries(AWebWoWViewerCpp -lwininet)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+	FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
+	MARK_AS_ADVANCED(OpenGL_LIBRARY)
+
+	target_link_libraries(AWebWoWViewerCpp ${OpenGL_LIBRARY})
 else()
 	target_link_libraries(AWebWoWViewerCpp GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #target_link_options(AWebWoWViewerCpp PUBLIC "SHELL: -llibg")
 
-INSTALL(TARGETS AWebWoWViewerCpp DESTINATION BIN)
+install(TARGETS AWebWoWViewerCpp
+		EXPORT ${PROJECT_NAME}Targets
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		COMPONENT libraries)
+
+INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Libraries)
+
+if( MINGW )
+	message( STATUS "    Installing system-libraries: MinGW DLLs." )
+	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
+	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${Mingw_Path}/libgcc_s_seh-1.dll ${Mingw_Path}/libstdc++-6.dll ${Mingw_Path}/libssp-0.dll ${Mingw_Path}/libwinpthread-1.dll)
+endif( MINGW )
+include( InstallRequiredSystemLibraries )
+
+
+# Actually install it when make install is called.
+# Note, this works with CPack
+if( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
+	install( PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT System )
+endif( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
+
+include(CPack)

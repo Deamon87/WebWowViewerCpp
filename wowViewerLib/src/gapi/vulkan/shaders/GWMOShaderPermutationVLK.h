@@ -16,7 +16,7 @@ public:
         return 5;
     };
     int getTextureCount() override {
-        return 3;
+        return 9;
     };
 };
 

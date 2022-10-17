@@ -24,6 +24,7 @@
 #include "shaders/GFFXGlow.h"
 #include "shaders/GSkyConus.h"
 #include "shaders/GWaterfallShaderGL33.h"
+#include "oneapi/tbb/parallel_for_each.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -332,10 +333,12 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 #ifdef SINGLE_BUFFER_UPLOAD
 void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
     int fullSize = 0;
+    int fullTargetSize = 0;
     for (int i = 0; i < bufferChunks.size(); i++) {
         auto &bufferVec = bufferChunks[i];
         for (auto &buffer : *bufferVec) {
-            fullSize += buffer->getSize();
+            fullTargetSize = std::max<int>(fullTargetSize, fullSize + buffer->getSize());
+            fullSize += ((buffer->getRealSize() > 0) ? buffer->getRealSize() : buffer->getSize());
             int offsetDiff = fullSize % uniformBufferOffsetAlign;
             if (offsetDiff != 0) {
                 int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
@@ -344,6 +347,8 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
             }
         }
     }
+    fullSize = fullTargetSize;
+
     if (fullSize > aggregationBufferForUpload.size()) {
         aggregationBufferForUpload.resize(fullSize);
     }
@@ -351,6 +356,7 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
     uploadAmountInBytes = 0;
     //2. Create buffers and update them
     int currentSize = 0;
+    int targetSize = 0;
     int buffersIndex = 0;
 
     HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
@@ -369,7 +375,8 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
             for (auto &buffer : *bufferVec) {
                 buffer->setOffset(currentSize);
                 buffer->setPointer(&pointerForUpload[currentSize]);
-                currentSize += buffer->getSize();
+                targetSize = std::max<int>(targetSize, currentSize + buffer->getSize());
+                currentSize += ((buffer->getRealSize() > 0) ? buffer->getRealSize() : buffer->getSize());
 
                 int offsetDiff = currentSize % uniformBufferOffsetAlign;
                 if (offsetDiff != 0) {
@@ -379,20 +386,26 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
                 }
             }
         }
-        assert(currentSize == fullSize);
+        assert(targetSize == fullSize);
 
         for (int i = 0; i < bufferChunks.size(); i++) {
             auto &bufferVec = bufferChunks[i];
             auto frameDepData = frameDepedantDataVec[i];
 
-            for (auto &buffer : *bufferVec) {
-                buffer->update(frameDepData);
-            }
+            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, bufferVec->size(), 400),
+                                      [&](tbb::blocked_range<size_t> &r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    (*bufferVec)[i]->update(frameDepData);
+                }
+            }, tbb::auto_partitioner());
+//            for (auto &buffer : *bufferVec) {
+//                buffer->update(frameDepData);
+//            }
         }
 
-        if (currentSize > 0) {
-            bufferForUploadGL->uploadData(pointerForUpload, currentSize);
-            uploadAmountInBytes+= currentSize;
+        if (targetSize > 0) {
+            bufferForUploadGL->uploadData(pointerForUpload, targetSize);
+            uploadAmountInBytes+= targetSize;
         }
     }
 }
@@ -630,10 +643,10 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     }
 
     if (m_lastBlendMode != hmesh->m_blendMode) {
-        BlendModeDesc &selectedBlendMode = blendModes[(char)hmesh->m_blendMode];
+        BlendModeDesc &selectedBlendMode = GL33::blendModes[(char)hmesh->m_blendMode];
 
         if ((m_lastBlendMode == EGxBlendEnum::GxBlend_UNDEFINED) ||
-            (blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
+            (GL33::blendModes[(char)m_lastBlendMode].blendModeEnable != selectedBlendMode.blendModeEnable )) {
             if (selectedBlendMode.blendModeEnable) {
                 glEnable(GL_BLEND);
             } else {
@@ -783,9 +796,9 @@ HFrameBuffer GDeviceGL33::createFrameBuffer(int width, int height, std::vector<I
     return h_frameBuffer;
 };
 
-HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size) {
+HGUniformBufferChunk GDeviceGL33::createUniformBufferChunk(size_t size, size_t realSize) {
     HGUniformBufferChunk h_uniformBuffer;
-    h_uniformBuffer.reset(new GUniformBufferChunk33(size));
+    h_uniformBuffer.reset(new GUniformBufferChunk33(size, realSize));
 
     return h_uniformBuffer;
 };
@@ -827,9 +840,9 @@ void GDeviceGL33::bindTexture(ITexture *iTexture, int slot) {
 
 HGTexture GDeviceGL33::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
     BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture.get();
-    blpCacheRecord.wrapX = xWrapTex;
-    blpCacheRecord.wrapY = yWrapTex;
+    blpCacheRecord.textureFileName = texture->getTextureName();
+    blpCacheRecord.wrapX = false;
+    blpCacheRecord.wrapY = false;
 
     auto i = loadedTextureCache[blpCacheRecord];
     if (!i.expired()) {

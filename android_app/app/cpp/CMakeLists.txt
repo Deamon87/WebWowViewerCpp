@@ -94,15 +94,6 @@ add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/filesystem_impl ${CMAKE_CURRENT_B
 set(BUILD_SHARED_LIBS OFF)
 add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/bzip ${CMAKE_CURRENT_BINARY_DIR}/bzip)
 
-#mdebtls as replacement for openssl
-set(USE_STATIC_MBEDTLS_LIBRARY ON CACHE BOOL "Use static" )
-set(USE_SHARED_MBEDTLS_LIBRARY ON CACHE BOOL "Do not use shared" )
-add_subdirectory(${VIEWER_IMPORT_DIR}/3rdparty/mdebtls ${CMAKE_CURRENT_BINARY_DIR}/mdebtls)
-SET(MBEDCRYPTO_LIBRARY "mbedcrypto.so")
-SET(MBEDTLS_LIBRARY "mbedx509.so")
-SET(MBEDX509_LIBRARY "mbedtls.so")
-set(MBEDTLS_INCLUDE_DIRS ${CMAKE_CURRENT_BINARY_DIR}/mdebtls/include ${CMAKE_CURRENT_SOURCE_DIR}/src/includes)
-
 #CascLib
 add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
 

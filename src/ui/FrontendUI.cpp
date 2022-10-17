@@ -6,7 +6,6 @@
 
 #ifndef __ANDROID_API__
 #include "imguiLib/imguiImpl/imgui_impl_glfw.h"
-#include <imguiImpl/imgui_impl_opengl3.h>
 #else
 #include <imguiImpl/imgui_impl_android.h>
 #endif
@@ -20,7 +19,7 @@
 #include <stateSaver/stateSaver.h>
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
-#include "childWindow/mapConstructionWindow.h"
+#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
@@ -64,9 +63,9 @@ void FrontendUI::composeUI() {
         ImGui::EndPopup();
     }
 
-    if (ImGui::BeginPopupModal("Casc succesed"))
+    if (ImGui::BeginPopupModal("Casc succeed"))
     {
-        ImGui::Text("CASC storage succefully opened");
+        ImGui::Text("CASC storage successfully opened");
         if (ImGui::Button("Ok", ImVec2(-1, 23))) {
             ImGui::CloseCurrentPopup();
         }
@@ -79,17 +78,15 @@ void FrontendUI::composeUI() {
     createFileDialog.Display();
 
     if (fileDialog.HasSelected()) {
-        std::cout << "Selected filename" << fileDialog.GetSelected().string() << std::endl;
+        std::cout << "Selected filename " << fileDialog.GetSelected().string() << std::endl;
         std::string cascPath = fileDialog.GetSelected().string();
-        std::string product = fileDialog.getProductBuild();
-        if (!product.empty())
-            cascPath = cascPath + ":"+product;
+        BuildDefinition buildDef = fileDialog.getProductBuild();
 
-        if (!openCascCallback(cascPath)) {
+        if (!tryOpenCasc(cascPath, buildDef)) {
             ImGui::OpenPopup("Casc failed");
             cascOpened = false;
         } else {
-            ImGui::OpenPopup("Casc succesed");
+            ImGui::OpenPopup("Casc succeed");
             cascOpened = true;
         }
         fileDialog.ClearSelected();
@@ -104,6 +101,15 @@ void FrontendUI::composeUI() {
 
 //    if (show_demo_window)
 //        ImGui::ShowDemoWindow(&show_demo_window);
+
+    if (m_databaseUpdateWorkflow != nullptr) {
+        if (m_databaseUpdateWorkflow->isDatabaseUpdated()) {
+            m_databaseUpdateWorkflow = nullptr;
+            createDatabaseHandler();
+        } else {
+            m_databaseUpdateWorkflow->render();
+        }
+    }
 
     showSettingsDialog();
     showQuickLinksDialog();
@@ -126,51 +132,107 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Begin("Current stats",
                      &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
-        static float cameraPosition[3] = {0, 0, 0};
-        getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+        if (ImGui::CollapsingHeader("Camera position")) {
+            static float cameraPosition[3] = {0, 0, 0};
+            getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
 
-        ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
-                    cameraPosition[2]);
+            ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
+                        cameraPosition[2]);
 
-        if (m_api->getConfig()->doubleCameraDebug) {
-            static float debugCameraPosition[3] = {0, 0, 0};
-            getCameraPos(debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+            if (m_api->getConfig()->doubleCameraDebug) {
+                static float debugCameraPosition[3] = {0, 0, 0};
+                getDebugCameraPos(debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
 
-            ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
-                        debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+                ImGui::Text("Current debug camera position: (%.1f,%.1f,%.1f)",
+                            debugCameraPosition[0], debugCameraPosition[1], debugCameraPosition[2]);
+            }
+            ImGui::Separator();
         }
-
         ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                     ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
-        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
-        ImGui::NewLine();
-        ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
-        ImGui::Text("Elapsed time on update : %.3f ms",  m_api->getConfig()->updateTimePerFrame);
-        ImGui::Text("Elapsed time on m2 update : %.3f ms",  m_api->getConfig()->m2UpdateTime);
-        ImGui::Text("Elapsed time on wait for begin update: %.3f ms",  m_api->hDevice->getWaitForUpdate());
 
-        ImGui::Text("Elapsed time on singleUpdateCNT: %.3f ms",  m_api->getConfig()->singleUpdateCNT);
-        ImGui::Text("Elapsed time on meshesCollectCNT: %.3f ms",  m_api->getConfig()->meshesCollectCNT);
-        ImGui::Text("Elapsed time on updateBuffersCNT: %.3f ms",  m_api->getConfig()->updateBuffersCNT);
-        ImGui::Text("Elapsed time on updateBuffersDeviceCNT: %.3f ms",  m_api->getConfig()->updateBuffersDeviceCNT);
-        ImGui::Text("Elapsed time on postLoadCNT: %.3f ms",  m_api->getConfig()->postLoadCNT);
-        ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms",  m_api->getConfig()->textureUploadCNT);
-        ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms",  m_api->getConfig()->drawStageAndDepsCNT);
-        ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms",  m_api->getConfig()->endUpdateCNT);
+        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
+        ImGui::Text("Current textures in use %d", m_api->hDevice->getCurrentTextureAllocated());
+
+        ImGui::NewLine();
+
+        if (ImGui::CollapsingHeader("Elapsed times")) {
+            ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
+            ImGui::Text("- Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
+            ImGui::Text("- Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
+            ImGui::Text("- Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
+            ImGui::Text("- Elapsed time on cullUpdateLightsFromDBCounter: %.3f ms", m_api->getConfig()->cullUpdateLightsFromDBCounter);
+            ImGui::Text("- Elapsed time on cullExterior: %.3f ms", m_api->getConfig()->cullExterior);
+            ImGui::Text("-- Elapsed time on cullExteriorWDLCull: %.3f ms", m_api->getConfig()->cullExteriorWDLCull);
+            ImGui::Text("-- Elapsed time on cullExteriorGetCands: %.3f ms", m_api->getConfig()->cullExteriorGetCands);
+            ImGui::Text("-- Elapsed time on cullExterioFrustumWMO: %.3f ms", m_api->getConfig()->cullExterioFrustumWMO);
+            ImGui::Text("-- Elapsed time on cullExterioFrustumM2: %.3f ms", m_api->getConfig()->cullExterioFrustumM2);
+            ImGui::Text("- Elapsed time on cullSkyDoms: %.3f ms", m_api->getConfig()->cullSkyDoms);
+            ImGui::Text("- Elapsed time on cullCombineAllObjects: %.3f ms", m_api->getConfig()->cullCombineAllObjects);
+
+            ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
+
+            ImGui::Text("Elapsed time on update : %.3f ms", m_api->getConfig()->updateTimePerFrame);
+            ImGui::Text("- Elapsed time on startUpdateForNexFrame: %.3f ms", m_api->getConfig()->startUpdateForNexFrame);
+            ImGui::Text("- Elapsed time on singleUpdateCNT: %.3f ms", m_api->getConfig()->singleUpdateCNT);
+            ImGui::Text("-- Elapsed time on mapProduceUpdateTime : %.3f ms", m_api->getConfig()->mapProduceUpdateTime);
+            ImGui::Text("--- Elapsed time on map update : %.3f ms", m_api->getConfig()->mapUpdateTime);
+            ImGui::Text("---- Elapsed time on m2 update : %.3f ms", m_api->getConfig()->m2UpdateTime);
+            ImGui::Text("---- Elapsed time on wmo group update : %.3f ms", m_api->getConfig()->wmoGroupUpdateTime);
+            ImGui::Text("---- Elapsed time on adtUpdate update : %.3f ms", m_api->getConfig()->adtUpdateTime);
+            ImGui::Text("---- Elapsed time on m2 calc distance : %.3f ms", m_api->getConfig()->m2calcDistanceTime);
+            ImGui::Text("---- Elapsed time on adt cleanup : %.3f ms", m_api->getConfig()->adtCleanupTime);
+            ImGui::Text("--- Elapsed time on interiorViewCollectMeshTime : %.3f ms", m_api->getConfig()->interiorViewCollectMeshTime);
+            ImGui::Text("--- Elapsed time on exteriorViewCollectMeshTime : %.3f ms", m_api->getConfig()->exteriorViewCollectMeshTime);
+            ImGui::Text("--- Elapsed time on m2CollectMeshTime : %.3f ms", m_api->getConfig()->m2CollectMeshTime);
+            ImGui::Text("--- Elapsed time on sortMeshTime : %.3f ms", m_api->getConfig()->sortMeshTime);
+            ImGui::Text("--- Elapsed time on collectBuffersTime : %.3f ms", m_api->getConfig()->collectBuffersTime);
+            ImGui::Text("--- Elapsed time on sortBuffersTime : %.3f ms", m_api->getConfig()->sortBuffersTime);
+
+            ImGui::Text("- Elapsed time on produceDrawStage: %.3f ms", m_api->getConfig()->produceDrawStage);
+            ImGui::Text("- Elapsed time on meshesCollectCNT: %.3f ms", m_api->getConfig()->meshesCollectCNT);
+            ImGui::Text("- Elapsed time on updateBuffersCNT: %.3f ms", m_api->getConfig()->updateBuffersCNT);
+            ImGui::Text("- Elapsed time on updateBuffersDeviceCNT: %.3f ms", m_api->getConfig()->updateBuffersDeviceCNT);
+            ImGui::Text("- Elapsed time on postLoadCNT: %.3f ms", m_api->getConfig()->postLoadCNT);
+            ImGui::Text("- Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
+            ImGui::Text("- Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
+
+            ImGui::Text("Elapsed time on wait for begin update: %.3f ms", m_api->hDevice->getWaitForUpdate());
+
+
+            ImGui::Separator();
+        }
 
         int currentFrame = m_api->hDevice->getDrawFrameNumber();
         auto &cullStageData = m_cullstages[currentFrame];
 
-        int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.size() : 0;
-        int wmoObjectsDrawn = cullStageData!= nullptr ? cullStageData->wmoArray.size() : 0;
+        if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
+            int m2ObjectsBeforeCullingExterior = 0;
+            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
+            }
 
-        ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
-        ImGui::Text("WMO objects drawn: %s", std::to_string(wmoObjectsDrawn).c_str());
+            int wmoGroupsInExterior = 0;
+            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
+            }
+
+            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
+            int wmoObjectsBeforeCull = cullStageData!= nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
+
+            ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
+            ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
+            ImGui::Text("Interiors (aka group WMOs): %s", std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
+            ImGui::Text("M2 Objects Before Culling in Exterior: %s", std::to_string(m2ObjectsBeforeCullingExterior).c_str());
+            ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
+
+            ImGui::Separator();
+        }
 
         if (ImGui::CollapsingHeader("Current fog params")) {
-            if (cullStageData->frameDepedantData != nullptr) {
+            if (cullStageData != nullptr && cullStageData->frameDepedantData != nullptr) {
                 ImGui::Text("Fog end: %.3f", cullStageData->frameDepedantData->FogEnd);
                 ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDepedantData->FogScaler);
                 ImGui::Text("Fog Density: %.3f", cullStageData->frameDepedantData->FogDensity);
@@ -200,6 +262,7 @@ void FrontendUI::showCurrentStatsDialog() {
                             cullStageData->frameDepedantData->FogHeightCoefficients.x,
                             cullStageData->frameDepedantData->FogHeightCoefficients.y,
                             cullStageData->frameDepedantData->FogHeightCoefficients.z);
+                ImGui::Separator();
             }
         }
         if (ImGui::CollapsingHeader("Current light params")) {
@@ -208,9 +271,6 @@ void FrontendUI::showCurrentStatsDialog() {
             }
         }
 
-//        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
-//        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
-//            }
         ImGui::End();
     }
 }
@@ -320,7 +380,11 @@ void FrontendUI::showMapSelectionDialog() {
 
                             isWmoMap = false;
                             adtSelectionMinimap = {};
-                            getAdtSelectionMinimap(mapRec.WdtFileID);
+                            if (mapRec.WdtFileID > 0) {
+                                getAdtSelectionMinimap(mapRec.WdtFileID);
+                            } else {
+                                getAdtSelectionMinimap("world/maps/"+mapRec.MapDirectory+"/"+mapRec.MapDirectory+".wdt");
+                            }
 
                         }
                         prevMapId = mapRec.ID;
@@ -357,7 +421,12 @@ void FrontendUI::showMapSelectionDialog() {
                         worldPosX = 0;
                         worldPosY = 0;
                         if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
-                            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                            if (prevMapRec.WdtFileID > 0) {
+                                openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                            } else {
+                                //Try to open map by fileName
+                                openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f, 0);
+                            }
                             showSelectMap = false;
                         }
                     }
@@ -427,7 +496,11 @@ void FrontendUI::showAdtSelectionMinimap() {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
         if (ImGui::Button("Go")) {
 
-            openSceneByfdid(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            if (prevMapRec.WdtFileID > 0) {
+                openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+            } else {
+                openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200);
+            }
             showSelectMap = false;
 
             ImGui::CloseCurrentPopup();
@@ -437,10 +510,10 @@ void FrontendUI::showAdtSelectionMinimap() {
 
     if (prevMinimapZoom != minimapZoom) {
         auto windowSize = ImGui::GetWindowSize();
-        ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x / 2.0) * minimapZoom / prevMinimapZoom -
-                          windowSize.x / 2.0);
-        ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y / 2.0) * minimapZoom / prevMinimapZoom -
-                          windowSize.y / 2.0);
+        ImGui::SetScrollX((ImGui::GetScrollX() + windowSize.x / 2.0f) * minimapZoom / prevMinimapZoom -
+                          windowSize.x / 2.0f);
+        ImGui::SetScrollY((ImGui::GetScrollY() + windowSize.y / 2.0f) * minimapZoom / prevMinimapZoom -
+                          windowSize.y / 2.0f);
     }
     prevMinimapZoom = minimapZoom;
 
@@ -460,6 +533,13 @@ void FrontendUI::showMainMenu() {
             }
             if (ImGui::MenuItem("Unload scene", "", false, cascOpened)) {
                 unloadScene();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
+                m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(
+                        m_api,
+                        contains(fileDialog.getProductBuild().productName, "classic")
+                    );
             }
             ImGui::EndMenu();
         }
@@ -510,11 +590,13 @@ void FrontendUI::initImgui(
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
-    auto context = ImGui::CreateContext();
+    this->imguiContext = ImGui::CreateContext();
     auto &fileDialog = this->fileDialog;
-    addIniCallback(context,
+    auto &windowWidth = this->windowWidth;
+    auto &windowHeight = this->windowHeight;
+    addIniCallback(imguiContext,
                "Global Settings",
-               [&fileDialog](const char* line) -> void {
+               [&fileDialog, &windowWidth, &windowHeight](const char* line) -> void {
                     char lastCascDir[256];
                     if (sscanf(line, "lastCascDir=%[^\n\r]", &lastCascDir) == 1) {
                         std::string s = std::string(&lastCascDir[0]);
@@ -522,12 +604,24 @@ void FrontendUI::initImgui(
 
                         fileDialog.SetPwd(s);
                     }
+                   int lastWidth = 0;
+                   if (sscanf(line, "windowWidth=%d", &lastWidth) == 1) {
+                       windowWidth = lastWidth;
+                   }
+                   int lastHeight = 0;
+                   if (sscanf(line, "windowHeight=%d", &lastHeight) == 1) {
+                       windowHeight = lastHeight;
+                   }
                },
-               [&fileDialog](ImGuiTextBuffer* buf) -> void {
+               [&fileDialog, &windowWidth, &windowHeight](ImGuiTextBuffer* buf) -> void {
                    std::string currPath = fileDialog.GetSelected();
                    buf->appendf("lastCascDir=%s\n", currPath.c_str());
+                   buf->appendf("windowWidth=%s\n", std::to_string(windowWidth).c_str());
+                   buf->appendf("windowHeight=%s\n", std::to_string(windowHeight).c_str());
                }
        );
+
+    ImGui::LoadIniSettingsFromDisk(ImGui::GetIO().IniFilename);
 
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
@@ -575,7 +669,46 @@ bool FrontendUI::getStopKeyboard() {
     return io.WantCaptureKeyboard;
 }
 
+std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneType, const std::string& name, int cameraNum) {
+    apiContainer->camera = std::make_shared<FirstPersonCamera>();
+    if (sceneType == -1) {
+        return std::make_shared<NullScene>();
+    } else if (sceneType == 0) {
+//        m_usePlanarCamera = cameraNum == -1;
 
+
+        return std::make_shared<M2Scene>(apiContainer, name , cameraNum);
+    } else if (sceneType == 1) {
+        return std::make_shared<WmoScene>(apiContainer, name);
+    } else if (sceneType == 2) {
+        auto &adtFileName = name;
+
+        size_t lastSlashPos = adtFileName.find_last_of("/");
+        size_t underscorePosFirst = adtFileName.find_last_of("_");
+        size_t underscorePosSecond = adtFileName.find_last_of("_", underscorePosFirst-1);
+        std::string mapName = adtFileName.substr(lastSlashPos+1, underscorePosSecond-lastSlashPos-1);
+
+        int i = std::stoi(adtFileName.substr(underscorePosSecond+1, underscorePosFirst-underscorePosSecond-1));
+        int j = std::stoi(adtFileName.substr(underscorePosFirst+1, adtFileName.size()-underscorePosFirst-5));
+
+        float adt_x_min = AdtIndexToWorldCoordinate(j);
+        float adt_x_max = AdtIndexToWorldCoordinate(j+1);
+
+        float adt_y_min = AdtIndexToWorldCoordinate(i);
+        float adt_y_max = AdtIndexToWorldCoordinate(i+1);
+
+        apiContainer->camera = std::make_shared<FirstPersonCamera>();
+        apiContainer->camera->setCameraPos(
+            (adt_x_min+adt_x_max) / 2.0,
+            (adt_y_min+adt_y_max) / 2.0,
+            200
+        );
+
+        return std::make_shared<Map>(apiContainer, adtFileName, i, j, mapName);
+    }
+
+    return nullptr;
+}
 
 void FrontendUI::showQuickLinksDialog() {
     if (!showQuickLinks) return;
@@ -588,7 +721,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
-
+    if (ImGui::Button("10.0 Raid WMO", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(4282557);
+    }
     if (ImGui::Button("(WMO) Model with broken portal culling", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4217818);
     }
@@ -612,7 +747,7 @@ void FrontendUI::showQuickLinksDialog() {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
 //    }
     if (ImGui::Button("Nyalotha map", ImVec2(-1, 0))) {
-        openSceneByfdid(2217, 2842322, -11595, 9280, 260);
+        openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260);
     }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1247268);
@@ -644,7 +779,26 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Сollector top", ImVec2(-1, 0))) {
         openWMOSceneByfdid(113540);
     }
+    if (ImGui::Button("10.0 unk model", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
 
+        openM2SceneByfdid(4519090, replacementTextureFDids);
+    }
+    if (ImGui::Button("10.0 strange shoulders", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[2] = 4615508;
+//        replacementTextureFDids[3] = 4615508;
+
+
+
+        openM2SceneByfdid(4614814, replacementTextureFDids);
+    }
+    if (ImGui::Button("DF chicken", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 4007136;
+
+        openM2SceneByfdid(4005446, replacementTextureFDids);
+    }
     if (ImGui::Button("Fox", ImVec2(-1, 0))) {
             replacementTextureFDids = std::vector<int>(17);
             replacementTextureFDids[11] = 3071379;
@@ -730,6 +884,11 @@ void FrontendUI::showQuickLinksDialog() {
 //            m_api->getConfig()->setBCLightHack(true);
     }
 
+    if (ImGui::Button("DragonLands login screen", ImVec2(-1, 0))) {
+            openM2SceneByfdid(4684877, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+    }
+
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
             openM2SceneByfdid(3445776, replacementTextureFDids);
     }
@@ -773,16 +932,16 @@ void FrontendUI::showQuickLinksDialog() {
 
     }
     if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3445776, replacementTextureFDids);
+        openM2SceneByfdid(3445776, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3572296, replacementTextureFDids);
+        openM2SceneByfdid(3572296, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3487959", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3487959, replacementTextureFDids);
+        openM2SceneByfdid(3487959, replacementTextureFDids);
     }
     if (ImGui::Button("M2 1729717 waterfall", ImVec2(-1, 0))) {
-            openM2SceneByfdid(1729717, replacementTextureFDids);
+        openM2SceneByfdid(1729717, replacementTextureFDids);
     }
     if (ImGui::Button("Maw jailer", ImVec2(-1, 0))) {
 //        3096499,3096495
@@ -811,7 +970,9 @@ void FrontendUI::showQuickLinksDialog() {
 
             openM2SceneByfdid(3732303, replacementTextureFDids);
     }
-
+    if (ImGui::Button("Bugged ADT (SL)", ImVec2(-1, 0))) {
+        currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
+    }
     ImGui::Separator();
     ImGui::Text("Models for billboard checking");
     ImGui::NewLine();
@@ -839,10 +1000,11 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::End();
 }
 
+static HGTexture blpText = nullptr;
+
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
         ImGui::Begin("Settings", &showSettings);
-
         {
             std::string currentCamera;
             if (currentCameraNum == -1) {
@@ -911,8 +1073,8 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->farPlaneForCulling = farPlane+50;
         }
 
-        if (ImGui::Checkbox("Use gauss blur", &useGaussBlur)) {
-            m_api->getConfig()->useGaussBlur = useGaussBlur;
+        if (ImGui::Checkbox("Disable glow", &disableGlow)) {
+            m_api->getConfig()->disableGlow = disableGlow;
         }
 
         bool disableFog = m_api->getConfig()->disableFog;
@@ -1081,12 +1243,35 @@ void FrontendUI::showSettingsDialog() {
             }
         }
 
+        //Glow source
+        switch(m_api->getConfig()->glowSource) {
+            case EParameterSource::eDatabase: {
+                glowSource = 0;
+                break;
+            }
+            case EParameterSource::eConfig: {
+                glowSource = 1;
+                break;
+            }
+        }
 
-//        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
-//            if (setThreadCount){
-//                setThreadCount(threadCount);
-//            }
-//        }
+        if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
+            m_api->getConfig()->glowSource = EParameterSource::eDatabase;
+        }
+        if (ImGui::RadioButton("Manual glow", &glowSource, 1)) {
+            m_api->getConfig()->glowSource = EParameterSource::eConfig;
+        }
+
+        if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
+            if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
+                m_api->getConfig()->currentGlow = customGlow;
+            }
+        }
+
+
+        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
+            m_api->getConfig()->threadCount = threadCount;
+        }
 //        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
 //            if (setQuicksortCutoff){
 //                setQuicksortCutoff(quickSortCutoff);
@@ -1103,7 +1288,7 @@ void FrontendUI::showSettingsDialog() {
 //#define logExecution { \
 //    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
 //}
-void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto m_device = m_api->hDevice;
 
     logExecution
@@ -1289,6 +1474,12 @@ void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updat
     bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
 }
 
+void FrontendUI::getAdtSelectionMinimap(int wdtFileDataId) {
+    m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
+}
+void FrontendUI::getAdtSelectionMinimap(std::string wdtFilePath) {
+    m_wdtFile = m_api->cacheStorage->getWdtFileCache()->get(wdtFilePath);
+}
 
 void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
     if (m_api->databaseHandler == nullptr)  return;
@@ -1359,7 +1550,7 @@ void FrontendUI::showMakeScreenshotDialog() {
    }
 }
 
-void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
+void FrontendUI::produceUpdateStage(HUpdateStage &updateStage) {
     this->update(updateStage);
 
 
@@ -1527,7 +1718,8 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
         auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
                                               false,
-                                              m_api->getConfig()->doubleCameraDebug, m_api->getConfig()->swapMainAndDebug,
+                                              m_api->getConfig()->doubleCameraDebug,
+                                              m_api->getConfig()->swapMainAndDebug,
                                               *m_api,
                                               currentScene, cullStageData);
         if (drawStage != nullptr) {
@@ -1552,11 +1744,12 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     return sceneScenario;
 }
 
-bool FrontendUI::openCascCallback(std::string cascPath) {
+bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     HRequestProcessor newProcessor = nullptr;
     std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
+
     try {
-        newProcessor = std::make_shared<CascRequestProcessor>(cascPath.c_str());
+        newProcessor = std::make_shared<CascRequestProcessor>(cascPath, buildDef);
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
         newProcessor->setThreaded(true);
         newProcessor->setFileRequester(newStorage.get());
@@ -1570,17 +1763,6 @@ bool FrontendUI::openCascCallback(std::string cascPath) {
     return true;
 }
 
-void FrontendUI::openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z) {
-    if (m_api->cacheStorage) {
-//            storage->actuallDropCache();
-    }
-
-    currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(x, y, z);
-    m_api->camera->setMovementSpeed(movementSpeed);
-}
-
 void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
     currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
     m_api->camera->setCameraPos(0, 0, 0);
@@ -1588,11 +1770,17 @@ void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
 
 void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
     currentScene = std::make_shared<Map>(m_api, mapId, mapName);
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x,y,z);
+    m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
     currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
+
+    m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x,y,z);
+    m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
     currentScene = std::make_shared<M2Scene>(m_api, m2Fdid, -1);
@@ -1628,6 +1816,8 @@ int FrontendUI::getCameraNumCallback() {
 
     return 0;
 }
+
+
 
 bool FrontendUI::setNewCameraCallback(int cameraNum) {
     if (currentScene == nullptr) return false;
@@ -1671,6 +1861,7 @@ void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &camera
     cameraZ = currentCameraPos[2];
 }
 
+
 inline bool fileExistsNotNull (const std::string& name) {
 #ifdef ANDROID
     return false;
@@ -1687,11 +1878,10 @@ inline bool fileExistsNotNull (const std::string& name) {
     return fileExists;
 }
 
-
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=4dcdb72ad9a3e875782646a4d37ee6f9&cdnconfig=bca49000f3f121b79e63f88ffaf605ab&filename=data&filedataid=";
+    const char * url = "https://wow.tools/casc/file/fname?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=";
+    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
@@ -2198,9 +2388,23 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 }
 
 void FrontendUI::createDatabaseHandler() {
+    bool forceEmptyDatabase = false;
     if (fileExistsNotNull("./export.db3")) {
-        m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
-    } else {
+        try{
+            m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
+        } catch(std::exception const& e) {
+            std::cout << "Failed to open database: " << e.what() << std::endl;
+            forceEmptyDatabase = true;
+        } catch(...) {
+            std::cout << "Exception occurred" << std::endl;
+        }
+    }
+
+    if (forceEmptyDatabase) {
         m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
     }
+
+    mapList = {};
+    mapListStringMap = {};
+    filteredMapList = {};
 }

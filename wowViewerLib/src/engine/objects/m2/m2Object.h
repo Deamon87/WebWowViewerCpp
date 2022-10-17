@@ -9,6 +9,9 @@ class M2Object;
 #define _USE_MATH_DEFINES
 
 #include <cstdint>
+#include <oneapi/tbb/concurrent_unordered_set.h>
+#include <oneapi/tbb/parallel_sort.h>
+#include <unordered_set>
 #include "mathfu/glsl_mappings.h"
 #include "../../managers/particles/particleEmitter.h"
 #include "../../persistance/header/wmoFileHeader.h"
@@ -16,14 +19,12 @@ class M2Object;
 #include "../../geometry/skinGeom.h"
 #include "m2Helpers/M2MaterialInst.h"
 #include "../../managers/animationManager.h"
-#include "mathfu/matrix.h"
 #include "../../persistance/header/skinFileHeader.h"
 #include "../../persistance/skelFile.h"
-
-#include "mathfu/internal/vector_4.h"
 #include "../../managers/CRibbonEmitter.h"
 #include "../../ApiContainer.h"
 #include "m2Helpers/CBoneMasterData.h"
+
 
 class M2Object {
 public:
@@ -36,13 +37,12 @@ public:
 
     ~M2Object();
 
-    friend class M2InstancingObject;
     friend class M2MeshBufferUpdater;
-    bool m_cullResult = false;
 private:
     void createAABB();
     bool m_loading = false;
     bool m_loaded = false;
+    bool m_geomLoaded = false;
     bool m_hasAABB = false;
 
     bool m_alwaysDraw = false;
@@ -168,11 +168,14 @@ private:
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
     static float getTextureWeight(M2SkinProfile *skinData, M2Data *m2data, int batchIndex, int textureIndex, const std::vector<float> &transparencies) ;
 public:
-
-    void testExport();
-
     void setAlwaysDraw(bool value) {
         m_alwaysDraw = value;
+    }
+    bool getAlwaysDraw() {
+        return m_alwaysDraw;
+    }
+    bool getIsSkybox() {
+        return m_boolSkybox;
     }
 
     bool getInteriorAmbientWasSet() {
@@ -182,11 +185,11 @@ public:
         m_interiorAmbientWasSet = value;
     }
 
-    void addPostLoadEvent(std::function<void()> &value) {
+    void addPostLoadEvent(const std::function<void()> &value) {
         m_postLoadEvents.push_back(value);
     }
 
-    CAaBox getAABB() { return aabb; };
+    const CAaBox &getAABB() { return aabb; };
     CAaBox getColissionAABB();;
 
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
@@ -251,13 +254,13 @@ public:
     };
     bool getUseLocalLighting() { return m_useLocalDiffuseColor == 1; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
-                                   const std::vector<mathfu::vec4> &frustumPlanes,
-                                   const std::vector<mathfu::vec3> &frustumPoints);
+                                   const MathHelper::FrustumCullingData &frustumData);
 
     bool isMainDataLoaded();
-    bool isGeomReqFilesLoaded();
+    bool getHasBoundingBox() {return m_hasAABB;}
 
-    bool doPostLoad();
+    void doLoadMainFile();
+    void doLoadGeom();
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
@@ -295,6 +298,132 @@ public:
 
     HGM2Mesh createWaterfallMesh();
     void updateDynamicMeshes();
+};
+
+#include "../../algorithms/mathHelper.h"
+
+template<>
+inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
+    return object->getAABB();
+}
+
+
+struct M2ObjectHasher
+{
+    size_t operator()(const std::shared_ptr<M2Object>& val)const
+    {
+        return std::hash<std::shared_ptr<M2Object>>()(val);
+    }
+};
+
+//typedef oneapi::tbb::concurrent_unordered_set<std::shared_ptr<M2Object>, M2ObjectHasher> M2ObjectListContainer;
+//typedef std::unordered_set<std::shared_ptr<M2Object>> M2ObjectListContainer;
+
+class M2ObjectListContainer {
+private:
+    std::vector<std::shared_ptr<M2Object>> candidates;
+    std::vector<std::shared_ptr<M2Object>> drawn;
+    std::vector<std::shared_ptr<M2Object>> toLoadMain;
+    std::vector<std::shared_ptr<M2Object>> toLoadGeom;
+
+    bool candCanHaveDuplicates = false;
+    bool drawnCanHaveDuplicates = false;
+    bool toLoadMainCanHaveDuplicates = false;
+    bool toLoadGeomCanHaveDuplicates = false;
+
+    void inline removeDuplicates(std::vector<std::shared_ptr<M2Object>> &array) {
+        if (array.size() < 1000) {
+            std::sort(array.begin(), array.end());
+        } else {
+            tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
+        }
+        array.erase(std::unique(array.begin(), array.end()), array.end());
+        return;
+    }
+
+public:
+    M2ObjectListContainer() {
+        candidates.reserve(100000);
+        toLoadMain.reserve(10000);
+        toLoadGeom.reserve(10000);
+        drawn.reserve(10000);
+    }
+    void addCandidate(const std::shared_ptr<M2Object> &cand) {
+        if (cand == nullptr) return;
+        if (cand->getHasBoundingBox()) {
+            candidates.push_back(cand);
+            candCanHaveDuplicates = true;
+        } else {
+            toLoadMain.push_back(cand);
+            toLoadMainCanHaveDuplicates = true;
+        }
+    }
+
+    void addToDraw(const std::shared_ptr<M2Object> &toDraw) {
+        if (toDraw->getGetIsLoaded()) {
+            drawn.push_back(toDraw);
+            drawnCanHaveDuplicates = true;
+        } else if (!toDraw->isMainDataLoaded()) {
+            toLoadMain.push_back(toDraw);
+            toLoadMainCanHaveDuplicates = true;
+        } else {
+            toLoadGeom.push_back(toDraw);
+            toLoadGeomCanHaveDuplicates = true;
+        }
+    }
+
+    const std::vector<std::shared_ptr<M2Object>> &getCandidates() {
+        if (this->candCanHaveDuplicates) {
+            removeDuplicates(candidates);
+            candCanHaveDuplicates = false;
+        }
+
+        return candidates;
+    }
+
+    const std::vector<std::shared_ptr<M2Object>> &getDrawn() {
+        if (this->drawnCanHaveDuplicates) {
+            removeDuplicates(drawn);
+            drawnCanHaveDuplicates = false;
+        }
+
+        return drawn;
+    }
+
+    const std::vector<std::shared_ptr<M2Object>> &getToLoadMain() {
+        if (this->toLoadMainCanHaveDuplicates) {
+            removeDuplicates(toLoadMain);
+            toLoadMainCanHaveDuplicates = false;
+        }
+
+        return toLoadMain;
+    }
+
+    const std::vector<std::shared_ptr<M2Object>> &getToLoadGeom() {
+        if (this->toLoadGeomCanHaveDuplicates) {
+            removeDuplicates(toLoadGeom);
+            toLoadGeomCanHaveDuplicates = false;
+        }
+
+        return toLoadGeom;
+    }
+
+    void addDrawnAndToLoad(M2ObjectListContainer &anotherList) {
+        auto &anotherDrawn = anotherList.getDrawn();
+        this->drawn.insert(this->drawn.end(), anotherDrawn.begin(), anotherDrawn.end());
+
+        auto &anotherToLoadMain = anotherList.getToLoadMain();
+        this->toLoadMain.insert(this->toLoadMain.end(), anotherToLoadMain.begin(), anotherToLoadMain.end());
+
+        auto &anotherToLoadGeom = anotherList.getToLoadGeom();
+        this->toLoadGeom.insert(this->toLoadGeom.end(), anotherToLoadGeom.begin(), anotherToLoadGeom.end());
+
+        toLoadMainCanHaveDuplicates = true;
+        toLoadGeomCanHaveDuplicates = true;
+        drawnCanHaveDuplicates = true;
+    }
 };
 
 

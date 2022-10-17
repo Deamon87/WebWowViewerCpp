@@ -194,9 +194,9 @@ class IDevice {
         virtual HGPUFence createFence() = 0;
 
         virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
-        virtual HGUniformBufferChunk createUniformBufferChunk(size_t size) {
+        virtual HGUniformBufferChunk createUniformBufferChunk(size_t size, size_t realSize = 0) {
             HGUniformBufferChunk h_uniformBuffer;
-            h_uniformBuffer.reset(new IUniformBufferChunk(size));
+            h_uniformBuffer.reset(new IUniformBufferChunk(size, realSize));
 
             return h_uniformBuffer;
         };
@@ -233,14 +233,16 @@ class IDevice {
 
         static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
         virtual void addDeallocationRecord(std::function<void()> callback) {};
+
+        virtual int getCurrentTextureAllocated() {return 0;}
 };
 
 typedef std::shared_ptr<IDevice> HGDevice;
 
 #include <cassert>
 
-#define _DEBUG
-#ifdef _DEBUG
+#define IDEVICE_DEBUG
+#ifdef IDEVICE_DEBUG
 #define TEST(expr) do { \
             if(!(expr)) { \
                 assert(0 && #expr); \

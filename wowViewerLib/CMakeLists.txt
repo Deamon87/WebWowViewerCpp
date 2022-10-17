@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.6)
 project(WoWViewerLib)
 
 include(CheckCXXCompilerFlag)
@@ -16,8 +16,17 @@ set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
+
 if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set(LINK_GLEW 0)
+endif()
+#MacOS system
+if (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    set(LINK_OGL2 0)
+    set(LINK_GLEW 0)
+endif()
+if (MSVC)
+    add_definitions(-DNOMINMAX)
 endif()
 
 if (CMAKE_NDK_BUILD)
@@ -54,18 +63,23 @@ endif()
 if (LINK_OGL4)
     add_definitions(-DLINK_OGL4)
 endif()
-if (LINK_VULKAN EQUAL ON)
-    add_definitions(-DLINK_VULKAN)
-endif()
 
 set(My_Vectorize_Compile_Options "")
 
 
 message("ENABLE_SIMD = ${ENABLE_SIMD}")
 
+if (NOT EMSCRIPTEN)
+    find_package(Threads REQUIRED)
+endif ()
 
-SET(TBB_BUILD_SHARED 0)
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/tbb)
+SET(TBB_STRICTTBB_BUILD_SHARED 0)
+SET(TBB_STRICT OFF CACHE BOOL "")
+SET(TBB_TEST 0 CACHE BOOL "")
+if (EMSCRIPTEN)
+    add_definitions("-D__TBB_RESUMABLE_TASKS_USE_THREADS")
+endif ()
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
 option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
 
@@ -86,11 +100,14 @@ if (EMSCRIPTEN)
 else()
     set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msse3;-mavx2;-ftree-vectorize")
 
-    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar -g -O3" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar -g -O3")
+    if (NOT MSVC)
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar")
+
+        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -g -O3" )
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -g -O3")
+    endif()
 endif()
-
-
 
 
 IF(CMAKE_BUILD_TYPE MATCHES DEBUG)
@@ -106,18 +123,21 @@ set(mathfu_build_benchmarks OFF CACHE BOOL "")
 set(mathfu_build_tests OFF CACHE BOOL "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
-add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu)
+add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu EXCLUDE_FROM_ALL)
 
 message(CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME})
 string(TOUPPER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWERCASE)
 if (LINK_GLEW)
     if (WIN32)
         MESSAGE(IT IS WINDOWS!!!!)
+
         set(GLEW_INCLUDE_DIRS ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/include)
         if(CMAKE_SIZEOF_VOID_P EQUAL 8)
             set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/x64/glew32.lib )
+            set(GLEW_DLL "${PROJECT_SOURCE_DIR}/3rdparty/glew_win/bin/Release/x64/glew32.dll")
         elseif(CMAKE_SIZEOF_VOID_P EQUAL 4)
             set(GLEW_LIBRARIES ${PROJECT_SOURCE_DIR}/3rdparty/glew_win/lib/Release/Win32/glew32.lib )
+            set(GLEW_DLL "${PROJECT_SOURCE_DIR}/3rdparty/glew_win/bin/Release/Win32/glew32.dll")
         endif()
     elseif(NOT CMAKE_SYSTEM_NAME_LOWERCASE MATCHES "ANDROID")
 
@@ -155,12 +175,21 @@ set(SOURCE_FILES
         src/engine/persistance/header/M2FileHeader.h
         src/engine/geometry/m2Geom.cpp
         src/engine/geometry/m2Geom.h
-        src/engine/managers/SceneGraph.cpp src/engine/managers/SceneGraph.h src/engine/persistance/header/wmoFileHeader.h
-        src/engine/texture/BlpTexture.cpp src/engine/texture/BlpTexture.h src/engine/persistance/header/blpFileHeader.h
-        src/engine/cache/cache.cpp src/engine/cache/cache.h src/engine/geometry/skinGeom.cpp
-        src/engine/geometry/skinGeom.h src/engine/persistance/header/skinFileHeader.h
-        src/engine/objects/m2/m2Object.cpp src/engine/objects/m2/m2Object.h
-        src/engine/algorithms/mathHelper.cpp src/engine/algorithms/mathHelper.h
+        src/engine/managers/SceneGraph.cpp
+        src/engine/managers/SceneGraph.h
+        src/engine/persistance/header/wmoFileHeader.h
+        src/engine/texture/BlpTexture.cpp
+        src/engine/texture/BlpTexture.h
+        src/engine/persistance/header/blpFileHeader.h
+        src/engine/cache/cache.cpp
+        src/engine/cache/cache.h
+        src/engine/geometry/skinGeom.cpp
+        src/engine/geometry/skinGeom.h
+        src/engine/persistance/header/skinFileHeader.h
+        src/engine/objects/m2/m2Object.cpp
+        src/engine/objects/m2/m2Object.h
+        src/engine/algorithms/mathHelper.cpp
+        src/engine/algorithms/mathHelper.h
         src/engine/objects/m2/m2Helpers/M2MaterialInst.cpp
         src/engine/objects/m2/m2Helpers/M2MaterialInst.h
         src/engine/managers/animationManager.cpp
@@ -189,8 +218,6 @@ set(SOURCE_FILES
         src/engine/objects/scenes/m2Scene.cpp
 #        src/engine/objects/scenes/creatureScene.cpp
 #        src/engine/objects/scenes/creatureScene.h
-        src/engine/algorithms/PortalCullingAlgo.cpp
-        src/engine/algorithms/PortalCullingAlgo.h
         src/engine/objects/scenes/wmoScene.cpp
         src/engine/objects/scenes/wmoScene.h
         src/engine/objects/objectCache.h
@@ -200,7 +227,16 @@ set(SOURCE_FILES
         src/engine/persistance/wdtFile.h
         src/engine/managers/particles/particleEmitter.cpp
         src/engine/managers/particles/particleEmitter.h
-        src/engine/managers/particles/generators/CParticleGenerator.cpp src/engine/managers/particles/generators/CParticleGenerator.h src/engine/managers/particles/generators/CSphereGenerator.cpp src/engine/managers/particles/generators/CSphereGenerator.h src/engine/managers/particles/particle.cpp src/engine/managers/particles/particle.h src/engine/managers/particles/generators/CSplineGenerator.cpp src/engine/managers/particles/generators/CSplineGenerator.h src/engine/managers/particles/generators/CBoneGenerator.cpp src/engine/managers/particles/generators/CBoneGenerator.h
+        src/engine/managers/particles/generators/CParticleGenerator.cpp
+        src/engine/managers/particles/generators/CParticleGenerator.h
+        src/engine/managers/particles/generators/CSphereGenerator.cpp
+        src/engine/managers/particles/generators/CSphereGenerator.h
+        src/engine/managers/particles/particle.cpp
+        src/engine/managers/particles/particle.h
+        src/engine/managers/particles/generators/CSplineGenerator.cpp
+        src/engine/managers/particles/generators/CSplineGenerator.h
+        src/engine/managers/particles/generators/CBoneGenerator.cpp
+        src/engine/managers/particles/generators/CBoneGenerator.h
         src/engine/persistance/wdlFile.cpp
         src/engine/persistance/wdlFile.h
         src/engine/objects/wdl/wdlObject.cpp
@@ -223,7 +259,7 @@ set(SOURCE_FILES
         src/engine/persistance/animFile.h
         src/engine/persistance/m2File.cpp
         src/engine/persistance/m2File.h
-                src/gapi/interface/IDevice.cpp
+        src/gapi/interface/IDevice.cpp
         src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IIndexBuffer.h
@@ -237,7 +273,6 @@ set(SOURCE_FILES
         src/gapi/IDeviceFactory.cpp
         src/gapi/interface/meshes/IParticleMesh.h
         src/gapi/interface/syncronization/IGPUFence.h
-        src/engine/objects/wowFrameData.h
         src/engine/engineClassList.h
         src/engine/camera/planarCamera.cpp
         src/engine/camera/planarCamera.h
@@ -273,9 +308,22 @@ set(SOURCE_FILES
         src/engine/objects/m2/m2Helpers/CBoneMasterData.cpp
         src/engine/objects/m2/m2Helpers/CBoneMasterData.h
         src/exporters/IExporter.h
-        src/engine/objects/iScene.cpp src/engine/algorithms/C3Spline.cpp src/engine/algorithms/C3Spline.h src/engine/algorithms/C3Spline_Bezier3.cpp src/engine/algorithms/C3Spline_Bezier3.h src/include/string_utils.h src/include/string_utlis.cpp)
+        src/engine/objects/iScene.cpp
+        src/engine/algorithms/C3Spline.cpp
+        src/engine/algorithms/C3Spline.h
+        src/engine/algorithms/C3Spline_Bezier3.cpp
+        src/engine/algorithms/C3Spline_Bezier3.h
+        src/include/string_utils.h
+        src/include/string_utlis.cpp
+        src/engine/persistance/db2File.cpp
+        src/engine/persistance/db2File.h
+        src/engine/algorithms/mathHelper_culling_sse.cpp
+        src/engine/algorithms/mathHelper_culling_sse.h
+        src/engine/algorithms/mathHelper_culling.cpp
+        src/engine/algorithms/mathHelper_culling.h)
 
-set(OPENGL20_IMPLEMENTATION
+if (LINK_OGL2)
+    set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/textures/GBlpTextureGL20.cpp
         src/gapi/ogl2.0/textures/GBlpTextureGL20.h
         src/gapi/ogl2.0/buffers/GVertexBufferDynamicGL20.cpp
@@ -312,6 +360,7 @@ set(OPENGL20_IMPLEMENTATION
         src/gapi/ogl2.0/shaders/GAdtShaderPermutationGL20.h
         src/gapi/ogl2.0/GOcclusionQueryGL20.cpp
         src/gapi/ogl2.0/GOcclusionQueryGL20.h)
+endif()
 
 set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
@@ -401,7 +450,8 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
 
-if (LINK_VULKAN EQUAL ON)
+set(Vulkan_INCLUDE_DIR "")
+if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
             src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
@@ -440,53 +490,83 @@ if (LINK_VULKAN EQUAL ON)
             src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
             src/gapi/vulkan/shaders/GFFXGlowVLK.h
             src/gapi/vulkan/GRenderPassVLK.cpp
-            src/gapi/vulkan/GRenderPassVLK.h src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
-    include_directories(${Vulkan_INCLUDE_DIR})
+            src/gapi/vulkan/GRenderPassVLK.h
+            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp
+            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
+            src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
+            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
+    set(Vulkan_INCLUDE_DIR $ENV{VULKAN_SDK}/Include)
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
             find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
             IF (Vulkan_LIBRARY)
-                set(Vulkan_FOUND ON)
+                set(Vulkan_FOUND ON PARENT_SCOPE)
                 MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
+            ELSE()
+                set(LINK_VULKAN OFF)
+                set(VULKAN_IMPLEMENTATION "")
             ENDIF()
         ENDIF()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
     ELSE(WIN32)
         IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan" REQUIRED)
+            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan")
             IF (Vulkan_LIBRARY)
-                set(Vulkan_FOUND ON)
+                set(Vulkan_FOUND ON PARENT_SCOPE)
                 MESSAGE("Using bundled Vulkan library version non-win32")
+            ELSE()
+                set(LINK_VULKAN OFF)
+                set(VULKAN_IMPLEMENTATION "")
             ENDIF()
         ENDIF()
-        find_package(Threads REQUIRED)
     ENDIF()
-endif()
 
-check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
-if(HAVE_FLAG_STD_CXX17)
-    # Have -std=c++17, use it
-    message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
-#    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
-#    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
-    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
-else()
-    check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
-    if(HAVE_FLAG_STD_CXX1Z)
-#        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
-#        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
-    else()
-        message(ERROR "No supported flags")
+    if (LINK_VULKAN)
+        add_definitions(-DLINK_VULKAN)
     endif()
 endif()
+
+if (NOT MSVC)
+    check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
+    if(HAVE_FLAG_STD_CXX17)
+        # Have -std=c++17, use it
+        message("WOWLIB HAVE_FLAG_STD_CXX17 is supported")
+        #    set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++17" )
+        #    set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++17" )
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++17" )
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17" )
+    else()
+        check_cxx_compiler_flag(-std=c++1z HAVE_FLAG_STD_CXX1Z)
+        if(HAVE_FLAG_STD_CXX1Z)
+            #        set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -std=c++1z" )
+            #        set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -std=c++1z" )
+            set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -std=c++1z")
+            set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++1z")
+        else()
+            message(ERROR "No supported flags")
+        endif()
+    endif()
+endif()
+if (MSVC)
+    include(CheckCXXCompilerFlag)
+    CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
+    message("MSVC Is on")
+    if (_cpp_17_flag_supported)
+        message("/std:c++17 is supported")
+        #target_compile_options(AWebWoWViewerCpp "/std:c++17")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
+        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
+        #target_compile_options(AWebWoWViewerCpp /std:c++17)
+    endif()
+endif()
+
 
 add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
 if (NOT MSVC)
     target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
 endif()
+
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
 endforeach()
@@ -504,14 +584,19 @@ if (LINK_OPENMP)
         target_link_libraries(WoWViewerLib -fopenmp)
     endif()
 endif()
-if (LINK_VULKAN EQUAL ON)
-    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
-endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
-target_link_libraries(WoWViewerLib tbb_static)
+target_link_libraries(WoWViewerLib TBB::tbb )
+if (UNIX AND NOT EMSCRIPTEN)
+target_link_libraries(WoWViewerLib Threads::Threads)
+endif()
 #target_link_options(WoWViewerLib PUBLIC "SHELL: -lstdc++")
 
+if (WIN32)
+    install(FILES ${GLEW_DLL}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+            )
+endif()
 
 if (ENABLE_SIMD)
     mathfu_configure_flags(WoWViewerLib TRUE)
@@ -519,10 +604,11 @@ else()
     mathfu_configure_flags(WoWViewerLib FALSE) #This being TRUE somehow breaks current ribbonEmitter code
 endif()
 
-if (LINK_VULKAN EQUAL ON)
+if (LINK_VULKAN)
     message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
     target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
     target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
+    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
@@ -549,7 +635,7 @@ endif()
 
 set(ext_inDir ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/include ${PROJECT_SOURCE_DIR}/3rdparty/mathfu/dependencies/vectorial/include)
 
-if (LINK_VULKAN EQUAL ON)
+if (LINK_VULKAN)
     set(ext_inDir ${ext_inDir} ${Vulkan_INCLUDE_DIR})
 endif()
 set(WoWViewerLib_INCLUDE_DIRS ${ext_inDir} CACHE INTERNAL "")

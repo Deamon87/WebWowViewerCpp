@@ -15,11 +15,12 @@
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
-#include "childWindow/mapConstructionWindow.h"
+#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../minimapGenerator/minimapGenerator.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../minimapGenerator/storage/CMinimapDataDB.h"
 #include "../exporters/dataExporter/DataExporterClass.h"
+#include "childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -36,7 +37,9 @@ public:
         //this->createDefaultprocessor();
 
     }
-    ~FrontendUI() override {};
+    ~FrontendUI() override {
+        ImGui::DestroyContext(this->imguiContext);
+    };
     std::shared_ptr<FrontendUI> getShared()
     {
         return shared_from_this();
@@ -51,16 +54,16 @@ public:
     void setAnimationId(int animationId) override {};
     void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
-    void produceUpdateStage(HUpdateStage updateStage) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceUpdateStage(HUpdateStage &updateStage) override;
 
-    void checkCulling(HCullStage cullStage) override {};
+    void checkCulling(HCullStage &cullStage) override {};
 
 
-    void doPostLoad(HCullStage cullStage) override {};
+    void doPostLoad(HCullStage &cullStage) override {};
 
-    void update(HUpdateStage updateStage) {};
-    void updateBuffers(HUpdateStage updateStage) override {};
+    void update(HUpdateStage &updateStage) {};
+    void updateBuffers(HUpdateStage &updateStage) override {};
 
 
     int getCameraNum() override {return 0;};
@@ -72,8 +75,20 @@ public:
     void setUIScale(float scale) {
         uiScale = scale;
     }
+    int getWindowWidth() const {
+        return windowWidth;
+    }
+    int getWindowHeight() const {
+        return windowHeight;
+    }
+    void setWindowSize(int width, int height) {
+        windowWidth = width;
+        windowHeight = height;
+    }
 private:
-    std::array<HCullStage, 4> m_cullstages;
+    ImGuiContext* imguiContext = nullptr;
+
+    std::array<HCullStage, 4> m_cullstages = {};
 
     std::shared_ptr<CMinimapDataDB> m_minimapDB;
 
@@ -92,9 +107,8 @@ private:
 
     std::shared_ptr<IScene> currentScene = nullptr;
 
-    bool openCascCallback(std::string cascPath);
+    bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
-    void openSceneByfdid(int mapId, int wdtFileId, float x, float y, float z);
     void openWMOSceneByfdid(int WMOFdid);
     void openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds);
     void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
@@ -103,9 +117,8 @@ private:
     void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
 
-    void getAdtSelectionMinimap(int wdtFileDataId) {
-        m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
-    };
+    void getAdtSelectionMinimap(int wdtFileDataId);
+    void getAdtSelectionMinimap(std::string wdtFilePath);
     void getMapList(std::vector<MapRecord> &mapList);
     std::string getCurrentAreaName();
     bool fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists);
@@ -152,6 +165,9 @@ private:
     bool mapCanBeOpened = true;
     bool adtMinimapFilled = false;
 
+    int windowWidth = 640;
+    int windowHeight = 480;
+
     float minimapZoom = 1;
     float farPlane = 200;
     int currentTime = 0;
@@ -161,10 +177,14 @@ private:
     float prevMinimapZoom = 1;
     int prevMapId = -1;
     bool isWmoMap = false;
-    bool useGaussBlur = true;
+
     bool pauseAnimation = true;
 
     int lightSource = 0;
+
+    bool disableGlow = false;
+    int glowSource = 0;
+    float customGlow = 0.0;
 
     int currentCameraNum = -1;
 
@@ -207,6 +227,8 @@ private:
 
 //Test export
     DataExporterClass *dataExporter = nullptr;
+
+    std::shared_ptr<DatabaseUpdateWorkflow> m_databaseUpdateWorkflow = nullptr;
 
 public:
     void overrideCascOpened(bool value) {

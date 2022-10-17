@@ -287,7 +287,7 @@ void GLTFExporter::addTrack(tinygltf::Animation &animation, M2Track<N> &track, i
         int accessor_Type = 0;
         int valuesOffset = buffer.size();
         int valuesSizeInBytes = 0;
-        if constexpr (std::is_same_v<N, Quat16>) {
+        if constexpr (std::is_same<N, Quat16>::value) {
             accessor_Type = TINYGLTF_TYPE_VEC4;
             auto valueVector = std::vector<mathfu::vec4_packed>(valueArr.size);
 
@@ -302,7 +302,7 @@ void GLTFExporter::addTrack(tinygltf::Animation &animation, M2Track<N> &track, i
             buffer.resize(valuesOffset + valuesSizeInBytes);
             std::copy((uint8_t *)&valueVector[0], (uint8_t *)(&valueVector[0] + valueVector.size()), &buffer[valuesOffset]);
 
-        } else if constexpr (std::is_same_v<N, C3Vector>) {
+        } else if constexpr (std::is_same<N, C3Vector>::value) {
             accessor_Type = TINYGLTF_TYPE_VEC3;
             valuesSizeInBytes = valueArr.size * sizeof(C3Vector);
             buffer.resize(valuesOffset + valuesSizeInBytes);

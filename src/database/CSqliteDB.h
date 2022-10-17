@@ -6,13 +6,15 @@
 #define AWEBWOWVIEWERCPP_CSQLITEDB_H
 
 #include <vector>
+#include <unordered_map>
 #include <SQLiteCpp/Database.h>
 #include "../../wowViewerLib/src/include/databaseHandler.h"
+#include "../../wowViewerLib/src/engine/algorithms/hashString.h"
 
 
 class CSqliteDB : public IClientDatabase {
 public:
-    CSqliteDB(std::string dbFileName);
+    explicit CSqliteDB(std::string dbFileName);
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
     bool getMapById(int mapId, MapRecord &mapRecord) override;
     AreaRecord getArea(int areaId) override;
@@ -24,21 +26,62 @@ public:
     void getLiquidTypeData(int liquidTypeId,  std::vector<LiquidTypeData > &liquidTypeData) override;
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override;
 private:
+    class StatementFieldHolder {
+    public:
+        StatementFieldHolder(SQLite::Database &database, const std::string &query);
+
+        template <class ... Ts>
+        void setInputs(Ts && ... inputs);
+
+        void setInputs();
+        bool execute();
+        SQLite::Column getField(HashedString fieldName);
+        inline int getFieldIndex(HashedString fieldName) {
+            auto it = fieldToIndex.find(fieldName.Hash());
+            if(it != fieldToIndex.end()) {
+                return it->second;
+            } else {
+                return -1;
+            }
+        }
+    private:
+        SQLite::Statement m_query;
+        std::unordered_map<size_t, int> fieldToIndex;
+
+    };
+
     SQLite::Database m_sqliteDatabase;
 
-    SQLite::Statement getWmoAreaAreaName;
-    SQLite::Statement getAreaNameStatement;
-    SQLite::Statement getLightStatement;
-    SQLite::Statement getLightByIdStatement;
-    SQLite::Statement getLightData;
-    SQLite::Statement getLiquidObjectInfo;
-    SQLite::Statement getLiquidTypeInfo;
+    StatementFieldHolder getWmoAreaAreaName;
+    StatementFieldHolder getAreaNameStatement;
+    StatementFieldHolder getLightStatement;
+    StatementFieldHolder getLightByIdStatement;
+    StatementFieldHolder getLightData;
+    StatementFieldHolder getLiquidObjectInfo;
+    StatementFieldHolder getLiquidTypeInfo;
 
-    SQLite::Statement getZoneLightInfo;
-    SQLite::Statement getZoneLightPointsInfo;
-    SQLite::Statement getMapList;
-    SQLite::Statement getMapByIdStatement;
+    StatementFieldHolder getZoneLightInfo;
+    StatementFieldHolder getZoneLightPointsInfo;
+    StatementFieldHolder getMapList;
+    StatementFieldHolder getMapByIdStatement;
 
+    bool getHasLiquidTypeXTexture(SQLite::Database &sqliteDatabase) {
+        bool m_hasLiquidTypeXTexture = sqliteDatabase.tableExists("LiquidTypeXTexture") ? 1 : 0;
+
+        return m_hasLiquidTypeXTexture;
+    }
+
+    bool getHasWDTId(SQLite::Database &sqliteDatabase) {
+        bool m_hasWdtId;
+        try {
+            sqliteDatabase.execAndGet("select WdtFileDataID from Map");
+            m_hasWdtId = true;
+        } catch (...) {
+            m_hasWdtId = false;
+        }
+
+        return m_hasWdtId;
+    }
 
     struct InnerLightResult {
         float pos[3];
@@ -99,6 +142,8 @@ private:
                    const InnerLightDataRes &currLdRes,
                    float timeAlphaBlend, float innerAlpha) const;
 };
+
+
 
 
 #endif //AWEBWOWVIEWERCPP_CSQLITEDB_H

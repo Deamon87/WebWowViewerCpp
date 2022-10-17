@@ -27,8 +27,13 @@ private:
     bool m_supportThreads = true;
     bool m_isTerminating = false;
 
+    FrameCounter submitDrawCommands;
+    FrameCounter updateTimePerFrame;
 
+
+    FrameCounter startUpdateForNexFrame;
     FrameCounter singleUpdateCNT;
+    FrameCounter produceDrawStage;
     FrameCounter meshesCollectCNT;
     FrameCounter updateBuffersCNT;
     FrameCounter updateBuffersDeviceCNT;

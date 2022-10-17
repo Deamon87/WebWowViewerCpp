@@ -158,14 +158,15 @@ enum class WmoPixelShader : int {
     MapObjTwoLayerDiffuseMod2xNA = 16,
     MapObjTwoLayerDiffuseAlpha = 17,
     MapObjLod = 18,
-    MapObjParallax = 19
+    MapObjParallax = 19,
+    MapObjUnkShader = 20
 };
 
 inline constexpr const int operator+(WmoPixelShader const val) { return static_cast<const int>(val); };
 
 inline constexpr const int operator+(WmoVertexShader const val) { return static_cast<const int>(val); };
 
-const int MAX_WMO_SHADERS = 23;
+const int MAX_WMO_SHADERS = 24;
 static const struct {
     int vertexShader;
     int pixelShader;
@@ -284,7 +285,12 @@ static const struct {
     {
         +WmoVertexShader::MapObjParallax,
         +WmoPixelShader::MapObjParallax,
-    }
+    },
+    //23 // TODO: stub for now
+    {
+        +WmoVertexShader::MapObjDiffuse_T1,
+        +WmoPixelShader::MapObjUnkShader,
+    },
 };
 
 
@@ -449,6 +455,9 @@ void WmoGroupObject::createMeshes() {
         if (shaderId >= MAX_WMO_SHADERS) {
             shaderId = 0;
         }
+//        if (shaderId == 23) {
+//            std::cout << "Hello" << std::endl;
+//        }
         int pixelShader = wmoMaterialShader[shaderId].pixelShader;
         int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 
@@ -485,12 +494,30 @@ void WmoGroupObject::createMeshes() {
         HGTexture texture2 = m_wmoApi->getTexture(material.envNameIndex, isSecondTextSpec);
         HGTexture texture3 = m_wmoApi->getTexture(material.texture_2, false);
 
-        meshTemplate.texture.resize(3);
+        meshTemplate.texture = std::vector<std::shared_ptr<ITexture>>(9, nullptr);
         meshTemplate.texture[0] = texture1;
         meshTemplate.texture[1] = texture2;
         meshTemplate.texture[2] = texture3;
 
-        meshTemplate.textureCount = 3;
+        meshTemplate.textureCount = 9;
+        if (pixelShader == (int)WmoPixelShader::MapObjParallax) {
+            meshTemplate.texture[3] = m_wmoApi->getTexture(material.color_2, false);
+            meshTemplate.texture[4] = m_wmoApi->getTexture(material.flags_2, false);
+            meshTemplate.texture[5] = m_wmoApi->getTexture(material.runTimeData[0], false);
+        } else if (pixelShader == (int)WmoPixelShader::MapObjUnkShader) {
+//            meshTemplate.texture.resize(9);
+//            meshTemplate.textureCount = 9;
+
+            meshTemplate.texture[3] = m_wmoApi->getTexture(material.color_2, false);
+            meshTemplate.texture[4] = m_wmoApi->getTexture(material.flags_2, false);
+            meshTemplate.texture[5] = m_wmoApi->getTexture(material.runTimeData[0], false);
+            meshTemplate.texture[6] = m_wmoApi->getTexture(material.runTimeData[1], false);
+            meshTemplate.texture[7] = m_wmoApi->getTexture(material.runTimeData[2], false);
+            meshTemplate.texture[8] = m_wmoApi->getTexture(material.runTimeData[3], false);
+        }
+
+
+
 
         meshTemplate.ubo[0] = nullptr;
         meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
@@ -508,6 +535,7 @@ void WmoGroupObject::createMeshes() {
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
         });
+
 
         hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
 //            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
@@ -686,19 +714,23 @@ void WmoGroupObject::loadDoodads() {
     if (this->m_geom->doodadRefsLen <= 0) return;
     if (m_wmoApi == nullptr) return;
 
-    m_doodads = std::vector<std::shared_ptr<M2Object>>(this->m_geom->doodadRefsLen, nullptr);
+    m_doodads = {};
+    m_doodads.reserve(this->m_geom->doodadRefsLen);
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
-        m_doodads[i] = newDoodad;
-        std::function<void()> event = [&, newDoodad]() -> void {
-            this->m_recalcBoundries = true;
-        };
-        if (m_doodads[i] != nullptr) {
-            m_doodads[i]->addPostLoadEvent(event);
+        m_doodads.push_back(newDoodad);
+        if (newDoodad != nullptr) {
+            std::function<void()> event = [&, newDoodad]() -> void {
+                this->m_recalcBoundries = true;
+            };
+
+            newDoodad->addPostLoadEvent(event);
         }
     }
+
+    this->m_recalcBoundries = true;
 }
 
 void WmoGroupObject::createWorldGroupBB(CAaBox &bbox, mathfu::mat4 &placementMatrix) {
@@ -731,9 +763,8 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 //
 //    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
 //
-    for (int j = 0; j < this->m_doodads.size(); j++) {
-        std::shared_ptr<M2Object> m2Object = this->m_doodads[j];
-        if (m2Object == nullptr || !m2Object->getGetIsLoaded()) continue; //corrupted :(
+    for (auto &m2Object : this->m_doodads) {
+        if (m2Object == nullptr || !m2Object->isMainDataLoaded()) continue;
 
         CAaBox m2AAbb = m2Object->getAABB();
 
@@ -754,8 +785,7 @@ void WmoGroupObject::updateWorldGroupBBWithM2() {
 
 void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                                        mathfu::vec4 &cameraPos,
-                                       std::vector<mathfu::vec4> &frustumPlanes,
-                                       std::vector<mathfu::vec3> &points) {
+                                       const MathHelper::FrustumCullingData &frustumData) {
     drawDoodads = false;
     drawGroup = false;
     if (!m_loaded) {
@@ -774,7 +804,7 @@ void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
         cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
-    drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
+    drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumData, bbArray);
 
     bbArray = this->m_volumeWorldGroupBorder;
     bool isInsideGroup = (
@@ -783,7 +813,7 @@ void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
         cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
     );
 
-    drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumPlanes, bbArray, points);
+    drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumData, bbArray);
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
@@ -816,14 +846,18 @@ bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
     return insidePortals;
 }
 
-void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP_NODE> &nodes, std::vector<int> &bspLeafIdList) {
+template<typename Y>
+void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vector<int> &bspLeafIdList) {
     if (nodeId == -1) return;
 
     if ((nodes[nodeId].planeType & 0x4)) {
         bspLeafIdList.push_back(nodeId);
     } else if (nodes[nodeId].planeType == 0) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
+        std::vector<MathHelper::PlanesUndPoints> left = {{{mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{{mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}}};
+
+        bool leftSide = MathHelper::checkFrustum( left, bbox);
+        bool rightSide = MathHelper::checkFrustum(right, bbox);
 
         if (leftSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
@@ -832,8 +866,11 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
     } else if (nodes[nodeId].planeType == 1) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
+        std::vector<MathHelper::PlanesUndPoints> left = {{{mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{{mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}}};
+
+        bool leftSide = MathHelper::checkFrustum(left, bbox);
+        bool rightSide = MathHelper::checkFrustum(right, bbox);
 
         if (leftSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
@@ -842,46 +879,11 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, PointerChecker<t_BSP
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
     } else if (nodes[nodeId].planeType == 2) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
+        std::vector<MathHelper::PlanesUndPoints> left = {{{mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}}};
+        std::vector<MathHelper::PlanesUndPoints> right = {{{mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}}};
 
-        if (leftSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
-        }
-        if (rightSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
-        }
-    }
-}
-
-void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, t_BSP_NODE *nodes, std::vector<int> &bspLeafIdList) {
-    if (nodeId == -1) return;
-
-    if ((nodes[nodeId].planeType & 0x4)) {
-        bspLeafIdList.push_back(nodeId);
-    } else if (nodes[nodeId].planeType == 0) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(-1, 0, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(1, 0, 0, -nodes[nodeId].fDist)}, bbox, {});
-
-        if (leftSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
-        }
-        if (rightSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
-        }
-    } else if (nodes[nodeId].planeType == 1) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, -1, 0, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 1, 0, -nodes[nodeId].fDist)}, bbox, {});
-
-        if (leftSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
-        }
-        if (rightSide) {
-            WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
-        }
-    } else if (nodes[nodeId].planeType == 2) {
-        bool leftSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, -1, nodes[nodeId].fDist)}, bbox, {});
-        bool rightSide = MathHelper::checkFrustum({mathfu::vec4(0, 0, 1, -nodes[nodeId].fDist)}, bbox, {});
+        bool leftSide = MathHelper::checkFrustum(left, bbox);
+        bool rightSide = MathHelper::checkFrustum(right, bbox);
 
         if (leftSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[0], nodes, bspLeafIdList);
@@ -1180,22 +1182,22 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 }
 
 
-void WmoGroupObject::checkDoodads(std::vector<std::shared_ptr<M2Object>> &wmoM2Candidates) {
+void WmoGroupObject::checkDoodads(M2ObjectListContainer &wmoM2Candidates) {
     if (!m_loaded) return;
 
     mathfu::vec4 ambientColor = getAmbientColor();
 
 
-    for (int i = 0; i < this->m_doodads.size(); i++) {
-        if (this->m_doodads[i] != nullptr) {
+    for (auto &doodad : this->m_doodads) {
+        if (doodad != nullptr) {
             if (this->getDontUseLocalLightingForM2()) {
-                this->m_doodads[i]->setUseLocalLighting(false);
+                doodad->setUseLocalLighting(false);
             } else {
-                this->m_doodads[i]->setUseLocalLighting(true);
-                this->m_doodads[i]->setAmbientColorOverride(ambientColor, true);
+                doodad->setUseLocalLighting(true);
+                doodad->setAmbientColorOverride(ambientColor, true);
             }
 
-            wmoM2Candidates.push_back(this->m_doodads[i]);
+            wmoM2Candidates.addCandidate(doodad);
         }
     }
 }

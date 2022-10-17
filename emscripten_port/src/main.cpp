@@ -220,7 +220,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
     auto controllable = apiContainer->camera;
 
-    controllable->zoomInFromMouseScroll(yoffset/240.0f);
+    controllable->zoomInFromMouseScroll(-yoffset*100.0f / 240.0f );
 }
 
 

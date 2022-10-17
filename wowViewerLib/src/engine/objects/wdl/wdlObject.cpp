@@ -4,10 +4,10 @@
 
 #include "wdlObject.h"
 
-bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu::vec4> &frustumPlanes,
-                                    std::vector<mathfu::vec3> &frustumPoints, std::vector<mathfu::vec3> &hullLines,
-                                    mathfu::mat4 &lookAtMat4, std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                    std::vector<std::shared_ptr<WmoObject>> &wmoCandidates) {
+bool WdlObject::checkFrustumCulling(const MathHelper::FrustumCullingData &frustumData,
+                                    mathfu::vec4 &cameraPos,
+                                    M2ObjectListContainer &m2ObjectsCandidates,
+                                    WMOListContainer &wmoCandidates) {
     if (!this->m_loaded) {
         if (m_wdlFile->getStatus() == FileStatus::FSLoaded) {
             this->loadingFinished();
@@ -17,12 +17,11 @@ bool WdlObject::checkFrustumCulling(mathfu::vec4 &cameraPos, std::vector<mathfu:
         }
     }
 
-    for (auto m2Object : m2Objects) {
-        m2ObjectsCandidates.push_back(m2Object);
+    for (const auto &m2Object : m2Objects) {
+        m2ObjectsCandidates.addCandidate(m2Object);
     }
-
-    for (auto wmoObject : wmoObjects) {
-        wmoCandidates.push_back(wmoObject);
+    for (const auto &wmoObject : wmoObjects) {
+        wmoCandidates.addCand(wmoObject);
     }
 
     return false;
@@ -134,10 +133,9 @@ WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
 }
 
 void WdlObject::checkSkyScenes(const StateForConditions &state,
-                               std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
+                               M2ObjectListContainer &m2ObjectsCandidates,
                                const mathfu::vec4 &cameraPos,
-                               const std::vector<mathfu::vec4> &frustumPlanes,
-                               const std::vector<mathfu::vec3> &frustumPoints
+                               const MathHelper::FrustumCullingData &frustumData
                                ) {
     for (auto &skyScene : skyScenes) {
         bool conditionPassed = true;
@@ -177,9 +175,7 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
 
         if (conditionPassed) {
             for (auto &m2Object : skyScene.m2Objects) {
-                if (m2Object->checkFrustumCulling(cameraPos, frustumPlanes, frustumPoints)) {
-                    m2ObjectsCandidates.push_back(m2Object);
-                }
+                m2ObjectsCandidates.addToDraw(m2Object);
             }
         }
     }

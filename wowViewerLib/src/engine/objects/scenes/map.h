@@ -14,7 +14,6 @@
 #include "../iScene.h"
 #include "../objectCache.h"
 #include "../wdl/wdlObject.h"
-#include "../wowFrameData.h"
 #include "../../SceneScenario.h"
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
@@ -35,10 +34,34 @@ private:
         }
     }
 protected:
+    FrameCounter mapProduceUpdateCounter;
+    FrameCounter interiorViewCollectMeshCounter;
+    FrameCounter exteriorViewCollectMeshCounter;
+    FrameCounter m2CollectMeshCounter;
+    FrameCounter sortMeshCounter;
+    FrameCounter collectBuffersCounter;
+    FrameCounter sortBuffersCounter;
 
-    tbb::task_scheduler_init taskScheduler;
+    FrameCounter mapUpdateCounter;
     FrameCounter m2UpdateframeCounter;
+    FrameCounter m2calcDistanceCounter;
+    FrameCounter adtCleanupCounter;
+    FrameCounter wmoGroupUpdate;
+    FrameCounter adtUpdate;
 
+
+    FrameCounter cullCreateVarsCounter;
+    FrameCounter cullGetCurrentWMOCounter;
+    FrameCounter cullGetCurrentZoneCounter;
+    FrameCounter cullUpdateLightsFromDBCounter;
+    FrameCounter cullExterior;
+    FrameCounter cullExteriorSetDecl;
+    FrameCounter cullExteriorWDLCull;
+    FrameCounter cullExteriorGetCands;
+    FrameCounter cullExterioFrustumWMO;
+    FrameCounter cullExterioFrustumM2;
+    FrameCounter cullSkyDoms;
+    FrameCounter cullCombineAllObjects;
 
     HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
@@ -96,20 +119,25 @@ protected:
 
     animTime_t getCurrentSceneTime() override ;
 
-    virtual void getPotentialEntities(const mathfu::vec4 &cameraPos, std::vector<std::shared_ptr<M2Object>> &potentialM2,
-                              HCullStage &cullStage, mathfu::mat4 &lookAtMat4, mathfu::vec4 &camera4,
-                              std::vector<mathfu::vec4> &frustumPlanes, std::vector<mathfu::vec3> &frustumPoints,
-                              std::vector<std::shared_ptr<WmoObject>> &potentialWmo);
+    virtual void getPotentialEntities(
+        const MathHelper::FrustumCullingData &frustumData,
+        const mathfu::vec4 &cameraPos,
+        HCullStage &cullStage,
+        M2ObjectListContainer &potentialM2,
+        WMOListContainer &potentialWmo);
 
-    virtual void getCandidatesEntities(std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos,
-                                       std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                                       std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                                       std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+    virtual void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
+                                       const mathfu::vec4 &cameraPos,
+                                       HCullStage &cullStage,
+                                       M2ObjectListContainer &m2ObjectsCandidates,
+                                       WMOListContainer &wmoCandidates);
 
-    void checkADTCulling(int i, int j, std::vector<mathfu::vec3> &hullLines, mathfu::mat4 &lookAtMat4,
-                              mathfu::vec4 &cameraPos, std::vector<mathfu::vec3> &frustumPoints, HCullStage &cullStage,
-                              std::vector<std::shared_ptr<M2Object>> &m2ObjectsCandidates,
-                              std::vector<std::shared_ptr<WmoObject>> &wmoCandidates);
+    void checkADTCulling(int i, int j,
+                         const MathHelper::FrustumCullingData &frustumData,
+                         const mathfu::vec4 &cameraPos,
+                         HCullStage &cullStage,
+                         M2ObjectListContainer &m2ObjectsCandidates,
+                         WMOListContainer &wmoCandidates);
 
     virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
@@ -131,10 +159,10 @@ protected:
     HADTBoundingBoxHolder m_adtBBHolder = nullptr;
 
 protected:
-    explicit Map() : taskScheduler(10){
+    explicit Map() {
     }
 public:
-    explicit Map(HApiContainer api, int mapId, std::string mapName) : taskScheduler(10) {
+    explicit Map(HApiContainer api, int mapId, std::string mapName) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; this->mapName = mapName;
@@ -194,9 +222,9 @@ public:
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
-    void checkCulling(HCullStage cullStage) override;
+    void checkCulling(HCullStage &cullStage) override;
 
-    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) override {
+    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) override {
         m_mandatoryADT = mandatoryADTs;
     }
     void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) override;
@@ -206,28 +234,25 @@ public:
     void resetAnimation() override {
 
     }
-    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) override {
+    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder &bbHolder) override {
         m_adtBBHolder = bbHolder;
     }
 
 
 
-    void doPostLoad(HCullStage cullStage) override;
+    void doPostLoad(HCullStage &cullStage) override;
 
-    void update(HUpdateStage updateStage);
-    void updateBuffers(HUpdateStage updateStage) override;
-    void produceUpdateStage(HUpdateStage updateStage) override;
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void update(HUpdateStage &updateStage);
+    void updateBuffers(HUpdateStage &updateStage) override;
+    void produceUpdateStage(HUpdateStage &updateStage) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
-                       std::vector<mathfu::vec3> &frustumPoints,
-                       std::vector<mathfu::vec3> &hullLines,
-                       mathfu::mat4 &lookAtMat4,
-                       mathfu::mat4 &viewPerspectiveMat,
+                       const MathHelper::FrustumCullingData &frustumData,
                        int viewRenderOrder,
                        HCullStage cullStage);
 
-    HDrawStage doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const;
+    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const;
 
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;

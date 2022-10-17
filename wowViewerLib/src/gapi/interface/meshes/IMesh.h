@@ -51,8 +51,6 @@ enum class DrawElementMode {
     TRIANGLE_STRIP
 };
 
-extern BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX];
-
 class gMeshTemplate {
 public:
     gMeshTemplate(HGVertexBufferBindings bindings, HGShaderPermutation shader) : bindings(bindings), shader(shader) {}

@@ -10,6 +10,7 @@
 #include <jni.h>
 #include <android_native_app_glue.h>
 #include "HttpRequestProcessor.h"
+#include "../../../../wowViewerLib/src/include/string_utils.h"
 
 struct UserDataForRequest {
     std::string fileName;
@@ -82,32 +83,6 @@ extern "C" {
     }
 }
 
-template< typename T >
-static std::string int_to_hex( T i )
-{
-    std::stringstream stream;
-    stream << "0x"
-           << std::setfill ('0') << std::setw(sizeof(T)*2)
-           << std::hex << i;
-    return stream.str();
-}
-static std::string char_to_escape( char i )
-{
-    std::stringstream stream;
-    stream << "%"
-           << std::setfill ('0') << std::setw(2)
-           << std::hex << (int)i;
-    return stream.str();
-}
-
-static std::string ReplaceAll(std::string str, const std::string& from, const std::string& to) {
-    size_t start_pos = 0;
-    while((start_pos = str.find(from, start_pos)) != std::string::npos) {
-        str.replace(start_pos, from.length(), to);
-        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
-    }
-    return str;
-}
 
 void HttpRequestProcessorAndroid::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
     auto perstFile = s_file.lock();
@@ -122,7 +97,7 @@ void HttpRequestProcessorAndroid::processFileRequest(std::string &fileName, Cach
     std::string escapedFileName = fileName;
     for (int i = 0; i < charsToEscape.size(); i++) {
         char c = charsToEscape[i];
-        escapedFileName = ReplaceAll(escapedFileName, std::string(1, c), char_to_escape(c));
+        escapedFileName = ReplaceAll(escapedFileName, std::string(1, c), url_char_to_escape(c));
     }
 
     std::string fullUrl;

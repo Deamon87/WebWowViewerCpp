@@ -19,7 +19,7 @@ protected:
     RequestProcessor() : toBeProcessed(0){
 
     }
-    ~RequestProcessor() {
+    virtual ~RequestProcessor() {
         if (loaderThread != nullptr) {
             isTerminating = true;
             loaderThread->join();

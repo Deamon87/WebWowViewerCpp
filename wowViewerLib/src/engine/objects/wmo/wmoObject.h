@@ -9,6 +9,7 @@ struct WmoGroupResult;
 class WmoGroupObject;
 #include <string>
 #include <unordered_set>
+#include <oneapi/tbb/concurrent_unordered_set.h>
 #include <unordered_map>
 #include <memory>
 #include "../../geometry/wmoMainGeom.h"
@@ -21,15 +22,6 @@ class WmoGroupObject;
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"
 
-
-struct WmoGroupResult {
-    M2Range topBottom;
-    int groupIndex;
-    int WMOGroupID;
-    std::vector<int> bspLeafList;
-    int nodeId;
-};
-
 class WmoObject : public IWmoApi {
 
 public:
@@ -38,6 +30,17 @@ public:
 
 	~WmoObject();
 private:
+    struct PortalTraverseTempData {
+        FrameViewsHolder &viewsHolder;
+        bool exteriorWasCreatedBeforeTraversing;
+        mathfu::vec4 farPlane;
+        std::vector<HInteriorView> &ivPerWMOGroup;
+        mathfu::vec4 &cameraVec4;
+        mathfu::vec4 &cameraLocal;
+        mathfu::mat4 &transposeInverseModelMat;
+        std::vector<bool> &transverseVisitedPortals;
+    };
+
     HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
@@ -70,10 +73,6 @@ private:
 
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
-
-    // Portal culling stuff begin
-    std::vector<bool> transverseVisitedPortals;
-    // Portal culling stuff end
 
     HGMesh transformedAntiPortals;
 
@@ -126,7 +125,7 @@ public:
 
     void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
 
-    bool doPostLoad(int &processedThisFrame);
+    bool doPostLoad();
     void update();
     void uploadGeneratorBuffers();
 
@@ -137,44 +136,29 @@ public:
 
 public:
     //Portal culling
-//    bool startTraversingFromInteriorWMO (
-//        std::vector<WmoGroupResult> &wmoGroupsResult,
-//        mathfu::vec4 &cameraVec4,
-//        mathfu::mat4 &viewPerspectiveMat,
-//        std::vector<M2Object*> &m2RenderedThisFrame);
-//
-//    bool startTraversingFromExterior (
-//        mathfu::vec4 &cameraVec4,
-//        mathfu::mat4 &viewPerspectiveMat,
-//        std::vector<M2Object*> &m2RenderedThisFrame);
-
-    void resetTraversedWmoGroups();
     bool startTraversingWMOGroup(
         mathfu::vec4 &cameraVec4,
-        mathfu::mat4 &viewPerspectiveMat,
+        const MathHelper::FrustumCullingData &frustumData,
         int groupId,
         int globalLevel,
         int &renderOrder,
         bool traversingFromInterior,
-        std::vector<InteriorView> &interiorViews,
-        ExteriorView &exteriorView
+        FrameViewsHolder &viewsHolder
     );
 
     void checkGroupDoodads(
         int groupId,
         mathfu::vec4 &cameraVec4,
         std::vector<mathfu::vec4> &frustumPlanes,
-        std::vector<std::shared_ptr<M2Object>> &m2Candidates);
+        M2ObjectListContainer &m2Candidates);
 
-    void transverseGroupWMO (
+    void addSplitChildWMOsToView(InteriorView &interiorView, int groupId);
+
+
+    void traverseGroupWmo (
         int groupId,
         bool traversingStartedFromInterior,
-        std::vector<InteriorView> &allInteriorViews, //GroupIndex as index
-        ExteriorView &exteriorView,
-        mathfu::vec4 &cameraVec4,
-        mathfu::vec4 &cameraLocal,
-        mathfu::mat4 &inverseTransposeModelMat,
-        std::vector<bool> &transverseVisitedPortals,
+        PortalTraverseTempData &traverseTempData,
         std::vector<mathfu::vec4> &localFrustumPlanes,
         int globalLevel,
         int localLevel
@@ -194,6 +178,77 @@ public:
 
     void createTransformedAntiPortalMesh();
     void updateTransformedAntiPortalPoints();
+};
+
+struct WMOObjectHasher
+{
+    size_t operator()(const std::shared_ptr<WmoObject>& val)const
+    {
+        return std::hash<std::shared_ptr<WmoObject>>()(val);
+    }
+};
+
+//typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
+class WMOListContainer {
+private:
+    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
+    std::vector<std::shared_ptr<WmoObject>> wmoToLoad;
+
+    bool candCanHaveDuplicates = false;
+    bool toLoadCanHaveDuplicates = false;
+
+    void inline removeDuplicates(std::vector<std::shared_ptr<WmoObject>> &array) {
+        if (array.size() < 1000) {
+            std::sort(array.begin(), array.end());
+        } else {
+            tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
+        }
+        array.erase(std::unique(array.begin(), array.end()), array.end());
+        return;
+    }
+
+public:
+    WMOListContainer() {
+        wmoCandidates.reserve(3000);
+        wmoToLoad.reserve(3000);
+    }
+
+    void addCand(const std::shared_ptr<WmoObject> &toDraw) {
+        if (toDraw->isLoaded()) {
+            wmoCandidates.push_back(toDraw);
+            candCanHaveDuplicates = true;
+        } else {
+            wmoToLoad.push_back(toDraw);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    void addToLoad(const std::shared_ptr<WmoObject> &toLoad) {
+        if (!toLoad->isLoaded()) {
+            wmoToLoad.push_back(toLoad);
+            toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    const std::vector<std::shared_ptr<WmoObject>> &getCandidates() {
+        if (this->candCanHaveDuplicates) {
+            removeDuplicates(wmoCandidates);
+            candCanHaveDuplicates = false;
+        }
+
+        return wmoCandidates;
+    }
+
+    const std::vector<std::shared_ptr<WmoObject>> &getToLoad() {
+        if (this->toLoadCanHaveDuplicates) {
+            removeDuplicates(wmoToLoad);
+            toLoadCanHaveDuplicates = false;
+        }
+
+        return wmoToLoad;
+    }
 };
 
 

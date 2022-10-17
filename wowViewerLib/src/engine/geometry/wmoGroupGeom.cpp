@@ -100,6 +100,13 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                     object.textureCoordsLen3 = chunkData.chunkLen / sizeof(C2Vector);
                                     chunkData.readValues(object.textCoords3,
                                                          object.textureCoordsLen3);
+                                } else if (object.textureCoordsRead == 3) {
+                                    debuglog("texture coords 4 in file "+ object.getFileName() + " "+std::to_string(object.getFileDataId()));
+                                    object.textureCoordsLen4 = chunkData.chunkLen / sizeof(C2Vector);
+                                    chunkData.readValues(object.textCoords4,
+                                                         object.textureCoordsLen4);
+                                } else {
+                                    debuglog("object.textureCoordsRead = "+std::to_string(object.textureCoordsRead));
                                 }
                                 object.textureCoordsRead++;
                             },
@@ -121,6 +128,15 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                                     std::cout << "Spotted incorrect MOCV cout" << std::endl;
                                 }
                             },
+                        }
+                    },
+                    {
+                        'MOC2', {
+                        [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOC2");
+                                object.cvSecondLen = chunkData.chunkLen / 4;
+                                chunkData.readValues(object.colorSecondArray, object.cvSecondLen);
+                            }
                         }
                     },
                     {
@@ -299,8 +315,10 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
             C2Vector textCoordinate;
             C2Vector textCoordinate2;
             C2Vector textCoordinate3;
+            C2Vector textCoordinate4;
             CImVector color;
             CImVector color2;
+            CImVector colorSecond;
         });
 
         static const C2Vector c2ones = C2Vector(mathfu::vec2(1.0, 1.0));
@@ -330,6 +348,11 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
             } else {
                 format.textCoordinate3 = c2ones;
             }
+            if (textureCoordsLen4 > 0) {
+                format.textCoordinate4 = textCoords4[i];
+            } else {
+                format.textCoordinate4 = c2ones;
+            }
             if (cvLen > 0) {
                 format.color = colorArray[i];
             } else {
@@ -345,6 +368,14 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
                 format.color2.g = 0;
                 format.color2.b = 0;
                 format.color2.a = 0xFF;
+            }
+            if (cvSecondLen > 0) {
+                format.colorSecond = colorSecondArray[i];
+            } else {
+                format.colorSecond.r = 0;
+                format.colorSecond.g = 0;
+                format.colorSecond.b = 0;
+                format.colorSecond.a = 0xFF;
             }
         }
 
@@ -365,15 +396,17 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HGDevice &device) {
     return indexVBO;
 }
 
-static GBufferBinding staticWMOBindings[7] = {
-    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 56, 0 },
-    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 56, 12},
-    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 56, 24},
-    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 56, 32},
-    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false, 56, 40},
-    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 56, 48},
-    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true, 56, 52}
-};
+static const std::array<GBufferBinding, 9> staticWMOBindings = {{
+    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 68   , 0 },
+    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 68, 12},
+    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 68, 24},
+    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 68, 32},
+    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false, 68, 40},
+    {+wmoShader::Attribute::aTexCoord4, 2, GBindingType::GFLOAT, false, 68, 48},
+    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 56},
+    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 60},
+    {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 64}
+}};
 
 static GBufferBinding staticWMOWaterBindings[2] = {
     {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
@@ -388,7 +421,7 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HGDevice &device) {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = getVBO(device);
 
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOBindings[0], &staticWMOBindings[7]);
+        vertexBinding.bindings = std::vector<GBufferBinding>(staticWMOBindings.begin(), staticWMOBindings.end());
 
         vertexBufferBindings->addVertexBufferBinding(vertexBinding);
         vertexBufferBindings->save();

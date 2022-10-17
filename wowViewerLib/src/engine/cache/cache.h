@@ -149,19 +149,6 @@ public:
         std::string fileName = ss.str();
 
         cacheLck.lock();
-        auto it = m_cache.find(fileName);
-        bool found = it != m_cache.end();
-        cacheLck.unlock();
-
-        if (found) {
-            if (!it->second.expired()) {
-                return it->second.lock();
-            } else {
-//                std::cout << "getFileId: fileName = " << fileName << " is expired" << std::endl;
-             }
-        }
-
-        cacheLck.lock();
         {
             auto it = m_cache.find(fileName);
             bool found = it != m_cache.end();

@@ -13,17 +13,19 @@ class FrameCounter {
 public:
     FrameCounter(){};
     void beginMeasurement();
-    void endMeasurement(const std::string &source);
+    void endMeasurement();
 
     double getTimePerFrame() {
         return timePerFrame;
     }
 private:
-#if defined(_MSC_VER) or defined(__EMSCRIPTEN__)
-    std::chrono::time_point<std::chrono::steady_clock> m_startTime;
-#else
-    std::chrono::system_clock::time_point m_startTime;
-#endif
+//#if defined(_MSC_VER)
+//    std::chrono::time_point<std::chrono::steady_clock> m_startTime;
+//#else
+    using hi_res_time_point = std::chrono::time_point<std::chrono::high_resolution_clock>;
+
+    hi_res_time_point m_startTime;
+//#endif
     double m_accomulatedTimeInterval = 0;
     int frameCounter = 0;
 

@@ -44,9 +44,9 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 
 
 
-#define OPENGL_DGB_MESSAGE 1
-
-#if defined(__EMSCRIPTEN__)
+#if defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#define OPENGL_DGB_MESSAGE 0
+#else
 #define OPENGL_DGB_MESSAGE 0
 #endif
 
@@ -109,7 +109,7 @@ public:
     HGVertexBufferBindings createVertexBufferBindings() override;
     //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
     HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override;
-    HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
+    HGUniformBufferChunk createUniformBufferChunk(size_t size, size_t realSize = 0) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
@@ -156,13 +156,13 @@ private:
     bool isDepthPreFill = false;
 protected:
     struct BlpCacheRecord {
-        BlpTexture* texture;
+        std::string textureFileName;
         bool wrapX;
         bool wrapY;
 
         bool operator==(const BlpCacheRecord &other) const {
           return
-              (texture == other.texture) &&
+              (textureFileName == other.textureFileName) &&
               (wrapX == other.wrapX) &&
               (wrapY == other.wrapY);
 
@@ -171,7 +171,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<std::string>{}(k.textureFileName) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureGL33>, BlpCacheRecordHasher> loadedTextureCache;
@@ -240,6 +240,8 @@ public:
         };
     };
     std::unordered_map<WMOShaderCacheRecord, std::weak_ptr<IShaderPermutation>, WMOShaderCacheRecordHasher> wmoShaderCache;
+
+    int getCurrentTextureAllocated() override {return GTextureGL33::getCurrentGLTexturesAllocated();}
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;

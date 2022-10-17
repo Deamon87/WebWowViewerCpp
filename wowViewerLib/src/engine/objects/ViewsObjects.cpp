@@ -5,7 +5,12 @@
 #include "ViewsObjects.h"
 #include "../../gapi/UniformBufferStructures.h"
 #include "../shader/ShaderDefinitions.h"
-#include <execution>
+#include "oneapi/tbb/parallel_for.h"
+
+#if (__AVX__ && __SSE2__)
+#include "../algorithms/mathHelper_culling_sse.h"
+#endif
+#include "../algorithms/mathHelper_culling.h"
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     {
@@ -23,7 +28,7 @@ void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<
 
 
 void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
-    for (auto& wmoGroup : drawnWmos) {
+    for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
         wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
 
@@ -33,48 +38,41 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
 //    }
 }
 
-void GeneralView::addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos) {
-    std::vector<std::shared_ptr<M2Object>> candidates;
-    for (auto &wmoGroup : wmosForM2) {
-        auto doodads = wmoGroup->getDoodads();
-        std::copy(doodads->begin(), doodads->end(), std::back_inserter(candidates));
+void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
+    for (auto &wmoGroup : wmoGroupArray.getToCheckM2()) {
+        auto &doodads = wmoGroup->getDoodads();
+        for (auto &m2object : doodads) {
+            this->m2List.addCandidate(m2object);
+        }
     }
 
-    //Delete duplicates
-#if (_LIBCPP_HAS_PARALLEL_ALGORITHMS)
-    std::sort(std::execution::par_unseq, candidates.begin(), candidates.end() );
+    auto candidatesArr = this->m2List.getCandidates();
+    auto candCullRes = std::vector<uint32_t>(candidatesArr.size(), 0xFFFFFFFF);
+
+    oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 1000),
+                      [&](tbb::blocked_range<size_t> r) {
+//for (int i = 0; i < candidatesArr.size(); i++) {
+#if (__AVX__ && __SSE2__)
+        ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(this->frustumData, r.begin(),
+                                                                       r.end(), candidatesArr,
+                                                                       candCullRes);
 #else
-    std::sort(candidates.begin(), candidates.end() );
+        ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
+                                                          r.begin(), r.end(), candidatesArr,
+                                                          candCullRes);
 #endif
-    candidates.erase( unique( candidates.begin(), candidates.end() ), candidates.end() );
+    }, tbb::auto_partitioner());
 
-//    std::vector<bool> candidateResults = std::vector<bool>(candidates.size(), false);
-
-    std::for_each(
-        candidates.begin(),
-        candidates.end(),
-        [this, &cameraPos](std::shared_ptr<M2Object> m2Candidate) {  // copies are safer, and the resulting code will be as quick.
-            if (m2Candidate == nullptr) return;
-            for (auto &frustumPlane : this->frustumPlanes) {
-                if (m2Candidate->checkFrustumCulling(cameraPos, frustumPlane, {})) {
-                    setM2Lights(m2Candidate);
-
-                    break;
-                }
-            }
-        });
-
-//    drawnM2s = std::vector<M2Object *>();
-    drawnM2s.reserve(drawnM2s.size() + candidates.size());
-    for (auto &m2Candidate : candidates) {
-        if (m2Candidate == nullptr) continue;
-        if (m2Candidate->m_cullResult) {
-            drawnM2s.push_back(m2Candidate);
+    for (int i = 0; i < candCullRes.size(); i++) {
+        if (!candCullRes[i]) {
+            auto &m2ObjectCandidate = candidatesArr[i];
+            setM2Lights(m2ObjectCandidate);
+            this->m2List.addToDraw(m2ObjectCandidate);
         }
     }
 }
 
-void GeneralView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
+void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
@@ -83,7 +81,7 @@ static std::array<GBufferBinding, 3> DrawPortalBindings = {
     //24
 };
 
-void GeneralView::produceTransformedPortalMeshes(HApiContainer apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
+void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
 
     std::vector<uint16_t> indiciesArray;
     std::vector<float> verticles;
@@ -181,12 +179,34 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer apiContainer, std
     }
 }
 
-void InteriorView::setM2Lights(std::shared_ptr<M2Object> m2Object) {
-    if (!drawnWmos[0]->getIsLoaded()) return;
+void InteriorView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
+    if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
 
-    if (drawnWmos[0]->getDontUseLocalLightingForM2()) {
+    if (ownerGroupWMO->getDontUseLocalLightingForM2()) {
         m2Object->setUseLocalLighting(false);
     } else {
-        drawnWmos[0]->assignInteriorParams(m2Object);
+        ownerGroupWMO->assignInteriorParams(m2Object);
     }
+}
+
+HExteriorView FrameViewsHolder::getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData) {
+    if (exteriorView == nullptr) {
+        exteriorView = std::make_shared<ExteriorView>();
+        exteriorView->frustumData = frustumData;
+    }
+
+    return exteriorView;
+}
+
+HInteriorView FrameViewsHolder::createInterior(const MathHelper::FrustumCullingData &frustumData) {
+    auto interior = std::make_shared<InteriorView>();
+    interior->frustumData = frustumData;
+
+    interiorViews.push_back(interior);
+
+    return interior;
+}
+
+HExteriorView FrameViewsHolder::getExterior() {
+    return exteriorView;
 }

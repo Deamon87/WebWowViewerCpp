@@ -43,6 +43,14 @@
 #include <stdint.h>
 #endif
 
+#if defined(_MSC_VER)
+#define ALIGNED_(x) __declspec(align(x))
+#else
+#if defined(__GNUC__)
+#define ALIGNED_(x) __attribute__ ((aligned(x)))
+#endif
+#endif
+
 #define DEBUGPOINTER 0
 
 template<class T>
@@ -127,10 +135,10 @@ struct M2RangeInt {
 };
 typedef M2Range CRange;
 
+PACK(
 struct CAaBox
 {
-public:
-    CAaBox(){};
+    CAaBox()= default;
     CAaBox(C3Vector pmin, C3Vector pmax) {
 		this->min = pmin;
         this->max = pmax;
@@ -144,7 +152,8 @@ public:
 
     C3Vector min = mathfu::vec3_packed(mathfu::vec3(20000, 20000, 20000));
     C3Vector max = mathfu::vec3_packed(mathfu::vec3(-20000, -20000, -20000));
-};
+});
+
 struct CRect
 {
     float miny;

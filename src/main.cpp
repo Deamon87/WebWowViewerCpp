@@ -29,28 +29,18 @@
 #include <iostream>
 #include <csignal>
 #include <exception>
+#include <algorithm>
 #include <GLFW/glfw3.h>
-
-
 
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "ui/FrontendUI.h"
-#include "database/CSqliteDB.h"
-#include "../wowViewerLib/src/engine/WowFilesCacheStorage.h"
 #include "../wowViewerLib/src/engine/SceneComposer.h"
 #include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../wowViewerLib/src/engine/objects/scenes/map.h"
-#include "../wowViewerLib/src/engine/ApiContainer.h"
-#include "../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
-#include "../wowViewerLib/src/engine/objects/scenes/m2Scene.h"
 #include "screenshots/screenshotMaker.h"
 #include "database/CEmptySqliteDB.h"
 #include <exception>
-
-//TODO: Consider using dedicated buffers for uniform data for OGL in update thread, fill them up there
-//Anb upload these buffers from main thread just before drawing
-//Reason: void SceneComposer::DoUpdate takes 25% of time with OGL backend
 
 int mleft_pressed = 0;
 int mright_pressed = 0;
@@ -60,10 +50,7 @@ double m_y = 0.0;
 bool stopMouse = false;
 bool stopKeyboard = false;
 
-std::string screenshotFileName = "";
-int screenshotWidth = 100;
-int screenshotHeight = 100;
-bool needToMakeScreenshot = false;
+std::shared_ptr<FrontendUI> frontendUI = nullptr;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
@@ -270,12 +257,22 @@ double calcFPS(GLFWwindow* window, double timeInterval = 1.0, std::string window
 
 int canvWidth = 640;
 int canvHeight = 480;
+
+int windowWidth = canvWidth;
+int windowHeight = canvHeight;
 bool windowSizeChanged = false;
 
 void window_size_callback(GLFWwindow* window, int width, int height)
 {
-    canvWidth = width;
-    canvHeight = height;
+    windowWidth = width;
+    windowHeight = height;
+
+    glfwGetFramebufferSize(window, &canvWidth, &canvHeight);
+
+    if (frontendUI != nullptr) {
+        frontendUI->setWindowSize(windowWidth, windowHeight);
+    }
+
     windowSizeChanged = true;
 }
 
@@ -390,7 +387,7 @@ int main(){
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     }
 
-    auto window = glfwCreateWindow(canvWidth, canvHeight, "WowMapViewer", nullptr, nullptr);
+    auto window = glfwCreateWindow(windowWidth, windowHeight, "WowMapViewer", nullptr, nullptr);
 
 #ifdef LINK_VULKAN
     vkCallInitCallback callback;
@@ -431,7 +428,7 @@ int main(){
 
     //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
 
-    std::shared_ptr<FrontendUI> frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
+    frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
 
     glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);
@@ -441,12 +438,47 @@ int main(){
     glfwSetWindowSizeLimits( window, canvWidth, canvHeight, GLFW_DONT_CARE, GLFW_DONT_CARE);
     glfwSetMouseButtonCallback( window, mouse_button_callback);
 
+    GLFWmonitor* windowMonitor = glfwGetPrimaryMonitor();
+    float xscale, yscale;
+    glfwGetMonitorContentScale(windowMonitor, &xscale, &yscale);
+
+    float uiScale = std::max<float>(xscale, yscale);
+    std::cout << "uiScale = " << uiScale << std::endl;
+
+    int width_mm, height_mm;
+    glfwGetMonitorPhysicalSize(windowMonitor, &width_mm, &height_mm);
+
+    if (width_mm > 0 && height_mm > 0) {
+        std::cout << "monitor width = " << width_mm << "mm, monitor height = " << height_mm << "mm" << std::endl;
+        float monitorDiag = sqrt((width_mm * width_mm) + (height_mm * height_mm)) * 3.0f / 64.0f;
+        std::cout << "monitor diag " << monitorDiag << "''" << std::endl;
+
+        if (monitorDiag > 20) {
+            uiScale = std::min<float>(uiScale, 2.0f);
+        }
+        if (monitorDiag > 25) {
+            uiScale = std::min<float>(uiScale, 1.5f);
+        }
+
+        std::cout << "corrected uiScale for monitor dimensions = " << uiScale << std::endl;
+    }
+
+    frontendUI->setUIScale(uiScale);
+
+
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
     //Otherwise keys like backspace, delete etc wont work
-
     frontendUI->initImgui(window);
-    frontendUI->createDefaultprocessor();
+    {
+        int width = frontendUI->getWindowWidth();
+        int height = frontendUI->getWindowHeight();
+
+        glfwSetWindowSize(window, width, height);
+        glfwGetFramebufferSize(window, &canvWidth, &canvHeight);
+    }
+
+//    frontendUI->createDefaultprocessor();
     glfwSwapInterval(0);
 
 //try {

@@ -578,7 +578,7 @@ void MinimapGenerator::process() {
         mathfu::vec3 minCoord = mathfu::vec3(20000, 20000, 20000);
         mathfu::vec3 maxCoord = mathfu::vec3(-20000, -20000, -20000);
 
-        for (auto &m2Object: lastFrameCull->m2Array) {
+        for (auto &m2Object: lastFrameCull->m2Array.getCandidates()) {
             auto objBB = m2Object->getAABB();
 
             if (!MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
@@ -595,7 +595,7 @@ void MinimapGenerator::process() {
             );
         }
 
-        for (auto &wmoObject: lastFrameCull->wmoArray) {
+        for (auto &wmoObject: lastFrameCull->wmoArray.getCandidates()) {
             auto objBB = wmoObject->getAABB();
             if (!MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 

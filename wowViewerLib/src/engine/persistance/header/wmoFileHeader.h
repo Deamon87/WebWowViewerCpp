@@ -127,6 +127,25 @@ struct SMOGroupFlags {
     uint32_t unused10 : 1;
 };
 
+    struct SMOGroupFlags2 {
+        //0x1
+        uint32_t unk1 : 1;
+        //0x2
+        uint32_t unk2 : 1;
+        //0x4
+        uint32_t unk4 : 1;
+        //0x8
+        uint32_t unk8 : 1;
+        //0x10
+        uint32_t unk0x10 : 1;
+        //0x20
+        uint32_t unk0x20 : 1;
+        //0x40
+        uint32_t isSplitGroupParent : 1;
+        //0x80
+        uint32_t isSplitGroupChild : 1;
+    };
+
 struct SMOGroupInfo
 {
 /*000h*/  SMOGroupFlags flags; //  see information in in MOGP, they are equivalent
@@ -226,8 +245,9 @@ struct MOGP {
     uint8_t         fogIndicies[4];// 	Up to four indices into the WMO fog list
     uint32_t 		liquidType;    //LiquidType, not always directly used: see below in the MLIQ chunk.
     uint32_t        wmoGroupID;
-    uint32_t 		unused1;//&1: WoD(?)+ CanCutTerrain (by MOPL planes), others (UNUSED: 20740)
-    uint32_t 		unused2;//(UNUSED: 20740)
+    SMOGroupFlags2 	flags2;//&1: WoD(?)+ CanCutTerrain (by MOPL planes), others (UNUSED: 20740)
+    int16_t 		parentSplitOrFirstChildGroupIndex;
+    int16_t 		nextSplitGroupChildIndex;
 };
 
 struct MAVG {

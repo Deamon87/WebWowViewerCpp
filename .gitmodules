@@ -13,12 +13,6 @@
 [submodule "3rdparty/zlib"]
 	path = 3rdparty/zlib
 	url = https://github.com/madler/zlib
-[submodule "3rdparty/libzip"]
-	path = 3rdparty/libzip
-	url = https://github.com/nih-at/libzip.git
-[submodule "3rdparty/PolyM"]
-	path = 3rdparty/PolyM
-	url = https://github.com/khuttun/PolyM
 [submodule "3rdparty/stormlib"]
 	path = 3rdparty/stormlib
 	url = https://github.com/ladislav-zezula/StormLib.git
@@ -35,12 +29,6 @@
 [submodule "3rdparty/SQLiteCpp"]
 	path = 3rdparty/SQLiteCpp
 	url = https://github.com/SRombauts/SQLiteCpp.git
-[submodule "3rdparty/libpng"]
-	path = 3rdparty/libpng
-	url = https://github.com/glennrp/libpng.git
-[submodule "wowViewerLib/3rdparty/tbb"]
-	path = wowViewerLib/3rdparty/tbb
-	url = https://github.com/wjakob/tbb
 [submodule "3rdparty/filesystem_impl"]
 	path = 3rdparty/filesystem_impl
 	url = https://github.com/gulrak/filesystem.git
@@ -50,10 +38,9 @@
 [submodule "emscripten_port/3rdparty/zipper"]
 	path = emscripten_port/3rdparty/zipper
 	url = https://github.com/sebastiandev/zipper.git
-[submodule "3rdparty/libressl"]
-	path = 3rdparty/libressl
-	url = https://github.com/libressl-portable/portable.git
-
-[submodule "3rdparty/mdebtls"]
-	path = 3rdparty/mdebtls
-	url = https://github.com/ARMmbed/mbedtls
+[submodule "3rdparty/DBImporter"]
+	path = 3rdparty/DBImporter
+	url = https://github.com/Deamon87/DBImporter.git
+[submodule "wowViewerLib/3rdparty/oneTbb"]
+	path = wowViewerLib/3rdparty/oneTbb
+	url = https://github.com/Deamon87/oneTBBWasm.git

@@ -181,7 +181,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     this->threadCount = std::max<int>((int)std::thread::hardware_concurrency() - 3, 1);
 
@@ -288,6 +288,10 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 //    poolCreateInfo.maxBlockCount = 10;
 //
 //    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
+
+}
+
+void GDeviceVLK::initialize() {
 
 }
 
@@ -853,7 +857,9 @@ unsigned int GDeviceVLK::getDrawFrameNumber() {
 unsigned int GDeviceVLK::getUpdateFrameNumber() {
     return (m_frameNumber + 1) & 3;
 }
-
+unsigned int GDeviceVLK::getOcclusionFrameNumber() {
+    return (m_frameNumber + 2) & 3;
+}
 unsigned int GDeviceVLK::getCullingFrameNumber() {
     return (m_frameNumber + 3) & 3;
 }
@@ -901,7 +907,7 @@ void GDeviceVLK::startUpdateForNextFrame() {
     vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkWaitForFences(device, 1, &inFlightFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &uploadFences[uploadFrame]);
-    this->waitInDrawStageAndDeps.endMeasurement("");
+    this->waitInDrawStageAndDeps.endMeasurement();
 
     if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
         std::cout << "failed to begin recording uploadCommandBuffer command buffer!" << std::endl;
@@ -1126,6 +1132,11 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "waterfallShader") {
         IShaderPermutation *iPremutation = new GWaterfallShaderVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "drawBBShader") {
+        IShaderPermutation *iPremutation = new GDrawBoundingBoxVLK(shaderName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;
@@ -1843,6 +1854,14 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
 
 //    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
 
+    if (drawStage->target == nullptr &&
+        (
+            (drawStage->viewPortDimensions.maxs[0] != swapChainExtent.width) ||
+            (drawStage->viewPortDimensions.maxs[1] != swapChainExtent.height)
+        )
+    ) {
+        recreateSwapChain();
+    }
 
     vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
 
@@ -1868,8 +1887,8 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
         bufferInheritanceInfo.subpass = 0;
         bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
         bufferInheritanceInfo.occlusionQueryEnable = false;
-        bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
-        bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+        bufferInheritanceInfo.queryFlags = 0;
+        bufferInheritanceInfo.pipelineStatistics = 0;
 
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -1890,8 +1909,8 @@ void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
         bufferInheritanceInfo.subpass = 0;
         bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
         bufferInheritanceInfo.occlusionQueryEnable = false;
-        bufferInheritanceInfo.queryFlags = VK_NULL_HANDLE;
-        bufferInheritanceInfo.pipelineStatistics = VK_NULL_HANDLE;
+        bufferInheritanceInfo.queryFlags = 0;
+        bufferInheritanceInfo.pipelineStatistics = 0;
 
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;

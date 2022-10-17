@@ -7,6 +7,8 @@
 #include "../../../engine/opengl/header.h"
 #include "../../interface/IDevice.h"
 
+int GTextureGL33::currentGLTexturesAllocated = 0;
+
 GTextureGL33::GTextureGL33(const HGDevice &device, bool xWrapTex, bool yWrapTex) : m_device(device) {
     this->xWrapTex = xWrapTex;
     this->yWrapTex = yWrapTex;
@@ -22,12 +24,14 @@ void GTextureGL33::createBuffer() {
     logGLError
     glGenTextures(1, &textureIdentifier);
     logGLError
+    GTextureGL33::currentGLTexturesAllocated++;
 }
 
 void GTextureGL33::destroyBuffer() {
     const GLuint indent = textureIdentifier;
     m_device->addDeallocationRecord([indent]() -> void {
         glDeleteTextures(1, &indent);
+        GTextureGL33::currentGLTexturesAllocated--;
     });
 }
 

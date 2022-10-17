@@ -1016,20 +1016,24 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 //            }
 //            emscripten_run_script("debugger;");
             auto partColorInd = this->m_data->old.particleColorIndex - 11;
-            auto colorRepl1Track = colorRepl3Tracks[partColorInd];
+            auto colorReplTrack = colorRepl3Tracks[partColorInd];
             mathfu::vec4 timedValue = {0,0,0,0};
             if (percentTime < *m_data->old.colorTrack.timestamps[1]) {
                 float alpha =
-                    (percentTime  - (*m_data->old.colorTrack.timestamps[0]/32767.0f)) /
-                    (*m_data->old.colorTrack.timestamps[0]/32767.0f - *m_data->old.colorTrack.timestamps[1]/32767.0f);
+                    ((*m_data->old.colorTrack.timestamps[1]/32767.0f) - percentTime) /
+                    (*m_data->old.colorTrack.timestamps[1]/32767.0f - *m_data->old.colorTrack.timestamps[0]/32767.0f);
 
-                timedValue = (colorRepl1Track[1]-colorRepl1Track[0]) * alpha + colorRepl1Track[0];
+                alpha = std::clamp<float>(alpha, 0.0f, 1.0f);
+
+                timedValue = (colorReplTrack[1] - colorReplTrack[0]) * (1.0f - alpha) + colorReplTrack[0];
             } else {
                 float alpha =
-                    (percentTime  - (*m_data->old.colorTrack.timestamps[1]/32767.0f)) /
+                    ((*m_data->old.colorTrack.timestamps[2]/32767.0f) - percentTime) /
                     (*m_data->old.colorTrack.timestamps[2]/32767.0f - *m_data->old.colorTrack.timestamps[1]/32767.0f);
 
-                timedValue = (colorRepl1Track[1]-colorRepl1Track[0]) * alpha + colorRepl1Track[0];
+                alpha = std::clamp<float>(alpha, 0.0f, 1.0f);
+
+                timedValue = (colorReplTrack[2] - colorReplTrack[1]) * (1.0f - alpha) + colorReplTrack[1];
             }
 
             ageDependentValues.m_timedColor = timedValue.xyz();

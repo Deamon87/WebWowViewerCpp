@@ -15,8 +15,10 @@
 #   error "include imgui.h before this header"
 #endif
 
-#include "../../database/csvtest/csv.h"
 #include "../../../../wowViewerLib/src/include/string_utils.h"
+#include "buildDefinition.h"
+#include "../../../database/buildInfoParser/buildInfoParser.h"
+#include "../../../database/product_db_parser/productDbParser.h"
 
 using ImGuiFileBrowserFlags = int;
 
@@ -75,15 +77,15 @@ namespace ImGui
         void SetTypeFilters(const std::vector<const char*> &typeFilters);
 
         bool isCascOpenMode() { return m_cascOpenMode;};
-        std::string getProductBuild() { return currentBuild;};
+        BuildDefinition getProductBuild() { return currentBuild;};
     private:
 
         void loadBuildsFromBuildInfo();
 
         bool m_cascOpenMode = false;
         ghc::filesystem::path m_last_pwd_forBuildInfo;
-        std::vector<std::string> availableBuilds;
-        std::string currentBuild = "";
+        std::vector<BuildDefinition> availableBuilds;
+        BuildDefinition currentBuild = {};
 
         class ScopeGuard
         {
@@ -235,39 +237,72 @@ inline bool fileExistsNotNull1 (const std::string& name) {
     return exists(p) && ghc::filesystem::file_size(p) > 10;
 }
 
+inline void readWholeFileToString (const std::string& fileName, std::string &output) {
+    std::ifstream t(fileName, std::ios::binary );
+
+    //Allocate whole size for string
+    t.seekg(0, std::ios::end);
+    output.reserve(t.tellg());
+    t.seekg(0, std::ios::beg);
+
+    //Read and assign
+    output.assign((std::istreambuf_iterator<char>(t)),
+               std::istreambuf_iterator<char>());
+
+    t.close();
+}
+
 inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
     availableBuilds.clear();
-    currentBuild = "";
+    currentBuild = {};
+
+    SetOfBuildDefs buildDefs;
+
     std::string buildFile = GetSelected() / ".build.info";
-//    std::cout<<buildFile<<std::endl;
     if (fileExistsNotNull1(buildFile)) {
-        auto lineReader = io::LineReader(buildFile);
-        std::string header = lineReader.next_line();
-        std::vector<std::string> headerNames;
-        tokenize(header, "|", headerNames);
+        std::string buildFileContent;
+        readWholeFileToString(buildFile, buildFileContent);
 
-        int productIndex = -1;
-        for (int i = 0; i < headerNames.size(); i++) {
-            if (startsWith(headerNames[i], "Product")) {
-                productIndex = i;
-                break;
+        try {
+            if (!buildFileContent.empty()) {
+                buildDefs.merge(BuildInfoParser::parseFileContent(buildFileContent));
             }
-        }
-        if (productIndex == -1) return;
-
-        while(char*line = lineReader.next_line()){
-            std::string content = line;
-            std::vector<std::string> values;
-            tokenize(content, "|", values);
-            if (productIndex < values.size()) {
-                availableBuilds.push_back(values[productIndex]);
-            }
+        } catch (...) {
+            std::cout << "error while trying to read and parse .build.info";
         }
     }
 
+    /*
+    std::string productDBFile = GetSelected() / ".product.db";
+    if (fileExistsNotNull1(productDBFile)) {
+        std::string productFileContent;
+        readWholeFileToString(productDBFile, productFileContent);
 
-    std::sort(availableBuilds.begin(), availableBuilds.end());
-    availableBuilds.erase(std::unique(availableBuilds.begin(), availableBuilds.end()), availableBuilds.end());
+        try {
+            if (!productFileContent.empty()) {
+                buildDefs.merge(ProductDbParser::parseFileContent(productFileContent));
+            }
+        } catch (...) {
+            std::cout << "error while trying to read and parse .product.db";
+        }
+    }
+    */
+
+
+    availableBuilds = std::vector<BuildDefinition>(buildDefs.begin(), buildDefs.end());
+
+    std::sort(availableBuilds.begin(), availableBuilds.end(), [](const BuildDefinition &a, const BuildDefinition &b) {
+        int compareRes = a.productName.compare(b.productName);
+        if (compareRes != 0) return compareRes < 0;
+
+        compareRes = a.buildVersion.compare(b.buildVersion);
+        if (compareRes != 0) return compareRes < 0;
+
+        compareRes = a.buildConfig.compare(b.buildConfig);
+        if (compareRes != 0) return compareRes < 0;
+
+        return false;
+    });
 
     if (availableBuilds.size()>0) {
         currentBuild = availableBuilds[0];
@@ -500,16 +535,20 @@ inline void ImGui::FileBrowser::Display()
         ImGui::Text("Select product build:");
         SameLine();
         if (ImGui::BeginCombo("##buildSelect",
-                              currentBuild.c_str())) // The second parameter is the label previewed before opening the combo.
+                              currentBuild.productName.c_str())) // The second parameter is the label previewed before opening the combo.
         {
             if (availableBuilds.empty()) {
-                availableBuilds.push_back("");
+                ImGui::Selectable("No builds found", true);
             }
             for (int n = 0; n < availableBuilds.size(); n++)
             {
-                bool is_selected = (availableBuilds[n] == currentBuild);
-                if (ImGui::Selectable(availableBuilds[n].c_str(), is_selected)) {
-                    currentBuild = availableBuilds[n];
+                auto &buildDef = availableBuilds[n];
+
+                bool is_selected = (buildDef == currentBuild);
+                std::string label = buildDef.productName + " - " +buildDef.buildVersion + " - " + buildDef.buildConfig.substr(0,5);
+
+                if (ImGui::Selectable(label.c_str(), is_selected)) {
+                    currentBuild = buildDef;
                 }
 
                 if (is_selected)

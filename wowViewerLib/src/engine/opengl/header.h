@@ -34,6 +34,10 @@
 #ifdef _WIN32
 #undef GLFW_INCLUDE_VULKAN
 #include <GL/glew.h>
+#elif defined(__APPLE__)
+#include <OpenGL/gl3.h>
+#include <OpenGL/gl3ext.h>
+#include <OpenGL/glu.h>
 #else
 #include <GL/gl.h>
 #include <GL/glext.h>

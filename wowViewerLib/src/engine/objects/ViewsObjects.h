@@ -5,9 +5,17 @@
 #ifndef AWEBWOWVIEWERCPP_VIEWSOBJECTS_H
 #define AWEBWOWVIEWERCPP_VIEWSOBJECTS_H
 
+#include <memory>
+
+class GeneralView;
 class InteriorView;
 class ExteriorView;
 class ADTObjRenderRes;
+class FrameViewsHolder;
+
+typedef std::shared_ptr<GeneralView> HGeneralView;
+typedef std::shared_ptr<InteriorView> HInteriorView;
+typedef std::shared_ptr<ExteriorView> HExteriorView;
 
 #include <vector>
 #include "wmo/wmoGroupObject.h"
@@ -24,14 +32,12 @@ public:
 
 class GeneralView {
 public:
-    bool viewCreated = false;
-    std::vector<std::shared_ptr<WmoGroupObject>> drawnWmos = {}; //Wmos which draw their meshes
-    std::vector<std::shared_ptr<WmoGroupObject>> wmosForM2 = {}; //Wmo which contribute M2s to the scene
-    std::vector<std::shared_ptr<M2Object>> drawnM2s = {};
+    WMOGroupListContainer wmoGroupArray;
+    M2ObjectListContainer m2List;
 
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> worldPortalVertices = {};
-    std::vector<std::vector<mathfu::vec4>> frustumPlanes = {};
+    MathHelper::FrustumCullingData frustumData;
 
     int level = -1;
     int renderOrder = -1;
@@ -43,19 +49,18 @@ public:
         std::vector<HGMesh> m_meshes = {};
     } portalPointsFrame;
 
-
-
     virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
-    virtual void setM2Lights(std::shared_ptr<M2Object> m2Object);
+    virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
-    void produceTransformedPortalMeshes(HApiContainer apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
-    void addM2FromGroups(mathfu::mat4 &frustumMat, mathfu::mat4 &lookAtMat4, mathfu::vec4 &cameraPos);
+    void produceTransformedPortalMeshes(HApiContainer &apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
+    void addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos);
 };
 
 class InteriorView : public GeneralView {
 public:
-    int portalIndex = -1;
-    void setM2Lights(std::shared_ptr<M2Object> m2Object) override;
+    std::vector<int> portalIndexes;
+    std::shared_ptr<WmoGroupObject> ownerGroupWMO = {}; //Wmos which portals belong to
+    void setM2Lights(std::shared_ptr<M2Object> &m2Object) override;
 };
 
 class ExteriorView : public GeneralView {
@@ -66,6 +71,22 @@ public:
 
 public:
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) override;
+};
+
+class FrameViewsHolder {
+public:
+    HExteriorView getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData);
+    HExteriorView getExterior();
+    HInteriorView createInterior(const MathHelper::FrustumCullingData &frustumData);
+
+    const std::vector<HInteriorView> &getInteriorViews() {
+        return interiorViews;
+    }
+private:
+    HExteriorView exteriorView = nullptr ;
+    std::vector<HInteriorView> interiorViews = {};
+
+
 };
 
 

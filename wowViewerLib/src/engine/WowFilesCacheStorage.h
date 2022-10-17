@@ -24,6 +24,7 @@ typedef std::shared_ptr<WoWFilesCacheStorage> HWoWFilesCacheStorage;
 #include "geometry/m2Geom.h"
 #include "geometry/skinGeom.h"
 #include "texture/BlpTexture.h"
+#include "persistance/db2File.h"
 
 class WoWFilesCacheStorage : public IFileRequester {
 private:
@@ -37,6 +38,7 @@ private:
     Cache<BlpTexture> textureCache;
     Cache<AnimFile> animCache;
     Cache<SkelFile> skelCache;
+    Cache<Db2File> db2Cache;
 public:
     WoWFilesCacheStorage(IFileRequest * requestProcessor);
     void provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data)  ;
@@ -56,6 +58,7 @@ public:
     Cache<WmoGroupGeom>* getWmoGroupGeomCache();
     Cache<WdtFile>* getWdtFileCache();
     Cache<WdlFile>* getWdlFileCache();
+    Cache<Db2File>* getDb2Cache();
 };
 
 

@@ -116,7 +116,7 @@ struct renderFrameBufferShader {
 
 struct wmoShader {
     enum class Attribute {
-        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aColor = 5, aColor2 = 6, wmoShaderAttributeEnd
+        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aTexCoord4 = 5, aColor = 6, aColor2 = 7, aColorSecond = 8, wmoShaderAttributeEnd
     };
 };
 
@@ -193,8 +193,10 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 {"aTexCoord", 2},
 {"aTexCoord2", 3},
 {"aTexCoord3", 4},
-{"aColor", 5},
-{"aColor2", 6},
+{"aTexCoord4", 5},
+{"aColor", 6},
+{"aColor2", 7},
+{"aColorSecond", 8},
 }},{"imguiShader",  {
 {"Position", 0},
 {"UV", 1},
@@ -623,36 +625,36 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"m2Shader",  {
     {
       0, {
-        {"_240_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_240_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_240_scene_uViewUp", true, 128, 1, 4, 0},
-        {"_240_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_240_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_240_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_240_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_240_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_240_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
-        {"_240_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
-        {"_240_fogData_densityParams", true, 256, 1, 4, 0},
-        {"_240_fogData_heightPlane", true, 272, 1, 4, 0},
-        {"_240_fogData_color_and_heightRate", true, 288, 1, 4, 0},
-        {"_240_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
-        {"_240_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
-        {"_240_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
-        {"_240_fogData_sunPercentage", true, 352, 1, 4, 0},
+        {"_210_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_210_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_210_scene_uViewUp", true, 128, 1, 4, 0},
+        {"_210_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_210_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_210_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_210_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_210_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_210_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_210_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
+        {"_210_fogData_densityParams", true, 256, 1, 4, 0},
+        {"_210_fogData_heightPlane", true, 272, 1, 4, 0},
+        {"_210_fogData_color_and_heightRate", true, 288, 1, 4, 0},
+        {"_210_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_210_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_210_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_210_fogData_sunPercentage", true, 352, 1, 4, 0},
       }
     },
     {
       2, {
-        {"_230_vertexShader_IsAffectedByLight", false, 0, 1, 4, 0},
-        {"_230_color_Transparency", true, 16, 1, 4, 0},
-        {"_230_uTextMat[0]", true, 32, 4, 4, 2},
+        {"_200_vertexShader_IsAffectedByLight", false, 0, 1, 4, 0},
+        {"_200_color_Transparency", true, 16, 1, 4, 0},
+        {"_200_uTextMat[0]", true, 32, 4, 4, 2},
       }
     },
     {
       1, {
-        {"_133_uPlacementMat", true, 0, 4, 4, 0},
-        {"_133_uBoneMatrixes[0]", true, 64, 4, 4, 220},
+        {"_100_uPlacementMat", true, 0, 4, 4, 0},
+        {"_100_uBoneMatrixes[0]", true, 64, 4, 4, 220},
       }
     },
   }},
@@ -669,33 +671,33 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"wmoShader",  {
     {
       2, {
-        {"_170_VertexShader_UseLitColor", false, 0, 1, 4, 0},
+        {"_146_VertexShader_UseLitColor", false, 0, 1, 4, 0},
       }
     },
     {
       0, {
-        {"_111_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_111_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_111_scene_uViewUp", true, 128, 1, 4, 0},
-        {"_111_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_111_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_111_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_111_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_111_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_111_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
-        {"_111_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
-        {"_111_fogData_densityParams", true, 256, 1, 4, 0},
-        {"_111_fogData_heightPlane", true, 272, 1, 4, 0},
-        {"_111_fogData_color_and_heightRate", true, 288, 1, 4, 0},
-        {"_111_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
-        {"_111_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
-        {"_111_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
-        {"_111_fogData_sunPercentage", true, 352, 1, 4, 0},
+        {"_78_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_78_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_78_scene_uViewUp", true, 128, 1, 4, 0},
+        {"_78_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_78_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_78_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_78_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_78_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_78_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_78_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
+        {"_78_fogData_densityParams", true, 256, 1, 4, 0},
+        {"_78_fogData_heightPlane", true, 272, 1, 4, 0},
+        {"_78_fogData_color_and_heightRate", true, 288, 1, 4, 0},
+        {"_78_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_78_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_78_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_78_fogData_sunPercentage", true, 352, 1, 4, 0},
       }
     },
     {
       1, {
-        {"_93_uPlacementMat", true, 0, 4, 4, 0},
+        {"_58_uPlacementMat", true, 0, 4, 4, 0},
       }
     },
   }},
@@ -743,39 +745,39 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"waterfallShader",  {
     {
       1, {
-        {"_571_uPlacementMat", true, 0, 4, 4, 0},
-        {"_571_uBoneMatrixes[0]", true, 64, 4, 4, 220},
+        {"_818_uPlacementMat", true, 0, 4, 4, 0},
+        {"_818_uBoneMatrixes[0]", true, 64, 4, 4, 220},
       }
     },
     {
       0, {
-        {"_488_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_488_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_488_scene_uViewUp", true, 128, 1, 4, 0},
-        {"_488_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_488_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_488_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_488_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_488_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_488_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
-        {"_488_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
-        {"_488_fogData_densityParams", true, 256, 1, 4, 0},
-        {"_488_fogData_heightPlane", true, 272, 1, 4, 0},
-        {"_488_fogData_color_and_heightRate", true, 288, 1, 4, 0},
-        {"_488_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
-        {"_488_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
-        {"_488_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
-        {"_488_fogData_sunPercentage", true, 352, 1, 4, 0},
+        {"_709_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_709_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_709_scene_uViewUp", true, 128, 1, 4, 0},
+        {"_709_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_709_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_709_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_709_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_709_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_709_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_709_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
+        {"_709_fogData_densityParams", true, 256, 1, 4, 0},
+        {"_709_fogData_heightPlane", true, 272, 1, 4, 0},
+        {"_709_fogData_color_and_heightRate", true, 288, 1, 4, 0},
+        {"_709_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_709_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_709_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_709_fogData_sunPercentage", true, 352, 1, 4, 0},
       }
     },
     {
       4, {
-        {"_220_values0", true, 0, 1, 4, 0},
-        {"_220_values1", true, 16, 1, 4, 0},
-        {"_220_values2", true, 32, 1, 4, 0},
-        {"_220_values3", true, 48, 1, 4, 0},
-        {"_220_values4", true, 64, 1, 4, 0},
-        {"_220_baseColor", true, 80, 1, 4, 0},
+        {"_445_values0", true, 0, 1, 4, 0},
+        {"_445_values1", true, 16, 1, 4, 0},
+        {"_445_values2", true, 32, 1, 4, 0},
+        {"_445_values3", true, 48, 1, 4, 0},
+        {"_445_values4", true, 64, 1, 4, 0},
+        {"_445_baseColor", true, 80, 1, 4, 0},
       }
     },
   }},
@@ -1046,35 +1048,35 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"wmoShader",  {
     {
       4, {
-        {"_622_UseLitColor_EnableAlpha_PixelShader_BlendMode", false, 0, 1, 4, 0},
-        {"_622_FogColor_AlphaTest", true, 16, 1, 4, 0},
+        {"_657_UseLitColor_EnableAlpha_PixelShader_BlendMode", false, 0, 1, 4, 0},
+        {"_657_FogColor_AlphaTest", true, 16, 1, 4, 0},
       }
     },
     {
       0, {
-        {"_501_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_501_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_501_scene_uViewUp", true, 128, 1, 4, 0},
-        {"_501_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
-        {"_501_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
-        {"_501_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
-        {"_501_fogData_densityParams", true, 256, 1, 4, 0},
-        {"_501_fogData_heightPlane", true, 272, 1, 4, 0},
-        {"_501_fogData_color_and_heightRate", true, 288, 1, 4, 0},
-        {"_501_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
-        {"_501_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
-        {"_501_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
-        {"_501_fogData_sunPercentage", true, 352, 1, 4, 0},
+        {"_537_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_537_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_537_scene_uViewUp", true, 128, 1, 4, 0},
+        {"_537_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorAmbientColor", true, 160, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorHorizontAmbientColor", true, 176, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorGroundAmbientColor", true, 192, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorDirectColor", true, 208, 1, 4, 0},
+        {"_537_scene_extLight_uExteriorDirectColorDir", true, 224, 1, 4, 0},
+        {"_537_scene_extLight_adtSpecMult", true, 240, 1, 4, 0},
+        {"_537_fogData_densityParams", true, 256, 1, 4, 0},
+        {"_537_fogData_heightPlane", true, 272, 1, 4, 0},
+        {"_537_fogData_color_and_heightRate", true, 288, 1, 4, 0},
+        {"_537_fogData_heightDensity_and_endColor", true, 304, 1, 4, 0},
+        {"_537_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
+        {"_537_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
+        {"_537_fogData_sunPercentage", true, 352, 1, 4, 0},
       }
     },
     {
       3, {
-        {"_489_intLight_uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
-        {"_489_intLight_uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
+        {"_525_intLight_uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
+        {"_525_intLight_uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
       }
     },
   }},
