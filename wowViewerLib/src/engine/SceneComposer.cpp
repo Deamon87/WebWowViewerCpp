@@ -90,7 +90,6 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
             updateThread = std::thread(([&]() {
 //                try {
                     this->m_apiContainer->hDevice->initUploadThread();
-                    FrameCounter frameCounter;
                     //NOTE: Refer to comment in cullingThread code
                     auto currIndex = getPromiseInd();
                     while (!this->m_isTerminating) {
@@ -100,11 +99,9 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                         future.wait();
                         auto nextIndex = getNextPromiseInd();
 
-                        frameCounter.beginMeasurement();
+                        updateTimePerFrame.beginMeasurement();
                         DoUpdate();
-                        frameCounter.endMeasurement();
-
-                        m_apiContainer->getConfig()->updateTimePerFrame = frameCounter.getTimePerFrame();
+                        updateTimePerFrame.endMeasurement();
 
                         updateFinished.set_value(true);
                         currIndex = nextIndex;
@@ -173,7 +170,9 @@ void SceneComposer::DoUpdate() {
     auto frameScenario = m_frameScenarios[updateObjFrame];
     if (frameScenario == nullptr) return;
     logExecution
+    startUpdateForNexFrame.beginMeasurement();
     device->startUpdateForNextFrame();
+    startUpdateForNexFrame.endMeasurement();
     logExecution
     singleUpdateCNT.beginMeasurement();
     logExecution
@@ -183,7 +182,7 @@ void SceneComposer::DoUpdate() {
     logExecution
     singleUpdateCNT.endMeasurement();
     logExecution
-    meshesCollectCNT.beginMeasurement();
+    produceDrawStage.beginMeasurement();
     logExecution
     std::vector<HGUniformBufferChunk> additionalChunks;
     logExecution
@@ -192,7 +191,9 @@ void SceneComposer::DoUpdate() {
         link.scene->produceDrawStage(link.drawStage, link.updateStage, additionalChunks);
         logExecution
     }
+    produceDrawStage.endMeasurement();
 
+    meshesCollectCNT.beginMeasurement();
     std::vector<HGMesh> meshes;
     logExecution
     collectMeshes(frameScenario->getDrawStage(), meshes);
@@ -239,13 +240,13 @@ void SceneComposer::DoUpdate() {
     logExecution
     textureUploadCNT.endMeasurement();
 
-    drawStageAndDepsCNT.beginMeasurement();
     if (device->getIsVulkanAxisSystem()) {
+        drawStageAndDepsCNT.beginMeasurement();
         if (frameScenario != nullptr) {
             m_apiContainer->hDevice->drawStageAndDeps(frameScenario->getDrawStage());
         }
+        drawStageAndDepsCNT.endMeasurement();
     }
-    drawStageAndDepsCNT.endMeasurement();
     logExecution
     endUpdateCNT.beginMeasurement();
     device->endUpdateForNextFrame();
@@ -254,7 +255,10 @@ void SceneComposer::DoUpdate() {
     logExecution
 
     auto config = m_apiContainer->getConfig();
+    config->startUpdateForNexFrame = startUpdateForNexFrame.getTimePerFrame();
+    config->updateTimePerFrame = updateTimePerFrame.getTimePerFrame();
     config->singleUpdateCNT = singleUpdateCNT.getTimePerFrame();
+    config->produceDrawStage = produceDrawStage.getTimePerFrame();;
     config->meshesCollectCNT = meshesCollectCNT.getTimePerFrame();;
     config->updateBuffersCNT = updateBuffersCNT.getTimePerFrame();;
     config->updateBuffersDeviceCNT = updateBuffersDeviceCNT.getTimePerFrame();;
@@ -325,7 +329,11 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     logExecution
     m_apiContainer->hDevice->beginFrame();
     if (thisFrameScenario != nullptr && !m_apiContainer->hDevice->getIsVulkanAxisSystem()) {
+        drawStageAndDepsCNT.beginMeasurement();
+
         m_apiContainer->hDevice->drawStageAndDeps(thisFrameScenario->getDrawStage());
+
+        drawStageAndDepsCNT.endMeasurement();
     }
     logExecution
 
@@ -335,7 +343,9 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     logExecution
     if (!m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
         logExecution
+        updateTimePerFrame.beginMeasurement();
         DoUpdate();
+        updateTimePerFrame.endMeasurement();
         logExecution
     }
     logExecution

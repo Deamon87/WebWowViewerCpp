@@ -53,7 +53,7 @@ extern "C" {
     extern void offerFileAsDownload(std::string filename, std::string mime);
 }
 
-void M2Scene::doPostLoad(HCullStage cullStage) {
+void M2Scene::doPostLoad(HCullStage &cullStage) {
     Map::doPostLoad(cullStage);
 }
 

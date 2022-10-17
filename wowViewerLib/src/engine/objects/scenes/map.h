@@ -34,7 +34,20 @@ private:
         }
     }
 protected:
+    FrameCounter mapProduceUpdateCounter;
+    FrameCounter interiorViewCollectMeshCounter;
+    FrameCounter exteriorViewCollectMeshCounter;
+    FrameCounter m2CollectMeshCounter;
+    FrameCounter sortMeshCounter;
+    FrameCounter collectBuffersCounter;
+    FrameCounter sortBuffersCounter;
+
+    FrameCounter mapUpdateCounter;
     FrameCounter m2UpdateframeCounter;
+    FrameCounter m2calcDistanceCounter;
+    FrameCounter adtCleanupCounter;
+    FrameCounter wmoGroupUpdate;
+    FrameCounter adtUpdate;
 
 
     FrameCounter cullCreateVarsCounter;
@@ -209,9 +222,9 @@ public:
 
     void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
-    void checkCulling(HCullStage cullStage) override;
+    void checkCulling(HCullStage &cullStage) override;
 
-    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> mandatoryADTs) override {
+    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) override {
         m_mandatoryADT = mandatoryADTs;
     }
     void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) override;
@@ -221,25 +234,25 @@ public:
     void resetAnimation() override {
 
     }
-    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder bbHolder) override {
+    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder &bbHolder) override {
         m_adtBBHolder = bbHolder;
     }
 
 
 
-    void doPostLoad(HCullStage cullStage) override;
+    void doPostLoad(HCullStage &cullStage) override;
 
-    void update(HUpdateStage updateStage);
-    void updateBuffers(HUpdateStage updateStage) override;
-    void produceUpdateStage(HUpdateStage updateStage) override;
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void update(HUpdateStage &updateStage);
+    void updateBuffers(HUpdateStage &updateStage) override;
+    void produceUpdateStage(HUpdateStage &updateStage) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,
                        int viewRenderOrder,
                        HCullStage cullStage);
 
-    HDrawStage doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const;
+    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const;
 
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;

@@ -24,6 +24,7 @@
 #include "shaders/GFFXGlow.h"
 #include "shaders/GSkyConus.h"
 #include "shaders/GWaterfallShaderGL33.h"
+#include "oneapi/tbb/parallel_for_each.h"
 
 namespace GL33 {
     BlendModeDesc blendModes[(int)EGxBlendEnum::GxBlend_MAX] = {
@@ -391,14 +392,20 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
             auto &bufferVec = bufferChunks[i];
             auto frameDepData = frameDepedantDataVec[i];
 
-            for (auto &buffer : *bufferVec) {
-                buffer->update(frameDepData);
-            }
+            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, bufferVec->size(), 400),
+                                      [&](tbb::blocked_range<size_t> &r) {
+                for (int i = r.begin(); i < r.end(); i++) {
+                    (*bufferVec)[i]->update(frameDepData);
+                }
+            }, tbb::auto_partitioner());
+//            for (auto &buffer : *bufferVec) {
+//                buffer->update(frameDepData);
+//            }
         }
 
-        if (currentSize > 0) {
-            bufferForUploadGL->uploadData(pointerForUpload, currentSize);
-            uploadAmountInBytes+= currentSize;
+        if (targetSize > 0) {
+            bufferForUploadGL->uploadData(pointerForUpload, targetSize);
+            uploadAmountInBytes+= targetSize;
         }
     }
 }
