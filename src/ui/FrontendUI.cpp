@@ -202,6 +202,11 @@ void FrontendUI::showCurrentStatsDialog() {
                             cullStageData->frameDepedantData->FogHeightCoefficients.z);
             }
         }
+        if (ImGui::CollapsingHeader("Current light params")) {
+            if (cullStageData->frameDepedantData != nullptr) {
+                ImGui::Text("Glow: %.3f", cullStageData->frameDepedantData->currentGlow);
+            }
+        }
 
 //        ImGui::Text("Current Fog scaler: %f", m_api->getConfig()->getFogScaler());
 //        ImGui::Text("Current Fog density: %f", m_api->getConfig()->getFogDensity());
