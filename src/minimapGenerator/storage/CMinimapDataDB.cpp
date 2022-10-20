@@ -27,7 +27,7 @@ CMinimapDataDB::CMinimapDataDB(std::string fileName) : m_sqliteDatabase(fileName
                               "    ocean_color_0        FLOAT,\n"
                               "    ocean_color_1        FLOAT,\n"
                               "    ocean_color_2        FLOAT,\n"
-                              "    ocean_color_3        FLOAT\n"
+                              "    ocean_color_3        FLOAT,\n"
                               "    world_coord_min_x    FLOAT,\n"
                               "    world_coord_min_y    FLOAT,\n"
                               "    world_coord_max_x    FLOAT,\n"
@@ -108,6 +108,9 @@ CMinimapDataDB::CMinimapDataDB(std::string fileName) : m_sqliteDatabase(fileName
 }
 
 void CMinimapDataDB::getScenarios(std::vector<ScenarioDef> &scenarioList) {
+    if (!m_sqliteDatabase.tableExists("scenarios"))
+        return;
+
     SQLite::Statement getScenarioList(m_sqliteDatabase,
     "select s.id, s.map_id, s.orientation, s.name, \n"
     "       s.ocean_color_0, s.ocean_color_1, s.ocean_color_2, s.ocean_color_3,\n"

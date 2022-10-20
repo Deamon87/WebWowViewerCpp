@@ -601,10 +601,10 @@ void AdtObject::calcBoundingBoxes() {
         float minZ = 999999;
         float maxZ = -999999;
         if (mcnkContent->mcvt != nullptr) {
-            for (int j = 0; j < 8 * 8 + 9 * 9; j++) {
+            for (int j = 0; j < (8 * 8 + 9 * 9); j++) {
                 float heightVal = mcnkContent->mcvt->height[j];
-                if (minZ > heightVal) minZ = heightVal;
-                if (maxZ < heightVal) maxZ = heightVal;
+                if (heightVal < minZ) minZ = heightVal;
+                if (heightVal > maxZ) maxZ = heightVal;
             }
         }
 

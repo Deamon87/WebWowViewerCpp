@@ -1658,12 +1658,7 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 }
 
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
-    if (minimapGenerator != nullptr &&
-        (
-            minimapGenerator->getCurrentMode() == EMGMode::eScreenshotGeneration ||
-            minimapGenerator->getCurrentMode() == EMGMode::eBoundingBoxCalculation
-        )
-    ) {
+    if (minimapGenerator != nullptr && minimapGenerator->getCurrentMode() != EMGMode::eNone) {
         minimapGenerator->process();
     }
 
@@ -2354,15 +2349,23 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 
                     const int imageSize = 512;
 
-                    if (ImGui::ImageButton2(texture, "previewImage", ImVec2(imageSize, imageSize))) {
+                    if (ImGui::ImageButton2(texture, "previewImage",
+                                            ImVec2(imageSize, imageSize),
+                                            ImVec2(0,1),
+                                            ImVec2(1,0)))
+                    {
                         auto mousePos = ImGui::GetMousePos();
                         ImGuiStyle &style = ImGui::GetStyle();
 
                         mousePos.x += -ImGui::GetWindowPos().x - style.WindowPadding.x;
                         mousePos.y += -ImGui::GetWindowPos().y - style.WindowPadding.y;
 
-                        previewX = (0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewX;
-                        previewY = (0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewY;
+
+                        previewX = ((0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewX;
+                        previewY = ((0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewY;
+
+
+
                         minimapGenerator->setLookAtPoint(previewX, previewY);
                     };
 

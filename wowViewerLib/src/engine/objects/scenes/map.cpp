@@ -564,6 +564,8 @@ void Map::checkCulling(HCullStage &cullStage) {
 
     cullCombineAllObjects.endMeasurement();
 
+
+
     m_api->getConfig()->cullCreateVarsCounter           = cullCreateVarsCounter.getTimePerFrame();
     m_api->getConfig()->cullGetCurrentWMOCounter        = cullGetCurrentWMOCounter.getTimePerFrame();
     m_api->getConfig()->cullGetCurrentZoneCounter       = cullGetCurrentZoneCounter.getTimePerFrame();
@@ -1677,6 +1679,29 @@ void Map::produceUpdateStage(HUpdateStage &updateStage) {
     }
     sortMeshCounter.endMeasurement();
 
+    //Collect textures for upload
+    auto &textureToUpload = updateStage->texturesForUpload;
+    textureToUpload.reserve(10000);
+    for (auto &mesh: updateStage->transparentMeshes->meshes) {
+        for (auto &text : mesh->texture()) {
+            if (text != nullptr && !text->getIsLoaded()) {
+                textureToUpload.push_back(text);
+            }
+        }
+    }
+    for (auto &mesh: updateStage->opaqueMeshes->meshes) {
+        for (auto &text : mesh->texture()) {
+            if (text != nullptr && !text->getIsLoaded()) {
+                textureToUpload.push_back(text);
+            }
+        }
+    }
+
+    tbb::parallel_sort(textureToUpload.begin(), textureToUpload.end(),
+                       [](auto &first, auto &end) { return first < end; }
+    );
+    textureToUpload.erase(unique(textureToUpload.begin(), textureToUpload.end()), textureToUpload.end());
+
     //1. Collect buffers
     collectBuffersCounter.beginMeasurement();
     std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
@@ -1826,6 +1851,8 @@ void Map::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStag
         //Replace all data in target drawStage with new data
         *resultDrawStage = *prevDrawStage;
     }
+
+
 }
 
 HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const {
