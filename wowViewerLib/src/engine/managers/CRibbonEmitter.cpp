@@ -144,12 +144,12 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.ubo[2] = nullptr;
 
         meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
+        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Ribbon::meshRibbonWideBlockPS));
 
         auto blendMode = meshTemplate.blendMode;
         auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
         meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
-            Particle::meshParticleWideBlockPS& blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
+            Ribbon::meshRibbonWideBlockPS& blockPS = self->getObject<Ribbon::meshRibbonWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
             blockPS.uPixelShader = 0;

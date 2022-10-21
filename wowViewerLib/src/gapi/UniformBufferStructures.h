@@ -117,6 +117,19 @@ namespace Particle {
         int uBlendMode;
         int padding2;   // according to std140
         int padding3;   // according to std140
+    };
+}
+
+namespace Ribbon {
+    struct meshRibbonWideBlockPS {
+        float uAlphaTest;
+        float textureScale0;
+        float textureScale1;
+        float textureScale2;
+        int uPixelShader;
+        int uBlendMode;
+        int padding2;   // according to std140
+        int padding3;   // according to std140
         float textureTranslate0;
         float textureTranslate1;
         float textureTranslate2;

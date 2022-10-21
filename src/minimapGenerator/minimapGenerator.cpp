@@ -542,6 +542,10 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 
+        if (objBB.max.z > 2000) {
+            continue;
+        }
+
         minCoord = mathfu::vec3(
             std::min<float>(minCoord.x, objBB.min.x),
             std::min<float>(minCoord.y, objBB.min.y),
@@ -559,6 +563,10 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 
+        if (objBB.max.z > 2000) {
+            continue;
+        }
+
         minCoord = mathfu::vec3(
             std::min<float>(minCoord.x, objBB.min.x),
             std::min<float>(minCoord.y, objBB.min.y),
@@ -575,6 +583,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
     for (auto &adtObjectRes: cullStage->adtArray) {
         auto adtObj = adtObjectRes->adtObject;
 
+
         if (applyAdtChecks && (adtObj->getAdtX() != adt_x || adtObj->getAdtY() != adt_y)) {
 //                std::cout << "skipping adtObj( " <<
 //                adtObj->getAdtX() << "," << adtObj->getAdtY() << " "
@@ -584,6 +593,10 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
         }
 
         auto objBB = adtObj->calcAABB();
+
+        if (objBB.max.z > 2000) {
+            continue;
+        }
 
         minCoord = mathfu::vec3(
             std::min<float>(minCoord.x, objBB.min.x),
@@ -598,7 +611,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
     }
 }
 
-const int waitQueueLen = 3;
+const int waitQueueLen = 5;
 void MinimapGenerator::process() {
     if (m_processor->completedAllJobs()) {
         framesReady++;
@@ -625,6 +638,7 @@ void MinimapGenerator::process() {
     }
 
     if (m_candidateDS == nullptr) {
+        resetCandidate();
         prepearCandidate = true;
         return;
     }

@@ -72,6 +72,7 @@ void main() {
         vec3 matDiffuse = vColor.xyz * textureMod.rgb;
         finalColor = vec4(matDiffuse.rgb, opacity);
     } else if (uNonOptPixelShader == 4) { //Refraction
+        discard;
         float t0_973 = tex.x;
         float t1_978 = tex2.y;
         float t2_983 = tex3.z;
