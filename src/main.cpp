@@ -352,8 +352,8 @@ int main(){
 #endif
 
 //    std::string rendererName = "ogl2";
-      std::string rendererName = "ogl3";
-//    std::string rendererName = "vulkan";
+//      std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
     //FOR OGL
 

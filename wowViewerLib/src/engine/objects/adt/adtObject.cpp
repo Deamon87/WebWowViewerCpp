@@ -180,7 +180,6 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
                 }
             }
         } else {
-
             std::vector<LiquidTypeData> liquidTypeData;
             m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, liquidTypeData);
             for (auto ltd: liquidTypeData) {
@@ -289,13 +288,13 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
         bool waterColorFound = true;
         if (m_api->getConfig()->colorOverrideHolder != nullptr) {
             waterColorFound = false;
-            int adt_global_x = worldCoordinateToGlobalAdtChunk(waterPos.y) % 16;
-            int adt_global_y = worldCoordinateToGlobalAdtChunk(waterPos.x) % 16;
-
-            auto areaId = getAreaId(adt_global_x, adt_global_y);
+//            int adt_global_x = worldCoordinateToGlobalAdtChunk(waterPos.y) % 16;
+//            int adt_global_y = worldCoordinateToGlobalAdtChunk(waterPos.x) % 16;
+//
+//            auto areaId = getAreaId(adt_global_x, adt_global_y);
 
             for (auto &riverOverride : *m_api->getConfig()->colorOverrideHolder) {
-                if (riverOverride.areaId == areaId) {
+                if (riverOverride.liquidObjectId == liquidInstance.liquid_object_or_lvf) {
                     closeRiverColor = riverOverride.color.xyz();
                     waterColorFound = true;
                     break;
@@ -1273,8 +1272,6 @@ bool AdtObject::checkReferences(
 
 bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
                                     const mathfu::vec4 &cameraPos,
-                                    int adt_glob_x,
-                                    int adt_glob_y,
                                     const MathHelper::FrustumCullingData &frustumData,
                                     M2ObjectListContainer &m2ObjectsCandidates,
                                     WMOListContainer &wmoCandidates) {

@@ -33,7 +33,7 @@ HDrawStage FrameScenario::getDrawStage() {
 
 //FrameScenario::addDrawStage(std::shared_ptr<UpdateStage>, std::shared_ptr<IScene>, std::shared_ptr<CameraMatrices>, std::vector<std::shared_ptr<DrawStage>, std::allocator<std::shared_ptr<DrawStage>>> const&, bool, ViewPortDimensions const&, bool, mathfu::Vector<float, 4> const&, std::shared_ptr<IFrameBuffer>)
 //FrameScenario::addDrawStage(std::shared_ptr<UpdateStage>, std::shared_ptr<IScene>, std::shared_ptr<CameraMatrices>, std::__debug::vector<std::shared_ptr<DrawStage>, std::allocator<std::shared_ptr<DrawStage>>> const&, bool, ViewPortDimensions const&, bool, mathfu::Vector<float, 4> const&, std::shared_ptr<IFrameBuffer>)
-HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage, HScene scene, HCameraMatrices matricesForDrawing,
+HDrawStage FrameScenario::addDrawStage(std::vector<HUpdateStage> &updateStages, HScene scene, HCameraMatrices matricesForDrawing,
                                        std::vector<HDrawStage> const &drawStageDependencies, bool setViewPort,
                                         ViewPortDimensions const &viewPortDimensions, bool clearScreen, bool invertedZ,
                                         mathfu::vec4 const &clearColor, HFrameBuffer fbTarget) {
@@ -50,7 +50,7 @@ HDrawStage FrameScenario::addDrawStage(HUpdateStage updateStage, HScene scene, H
 
 //    drawStage->sceneWideBlockVSPSChunk;
 
-    drawStageLinks.push_back({scene, updateStage, drawStage});
+    drawStageLinks.push_back({scene, updateStages, drawStage});
 
     this->lastDrawStage = drawStage;
 

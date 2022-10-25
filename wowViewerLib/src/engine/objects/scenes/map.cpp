@@ -1232,11 +1232,16 @@ void Map::checkADTCulling(int i, int j,
     if ((i < 0) || (i > 64)) return;
     if ((j < 0) || (j > 64)) return;
 
-    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
-    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+    if (this->m_adtConfigHolder != nullptr) {
+        float maxZ = m_adtConfigHolder->adtMaxZ[i][j];
+        float minZ = m_adtConfigHolder->adtMinZ[i][j];
 
-    if (this->m_adtBBHolder != nullptr) {
-        bool bbCheck = MathHelper::checkFrustum( frustumData, (*this->m_adtBBHolder)[i][j]);
+        CAaBox box = {
+            C3Vector({AdtIndexToWorldCoordinate(j + 1) , AdtIndexToWorldCoordinate(i + 1), minZ}),
+            C3Vector({AdtIndexToWorldCoordinate(j) , AdtIndexToWorldCoordinate(j), maxZ})
+        };
+
+        bool bbCheck = MathHelper::checkFrustum( frustumData, box);
 
         if (!bbCheck)
             return;
@@ -1251,8 +1256,6 @@ void Map::checkADTCulling(int i, int j,
         bool result = adtObject->checkFrustumCulling(
             *adtFrustRes.get(),
             cameraPos,
-            adt_global_x,
-            adt_global_y,
             frustumData, m2ObjectsCandidates, wmoCandidates);
 
 //        if (this->m_adtBBHolder != nullptr) {

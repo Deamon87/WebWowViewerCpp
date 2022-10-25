@@ -6,10 +6,15 @@
 #define AWEBWOWVIEWERCPP_ENTITIES_H
 
 #include <string>
+#include <vector>
+#include <unordered_set>
+#include <unordered_map>
+#include <array>
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
 #include <mathfu/glsl_mappings.h>
+#include "../../wowViewerLib/src/include/config.h"
 
 enum class ScenarioOrientation {
     soTopDownOrtho,
@@ -25,10 +30,26 @@ enum class EMGMode {
     ePreview,
 };
 
-struct ScenarioDef {
-    int id;
+struct MapRenderDef {
+    int id = -1;
+
     int mapId;
+
+    double deltaX;
+    double deltaY;
+    double deltaZ;
+
+    HADTRenderConfigDataHolder adtConfigHolder = std::make_shared<ADTRenderConfigData>();
+};
+
+struct ScenarioDef {
+    std::vector<MapRenderDef> maps;
+
+    int id = -1;
     std::string name;
+    ScenarioOrientation orientation = ScenarioOrientation::so45DegreeTick0;
+
+    std::unordered_map<int, std::vector<int>> activatePhasePerMap;
 
     mathfu::vec4 closeOceanColor;
 
@@ -36,11 +57,10 @@ struct ScenarioDef {
     mathfu::vec2 maxWowWorldCoord;
 
     int imageHeight;
+
     int imageWidth;
 
     float zoom = 1.0f;
-
-    ScenarioOrientation orientation = ScenarioOrientation::so45DegreeTick0;
 
     std::string folderToSave;
 };

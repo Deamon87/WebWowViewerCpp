@@ -78,7 +78,7 @@ class FrameScenario {
     friend class SceneComposer;
     struct DrawStageLinkage {
         HScene scene;
-        HUpdateStage updateStage;
+        std::vector<HUpdateStage> updateStages;
         HDrawStage drawStage;
     };
 private:
@@ -92,7 +92,7 @@ public:
     HCullStage addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene);
     HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
 
-    HDrawStage addDrawStage(HUpdateStage updateStage,
+    HDrawStage addDrawStage(std::vector<HUpdateStage> &updateStage,
                             HScene scene,
                             HCameraMatrices matricesForDrawing,
                             std::vector<HDrawStage> const &drawStageDependencies,

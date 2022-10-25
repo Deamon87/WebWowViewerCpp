@@ -48,15 +48,12 @@ void main() {
 
     vec4 cameraPoint = scene.uLookAtMat * worldPoint;
 
-
     mat4 viewModelMat = scene.uLookAtMat * uPlacementMat;
     mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
-
 
     gl_Position = scene.uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, 0);
     vNormal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
-
 
     vColor = aColor.bgra;
     vColor2 = aColor2;
@@ -99,7 +96,7 @@ void main() {
        vTexCoord3 = aTexCoord3; //not used
    } else if (uVertexShader == 7) { //MapObjDiffuse_CompAlpha
        vTexCoord = aTexCoord;
-       vTexCoord2 = vPosition.xy * -0.239999995;
+       vTexCoord2 = aTexCoord2;
        vTexCoord3 = aTexCoord3; //not used
    } else if (uVertexShader == 8) { //MapObjParallax
        vTexCoord = aTexCoord;

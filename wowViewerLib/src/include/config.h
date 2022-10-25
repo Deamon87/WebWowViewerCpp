@@ -6,11 +6,13 @@
 #define WOWVIEWERLIB_CONFIG_H
 
 #include <string>
+#include <unordered_set>
+#include <unordered_map>
 #include <thread>
 #include <mathfu/glsl_mappings.h>
 
 struct RiverColorOverride {
-    int areaId = -1;
+    int liquidObjectId;
     mathfu::vec4 color = {0,0,0,0};
 };
 
@@ -189,6 +191,42 @@ public:
 
     HRiverColorOverrideHolder colorOverrideHolder = nullptr;
 };
+
+//ADT STUFF FOR MAP GENERATION
+typedef std::array<int,2> AdtCell;
+
+struct AdtCellCompare
+{
+    bool operator()(const AdtCell &a, const AdtCell &b) const {
+        return a[0] == b[0] && a[1] == b[1];
+    }
+};
+
+struct AdtCellHasher {
+    std::size_t operator()(const AdtCell &k) const {
+        using std::hash;
+        return hash<int>{}(k[0]) ^ (hash<int>{}(k[1]) << 16);
+    };
+};
+
+struct ADTRenderConfigData {
+    ADTRenderConfigData() {
+        std::array<float, 64> defaultMaxZ = {};
+        std::array<float, 64> defaultMinZ = {};
+        defaultMaxZ.fill(-200000);
+        defaultMinZ.fill(200000);
+
+        adtMaxZ.fill(defaultMaxZ);
+        adtMinZ.fill(defaultMinZ);
+    }
+    std::array<std::array<float, 64>, 64> adtMaxZ;
+    std::array<std::array<float, 64>, 64> adtMinZ;
+    std::unordered_set<AdtCell, AdtCellHasher, AdtCellCompare> excludedADTs;
+    std::unordered_map<AdtCell, std::unordered_set<AdtCell, AdtCellHasher, AdtCellCompare>, AdtCellHasher> excludedChunksPerADTs;
+};
+
+typedef std::shared_ptr<ADTRenderConfigData> HADTRenderConfigDataHolder;
+
 
 
 #endif //WOWVIEWERLIB_CONFIG_H

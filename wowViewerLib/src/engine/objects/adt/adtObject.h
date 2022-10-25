@@ -59,8 +59,6 @@ public:
     bool checkFrustumCulling(
         ADTObjRenderRes &adtFrustRes,
         const mathfu::vec4 &cameraPos,
-        int adt_glob_x,
-        int adt_glob_y,
         const MathHelper::FrustumCullingData &frustumData,
 
         M2ObjectListContainer&m2ObjectsCandidates,

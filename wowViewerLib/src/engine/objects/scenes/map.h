@@ -156,7 +156,7 @@ protected:
     FreeStrategy adtFreeLambda;
     FreeStrategy zeroStateLambda;
 
-    HADTBoundingBoxHolder m_adtBBHolder = nullptr;
+    HADTRenderConfigDataHolder m_adtConfigHolder = nullptr;
 
 protected:
     explicit Map() {
@@ -234,8 +234,8 @@ public:
     void resetAnimation() override {
 
     }
-    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder &bbHolder) override {
-        m_adtBBHolder = bbHolder;
+    virtual void setAdtConfig(HADTRenderConfigDataHolder &adtConfig) override {
+        m_adtConfigHolder = adtConfig;
     }
 
 
@@ -245,7 +245,7 @@ public:
     void update(HUpdateStage &updateStage);
     void updateBuffers(HUpdateStage &updateStage) override;
     void produceUpdateStage(HUpdateStage &updateStage) override;
-    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,

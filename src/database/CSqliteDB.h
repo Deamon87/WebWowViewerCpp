@@ -47,7 +47,6 @@ private:
     private:
         SQLite::Statement m_query;
         std::unordered_map<size_t, int> fieldToIndex;
-
     };
 
     SQLite::Database m_sqliteDatabase;

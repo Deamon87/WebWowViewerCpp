@@ -14,8 +14,7 @@
 
 
 MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGDevice &hDevice,
-                                   HRequestProcessor processor, std::shared_ptr<IClientDatabase> dbhandler,
-                                   HADTBoundingBoxHolder boundingBoxHolder) {
+                                   HRequestProcessor processor, std::shared_ptr<IClientDatabase> dbhandler) {
     m_apiContainer = std::make_shared<ApiContainer>();
 
     m_apiContainer->hDevice = hDevice;
@@ -24,7 +23,6 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGD
     m_apiContainer->databaseHandler = dbhandler;
 
     m_processor = processor;
-    m_boundingBoxHolder = boundingBoxHolder;
 
     auto config = m_apiContainer->getConfig();
     config->glowSource = EParameterSource::eConfig;
@@ -129,7 +127,9 @@ void MinimapGenerator::startNextScenario() {
 void MinimapGenerator::setupScenarioData() {
     m_zoom = currentScenario.zoom;
 
-    mandatoryADTMap.resize(0);
+    for (auto &mapData : mapRuntimeInfo) {
+        mapData.mandatoryADTMap.resize(0);
+    }
 
     stackOfCullStages = {nullptr, nullptr, nullptr, nullptr};
 
@@ -139,23 +139,29 @@ void MinimapGenerator::setupScenarioData() {
         m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
     }
 
-    MapRecord mapRecord;
-    if (!m_apiContainer->databaseHandler->getMapById(currentScenario.mapId, mapRecord)) {
-        std::cout << "Couldnt get data for mapId " << currentScenario.mapId << std::endl;
-        startNextScenario();
-        return;
-    }
+    for ( int i = 0; i < currentScenario.maps.size(); i++) {
+        auto &mapDef = currentScenario.maps[i];
+        MapRecord mapRecord;
+        if (!m_apiContainer->databaseHandler->getMapById(mapDef.mapId, mapRecord)) {
+            std::cout << "Couldnt get data for mapId " << mapDef.mapId << std::endl;
+            startNextScenario();
+            return;
+        }
 
-    m_currentScene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
-    if (m_mgMode == EMGMode::eScreenshotGeneration) {
-        m_currentScene->setAdtBoundingBoxHolder(m_boundingBoxHolder);
+        auto &mapRuntime = mapRuntimeInfo.emplace_back();
+        mapRuntime.mapIndex = i;
+        mapRuntime.scene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
+
+        if (m_mgMode == EMGMode::eScreenshotGeneration) {
+            mapRuntime.scene->setAdtConfig(mapDef.adtConfigHolder);
+        }
     }
 
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
     config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
 
-    setMinMaxXYWidhtHeight(currentScenario.minWowWorldCoord, currentScenario.maxWowWorldCoord);
+    setMinMaxXYWidthHeight(currentScenario.minWowWorldCoord, currentScenario.maxWowWorldCoord);
 
     m_x = 0;
     //To make AABB work for sure!
@@ -165,72 +171,79 @@ void MinimapGenerator::setupScenarioData() {
     m_height = currentScenario.imageHeight;
 
     //Assign mandatory adt for every cell on the screen
-    if (m_mgMode == EMGMode::eScreenshotGeneration && m_boundingBoxHolder != nullptr) {
+    if (m_mgMode == EMGMode::eScreenshotGeneration ) {
         //currentScenario.boundingBoxHolder
-        mandatoryADTMap.resize(m_chunkWidth);
-        for (int i = 0; i < m_chunkWidth; i++) {
-            mandatoryADTMap[i].resize(m_chunkHeight);
-        }
+        for (auto &mapData : mapRuntimeInfo) {
+            mapData.mandatoryADTMap.resize(m_chunkWidth);
+            for (int i = 0; i < m_chunkWidth; i++) {
+                mapData.mandatoryADTMap[i].resize(m_chunkHeight);
+            }
 
-        for (int adt_x = 0; adt_x < 64; adt_x++) {
-            for (int adt_y = 0; adt_y < 64; adt_y++) {
-                auto aaBB = (*m_boundingBoxHolder)[adt_x][adt_y];
-                //Project aaBB into screenSpace coordinates
-                std::array<float, 2> minMaxX = {aaBB.min.x, aaBB.min.x};
-                std::array<float, 2> minMaxY = {aaBB.min.y, aaBB.min.y};
-                std::array<float, 2> minMaxZ = {aaBB.min.z, aaBB.min.z};
-                std::vector<mathfu::vec4> corners;
+            for (int adt_x = 0; adt_x < 64; adt_x++) {
+                for (int adt_y = 0; adt_y < 64; adt_y++) {
+                    float minZ = currentScenario.maps[mapData.mapIndex].adtConfigHolder->adtMinZ[adt_x][adt_y];
+                    float maxZ = currentScenario.maps[mapData.mapIndex].adtConfigHolder->adtMaxZ[adt_x][adt_y];
+                    //Project aaBB into screenSpace coordinates
 
-                for (int i = 0; i < 2; i++) {
-                    for (int j = 0; j < 2; j++) {
-                        for (int k = 0; k < 2; k++) {
-                            corners.push_back(
-                                mathfu::vec4(
-                                    minMaxX[i],
-                                    minMaxY[j],
-                                    minMaxZ[k],
-                                    1.0f
-                                )
-                            );
+                    std::array<float, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1) , AdtIndexToWorldCoordinate(adt_x + 1)};
+                    std::array<float, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_y) , AdtIndexToWorldCoordinate(adt_x)};
+                    std::array<float, 2> minMaxZ = {minZ, maxZ};
+                    std::vector<mathfu::vec4> corners;
+
+                    for (int i = 0; i < 2; i++) {
+                        for (int j = 0; j < 2; j++) {
+                            for (int k = 0; k < 2; k++) {
+                                corners.push_back(
+                                    mathfu::vec4(
+                                        minMaxX[i],
+                                        minMaxY[j],
+                                        minMaxZ[k],
+                                        1.0f
+                                    )
+                                );
+                            }
                         }
                     }
-                }
 
-                mathfu::mat4 viewProj = genTempProjectMatrix();
-                for (int i = 0; i < corners.size(); i++) {
-                    corners[i] = viewProj * corners[i];
-                    corners[i] = corners[i] * (1.0f / corners[i].w);
-                }
+                    mathfu::mat4 viewProj = genTempProjectMatrix();
+                    for (int i = 0; i < corners.size(); i++) {
+                        corners[i] = viewProj * corners[i];
+                        corners[i] = corners[i] * (1.0f / corners[i].w);
+                    }
 
-                std::array<float, 2> minMaxScreenX = {20000, -20000};
-                std::array<float, 2> minMaxScreenY = {20000, -20000};
-                std::array<float, 2> minMaxScreenZ = {20000, -20000};
+                    std::array<float, 2> minMaxScreenX = {20000, -20000};
+                    std::array<float, 2> minMaxScreenY = {20000, -20000};
+                    std::array<float, 2> minMaxScreenZ = {20000, -20000};
 
-                for (int i = 0; i < corners.size(); i++) {
-                    minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
-                    minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
+                    for (int i = 0; i < corners.size(); i++) {
+                        minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
+                        minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
 
-                    minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
-                    minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
+                        minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
+                        minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
 
-                    minMaxScreenZ[0] = std::min<float>(corners[i].z, minMaxScreenZ[0]);
-                    minMaxScreenZ[1] = std::max<float>(corners[i].z, minMaxScreenZ[1]);
-                }
+                        minMaxScreenZ[0] = std::min<float>(corners[i].z, minMaxScreenZ[0]);
+                        minMaxScreenZ[1] = std::max<float>(corners[i].z, minMaxScreenZ[1]);
+                    }
 
-                //Add adt to all occupied cells
-                for (int i = std::floor(minMaxScreenX[0]); i < std::ceil((minMaxScreenX[1] - minMaxScreenX[0]) / 2.0f); i++) {
-                    for (int j = std::floor(minMaxScreenY[0]); j < std::ceil((minMaxScreenY[1] - minMaxScreenY[0]) / 2.0f); j++) {
-                        if (i < m_chunkStartX)
-                            return;
-                        if (j < m_chunkStartY)
-                            return;
-                        if (i > m_chunkStartX + m_chunkWidth)
-                            return;
-                        if (i > m_chunkStartY + m_chunkHeight)
-                            return;
+                    //Add adt to all occupied cells
+                    for (int i = std::floor(minMaxScreenX[0]);
+                         i < std::ceil((minMaxScreenX[1] - minMaxScreenX[0]) / 2.0f); i++) {
+                        for (int j = std::floor(minMaxScreenY[0]);
+                             j < std::ceil((minMaxScreenY[1] - minMaxScreenY[0]) / 2.0f); j++) {
+                            if (i < m_chunkStartX)
+                                return;
+                            if (j < m_chunkStartY)
+                                return;
+                            if (i > m_chunkStartX + m_chunkWidth)
+                                return;
+                            if (i > m_chunkStartY + m_chunkHeight)
+                                return;
 
-                        std::array<uint8_t, 2> adtCoord = {static_cast<unsigned char>(adt_x), static_cast<unsigned char>(adt_y)};
-                        mandatoryADTMap[i - m_chunkStartX][j - m_chunkStartY].push_back(adtCoord);
+                            std::array<uint8_t, 2> adtCoord = {static_cast<unsigned char>(adt_x),
+                                                               static_cast<unsigned char>(adt_y)};
+                            mapData.mandatoryADTMap[i - m_chunkStartX][j - m_chunkStartY].push_back(adtCoord);
+                        }
                     }
                 }
             }
@@ -243,87 +256,73 @@ void MinimapGenerator::setupScenarioData() {
 
 
 void
-MinimapGenerator::setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord) {
+MinimapGenerator::setMinMaxXYWidthHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord) {
     calcXtoYCoef();
 
     bool useZCoord = false;
-    float minZ = 20000; float maxZ = -20000;
-    if (m_boundingBoxHolder && m_mgMode != EMGMode::eBoundingBoxCalculation) {
+    mathfu::mat4 viewProj = genTempProjectMatrix();
+
+    std::array<float, 2> minMaxScreenX = {20000, -20000};
+    std::array<float, 2> minMaxScreenY = {20000, -20000};
+
+    if (m_mgMode != EMGMode::eBoundingBoxCalculation) {
         std::cout << "Using bounding box data to calc minMax Z" << std::endl;
         useZCoord = true;
 
-        for (int adt_y = worldCoordinateToAdtIndex(minWowWorldCoord.x);
-            adt_y < worldCoordinateToAdtIndex(maxWowWorldCoord.x); adt_y++) {
+        for (auto &mapData : mapRuntimeInfo) {
+            auto &mapDef = currentScenario.maps[mapData.mapIndex];
 
-            for (int adt_x = worldCoordinateToAdtIndex(minWowWorldCoord.y);
-                 adt_x < worldCoordinateToAdtIndex(maxWowWorldCoord.y); adt_x++) {
+            for (int adt_y = worldCoordinateToAdtIndex(minWowWorldCoord.x + mapDef.deltaX);
+                 adt_y < worldCoordinateToAdtIndex(maxWowWorldCoord.x+ mapDef.deltaX); adt_y++) {
 
-                auto adtMinZ = (*m_boundingBoxHolder)[adt_x][adt_y].min.z;
-                if (adtMinZ < 32*MathHelper::TILESIZE)
-                    minZ = std::min<float>(adtMinZ, minZ);
+                for (int adt_x = worldCoordinateToAdtIndex(minWowWorldCoord.y + mapDef.deltaY);
+                    adt_x < worldCoordinateToAdtIndex(maxWowWorldCoord.y + mapDef.deltaY); adt_x++) {
 
-                auto adtMaxZ = (*m_boundingBoxHolder)[adt_x][adt_y].max.z;
-                if (adtMaxZ > -32*MathHelper::TILESIZE) {
-                    maxZ = std::max<float>((*m_boundingBoxHolder)[adt_x][adt_y].max.z, maxZ);
-                }
-            }
-        }
-    }
-    std::array<float, 2> minMaxX = {minWowWorldCoord.x, maxWowWorldCoord.x};
-    std::array<float, 2> minMaxY = {minWowWorldCoord.y, maxWowWorldCoord.y};
-    std::array<float, 2> minMaxZ = {minZ, maxZ};
+                    auto adtMinZ = mapDef.adtConfigHolder->adtMinZ[adt_x][adt_y];
+                    auto adtMaxZ = mapDef.adtConfigHolder->adtMinZ[adt_x][adt_y];
 
-    mathfu::mat4 viewProj = genTempProjectMatrix();
+                    if (adtMinZ > adtMaxZ)
+                        continue;
 
-    std::vector<mathfu::vec4> corners;
-    if (useZCoord) {
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-                for (int k = 0; k < 2; k++) {
-                    corners.push_back(
-                        mathfu::vec4(
-                            minMaxX[i],
-                            minMaxY[j],
-                            minMaxZ[k],
-                            1.0f
-                        )
-                    );
+                    adtMinZ += mapDef.deltaZ;
+                    adtMaxZ += mapDef.deltaZ;
+
+                    std::array<float, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1), AdtIndexToWorldCoordinate(adt_x + 1)};
+                    std::array<float, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x)};
+                    std::array<float, 2> minMaxZ = {adtMinZ, adtMaxZ};
+
+                    std::vector<mathfu::vec4> corners;
+                    for (int i = 0; i < 2; i++)
+                    for (int j = 0; j < 2; j++)
+                    for (int k = 0; k < 2; k++) {
+                        corners.push_back(
+                            mathfu::vec4(
+                                minMaxX[i],
+                                minMaxY[j],
+                                minMaxZ[k],
+                                1.0f
+                            )
+                        );
+                    }
+
+                    for (int i = 0; i < corners.size(); i++) {
+                        corners[i] = viewProj * corners[i];
+                        corners[i] = corners[i] * (1.0f / corners[i].w);
+                    }
+
+                    for (int i = 0; i < corners.size(); i++) {
+                        minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
+                        minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
+
+                        minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
+                        minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
+                    }
                 }
             }
         }
     } else {
-        for (int i = 0; i < 2; i++) {
-            for (int j = 0; j < 2; j++) {
-                corners.push_back(
-                    mathfu::vec4(
-                        minMaxX[i],
-                        minMaxY[j],
-                        0,
-                        1.0f
-                    )
-                );
-            }
-        }
-    }
-
-    for (int i = 0; i < corners.size(); i++) {
-        corners[i] = viewProj * corners[i];
-        corners[i] = corners[i] * (1.0f / corners[i].w);
-    }
-
-    std::array<float, 2> minMaxScreenX = {20000, -20000};
-    std::array<float, 2> minMaxScreenY = {20000, -20000};
-    std::array<float, 2> minMaxScreenZ = {20000, -20000};
-
-    for (int i = 0; i < corners.size(); i++) {
-        minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
-        minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
-
-        minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
-        minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
-
-        minMaxScreenZ[0] = std::min<float>(corners[i].z, minMaxScreenZ[0]);
-        minMaxScreenZ[1] = std::max<float>(corners[i].z, minMaxScreenZ[1]);
+        minMaxScreenX = {-64, -64};
+        minMaxScreenY = {64, 64};
     }
 
 
@@ -351,13 +350,6 @@ mathfu::mat4 MinimapGenerator::genTempProjectMatrix() {
     auto orthoProjection = getOrthoMatrix();
 
     mathfu::vec3 lookAtPoint = mathfu::vec3(0, 0, 0);
-    lookAtPoint = lookAtPoint;
-    //std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
-
-    mathfu::vec3 lookAtVec3 = getLookAtVec3();
-    lookAtPoint -= (4000.0f*lookAtVec3);
-
-    mathfu::vec3 cameraPos = lookAtPoint-(2000.0f*lookAtVec3);
 
     std::shared_ptr<ICamera> tempCamera;
     if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
@@ -366,8 +358,8 @@ mathfu::mat4 MinimapGenerator::genTempProjectMatrix() {
         tempCamera = std::make_shared<FirstPersonOrthoStaticCamera>();
     }
 
-    tempCamera->setCameraPos(cameraPos.x, cameraPos.y, cameraPos.z);
-    tempCamera->setCameraLookAt(lookAtPoint.x, lookAtPoint.y, lookAtPoint.z);
+    setupCamera(lookAtPoint, tempCamera);
+
     tempCamera->tick(0);
 
     float nearPlane = 1.0;
@@ -484,10 +476,11 @@ void MinimapGenerator::setupCameraData() {
     float alphaMax = -max2.z / (max1.z - max2.z);
     auto max = (max1 - max2) * alphaMax + max2;
 
-
-    if (mandatoryADTMap.size() > 0) {
-        auto adtVec = mandatoryADTMap[m_x][m_y];
-        m_currentScene->setMandatoryADTs(adtVec);
+    for (auto &mapRuntime : mapRuntimeInfo) {
+        if (mapRuntime.mandatoryADTMap.size() > 0) {
+            auto adtVec = mapRuntime.mandatoryADTMap[m_x][m_y];
+            mapRuntime.scene->setMandatoryADTs(adtVec);
+        }
     }
 
 //    std::cout << "(Debug) m_x = " << m_x << " m_y = " << m_y <<
@@ -507,26 +500,31 @@ void MinimapGenerator::setZoom(float zoom) {
 void MinimapGenerator::setLookAtPoint(float x, float y) {
     mathfu::vec3 lookAtPoint2D = mathfu::vec3(x, y, 0);
 
+    setupCamera(lookAtPoint2D, m_apiContainer->camera);
+
+    m_apiContainer->camera->tick(0);
+}
+
+void
+MinimapGenerator::setupCamera(const mathfu::vec3 &lookAtPoint2D, std::shared_ptr<ICamera> &camera) {
     mathfu::vec3 lookAtVec3 = getLookAtVec3();
+
     mathfu::vec3 lookAtPoint = lookAtPoint2D - ((m_minZ - 10) * lookAtVec3);
+    mathfu::vec3 cameraPos = lookAtPoint2D - ((m_maxZ + 10) * lookAtVec3);
 
-    mathfu::vec3 cameraPos = lookAtPoint2D - ((m_maxZ + 10)*lookAtVec3);
-//    std::cout << "cameraPos = (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ") " << std::endl;
-
-    m_apiContainer->camera->setCameraPos(
+    camera->setCameraPos(
         cameraPos.x, cameraPos.y, cameraPos.z
     );
-    m_apiContainer->camera->setCameraLookAt(
+    camera->setCameraLookAt(
         lookAtPoint.x, lookAtPoint.y, lookAtPoint.z
     );
-    m_apiContainer->camera->tick(0);
 }
 
 void MinimapGenerator::resetCandidate() {
     prepearCandidate = false;
     m_candidateDS = nullptr;
-    m_candidateCS = nullptr;
-    m_candidateUS = nullptr;
+    m_candidateCS = {};
+    m_candidateUS = {};
     framesReady = 0;
 }
 
@@ -624,18 +622,28 @@ void MinimapGenerator::process() {
         return;
     }
 
-    if (
-        (m_candidateCS != nullptr && (
-                (m_candidateCS->m2Array.getToLoadGeom().size() != 0) ||
-                (m_candidateCS->m2Array.getToLoadMain().size() != 0) ||
-                (m_candidateCS->wmoGroupArray.getToLoad().size() != 0)
-            )
-        ) ||
-        (m_candidateUS != nullptr && m_candidateUS->texturesForUpload.size() > 0)
-    ) {
-        resetCandidate();
-        return;
+    if (!m_candidateCS.empty()) {
+        for (auto &cullStage : m_candidateCS) {
+            if (cullStage != nullptr && (
+                    (cullStage->m2Array.getToLoadGeom().size() != 0) ||
+                    (cullStage->m2Array.getToLoadMain().size() != 0) ||
+                    (cullStage->wmoGroupArray.getToLoad().size() != 0)
+                )) {
+                resetCandidate();
+                return;
+            }
+        }
     }
+
+    if (!m_candidateUS.empty()) {
+        for (auto &updateStage : m_candidateUS) {
+            if (updateStage != nullptr && updateStage->texturesForUpload.size() > 0) {
+                resetCandidate();
+                return;
+            }
+        }
+    }
+
 
     if (m_candidateDS == nullptr) {
         resetCandidate();
@@ -662,7 +670,6 @@ void MinimapGenerator::process() {
     mathfu::vec3 minCoord = mathfu::vec3(20000, 20000, 20000);
     mathfu::vec3 maxCoord = mathfu::vec3(-20000, -20000, -20000);
     {
-
         CAaBox adtBox2d = {
             mathfu::vec3_packed(mathfu::vec3(minAdt.x, minAdt.y, 0)),
             mathfu::vec3_packed(mathfu::vec3(maxAdt.x, maxAdt.y, 0))
@@ -700,12 +707,8 @@ void MinimapGenerator::process() {
             maxAdt.y,
             maxCoord.z);
 
-        if (m_boundingBoxHolder != nullptr) {
-            (*m_boundingBoxHolder)[adt_x][adt_y] = CAaBox(
-                C3Vector(minCoord),
-                C3Vector(maxCoord)
-            );
-        }
+        currentScenario.maps[m_mapIndex].adtConfigHolder->adtMinZ[adt_x][adt_y] = minCoord.z;
+        currentScenario.maps[m_mapIndex].adtConfigHolder->adtMaxZ[adt_x][adt_y] = maxCoord.z;
 
         saveDrawStageToFile(currentScenario.folderToSave+"/minimap", lastFrameIt);
     } else if (m_mgMode == EMGMode::eScreenshotGeneration) {
@@ -786,7 +789,8 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 
     mathfu::vec4 clearColor = m_apiContainer->getConfig()->clearColor;
     m_lastDraw = nullptr;
-    if (m_currentScene != nullptr) {
+
+    if (!mapRuntimeInfo.empty()) {
         ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};
 
         HFrameBuffer fb = nullptr;
@@ -801,20 +805,36 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 
         std::vector<HDrawStage> drawStageDependencies = {};
 
-        auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, m_currentScene);
-        std::shared_ptr<UpdateStage> updateStage = sceneScenario->addUpdateStage(cullStage, 0, cameraMatricesRendering);
+        auto &&mainMap = mapRuntimeInfo[m_mapIndex];
+        std::vector<HCullStage> cullStages;
+        std::vector<HUpdateStage> updateStages;
+
+        if (m_mgMode != EMGMode::eBoundingBoxCalculation) {
+            for (auto &mapData: mapRuntimeInfo) {
+                auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mapData.scene);
+                HUpdateStage updateStage = sceneScenario->addUpdateStage(cullStage, 0,
+                                                                                         cameraMatricesRendering);
+                cullStages.push_back(cullStage);
+                updateStages.push_back(updateStage);
+            }
+        } else {
+            auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mainMap.scene);
+            std::shared_ptr<UpdateStage> updateStage = sceneScenario->addUpdateStage(cullStage, 0,
+                                                                                     cameraMatricesRendering);
+        }
+
         HDrawStage sceneDrawStage = sceneScenario->addDrawStage(
-            updateStage, m_currentScene, cameraMatricesRendering,
+            updateStages, mainMap.scene, cameraMatricesRendering,
             drawStageDependencies, true, dimensions, true, false, clearColor, fb);
 
         m_lastDraw = sceneDrawStage;
         //We dont need stack in preview mode
         if (prepearCandidate && m_candidateDS == nullptr) {
             m_candidateDS = sceneDrawStage;
-            m_candidateCS = cullStage;
-            m_candidateUS = updateStage;
+            m_candidateCS = cullStages;
+            m_candidateUS = updateStages;
         }
-        stackOfCullStages[m_apiContainer->hDevice->getDrawFrameNumber()] = cullStage;
+        stackOfCullStages[m_apiContainer->hDevice->getDrawFrameNumber()] = cullStages[0];
 
         return sceneDrawStage;
     }

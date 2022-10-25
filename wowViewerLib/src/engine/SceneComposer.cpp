@@ -188,7 +188,7 @@ void SceneComposer::DoUpdate() {
     logExecution
     for (auto &link : frameScenario->drawStageLinks) {
         logExecution
-        link.scene->produceDrawStage(link.drawStage, link.updateStage, additionalChunks);
+        link.scene->produceDrawStage(link.drawStage, link.updateStages, additionalChunks);
         logExecution
     }
     produceDrawStage.endMeasurement();

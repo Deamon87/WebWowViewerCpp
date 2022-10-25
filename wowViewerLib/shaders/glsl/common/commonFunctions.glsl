@@ -4,9 +4,9 @@ vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
 //    vec3 reflection = reflect(normPos, normal);
 //    return (normalize(vec3(reflection.r, reflection.g, reflection.b + 1.0)).rg * 0.5) + vec2(0.5);
 
-    vec3 normPos_495 = normalize(cameraPoint.xyz);
-    vec3 temp_500 = (normPos_495 - (normal * (2.0 * dot(normPos_495, normal))));
-    vec3 temp_657 = vec3(temp_500.x, temp_500.y, (temp_500.z + 1.0));
+    vec3 viewVecNormalized = -normalize(cameraPoint.xyz);
+    vec3 reflection = reflect(viewVecNormalized, normal);
+    vec3 temp_657 = vec3(reflection.x, reflection.y, (reflection.z + 1.0));
 
     return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
 }

@@ -19,9 +19,10 @@ private:
     std::vector<ScenarioDef> scenarioListToProcess;
     ScenarioDef currentScenario;
 
-    HScene m_currentScene = nullptr;
     int m_width = 1024;
     int m_height = 1024;
+
+    int m_mapIndex = 0;
 
     //Position that's being rendered
     int m_x = 0;
@@ -38,16 +39,20 @@ private:
 
     HDrawStage m_lastDraw = nullptr;
 
-    HADTBoundingBoxHolder m_boundingBoxHolder = nullptr;
+    struct PerSceneData {
+        int mapIndex = -1;
+        HScene scene;
+        //Per X dimension, per Y dimension, vector of mandatory adt {x, y} coordinates
+        std::vector<std::vector<std::vector<std::array<uint8_t, 2>>>> mandatoryADTMap;
+    };
 
-    //Per X dimension, per Y dimension, vector of mandatory adt {x, y} coordinates
-    std::vector<std::vector<std::vector<std::array<uint8_t, 2>>>> mandatoryADTMap;
+    std::vector<PerSceneData> mapRuntimeInfo;
 
     std::array<HCullStage, 4> stackOfCullStages;
 
-    HUpdateStage m_candidateUS = nullptr;
+    std::vector<HUpdateStage> m_candidateUS = {};
     HDrawStage m_candidateDS = nullptr;
-    HCullStage m_candidateCS = nullptr;
+    std::vector<HCullStage> m_candidateCS = {};
 
     float m_zFar = 3000.0f;
     float m_maxZ = 1000.0f;
@@ -72,7 +77,7 @@ public:
     MinimapGenerator(HWoWFilesCacheStorage cacheStorage,
                      const HGDevice &hDevice,
                      HRequestProcessor processor,
-                     std::shared_ptr<IClientDatabase> dbhandler, HADTBoundingBoxHolder boundingBoxHolder);
+                     std::shared_ptr<IClientDatabase> dbhandler);
 
     void startScenarios(std::vector<ScenarioDef> &scenarioListToProcess);
     void process();
@@ -95,7 +100,7 @@ public:
 
     void calcXtoYCoef();
 
-    void setMinMaxXYWidhtHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord);
+    void setMinMaxXYWidthHeight(const mathfu::vec2 &minWowWorldCoord, const mathfu::vec2 &maxWowWorldCoord);
 
     void setupScenarioData();
 
@@ -112,6 +117,7 @@ public:
 
     void saveDrawStageToFile(std::string folderToSave, const std::shared_ptr<DrawStage> &lastFrameIt);
 
+    void setupCamera(const mathfu::vec3 &lookAtPoint2D, std::shared_ptr<ICamera> &camera);
 };
 
 typedef std::shared_ptr<MinimapGenerator> HMinimapGenerator;

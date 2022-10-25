@@ -23,7 +23,7 @@ public:
     virtual void setMeshIds(std::vector<uint8_t> &meshIds) = 0;
     virtual void resetAnimation() = 0;
 
-    virtual void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;
+    virtual void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;
     virtual void produceUpdateStage(HUpdateStage &updateStage) = 0;
 
     virtual void checkCulling(HCullStage &cullStage) = 0;
@@ -36,7 +36,7 @@ public:
 
     virtual void exportScene(IExporter * exporter) {};
 
-    virtual void setAdtBoundingBoxHolder(HADTBoundingBoxHolder &bbHolder) {};
+    virtual void setAdtConfig(HADTRenderConfigDataHolder &adtConfig) {};
     virtual void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {};
     virtual void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) {};
 };
