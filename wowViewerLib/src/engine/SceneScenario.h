@@ -30,6 +30,11 @@ struct CullStage {
     HCameraMatrices matricesForCulling;
     HScene scene;
 
+    //Just for proper BoundingBox calculus
+    float deltaX = 0.0f;
+    float deltaY = 0.0f;
+    float deltaZ = 0.0f;
+
 //Output:
     int adtAreadId = -1;
 
@@ -89,8 +94,8 @@ private:
 
     HDrawStage lastDrawStage;
 public:
-    HCullStage addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene);
-    HUpdateStage addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
+    HCullStage addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene, mathfu::vec3 deltas = {0,0,0});
+    HUpdateStage addUpdateStage(HCullStage &cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
 
     HDrawStage addDrawStage(std::vector<HUpdateStage> &updateStage,
                             HScene scene,

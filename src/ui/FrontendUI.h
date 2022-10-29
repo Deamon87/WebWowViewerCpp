@@ -21,6 +21,7 @@
 #include "../minimapGenerator/storage/CMinimapDataDB.h"
 #include "../exporters/dataExporter/DataExporterClass.h"
 #include "childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h"
+#include "childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -38,6 +39,8 @@ public:
 
     }
     ~FrontendUI() override {
+        fileDialog.Close();
+        createFileDialog.Close();
         ImGui::DestroyContext(this->imguiContext);
     };
     std::shared_ptr<FrontendUI> getShared()
@@ -54,7 +57,7 @@ public:
     void setAnimationId(int animationId) override {};
     void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
-    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) override;
     void produceUpdateStage(HUpdateStage &updateStage) override;
 
     void checkCulling(HCullStage &cullStage) override {};
@@ -90,20 +93,7 @@ private:
 
     std::array<HCullStage, 4> m_cullstages = {};
 
-    std::shared_ptr<CMinimapDataDB> m_minimapDB;
-
-    HMinimapGenerator minimapGenerator;
-    HADTBoundingBoxHolder boundingBoxHolder;
-    std::vector<ScenarioDef> sceneDefList;
-    HRiverColorOverrideHolder riverColorOverrides;
-    ScenarioDef *sceneDef = nullptr;
-    bool editTabOpened;
-    float previewX = 0;
-    float previewY = 0;
-    float previewZoom = 1;
-
     float uiScale = 1;
-
 
     std::shared_ptr<IScene> currentScene = nullptr;
 
@@ -223,6 +213,7 @@ private:
     int exporterFramesReady = 0;
 
    std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
+   std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
 
 
 //Test export

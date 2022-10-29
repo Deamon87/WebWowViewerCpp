@@ -1748,80 +1748,100 @@ void Map::produceUpdateStage(HUpdateStage &updateStage) {
     m_api->getConfig()->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
     m_api->getConfig()->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
 }
-void Map::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
-    auto cullStage = updateStage->cullResult;
+void Map::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) {
+    //Smash all meshes into one array
 
-    //Create scenewide uniform
-    resultDrawStage->frameDepedantData = updateStage->cullResult->frameDepedantData;
-    auto renderMats = resultDrawStage->matricesForRendering;
+    auto opaqueMeshes = std::make_shared<MeshesToRender>();
+    auto transparentMeshes = std::make_shared<MeshesToRender>();
+    for (auto &updateStage : updateStages) {
+        auto cullStage = updateStage->cullResult;
 
-    resultDrawStage->opaqueMeshes = updateStage->opaqueMeshes;
-    resultDrawStage->transparentMeshes = updateStage->transparentMeshes;
+        //Create scenewide uniform
+        resultDrawStage->frameDepedantData = updateStage->cullResult->frameDepedantData;
+
+        opaqueMeshes->meshes.insert(std::end(opaqueMeshes->meshes),
+                                    std::begin(updateStage->opaqueMeshes->meshes),
+                                    std::end(updateStage->opaqueMeshes->meshes));
+        transparentMeshes->meshes.insert(std::end(transparentMeshes->meshes),
+                                    std::begin(updateStage->transparentMeshes->meshes),
+                                    std::end(updateStage->transparentMeshes->meshes));
+    }
+
+    //Sort transparent meshes. Again
+    tbb::parallel_sort(transparentMeshes->meshes.begin(), transparentMeshes->meshes.end(),
+#include "../../../gapi/interface/sortLambda.h"
+    );
 
     HDrawStage origResultDrawStage = resultDrawStage;
     bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
 
     auto config = m_api->getConfig();
-    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
 
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
+    auto renderMats = resultDrawStage->matricesForRendering;
+    if (renderMats != nullptr) {
+        resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+        resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler(
+            [renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
+                auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
 
-        blockPSVS->extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
-        blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
-        blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
-        blockPSVS->extLight.uAdtSpecMult = mathfu::vec4(config->adtSpecMult, 0,0,1.0);
+                blockPSVS->uLookAtMat = renderMats->lookAtMat;
+                blockPSVS->uPMatrix = renderMats->perspectiveMat;
+                blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
+                blockPSVS->uViewUp = renderMats->viewUp;
+
+                blockPSVS->extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
+                blockPSVS->extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
+                blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
+                blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
+                blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
+                blockPSVS->extLight.uAdtSpecMult = mathfu::vec4(config->adtSpecMult, 0, 0, 1.0);
 
 //        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
-        float fogEnd = config->farPlane;
-        if (config->disableFog || !fdd->FogDataFound) {
-            fogEnd = 100000000.0f;
-            fdd->FogScaler = 0;
-            fdd->FogDensity = 0;
-        }
+                float fogEnd = config->farPlane;
+                if (config->disableFog || !fdd->FogDataFound) {
+                    fogEnd = 100000000.0f;
+                    fdd->FogScaler = 0;
+                    fdd->FogDensity = 0;
+                }
 
-        float fogStart = std::max<float>(config->farPlane - 250, 0);
-        fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
+                float fogStart = std::max<float>(config->farPlane - 250, 0);
+                fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
 
 
-        blockPSVS->fogData.densityParams = mathfu::vec4(
-            fogStart,
-            fogEnd ,
-            fdd->FogDensity / 1000,
-            0);
-        blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
-        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor,fdd->FogHeightScaler);
-        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
-            fdd->FogHeightDensity,
-            fdd->EndFogColor.x,
-            fdd->EndFogColor.y,
-            fdd->EndFogColor.z
+                blockPSVS->fogData.densityParams = mathfu::vec4(
+                    fogStart,
+                    fogEnd,
+                    fdd->FogDensity / 1000,
+                    0);
+                blockPSVS->fogData.heightPlane = mathfu::vec4(0, 0, 0, 0);
+                blockPSVS->fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor, fdd->FogHeightScaler);
+                blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
+                    fdd->FogHeightDensity,
+                    fdd->EndFogColor.x,
+                    fdd->EndFogColor.y,
+                    fdd->EndFogColor.z
+                );
+                blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
+                    fdd->SunFogAngle,
+                    fdd->SunFogColor.x * fdd->SunFogStrength,
+                    fdd->SunFogColor.y * fdd->SunFogStrength,
+                    fdd->SunFogColor.z * fdd->SunFogStrength
+                );
+                blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
+                    fdd->FogHeightColor,
+                    (fdd->EndFogColorDistance > 0) ?
+                    fdd->EndFogColorDistance :
+                    1000.0f
+                );
+                blockPSVS->fogData.sunPercentage = mathfu::vec4(
+                    (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f, 0, 0, 0);
+
+            }
         );
-        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
-            fdd->SunFogAngle,
-            fdd->SunFogColor.x * fdd->SunFogStrength,
-            fdd->SunFogColor.y * fdd->SunFogStrength,
-            fdd->SunFogColor.z * fdd->SunFogStrength
-        );
-        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
-            fdd->FogHeightColor,
-            (fdd->EndFogColorDistance > 0) ?
-            fdd->EndFogColorDistance :
-            1000.0f
-        );
-        blockPSVS->fogData.sunPercentage = mathfu::vec4(
-            (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f
-            , 0, 0, 0);
+        additionalChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
+    }
 
-    });
 
-    updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
 
     if (frameBufferSupported ) {
         //Create a copy of exiting resultDrawStage
@@ -1842,7 +1862,7 @@ void Map::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStag
         HDrawStage prevDrawStage = resultDrawStageCpy;
 
         if (!config->disableGlow) {
-            lastDrawStage = doGaussBlur(prevDrawStage, updateStage);
+            lastDrawStage = doGaussBlur(prevDrawStage, additionalChunks);
             if (lastDrawStage != nullptr)
                 prevDrawStage = lastDrawStage;
         }
@@ -1856,9 +1876,10 @@ void Map::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStag
     }
 
 
+
 }
 
-HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const {
+HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const {
     if (quadBindings == nullptr)
         return nullptr;
 
@@ -1886,7 +1907,7 @@ HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &upd
     );
 
     auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-    updateStage->uniformBufferChunks.push_back(vertexChunk);
+    uniformBufferChunks.push_back(vertexChunk);
     vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
         meshblockVS.x = 1;
@@ -1897,7 +1918,7 @@ HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &upd
 
 
     auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag);
+    uniformBufferChunks.push_back(ffxGaussFrag);
     ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-1, 0, 0, -1};
@@ -1911,7 +1932,7 @@ HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &upd
 
 
     auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag2);
+    uniformBufferChunks.push_back(ffxGaussFrag2);
     ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {-6, -1, 1, 6};
@@ -1923,7 +1944,7 @@ HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &upd
         }
     });
     auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag3);
+    uniformBufferChunks.push_back(ffxGaussFrag3);
     ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
         static const float s_texOffsetX[4] = {0, 0, 0, 0};
@@ -1990,7 +2011,7 @@ HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &upd
 
         auto glow = parentDrawStage->frameDepedantData->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        updateStage->uniformBufferChunks.push_back(ffxGlowfragmentChunk);
+        uniformBufferChunks.push_back(ffxGlowfragmentChunk);
         ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
             auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
             meshblockVS.x = 1;

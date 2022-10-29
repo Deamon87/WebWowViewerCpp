@@ -4,10 +4,13 @@
 
 #include "SceneScenario.h"
 
-HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene) {
+HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene, mathfu::vec3 deltas) {
     HCullStage newCullStage = std::make_shared<CullStage>();
     newCullStage->matricesForCulling = matricesForCulling;
     newCullStage->scene = scene;
+    newCullStage->deltaX = deltas[0];
+    newCullStage->deltaY = deltas[1];
+    newCullStage->deltaZ = deltas[2];
 
     cullStages.push_back(newCullStage);
 
@@ -15,7 +18,7 @@ HCullStage FrameScenario::addCullStage(HCameraMatrices matricesForCulling, std::
 }
 
 HUpdateStage
-FrameScenario::addUpdateStage(HCullStage cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate) {
+FrameScenario::addUpdateStage(HCullStage &cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate) {
     HUpdateStage newUpdateStage = std::make_shared<UpdateStage>();
 
     newUpdateStage->cullResult = cullStage;

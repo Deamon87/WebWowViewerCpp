@@ -225,7 +225,7 @@ set(SOURCE_FILES
 		src/database/product_db_parser/productDbParser.cpp
 		src/database/product_db_parser/productDbParser.h
 		src/database/buildInfoParser/buildInfoParser.cpp
-		src/database/buildInfoParser/buildInfoParser.h)
+		src/database/buildInfoParser/buildInfoParser.h src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.cpp src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h)
 
 
 

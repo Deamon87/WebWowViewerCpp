@@ -33,11 +33,11 @@ enum class EMGMode {
 struct MapRenderDef {
     int id = -1;
 
-    int mapId;
+    int mapId = -1;
 
-    double deltaX;
-    double deltaY;
-    double deltaZ;
+    double deltaX = 0.0f;
+    double deltaY = 0.0f;
+    double deltaZ = 0.0f;
 
     HADTRenderConfigDataHolder adtConfigHolder = std::make_shared<ADTRenderConfigData>();
 };

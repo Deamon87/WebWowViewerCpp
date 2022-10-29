@@ -65,6 +65,7 @@ private:
     mathfu::mat4 getOrthoMatrix();
     mathfu::vec3 getLookAtVec3();
     void startNextScenario();
+    bool loadMaps();
     void resetCandidate();
 
     void calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoord,

@@ -16,7 +16,7 @@ public:
     virtual void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
     virtual void produceUpdateStage(HUpdateStage &updateStage) override {};
-    virtual void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override {
+    virtual void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) override {
         resultDrawStage->transparentMeshes = std::make_shared<MeshesToRender>();
         resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
     };

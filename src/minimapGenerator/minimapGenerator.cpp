@@ -123,29 +123,14 @@ void MinimapGenerator::startNextScenario() {
     setupScenarioData();
 }
 
-
-void MinimapGenerator::setupScenarioData() {
-    m_zoom = currentScenario.zoom;
-
-    for (auto &mapData : mapRuntimeInfo) {
-        mapData.mandatoryADTMap.resize(0);
-    }
-
-    stackOfCullStages = {nullptr, nullptr, nullptr, nullptr};
-
-    if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
-        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
-    } else {
-        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
-    }
-
+bool MinimapGenerator::loadMaps() {
     for ( int i = 0; i < currentScenario.maps.size(); i++) {
         auto &mapDef = currentScenario.maps[i];
         MapRecord mapRecord;
         if (!m_apiContainer->databaseHandler->getMapById(mapDef.mapId, mapRecord)) {
             std::cout << "Couldnt get data for mapId " << mapDef.mapId << std::endl;
             startNextScenario();
-            return;
+            return false;
         }
 
         auto &mapRuntime = mapRuntimeInfo.emplace_back();
@@ -156,20 +141,11 @@ void MinimapGenerator::setupScenarioData() {
             mapRuntime.scene->setAdtConfig(mapDef.adtConfigHolder);
         }
     }
-
-    auto config = m_apiContainer->getConfig();
-    config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
-    config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
-
     setMinMaxXYWidthHeight(currentScenario.minWowWorldCoord, currentScenario.maxWowWorldCoord);
 
-    m_x = 0;
-    //To make AABB work for sure!
-    m_y = m_chunkHeight - 1;
-
-    m_width = currentScenario.imageWidth;
-    m_height = currentScenario.imageHeight;
-
+    for (auto &mapData : mapRuntimeInfo) {
+        mapData.mandatoryADTMap.resize(0);
+    }
     //Assign mandatory adt for every cell on the screen
     if (m_mgMode == EMGMode::eScreenshotGeneration ) {
         //currentScenario.boundingBoxHolder
@@ -206,24 +182,24 @@ void MinimapGenerator::setupScenarioData() {
                     }
 
                     mathfu::mat4 viewProj = genTempProjectMatrix();
-                    for (int i = 0; i < corners.size(); i++) {
-                        corners[i] = viewProj * corners[i];
-                        corners[i] = corners[i] * (1.0f / corners[i].w);
+                    for (auto & corner : corners) {
+                        corner = viewProj * corner;
+                        corner = corner * (1.0f / corner.w);
                     }
 
                     std::array<float, 2> minMaxScreenX = {20000, -20000};
                     std::array<float, 2> minMaxScreenY = {20000, -20000};
                     std::array<float, 2> minMaxScreenZ = {20000, -20000};
 
-                    for (int i = 0; i < corners.size(); i++) {
-                        minMaxScreenX[0] = std::min<float>(corners[i].x, minMaxScreenX[0]);
-                        minMaxScreenX[1] = std::max<float>(corners[i].x, minMaxScreenX[1]);
+                    for (auto & corner : corners) {
+                        minMaxScreenX[0] = std::min<float>(corner.x, minMaxScreenX[0]);
+                        minMaxScreenX[1] = std::max<float>(corner.x, minMaxScreenX[1]);
 
-                        minMaxScreenY[0] = std::min<float>(corners[i].y, minMaxScreenY[0]);
-                        minMaxScreenY[1] = std::max<float>(corners[i].y, minMaxScreenY[1]);
+                        minMaxScreenY[0] = std::min<float>(corner.y, minMaxScreenY[0]);
+                        minMaxScreenY[1] = std::max<float>(corner.y, minMaxScreenY[1]);
 
-                        minMaxScreenZ[0] = std::min<float>(corners[i].z, minMaxScreenZ[0]);
-                        minMaxScreenZ[1] = std::max<float>(corners[i].z, minMaxScreenZ[1]);
+                        minMaxScreenZ[0] = std::min<float>(corner.z, minMaxScreenZ[0]);
+                        minMaxScreenZ[1] = std::max<float>(corner.z, minMaxScreenZ[1]);
                     }
 
                     //Add adt to all occupied cells
@@ -232,13 +208,13 @@ void MinimapGenerator::setupScenarioData() {
                         for (int j = std::floor(minMaxScreenY[0]);
                              j < std::ceil((minMaxScreenY[1] - minMaxScreenY[0]) / 2.0f); j++) {
                             if (i < m_chunkStartX)
-                                return;
+                                continue;
                             if (j < m_chunkStartY)
-                                return;
+                                continue;
                             if (i > m_chunkStartX + m_chunkWidth)
-                                return;
+                                continue;
                             if (i > m_chunkStartY + m_chunkHeight)
-                                return;
+                                continue;
 
                             std::array<uint8_t, 2> adtCoord = {static_cast<unsigned char>(adt_x),
                                                                static_cast<unsigned char>(adt_y)};
@@ -249,6 +225,35 @@ void MinimapGenerator::setupScenarioData() {
             }
         }
     }
+
+    return true;
+}
+
+void MinimapGenerator::setupScenarioData() {
+    m_zoom = currentScenario.zoom;
+
+    stackOfCullStages = {nullptr, nullptr, nullptr, nullptr};
+
+    auto config = m_apiContainer->getConfig();
+    config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
+    config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
+
+
+    m_width = currentScenario.imageWidth;
+    m_height = currentScenario.imageHeight;
+
+    if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
+        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
+    } else {
+        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
+    }
+
+    if (!loadMaps())
+        return;
+
+    m_x = 0;
+    //To make AABB work for sure!
+    m_y = m_chunkHeight - 1;
 
     prepearCandidate = false;
     setupCameraData();
@@ -284,12 +289,9 @@ MinimapGenerator::setMinMaxXYWidthHeight(const mathfu::vec2 &minWowWorldCoord, c
                     if (adtMinZ > adtMaxZ)
                         continue;
 
-                    adtMinZ += mapDef.deltaZ;
-                    adtMaxZ += mapDef.deltaZ;
-
-                    std::array<float, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1), AdtIndexToWorldCoordinate(adt_x + 1)};
-                    std::array<float, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x)};
-                    std::array<float, 2> minMaxZ = {adtMinZ, adtMaxZ};
+                    std::array<double, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1) + mapDef.deltaX, AdtIndexToWorldCoordinate(adt_x + 1) + mapDef.deltaX};
+                    std::array<double, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_y) + mapDef.deltaY, AdtIndexToWorldCoordinate(adt_x) + mapDef.deltaY};
+                    std::array<double, 2> minMaxZ = {adtMinZ + mapDef.deltaZ, adtMaxZ + mapDef.deltaZ};
 
                     std::vector<mathfu::vec4> corners;
                     for (int i = 0; i < 2; i++)
@@ -540,7 +542,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 
-        if (objBB.max.z > 2000) {
+        if (objBB.max.x > 17000) {
             continue;
         }
 
@@ -561,7 +563,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 
-        if (objBB.max.z > 2000) {
+        if (objBB.max.x > 17000) {
             continue;
         }
 
@@ -592,7 +594,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         auto objBB = adtObj->calcAABB();
 
-        if (objBB.max.z > 2000) {
+        if (objBB.max.x > 17000) {
             continue;
         }
 
@@ -675,23 +677,30 @@ void MinimapGenerator::process() {
             mathfu::vec3_packed(mathfu::vec3(maxAdt.x, maxAdt.y, 0))
         };
 
-        this->calcBB(lastFrameCull, minCoord, maxCoord, adtBox2d, adt_x, adt_y, m_mgMode == EMGMode::eBoundingBoxCalculation);
-        float zFar = (minCoord - maxCoord).Length();
-        float maxZ = maxCoord.z;
-        float minZ = minCoord.z;
+        bool needRestart = false;
+        for (auto &cullStage: lastFrameCull) {
+            this->calcBB(cullStage, minCoord, maxCoord, adtBox2d, adt_x, adt_y,
+                         m_mgMode == EMGMode::eBoundingBoxCalculation);
+            float zFar = (minCoord - maxCoord).Length();
+            float maxZ = maxCoord.z + cullStage->deltaZ;
+            float minZ = minCoord.z + cullStage->deltaZ;
 
-        if (!lastFrameCull->m2Array.getDrawn().empty() || !lastFrameCull->adtArray.empty() ||
-            !lastFrameCull->wmoGroupArray.getToDraw().empty()) {
-            if (minCoord.x < 20000 && maxCoord.x > -20000) {
-                if (zFar > m_zFar || maxZ > m_maxZ || minZ < m_minZ) {
-                    m_zFar = std::max<float>(zFar, m_zFar);
-                    m_maxZ = std::max<float>(maxZ, m_maxZ);
-                    m_minZ = std::min<float>(minZ, m_minZ);
-                    resetCandidate();
-                    setupCameraData();
-                    return;
+            if (!cullStage->m2Array.getDrawn().empty() || !cullStage->adtArray.empty() ||
+                !cullStage->wmoGroupArray.getToDraw().empty()) {
+                if (minCoord.x < 20000 && maxCoord.x > -20000) {
+                    if (zFar > m_zFar || maxZ > m_maxZ || minZ < m_minZ) {
+                        m_zFar = std::max<float>(zFar, m_zFar);
+                        m_maxZ = std::max<float>(maxZ, m_maxZ);
+                        m_minZ = std::min<float>(minZ, m_minZ);
+                        needRestart = true;
+                    }
                 }
             }
+        }
+        if (needRestart) {
+            resetCandidate();
+            setupCameraData();
+            return;
         }
     }
 
@@ -883,19 +892,7 @@ Config *MinimapGenerator::getConfig() {
 }
 
 void MinimapGenerator::reload() {
-    m_currentScene = nullptr;
-
-    MapRecord mapRecord;
-    if (!m_apiContainer->databaseHandler->getMapById(currentScenario.mapId, mapRecord)) {
-        std::cout << "Couldnt get data for mapId " << currentScenario.mapId << std::endl;
-        startNextScenario();
-        return;
-    }
-
-    m_currentScene = std::make_shared<Map>(m_apiContainer, mapRecord.ID, mapRecord.WdtFileID);
-    if (m_mgMode == EMGMode::eScreenshotGeneration) {
-        m_currentScene->setAdtBoundingBoxHolder(m_boundingBoxHolder);
-    }
+    loadMaps();
 }
 
 void MinimapGenerator::getCurrentFDData(int &areaId, int &parentAreaId, mathfu::vec4 &riverColor) {

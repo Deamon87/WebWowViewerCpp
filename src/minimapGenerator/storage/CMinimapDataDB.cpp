@@ -120,7 +120,7 @@ const std::string insertAdtExcludedSQL =
     R"===(
     insert into scenario_map_def_excluded_adt(map_definition_id,
        adt_x, adt_y,
-       min_z, max_z)
+       chunk_x, chunk_y)
     values (?, ?, ?, ?, ?)
 )===";
 
@@ -284,7 +284,6 @@ void CMinimapDataDB::getAdtExcluded(MapRenderDef& mapRenderDef) {
         AdtCell adtCell = {adt_x, adt_y};
         AdtCell chunkCell = {chunk_x, chunk_y};
         if (chunk_x == -1 || chunk_y == -1) {\
-
             mapRenderDef.adtConfigHolder->excludedADTs.insert(adtCell);
         } else {
             mapRenderDef.adtConfigHolder->excludedChunksPerADTs[adtCell].insert(chunkCell);
@@ -292,7 +291,28 @@ void CMinimapDataDB::getAdtExcluded(MapRenderDef& mapRenderDef) {
     }
 }
 void CMinimapDataDB::saveAdtExcluded(MapRenderDef& mapRenderDef){
+    SQLite::Transaction transaction(m_sqliteDatabase);
 
+    //1. Clear all records for that mapId from DB
+    {
+        SQLite::Statement cleanABB(m_sqliteDatabase,
+                                   "delete from adt_bounding_boxes where map_id = ?"
+        );
+        cleanABB.exec();
+    }
+
+    //2. Insert into database
+    for (int i = 0; i < 64; i++) {
+        for (int j = 0; j < 64; j++) {
+            insertADTBoundingBoxes.setInputs(mapRenderDef.mapId, i, j,
+                                             mapRenderDef.adtConfigHolder->adtMinZ[i][j],
+                                             mapRenderDef.adtConfigHolder->adtMaxZ[i][j]);
+            insertADTBoundingBoxes.execute();
+        }
+    }
+
+    //3. Commit transaction
+    transaction.commit();
 }
 
 void CMinimapDataDB::getRiverColorOverrides(int mapId, std::vector<RiverColorOverride> &riverOverrides) {
