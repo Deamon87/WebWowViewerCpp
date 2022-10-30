@@ -43,13 +43,10 @@ struct MapRenderDef {
 };
 
 struct ScenarioDef {
-    std::vector<MapRenderDef> maps;
 
     int id = -1;
     std::string name;
     ScenarioOrientation orientation = ScenarioOrientation::so45DegreeTick0;
-
-    std::unordered_map<int, std::vector<int>> activatePhasePerMap;
 
     mathfu::vec4 closeOceanColor;
 
@@ -57,12 +54,14 @@ struct ScenarioDef {
     mathfu::vec2 maxWowWorldCoord;
 
     int imageHeight;
-
     int imageWidth;
 
     float zoom = 1.0f;
 
     std::string folderToSave;
+
+    std::unordered_map<int, std::vector<int>> activatePhasePerMap;
+    std::vector<MapRenderDef> maps;
 };
 
 

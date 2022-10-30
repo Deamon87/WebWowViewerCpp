@@ -72,11 +72,13 @@ private:
     StatementFieldHolder insertADTBoundingBoxes;
 
     StatementFieldHolder getMapDef;
-    StatementFieldHolder insertMapDef;
+    StatementFieldHolder insertNewMapDef;
     StatementFieldHolder updateMapDef;
 
     StatementFieldHolder getADTExcluded;
     StatementFieldHolder insertADTExcluded;
+
+    void saveScenario(ScenarioDef &scenario);
 };
 
 

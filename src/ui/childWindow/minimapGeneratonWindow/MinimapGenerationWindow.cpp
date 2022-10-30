@@ -112,23 +112,40 @@ void MinimapGenerationWindow::render() {
 
 void MinimapGenerationWindow::renderMapConfigSubWindow(int mapIndex) {
     auto &mapRenderDef = sceneDef->maps[mapIndex];
-    ImGui::BeginGroupPanel(("Map##" + std::to_string(mapIndex)).c_str());
+    ImGui::BeginGroupPanel(("Map" + std::to_string(mapIndex)).c_str());
 
     ImGui::InputInt(("Map Id##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.mapId);
     ImGui::InputDouble(("Delta X##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.deltaX);
     ImGui::InputDouble(("Delta Y##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.deltaY);
     ImGui::InputDouble(("Delta Z##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.deltaZ);
 
-    ImGui::PushStyleColor(ImGuiCol_Button, 0x0000FF);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive, 0x0000FF);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, 0x0000FF);
-    if (ImGui::Button("Delete")) {
-        sceneDef->maps.erase(std::next(sceneDef->maps.begin(), mapIndex-1));
+    const auto redColor = ImVec4{1.0f, 0.f, 0.f, 1.0f};
+    ImGui::PushStyleColor(ImGuiCol_Button, redColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, redColor);
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, redColor);
+    if (ImGui::Button(("Delete##"+ std::to_string(mapIndex)).c_str())) {
+        if (mapIndex > 0) {
+            sceneDef->maps.erase(std::next(sceneDef->maps.begin(), mapIndex - 1));
+        } else {
+            sceneDef->maps.erase(sceneDef->maps.begin());
+        }
     }
-    ImGui::PopStyleColor(ImGuiCol_Button);
-    ImGui::PopStyleColor(ImGuiCol_ButtonActive);
-    ImGui::PopStyleColor(ImGuiCol_ButtonActive);
+    ImGui::PopStyleColor(3);
+    ImGui::EndGroupPanel();
 
+    ImGui::SameLine();
+    ImGui::BeginGroupPanel("");
+
+    bool active = mapIndexExcludeADT == mapIndex;
+    if (ImGui::RadioButton(("Exclude ADT##" + std::to_string(mapIndex)).c_str(), active)) {
+        mapIndexExcludeADT = mapIndex;
+        mapIndexExcludeADTChunk = -1;
+    }
+    bool active2 = mapIndexExcludeADTChunk == mapIndex;
+    if (ImGui::RadioButton(("Exclude ADT Chunk##" + std::to_string(mapIndex)).c_str(), active2)) {
+        mapIndexExcludeADT = -1;
+        mapIndexExcludeADTChunk = mapIndex;
+    }
     ImGui::EndGroupPanel();
 }
 
@@ -324,6 +341,10 @@ void MinimapGenerationWindow::renderEditTab() {
 
                 if (ImGui::Button("Add Map")) {
                     sceneDef->maps.emplace_back();
+                }
+                if (ImGui::Button("Reset Exclude")) {
+                    mapIndexExcludeADT = -1;
+                    mapIndexExcludeADTChunk = -1;
                 }
                 ImGui::EndGroupPanel();
             }

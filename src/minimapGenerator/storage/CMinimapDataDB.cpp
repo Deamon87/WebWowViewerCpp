@@ -50,7 +50,8 @@ R"===(
 
 const std::string insertNewScenariosSQL =
 R"===(
-    insert into scenarios (orientation,
+    insert into scenarios (name,
+                          orientation,
                           ocean_color_0, ocean_color_1, ocean_color_2, ocean_color_3,
                           world_coord_min_x, world_coord_min_y, world_coord_max_x, world_coord_max_y,
                           image_width, image_height, zoom, folderToSave)
@@ -59,7 +60,7 @@ R"===(
 
 const std::string updateScenarioSQL =
 R"===(
-     update scenarios set map_id = ?, orientation = ?,
+     update scenarios set name = ?, map_id = ?, orientation = ?,
          ocean_color_0 = ?, ocean_color_1 = ?, ocean_color_2 = ?, ocean_color_3 = ?,
          world_coord_min_x = ?, world_coord_min_y = ?, world_coord_max_x = ?, world_coord_max_y = ?,
          image_width = ?, image_height = ?, zoom = ?, folderToSave = ?
@@ -133,7 +134,7 @@ CMinimapDataDB::CMinimapDataDB(const std::string &fileName) :
     insertADTBoundingBoxes(InitDB(m_sqliteDatabase), insertADTBoundingBoxesSQL),
 
     getMapDef(InitDB(m_sqliteDatabase), getMapDefSQL),
-    insertMapDef(InitDB(m_sqliteDatabase), insertMapDefSQL),
+    insertNewMapDef(InitDB(m_sqliteDatabase), insertMapDefSQL),
     updateMapDef(InitDB(m_sqliteDatabase), updateMapDefSQL),
 
     getADTExcluded(InitDB(m_sqliteDatabase), getAdtExcludedSQL),
@@ -187,50 +188,65 @@ void CMinimapDataDB::saveScenarios(std::vector<ScenarioDef> &scenarios) {
     SQLite::Transaction transaction(m_sqliteDatabase);
 
     for (auto &scenario : scenarios) {
-        if (scenario.id == -1) {
-            insertNewScenario.setInputs(
-                (int) scenario.orientation,
-                scenario.closeOceanColor.x,
-                scenario.closeOceanColor.y,
-                scenario.closeOceanColor.z,
-                scenario.closeOceanColor.w,
-                scenario.minWowWorldCoord.x,
-                scenario.minWowWorldCoord.y,
-                scenario.maxWowWorldCoord.x,
-                scenario.maxWowWorldCoord.y,
-                scenario.imageWidth,
-                scenario.imageHeight,
-                scenario.zoom,
-                scenario.folderToSave.c_str()
-            );
-
-            if (insertNewScenario.execute()) {
-                scenario.id = m_sqliteDatabase.getLastInsertRowid();
-            }
-        } else {
-            updateScenario.setInputs(
-                (int) scenario.orientation,
-                scenario.closeOceanColor.x,
-                scenario.closeOceanColor.y,
-                scenario.closeOceanColor.z,
-                scenario.closeOceanColor.w,
-                scenario.minWowWorldCoord.x,
-                scenario.minWowWorldCoord.y,
-                scenario.maxWowWorldCoord.x,
-                scenario.maxWowWorldCoord.y,
-                scenario.imageWidth,
-                scenario.imageHeight,
-                scenario.zoom,
-                scenario.folderToSave.c_str(),
-                scenario.id
-            );
-
-            updateScenario.execute();
-        }
+        saveScenario(scenario);
     }
 
     // Commit transaction
     transaction.commit();
+}
+
+void CMinimapDataDB::saveScenario(ScenarioDef &scenario) {
+    SQLite::Transaction transaction(m_sqliteDatabase);
+
+    if (scenario.id == -1) {
+        insertNewScenario.setInputs(
+            scenario.name,
+            (int) scenario.orientation,
+            scenario.closeOceanColor.x,
+            scenario.closeOceanColor.y,
+            scenario.closeOceanColor.z,
+            scenario.closeOceanColor.w,
+            scenario.minWowWorldCoord.x,
+            scenario.minWowWorldCoord.y,
+            scenario.maxWowWorldCoord.x,
+            scenario.maxWowWorldCoord.y,
+            scenario.imageWidth,
+            scenario.imageHeight,
+            scenario.zoom,
+            scenario.folderToSave.c_str()
+        );
+
+        if (insertNewScenario.execute()) {
+            scenario.id = m_sqliteDatabase.getLastInsertRowid();
+        }
+    } else {
+        updateScenario.setInputs(
+            scenario.name,
+            (int) scenario.orientation,
+            scenario.closeOceanColor.x,
+            scenario.closeOceanColor.y,
+            scenario.closeOceanColor.z,
+            scenario.closeOceanColor.w,
+            scenario.minWowWorldCoord.x,
+            scenario.minWowWorldCoord.y,
+            scenario.maxWowWorldCoord.x,
+            scenario.maxWowWorldCoord.y,
+            scenario.imageWidth,
+            scenario.imageHeight,
+            scenario.zoom,
+            scenario.folderToSave.c_str(),
+            scenario.id
+        );
+
+        updateScenario.execute();
+    }
+    // Commit transaction
+    transaction.commit();
+
+    //Save arrays
+    for (auto &mapDef : scenario.maps) {
+        saveMapRenderDef(scenario.id, mapDef);
+    }
 }
 
 void CMinimapDataDB::getAdtBoundingBoxes(MapRenderDef& mapRenderDef) {
@@ -276,7 +292,7 @@ void CMinimapDataDB::getAdtExcluded(MapRenderDef& mapRenderDef) {
 
     while (getADTExcluded.execute())
     {
-        int adt_x = getADTExcluded.getField("adt_x").getInt();
+        int adt_x = c.getField("adt_x").getInt();
         int adt_y = getADTExcluded.getField("adt_y").getInt();
         int chunk_x = getADTExcluded.getField("chunk_x").getInt();
         int chunk_y = getADTExcluded.getField("chunk_y").getInt();
@@ -510,5 +526,32 @@ void CMinimapDataDB::getMapRenderDef(int scenarioId, std::vector<MapRenderDef> &
 }
 
 void CMinimapDataDB::saveMapRenderDef(int scenarioId, MapRenderDef& mapRenderDef) {
+    SQLite::Transaction transaction(m_sqliteDatabase);
 
+    if (mapRenderDef.id == -1) {
+        insertNewMapDef.setInputs(
+            scenarioId,
+            mapRenderDef.mapId,
+            mapRenderDef.deltaX,
+            mapRenderDef.deltaY,
+            mapRenderDef.deltaZ
+        );
+
+        if (insertNewMapDef.execute()) {
+            mapRenderDef.id = m_sqliteDatabase.getLastInsertRowid();
+        }
+    } else {
+        updateMapDef.setInputs(
+            mapRenderDef.mapId,
+            mapRenderDef.deltaX,
+            mapRenderDef.deltaY,
+            mapRenderDef.deltaZ
+        );
+
+        updateScenario.execute();
+    }
+    // Commit transaction
+    transaction.commit();
+
+    saveAdtExcluded(mapRenderDef);
 }
