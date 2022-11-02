@@ -30,8 +30,8 @@ private:
                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
 
 public:
-    explicit M2Scene(HApiContainer api, std::string m2Model, int cameraView = - 1);
-    explicit M2Scene(HApiContainer api, int fileDataId, int cameraView = - 1);
+    explicit M2Scene(HApiContainer api, std::string m2Model);
+    explicit M2Scene(HApiContainer api, int fileDataId);
 
 
     ~M2Scene() override {

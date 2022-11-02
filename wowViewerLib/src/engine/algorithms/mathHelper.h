@@ -144,8 +144,12 @@ inline bool feq(const float a, const float b, const float tolerance = ROUNDING_E
     return (a + tolerance >= b) && (a - tolerance <= b);
 }
 
+inline float worldCoordinateToAdtIndexF(float x) {
+    return (32.0f - (x / MathHelper::TILESIZE));
+}
+
 inline int worldCoordinateToAdtIndex(float x) {
-    return floor((32.0f - (x / MathHelper::TILESIZE)));
+    return floor(worldCoordinateToAdtIndexF(x));
 }
 
 inline int worldCoordinateToGlobalAdtChunk(float x) {

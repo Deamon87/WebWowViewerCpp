@@ -13,7 +13,7 @@ endif()
 if(COMMAND cmake_policy)
 	cmake_policy(SET CMP0003 NEW)
 endif(COMMAND cmake_policy)
-
+cmake_policy(SET CMP0079 NEW)
 
 set(USE_NEON 0)
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -331,6 +331,7 @@ target_link_libraries(AWebWoWViewerCpp libprotobuf-lite)
 
 
 target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
+target_link_libraries(DBImporterLib SQLiteCpp)
 if (NOT MSVC)
 	find_library(DL_EXISTS dl)
 	message("DL_EXISTS = ${DL_EXISTS}")

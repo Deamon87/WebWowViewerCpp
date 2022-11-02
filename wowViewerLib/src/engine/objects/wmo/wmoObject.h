@@ -25,7 +25,7 @@ class WmoGroupObject;
 class WmoObject : public IWmoApi {
 
 public:
-    WmoObject(HApiContainer api) : m_api(api) {
+    WmoObject(HApiContainer &api) : m_api(api) {
     }
 
 	~WmoObject();

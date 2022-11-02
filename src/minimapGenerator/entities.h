@@ -53,8 +53,9 @@ struct ScenarioDef {
     mathfu::vec2 minWowWorldCoord;
     mathfu::vec2 maxWowWorldCoord;
 
-    int imageHeight;
-    int imageWidth;
+    //TODO: add check
+    int imageHeight = 1024;
+    int imageWidth = 1024;
 
     float zoom = 1.0f;
 
@@ -62,6 +63,27 @@ struct ScenarioDef {
 
     std::unordered_map<int, std::vector<int>> activatePhasePerMap;
     std::vector<MapRenderDef> maps;
+public:
+    int getOrientation() const {return (int) orientation;}
+    void setOrientation(int value) { orientation = static_cast<ScenarioOrientation>(value); };
+
+    float getCloseOceanColor_R() const {return closeOceanColor[0];}
+    float getCloseOceanColor_G() const {return closeOceanColor[1];}
+    float getCloseOceanColor_B() const {return closeOceanColor[2];}
+
+    void setCloseOceanColor_R(float value) {closeOceanColor[0] = value;}
+    void setCloseOceanColor_G(float value) {closeOceanColor[1] = value;}
+    void setCloseOceanColor_B(float value) {closeOceanColor[2] = value;}
+
+    float getMinWowWorldCoordX() const {return minWowWorldCoord.x;}
+    float getMinWowWorldCoordY() const {return minWowWorldCoord.y;}
+    float getMaxWowWorldCoordX() const {return maxWowWorldCoord.x;}
+    float getMaxWowWorldCoordY() const {return maxWowWorldCoord.y;}
+
+    void setMinWowWorldCoordX(float value){minWowWorldCoord.x = value;}
+    void setMinWowWorldCoordY(float value){minWowWorldCoord.y = value;}
+    void setMaxWowWorldCoordX(float value){maxWowWorldCoord.x = value;}
+    void setMaxWowWorldCoordY(float value){maxWowWorldCoord.y = value;}
 };
 
 

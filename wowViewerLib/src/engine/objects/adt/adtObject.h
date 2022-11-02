@@ -41,6 +41,8 @@ public:
         m_mapApi = api;
     }
 
+    FileStatus getLoadedStatus();
+
     void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 

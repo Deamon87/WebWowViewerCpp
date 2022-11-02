@@ -838,15 +838,28 @@ void AdtObject::collectMeshesLod(std::vector<HGMesh> &renderedThisFrame) {
     */
 }
 
+
+FileStatus AdtObject::getLoadedStatus() {
+    const std::array<std::shared_ptr<PersistentFile>, 5> filesToCheck = {
+        m_adtFile, m_adtFileObj, m_adtFileObjLod, m_adtFileLod, m_adtFileTex
+    };
+
+    for (auto &fileToCheck : filesToCheck) {
+        if (fileToCheck == nullptr) continue;
+        if (fileToCheck->getStatus()==FileStatus::FSRejected) {
+            return FileStatus::FSRejected;
+        }
+        if (fileToCheck->getStatus()==FileStatus::FSNotLoaded) {
+            return FileStatus::FSNotLoaded;
+        }
+    }
+    return FileStatus::FSLoaded;
+}
+
+
 void AdtObject::doPostLoad() {
-//    std::cout << "AdtObject::doPostLoad finished called" << std::endl;
     if (!m_loaded) {
-        if (m_adtFile->getStatus()==FileStatus::FSLoaded &&
-            m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
-            m_adtFileObj->getStatus()==FileStatus::FSLoaded &&
-            m_adtFileObjLod->getStatus()==FileStatus::FSLoaded &&
-            ((m_adtFileLod != nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded) || !m_wdtFile->mphd->flags.unk_0x0100) &&
-            m_adtFileTex->getStatus()==FileStatus::FSLoaded) {
+        if (getLoadedStatus() == FileStatus::FSLoaded) {
             this->loadingFinished();
             m_loaded = true;
         }
@@ -1364,7 +1377,7 @@ AdtObject::AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDa
     m_adtFileTex = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.tex0ADT);
     m_adtFileObj = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.obj0ADT);
     m_adtFileObjLod = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.obj1ADT);
-    if (fileDataIDs.lodADT != 0) {
+    if (fileDataIDs.lodADT != 0 && m_wdtFile->mphd->flags.unk_0x0100) {
         m_adtFileLod = m_api->cacheStorage->getAdtGeomCache()->getFileId(fileDataIDs.lodADT);
     } else {
         m_adtFileLod = nullptr;

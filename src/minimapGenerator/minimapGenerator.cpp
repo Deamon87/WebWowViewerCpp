@@ -166,6 +166,8 @@ bool MinimapGenerator::loadMaps() {
                     std::array<float, 2> minMaxZ = {minZ, maxZ};
                     std::vector<mathfu::vec4> corners;
 
+                    if (minZ > maxZ) continue;
+
                     for (int i = 0; i < 2; i++) {
                         for (int j = 0; j < 2; j++) {
                             for (int k = 0; k < 2; k++) {
@@ -211,9 +213,9 @@ bool MinimapGenerator::loadMaps() {
                                 continue;
                             if (j < m_chunkStartY)
                                 continue;
-                            if (i > m_chunkStartX + m_chunkWidth)
+                            if (i >= m_chunkStartX + m_chunkWidth)
                                 continue;
-                            if (i > m_chunkStartY + m_chunkHeight)
+                            if (i >= m_chunkStartY + m_chunkHeight)
                                 continue;
 
                             std::array<uint8_t, 2> adtCoord = {static_cast<unsigned char>(adt_x),
@@ -230,6 +232,7 @@ bool MinimapGenerator::loadMaps() {
 }
 
 void MinimapGenerator::setupScenarioData() {
+    m_mapIndex = 0;
     m_zoom = currentScenario.zoom;
 
     stackOfCullStages = {nullptr, nullptr, nullptr, nullptr};
@@ -237,7 +240,6 @@ void MinimapGenerator::setupScenarioData() {
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
     config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
-
 
     m_width = currentScenario.imageWidth;
     m_height = currentScenario.imageHeight;
@@ -277,11 +279,15 @@ MinimapGenerator::setMinMaxXYWidthHeight(const mathfu::vec2 &minWowWorldCoord, c
         for (auto &mapData : mapRuntimeInfo) {
             auto &mapDef = currentScenario.maps[mapData.mapIndex];
 
-            for (int adt_y = worldCoordinateToAdtIndex(minWowWorldCoord.x + mapDef.deltaX);
-                 adt_y < worldCoordinateToAdtIndex(maxWowWorldCoord.x+ mapDef.deltaX); adt_y++) {
+            for (int adt_y = worldCoordinateToAdtIndex(maxWowWorldCoord.x + mapDef.deltaX);
+                 adt_y <= worldCoordinateToAdtIndex(minWowWorldCoord.x+ mapDef.deltaX); adt_y++) {
 
-                for (int adt_x = worldCoordinateToAdtIndex(minWowWorldCoord.y + mapDef.deltaY);
-                    adt_x < worldCoordinateToAdtIndex(maxWowWorldCoord.y + mapDef.deltaY); adt_x++) {
+                if (adt_y < 0 || adt_y > 63) continue;
+
+                for (int adt_x = worldCoordinateToAdtIndex(maxWowWorldCoord.y + mapDef.deltaY);
+                    adt_x <= worldCoordinateToAdtIndex(minWowWorldCoord.y + mapDef.deltaY); adt_x++) {
+
+                    if (adt_x < 0 || adt_x > 63) continue;
 
                     auto adtMinZ = mapDef.adtConfigHolder->adtMinZ[adt_x][adt_y];
                     auto adtMaxZ = mapDef.adtConfigHolder->adtMinZ[adt_x][adt_y];
@@ -323,10 +329,17 @@ MinimapGenerator::setMinMaxXYWidthHeight(const mathfu::vec2 &minWowWorldCoord, c
             }
         }
     } else {
-        minMaxScreenX = {-64, -64};
-        minMaxScreenY = {64, 64};
+        minMaxScreenX = {-64, 64};
+        minMaxScreenY = {-64, 64};
     }
 
+    if (minMaxScreenX[0] > minMaxScreenX[1]) {
+        std::cout << "apparently BB were not calculated. exiting" << std::endl;
+        m_chunkStartX = 0;
+        m_chunkStartY = 0;
+        m_chunkWidth  = 0;
+        m_chunkHeight  = 0;
+    }
 
     mathfu::vec2 minOrthoMapCoord = mathfu::vec2(
         minMaxScreenX[0],
@@ -431,14 +444,14 @@ void MinimapGenerator::setupCameraData() {
     //Do reverse transform here
     auto min1 = mathfu::vec4(
         (m_chunkStartX + m_x) * 2.0f,
-        (m_chunkStartY + m_chunkHeight - (m_y - 1)) * 2.0f,
+        (m_chunkStartY + m_chunkHeight - (m_y + 1)) * 2.0f,
         0,
         1
     );
 
     auto min2 = mathfu::vec4(
         (m_chunkStartX + m_x) * 2.0f,
-        (m_chunkStartY + m_chunkHeight - (m_y - 1)) * 2.0f,
+        (m_chunkStartY + m_chunkHeight - (m_y + 1)) * 2.0f,
         1,
         1
     );
@@ -620,17 +633,23 @@ void MinimapGenerator::process() {
         return;
     }
 
-    if (framesReady < waitQueueLen) {
-        return;
-    }
-
     if (!m_candidateCS.empty()) {
         for (auto &cullStage : m_candidateCS) {
-            if (cullStage != nullptr && (
+            if (cullStage == nullptr) continue;
+
+            for (const auto &adtCullRes : cullStage->adtArray) {
+                if (adtCullRes->adtObject == nullptr) continue;
+                if (adtCullRes->adtObject->getLoadedStatus() == FileStatus::FSNotLoaded) {
+                    resetCandidate();
+                    return;
+                }
+            }
+
+            if (
                     (cullStage->m2Array.getToLoadGeom().size() != 0) ||
                     (cullStage->m2Array.getToLoadMain().size() != 0) ||
                     (cullStage->wmoGroupArray.getToLoad().size() != 0)
-                )) {
+                ) {
                 resetCandidate();
                 return;
             }
@@ -646,6 +665,9 @@ void MinimapGenerator::process() {
         }
     }
 
+    if (framesReady < waitQueueLen) {
+        return;
+    }
 
     if (m_candidateDS == nullptr) {
         resetCandidate();
@@ -719,7 +741,7 @@ void MinimapGenerator::process() {
         currentScenario.maps[m_mapIndex].adtConfigHolder->adtMinZ[adt_x][adt_y] = minCoord.z;
         currentScenario.maps[m_mapIndex].adtConfigHolder->adtMaxZ[adt_x][adt_y] = maxCoord.z;
 
-        saveDrawStageToFile(currentScenario.folderToSave+"/minimap", lastFrameIt);
+        saveDrawStageToFile(currentScenario.folderToSave+"/minimap/"+std::to_string(currentScenario.maps[m_mapIndex].mapId), lastFrameIt);
     } else if (m_mgMode == EMGMode::eScreenshotGeneration) {
         //Make screenshot out of this drawStage
         saveDrawStageToFile(currentScenario.folderToSave, lastFrameIt);
@@ -735,7 +757,17 @@ void MinimapGenerator::process() {
 //    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
         if (m_x >= m_chunkWidth) {
-            startNextScenario();
+            if (m_mgMode == EMGMode::eBoundingBoxCalculation && (m_mapIndex+1) < currentScenario.maps.size()) {
+                m_mapIndex++;
+                m_x = 0;
+                m_y = 0;
+                m_zFar = 10000.0f;
+                m_maxZ = 1000.0f;
+                m_minZ = -1000.0f;
+                setupCameraData();
+            } else {
+                startNextScenario();
+            }
         } else {
             //reset
             m_zFar = 10000.0f;
@@ -830,6 +862,8 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
             auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mainMap.scene);
             std::shared_ptr<UpdateStage> updateStage = sceneScenario->addUpdateStage(cullStage, 0,
                                                                                      cameraMatricesRendering);
+            cullStages.push_back(cullStage);
+            updateStages.push_back(updateStage);
         }
 
         HDrawStage sceneDrawStage = sceneScenario->addDrawStage(

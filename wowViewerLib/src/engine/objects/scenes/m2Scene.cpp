@@ -139,8 +139,8 @@ void updateCameraPosOnLoad(const HApiContainer &m_api, const std::shared_ptr<M2O
     }
 }
 
-M2Scene::M2Scene(HApiContainer api, std::string m2Model, int cameraView) {
-    m_api = api; m_m2Model = m2Model; m_cameraView = cameraView;
+M2Scene::M2Scene(HApiContainer api, std::string m2Model) {
+    m_api = api; m_m2Model = m2Model;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
 
@@ -162,8 +162,8 @@ M2Scene::M2Scene(HApiContainer api, std::string m2Model, int cameraView) {
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
-M2Scene::M2Scene(HApiContainer api, int fileDataId, int cameraView) {
-    m_api = api; m_cameraView = cameraView;
+M2Scene::M2Scene(HApiContainer api, int fileDataId) {
+    m_api = api;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
 

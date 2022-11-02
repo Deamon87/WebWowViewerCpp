@@ -151,7 +151,7 @@ void collectMeshes(HDrawStage drawStage, std::vector<HGMesh> &meshes) {
             std::back_inserter(meshes)
         );
     }
-    for (auto deps : drawStage->drawStageDependencies) {
+    for (auto &deps : drawStage->drawStageDependencies) {
         collectMeshes(deps, meshes);
     }
 }
@@ -184,11 +184,11 @@ void SceneComposer::DoUpdate() {
     logExecution
     produceDrawStage.beginMeasurement();
     logExecution
-    std::vector<HGUniformBufferChunk> additionalChunks;
+
     logExecution
     for (auto &link : frameScenario->drawStageLinks) {
         logExecution
-        link.scene->produceDrawStage(link.drawStage, link.updateStages, additionalChunks);
+        link.scene->produceDrawStage(link.drawStage, link.updateStages);
         logExecution
     }
     produceDrawStage.endMeasurement();
@@ -213,11 +213,11 @@ void SceneComposer::DoUpdate() {
 
     updateBuffersDeviceCNT.beginMeasurement();
     logExecution
-    std::vector<HFrameDepedantData> frameDepDataVec = {};
+    std::vector<std::vector<HGUniformBufferChunk>*> uniformChunkVec;
+    std::vector<HFrameDepedantData> frameDepDataVec;
     logExecution
-    std::vector<std::vector<HGUniformBufferChunk>*> uniformChunkVec = {};
-    logExecution
-    for (auto updateStage : frameScenario->updateStages) {
+//    uniformChunkVec.push_back(&additionalChunks);
+    for (auto &updateStage : frameScenario->updateStages) {
         frameDepDataVec.push_back(updateStage->cullResult->frameDepedantData);
         uniformChunkVec.push_back(&updateStage->uniformBufferChunks);
     }

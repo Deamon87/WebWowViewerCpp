@@ -68,6 +68,8 @@ protected:
     std::vector<std::array<uint8_t, 2>> m_mandatoryADT;
     std::string mapName;
 
+    HGUniformBufferChunk m_sceneWideBlockVSPSChunk;
+
     SceneMode m_sceneMode = SceneMode::smMap;
 
     float m_currentTime = 0;
@@ -97,7 +99,6 @@ protected:
     //M2 mode
     std::shared_ptr<M2Object> m_m2Object = nullptr;
     std::string m_m2Model;
-    int m_cameraView;
 
     //Wmo mode
     std::shared_ptr<WmoObject> m_wmoObject = nullptr;
@@ -162,23 +163,7 @@ protected:
     explicit Map() {
     }
 public:
-    explicit Map(HApiContainer api, int mapId, std::string mapName) {
-        initMapTiles();
-
-        m_mapId = mapId; m_api = api; this->mapName = mapName;
-        m_sceneMode = SceneMode::smMap;
-        createAdtFreeLamdas();
-
-        std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
-        std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
-
-        m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
-        m_wdlObject->setMapApi(this);
-
-        loadZoneLights();
-
-    };
+    explicit Map(HApiContainer api, int mapId, std::string mapName);;
 
     explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
         initMapTiles();
@@ -245,7 +230,7 @@ public:
     void update(HUpdateStage &updateStage);
     void updateBuffers(HUpdateStage &updateStage) override;
     void produceUpdateStage(HUpdateStage &updateStage) override;
-    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,
@@ -258,6 +243,8 @@ private:
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;
 
     void createAdtFreeLamdas();
+
+    IChunkHandlerType generateSceneWideChunk(HCameraMatrices &renderMats, Config* config);
 };
 
 #endif //WEBWOWVIEWERCPP_MAP_H

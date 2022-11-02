@@ -114,7 +114,9 @@ void MinimapGenerationWindow::renderMapConfigSubWindow(int mapIndex) {
     auto &mapRenderDef = sceneDef->maps[mapIndex];
     ImGui::BeginGroupPanel(("Map" + std::to_string(mapIndex)).c_str());
 
-    ImGui::InputInt(("Map Id##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.mapId);
+    if (ImGui::InputInt(("Map Id##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.mapId)) {
+        m_minimapDB->getAdtBoundingBoxes(mapRenderDef);
+    }
     ImGui::InputDouble(("Delta X##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.deltaX);
     ImGui::InputDouble(("Delta Y##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.deltaY);
     ImGui::InputDouble(("Delta Z##"+ std::to_string(mapIndex)).c_str(), &mapRenderDef.deltaZ);
@@ -323,6 +325,16 @@ HDrawStage MinimapGenerationWindow::getDrawStage(HFrameScenario sceneScenario) {
     }
 }
 
+template<class T, size_t N, class V>
+inline std::array<T, N> to_array(const V& v)
+{
+    assert(v.size() <= N);
+    std::array<T, N> d = {0};
+    using std::begin; using std::end;
+    std::copy( begin(v), end(v), begin(d) ); // this is the recommended way
+    return d;
+}
+
 void MinimapGenerationWindow::renderEditTab() {
     if (ImGui::BeginTabItem("Edit", &editTabOpened, ImGuiTabItemFlags_SetSelected)) {
         {
@@ -330,7 +342,17 @@ void MinimapGenerationWindow::renderEditTab() {
             if (sceneDef->name.size() > 128) sceneDef->name.resize(128);
             std::copy(sceneDef->name.begin(), sceneDef->name.end(), scenarioName.data());
             if (ImGui::InputText("Scenario name", scenarioName.data(), 128)) {
-                sceneDef->name = std::string(std::begin(scenarioName), std::end(scenarioName));
+                scenarioName[127] = 0;
+                sceneDef->name = std::string(scenarioName.data());
+            }
+
+            if (sceneDef->folderToSave.size() > 128) sceneDef->folderToSave.resize(128);
+            std::array<char,128> folderToSave = to_array<char, 128>(sceneDef->folderToSave);
+
+            if (ImGui::InputText("Folder for saving", folderToSave.data(), 128)) {
+                folderToSave[127] = 0;
+                sceneDef->folderToSave = std::string(folderToSave.data());
+                trim(sceneDef->folderToSave);
             }
             {
                 ImGui::BeginGroupPanel("Maps");
@@ -348,8 +370,6 @@ void MinimapGenerationWindow::renderEditTab() {
                 }
                 ImGui::EndGroupPanel();
             }
-
-
 
             ImGui::BeginGroupPanel("Orientation");
             {

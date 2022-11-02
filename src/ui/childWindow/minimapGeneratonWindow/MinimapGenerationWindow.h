@@ -17,7 +17,7 @@ public:
         m_api = api;
         m_processor = processor;
 
-        m_minimapDB = std::make_shared<CMinimapDataDB>("minimapdb.sqlite");
+        m_minimapDB = std::make_shared<CMinimapDataDB::DataBaseClass>("minimapdb.sqlite");
         m_minimapDB->getScenarios(sceneDefList);
 
         createMinimapGenerator();
@@ -33,7 +33,7 @@ private:
 
     bool &m_showMinimapGeneratorSettings;
 
-    std::shared_ptr<CMinimapDataDB> m_minimapDB;
+    std::shared_ptr<CMinimapDataDB::DataBaseClass> m_minimapDB;
 
     HMinimapGenerator minimapGenerator;
     std::vector<ScenarioDef> sceneDefList;

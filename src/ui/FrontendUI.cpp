@@ -552,7 +552,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
             if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
-            if (ImGui::MenuItem("Open minimap generator")) {
+            if (ImGui::MenuItem("Open minimap generator", "", false, cascOpened)) {
                 showMinimapGeneratorSettings = true;
             }
             if (ImGui::MenuItem("Test export")) {
@@ -679,7 +679,7 @@ std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneTyp
 //        m_usePlanarCamera = cameraNum == -1;
 
 
-        return std::make_shared<M2Scene>(apiContainer, name , cameraNum);
+        return std::make_shared<M2Scene>(apiContainer, name);
     } else if (sceneType == 1) {
         return std::make_shared<WmoScene>(apiContainer, name);
     } else if (sceneType == 2) {
@@ -1290,7 +1290,7 @@ void FrontendUI::showSettingsDialog() {
 //#define logExecution { \
 //    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
 //}
-void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) {
+void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
     auto m_device = m_api->hDevice;
 
     logExecution
@@ -1787,7 +1787,7 @@ void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y,
     m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
-    currentScene = std::make_shared<M2Scene>(m_api, m2Fdid, -1);
+    currentScene = std::make_shared<M2Scene>(m_api, m2Fdid);
     currentScene->setReplaceTextureArray(replacementTextureIds);
 
 
@@ -1798,7 +1798,7 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
     m_api->camera->setCameraPos(0, 0, 0);
 }
 void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
-    currentScene = std::make_shared<M2Scene>(m_api, m2FileName, -1);
+    currentScene = std::make_shared<M2Scene>(m_api, m2FileName);
     currentScene->setReplaceTextureArray(replacementTextureIds);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();

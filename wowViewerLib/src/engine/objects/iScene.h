@@ -23,7 +23,7 @@ public:
     virtual void setMeshIds(std::vector<uint8_t> &meshIds) = 0;
     virtual void resetAnimation() = 0;
 
-    virtual void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) = 0;
+    virtual void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStage) = 0;
     virtual void produceUpdateStage(HUpdateStage &updateStage) = 0;
 
     virtual void checkCulling(HCullStage &cullStage) = 0;

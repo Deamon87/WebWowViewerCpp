@@ -57,7 +57,7 @@ public:
     void setAnimationId(int animationId) override {};
     void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
-    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) override;
     void produceUpdateStage(HUpdateStage &updateStage) override;
 
     void checkCulling(HCullStage &cullStage) override {};
