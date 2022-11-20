@@ -124,6 +124,8 @@ void MinimapGenerator::startNextScenario() {
 }
 
 bool MinimapGenerator::loadMaps() {
+    mapRuntimeInfo.clear();
+
     for ( int i = 0; i < currentScenario.maps.size(); i++) {
         auto &mapDef = currentScenario.maps[i];
         MapRecord mapRecord;
@@ -157,16 +159,25 @@ bool MinimapGenerator::loadMaps() {
 
             for (int adt_x = 0; adt_x < 64; adt_x++) {
                 for (int adt_y = 0; adt_y < 64; adt_y++) {
-                    float minZ = currentScenario.maps[mapData.mapIndex].adtConfigHolder->adtMinZ[adt_x][adt_y];
-                    float maxZ = currentScenario.maps[mapData.mapIndex].adtConfigHolder->adtMaxZ[adt_x][adt_y];
+                    mathfu::vec3 adtMin = currentScenario.maps[mapData.mapIndex].adtConfigHolder->adtMin[adt_x][adt_y];
+                    mathfu::vec3 adtMax = currentScenario.maps[mapData.mapIndex].adtConfigHolder->adtMax[adt_x][adt_y];
                     //Project aaBB into screenSpace coordinates
 
-                    std::array<float, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1) , AdtIndexToWorldCoordinate(adt_x + 1)};
+                    std::array<float, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1), AdtIndexToWorldCoordinate(adt_x + 1)};
                     std::array<float, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_y) , AdtIndexToWorldCoordinate(adt_x)};
-                    std::array<float, 2> minMaxZ = {minZ, maxZ};
+
+//                    std::array<float, 2> minMaxX = {adtMin.x, adtMax.x};
+//                    std::array<float, 2> minMaxY = {adtMin.y, adtMax.y};
+                    std::array<float, 2> minMaxZ = {adtMin.z, adtMax.z};
                     std::vector<mathfu::vec4> corners;
 
-                    if (minZ > maxZ) continue;
+                    if (minMaxZ[0] > minMaxZ[1]) continue;
+
+                    minMaxX[0] = std::max<double>(minMaxX[0] - (MathHelper::TILESIZE/2.0f), adtMin.x );
+                    minMaxX[1] = std::min<double>(minMaxX[1] + (MathHelper::TILESIZE/2.0f), adtMax.x );
+                    minMaxY[0] = std::max<double>(minMaxY[0] - (MathHelper::TILESIZE/2.0f), adtMin.y );
+                    minMaxY[1] = std::min<double>(minMaxY[1] + (MathHelper::TILESIZE/2.0f), adtMax.y );
+
 
                     for (int i = 0; i < 2; i++) {
                         for (int j = 0; j < 2; j++) {
@@ -215,7 +226,7 @@ bool MinimapGenerator::loadMaps() {
                                 continue;
                             if (i >= m_chunkStartX + m_chunkWidth)
                                 continue;
-                            if (i >= m_chunkStartY + m_chunkHeight)
+                            if (j >= m_chunkStartY + m_chunkHeight)
                                 continue;
 
                             std::array<uint8_t, 2> adtCoord = {static_cast<unsigned char>(adt_x),
@@ -240,9 +251,11 @@ void MinimapGenerator::setupScenarioData() {
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
     config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
+    config->currentTime = currentScenario.time;
 
     m_width = currentScenario.imageWidth;
     m_height = currentScenario.imageHeight;
+
 
     if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
         m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
@@ -289,15 +302,22 @@ MinimapGenerator::setMinMaxXYWidthHeight(const mathfu::vec2 &minWowWorldCoord, c
 
                     if (adt_x < 0 || adt_x > 63) continue;
 
-                    auto adtMinZ = mapDef.adtConfigHolder->adtMinZ[adt_x][adt_y];
-                    auto adtMaxZ = mapDef.adtConfigHolder->adtMinZ[adt_x][adt_y];
+                    auto adtMin = mapDef.adtConfigHolder->adtMin[adt_x][adt_y] + mathfu::vec3(mapDef.deltaX, mapDef.deltaY, mapDef.deltaZ);
+                    auto adtMax = mapDef.adtConfigHolder->adtMin[adt_x][adt_y] + mathfu::vec3(mapDef.deltaX, mapDef.deltaY, mapDef.deltaZ);;
 
-                    if (adtMinZ > adtMaxZ)
+                    if (adtMin.z > adtMax.z)
                         continue;
 
-                    std::array<double, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1) + mapDef.deltaX, AdtIndexToWorldCoordinate(adt_x + 1) + mapDef.deltaX};
-                    std::array<double, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_y) + mapDef.deltaY, AdtIndexToWorldCoordinate(adt_x) + mapDef.deltaY};
-                    std::array<double, 2> minMaxZ = {adtMinZ + mapDef.deltaZ, adtMaxZ + mapDef.deltaZ};
+                    std::array<double, 2> minMaxX = {AdtIndexToWorldCoordinate(adt_y + 1) + mapDef.deltaX, AdtIndexToWorldCoordinate(adt_y) + mapDef.deltaX};
+                    std::array<double, 2> minMaxY = {AdtIndexToWorldCoordinate(adt_x + 1) + mapDef.deltaY, AdtIndexToWorldCoordinate(adt_x) + mapDef.deltaY};
+
+                    minMaxX[0] = std::max<double>(minMaxX[0] - (MathHelper::TILESIZE/2.0f), adtMin.x);
+                    minMaxX[1] = std::min<double>(minMaxX[1] + (MathHelper::TILESIZE/2.0f), adtMax.x);
+
+                    minMaxY[0] = std::max<double>(minMaxY[0] - (MathHelper::TILESIZE/2.0f), adtMin.y);
+                    minMaxY[1] = std::min<double>(minMaxY[1] + (MathHelper::TILESIZE/2.0f), adtMax.y);
+
+                    std::array<double, 2> minMaxZ = {adtMin.z + mapDef.deltaZ, adtMax.z + mapDef.deltaZ};
 
                     std::vector<mathfu::vec4> corners;
                     for (int i = 0; i < 2; i++)
@@ -559,6 +579,10 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
             continue;
         }
 
+        if (objBB.max.z > 10000) {
+            std::cout << "what" << std::endl;
+        }
+
         minCoord = mathfu::vec3(
             std::min<float>(minCoord.x, objBB.min.x),
             std::min<float>(minCoord.y, objBB.min.y),
@@ -578,6 +602,10 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         if (objBB.max.x > 17000) {
             continue;
+        }
+
+        if (objBB.max.z > 10000) {
+            std::cout << "what" << std::endl;
         }
 
         minCoord = mathfu::vec3(
@@ -609,6 +637,10 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
 
         if (objBB.max.x > 17000) {
             continue;
+        }
+
+        if (objBB.max.z > 10000) {
+            std::cout << "what" << std::endl;
         }
 
         minCoord = mathfu::vec3(
@@ -703,9 +735,14 @@ void MinimapGenerator::process() {
         for (auto &cullStage: lastFrameCull) {
             this->calcBB(cullStage, minCoord, maxCoord, adtBox2d, adt_x, adt_y,
                          m_mgMode == EMGMode::eBoundingBoxCalculation);
+            if (adt_y == 29 && adt_x == 15) {
+                std::cout << "what" << std::endl;
+            }
+
             float zFar = (minCoord - maxCoord).Length();
             float maxZ = maxCoord.z + cullStage->deltaZ;
             float minZ = minCoord.z + cullStage->deltaZ;
+
 
             if (!cullStage->m2Array.getDrawn().empty() || !cullStage->adtArray.empty() ||
                 !cullStage->wmoGroupArray.getToDraw().empty()) {
@@ -724,10 +761,20 @@ void MinimapGenerator::process() {
             setupCameraData();
             return;
         }
+
+        if (minCoord.x < 20000 && maxCoord.x > -20000) {
+            minAdt.x = std::max<double>(minCoord.x, minAdt.x - (MathHelper::TILESIZE/2.0f));
+            maxAdt.x = std::min<double>(maxCoord.x, maxAdt.x + (MathHelper::TILESIZE/2.0f));
+
+            minAdt.y = std::max<double>(minCoord.y, minAdt.y - (MathHelper::TILESIZE/2.0f));
+            maxAdt.y = std::min<double>(maxCoord.y, maxAdt.y + (MathHelper::TILESIZE/2.0f));
+        }
     }
 
     //Conditional mode stuff
     if (m_mgMode == EMGMode::eBoundingBoxCalculation) {
+
+
         minCoord = mathfu::vec3(
             minAdt.x,
             minAdt.y,
@@ -738,8 +785,10 @@ void MinimapGenerator::process() {
             maxAdt.y,
             maxCoord.z);
 
-        currentScenario.maps[m_mapIndex].adtConfigHolder->adtMinZ[adt_x][adt_y] = minCoord.z;
-        currentScenario.maps[m_mapIndex].adtConfigHolder->adtMaxZ[adt_x][adt_y] = maxCoord.z;
+        currentScenario.maps[m_mapIndex].adtConfigHolder->adtMin[adt_x][adt_y] = minCoord;
+        currentScenario.maps[m_mapIndex].adtConfigHolder->adtMax[adt_x][adt_y] = maxCoord;
+
+
 
         saveDrawStageToFile(currentScenario.folderToSave+"/minimap/"+std::to_string(currentScenario.maps[m_mapIndex].mapId), lastFrameIt);
     } else if (m_mgMode == EMGMode::eScreenshotGeneration) {

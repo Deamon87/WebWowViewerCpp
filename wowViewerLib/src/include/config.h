@@ -211,16 +211,16 @@ struct AdtCellHasher {
 
 struct ADTRenderConfigData {
     ADTRenderConfigData() {
-        std::array<float, 64> defaultMaxZ = {};
-        std::array<float, 64> defaultMinZ = {};
-        defaultMaxZ.fill(-200000);
-        defaultMinZ.fill(200000);
+        std::array<mathfu::vec3, 64> defaultMax = {};
+        std::array<mathfu::vec3, 64> defaultMin = {};
+        defaultMax.fill({-200000, -200000, -200000});
+        defaultMin.fill({200000, 200000, 200000});
 
-        adtMaxZ.fill(defaultMaxZ);
-        adtMinZ.fill(defaultMinZ);
+        adtMax.fill(defaultMax);
+        adtMin.fill(defaultMin);
     }
-    std::array<std::array<float, 64>, 64> adtMaxZ;
-    std::array<std::array<float, 64>, 64> adtMinZ;
+    std::array<std::array<mathfu::vec3, 64>, 64> adtMin;
+    std::array<std::array<mathfu::vec3, 64>, 64> adtMax;
     std::unordered_set<AdtCell, AdtCellHasher, AdtCellCompare> excludedADTs;
     std::unordered_map<AdtCell, std::unordered_set<AdtCell, AdtCellHasher, AdtCellCompare>, AdtCellHasher> excludedChunksPerADTs;
 };

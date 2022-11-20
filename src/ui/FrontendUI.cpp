@@ -723,6 +723,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
+    if (ImGui::Button("10xt_exterior_glacialspike01.wmo (parallax)", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(4419436);
+    }
     if (ImGui::Button("10.0 Raid WMO", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4282557);
     }
@@ -1919,19 +1922,19 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 }
 
 void FrontendUI::createDatabaseHandler() {
-    bool forceEmptyDatabase = false;
+    bool useEmptyDatabase = false;
     if (fileExistsNotNull("./export.db3")) {
         try{
             m_api->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
         } catch(std::exception const& e) {
             std::cout << "Failed to open database: " << e.what() << std::endl;
-            forceEmptyDatabase = true;
+            useEmptyDatabase = true;
         } catch(...) {
             std::cout << "Exception occurred" << std::endl;
         }
     }
 
-    if (forceEmptyDatabase) {
+    if (useEmptyDatabase) {
         m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
     }
 

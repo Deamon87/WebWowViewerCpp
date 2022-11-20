@@ -122,7 +122,7 @@ public:
 //        std::cout << "Mesh destroyed" << std::endl;
 
     };
-    virtual HGUniformBufferChunk getUniformBuffer(int slot) = 0;
+    virtual inline HGUniformBufferChunk getUniformBuffer(int slot) = 0;
     virtual EGxBlendEnum getGxBlendMode() = 0;
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;

@@ -42,7 +42,11 @@ if(NOT ANDROID)
 
 #    set(PATH_TO_NATIVE_GLSL_VALIDATOR "${CMAKE_BINARY_DIR}/glslangValidator${CMAKE_EXECUTABLE_SUFFIX}")
 #    set(PATH_TO_NATIVE_SPIRV_REFLECTION "${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX}")
-    set(PATH_TO_NATIVE_GLSL_VALIDATOR $<TARGET_FILE:glslangValidator>)
+    if (NOT PATH_TO_NATIVE_GLSL_VALIDATOR)
+        set(PATH_TO_NATIVE_GLSL_VALIDATOR $<TARGET_FILE:glslangValidator>)
+    else()
+        MESSAGE(WARNING "PATH_TO_NATIVE_GLSL_VALIDATOR = ${PATH_TO_NATIVE_GLSL_VALIDATOR}")
+    endif()
     set(PATH_TO_NATIVE_SPIRV_REFLECTION $<TARGET_FILE:spirv_reflection>)
 else()
     MESSAGE(WARNING "PYTHON_EXECUTABLE = ${PYTHON_EXECUTABLE}")
@@ -61,13 +65,13 @@ else()
     add_custom_target(spirv_reflection)
 endif()
 
-
 macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
-    make_directory(${destDir})
+    set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spriv_raw)
+    make_directory(${spirvNonOptDir})
 
-    file(GLOB templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
-    file(GLOB commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.glsl)
+    file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
+    file(GLOB_RECURSE commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.glsl)
 
     foreach(commonFileRelative ${commonFilesRelative})
         set(commonFileFullPath ${srcCommonDir}/${commonFileRelative})
@@ -82,8 +86,13 @@ macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
             message(STATUS "Configuring file ${templateFile}")
             get_filename_component(FILE_NAME_WO_EXT ${srcTemplatePath} NAME_WE)
             get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
-            set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.spv")
-#            set(SPIRVOpt "${destDir}/${FILE_NAME}.opt.spv")
+            if (NOT SPIRV_OPT_APP)
+                set(SPIRV_NonOpt "${destDir}/${FILE_NAME}.spv")
+            else()
+                set(SPIRV_NonOpt "${spirvNonOptDir}/${FILE_NAME}.spv")
+                set(SPIRVOpt "${destDir}/${FILE_NAME}.spv")
+            endif()
+
 
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
@@ -91,25 +100,12 @@ macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
                     COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath} glslangValidator ${commonFiles})
 
-#            if(SPIRV_OPT_APP)
-#                add_custom_command(
-#                        OUTPUT ${SPIRVOpt}
-#                        COMMAND ${SPIRV_OPT_APP} --inline-entry-points-exhaustive
-#                        --convert-local-access-chains
-#                        --eliminate-local-single-block
-#                        --eliminate-local-single-store
-#                        --eliminate-insert-extract
-#                        --eliminate-dead-code-aggressive
-#                        --eliminate-dead-branches
-#                        --merge-blocks
-#                        --eliminate-local-single-block
-#                        --eliminate-local-single-store
-#                        --eliminate-local-multi-store
-#                        --eliminate-insert-extract
-#                        --eliminate-dead-code-aggressive
-#                        -o ${SPIRVOpt} ${SPIRV_NonOpt}
-#                        DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
-#            endif()
+            if(SPIRV_OPT_APP)
+                add_custom_command(
+                        OUTPUT ${SPIRVOpt}
+                        COMMAND ${SPIRV_OPT_APP} -O -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                        DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
+            endif()
 
             list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
             list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
@@ -146,11 +142,8 @@ macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
 
             list(APPEND GLSL20Files ${GLSL20_FILE})
 
-
             get_filename_component(GLSL30_FILE_FULLPATH "${GLSL33_FILE}"
                     REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
-
-
 
             add_custom_command(
                     OUTPUT ${GLSL33_FILE}
@@ -163,15 +156,15 @@ macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
         endif(NOT IS_DIRECTORY ${srcTemplatePath})
     endforeach(templateFile)
 
-#    if (NOT SPIRV_OPT_APP)
+    if (NOT SPIRV_OPT_APP)
         SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
-#    else()
-#        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
-#    endif()
+    else()
+        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
+    endif()
 endmacro(configure_filesVLK)
 
 configure_filesVLK(
-        ${PROJECT_SOURCE_DIR}/shaders/glsl/vulkan
+        ${PROJECT_SOURCE_DIR}/shaders/glsl/forwardRendering
         ${PROJECT_SOURCE_DIR}/shaders/glsl/common
         ${GLSL_TARGET_FOLDER}/spirv
         ${GLSL_TARGET_FOLDER}/glsl/glsl20/

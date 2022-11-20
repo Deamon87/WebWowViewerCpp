@@ -50,8 +50,8 @@ void CMinimapDataDB::DataBaseClass::getAdtBoundingBoxes(MapRenderDef& mapRenderD
     auto adtBoundingBoxesDB = m_storage.get_all<ADTBoundingBoxDB>(where(c(&ADTBoundingBoxDB::map_id) == mapRenderDef.mapId));
 
     for (auto &adtBoundingBoxeDB : adtBoundingBoxesDB) {
-        mapRenderDef.adtConfigHolder->adtMinZ[adtBoundingBoxeDB.adt_x][adtBoundingBoxeDB.adt_y] = adtBoundingBoxeDB.adtMin_z;
-        mapRenderDef.adtConfigHolder->adtMaxZ[adtBoundingBoxeDB.adt_x][adtBoundingBoxeDB.adt_y] = adtBoundingBoxeDB.adtMax_z;
+        mapRenderDef.adtConfigHolder->adtMin[adtBoundingBoxeDB.adt_x][adtBoundingBoxeDB.adt_y] = {adtBoundingBoxeDB.adtMin_x, adtBoundingBoxeDB.adtMin_y, adtBoundingBoxeDB.adtMin_z} ;
+        mapRenderDef.adtConfigHolder->adtMax[adtBoundingBoxeDB.adt_x][adtBoundingBoxeDB.adt_y] = {adtBoundingBoxeDB.adtMax_x, adtBoundingBoxeDB.adtMax_y, adtBoundingBoxeDB.adtMax_z};
     }
 }
 
@@ -67,8 +67,12 @@ void CMinimapDataDB::DataBaseClass::saveAdtBoundingBoxes(MapRenderDef& mapRender
             boxDb.map_id = mapRenderDef.mapId;
             boxDb.adt_x = i;
             boxDb.adt_y = j;
-            boxDb.adtMin_z = mapRenderDef.adtConfigHolder->adtMinZ[i][j];
-            boxDb.adtMax_z = mapRenderDef.adtConfigHolder->adtMaxZ[i][j];
+            boxDb.adtMin_x = mapRenderDef.adtConfigHolder->adtMin[i][j].x;
+            boxDb.adtMin_y = mapRenderDef.adtConfigHolder->adtMin[i][j].y;
+            boxDb.adtMin_z = mapRenderDef.adtConfigHolder->adtMin[i][j].z;
+            boxDb.adtMax_x = mapRenderDef.adtConfigHolder->adtMax[i][j].x;
+            boxDb.adtMax_y = mapRenderDef.adtConfigHolder->adtMax[i][j].y;
+            boxDb.adtMax_z = mapRenderDef.adtConfigHolder->adtMax[i][j].z;
 
             m_storage.insert(boxDb);
         }

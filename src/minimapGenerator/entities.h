@@ -59,6 +59,8 @@ struct ScenarioDef {
 
     float zoom = 1.0f;
 
+    int time = 0;
+
     std::string folderToSave;
 
     std::unordered_map<int, std::vector<int>> activatePhasePerMap;

@@ -475,24 +475,69 @@ void M2Object::createAABB() {
         auto min = mathfu::vec3(9999, 9999, 9999);
         auto max = mathfu::vec3(-9999, -9999, -9999);
 
+//        auto indexBuffer = m_skinGeom->generateIndexBuffer();
+//        auto m2SkinProfile = m_skinGeom->getSkinData();
+//        for (int batchIndex = 0; batchIndex < m2SkinProfile->batches.size; batchIndex++) {
+//            M2Batch *textMaterial = m2SkinProfile->batches.getElement(batchIndex);
+//            M2SkinSection *skinSection = m2SkinProfile->skinSections.getElement(textMaterial->skinSectionIndex);
+//
+//            int vertexIndexStart = skinSection->indexStart + (skinSection->Level << 16);
+//
+//            for (int i = 0; i < skinSection->indexCount; i++) {
+//                auto *vertex = m2Data->vertices.getElement(vertexIndexStart+i);
+//
+//                min = mathfu::vec3(
+//                    mathfu::vec3(
+//                        std::min(min.x, vertex->pos.x),
+//                        std::min(min.y, vertex->pos.y),
+//                        std::min(min.z, vertex->pos.z)
+//                    )
+//                );
+//
+//                max = mathfu::vec3(
+//                    mathfu::vec3(
+//                        std::max(max.x, vertex->pos.x),
+//                        std::max(max.y, vertex->pos.y),
+//                        std::max(max.z, vertex->pos.z)
+//                    )
+//                );
+//            }
+//        }
         for (int i = 0; i < m2Data->vertices.size; i++) {
             auto *vertex = m2Data->vertices.getElement(i);
+            min = mathfu::vec3(
+                    mathfu::vec3(
+                        std::min(min.x, vertex->pos.x),
+                        std::min(min.y, vertex->pos.y),
+                        std::min(min.z, vertex->pos.z)
+                    )
+                );
 
-            min = mathfu::vec3(mathfu::vec3(std::min(min.x, vertex->pos.x),
-                                                             std::min(min.y, vertex->pos.y),
-                                                             std::min(min.z, vertex->pos.z)));
-
-            max = mathfu::vec3(mathfu::vec3(std::max(max.x, vertex->pos.x),
-                                                             std::max(max.y, vertex->pos.y),
-                                                             std::max(max.z, vertex->pos.z)));
+                max = mathfu::vec3(
+                    mathfu::vec3(
+                        std::max(max.x, vertex->pos.x),
+                        std::max(max.y, vertex->pos.y),
+                        std::max(max.z, vertex->pos.z)
+                    )
+                );
         }
 
-//        std::cout << "calculated min = (" << min.x << ", " << min.y << ", " << min.z << ")" << std::endl;
-//        std::cout << "calculated max = (" << max.x << ", " << max.y << ", " << max.z << ")" << std::endl;
+        //TODO: undo this :D
+
+        mathfu::vec4 minVec = mathfu::vec4(min.x - 10, min.y - 10, min.z - 10, 1);
+        mathfu::vec4 maxVec = mathfu::vec4(max.x + 10, max.y + 10, max.z + 10, 1);
+        if (min.x > max.x) {
+            minVec = {0,0,0,1};
+            maxVec = {0,0,0,1};
+        }
+
+        CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
+
+        this->aabb = worldAABB;
     }
 
 
-
+    if (false)
     {
         C3Vector min = m2Data->bounding_box.min;
         C3Vector max = m2Data->bounding_box.max;
@@ -1531,8 +1576,8 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     meshTemplate.skybox = m_boolSkybox;
 
     HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
-    meshTemplate.texture.resize(m2Batch->textureCount);
-    meshTemplate.textureCount = m2Batch->textureCount;
+    meshTemplate.texture.resize(4);
+    meshTemplate.textureCount = 4;
     for (int j = 0; j < material.textureCount; j++) {
         meshTemplate.texture[j] = material.textures[j];
     }

@@ -14,7 +14,11 @@ namespace CMinimapDataDB {
         int map_id;
         int adt_x;
         int adt_y;
+        float adtMin_x;
+        float adtMin_y;
         float adtMin_z;
+        float adtMax_x;
+        float adtMax_y;
         float adtMax_z;
     };
 
@@ -80,7 +84,11 @@ namespace CMinimapDataDB {
                 make_column("map_id", &ADTBoundingBoxDB::map_id),
                 make_column("adt_x", &ADTBoundingBoxDB::adt_x),
                 make_column("adt_y", &ADTBoundingBoxDB::adt_y),
+                make_column("adt_min_x", &ADTBoundingBoxDB::adtMin_x),
+                make_column("adt_min_y", &ADTBoundingBoxDB::adtMin_y),
                 make_column("adt_min_z", &ADTBoundingBoxDB::adtMin_z),
+                make_column("adt_max_x", &ADTBoundingBoxDB::adtMax_x),
+                make_column("adt_max_y", &ADTBoundingBoxDB::adtMax_y),
                 make_column("adt_max_z", &ADTBoundingBoxDB::adtMax_z)
             )
         );

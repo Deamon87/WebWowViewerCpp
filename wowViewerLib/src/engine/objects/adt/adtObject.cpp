@@ -1388,6 +1388,8 @@ AdtObject::AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDa
 }
 
 bool AdtObject::getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeRiverColor) {
+    if (!m_loaded) return false;
+
     auto adt_x = worldCoordinateToAdtIndex(cameraPos.y);
     auto adt_y = worldCoordinateToAdtIndex(cameraPos.x);
 

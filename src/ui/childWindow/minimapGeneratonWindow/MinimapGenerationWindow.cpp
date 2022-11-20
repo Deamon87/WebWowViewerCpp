@@ -423,6 +423,7 @@ void MinimapGenerationWindow::renderEditTab() {
                 ImGui::PopItemWidth();
                 ImGui::EndGroupPanel();
             }
+            ImGui::InputFloat("Zoom", &sceneDef->zoom, 0.1);
 
 
 
@@ -474,10 +475,10 @@ void MinimapGenerationWindow::renderEditTab() {
                 ImGui::EndGroupPanel();
             }
 
-            auto currentTime = minimapGenerator->getConfig()->currentTime;
+            auto currentTime = sceneDef->time;
             ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
-            if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-                minimapGenerator->getConfig()->currentTime = currentTime;
+            if (ImGui::SliderInt("Current time", &sceneDef->time, 0, 2880)) {
+//                sceneDef->time = sceneDef->time;
             }
 
             editComponentsForConfig(minimapGenerator->getConfig());

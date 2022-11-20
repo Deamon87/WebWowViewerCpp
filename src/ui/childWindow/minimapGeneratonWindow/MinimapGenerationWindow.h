@@ -44,6 +44,7 @@ private:
     float previewY = 0;
     float previewZoom = 1;
 
+
     int mapIndexExcludeADT = -1;
     int mapIndexExcludeADTChunk = -1;
 

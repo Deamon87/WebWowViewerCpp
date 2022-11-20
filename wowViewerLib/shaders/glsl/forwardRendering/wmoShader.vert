@@ -7,6 +7,8 @@ precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
+#include "../common/commonFunctions.glsl"
+#include "../common/commonWMOMaterial.glsl"
 
 /* vertex shader code */
 layout (location = 0) in vec3 aPosition;
@@ -41,7 +43,6 @@ layout(location=6) out vec4 vColorSecond;
 layout(location=7) out vec4 vPosition;
 layout(location=8) out vec3 vNormal;
 
-#include "../common/commonFunctions.glsl"
 
 void main() {
     vec4 worldPoint = uPlacementMat * vec4(aPosition, 1);
@@ -61,47 +62,6 @@ void main() {
     vTexCoord4 = aTexCoord4;
 
     int uVertexShader = VertexShader_UseLitColor.x;
-   if ( uVertexShader == -1 ) {
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2;
-       vTexCoord3 = aTexCoord3;
-   } else if (uVertexShader == 0) { //MapObjDiffuse_T1
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2; //not used
-       vTexCoord3 = aTexCoord3; //not used
-   } else if (uVertexShader == 1) { //MapObjDiffuse_T1_Refl
-       vTexCoord = aTexCoord;
-       vTexCoord2 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
-       vTexCoord3 = aTexCoord3; //not used
-   } else if (uVertexShader == 2) { //MapObjDiffuse_T1_Env_T2
-       vTexCoord = aTexCoord;
 
-       vTexCoord2 = posToTexCoord(vPosition.xyz, vNormal);;
-       vTexCoord3 = aTexCoord3;
-   } else if (uVertexShader == 3) { //MapObjSpecular_T1
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2; //not used
-       vTexCoord3 = aTexCoord3; //not used
-   } else if (uVertexShader == 4) { //MapObjDiffuse_Comp
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2; //not used
-       vTexCoord3 = aTexCoord3; //not used
-   } else if (uVertexShader == 5) { //MapObjDiffuse_Comp_Refl
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2;
-       vTexCoord3 = reflect(normalize(cameraPoint.xyz), vNormal).xy;
-   } else if (uVertexShader == 6) { //MapObjDiffuse_Comp_Terrain
-       vTexCoord = aTexCoord;
-       vTexCoord2 = vPosition.xy * -0.239999995;
-       vTexCoord3 = aTexCoord3; //not used
-   } else if (uVertexShader == 7) { //MapObjDiffuse_CompAlpha
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2;
-       vTexCoord3 = aTexCoord3; //not used
-   } else if (uVertexShader == 8) { //MapObjParallax
-       vTexCoord = aTexCoord;
-       vTexCoord2 = aTexCoord2;
-       vTexCoord3 = aTexCoord3;
-   }
-
+    calcWMOVertMat(uVertexShader, vPosition.xyz, vNormal, aTexCoord, aTexCoord2, aTexCoord3, vTexCoord, vTexCoord2, vTexCoord3);
 }

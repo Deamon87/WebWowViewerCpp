@@ -1239,12 +1239,15 @@ void Map::checkADTCulling(int i, int j,
     if ((j < 0) || (j > 64)) return;
 
     if (this->m_adtConfigHolder != nullptr) {
-        float maxZ = m_adtConfigHolder->adtMaxZ[i][j];
-        float minZ = m_adtConfigHolder->adtMinZ[i][j];
+        mathfu::vec3 min = m_adtConfigHolder->adtMin[i][j];
+        mathfu::vec3 max = m_adtConfigHolder->adtMax[i][j];
 
         CAaBox box = {
-            C3Vector({AdtIndexToWorldCoordinate(j + 1) , AdtIndexToWorldCoordinate(i + 1), minZ}),
-            C3Vector({AdtIndexToWorldCoordinate(j) , AdtIndexToWorldCoordinate(i), maxZ})
+            C3Vector(min),
+            C3Vector(max)
+
+//            C3Vector({AdtIndexToWorldCoordinate(j + 1) , AdtIndexToWorldCoordinate(i + 1), minZ}),
+//            C3Vector({AdtIndexToWorldCoordinate(j) , AdtIndexToWorldCoordinate(i), maxZ})
         };
 
         bool bbCheck = MathHelper::checkFrustum( frustumData, box);
@@ -1409,7 +1412,6 @@ void Map::doPostLoad(HCullStage &cullStage) {
 };
 
 void Map::update(HUpdateStage &updateStage) {
-    mapUpdateCounter.beginMeasurement();
     mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
     mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
     mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
@@ -1478,9 +1480,6 @@ void Map::update(HUpdateStage &updateStage) {
     adtCleanupCounter.endMeasurement();
     this->m_currentTime += updateStage->delta;
 
-    mapUpdateCounter.endMeasurement();
-
-    m_api->getConfig()->mapUpdateTime = mapUpdateCounter.getTimePerFrame();
     m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
     m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
     m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
@@ -1607,7 +1606,9 @@ animTime_t Map::getCurrentSceneTime() {
 }
 void Map::produceUpdateStage(HUpdateStage &updateStage) {
     mapProduceUpdateCounter.beginMeasurement();
+    mapUpdateCounter.beginMeasurement();
     this->update(updateStage);
+    mapUpdateCounter.endMeasurement();
 
     //Create meshes
     updateStage->opaqueMeshes = std::make_shared<MeshesToRender>();
@@ -1746,6 +1747,7 @@ void Map::produceUpdateStage(HUpdateStage &updateStage) {
 
 
     m_api->getConfig()->mapProduceUpdateTime = mapProduceUpdateCounter.getTimePerFrame();
+    m_api->getConfig()->mapUpdateTime = mapUpdateCounter.getTimePerFrame();
     m_api->getConfig()->interiorViewCollectMeshTime = interiorViewCollectMeshCounter.getTimePerFrame();
     m_api->getConfig()->exteriorViewCollectMeshTime = exteriorViewCollectMeshCounter.getTimePerFrame();
     m_api->getConfig()->m2CollectMeshTime = m2CollectMeshCounter.getTimePerFrame();

@@ -8,7 +8,6 @@
 #include "../shaders/GShaderPermutationVLK.h"
 
 GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
-
     uniformsAvailable = 5*4096;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096;

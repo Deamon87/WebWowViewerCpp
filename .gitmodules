@@ -44,3 +44,6 @@
 [submodule "wowViewerLib/3rdparty/oneTbb"]
 	path = wowViewerLib/3rdparty/oneTbb
 	url = https://github.com/Deamon87/oneTBBWasm.git
+[submodule "3rdparty/hiberlite"]
+	path = 3rdparty/hiberlite
+	url = https://github.com/paulftw/hiberlite.git

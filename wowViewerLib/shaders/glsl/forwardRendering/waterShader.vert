@@ -31,8 +31,8 @@ void main() {
 
     vec4 cameraPoint = cameraMatrix * aPositionVec4;
 
-    const float posToTextPos = 1.0 / (1600.0/3.0/16.0);
-    vTextCoords = aPositionVec4.xy * posToTextPos;
+    //const float posToTextPos = 1.0 / (1600.0/3.0/16.0);
+    vTextCoords = aTexCoord;//aPositionVec4.xy * posToTextPos;
 
     gl_Position = scene.uPMatrix * cameraPoint;
     //   vTexCoord = aTexCoord;
