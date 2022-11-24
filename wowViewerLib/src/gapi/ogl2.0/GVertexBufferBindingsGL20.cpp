@@ -84,7 +84,7 @@ void GVertexBufferBindingsGL20::save() {
 
 //    m_device.bindVertexBufferBindings(this);
 //    for (GVertexBufferBinding &binding : m_bindings) {
-//        for (GBufferBinding &bufferBinding : binding.bindings) {
+//        for (GBufferBinding &adtVertexBufferBinding : binding.bindings) {
 //
 //        }
 //    }

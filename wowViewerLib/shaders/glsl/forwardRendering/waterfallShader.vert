@@ -65,13 +65,11 @@ void main() {
     boneTransformMat += (boneWeights.z ) * uBoneMatrixes[bones.z];
     boneTransformMat += (boneWeights.w ) * uBoneMatrixes[bones.w];
 
-    mat4 cameraMatrix = scene.uLookAtMat * uPlacementMat  * boneTransformMat ;
-    vec4 cameraPoint = cameraMatrix * vec4(pos, 1.0);
+    mat4 viewModelMat = scene.uLookAtMat * uPlacementMat  * boneTransformMat ;
+    vec4 cameraPoint = viewModelMat * vec4(pos, 1.0);
 
-    mat3 viewModelMatTransposed =
-        blizzTranspose(scene.uLookAtMat) *
-        blizzTranspose(uPlacementMat) *
-        blizzTranspose(boneTransformMat);
+    mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
+    vec3 normal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
 
     vNormal = (scene.uLookAtMat * uPlacementMat * vec4(aNormal, 0)).xyz;
     vPosition = pos;

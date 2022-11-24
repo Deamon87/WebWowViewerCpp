@@ -248,7 +248,9 @@ public:
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
         }
-        m_useLocalDiffuseColor = ( m_useLocalDiffuseColor == 0 ? m_useLocalDiffuseColor : (value ? 1 : 0) );
+        if (value && m_useLocalDiffuseColor == 0) {
+            m_useLocalDiffuseColor = 1;
+        }
 
         return m_useLocalDiffuseColor == 1;
     };

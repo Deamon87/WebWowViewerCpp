@@ -322,7 +322,6 @@ protected:
                 (depthCulling == other.depthCulling) &&
                 (depthWrite == other.depthWrite) &&
                 (invertZ == other.invertZ);
-
         };
     };
     struct PipelineCacheRecordHasher {
@@ -334,8 +333,9 @@ protected:
             (hash<int8_t >{}(k.triCCW) << 4) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
             (hash<int8_t >{}(k.depthWrite) << 10) ^
-            (hash<EGxBlendEnum>{}(k.blendMode) << 16) ^
-            (hash<DrawElementMode>{}(k.element) << 24);
+            (hash<int8_t >{}(k.invertZ) << 12) ^
+            (hash<EGxBlendEnum>{}(k.blendMode) << 14) ^
+            (hash<DrawElementMode>{}(k.element) << 16);
         };
     };
     std::unordered_map<PipelineCacheRecord, std::weak_ptr<GPipelineVLK>, PipelineCacheRecordHasher> loadedPipeLines;

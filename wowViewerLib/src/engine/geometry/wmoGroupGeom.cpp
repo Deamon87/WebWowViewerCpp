@@ -308,25 +308,12 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
     if (combinedVBO == nullptr) {
         combinedVBO = device->createVertexBuffer();
 
-        PACK(
-        struct VboFormat {
-            C3Vector pos;
-            C3Vector normal;
-            C2Vector textCoordinate;
-            C2Vector textCoordinate2;
-            C2Vector textCoordinate3;
-            C2Vector textCoordinate4;
-            CImVector color;
-            CImVector color2;
-            CImVector colorSecond;
-        });
-
         static const C2Vector c2ones = C2Vector(mathfu::vec2(1.0, 1.0));
         static const C3Vector c3zeros = C3Vector(mathfu::vec3(0, 0, 0));
 
-        std::vector<VboFormat> buffer (verticesLen);
+        std::vector<WMOVertex> buffer (verticesLen);
         for (int i = 0; i < verticesLen; i++) {
-            VboFormat &format = buffer[i];
+            WMOVertex &format = buffer[i];
             format.pos = verticles[i];
             if (normalsLen > 0) {
                 format.normal = normals[i];
@@ -379,7 +366,7 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
             }
         }
 
-        combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(VboFormat)));
+        combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(WMOVertex)));
     }
 
     return combinedVBO;
@@ -397,15 +384,15 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HGDevice &device) {
 }
 
 static const std::array<GBufferBinding, 9> staticWMOBindings = {{
-    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 68   , 0 },
-    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 68, 12},
-    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 68, 24},
-    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 68, 32},
-    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false, 68, 40},
-    {+wmoShader::Attribute::aTexCoord4, 2, GBindingType::GFLOAT, false, 68, 48},
-    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 56},
-    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 60},
-    {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 64}
+    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false,          sizeof(WMOVertex), offsetof(WMOVertex, pos) },
+    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false,            sizeof(WMOVertex), offsetof(WMOVertex, normal)},
+    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false,          sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate)},
+    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false,         sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate2)},
+    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false,         sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate3)},
+    {+wmoShader::Attribute::aTexCoord4, 2, GBindingType::GFLOAT, false,         sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate4)},
+    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true,      sizeof(WMOVertex), offsetof(WMOVertex, color)},
+    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true,     sizeof(WMOVertex), offsetof(WMOVertex, color2)},
+    {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true,sizeof(WMOVertex), offsetof(WMOVertex, colorSecond)}
 }};
 
 static GBufferBinding staticWMOWaterBindings[2] = {
@@ -491,7 +478,7 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &devi
             }
         }
 
-        std::vector<float> vboBuffer;
+
         std::vector<uint16_t> iboBuffer;
 
         for (int j = 0; j < m_mliq->ytiles; j++)

@@ -265,7 +265,7 @@ void calcWMOVertMat(in int vertexShader,
         vTexCoord3 = reflect(normalize(vertexPosInView.xyz), normalInView).xy;
     } else if (vertexShader == 6) { //MapObjDiffuse_Comp_Terrain
         vTexCoord = aTexCoord;
-        vTexCoord2 = vertexPosInView.xy * -0.239999995;
+        vTexCoord2 = vertexPosInView.xy * 0.239999995;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 7) { //MapObjDiffuse_CompAlpha
         vTexCoord = aTexCoord;

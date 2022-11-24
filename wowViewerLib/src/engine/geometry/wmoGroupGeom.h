@@ -12,9 +12,23 @@
 #include "../../include/sharedFile.h"
 #include "../../gapi/interface/IDevice.h"
 
+PACK(
+    struct WMOVertex {
+        C3Vector pos;
+        C3Vector normal;
+        C2Vector textCoordinate;
+        C2Vector textCoordinate2;
+        C2Vector textCoordinate3;
+        C2Vector textCoordinate4;
+        CImVector color;
+        CImVector color2;
+        CImVector colorSecond;
+    }
+);
+
 class WmoGroupGeom : public PersistentFile {
 public:
-    WmoGroupGeom(std::string fileName){m_fileName = fileName;};
+    WmoGroupGeom(std::string fileName){ m_fileName = fileName; };
     WmoGroupGeom(int fileDataId){ m_fileDataId = fileDataId;};
 
     void process(HFileContent wmoGroupFile, const std::string &fileName) override;
@@ -32,13 +46,6 @@ public:
     int getFileDataId() const {return m_fileDataId;}
     const std::string &getFileName() const {return m_fileName;}
 private:
-    int normalOffset = 0;
-    int textOffset = 0;
-    int textOffset2 = 0;
-    int textOffset3 = 0;
-    int colorOffset = 0;
-    int colorOffset2 = 0;
-
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 
     int getLegacyWaterType(int a);

@@ -838,6 +838,7 @@ bool WmoObject::startTraversingWMOGroup(
         if (interiorView == nullptr) {
             interiorView = viewsHolder.createInterior(frustumDataGlobal);
             ivPerWMOGroup[groupId] = interiorView;
+            interiorView->ownerGroupWMO = groupObjects[groupId];
             interiorView->wmoGroupArray.addToDraw(nextGroupObject);
             interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
         }
@@ -892,7 +893,7 @@ bool WmoObject::startTraversingWMOGroup(
         }
     }
 
-    //Add all ALAWAYSRENDER to Exterior
+    //Add all ALWAYSRENDER to Exterior
     for (int i = 0; i< mainGeom->groupsLen; i++) {
         if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
             auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);

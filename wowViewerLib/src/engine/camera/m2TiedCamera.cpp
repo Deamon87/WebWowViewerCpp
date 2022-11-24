@@ -5,9 +5,9 @@
 #include "m2TiedCamera.h"
 
 void m2TiedCamera::getCameraPosition(float *position) {
-    position[0] = m_lastCameraResult.target_position.x;
-    position[1] = m_lastCameraResult.target_position.y;
-    position[2] = m_lastCameraResult.target_position.z;
+    position[0] = lastCameraPos.x;
+    position[1] = lastCameraPos.y;
+    position[2] = lastCameraPos.z;
 }
 
 void m2TiedCamera::tick(animTime_t timeDelta) {
@@ -44,7 +44,8 @@ HCameraMatrices m2TiedCamera::getCameraMatrices(float fov, float canvasAspect, f
         farPlane);
     cameraMatrices->lookAtMat = lookAtMat4;
 
-    cameraMatrices->cameraPos = mathfu::vec4(m_lastCameraResult.position.xyz(), 1.0);
+    lastCameraPos = lookAtMat4.Inverse() * mathfu::vec4(0,0,0,1);
+    cameraMatrices->cameraPos = lastCameraPos;
     cameraMatrices->viewUp = mathfu::vec4(upVectorTranformed, 0);
     cameraMatrices->interiorDirectLightDir = mathfu::vec4(0,0,0,0);
 

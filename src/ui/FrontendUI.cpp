@@ -726,6 +726,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("10xt_exterior_glacialspike01.wmo (parallax)", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4419436);
     }
+    if (ImGui::Button("14654.wmo (parallax)", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(4222547);
+    }
     if (ImGui::Button("10.0 Raid WMO", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4282557);
     }

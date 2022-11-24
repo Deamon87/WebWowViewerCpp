@@ -70,6 +70,7 @@ private:
     VkDescriptorPool m_descriptorPool;
 
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
+    bool m_lastInvertedZ = false;
     std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
 
 

@@ -9,7 +9,7 @@ precision highp int;
 #include "../common/commonFogFunctions.glsl"
 
 /* vertex shader code */
-layout(location = 0) in vec3 aHeight;
+layout(location = 0) in vec3 aPos;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
@@ -61,16 +61,17 @@ void main() {
 //        uPos.z + aHeight,
 //        1);
 
-    vec4 worldPoint = vec4(
-        aHeight,
-        1);
+    vec4 worldPoint = vec4(aPos, 1);
 
     vChunkCoords = vec2(iX, iY);
 
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.rgb;
-    vNormal = blizzTranspose(scene.uLookAtMat) * aNormal;
+    mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
+    vec3 normal = normalize(viewMatForNormal * vec4(aNormal, 0.0)).xyz;
+
+    vNormal = normal;
 
     gl_Position = scene.uPMatrix * scene.uLookAtMat * worldPoint;
 

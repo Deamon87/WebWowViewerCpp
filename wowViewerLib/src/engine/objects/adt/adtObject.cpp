@@ -14,17 +14,34 @@
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range2d.h"
 
-static GBufferBinding bufferBinding[5] = {
-    {(uint32_t)adtShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 60, 0},
-    {(uint32_t)adtShader::Attribute::aHeight, 3, GBindingType::GFLOAT, false, 60, 4},
-    {(uint32_t)adtShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 60, 16 },
-    {(uint32_t)adtShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 60, 28},
-    {(uint32_t)adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, 60, 44},
-};
+PACK(
+    struct AdtVertex {
+        mathfu::vec3_packed pos;
+        float helpIndex = 0.0f;
+        mathfu::vec3_packed normal;
+        mathfu::vec4_packed mccv;
+        mathfu::vec4_packed mclv;
+    }
+);
+PACK(
+    struct LiquidVertexFormat {
+        mathfu::vec4_packed pos_transp;
+        mathfu::vec2_packed uv;
+    }
+);
+
+
+static std::array<GBufferBinding,5> adtVertexBufferBinding = {{
+    {+adtShader::Attribute::aIndex, 1,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, helpIndex)},
+    {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
+    {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
+    {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
+    {+adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, sizeof(AdtVertex), offsetof(AdtVertex, mclv)},
+}};
 
 static GBufferBinding staticWaterBindings[2] = {
-    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
-    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16},
+    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, pos_transp)},
+    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false,       sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, uv)},
 //    {+waterShader::Attribute::aDepth, 1, GBindingType::GFLOAT, false, 24, 0 },
 //    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 4},
 
@@ -142,7 +159,6 @@ void AdtObject::loadWmos() {
 }
 
 HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos) {
-
     uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
     if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
     {
@@ -204,13 +220,6 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     int i = this->m_adtFile->mcnkMap[x_chunk][y_chunk];
     auto &waterAaBB = waterTileAabb[i];
     SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
-//
-
-//
-//    float minX = mcnkChunk->position.x - (MathHelper::CHUNKSIZE);
-//    float maxX = mcnkChunk->position.x;
-//    float minY = mcnkChunk->position.y - (MathHelper::CHUNKSIZE);
-//    float maxY = mcnkChunk->position.y;
 
     float minX = 999999;     float maxX = -999999;
     float minY = 999999;     float maxY = -999999;
@@ -221,11 +230,6 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     minZ = std::min(minZ, waterAaBB.min.z);  maxZ = std::max(maxZ, waterAaBB.max.z);
 
     //Parse the blob
-    PACK(
-        struct LiquidVertexFormat {
-            mathfu::vec4_packed pos_transp;
-            mathfu::vec2_packed uv;
-        });
     std::vector<LiquidVertexFormat> vertexBuffer;
     std::vector<uint16_t > indexBuffer;
 
@@ -433,7 +437,8 @@ void AdtObject::loadWater() {
 
 void AdtObject::createVBO() {
     /* 1. help index + Heights + texCoords +  */
-    std::vector<float> vboArray ;
+
+    std::vector<AdtVertex> vboArray ;
 
     //DEBUG
 //    //Interate MLLL
@@ -462,66 +467,57 @@ void AdtObject::createVBO() {
 //    }
 //    std::cout<< "mlsi: min_index = "<< min_index << " max_index = " << max_index<< std::endl << std::flush;
 
+
     const float UNITSIZE =  (1600.0 / 3.0) / 16.0 / 8.0;
     for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
         for (int j = 0; j < 9 * 9 + 8 * 8; j++) {
+            AdtVertex &adtVertex = vboArray.emplace_back();
             /* 1.1 help index */
-            vboArray.push_back((float)j);
+            adtVertex.helpIndex = j;
             /* 1.2 Heights */
-            float iX = fmod(j, 17.0);
-            float iY = floor(j/17.0);
+            float iX = fmod(j, 17.0f);
+            float iY = floor(j/17.0f);
 
             if (iX > 8.01f) {
-                iY = iY + 0.5;
-                iX = iX - 8.5;
+                iY = iY + 0.5f;
+                iX = iX - 8.5f;
             }
-            mathfu::vec3 pos = mathfu::vec3(
-                m_adtFile->mapTile[i].position.x - iY * UNITSIZE,
-                m_adtFile->mapTile[i].position.y - iX * UNITSIZE,
-                m_adtFile->mapTile[i].position.z + m_adtFile->mcnkStructs[i].mcvt->height[j] );
-
-            vboArray.push_back(pos.x);
-            vboArray.push_back(pos.y);
-            vboArray.push_back(pos.z);
-
-//            std::cout << " i = " << i << " j =  " << j << " pos = " << pos.x << ", " << pos.y << ", " << pos.z << std::endl;
+            adtVertex.pos = { m_adtFile->mapTile[i].position.x - iY * UNITSIZE,
+                              m_adtFile->mapTile[i].position.y - iX * UNITSIZE,
+                              m_adtFile->mapTile[i].position.z + m_adtFile->mcnkStructs[i].mcvt->height[j] };
 
             /* 1.3 Normals */
             if (m_adtFile->mcnkStructs[i].mcnr != nullptr) {
                 for (int k = 0; k < 3; k++) {
-                    vboArray.push_back(m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f);
+                    adtVertex.normal.data_[k] = m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f;
                 }
             } else {
-                vboArray.push_back(0.0);
-                vboArray.push_back(0.0);
-                vboArray.push_back(1.0);
+                adtVertex.normal = { 0, 0, 1.0 };
             }
             /* 1.4 MCCV */ //Color vertex
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
                 auto &mccv = m_adtFile->mcnkStructs[i].mccv;
-                vboArray.push_back(mccv->entries[j].red / 255.0f);
-                vboArray.push_back(mccv->entries[j].green / 255.0f);
-                vboArray.push_back(mccv->entries[j].blue / 255.0f);
-                vboArray.push_back(mccv->entries[j].alpha / 255.0f);
+                adtVertex.mccv = {
+                    mccv->entries[j].red / 255.0f,
+                    mccv->entries[j].green / 255.0f,
+                    mccv->entries[j].blue / 255.0f,
+                    mccv->entries[j].alpha / 255.0f,
+                };
             } else {
-                vboArray.push_back(0.5f);
-                vboArray.push_back(0.5f);
-                vboArray.push_back(0.5f);
-                vboArray.push_back(0.5f);
+                adtVertex.mccv = { 0.5f, 0.5f, 0.5f, 0.5f};
             }
             /* 1.4 MCLV */ //Lightning Vertex
             if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
                 auto &mclv = m_adtFile->mcnkStructs[i].mclv;
-                vboArray.push_back(mclv->values[j].b / 255.0f);
-                vboArray.push_back(mclv->values[j].g / 255.0f);
-                vboArray.push_back(mclv->values[j].r / 255.0f);
-                vboArray.push_back(mclv->values[j].a / 255.0f);
+                adtVertex.mclv = {
+                    mclv->values[j].b / 255.0f,
+                    mclv->values[j].g / 255.0f,
+                    mclv->values[j].r / 255.0f,
+                    mclv->values[j].a / 255.0f
+                };
             } else {
                 //If MCLV is empty, localDiffuse doesnt exist in shader
-                vboArray.push_back(0.0f);
-                vboArray.push_back(0.0f);
-                vboArray.push_back(0.0f);
-                vboArray.push_back(0.0f);
+                adtVertex.mclv = { 0.0f, 0.0f, 0.0f, 0.0f };
             }
         }
     }
@@ -529,7 +525,7 @@ void AdtObject::createVBO() {
     /* 1.3 Make combinedVbo */
     HGDevice device = m_api->hDevice;
     combinedVbo = device->createVertexBuffer();
-    combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(float));
+    combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(AdtVertex));
 
     /* 2. Strips */
 
@@ -542,7 +538,8 @@ void AdtObject::createVBO() {
 
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = combinedVbo;
-        vertexBinding.bindings = std::vector<GBufferBinding>(&bufferBinding[0], &bufferBinding[5]);
+        vertexBinding.bindings = std::vector<GBufferBinding>(adtVertexBufferBinding.begin(),
+                                                             adtVertexBufferBinding.end());
 
         adtVertexBindings->addVertexBufferBinding(vertexBinding);
         adtVertexBindings->save();
@@ -581,10 +578,10 @@ void AdtObject::createVBO() {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = combinedVbo;
 
-		GBufferBinding bufferBinding = { +adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 4, 0 };
-		vertexBinding.bindings.push_back(bufferBinding);
-		bufferBinding = { +adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 4, static_cast<uint32_t>(indexVBOLodOffset * sizeof(float))};
-        vertexBinding.bindings.push_back(bufferBinding);
+		GBufferBinding adtLodBufferBinding = { +adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 4, 0 };
+		vertexBinding.bindings.push_back(adtLodBufferBinding);
+        GBufferBinding adtLodBufferBinding2 = {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 4, static_cast<uint32_t>(indexVBOLodOffset * sizeof(float))};
+        vertexBinding.bindings.push_back(adtLodBufferBinding2);
 
         lodVertexBindings->addVertexBufferBinding(vertexBinding);
         lodVertexBindings->save();

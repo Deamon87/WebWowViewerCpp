@@ -20,6 +20,8 @@ private:
     int m_cameraNum = -1;
 
     M2CameraResult m_lastCameraResult;
+    mathfu::vec4 lastCameraPos = mathfu::vec4(0,0,0,1.0);
+    mathfu::vec4 lastCameraDir = mathfu::vec4(0,0,0,1.0);
 public:
     void startMovingForward() override {};
     void stopMovingForward() override {};

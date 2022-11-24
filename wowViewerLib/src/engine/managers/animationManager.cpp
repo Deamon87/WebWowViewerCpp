@@ -182,13 +182,10 @@ void blendMatrices(std::vector<mathfu::mat4> &origMat, std::vector<mathfu::mat4>
 template <typename T>
 inline void calcAnimationTransform(
         mathfu::mat4 &tranformMat,
-        mathfu::mat4 *billboardMatrix,
         mathfu::vec4 &pivotPoint,
         mathfu::vec4 &negatePivotPoint,
         M2Array<M2Loop> &global_loops,
         std::vector<animTime_t> &globalSequenceTimes,
-
-        bool &isAnimated,
         M2Track<C3Vector> &translationTrack,
         M2Track<T> &rotationTrack,
         M2Track<C3Vector> &scaleTrack,
@@ -207,12 +204,9 @@ inline void calcAnimationTransform(
         );
 
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(transVec.xyz());
-        isAnimated = true;
     }
 
-    if (billboardMatrix != nullptr) {
-        tranformMat = tranformMat * *billboardMatrix;
-    } else if (rotationTrack.values.size > 0) {
+    if (rotationTrack.values.size > 0) {
         mathfu::quat defaultValue = mathfu::quat(1,0,0,0);
         mathfu::quat quaternionResult = animateTrackWithBlend<T, mathfu::quat>(
             animationInfo,
@@ -222,7 +216,6 @@ inline void calcAnimationTransform(
             defaultValue);
 
         tranformMat = tranformMat * quaternionResult.ToMatrix4();
-        isAnimated = true;
     }
 
     if (scaleTrack.values.size > 0) {
@@ -235,7 +228,6 @@ inline void calcAnimationTransform(
             defaultValue);
 
         tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
-        isAnimated = true;
     }
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(negatePivotPoint.xyz());
 }
@@ -489,15 +481,13 @@ AnimationManager::calcBoneMatrix(
     mathfu::mat4 *billboardMatrix = nullptr;
 
     /* 3. Calculate matrix */
-    bool isAnimated = (boneDefinition->flags_raw & 0x280) > 0;
+    const bool isAnimated = (boneDefinition->flags_raw & 0x280) > 0;
     mathfu::mat4 animatedMatrix = mathfu::mat4::Identity();
     if (isAnimated) {
         calcAnimationTransform(animatedMatrix,
-                               billboardMatrix,
                                pivotPoint, negatePivotPoint,
                                *globalSequences,
                                *globalSequenceTimes,
-                               isAnimated,
                                boneDefinition->translation,
                                boneDefinition->rotation,
                                boneDefinition->scaling,
@@ -918,12 +908,25 @@ void AnimationManager::update(
     for (int i = 0; i < bones.size; i++) {
         this->bonesIsCalculated[i] = false;
     }
+
+//    //NOT WORKING
+//    //Feed modelViewMatrix that would transform to "from vertex to eye", instead of "from eye to vertex", like normally
+//    //This is intended
+//    auto blizzModelViewMat = mathfu::mat4::FromScaleVector(mathfu::vec3(-1, -1, -1)) * modelViewMatrix;
+//    this->calcBones(bonesMatrices, blizzModelViewMat);
+//
+//    mathfu::mat4 invBlizzModelViewMat = blizzModelViewMat.Inverse();
+//    for (int i = 0; i < bones.size; i++) {
+//        bonesMatrices[i] = invBlizzModelViewMat * bonesMatrices[i];
+//    }
+//
     this->calcBones(bonesMatrices, modelViewMatrix);
 
     mathfu::mat4 invModelViewMatrix = modelViewMatrix.Inverse();
     for (int i = 0; i < bones.size; i++) {
         bonesMatrices[i] = invModelViewMatrix * bonesMatrices[i];
     }
+
 
     this->calcSubMeshColors(subMeshColors);
     this->calcTransparencies(transparencies);

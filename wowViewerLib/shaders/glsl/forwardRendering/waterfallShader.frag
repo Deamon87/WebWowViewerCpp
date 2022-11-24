@@ -75,7 +75,7 @@ vec3 PerturbNormal ( vec3 surf_pos, vec3 surf_norm )
 }
 
 void main() {
-    vec3 perturbedNormal = PerturbNormal(vPosition, normalize(vNormal));
+    vec3 perturbedNormal = PerturbNormal(-vPosition, normalize(vNormal));
 
     vec2 vTexCoordNorm = vTexCoord / values1.x;
 
