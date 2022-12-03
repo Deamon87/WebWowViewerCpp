@@ -35,7 +35,7 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
         if (ambient.Length() < 0.0001)
             ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-        auto frameDepedantData = cullStage->frameDepedantData;
+        auto frameDepedantData = cullStage->frameDependentData;
 
         frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
         frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
@@ -43,7 +43,7 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
         frameDepedantData->exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
         frameDepedantData->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
     }
-    auto frameDepedantData = cullStage->frameDepedantData;
+    auto frameDepedantData = cullStage->frameDependentData;
     frameDepedantData->FogDataFound = false;
 }
 

@@ -1197,8 +1197,8 @@ HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool
 
     BlpCacheRecord blpCacheRecord;
     blpCacheRecord.texture = texture.get();
-    blpCacheRecord.wrapX = xWrapTex;
-    blpCacheRecord.wrapY = yWrapTex;
+//    blpCacheRecord.wrapX = xWrapTex;
+//    blpCacheRecord.wrapY = yWrapTex;
 
     auto i = loadedTextureCache.find(blpCacheRecord);
     if (i != loadedTextureCache.end()) {

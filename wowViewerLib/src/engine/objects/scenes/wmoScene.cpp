@@ -34,7 +34,7 @@ void WmoScene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec
 
     mathfu::vec4 ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-    auto frameDepedantData = cullStage->frameDepedantData;
+    auto frameDepedantData = cullStage->frameDependentData;
 
     frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
     frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);

@@ -45,6 +45,8 @@ public:
     GDeviceGL20();
     ~GDeviceGL20() override = default;;
 
+    GDeviceType getDeviceType() override {return GDeviceType::GOpenGL2; };
+
     void initialize() override;
     void reset() override;
 

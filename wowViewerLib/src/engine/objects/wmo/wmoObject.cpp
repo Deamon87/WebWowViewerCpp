@@ -285,16 +285,16 @@ void WmoObject::createWorldPortals() {
         mathfu::vec3 lookAt = center + mathfu::vec3(portalInfo->plane.planeGeneral.normal);
         mathfu::vec3 upVector = portalVecs[0] - center;
 
-        mathfu::mat4 projMat = mathfu::mat4::LookAt(
+        mathfu::mat4 viewMat = mathfu::mat4::LookAt(
                 lookAt,
                 center,
                 upVector
         );
-        mathfu::mat4 projMatInv = projMat.Inverse();
+        mathfu::mat4 projMatInv = viewMat.Inverse();
 
         std::vector <mathfu::vec3> portalTransformed(portalVecs.size());
         for (int k = 0; k < portalVecs.size(); k++) {
-            portalTransformed[k] = (projMat * mathfu::vec4(portalVecs[k], 1.0)).xyz();
+            portalTransformed[k] = (viewMat * mathfu::vec4(portalVecs[k], 1.0)).xyz();
         }
 
         std::vector<mathfu::vec3> hulled = MathHelper::getHullPoints(portalTransformed);

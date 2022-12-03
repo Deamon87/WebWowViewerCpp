@@ -744,7 +744,6 @@ void AdtObject::createMeshes() {
 }
 
 void AdtObject::loadAlphaTextures() {
-    //int chunkCount = m_adtFile->mcnkRead+1;
     int chunkCount = m_adtFileTex->mcnkRead+1;
     int maxAlphaTexPerChunk = 4;
     int alphaTexSize = 64;

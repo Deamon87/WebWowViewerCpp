@@ -218,7 +218,7 @@ void SceneComposer::DoUpdate() {
     logExecution
 //    uniformChunkVec.push_back(&additionalChunks);
     for (auto &updateStage : frameScenario->updateStages) {
-        frameDepDataVec.push_back(updateStage->cullResult->frameDepedantData);
+        frameDepDataVec.push_back(updateStage->cullResult->frameDependentData);
         uniformChunkVec.push_back(&updateStage->uniformBufferChunks);
     }
     logExecution

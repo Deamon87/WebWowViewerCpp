@@ -988,7 +988,7 @@ void MinimapGenerator::getCurrentFDData(int &areaId, int &parentAreaId, mathfu::
 
     areaId = cullStage->adtAreadId;
     parentAreaId = cullStage->parentAreaId;
-    riverColor = cullStage->frameDepedantData->closeRiverColor;
+    riverColor = cullStage->frameDependentData->closeRiverColor;
 
     mathfu::vec4 cameraPos = {0,0,0,1};
     this->m_apiContainer->camera->getCameraPosition(cameraPos.data_);

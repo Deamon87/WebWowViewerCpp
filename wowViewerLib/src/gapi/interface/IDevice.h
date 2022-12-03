@@ -11,14 +11,10 @@ class IVertexBufferBindings;
 class IIndexBuffer;
 class IUniformBuffer;
 class IUniformBufferChunk;
-class IBlpTexture;
 class ITexture;
 class IShaderPermutation;
 class IMesh;
-class IM2Mesh;
 class IDevice;
-class IOcclusionQuery;
-class IParticleMesh;
 class IGPUFence;
 class IFrameBuffer;
 class gMeshTemplate;
@@ -42,7 +38,6 @@ typedef std::shared_ptr<IMesh> HGMesh;
 typedef std::shared_ptr<IMesh> HGM2Mesh;
 typedef std::shared_ptr<IMesh> HGParticleMesh;
 typedef std::shared_ptr<IMesh> HGOcclusionQuery;
-typedef std::shared_ptr<IBlpTexture> HGBlpTexture;
 typedef std::shared_ptr<ITexture> HGTexture;
 typedef std::shared_ptr<IGPUFence> HGPUFence;
 typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
@@ -143,9 +138,15 @@ struct FramebufAvalabilityStruct {
     int frame;
 };
 
+enum class GDeviceType {
+    GOpenGL2, GOpenGL3, GVulkan,
+};
+
 class IDevice {
     public:
         virtual ~IDevice() {};
+
+        virtual GDeviceType getDeviceType() = 0;
 
         virtual void initialize() = 0;
         virtual void reset() = 0;

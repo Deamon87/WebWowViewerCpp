@@ -80,20 +80,6 @@ void GVertexBufferBindingsGL20::addVertexBufferBinding(GVertexBufferBinding bind
 
 static int VAO_updated = 0;
 void GVertexBufferBindingsGL20::save() {
-//    std::cout << "VAO_updated = " << VAO_updated++ << std::endl;
-
-//    m_device.bindVertexBufferBindings(this);
-//    for (GVertexBufferBinding &binding : m_bindings) {
-//        for (GBufferBinding &adtVertexBufferBinding : binding.bindings) {
-//
-//        }
-//    }
-//    m_device.bindIndexBuffer(nullptr);
-//    m_device.bindVertexBuffer(nullptr);
-
-
-
-//    m_device.bindVertexBufferBindings(nullptr);
 
 }
 

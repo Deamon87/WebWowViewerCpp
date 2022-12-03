@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE20_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE20_H
 
-#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureGL20.h"
 #include "../GDeviceGL20.h"
 

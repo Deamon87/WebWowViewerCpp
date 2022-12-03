@@ -77,7 +77,7 @@ void main() {
         calcLight(
             matDiffuse,
             vNormal,
-            true,
+            UseLitColor_EnableAlpha_PixelShader_BlendMode.x == 1,
             vColor.w,
             scene,
             intLight,

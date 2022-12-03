@@ -25,9 +25,9 @@ class ADTObjRenderRes {
 public:
     std::shared_ptr<AdtObject> adtObject;
     bool wasLoaded = false;
-    bool drawChunk[256] = {false};
-    bool drawWaterChunk[256] = {false};
-    bool checkRefs[256] = {false};
+    std::array<bool, 256> drawChunk = {false};
+    std::array<bool, 256> drawWaterChunk = {false};
+    std::array<bool, 256> checkRefs = {false};
 };
 
 class GeneralView {
@@ -77,7 +77,7 @@ class FrameViewsHolder {
 public:
     HExteriorView getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData);
     HExteriorView getExterior();
-    HInteriorView createInterior(const MathHelper::FrustumCullingData &frustumData);
+    HInteriorView createInterior(const  MathHelper::FrustumCullingData &frustumData);
 
     const std::vector<HInteriorView> &getInteriorViews() {
         return interiorViews;

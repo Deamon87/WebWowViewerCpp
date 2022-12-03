@@ -232,42 +232,42 @@ void FrontendUI::showCurrentStatsDialog() {
         }
 
         if (ImGui::CollapsingHeader("Current fog params")) {
-            if (cullStageData != nullptr && cullStageData->frameDepedantData != nullptr) {
-                ImGui::Text("Fog end: %.3f", cullStageData->frameDepedantData->FogEnd);
-                ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDepedantData->FogScaler);
-                ImGui::Text("Fog Density: %.3f", cullStageData->frameDepedantData->FogDensity);
-                ImGui::Text("Fog Height: %.3f", cullStageData->frameDepedantData->FogHeight);
-                ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDepedantData->FogHeightScaler);
-                ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDepedantData->FogHeightDensity);
-                ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDepedantData->SunFogAngle);
+            if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr) {
+                ImGui::Text("Fog end: %.3f", cullStageData->frameDependentData->FogEnd);
+                ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDependentData->FogScaler);
+                ImGui::Text("Fog Density: %.3f", cullStageData->frameDependentData->FogDensity);
+                ImGui::Text("Fog Height: %.3f", cullStageData->frameDependentData->FogHeight);
+                ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDependentData->FogHeightScaler);
+                ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDependentData->FogHeightDensity);
+                ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDependentData->SunFogAngle);
                 ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDepedantData->FogColor.x,
-                            cullStageData->frameDepedantData->FogColor.y,
-                            cullStageData->frameDepedantData->FogColor.z);
+                            cullStageData->frameDependentData->FogColor.x,
+                            cullStageData->frameDependentData->FogColor.y,
+                            cullStageData->frameDependentData->FogColor.z);
                 ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDepedantData->EndFogColor.x,
-                            cullStageData->frameDepedantData->EndFogColor.y,
-                            cullStageData->frameDepedantData->EndFogColor.z);
-                ImGui::Text("End Fog Color Distance: %.3f", cullStageData->frameDepedantData->EndFogColorDistance);
+                            cullStageData->frameDependentData->EndFogColor.x,
+                            cullStageData->frameDependentData->EndFogColor.y,
+                            cullStageData->frameDependentData->EndFogColor.z);
+                ImGui::Text("End Fog Color Distance: %.3f", cullStageData->frameDependentData->EndFogColorDistance);
                 ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDepedantData->SunFogColor.x,
-                            cullStageData->frameDepedantData->SunFogColor.y,
-                            cullStageData->frameDepedantData->SunFogColor.z);
-                ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDepedantData->SunFogStrength);
+                            cullStageData->frameDependentData->SunFogColor.x,
+                            cullStageData->frameDependentData->SunFogColor.y,
+                            cullStageData->frameDependentData->SunFogColor.z);
+                ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDependentData->SunFogStrength);
                 ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDepedantData->FogHeightColor.x,
-                            cullStageData->frameDepedantData->FogHeightColor.y,
-                            cullStageData->frameDepedantData->FogHeightColor.z);
+                            cullStageData->frameDependentData->FogHeightColor.x,
+                            cullStageData->frameDependentData->FogHeightColor.y,
+                            cullStageData->frameDependentData->FogHeightColor.z);
                 ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDepedantData->FogHeightCoefficients.x,
-                            cullStageData->frameDepedantData->FogHeightCoefficients.y,
-                            cullStageData->frameDepedantData->FogHeightCoefficients.z);
+                            cullStageData->frameDependentData->FogHeightCoefficients.x,
+                            cullStageData->frameDependentData->FogHeightCoefficients.y,
+                            cullStageData->frameDependentData->FogHeightCoefficients.z);
                 ImGui::Separator();
             }
         }
         if (ImGui::CollapsingHeader("Current light params")) {
-            if (cullStageData->frameDepedantData != nullptr) {
-                ImGui::Text("Glow: %.3f", cullStageData->frameDepedantData->currentGlow);
+            if (cullStageData->frameDependentData != nullptr) {
+                ImGui::Text("Glow: %.3f", cullStageData->frameDependentData->currentGlow);
             }
         }
 

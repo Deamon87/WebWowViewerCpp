@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE_H
 
-#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureGL33.h"
 #include "../GDeviceGL33.h"
 

@@ -426,8 +426,6 @@ int main(){
 
     SceneComposer sceneComposer = SceneComposer(apiContainer);
 
-    //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
-
     frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
 
     glfwSetWindowUserPointer(window, &apiContainer);

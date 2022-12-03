@@ -19,8 +19,6 @@ class GTextureVLK;
 class GShaderPermutationVLK;
 class GMeshVLK;
 class GM2MeshVLK;
-class GOcclusionQueryVLK;
-class GParticleMeshVLK;
 class GPipelineVLK;
 class GRenderPassVLK;
 class GDescriptorPoolVLK;
@@ -63,6 +61,8 @@ public:
 
     explicit GDeviceVLK(vkCallInitCallback * callBacks);
     ~GDeviceVLK() override = default;;
+
+    GDeviceType getDeviceType() override {return GDeviceType::GVulkan; };
 
     void initialize() override;
 
@@ -280,21 +280,17 @@ private:
 protected:
     struct BlpCacheRecord {
         BlpTexture* texture;
-        bool wrapX;
-        bool wrapY;
+
 
         bool operator==(const BlpCacheRecord &other) const {
             return
-                (texture == other.texture) &&
-                (wrapX == other.wrapX) &&
-                (wrapY == other.wrapY);
-
+                (texture == other.texture);
         };
     };
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture) ^ (hash<bool>{}(k.wrapX) << 8) ^ (hash<bool>{}(k.wrapY) << 16);
+            return hash<void*>{}(k.texture);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;
@@ -469,7 +465,7 @@ protected:
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
 };
 
-
+typedef std::shared_ptr<GDeviceVLK> HGDeviceVLK;
 
 
 #endif //AWEBWOWVIEWERCPP_GDEVICEVULKAN_H

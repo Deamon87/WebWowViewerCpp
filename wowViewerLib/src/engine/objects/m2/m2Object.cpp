@@ -918,7 +918,10 @@ void M2Object:: doLoadGeom(){
             m_skelGeom = skelCache->getFileId(m_m2Geom->m_skid);
             return;
         }
-        if (m_skelGeom->getStatus() == FileStatus::FSLoaded && m_parentSkelGeom == nullptr) {
+        if (m_skelGeom->getStatus() != FileStatus::FSLoaded ) {
+            return;
+        }
+        if (m_parentSkelGeom == nullptr) {
             if (m_skelGeom->m_skpd != nullptr && m_skelGeom->m_skpd->parent_skel_file_id != 0) {
                 m_parentSkelGeom = skelCache->getFileId(m_skelGeom->m_skpd->parent_skel_file_id);
                 return;

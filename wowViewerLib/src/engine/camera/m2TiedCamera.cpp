@@ -19,9 +19,9 @@ void m2TiedCamera::tick(animTime_t timeDelta) {
 HCameraMatrices m2TiedCamera::getCameraMatrices(float fov, float canvasAspect, float nearPlane, float farPlane) {
     mathfu::mat4 lookAtMat4 =
         mathfu::mat4::LookAt(
-            -m_lastCameraResult.target_position.xyz()+m_lastCameraResult.position.xyz(),
-            mathfu::vec3(0,0,0),
-            mathfu::vec3(0,0,1)) * mathfu::mat4::FromTranslationVector(-m_lastCameraResult.position.xyz());
+            m_lastCameraResult.target_position.xyz(),
+            m_lastCameraResult.position.xyz(),
+            mathfu::vec3(0,0,1), 1);
 
     mathfu::mat4 rotateMat = MathHelper::RotationY(m_lastCameraResult.roll);
     lookAtMat4 = rotateMat * lookAtMat4;

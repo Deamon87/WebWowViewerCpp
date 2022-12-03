@@ -320,7 +320,10 @@ set(SOURCE_FILES
         src/engine/algorithms/mathHelper_culling_sse.cpp
         src/engine/algorithms/mathHelper_culling_sse.h
         src/engine/algorithms/mathHelper_culling.cpp
-        src/engine/algorithms/mathHelper_culling.h)
+        src/engine/algorithms/mathHelper_culling.h
+        src/renderer/MapSceneRenderer.cpp
+        src/renderer/MapSceneRenderer.h
+        src/renderer/MapSceneRendererFactory.cpp src/renderer/MapSceneRendererFactory.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -494,7 +497,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp
             src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
             src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
-            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
+            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h src/renderer/vulkan/MapSceneRenderForwardVLK.cpp src/renderer/vulkan/MapSceneRenderForwardVLK.h)
     set(Vulkan_INCLUDE_DIR $ENV{VULKAN_SDK}/Include)
     IF(WIN32)
         IF (NOT Vulkan_FOUND)

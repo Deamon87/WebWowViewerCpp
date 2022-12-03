@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_4X_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE_4X_H
 
-#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureGL4x.h"
 #include "../GDeviceGL4x.h"
 

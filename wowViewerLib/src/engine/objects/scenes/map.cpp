@@ -658,7 +658,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             skyBox->setAlpha(_light.blendCoef);
             if ((_light.skyBoxFlags & 4) > 0 ) {
                 //In this case conus is still rendered been, but all values are final fog values.
-                auto fdd = cullStage->frameDepedantData;
+                auto fdd = cullStage->frameDependentData;
                 fdd->overrideValuesWithFinalFog = true;
             }
 
@@ -718,16 +718,16 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 //        horizontAmbientColor *= ambientMult;
 
         if (config->glowSource == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->currentGlow = currentGlow;
         } else if (config->glowSource == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->currentGlow = config->currentGlow;
         }
 
 
         if (config->globalLighting == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
 
             fdd->exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
             fdd->exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
@@ -741,7 +741,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             );
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
         } else if (config->globalLighting == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
 
             fdd->exteriorAmbientColor = config->exteriorAmbientColor;
             fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
@@ -755,26 +755,26 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
         }
 
         {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->useMinimapWaterColor = config->useMinimapWaterColor;
             fdd->useCloseRiverColorForDB = config->useCloseRiverColorForDB;
         }
         if (config->waterColorParams == EParameterSource::eDatabase)
         {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->closeRiverColor = mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
             fdd->farRiverColor = mathfu::vec4(farRiverColor[2], farRiverColor[1], farRiverColor[0], 0);
             fdd->closeOceanColor = mathfu::vec4(closeOceanColor[2], closeOceanColor[1], closeOceanColor[0], 0);
             fdd->farOceanColor = mathfu::vec4(farOceanColor[2], farOceanColor[1], farOceanColor[0], 0);
         } else if (config->waterColorParams == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->closeRiverColor = config->closeRiverColor;
             fdd->farRiverColor = config->farRiverColor;
             fdd->closeOceanColor = config->closeOceanColor;
             fdd->farOceanColor = config->farOceanColor;
         }
         if (config->skyParams == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
             fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
             fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
@@ -909,7 +909,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
         //In case of no data -> disable the fog
         {
-            auto fdd = cullStage->frameDepedantData;
+            auto fdd = cullStage->frameDependentData;
             fdd->FogDataFound = !combinedResults.empty();
 //            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
 //            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
@@ -1621,7 +1621,7 @@ void Map::produceUpdateStage(HUpdateStage &updateStage) {
     transparentMeshes.reserve(30000);
 
     auto cullStage = updateStage->cullResult;
-    auto fdd = cullStage->frameDepedantData;
+    auto fdd = cullStage->frameDependentData;
 
     if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
         (cullStage->viewsHolder.getExterior() || cullStage->currentWmoGroupIsExtLit)) {
@@ -1765,7 +1765,7 @@ void Map::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage
         auto cullStage = updateStage->cullResult;
 
         //Create scenewide uniform
-        resultDrawStage->frameDepedantData = updateStage->cullResult->frameDepedantData;
+        resultDrawStage->frameDepedantData = updateStage->cullResult->frameDependentData;
 
         opaqueMeshes->meshes.insert(std::end(opaqueMeshes->meshes),
                                     std::begin(updateStage->opaqueMeshes->meshes),

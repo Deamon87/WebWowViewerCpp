@@ -44,10 +44,6 @@ struct FrameDepedantData {
     mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
     mathfu::vec3 exteriorDirectColorDir;
 
-    mathfu::vec4 interiorAmbientColor;
-    mathfu::vec4 interiorSunColor;
-    mathfu::vec3 interiorSunDir;
-
 //Sky params
     bool overrideValuesWithFinalFog = false;
 
@@ -88,23 +84,10 @@ struct FrameDepedantData {
 
 
 struct DrawStage {
-    HCameraMatrices matricesForRendering;
-    HGUniformBufferChunk sceneWideBlockVSPSChunk;
-
-    HFrameDepedantData frameDepedantData;
-    HMeshesToRender opaqueMeshes;
-    HMeshesToRender transparentMeshes = nullptr;
     std::vector<HDrawStage> drawStageDependencies;
 
-    bool invertedZ = false;
-
-    bool setViewPort = false;
-    ViewPortDimensions viewPortDimensions;
-
-    bool clearScreen = false;
     mathfu::vec4 clearColor;
 
-    HFrameBuffer target = nullptr;
 };
 typedef std::shared_ptr<DrawStage> HDrawStage;
 

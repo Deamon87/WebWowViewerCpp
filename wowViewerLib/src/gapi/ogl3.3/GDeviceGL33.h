@@ -62,6 +62,8 @@ public:
     GDeviceGL33();
     ~GDeviceGL33() override {};
 
+    GDeviceType getDeviceType() override {return GDeviceType::GOpenGL3; };
+
     void initialize() override;
     void reset() override;
 

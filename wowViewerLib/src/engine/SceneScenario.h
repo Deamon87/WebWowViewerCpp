@@ -25,9 +25,11 @@ class FrameScenario;
 #include "DrawStage.h"
 #include "objects/wmo/wmoObject.h"
 
-struct CullStage {
-//Input:
+
+struct FrameInputParams {
     HCameraMatrices matricesForCulling;
+    HCameraMatrices cameraMatricesForRendering;
+    HCameraMatrices cameraMatricesForDebugCamera;
     HScene scene;
 
     //Just for proper BoundingBox calculus
@@ -35,12 +37,21 @@ struct CullStage {
     float deltaY = 0.0f;
     float deltaZ = 0.0f;
 
-//Output:
-    int adtAreadId = -1;
+    //Time advance
+    animTime_t delta;
 
+    //Parameters for framebuffer
+    ViewPortDimensions viewPortDimensions;
+    bool invertedZ = false;
+    bool clearScreen = false;
+};
+
+struct MapRenderPlan {
+    int adtAreadId = -1;
     int areaId = -1;
     int parentAreaId = -1;
 
+    //Result of culling test
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     bool currentWmoGroupIsExtLit = false;
     bool currentWmoGroupShowExtSkybox = false;
@@ -49,31 +60,16 @@ struct CullStage {
 
     FrameViewsHolder viewsHolder;
 
-    HFrameDepedantData frameDepedantData = std::make_shared<FrameDepedantData>();
+    HFrameDepedantData frameDependentData = std::make_shared<FrameDepedantData>();
 
+    //Objects for update and rendering
     std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
     M2ObjectListContainer m2Array;
     WMOListContainer wmoArray;
     WMOGroupListContainer wmoGroupArray;
+
+    //Settings for the frame
 };
-typedef std::shared_ptr<CullStage> HCullStage;
-
-struct UpdateStage {
-//input
-    HCullStage cullResult;
-    animTime_t delta;
-    HCameraMatrices cameraMatrices;
-
-//Output
-    HMeshesToRender opaqueMeshes;
-    HMeshesToRender transparentMeshes;
-
-    std::vector<HGUniformBufferChunk> uniformBufferChunks;
-    std::vector<HGTexture> texturesForUpload;
-    //
-};
-typedef std::shared_ptr<UpdateStage> HUpdateStage;
-
 
 class SceneComposer;
 
@@ -81,18 +77,8 @@ class SceneComposer;
 
 class FrameScenario {
     friend class SceneComposer;
-    struct DrawStageLinkage {
-        HScene scene;
-        std::vector<HUpdateStage> updateStages;
-        HDrawStage drawStage;
-    };
 private:
-    std::vector<HCullStage> cullStages;
-    std::vector<HUpdateStage> updateStages;
 
-    std::vector <DrawStageLinkage> drawStageLinks;
-
-    HDrawStage lastDrawStage;
 public:
     HCullStage addCullStage(HCameraMatrices matricesForCulling, std::shared_ptr<IScene> scene, mathfu::vec3 deltas = {0,0,0});
     HUpdateStage addUpdateStage(HCullStage &cullStage, animTime_t deltaTime, HCameraMatrices matricesForUpdate);
