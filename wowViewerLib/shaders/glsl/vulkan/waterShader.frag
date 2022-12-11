@@ -27,11 +27,12 @@ layout(std140, binding=4) uniform meshWideBlockPS {
 };
 
 void main() {
-    vec3 finalColor = color.rgb+texture(uTexture, vTextCoords).rgb;
+    vec3 matDiffuse = color.rgb+texture(uTexture, vTextCoords).rgb;
 
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
     //BlendMode is always GxBlend_Alpha
-    finalColor = makeFog(fogData, vec4(finalColor, 1.0), vPosition.xyz, sunDir.xyz, 2).rgb;
+    vec3 finalColor = makeFog(fogData, vec4(matDiffuse, 1.0), vPosition.xyz, sunDir.xyz, 2).rgb;
+
     outputColor = vec4(finalColor, 0.7);
 }

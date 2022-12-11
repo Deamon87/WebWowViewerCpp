@@ -14,7 +14,7 @@ private:
 
 
 public:
-    GUniformBufferChunk33(size_t size) : IUniformBufferChunk(size) {}
+    GUniformBufferChunk33(size_t size, size_t realSize = -1) : IUniformBufferChunk(size, realSize) {}
 
     void setUniformBuffer(HGUniformBuffer uniformBuffer) {
         m_uniformBuffer = uniformBuffer;

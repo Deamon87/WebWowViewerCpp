@@ -45,14 +45,26 @@ private:
 
     std::array<HCullStage, 4> stackOfCullStages;
 
+    HUpdateStage m_candidateUS = nullptr;
     HDrawStage m_candidateDS = nullptr;
     HCullStage m_candidateCS = nullptr;
+
+    float m_zFar = 3000.0f;
+    float m_maxZ = 1000.0f;
+    float m_minZ = -1000.0f;
+
+
     int framesReady = 0;
     bool prepearCandidate = false;
 
     mathfu::mat4 getOrthoMatrix();
     mathfu::vec3 getLookAtVec3();
     void startNextScenario();
+    void resetCandidate();
+
+    void calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoord,
+                mathfu::vec3 &maxCoord, const CAaBox &adtBox2d,
+                int adt_x, int adt_y, bool applyAdtChecks);
 
     mathfu::mat4 genTempProjectMatrix();
 public:

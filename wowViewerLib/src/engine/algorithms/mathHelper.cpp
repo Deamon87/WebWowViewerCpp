@@ -174,6 +174,8 @@ bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
 }
 
 std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &points){
+    if (points.empty())
+        return {};
     std::stack<Point> hullPoints = grahamScan(points);
     if (hullPoints.size() <= 2) {
         return std::vector<mathfu::vec3>(0);

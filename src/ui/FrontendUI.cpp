@@ -160,31 +160,48 @@ void FrontendUI::showCurrentStatsDialog() {
 
         if (ImGui::CollapsingHeader("Elapsed times")) {
             ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
+            ImGui::Text("- Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
+            ImGui::Text("- Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
+            ImGui::Text("- Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
+            ImGui::Text("- Elapsed time on cullUpdateLightsFromDBCounter: %.3f ms", m_api->getConfig()->cullUpdateLightsFromDBCounter);
+            ImGui::Text("- Elapsed time on cullExterior: %.3f ms", m_api->getConfig()->cullExterior);
+            ImGui::Text("-- Elapsed time on cullExteriorWDLCull: %.3f ms", m_api->getConfig()->cullExteriorWDLCull);
+            ImGui::Text("-- Elapsed time on cullExteriorGetCands: %.3f ms", m_api->getConfig()->cullExteriorGetCands);
+            ImGui::Text("-- Elapsed time on cullExterioFrustumWMO: %.3f ms", m_api->getConfig()->cullExterioFrustumWMO);
+            ImGui::Text("-- Elapsed time on cullExterioFrustumM2: %.3f ms", m_api->getConfig()->cullExterioFrustumM2);
+            ImGui::Text("- Elapsed time on cullSkyDoms: %.3f ms", m_api->getConfig()->cullSkyDoms);
+            ImGui::Text("- Elapsed time on cullCombineAllObjects: %.3f ms", m_api->getConfig()->cullCombineAllObjects);
+
+            ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
+
             ImGui::Text("Elapsed time on update : %.3f ms", m_api->getConfig()->updateTimePerFrame);
-            ImGui::Text("Elapsed time on m2 update : %.3f ms", m_api->getConfig()->m2UpdateTime);
+            ImGui::Text("- Elapsed time on startUpdateForNexFrame: %.3f ms", m_api->getConfig()->startUpdateForNexFrame);
+            ImGui::Text("- Elapsed time on singleUpdateCNT: %.3f ms", m_api->getConfig()->singleUpdateCNT);
+            ImGui::Text("-- Elapsed time on mapProduceUpdateTime : %.3f ms", m_api->getConfig()->mapProduceUpdateTime);
+            ImGui::Text("--- Elapsed time on map update : %.3f ms", m_api->getConfig()->mapUpdateTime);
+            ImGui::Text("---- Elapsed time on m2 update : %.3f ms", m_api->getConfig()->m2UpdateTime);
+            ImGui::Text("---- Elapsed time on wmo group update : %.3f ms", m_api->getConfig()->wmoGroupUpdateTime);
+            ImGui::Text("---- Elapsed time on adtUpdate update : %.3f ms", m_api->getConfig()->adtUpdateTime);
+            ImGui::Text("---- Elapsed time on m2 calc distance : %.3f ms", m_api->getConfig()->m2calcDistanceTime);
+            ImGui::Text("---- Elapsed time on adt cleanup : %.3f ms", m_api->getConfig()->adtCleanupTime);
+            ImGui::Text("--- Elapsed time on interiorViewCollectMeshTime : %.3f ms", m_api->getConfig()->interiorViewCollectMeshTime);
+            ImGui::Text("--- Elapsed time on exteriorViewCollectMeshTime : %.3f ms", m_api->getConfig()->exteriorViewCollectMeshTime);
+            ImGui::Text("--- Elapsed time on m2CollectMeshTime : %.3f ms", m_api->getConfig()->m2CollectMeshTime);
+            ImGui::Text("--- Elapsed time on sortMeshTime : %.3f ms", m_api->getConfig()->sortMeshTime);
+            ImGui::Text("--- Elapsed time on collectBuffersTime : %.3f ms", m_api->getConfig()->collectBuffersTime);
+            ImGui::Text("--- Elapsed time on sortBuffersTime : %.3f ms", m_api->getConfig()->sortBuffersTime);
+
+            ImGui::Text("- Elapsed time on produceDrawStage: %.3f ms", m_api->getConfig()->produceDrawStage);
+            ImGui::Text("- Elapsed time on meshesCollectCNT: %.3f ms", m_api->getConfig()->meshesCollectCNT);
+            ImGui::Text("- Elapsed time on updateBuffersCNT: %.3f ms", m_api->getConfig()->updateBuffersCNT);
+            ImGui::Text("- Elapsed time on updateBuffersDeviceCNT: %.3f ms", m_api->getConfig()->updateBuffersDeviceCNT);
+            ImGui::Text("- Elapsed time on postLoadCNT: %.3f ms", m_api->getConfig()->postLoadCNT);
+            ImGui::Text("- Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
+            ImGui::Text("- Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
+
             ImGui::Text("Elapsed time on wait for begin update: %.3f ms", m_api->hDevice->getWaitForUpdate());
 
-            ImGui::Text("Elapsed time on singleUpdateCNT: %.3f ms", m_api->getConfig()->singleUpdateCNT);
-            ImGui::Text("Elapsed time on meshesCollectCNT: %.3f ms", m_api->getConfig()->meshesCollectCNT);
-            ImGui::Text("Elapsed time on updateBuffersCNT: %.3f ms", m_api->getConfig()->updateBuffersCNT);
-            ImGui::Text("Elapsed time on updateBuffersDeviceCNT: %.3f ms", m_api->getConfig()->updateBuffersDeviceCNT);
-            ImGui::Text("Elapsed time on postLoadCNT: %.3f ms", m_api->getConfig()->postLoadCNT);
-            ImGui::Text("Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
-            ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
-            ImGui::Text("Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
 
-            ImGui::Text("Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
-            ImGui::Text("Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
-            ImGui::Text("Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
-            ImGui::Text("Elapsed time on cullUpdateLightsFromDBCounter: %.3f ms", m_api->getConfig()->cullUpdateLightsFromDBCounter);
-            ImGui::Text("Elapsed time on cullExterior: %.3f ms", m_api->getConfig()->cullExterior);
-            ImGui::Text("Elapsed time on cullExteriorWDLCull: %.3f ms", m_api->getConfig()->cullExteriorWDLCull);
-            ImGui::Text("Elapsed time on cullExteriorSetDecl: %.3f ms", m_api->getConfig()->cullExteriorSetDecl);
-            ImGui::Text("Elapsed time on cullExteriorGetCands: %.3f ms", m_api->getConfig()->cullExteriorGetCands);
-            ImGui::Text("Elapsed time on cullExterioFrustumWMO: %.3f ms", m_api->getConfig()->cullExterioFrustumWMO);
-            ImGui::Text("Elapsed time on cullExterioFrustumM2: %.3f ms", m_api->getConfig()->cullExterioFrustumM2);
-            ImGui::Text("Elapsed time on cullSkyDoms: %.3f ms", m_api->getConfig()->cullSkyDoms);
-            ImGui::Text("Elapsed time on cullCombineAllObjects: %.3f ms", m_api->getConfig()->cullCombineAllObjects);
             ImGui::Separator();
         }
 
@@ -246,6 +263,11 @@ void FrontendUI::showCurrentStatsDialog() {
                             cullStageData->frameDepedantData->FogHeightCoefficients.y,
                             cullStageData->frameDepedantData->FogHeightCoefficients.z);
                 ImGui::Separator();
+            }
+        }
+        if (ImGui::CollapsingHeader("Current light params")) {
+            if (cullStageData->frameDepedantData != nullptr) {
+                ImGui::Text("Glow: %.3f", cullStageData->frameDepedantData->currentGlow);
             }
         }
 
@@ -707,6 +729,9 @@ void FrontendUI::showQuickLinksDialog() {
     }
     if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
         openWMOSceneByfdid(3314067);
+    }
+    if (ImGui::Button("(WMO) Gazebo 590182", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(590182);
     }
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2756726);
@@ -1263,7 +1288,7 @@ void FrontendUI::showSettingsDialog() {
 //#define logExecution { \
 //    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
 //}
-void FrontendUI::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto m_device = m_api->hDevice;
 
     logExecution
@@ -1525,7 +1550,7 @@ void FrontendUI::showMakeScreenshotDialog() {
    }
 }
 
-void FrontendUI::produceUpdateStage(HUpdateStage updateStage) {
+void FrontendUI::produceUpdateStage(HUpdateStage &updateStage) {
     this->update(updateStage);
 
 
@@ -1633,12 +1658,7 @@ HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int hei
 }
 
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
-    if (minimapGenerator != nullptr &&
-        (
-            minimapGenerator->getCurrentMode() == EMGMode::eScreenshotGeneration ||
-            minimapGenerator->getCurrentMode() == EMGMode::eBoundingBoxCalculation
-        )
-    ) {
+    if (minimapGenerator != nullptr && minimapGenerator->getCurrentMode() != EMGMode::eNone) {
         minimapGenerator->process();
     }
 
@@ -1693,7 +1713,8 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
         auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
                                               false,
-                                              m_api->getConfig()->doubleCameraDebug, m_api->getConfig()->swapMainAndDebug,
+                                              m_api->getConfig()->doubleCameraDebug,
+                                              m_api->getConfig()->swapMainAndDebug,
                                               *m_api,
                                               currentScene, cullStageData);
         if (drawStage != nullptr) {
@@ -2328,15 +2349,23 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
 
                     const int imageSize = 512;
 
-                    if (ImGui::ImageButton2(texture, "previewImage", ImVec2(imageSize, imageSize))) {
+                    if (ImGui::ImageButton2(texture, "previewImage",
+                                            ImVec2(imageSize, imageSize),
+                                            ImVec2(0,1),
+                                            ImVec2(1,0)))
+                    {
                         auto mousePos = ImGui::GetMousePos();
                         ImGuiStyle &style = ImGui::GetStyle();
 
                         mousePos.x += -ImGui::GetWindowPos().x - style.WindowPadding.x;
                         mousePos.y += -ImGui::GetWindowPos().y - style.WindowPadding.y;
 
-                        previewX = (0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewX;
-                        previewY = (0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension() + previewY;
+
+                        previewX = ((0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewX;
+                        previewY = ((0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewY;
+
+
+
                         minimapGenerator->setLookAtPoint(previewX, previewY);
                     };
 

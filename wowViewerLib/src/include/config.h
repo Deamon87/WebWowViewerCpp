@@ -148,9 +148,24 @@ public:
     //Stuff to display in UI
     double cullingTimePerFrame = 0;
     double updateTimePerFrame = 0;
+    double mapUpdateTime = 0;
     double m2UpdateTime = 0;
+    double wmoGroupUpdateTime = 0;
+    double adtUpdateTime = 0;
+    double m2calcDistanceTime = 0;
+    double adtCleanupTime = 0;
 
+    double mapProduceUpdateTime = 0;
+    double interiorViewCollectMeshTime = 0;
+    double exteriorViewCollectMeshTime = 0;
+    double m2CollectMeshTime = 0;
+    double sortMeshTime = 0;
+    double collectBuffersTime = 0;
+    double sortBuffersTime = 0;
+
+    double startUpdateForNexFrame = 0;
     double singleUpdateCNT = 0;
+    double produceDrawStage = 0;
     double meshesCollectCNT = 0;
     double updateBuffersCNT = 0;
     double updateBuffersDeviceCNT = 0;

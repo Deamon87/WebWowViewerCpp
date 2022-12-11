@@ -44,9 +44,9 @@ typedef std::shared_ptr<GMeshGL33> HGL33Mesh;
 
 
 
-#define OPENGL_DGB_MESSAGE 1
-
 #if defined(__EMSCRIPTEN__) || defined(__APPLE__)
+#define OPENGL_DGB_MESSAGE 0
+#else
 #define OPENGL_DGB_MESSAGE 0
 #endif
 
@@ -109,7 +109,7 @@ public:
     HGVertexBufferBindings createVertexBufferBindings() override;
     //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
     HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override;
-    HGUniformBufferChunk createUniformBufferChunk(size_t size) override;
+    HGUniformBufferChunk createUniformBufferChunk(size_t size, size_t realSize = 0) override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;

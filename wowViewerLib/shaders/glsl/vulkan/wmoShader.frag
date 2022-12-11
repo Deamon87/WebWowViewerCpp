@@ -159,7 +159,7 @@ void main() {
         finalOpacity = tex.a;
     } else if (uPixelShader == 7) { //MapObjTwoLayerEnvMetal
 
-        vec4 colorMix = mix(tex2, tex, vColor2.a);
+        vec4 colorMix = mix(tex, tex2, vColor2.a);
 
         matDiffuse = colorMix.rgb ;
         emissive = (colorMix.rgb * colorMix.a) * tex3.rgb * distFade;
@@ -221,7 +221,7 @@ void main() {
         finalOpacity = 1.0;
     } else if (uPixelShader == 15) { //MapObjTwoLayerDiffuseMod2x
         vec3 layer1 = tex.rgb;
-        vec3 layer2 = mix(layer1, tex2.rbg, vec3(tex2.a));
+        vec3 layer2 = mix(layer1, tex2.rgb, vec3(tex2.a));
         vec3 layer3 = mix(layer2, layer1, vec3(vColor2.a));
 
         matDiffuse = layer3 * tex3.rgb * 2.0;
@@ -302,12 +302,12 @@ void main() {
         vec4 alphaVec2Normalized = alphaVec2 * (1.0 / dot(alphaVec2, vec4(1.0)));
 
         vec4 texMixed = tex_2 * alphaVec2Normalized.r +
-                        tex_3 * alphaVec2Normalized.b +
-                        tex_4 * alphaVec2Normalized.g +
+                        tex_3 * alphaVec2Normalized.g +
+                        tex_4 * alphaVec2Normalized.b +
                         tex_5 * alphaVec2Normalized.a;
 
         emissive = (texMixed.w * tex_1.rgb) * texMixed.rgb;
-        vec3 diffuseColor = vec3(0.0); //Probably is taken from MOMT or somewhere else
+        vec3 diffuseColor = vec3(0,0,0); //<= it's unknown where this color comes from. But it's not MOMT chunk
         matDiffuse = (diffuseColor - texMixed.rgb) * vColorSecond.a + texMixed.rgb;
     }
 

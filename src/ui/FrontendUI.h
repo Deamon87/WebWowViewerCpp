@@ -54,16 +54,16 @@ public:
     void setAnimationId(int animationId) override {};
     void setMeshIds(std::vector<uint8_t> &meshIds) override {};
 
-    void produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
-    void produceUpdateStage(HUpdateStage updateStage) override;
+    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void produceUpdateStage(HUpdateStage &updateStage) override;
 
-    void checkCulling(HCullStage cullStage) override {};
+    void checkCulling(HCullStage &cullStage) override {};
 
 
-    void doPostLoad(HCullStage cullStage) override {};
+    void doPostLoad(HCullStage &cullStage) override {};
 
-    void update(HUpdateStage updateStage) {};
-    void updateBuffers(HUpdateStage updateStage) override {};
+    void update(HUpdateStage &updateStage) {};
+    void updateBuffers(HUpdateStage &updateStage) override {};
 
 
     int getCameraNum() override {return 0;};
@@ -88,7 +88,7 @@ public:
 private:
     ImGuiContext* imguiContext = nullptr;
 
-    std::array<HCullStage, 4>   m_cullstages = {};
+    std::array<HCullStage, 4> m_cullstages = {};
 
     std::shared_ptr<CMinimapDataDB> m_minimapDB;
 

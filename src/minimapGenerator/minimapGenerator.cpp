@@ -490,9 +490,9 @@ void MinimapGenerator::setupCameraData() {
         m_currentScene->setMandatoryADTs(adtVec);
     }
 
-    std::cout << "(Debug) m_x = " << m_x << " m_y = " << m_y <<
-        ", x = " << (max.x + min.x) * 0.5f <<
-        ", y = " << (max.y + min.y) * 0.5f << std::endl;
+//    std::cout << "(Debug) m_x = " << m_x << " m_y = " << m_y <<
+//        ", x = " << (max.x + min.x) * 0.5f <<
+//        ", y = " << (max.y + min.y) * 0.5f << std::endl;
 
     setLookAtPoint(
         (max.x + min.x) * 0.5,
@@ -505,15 +505,12 @@ void MinimapGenerator::setZoom(float zoom) {
 }
 
 void MinimapGenerator::setLookAtPoint(float x, float y) {
-    mathfu::vec3 lookAtPoint = mathfu::vec3(x, y, 0);
-
-    lookAtPoint = lookAtPoint;
-    //std::cout << "lookAtPoint = (" << lookAtPoint.x << ", " << lookAtPoint.y << ", " << lookAtPoint.z << ") " << std::endl;
+    mathfu::vec3 lookAtPoint2D = mathfu::vec3(x, y, 0);
 
     mathfu::vec3 lookAtVec3 = getLookAtVec3();
-    lookAtPoint -= (7000.0f*lookAtVec3);
+    mathfu::vec3 lookAtPoint = lookAtPoint2D - ((m_minZ - 10) * lookAtVec3);
 
-    mathfu::vec3 cameraPos = lookAtPoint-(3000.0f*lookAtVec3);
+    mathfu::vec3 cameraPos = lookAtPoint2D - ((m_maxZ + 10)*lookAtVec3);
 //    std::cout << "cameraPos = (" << cameraPos.x << ", " << cameraPos.y << ", " << cameraPos.z << ") " << std::endl;
 
     m_apiContainer->camera->setCameraPos(
@@ -525,16 +522,88 @@ void MinimapGenerator::setLookAtPoint(float x, float y) {
     m_apiContainer->camera->tick(0);
 }
 
+void MinimapGenerator::resetCandidate() {
+    prepearCandidate = false;
+    m_candidateDS = nullptr;
+    m_candidateCS = nullptr;
+    m_candidateUS = nullptr;
+    framesReady = 0;
+}
 
-const int waitQueueLen = 5;
+void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoord,
+                              mathfu::vec3 &maxCoord,
+                              const CAaBox &adtBox2d,
+                              int adt_x, int adt_y, bool applyAdtChecks) {
+    minCoord = mathfu::vec3(20000, 20000, 20000);
+    maxCoord = mathfu::vec3(-20000, -20000, -20000);
+
+    for (auto &m2Object: cullStage->m2Array.getDrawn()) {
+        auto objBB = m2Object->getAABB();
+
+        if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
+
+        minCoord = mathfu::vec3(
+            std::min<float>(minCoord.x, objBB.min.x),
+            std::min<float>(minCoord.y, objBB.min.y),
+            std::min<float>(minCoord.z, objBB.min.z)
+        );
+        maxCoord = mathfu::vec3(
+            std::max<float>(maxCoord.x, objBB.max.x),
+            std::max<float>(maxCoord.y, objBB.max.y),
+            std::max<float>(maxCoord.z, objBB.max.z)
+        );
+    }
+
+    for (auto &wmoObject: cullStage->wmoGroupArray.getToDraw()) {
+        auto objBB = wmoObject->getWorldAABB();
+
+        if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
+
+        minCoord = mathfu::vec3(
+            std::min<float>(minCoord.x, objBB.min.x),
+            std::min<float>(minCoord.y, objBB.min.y),
+            std::min<float>(minCoord.z, objBB.min.z)
+        );
+        maxCoord = mathfu::vec3(
+            std::max<float>(maxCoord.x, objBB.max.x),
+            std::max<float>(maxCoord.y, objBB.max.y),
+            std::max<float>(maxCoord.z, objBB.max.z)
+        );
+    }
+
+
+    for (auto &adtObjectRes: cullStage->adtArray) {
+        auto adtObj = adtObjectRes->adtObject;
+
+        if (applyAdtChecks && (adtObj->getAdtX() != adt_x || adtObj->getAdtY() != adt_y)) {
+//                std::cout << "skipping adtObj( " <<
+//                adtObj->getAdtX() << "," << adtObj->getAdtY() << " "
+//                ") for adt(" << adt_x << ", " << adt_y << ")" << std::endl;
+
+            continue;
+        }
+
+        auto objBB = adtObj->calcAABB();
+
+        minCoord = mathfu::vec3(
+            std::min<float>(minCoord.x, objBB.min.x),
+            std::min<float>(minCoord.y, objBB.min.y),
+            std::min<float>(minCoord.z, objBB.min.z)
+        );
+        maxCoord = mathfu::vec3(
+            std::max<float>(maxCoord.x, objBB.max.x),
+            std::max<float>(maxCoord.y, objBB.max.y),
+            std::max<float>(maxCoord.z, objBB.max.z)
+        );
+    }
+}
+
+const int waitQueueLen = 3;
 void MinimapGenerator::process() {
-    if (m_processor->completedAllJobs() && !m_apiContainer->hDevice->wasTexturesUploaded()) {
+    if (m_processor->completedAllJobs()) {
         framesReady++;
     } else {
-        framesReady = 0;
-        prepearCandidate = false;
-        m_candidateDS = nullptr;
-        m_candidateCS = nullptr;
+        resetCandidate();
         return;
     }
 
@@ -542,103 +611,71 @@ void MinimapGenerator::process() {
         return;
     }
 
-    if (!prepearCandidate) {
-        prepearCandidate = true;
-        m_candidateDS = nullptr;
-        m_candidateCS = nullptr;
-        framesReady = 0;
+    if (
+        (m_candidateCS != nullptr && (
+                (m_candidateCS->m2Array.getToLoadGeom().size() != 0) ||
+                (m_candidateCS->m2Array.getToLoadMain().size() != 0) ||
+                (m_candidateCS->wmoGroupArray.getToLoad().size() != 0)
+            )
+        ) ||
+        (m_candidateUS != nullptr && m_candidateUS->texturesForUpload.size() > 0)
+    ) {
+        resetCandidate();
         return;
     }
 
+    if (m_candidateDS == nullptr) {
+        prepearCandidate = true;
+        return;
+    }
 
     auto lastFrameIt = m_candidateDS;
     auto lastFrameCull = m_candidateCS;
-    m_candidateDS = nullptr;
-    m_candidateCS = nullptr;
-    prepearCandidate = false;
-    framesReady = 0;
+    resetCandidate();
 
-    if (m_mgMode == EMGMode::eBoundingBoxCalculation) {
-        int adt_x = m_x;
-        int adt_y = m_y;
+    //Check the BB and adjust minZ-maxZ
+    int adt_x = m_x;
+    int adt_y = m_y;
 
-        vec2 minAdt ={
-            AdtIndexToWorldCoordinate(adt_y+1),
-            AdtIndexToWorldCoordinate(adt_x+1)
-        };
-        vec2 maxAdt = {
-            AdtIndexToWorldCoordinate(adt_y),
-            AdtIndexToWorldCoordinate(adt_x),
-        };
+    vec2 minAdt = {
+        AdtIndexToWorldCoordinate(adt_y + 1),
+        AdtIndexToWorldCoordinate(adt_x + 1)
+    };
+    vec2 maxAdt = {
+        AdtIndexToWorldCoordinate(adt_y),
+        AdtIndexToWorldCoordinate(adt_x),
+    };
+    mathfu::vec3 minCoord = mathfu::vec3(20000, 20000, 20000);
+    mathfu::vec3 maxCoord = mathfu::vec3(-20000, -20000, -20000);
+    {
+
         CAaBox adtBox2d = {
             mathfu::vec3_packed(mathfu::vec3(minAdt.x, minAdt.y, 0)),
             mathfu::vec3_packed(mathfu::vec3(maxAdt.x, maxAdt.y, 0))
         };
 
-        mathfu::vec3 minCoord = mathfu::vec3(20000, 20000, 20000);
-        mathfu::vec3 maxCoord = mathfu::vec3(-20000, -20000, -20000);
+        this->calcBB(lastFrameCull, minCoord, maxCoord, adtBox2d, adt_x, adt_y, m_mgMode == EMGMode::eBoundingBoxCalculation);
+        float zFar = (minCoord - maxCoord).Length();
+        float maxZ = maxCoord.z;
+        float minZ = minCoord.z;
 
-        for (auto &m2Object: lastFrameCull->m2Array.getCandidates()) {
-            auto objBB = m2Object->getAABB();
-
-            if (!MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
-
-            minCoord = mathfu::vec3(
-                std::min<float>(minCoord.x, objBB.min.x),
-                std::min<float>(minCoord.y, objBB.min.y),
-                std::min<float>(minCoord.z, objBB.min.z)
-            );
-            maxCoord = mathfu::vec3(
-                std::max<float>(maxCoord.x, objBB.max.x),
-                std::max<float>(maxCoord.y, objBB.max.y),
-                std::max<float>(maxCoord.z, objBB.max.z)
-            );
-        }
-
-        for (auto &wmoObject: lastFrameCull->wmoArray.getCandidates()) {
-            auto objBB = wmoObject->getAABB();
-            if (!MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
-
-            minCoord = mathfu::vec3(
-                std::min<float>(minCoord.x, objBB.min.x),
-                std::min<float>(minCoord.y, objBB.min.y),
-                std::min<float>(minCoord.z, objBB.min.z)
-            );
-            maxCoord = mathfu::vec3(
-                std::max<float>(maxCoord.x, objBB.max.x),
-                std::max<float>(maxCoord.y, objBB.max.y),
-                std::max<float>(maxCoord.z, objBB.max.z)
-            );
-        }
-
-
-        for (auto &adtObjectRes: lastFrameCull->adtArray) {
-            auto adtObj = adtObjectRes->adtObject;
-            if (adtObj->getAdtX() != adt_x || adtObj->getAdtY() != adt_y) {
-                std::cout << "skipping adtObj( " <<
-                adtObj->getAdtX() << "," << adtObj->getAdtY() << " "
-                ") for adt(" << adt_x << ", " << adt_y << ")" << std::endl;
-
-                continue;
+        if (!lastFrameCull->m2Array.getDrawn().empty() || !lastFrameCull->adtArray.empty() ||
+            !lastFrameCull->wmoGroupArray.getToDraw().empty()) {
+            if (minCoord.x < 20000 && maxCoord.x > -20000) {
+                if (zFar > m_zFar || maxZ > m_maxZ || minZ < m_minZ) {
+                    m_zFar = std::max<float>(zFar, m_zFar);
+                    m_maxZ = std::max<float>(maxZ, m_maxZ);
+                    m_minZ = std::min<float>(minZ, m_minZ);
+                    resetCandidate();
+                    setupCameraData();
+                    return;
+                }
             }
-
-            auto objBB = adtObj->calcAABB();
-            minCoord = mathfu::vec3(
-                std::min<float>(minCoord.x, objBB.min.x),
-                std::min<float>(minCoord.y, objBB.min.y),
-                std::min<float>(minCoord.z, objBB.min.z)
-            );
-            maxCoord = mathfu::vec3(
-                std::max<float>(maxCoord.x, objBB.max.x),
-                std::max<float>(maxCoord.y, objBB.max.y),
-                std::max<float>(maxCoord.z, objBB.max.z)
-            );
         }
+    }
 
-        std::cout << "minCoord = (" << minCoord.x << ", " << minCoord.y << ", " << minCoord.z << ")" << std::endl;
-        std::cout << "maxCoord = (" << maxCoord.x << ", " << maxCoord.y << ", " << maxCoord.z << ")" << std::endl;
-
-        //Set x-y limits according to current adt index, since bounding box counting process is done per ADT
+    //Conditional mode stuff
+    if (m_mgMode == EMGMode::eBoundingBoxCalculation) {
         minCoord = mathfu::vec3(
             minAdt.x,
             minAdt.y,
@@ -662,17 +699,24 @@ void MinimapGenerator::process() {
         saveDrawStageToFile(currentScenario.folderToSave, lastFrameIt);
     }
 
-    m_y--;
-    if (m_y < 0)  {
-        m_x++;
-        m_y = m_chunkHeight - 1;
-    }
+    //Apply this logic only if it's not a preview mode
+    if (m_mgMode != EMGMode::ePreview) {
+        m_y--;
+        if (m_y < 0) {
+            m_x++;
+            m_y = m_chunkHeight - 1;
+        }
 //    std::cout << "m_x = " << m_x << " out of (" << m_chunkStartX+m_chunkWidth << ") m_y = " << m_y << " out of (" << m_chunkStartY+m_chunkHeight << ")" << std::endl;
 
-    if (m_x >= m_chunkWidth) {
-        startNextScenario();
-    } else {
-        setupCameraData();
+        if (m_x >= m_chunkWidth) {
+            startNextScenario();
+        } else {
+            //reset
+            m_zFar = 10000.0f;
+            m_maxZ = 1000.0f;
+            m_minZ = -1000.0f;
+            setupCameraData();
+        }
     }
 }
 
@@ -751,9 +795,10 @@ HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) 
 
         m_lastDraw = sceneDrawStage;
         //We dont need stack in preview mode
-        if (m_mgMode != EMGMode::ePreview && prepearCandidate && m_candidateDS == nullptr) {
+        if (prepearCandidate && m_candidateDS == nullptr) {
             m_candidateDS = sceneDrawStage;
             m_candidateCS = cullStage;
+            m_candidateUS = updateStage;
         }
         stackOfCullStages[m_apiContainer->hDevice->getDrawFrameNumber()] = cullStage;
 
@@ -770,10 +815,11 @@ float MinimapGenerator::GetOrthoDimension() {
 }
 
 mathfu::mat4 MinimapGenerator::getOrthoMatrix() {
-    return mathfu::mat4::Ortho(
+    return
+        mathfu::mat4::Ortho(
         -GetOrthoDimension() / 2.0f,GetOrthoDimension() / 2.0f,
         -GetOrthoDimension() / 2.0f,GetOrthoDimension() / 2.0f,
-        1,10000
+        1,m_zFar + 10, 1
     );
 }
 

@@ -349,7 +349,7 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     return hmesh;
 }
 
-void Map::checkCulling(HCullStage cullStage) {
+void Map::checkCulling(HCullStage &cullStage) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
     cullCreateVarsCounter.beginMeasurement();
@@ -563,6 +563,8 @@ void Map::checkCulling(HCullStage cullStage) {
     }
 
     cullCombineAllObjects.endMeasurement();
+
+
 
     m_api->getConfig()->cullCreateVarsCounter           = cullCreateVarsCounter.getTimePerFrame();
     m_api->getConfig()->cullGetCurrentWMOCounter        = cullGetCurrentWMOCounter.getTimePerFrame();
@@ -1319,7 +1321,7 @@ void Map::createAdtFreeLamdas() {
 
 }
 
-void Map::doPostLoad(HCullStage cullStage) {
+void Map::doPostLoad(HCullStage &cullStage) {
     int processedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
@@ -1397,7 +1399,8 @@ void Map::doPostLoad(HCullStage cullStage) {
 
 
 
-void Map::update(HUpdateStage updateStage) {
+void Map::update(HUpdateStage &updateStage) {
+    mapUpdateCounter.beginMeasurement();
     mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
     mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
     mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
@@ -1418,31 +1421,36 @@ void Map::update(HUpdateStage updateStage) {
             }, tbb::simple_partitioner());
 
         m2UpdateframeCounter.endMeasurement();
-
-        m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
     }
 
+    wmoGroupUpdate.beginMeasurement();
     for (const auto &wmoGroupObject : updateStage->cullResult->wmoGroupArray.getToDraw()) {
         if (wmoGroupObject == nullptr) continue;
         wmoGroupObject->update();
     }
+    wmoGroupUpdate.endMeasurement();
 
+    adtUpdate.beginMeasurement();
     for (const auto &adtObjectRes : updateStage->cullResult->adtArray) {
         adtObjectRes->adtObject->update(deltaTime);
     }
+    adtUpdate.endMeasurement();
 
     //2. Calc distance every 100 ms
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
+    m2calcDistanceCounter.beginMeasurement();
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
           [&](tbb::blocked_range<size_t> r) {
               for (size_t i = r.begin(); i != r.end(); ++i) {
                   auto &m2Object = m2ToDraw[i];
                   if (m2Object == nullptr) continue;
                   m2Object->calcDistance(cameraVec3);
               }
-          }
+          }, tbb::auto_partitioner()
     );
+    m2calcDistanceCounter.endMeasurement();
 
     //Cleanup ADT every 10 seconds
+    adtCleanupCounter.beginMeasurement();
     if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
@@ -1458,12 +1466,21 @@ void Map::update(HUpdateStage updateStage) {
 
         adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
     }
+    adtCleanupCounter.endMeasurement();
     this->m_currentTime += updateStage->delta;
 
+    mapUpdateCounter.endMeasurement();
+
+    m_api->getConfig()->mapUpdateTime = mapUpdateCounter.getTimePerFrame();
+    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
+    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
+    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
+    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
+    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
     //Collect meshes
 }
 
-void Map::updateBuffers(HUpdateStage updateStage) {
+void Map::updateBuffers(HUpdateStage &updateStage) {
     auto cullStage = updateStage->cullResult;
 
     for (auto &m2Object : cullStage->m2Array.getDrawn()) {
@@ -1580,7 +1597,8 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }
-void Map::produceUpdateStage(HUpdateStage updateStage) {
+void Map::produceUpdateStage(HUpdateStage &updateStage) {
+    mapProduceUpdateCounter.beginMeasurement();
     this->update(updateStage);
 
     //Create meshes
@@ -1589,6 +1607,9 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
 
     auto &opaqueMeshes = updateStage->opaqueMeshes->meshes;
     auto transparentMeshes = std::vector<HGMesh>();
+
+    opaqueMeshes.reserve(30000);
+    transparentMeshes.reserve(30000);
 
     auto cullStage = updateStage->cullResult;
     auto fdd = cullStage->frameDepedantData;
@@ -1609,14 +1630,17 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
     }
 
     // Put everything into one array and sort
+    interiorViewCollectMeshCounter.beginMeasurement();
     bool renderPortals = m_api->getConfig()->renderPortals;
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
         view->collectMeshes(opaqueMeshes, transparentMeshes);
         if (renderPortals) {
             view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
         }
-    };
+    }
+    interiorViewCollectMeshCounter.endMeasurement();
 
+    exteriorViewCollectMeshCounter.beginMeasurement();
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
@@ -1626,30 +1650,9 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
             }
         }
     }
+    exteriorViewCollectMeshCounter.endMeasurement();
 
-    std::set<std::shared_ptr<M2Object>> m2ObjectsRendered;
-
-//    for (auto &view : vector) {
-//        (view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
-//    }
-
-//    M2ObjectListContainer s;
-//    for (auto i : m2ObjectsRendered)
-//        s.insert(i);
-//    m2ObjectsRendered.assign( s.begin(), s.end() );
-
-//    std::set<std::shared_ptr<M2Object>> s;
-//    unsigned size = m2ObjectsRendered.size();
-//    for( unsigned i = 0; i < size; ++i ) s.insert( m2ObjectsRendered[i] );
-//    m2ObjectsRendered.assign( s.begin(), s.end() );
-
-//    if (m2ObjectsRendered.size() > 2) {
-//        tbb::parallel_sort(m2ObjectsRendered.begin(), m2ObjectsRendered.end(),
-//                           [](auto &first, auto &end) { return first < end; }
-//        );
-//        m2ObjectsRendered.erase(unique(m2ObjectsRendered.begin(), m2ObjectsRendered.end()), m2ObjectsRendered.end());
-//    }
-
+    m2CollectMeshCounter.beginMeasurement();
     if (m_api->getConfig()->renderM2) {
         for (auto &m2Object : cullStage->m2Array.getDrawn()) {
             if (m2Object == nullptr) continue;
@@ -1657,15 +1660,15 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
             m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
         }
     }
+    m2CollectMeshCounter.endMeasurement();
 
     //No need to sort array which has only one element
+    sortMeshCounter.beginMeasurement();
     if (transparentMeshes.size() > 1) {
         tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(),
             #include "../../../gapi/interface/sortLambda.h"
         );
-//        std::sort(std::execution::par_unseq, transparentMeshes.begin(), transparentMeshes.end(),
-//            #include "../../../gapi/interface/sortLambda.h"
-//        );
+
         updateStage->transparentMeshes->meshes = transparentMeshes;
 
     } else {
@@ -1674,10 +1677,35 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
             targetTranspMeshes.push_back(transparentMeshes[i]);
         }
     }
+    sortMeshCounter.endMeasurement();
+
+    //Collect textures for upload
+    auto &textureToUpload = updateStage->texturesForUpload;
+    textureToUpload.reserve(10000);
+    for (auto &mesh: updateStage->transparentMeshes->meshes) {
+        for (auto &text : mesh->texture()) {
+            if (text != nullptr && !text->getIsLoaded()) {
+                textureToUpload.push_back(text);
+            }
+        }
+    }
+    for (auto &mesh: updateStage->opaqueMeshes->meshes) {
+        for (auto &text : mesh->texture()) {
+            if (text != nullptr && !text->getIsLoaded()) {
+                textureToUpload.push_back(text);
+            }
+        }
+    }
+
+    tbb::parallel_sort(textureToUpload.begin(), textureToUpload.end(),
+                       [](auto &first, auto &end) { return first < end; }
+    );
+    textureToUpload.erase(unique(textureToUpload.begin(), textureToUpload.end()), textureToUpload.end());
 
     //1. Collect buffers
+    collectBuffersCounter.beginMeasurement();
     std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
-    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 3);
+    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 5);
     int renderIndex = 0;
     for (const auto &mesh : opaqueMeshes) {
         for (int i = 0; i < 5; i++ ) {
@@ -1697,14 +1725,27 @@ void Map::produceUpdateStage(HUpdateStage updateStage) {
             }
         }
     }
+    collectBuffersCounter.endMeasurement();
 
+    sortBuffersCounter.beginMeasurement();
     tbb::parallel_sort(bufferChunks.begin(), bufferChunks.end(),
                        [](auto &first, auto &end) { return first < end; }
     );
     bufferChunks.erase(unique(bufferChunks.begin(), bufferChunks.end()), bufferChunks.end());
+    sortBuffersCounter.endMeasurement();
 
+    mapProduceUpdateCounter.endMeasurement();
+
+
+    m_api->getConfig()->mapProduceUpdateTime = mapProduceUpdateCounter.getTimePerFrame();
+    m_api->getConfig()->interiorViewCollectMeshTime = interiorViewCollectMeshCounter.getTimePerFrame();
+    m_api->getConfig()->exteriorViewCollectMeshTime = exteriorViewCollectMeshCounter.getTimePerFrame();
+    m_api->getConfig()->m2CollectMeshTime = m2CollectMeshCounter.getTimePerFrame();
+    m_api->getConfig()->sortMeshTime = sortMeshCounter.getTimePerFrame();
+    m_api->getConfig()->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
+    m_api->getConfig()->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
 }
-void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
+void Map::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
     auto cullStage = updateStage->cullResult;
 
     //Create scenewide uniform
@@ -1810,9 +1851,11 @@ void Map::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage,
         //Replace all data in target drawStage with new data
         *resultDrawStage = *prevDrawStage;
     }
+
+
 }
 
-HDrawStage Map::doGaussBlur(const HDrawStage parentDrawStage, HUpdateStage &updateStage) const {
+HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const {
     if (quadBindings == nullptr)
         return nullptr;
 

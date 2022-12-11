@@ -194,9 +194,9 @@ class IDevice {
         virtual HGPUFence createFence() = 0;
 
         virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
-        virtual HGUniformBufferChunk createUniformBufferChunk(size_t size) {
+        virtual HGUniformBufferChunk createUniformBufferChunk(size_t size, size_t realSize = 0) {
             HGUniformBufferChunk h_uniformBuffer;
-            h_uniformBuffer.reset(new IUniformBufferChunk(size));
+            h_uniformBuffer.reset(new IUniformBufferChunk(size, realSize));
 
             return h_uniformBuffer;
         };

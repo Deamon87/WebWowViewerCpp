@@ -25,9 +25,9 @@ void FirstPersonOrthoStaticCamera::tick (animTime_t timeDelta) {
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
     lookAtMat =
         mathfu::mat4::LookAt(
-        camera.xyz(),
-        lookAt,
-        mathfu::vec3(0,0,1));
+            lookAt,
+            camera.xyz(),
+            mathfu::vec3(0,0,1), 1.0);
 
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);

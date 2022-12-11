@@ -536,6 +536,7 @@ void WmoGroupObject::createMeshes() {
             blockVS.VertexShader = vertexShader;
         });
 
+
         hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
 //            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();

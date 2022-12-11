@@ -52,7 +52,7 @@ public:
     void setMeshIdArray(std::vector<uint8_t> &meshIds) override ;
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) override;
     void resetReplaceParticleColor() override;
-    void doPostLoad(HCullStage cullStage) override;
+    void doPostLoad(HCullStage &cullStage) override;
 
     int getCameraNum() override ;
     std::shared_ptr<ICamera> createCamera(int cameraNum) override;
