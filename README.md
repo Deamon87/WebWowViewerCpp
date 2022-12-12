@@ -1,3 +1,5 @@
+![github actions state](https://github.com/Deamon87/WebWowViewerCpp/actions/workflows/main.yml/badge.svg?branch=master)
+
 # WebWowViewerCpp
 
 The aim of this project is to create an opensource viewer of models and maps for World of Warcraft.
@@ -6,9 +8,11 @@ There are two frontends built using this code: standalone map viewer and webgl l
 
 Webgl version of model viewer runs on https://wow.tools/mv/ page
 
+
+
 ## How to build
 
-*The following text is intended only for developers. Usual users can download ready-to-use binaries from (release)[https://github.com/Deamon87/WebWowViewerCpp/releases/] section*
+*The following text is intended only for developers. Usual users can download ready-to-use binaries from [releases] page*
 
 ### Prerequirements:
 
@@ -30,7 +34,7 @@ Otherwise, you can look at the github actions script in `.github/workflows/` fol
 
 ## How to use
 
-- Grab an app from releases
+- Grab an app from [releases] page
 - Run app
 - Open your Local Casc (File -> Open Casc Storage)
 - Update the database (File -> Update database).
@@ -38,3 +42,5 @@ Otherwise, you can look at the github actions script in `.github/workflows/` fol
 - Select a map and adjust the zoom to find the point on minimap. Select a point and click GO
 
 Happy exploring :)
+
+[releases]:https://github.com/Deamon87/WebWowViewerCpp/releases/
