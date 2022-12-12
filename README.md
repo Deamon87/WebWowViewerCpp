@@ -6,3 +6,35 @@ There are two frontends built using this code: standalone map viewer and webgl l
 
 Webgl version of model viewer runs on https://wow.tools/mv/ page
 
+## How to build
+
+*The following text is intended only for developers. Usual users can download ready-to-use binaries from (release)[https://github.com/Deamon87/WebWowViewerCpp/releases/] section*
+
+### Prerequirements:
+
+- Git
+- CMake >3.13
+- Python 3
+- Any latest compiler: MSVC/Clang/GCC
+
+### Getting sources
+
+- git clone https://github.com/Deamon87/WebWowViewerCpp.git
+- git submodule --init --recursive
+
+### Building
+
+Configure and build as usually you would do with CMake project. Lately I had issues with `makefiles`, so I recommend using `ninja` generator
+
+Otherwise, you can look at the github actions script in `.github/workflows/` folder to look at how project is built there
+
+## How to use
+
+- Grab an app from releases
+- Run app
+- Open your Local Casc (File -> Open Casc Storage)
+- Update the database (File -> Update database).
+- Open Map Selection dialog (File -> Open Map Selection)
+- Select a map and adjust the zoom to find the point on minimap. Select a point and click GO
+
+Happy exploring :)
