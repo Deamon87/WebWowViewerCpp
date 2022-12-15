@@ -1279,7 +1279,7 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.ubo[4] = nullptr;
 
     auto l_m2Geom = m_m2Geom;
-    bbBlockVS->setUpdateHandler([this, l_m2Geom](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    bbBlockVS->setUpdateHandler([this, l_m2Geom](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
         M2Data *m2Data = l_m2Geom->getM2Data();
         CAaBox &aaBox = m2Data->bounding_box;
 
@@ -1388,7 +1388,7 @@ HGM2Mesh M2Object::createWaterfallMesh() {
     meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
     meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockVS));
 
-    meshTemplate.ubo[2]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    meshTemplate.ubo[2]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
         auto &meshblockVS = self->getObject<M2::WaterfallData::meshWideBlockVS>();
         meshblockVS.bumpScale = mathfu::vec4(wfv3Data->bumpScale, 0, 0, 0);
 
@@ -1397,7 +1397,7 @@ HGM2Mesh M2Object::createWaterfallMesh() {
 
     meshTemplate.ubo[3] = nullptr;
     meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockPS));
-    meshTemplate.ubo[4]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    meshTemplate.ubo[4]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
         auto &meshblockPS = self->getObject<M2::WaterfallData::meshWideBlockPS>();
         meshblockPS.baseColor = mathfu::vec4(
             wfv3Data->basecolor.a / 255.0f,
@@ -1628,7 +1628,9 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
         }
 
         for (auto &dynMesh: dynamicMeshes) {
-            HGParticleMesh mesh = dynMesh[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
+//            int frame = m_api->hDevice->getUpdateFrameNumber();
+            int frame = 0;
+            HGParticleMesh mesh = dynMesh[frame].m_mesh;
             mesh->setRenderOrder(renderOrder);
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
@@ -1923,7 +1925,7 @@ void M2Object::createVertexBindings() {
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockVS), (m_m2Geom->m_m2Data->bones.size + 1) * sizeof(mathfu::mat4));
     fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockPS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
         auto &blockVS = self->getObject<M2::modelWideBlockVS>();
 
         blockVS.uPlacementMat = m_placementMatrix;
@@ -1931,7 +1933,7 @@ void M2Object::createVertexBindings() {
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
     });
 
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 
@@ -1964,7 +1966,8 @@ void M2Object::createVertexBindings() {
 
 void M2Object::updateDynamicMeshes() {
     auto rootMatInverse = bonesMatrices[0].Inverse();
-    auto frameNum = m_api->hDevice->getUpdateFrameNumber();
+//    auto frameNum = m_api->hDevice->getUpdateFrameNumber();
+    int frameNum = 0;
 
     for (auto &dynamicMesh: dynamicMeshes) {
         auto &dynMeshData = dynamicMesh[frameNum];
@@ -2000,11 +2003,6 @@ void M2Object::updateDynamicMeshes() {
             overrideVert.bone_indices[1] = 0;
             overrideVert.bone_indices[2] = 0;
             overrideVert.bone_indices[3] = 0;
-
-//            overrideVert.bone_weights[0] = 1;
-//            overrideVert.bone_weights[1] = 0;
-//            overrideVert.bone_weights[2] = 0;
-//            overrideVert.bone_weights[3] = 0;
         }
 
         dynMeshData.m_bufferVBO->save(skinSection->vertexCount*sizeof(M2Vertex));

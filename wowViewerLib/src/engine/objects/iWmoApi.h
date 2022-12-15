@@ -7,8 +7,6 @@
 
 #include <functional>
 #include "m2/m2Object.h"
-#include "../../gapi/interface/IDevice.h"
-
 #include "../engineClassList.h"
 #include <functional>
 

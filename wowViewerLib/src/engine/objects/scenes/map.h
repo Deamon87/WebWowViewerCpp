@@ -14,9 +14,10 @@
 #include "../iScene.h"
 #include "../objectCache.h"
 #include "../wdl/wdlObject.h"
-#include "../../SceneScenario.h"
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
+#include "../../../renderer/frame/FrameInputParams.h"
+#include "../../../renderer/mapScene/MapScenePlan.h"
 
 enum class SceneMode {
    smMap,
@@ -114,33 +115,29 @@ protected:
     std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
     std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 
-    int getCameraNum() override {return 0;};
-    std::shared_ptr<ICamera> createCamera(int cameraNum) override { return nullptr;};
-
-
     animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(
         const MathHelper::FrustumCullingData &frustumData,
         const mathfu::vec4 &cameraPos,
-        HCullStage &cullStage,
+        HMapRenderPlan &mapRenderPlan,
         M2ObjectListContainer &potentialM2,
         WMOListContainer &potentialWmo);
 
     virtual void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                        const mathfu::vec4 &cameraPos,
-                                       HCullStage &cullStage,
+                                       HMapRenderPlan &mapRenderPlan,
                                        M2ObjectListContainer &m2ObjectsCandidates,
                                        WMOListContainer &wmoCandidates);
 
     void checkADTCulling(int i, int j,
                          const MathHelper::FrustumCullingData &frustumData,
                          const mathfu::vec4 &cameraPos,
-                         HCullStage &cullStage,
+                         HMapRenderPlan &mapRenderPlan,
                          M2ObjectListContainer &m2ObjectsCandidates,
                          WMOListContainer &wmoCandidates);
 
-    virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+    virtual void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
     struct mapInnerZoneLightRecord {
@@ -205,39 +202,30 @@ public:
 //        std::cout << "Map destroyed " << std::endl;
 	};
 
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
-    void checkCulling(HCullStage &cullStage) override;
+    void makeFramePlan(FrameInputParams<HMapRenderPlan> &frameInputParams, HMapRenderPlan &mapRenderPlan);
 
-    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) override {
+    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {
         m_mandatoryADT = mandatoryADTs;
     }
-    void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) override;
-    void setAnimationId(int animationId) override {};
-    void setMeshIds(std::vector<uint8_t> &meshIds) override {};
+    void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId);
 
-    void resetAnimation() override {
-
-    }
-    virtual void setAdtConfig(HADTRenderConfigDataHolder &adtConfig) override {
+    void setAdtConfig(HADTRenderConfigDataHolder &adtConfig) {
         m_adtConfigHolder = adtConfig;
     }
 
+    void doPostLoad(const HMapRenderPlan &renderPlan);
 
-
-    void doPostLoad(HCullStage &cullStage) override;
-
-    void update(HUpdateStage &updateStage);
-    void updateBuffers(HUpdateStage &updateStage) override;
-    void produceUpdateStage(HUpdateStage &updateStage) override;
-    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) override;
+    void update(const HMapRenderPlan &renderPlan);
+    void updateBuffers(const HMapRenderPlan &renderPlan);
+//    void produceUpdateStage(HUpdateStage &updateStage) override;
+//    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,
                        int viewRenderOrder,
-                       HCullStage cullStage);
+                       HMapRenderPlan &mapRenderPlan);
 
-    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const;
+//    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const;
 
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;
@@ -246,5 +234,6 @@ private:
 
     IChunkHandlerType generateSceneWideChunk(HCameraMatrices &renderMats, Config* config);
 };
+typedef std::shared_ptr<Map> HMapScene;
 
 #endif //WEBWOWVIEWERCPP_MAP_H

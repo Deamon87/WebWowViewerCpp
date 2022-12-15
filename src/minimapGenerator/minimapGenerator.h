@@ -6,9 +6,12 @@
 #define AWEBWOWVIEWERCPP_MINIMAPGENERATOR_H
 
 #include "../../wowViewerLib/src/engine/ApiContainer.h"
-#include "../../wowViewerLib/src/engine/SceneScenario.h"
 #include "../persistance/RequestProcessor.h"
 #include "entities.h"
+#include "../../wowViewerLib/src/engine/objects/iScene.h"
+#include "../../wowViewerLib/src/renderer/mapScene/MapScenePlan.h"
+#include "../../wowViewerLib/src/renderer/frame/SceneScenario.h"
+#include "../../wowViewerLib/src/engine/objects/scenes/map.h"
 
 
 class MinimapGenerator {
@@ -37,22 +40,18 @@ private:
 
     EMGMode m_mgMode = EMGMode::eNone;
 
-    HDrawStage m_lastDraw = nullptr;
+    HFrameBuffer m_lastFrameBuffer = nullptr;
 
     struct PerSceneData {
         int mapIndex = -1;
-        HScene scene;
+        HMapScene scene;
         //Per X dimension, per Y dimension, vector of mandatory adt {x, y} coordinates
         std::vector<std::vector<std::vector<std::array<uint8_t, 2>>>> mandatoryADTMap;
     };
 
     std::vector<PerSceneData> mapRuntimeInfo;
-
-    std::array<HCullStage, 4> stackOfCullStages;
-
-    std::vector<HUpdateStage> m_candidateUS = {};
-    HDrawStage m_candidateDS = nullptr;
-    std::vector<HCullStage> m_candidateCS = {};
+    HFrameBuffer m_candidateFrameBuffer = nullptr;
+    std::vector<HMapRenderPlan> m_candidateCS = {};
 
     float m_zFar = 3000.0f;
     float m_maxZ = 1000.0f;
@@ -68,7 +67,7 @@ private:
     bool loadMaps();
     void resetCandidate();
 
-    void calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoord,
+    void calcBB(const HMapRenderPlan &mapRenderPlan, mathfu::vec3 &minCoord,
                 mathfu::vec3 &maxCoord, const CAaBox &adtBox2d,
                 int adt_x, int adt_y, bool applyAdtChecks);
 
@@ -84,8 +83,8 @@ public:
     void process();
     EMGMode getCurrentMode() { return m_mgMode;}
     void setupCameraData();
-    HDrawStage createSceneDrawStage(HFrameScenario sceneScenario);
-    HDrawStage getLastDrawStage();
+    void createSceneDrawStage(HFrameScenario sceneScenario);
+    HFrameBuffer getLastFrameBuffer();
     Config *getConfig();
 
     void getCurrentTileCoordinates(int &x, int &y, int &maxX, int &maxY) {
@@ -116,7 +115,7 @@ public:
     void startBoundingBoxCalc(ScenarioDef &scenarioDef);
     void stopBoundingBoxCalc();
 
-    void saveDrawStageToFile(std::string folderToSave, const std::shared_ptr<DrawStage> &lastFrameIt);
+    void saveDrawStageToFile(std::string folderToSave, const HFrameBuffer lastFrameBuffer);
 
     void setupCamera(const mathfu::vec3 &lookAtPoint2D, std::shared_ptr<ICamera> &camera);
 };

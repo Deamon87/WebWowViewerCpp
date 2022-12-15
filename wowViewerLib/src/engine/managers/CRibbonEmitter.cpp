@@ -148,7 +148,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 
         auto blendMode = meshTemplate.blendMode;
         auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
-        meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+        meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
             Ribbon::meshRibbonWideBlockPS& blockPS = self->getObject<Ribbon::meshRibbonWideBlockPS>();
 
             blockPS.uAlphaTest = -1.0f;
@@ -866,39 +866,39 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
 
 void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
 
-    auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
-    if (currFrame.isDead) return;
-
-    for (int i = 0; i < currFrame.m_meshes.size(); i++) {
-        auto mesh = currFrame.m_meshes[i];
-
-        mesh->setRenderOrder(renderOrder);
-        if (mesh->getIsTransparent()) {
-            transparentMeshes.push_back(mesh);
-        } else {
-            opaqueMeshes.push_back(mesh);
-        }
-    }
+//    auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+//    if (currFrame.isDead) return;
+//
+//    for (int i = 0; i < currFrame.m_meshes.size(); i++) {
+//        auto mesh = currFrame.m_meshes[i];
+//
+//        mesh->setRenderOrder(renderOrder);
+//        if (mesh->getIsTransparent()) {
+//            transparentMeshes.push_back(mesh);
+//        } else {
+//            opaqueMeshes.push_back(mesh);
+//        }
+//    }
 }
 
 void CRibbonEmitter::updateBuffers() {
 //    return;
-
-  auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
-  currentFrame.isDead = this->IsDead();
-  if (currentFrame.isDead) return;
-
-  currentFrame.m_indexVBO->uploadData((void *) m_gxIndices.data(), (int) (m_gxIndices.size() * sizeof(uint16_t)));
-  currentFrame.m_bufferVBO->uploadData((void *) m_gxVertices.data(), (int) (m_gxVertices.size() * sizeof(CRibbonVertex)));
-
-  int indexCount = m_writePos > m_readPos ?
-      2 *(m_writePos - m_readPos) + 2:
-      2 *((int)m_edges.size() + m_writePos - m_readPos) + 2;
-    for (auto mesh : currentFrame.m_meshes) {
-        mesh->setStart(2 * m_readPos * sizeof(uint16_t));
-        mesh->setEnd(indexCount);
-        mesh->setSortDistance(0);
-        mesh->setPriorityPlane(this->m_priority);
-    }
+//
+//  auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+//  currentFrame.isDead = this->IsDead();
+//  if (currentFrame.isDead) return;
+//
+//  currentFrame.m_indexVBO->uploadData((void *) m_gxIndices.data(), (int) (m_gxIndices.size() * sizeof(uint16_t)));
+//  currentFrame.m_bufferVBO->uploadData((void *) m_gxVertices.data(), (int) (m_gxVertices.size() * sizeof(CRibbonVertex)));
+//
+//  int indexCount = m_writePos > m_readPos ?
+//      2 *(m_writePos - m_readPos) + 2:
+//      2 *((int)m_edges.size() + m_writePos - m_readPos) + 2;
+//    for (auto mesh : currentFrame.m_meshes) {
+//        mesh->setStart(2 * m_readPos * sizeof(uint16_t));
+//        mesh->setEnd(indexCount);
+//        mesh->setSortDistance(0);
+//        mesh->setPriorityPlane(this->m_priority);
+//    }
 
 }

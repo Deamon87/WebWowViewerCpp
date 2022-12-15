@@ -10,7 +10,7 @@
 #include "MapSceneRenderer.h"
 
 class MapSceneRendererFactory {
-    static std::shared_ptr<MapSceneRenderer> createForwardRenderer(HGDevice const &device);
+    static std::shared_ptr<MapSceneRenderer> createForwardRenderer(HGDevice &device);
 };
 
 

@@ -11,7 +11,7 @@
 
 void M2Scene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                    const mathfu::vec4 &cameraPos,
-                                   HCullStage &cullStage,
+                                   HMapRenderPlan &mapRenderPlan,
                                    M2ObjectListContainer &potentialM2,
                                    WMOListContainer &potentialWmo)  {
     potentialM2.addCandidate(m_m2Object);
@@ -19,23 +19,24 @@ void M2Scene::getPotentialEntities(const MathHelper::FrustumCullingData &frustum
 
 void M2Scene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
-                                    HCullStage &cullStage,
+                                    HMapRenderPlan &mapRenderPlan,
                                     M2ObjectListContainer &m2ObjectsCandidates,
                                     WMOListContainer &wmoCandidates) {
     m2ObjectsCandidates.addCandidate(m_m2Object);
 }
 
-void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                              StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
+void M2Scene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
+                                       MathHelper::FrustumCullingData &frustumData,
+                                       StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
     Config* config = this->m_api->getConfig();
-    Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    Map::updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
     if (config->globalLighting == EParameterSource::eM2) {
         auto ambient = m_m2Object->getM2SceneAmbientLight();
 
         if (ambient.Length() < 0.0001)
             ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-        auto frameDepedantData = cullStage->frameDependentData;
+        auto frameDepedantData = mapRenderPlan->frameDependentData;
 
         frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
         frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
@@ -43,7 +44,7 @@ void M2Scene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3
         frameDepedantData->exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
         frameDepedantData->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
     }
-    auto frameDepedantData = cullStage->frameDependentData;
+    auto frameDepedantData = mapRenderPlan->frameDependentData;
     frameDepedantData->FogDataFound = false;
 }
 
@@ -51,10 +52,6 @@ extern "C" {
     extern void supplyAnimationList(int *availablePointer, int length);
     extern void supplyMeshIds(int *availablePointer, int length);
     extern void offerFileAsDownload(std::string filename, std::string mime);
-}
-
-void M2Scene::doPostLoad(HCullStage &cullStage) {
-    Map::doPostLoad(cullStage);
 }
 
 void M2Scene::setReplaceTextureArray(std::vector<int> &replaceTextureArray) {

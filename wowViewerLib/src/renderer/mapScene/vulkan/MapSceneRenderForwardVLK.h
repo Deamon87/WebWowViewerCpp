@@ -7,14 +7,13 @@
 
 
 #include "../MapSceneRenderer.h"
-#include "../../gapi/vulkan/GDeviceVulkan.h"
+#include "../../../gapi/vulkan/GDeviceVulkan.h"
 
 class MapSceneRenderForwardVLK : public MapSceneRenderer {
 public:
-    MapSceneRenderForwardVLK(HGDeviceVLK hDevice);
+    explicit MapSceneRenderForwardVLK(HGDeviceVLK hDevice);
 
-    HFrameBuffer putIntoQueue(HCullStage &cullStage) override;
-
+    void putIntoQueue(FrameInputParams<MapRenderPlan> &frameInputParams) override;
 private:
     HGDeviceVLK m_device;
 

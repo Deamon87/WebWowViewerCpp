@@ -10,7 +10,10 @@
 #include <vector>
 #include <thread>
 
-#define toRadian(x) (float) ((float) (x) * ((float)M_PI/ (float)180.0))
+template<typename T>
+inline constexpr T toRadian(T x) {
+    return (x * M_PI) / 180.0;
+}
 
 template<typename T>
 inline const CAaBox &retrieveAABB(T &object);
@@ -32,6 +35,7 @@ public:
         mathfu::mat4 perspectiveMat;
         mathfu::mat4 viewMat;
         mathfu::vec4 farPlane;
+        mathfu::vec3 cameraPos;
         std::vector<PlanesUndPoints> frustums;
     } FrustumCullingData;
 

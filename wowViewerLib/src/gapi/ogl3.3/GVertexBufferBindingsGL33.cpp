@@ -78,7 +78,6 @@ void GVertexBufferBindingsGL33::save() {
         }
     }
 
-
     m_device->bindVertexBufferBindings(nullptr);
 
 }

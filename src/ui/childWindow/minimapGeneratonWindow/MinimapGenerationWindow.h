@@ -25,7 +25,7 @@ public:
 
     void render();
     void process();
-    HDrawStage getDrawStage(HFrameScenario sceneScenario);
+    void getDrawStage(HFrameScenario sceneScenario);
 
 private:
     HApiContainer m_api;

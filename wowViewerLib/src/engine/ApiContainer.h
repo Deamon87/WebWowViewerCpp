@@ -33,7 +33,7 @@ public:
 
 typedef std::shared_ptr<ApiContainer> HApiContainer;
 
-typedef std::array<std::array<CAaBox, 64>, 64> ADTBoundingBoxHolder;
-typedef std::shared_ptr<ADTBoundingBoxHolder> HADTBoundingBoxHolder;
+//typedef std::array<std::array<CAaBox, 64>, 64> ADTBoundingBoxHolder;
+//typedef std::shared_ptr<ADTBoundingBoxHolder> HADTBoundingBoxHolder;
 
 #endif //AWEBWOWVIEWERCPP_APICONTAINER_H

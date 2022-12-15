@@ -62,9 +62,9 @@ void MinimapGenerationWindow::render() {
                               true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
                                     ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-            auto drawStage = minimapGenerator->getLastDrawStage();
-            if (drawStage != nullptr) {
-                auto texture = drawStage->target->getAttachment(0);
+            auto lastFrameBuffer = minimapGenerator->getLastFrameBuffer();
+            if (lastFrameBuffer != nullptr) {
+                auto texture = lastFrameBuffer->getAttachment(0);
                 ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
                 ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
                 ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
@@ -97,13 +97,10 @@ void MinimapGenerationWindow::render() {
                 ImGui::PopStyleColor(3);
                 ImGui::PopStyleVar(3);
             }
-
             ImGui::EndChild();
 
         }
         ImGui::EndChild();
-
-
     }
     ImGui::Columns(1);
 
@@ -125,7 +122,7 @@ void MinimapGenerationWindow::renderMapConfigSubWindow(int mapIndex) {
     ImGui::PushStyleColor(ImGuiCol_Button, redColor);
     ImGui::PushStyleColor(ImGuiCol_ButtonActive, redColor);
     ImGui::PushStyleColor(ImGuiCol_ButtonHovered, redColor);
-    if (ImGui::Button(("Delete##"+ std::to_string(mapIndex)).c_str())) {
+    if (ImGui::Button(("Delete##"+std::to_string(mapIndex)).c_str())) {
         if (mapIndex > 0) {
             sceneDef->maps.erase(std::next(sceneDef->maps.begin(), mapIndex - 1));
         } else {
@@ -317,11 +314,9 @@ void MinimapGenerationWindow::process() {
         minimapGenerator->process();
 }
 
-HDrawStage MinimapGenerationWindow::getDrawStage(HFrameScenario sceneScenario) {
+void MinimapGenerationWindow::getDrawStage(HFrameScenario sceneScenario) {
     if (minimapGenerator->getCurrentMode() != EMGMode::eNone) {
         return minimapGenerator->createSceneDrawStage(sceneScenario);
-    } else {
-        return nullptr;
     }
 }
 

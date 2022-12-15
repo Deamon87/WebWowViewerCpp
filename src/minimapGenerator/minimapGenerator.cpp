@@ -246,7 +246,6 @@ void MinimapGenerator::setupScenarioData() {
     m_mapIndex = 0;
     m_zoom = currentScenario.zoom;
 
-    stackOfCullStages = {nullptr, nullptr, nullptr, nullptr};
 
     auto config = m_apiContainer->getConfig();
     config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
@@ -557,20 +556,18 @@ MinimapGenerator::setupCamera(const mathfu::vec3 &lookAtPoint2D, std::shared_ptr
 
 void MinimapGenerator::resetCandidate() {
     prepearCandidate = false;
-    m_candidateDS = nullptr;
     m_candidateCS = {};
-    m_candidateUS = {};
     framesReady = 0;
 }
 
-void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoord,
+void MinimapGenerator::calcBB(const HMapRenderPlan &mapRenderPlan, mathfu::vec3 &minCoord,
                               mathfu::vec3 &maxCoord,
                               const CAaBox &adtBox2d,
                               int adt_x, int adt_y, bool applyAdtChecks) {
     minCoord = mathfu::vec3(20000, 20000, 20000);
     maxCoord = mathfu::vec3(-20000, -20000, -20000);
 
-    for (auto &m2Object: cullStage->m2Array.getDrawn()) {
+    for (auto &m2Object: mapRenderPlan->m2Array.getDrawn()) {
         auto objBB = m2Object->getAABB();
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
@@ -595,7 +592,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
         );
     }
 
-    for (auto &wmoObject: cullStage->wmoGroupArray.getToDraw()) {
+    for (auto &wmoObject: mapRenderPlan->wmoGroupArray.getToDraw()) {
         auto objBB = wmoObject->getWorldAABB();
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
@@ -621,7 +618,7 @@ void MinimapGenerator::calcBB(const HCullStage &cullStage, mathfu::vec3 &minCoor
     }
 
 
-    for (auto &adtObjectRes: cullStage->adtArray) {
+    for (auto &adtObjectRes: mapRenderPlan->adtArray) {
         auto adtObj = adtObjectRes->adtObject;
 
 
@@ -688,27 +685,27 @@ void MinimapGenerator::process() {
         }
     }
 
-    if (!m_candidateUS.empty()) {
-        for (auto &updateStage : m_candidateUS) {
-            if (updateStage != nullptr && updateStage->texturesForUpload.size() > 0) {
-                resetCandidate();
-                return;
-            }
-        }
-    }
+//    if (!m_candidateUS.empty()) {
+//        for (auto &updateStage : m_candidateUS) {
+//            if (updateStage != nullptr && updateStage->texturesForUpload.size() > 0) {
+//                resetCandidate();
+//                return;
+//            }
+//        }
+//    }
+//
+//    if (framesReady < waitQueueLen) {
+//        return;
+//    }
+//
+//    if (m_candidateDS == nullptr) {
+//        resetCandidate();
+//        prepearCandidate = true;
+//        return;
+//    }
 
-    if (framesReady < waitQueueLen) {
-        return;
-    }
-
-    if (m_candidateDS == nullptr) {
-        resetCandidate();
-        prepearCandidate = true;
-        return;
-    }
-
-    auto lastFrameIt = m_candidateDS;
     auto lastFrameCull = m_candidateCS;
+    auto lastFrameParams = m_candidateCS;
     resetCandidate();
 
     //Check the BB and adjust minZ-maxZ
@@ -740,8 +737,8 @@ void MinimapGenerator::process() {
             }
 
             float zFar = (minCoord - maxCoord).Length();
-            float maxZ = maxCoord.z + cullStage->deltaZ;
-            float minZ = minCoord.z + cullStage->deltaZ;
+            float maxZ = maxCoord.z;
+            float minZ = minCoord.z;
 
 
             if (!cullStage->m2Array.getDrawn().empty() || !cullStage->adtArray.empty() ||
@@ -790,10 +787,10 @@ void MinimapGenerator::process() {
 
 
 
-        saveDrawStageToFile(currentScenario.folderToSave+"/minimap/"+std::to_string(currentScenario.maps[m_mapIndex].mapId), lastFrameIt);
+        saveDrawStageToFile(currentScenario.folderToSave+"/minimap/"+std::to_string(currentScenario.maps[m_mapIndex].mapId), m_lastFrameBuffer);
     } else if (m_mgMode == EMGMode::eScreenshotGeneration) {
         //Make screenshot out of this drawStage
-        saveDrawStageToFile(currentScenario.folderToSave, lastFrameIt);
+        saveDrawStageToFile(currentScenario.folderToSave, m_lastFrameBuffer);
     }
 
     //Apply this logic only if it's not a preview mode
@@ -827,7 +824,7 @@ void MinimapGenerator::process() {
     }
 }
 
-void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const std::shared_ptr<DrawStage> &lastFrameIt) {
+void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const HFrameBuffer lastFrameBuffer) {
     if (!ghc::filesystem::is_directory(folderToSave) ||
         !ghc::filesystem::exists(folderToSave)) { // Check if src folder exists
         ghc::filesystem::create_directories(folderToSave); // create src folder
@@ -840,98 +837,83 @@ void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const std::
     ) + ".png";
 
     std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width * m_height * 4 + 1);
-    saveDataFromDrawStage(lastFrameIt->target, fileName, m_width, m_height, buffer);
-    if (lastFrameIt->opaqueMeshes != nullptr) {
-//        std::cout << "Saved " << fileName << ": opaqueMeshes (" << lastFrameIt->opaqueMeshes->meshes.size() << ") "
-//                  << std::endl;
-    }
+    saveDataFromDrawStage(lastFrameBuffer, fileName, m_width, m_height, buffer);
 }
 
-HDrawStage MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) {
-    float farPlaneRendering = m_apiContainer->getConfig()->farPlane;
-    float farPlaneCulling = m_apiContainer->getConfig()->farPlaneForCulling;
+void MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) {
+//    float farPlaneRendering = m_apiContainer->getConfig()->farPlane;
+//    float farPlaneCulling = m_apiContainer->getConfig()->farPlaneForCulling;
+//
+//    float nearPlane = 1.0f;
+//    float fov = toRadian(45.0f);
+//
+//    float canvasAspect = (float)m_width / (float)m_height;
+//
+//    HCameraMatrices cameraMatricesCulling = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+//    HCameraMatrices cameraMatricesRendering = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+//    //Frustum matrix with reversed Z
+//
+//    {
+//        float f = 1.0f / tan(fov / 2.0f);
+//        cameraMatricesCulling->perspectiveMat = getOrthoMatrix();
+//        cameraMatricesRendering->perspectiveMat = getOrthoMatrix();
+//    }
+//
+//    mathfu::vec4 clearColor = m_apiContainer->getConfig()->clearColor;
+//    m_lastDraw = nullptr;
+//
+//    if (!mapRuntimeInfo.empty()) {
+//        ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};
+//
+//        HFrameBuffer fb = nullptr;
+//        int frameWait = 4;
+//        if (prepearCandidate && m_candidateFrameBuffer == nullptr ) {
+//            frameWait = waitQueueLen+4;
+//        }
+//
+//        fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height,
+//                                                        {ITextureFormat::itRGBA}, ITextureFormat::itDepth32,
+//                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), frameWait);
+//
+//        std::vector<HDrawStage> drawStageDependencies = {};
+//
+//        auto &&mainMap = mapRuntimeInfo[m_mapIndex];
+//        std::vector<HCullStage> cullStages;
+//        std::vector<HUpdateStage> updateStages;
+//
+//        if (m_mgMode != EMGMode::eBoundingBoxCalculation) {
+//            for (auto &mapData: mapRuntimeInfo) {
+//                auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mapData.scene);
+//                HUpdateStage updateStage = sceneScenario->addUpdateStage(cullStage, 0,
+//                                                                                         cameraMatricesRendering);
+//                cullStages.push_back(cullStage);
+//                updateStages.push_back(updateStage);
+//            }
+//        } else {
+//            auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mainMap.scene);
+//            std::shared_ptr<UpdateStage> updateStage = sceneScenario->addUpdateStage(cullStage, 0,
+//                                                                                     cameraMatricesRendering);
+//            cullStages.push_back(cullStage);
+//            updateStages.push_back(updateStage);
+//        }
+//
+//        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(
+//            updateStages, mainMap.scene, cameraMatricesRendering,
+//            drawStageDependencies, true, dimensions, true, false, clearColor, fb);
+//
+//        m_lastDraw = sceneDrawStage;
+//        //We dont need stack in preview mode
+//        if (prepearCandidate && m_candidateDS == nullptr) {
+//            m_candidateDS = sceneDrawStage;
+//            m_candidateCS = cullStages;
+//            m_candidateUS = updateStages;
+//        }
+//        stackOfCullStages[m_apiContainer->hDevice->getDrawFrameNumber()] = cullStages[0];
+//
+//        return sceneDrawStage;
+//    }
 
-    float nearPlane = 1.0;
-    float fov = toRadian(45.0);
-
-    float canvasAspect = (float)m_width / (float)m_height;
-
-    HCameraMatrices cameraMatricesCulling = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    HCameraMatrices cameraMatricesRendering = m_apiContainer->camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-    //Frustum matrix with reversed Z
-
-    {
-        float f = 1.0f / tan(fov / 2.0f);
-        cameraMatricesCulling->perspectiveMat = getOrthoMatrix();
-        cameraMatricesRendering->perspectiveMat = getOrthoMatrix();
-    }
-
-    if (m_apiContainer->hDevice->getIsVulkanAxisSystem() ) {
-        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
-
-        static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-                                                                  0, -1, 0, 0,
-                                                                  0, 0, 1.0/2.0, 1/2.0,
-                                                                  0, 0, 0, 1).Transpose();
-
-        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
-    }
-
-    mathfu::vec4 clearColor = m_apiContainer->getConfig()->clearColor;
-    m_lastDraw = nullptr;
-
-    if (!mapRuntimeInfo.empty()) {
-        ViewPortDimensions dimensions = {{0, 0}, {m_width, m_height}};
-
-        HFrameBuffer fb = nullptr;
-        int frameWait = 4;
-        if (prepearCandidate && m_candidateDS == nullptr ) {
-            frameWait = waitQueueLen+4;
-        }
-
-        fb = m_apiContainer->hDevice->createFrameBuffer(m_width, m_height,
-                                                        {ITextureFormat::itRGBA}, ITextureFormat::itDepth32,
-                                                        m_apiContainer->hDevice->getMaxSamplesCnt(), frameWait);
-
-        std::vector<HDrawStage> drawStageDependencies = {};
-
-        auto &&mainMap = mapRuntimeInfo[m_mapIndex];
-        std::vector<HCullStage> cullStages;
-        std::vector<HUpdateStage> updateStages;
-
-        if (m_mgMode != EMGMode::eBoundingBoxCalculation) {
-            for (auto &mapData: mapRuntimeInfo) {
-                auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mapData.scene);
-                HUpdateStage updateStage = sceneScenario->addUpdateStage(cullStage, 0,
-                                                                                         cameraMatricesRendering);
-                cullStages.push_back(cullStage);
-                updateStages.push_back(updateStage);
-            }
-        } else {
-            auto cullStage = sceneScenario->addCullStage(cameraMatricesCulling, mainMap.scene);
-            std::shared_ptr<UpdateStage> updateStage = sceneScenario->addUpdateStage(cullStage, 0,
-                                                                                     cameraMatricesRendering);
-            cullStages.push_back(cullStage);
-            updateStages.push_back(updateStage);
-        }
-
-        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(
-            updateStages, mainMap.scene, cameraMatricesRendering,
-            drawStageDependencies, true, dimensions, true, false, clearColor, fb);
-
-        m_lastDraw = sceneDrawStage;
-        //We dont need stack in preview mode
-        if (prepearCandidate && m_candidateDS == nullptr) {
-            m_candidateDS = sceneDrawStage;
-            m_candidateCS = cullStages;
-            m_candidateUS = updateStages;
-        }
-        stackOfCullStages[m_apiContainer->hDevice->getDrawFrameNumber()] = cullStages[0];
-
-        return sceneDrawStage;
-    }
-
-    return nullptr;
+    return;
 }
 
 float MinimapGenerator::GetOrthoDimension() {
@@ -966,8 +948,8 @@ mathfu::vec3 MinimapGenerator::getLookAtVec3() {
     return mathfu::vec3(0,0,0);
 }
 
-HDrawStage MinimapGenerator::getLastDrawStage() {
-    return m_lastDraw;
+HFrameBuffer MinimapGenerator::getLastFrameBuffer() {
+    return m_lastFrameBuffer;
 }
 
 Config *MinimapGenerator::getConfig() {
@@ -983,29 +965,27 @@ void MinimapGenerator::getCurrentFDData(int &areaId, int &parentAreaId, mathfu::
     parentAreaId = 0;
     riverColor = mathfu::vec4(0,0,0,0);
 
-    auto cullStage = stackOfCullStages[m_apiContainer->hDevice->getUpdateFrameNumber()];
-    if (cullStage == nullptr) return;
-
-    areaId = cullStage->adtAreadId;
-    parentAreaId = cullStage->parentAreaId;
-    riverColor = cullStage->frameDependentData->closeRiverColor;
-
-    mathfu::vec4 cameraPos = {0,0,0,1};
-    this->m_apiContainer->camera->getCameraPosition(cameraPos.data_);
-
-    for (auto &adtCullObj : cullStage->adtArray) {
-        auto adt_x = worldCoordinateToAdtIndex(cameraPos.y);
-        auto adt_y = worldCoordinateToAdtIndex(cameraPos.x);
-
-        if (adt_x != adtCullObj->adtObject->getAdtX() || adt_y != adtCullObj->adtObject->getAdtY())
-            continue;
-
-        mathfu::vec3 riverColorV3;
-        adtCullObj->adtObject->getWaterColorFromDB(cameraPos, riverColorV3);
-        riverColor = mathfu::vec4(riverColorV3, 0);
-        break;
-
-
-    }
+//    auto cullStage = stackOfCullStages[m_apiContainer->hDevice->getUpdateFrameNumber()];
+//    if (cullStage == nullptr) return;
+//
+//    areaId = cullStage->adtAreadId;
+//    parentAreaId = cullStage->parentAreaId;
+//    riverColor = cullStage->frameDependentData->closeRiverColor;
+//
+//    mathfu::vec4 cameraPos = {0,0,0,1};
+//    this->m_apiContainer->camera->getCameraPosition(cameraPos.data_);
+//
+//    for (auto &adtCullObj : cullStage->adtArray) {
+//        auto adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+//        auto adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+//
+//        if (adt_x != adtCullObj->adtObject->getAdtX() || adt_y != adtCullObj->adtObject->getAdtY())
+//            continue;
+//
+//        mathfu::vec3 riverColorV3;
+//        adtCullObj->adtObject->getWaterColorFromDB(cameraPos, riverColorV3);
+//        riverColor = mathfu::vec4(riverColorV3, 0);
+//        break;
+//    }
 }
 

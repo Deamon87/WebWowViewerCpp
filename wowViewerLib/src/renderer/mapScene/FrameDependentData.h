@@ -1,39 +1,14 @@
 //
-// Created by Deamon on 2/2/2020.
+// Created by Deamon on 11.12.22.
 //
 
-#ifndef AWEBWOWVIEWERCPP_DRAWSTAGE_H
-#define AWEBWOWVIEWERCPP_DRAWSTAGE_H
+#ifndef AWEBWOWVIEWERCPP_FRAMEDEPENDENTDATA_H
+#define AWEBWOWVIEWERCPP_FRAMEDEPENDENTDATA_H
 
-#include <memory>
+#include <array>
+#include "mathfu/glsl_mappings.h"
 
-struct DrawStage;
-struct CameraMatrices;
-struct ViewPortDimensions;
-
-struct FrameDepedantData;
-
-typedef std::shared_ptr<DrawStage> HDrawStage;
-typedef std::shared_ptr<FrameDepedantData> HFrameDepedantData;
-
-#include <memory>
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
-#include <mathfu/glsl_mappings.h>
-#include "../gapi/interface/IDevice.h"
-#include "CameraMatrices.h"
-
-
-struct ViewPortDimensions{
-    std::array<int, 2> mins;
-    std::array<int, 2> maxs;
-};
-
-struct MeshesToRender {std::vector<HGMesh> meshes;} ;
-typedef std::shared_ptr<MeshesToRender> HMeshesToRender;
-
-struct FrameDepedantData {
+struct FrameDependantData {
     //Glow
     float currentGlow;
 
@@ -81,14 +56,6 @@ struct FrameDepedantData {
     mathfu::vec4 closeOceanColor = mathfu::vec4(0,0,0,0);
     mathfu::vec4 farOceanColor = mathfu::vec4(0,0,0,0);
 };
+typedef std::shared_ptr<FrameDependantData> HFrameDependantData;
 
-
-struct DrawStage {
-    std::vector<HDrawStage> drawStageDependencies;
-
-    mathfu::vec4 clearColor;
-
-};
-typedef std::shared_ptr<DrawStage> HDrawStage;
-
-#endif //AWEBWOWVIEWERCPP_DRAWSTAGE_H
+#endif //AWEBWOWVIEWERCPP_FRAMEDEPENDENTDATA_H

@@ -56,7 +56,6 @@ typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 #include "../../engine/texture/BlpTexture.h"
 #include "textures/ITexture.h"
 #include "IFrameBuffer.h"
-#include "../../engine/DrawStage.h"
 
 struct M2ShaderCacheRecord {
     int vertexShader;
@@ -150,11 +149,6 @@ class IDevice {
 
         virtual void initialize() = 0;
         virtual void reset() = 0;
-        virtual unsigned int getFrameNumber() = 0;
-        virtual unsigned int getUpdateFrameNumber() = 0;
-        virtual unsigned int getOcclusionFrameNumber() = 0;
-        virtual unsigned int getCullingFrameNumber() = 0;
-        virtual unsigned int getDrawFrameNumber() = 0;
 
         virtual bool getIsAsynBuffUploadSupported() = 0;
         virtual int getMaxSamplesCnt() = 0;
@@ -175,10 +169,10 @@ class IDevice {
         virtual void startUpdateForNextFrame() {};
         virtual void endUpdateForNextFrame() {};
 
-        virtual void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData)= 0;
+//        virtual void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData)= 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
         virtual void drawMeshes(std::vector<HGMesh> &meshes) = 0;
-        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
+//        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
         virtual bool getIsCompressedTexturesSupported();
         virtual bool getIsAnisFiltrationSupported();

@@ -155,7 +155,7 @@ void GLTFExporter::createTextures(GLTFExporter::M2ModelData &m2ModelData, std::s
             sampler.minFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
             sampler.magFilter = TINYGLTF_TEXTURE_FILTER_LINEAR;
             sampler.wrapS = wrapX ? TINYGLTF_TEXTURE_WRAP_REPEAT : TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE;
-            sampler.wrapT = wrapX ? TINYGLTF_TEXTURE_WRAP_REPEAT : TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE;
+            sampler.wrapT = wrapY ? TINYGLTF_TEXTURE_WRAP_REPEAT : TINYGLTF_TEXTURE_WRAP_CLAMP_TO_EDGE;
 
             model.samplers.push_back(sampler);
         }

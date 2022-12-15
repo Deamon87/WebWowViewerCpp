@@ -7,9 +7,9 @@
 
 #include <functional>
 #include <assert.h>
-#include "../../../engine/DrawStage.h"
+#include "../../../renderer/mapScene/FrameDependentData.h"
 
-typedef std::function<void(IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData)> IChunkHandlerType;
+typedef std::function<void(IUniformBufferChunk* self, const HFrameDependantData &frameDepedantData)> IChunkHandlerType;
 
 class IUniformBufferChunk {
     friend class IDevice;
@@ -53,7 +53,7 @@ public:
     virtual void setUpdateHandler(IChunkHandlerType handler) {
         m_handler = handler;
     };
-    virtual void update(const HFrameDepedantData &frameDepedantData) {
+    virtual void update(const HFrameDependantData &frameDepedantData) {
         if (m_handler) {
             m_handler(this, frameDepedantData);
         }

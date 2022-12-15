@@ -168,7 +168,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
         meshTemplate.ubo[3] = nullptr;
         meshTemplate.ubo[4] = hDevice->createUniformBufferChunk(sizeof(DrawPortalShader::meshWideBlockPS));
 
-        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
             auto& blockPS = self->getObject<DrawPortalShader::meshWideBlockPS>();
 
             blockPS.uColor = {0.058, 0.058, 0.819607843, 0.3};

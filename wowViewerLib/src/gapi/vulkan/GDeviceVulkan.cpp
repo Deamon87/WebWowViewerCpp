@@ -958,7 +958,7 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData) {
+void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture(false, false);
@@ -1300,7 +1300,6 @@ void GDeviceVLK::commitFrame() {
 
     int currentDrawFrame = getDrawFrameNumber();
 
-
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame], VK_NULL_HANDLE, &imageIndex);
 
@@ -1596,342 +1595,342 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
     return newPool->allocate(layout, uniforms, images);
 }
 
-void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
-    //Draw deps
-    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
-        this->internalDrawStageAndDeps(drawStage->drawStageDependencies[i]);
-    }
-
-    this->setInvertZ(drawStage->invertedZ);
-
-    if (drawStage->clearScreen) {
-        clearColor[0] = drawStage->clearColor[0];
-        clearColor[1] = drawStage->clearColor[1];
-        clearColor[2] = drawStage->clearColor[2];
-    }
-
-    int updateFrame = getUpdateFrameNumber();
-    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
-    //Default renderPass for rendering to screen framebuffers
-    std::shared_ptr<GRenderPassVLK> renderPass = swapchainRenderPass;
-
-    if (drawStage->target != nullptr) {
-        commandBufferForFilling = renderCommandBuffersForFrameBuffers[updateFrame];
-
-        GFrameBufferVLK *frameBufferVlk = dynamic_cast<GFrameBufferVLK *>(drawStage->target.get());
-
-        renderPass = frameBufferVlk->m_renderPass;
-
-        std::vector<VkClearValue> clearValues = renderPass->produceClearColorVec(
-            { clearColor[0], clearColor[1], clearColor[2] },
-            drawStage->invertedZ ? 0.0f : 1.0f
-        );
-
-        VkRenderPassBeginInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.pNext = NULL;
-        renderPassInfo.renderPass = renderPass->getRenderPass();
-        renderPassInfo.framebuffer = frameBufferVlk->m_frameBuffer;
-        renderPassInfo.renderArea.offset = {drawStage->viewPortDimensions.mins[0], drawStage->viewPortDimensions.mins[1]};
-        renderPassInfo.renderArea.extent = {static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]), static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])};
-        renderPassInfo.clearValueCount = clearValues.size();
-        renderPassInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-    }
-
-    std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
-
-    VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
-    usualViewport.width = drawStage->viewPortDimensions.maxs[0];
-    usualViewport.height =  drawStage->viewPortDimensions.maxs[1];
-    usualViewport.x = drawStage->viewPortDimensions.mins[0];
-    usualViewport.y =  drawStage->viewPortDimensions.mins[1];
-    if (!getInvertZ()) {
-        usualViewport.minDepth = 0;
-        usualViewport.maxDepth = 0.990f;
-    } else {
-        usualViewport.minDepth = 0.06f;
-        usualViewport.maxDepth = 1.0f;
-    }
-
-    VkViewport &mapAreaViewport = viewportsForThisStage[(int)ViewportType::vp_mapArea];
-    mapAreaViewport = usualViewport;
-    if (!getInvertZ()) {
-        mapAreaViewport.minDepth = 0.991f;
-        mapAreaViewport.maxDepth = 0.996f;
-    } else {
-        mapAreaViewport.minDepth = 0.04f;
-        mapAreaViewport.maxDepth = 0.05f;
-    }
-
-    VkViewport &skyBoxViewport = viewportsForThisStage[(int)ViewportType::vp_skyBox];
-    skyBoxViewport = usualViewport;
-    if (!getInvertZ()) {
-        skyBoxViewport.minDepth = 0.997f;
-        skyBoxViewport.maxDepth = 1.0f;
-    } else {
-        skyBoxViewport.minDepth = 0;
-        skyBoxViewport.maxDepth = 0.03f;
-    }
-
-
-    //Set scissors
-    VkRect2D defaultScissor = {};
-    defaultScissor.offset = {0, 0};
-    defaultScissor.extent = {
-        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]),
-        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])
-    };
-
-    vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
-
-    //Set new viewport
-    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
-
-    bool atLeastOneDrawCall = false;
-    if (drawStage->opaqueMeshes != nullptr)
-        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass,
-                                                drawStage->opaqueMeshes, viewportsForThisStage,
-                                                defaultScissor) || atLeastOneDrawCall;
-    if (drawStage->transparentMeshes != nullptr)
-        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass,
-                                                drawStage->transparentMeshes, viewportsForThisStage,
-                                                defaultScissor) || atLeastOneDrawCall;
-
-    if (drawStage->target != nullptr) {
-        vkCmdEndRenderPass(commandBufferForFilling);
-        renderCommandBuffersForFrameBuffersNotNull[updateFrame] = renderCommandBuffersForFrameBuffersNotNull[updateFrame] || atLeastOneDrawCall;
-    } else {
-        renderCommandBuffersNotNull[updateFrame] = renderCommandBuffersNotNull[updateFrame] || atLeastOneDrawCall;
-    }
-
-}
+//void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {
+//    //Draw deps
+//    for (int i = 0; i < drawStage->drawStageDependencies.size(); i++) {
+//        this->internalDrawStageAndDeps(drawStage->drawStageDependencies[i]);
+//    }
+//
+//    this->setInvertZ(drawStage->invertedZ);
+//
+//    if (drawStage->clearScreen) {
+//        clearColor[0] = drawStage->clearColor[0];
+//        clearColor[1] = drawStage->clearColor[1];
+//        clearColor[2] = drawStage->clearColor[2];
+//    }
+//
+//    int updateFrame = getUpdateFrameNumber();
+//    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+//    //Default renderPass for rendering to screen framebuffers
+//    std::shared_ptr<GRenderPassVLK> renderPass = swapchainRenderPass;
+//
+//    if (drawStage->target != nullptr) {
+//        commandBufferForFilling = renderCommandBuffersForFrameBuffers[updateFrame];
+//
+//        GFrameBufferVLK *frameBufferVlk = dynamic_cast<GFrameBufferVLK *>(drawStage->target.get());
+//
+//        renderPass = frameBufferVlk->m_renderPass;
+//
+//        std::vector<VkClearValue> clearValues = renderPass->produceClearColorVec(
+//            { clearColor[0], clearColor[1], clearColor[2] },
+//            drawStage->invertedZ ? 0.0f : 1.0f
+//        );
+//
+//        VkRenderPassBeginInfo renderPassInfo = {};
+//        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//        renderPassInfo.pNext = NULL;
+//        renderPassInfo.renderPass = renderPass->getRenderPass();
+//        renderPassInfo.framebuffer = frameBufferVlk->m_frameBuffer;
+//        renderPassInfo.renderArea.offset = {drawStage->viewPortDimensions.mins[0], drawStage->viewPortDimensions.mins[1]};
+//        renderPassInfo.renderArea.extent = {static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]), static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])};
+//        renderPassInfo.clearValueCount = clearValues.size();
+//        renderPassInfo.pClearValues = clearValues.data();
+//
+//        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+//    }
+//
+//    std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
+//
+//    VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
+//    usualViewport.width = drawStage->viewPortDimensions.maxs[0];
+//    usualViewport.height =  drawStage->viewPortDimensions.maxs[1];
+//    usualViewport.x = drawStage->viewPortDimensions.mins[0];
+//    usualViewport.y =  drawStage->viewPortDimensions.mins[1];
+//    if (!getInvertZ()) {
+//        usualViewport.minDepth = 0;
+//        usualViewport.maxDepth = 0.990f;
+//    } else {
+//        usualViewport.minDepth = 0.06f;
+//        usualViewport.maxDepth = 1.0f;
+//    }
+//
+//    VkViewport &mapAreaViewport = viewportsForThisStage[(int)ViewportType::vp_mapArea];
+//    mapAreaViewport = usualViewport;
+//    if (!getInvertZ()) {
+//        mapAreaViewport.minDepth = 0.991f;
+//        mapAreaViewport.maxDepth = 0.996f;
+//    } else {
+//        mapAreaViewport.minDepth = 0.04f;
+//        mapAreaViewport.maxDepth = 0.05f;
+//    }
+//
+//    VkViewport &skyBoxViewport = viewportsForThisStage[(int)ViewportType::vp_skyBox];
+//    skyBoxViewport = usualViewport;
+//    if (!getInvertZ()) {
+//        skyBoxViewport.minDepth = 0.997f;
+//        skyBoxViewport.maxDepth = 1.0f;
+//    } else {
+//        skyBoxViewport.minDepth = 0;
+//        skyBoxViewport.maxDepth = 0.03f;
+//    }
+//
+//
+//    //Set scissors
+//    VkRect2D defaultScissor = {};
+//    defaultScissor.offset = {0, 0};
+//    defaultScissor.extent = {
+//        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]),
+//        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])
+//    };
+//
+//    vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+//
+//    //Set new viewport
+//    vkCmdSetViewport(commandBufferForFilling, 0, 1, &usualViewport);
+//
+//    bool atLeastOneDrawCall = false;
+//    if (drawStage->opaqueMeshes != nullptr)
+//        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass,
+//                                                drawStage->opaqueMeshes, viewportsForThisStage,
+//                                                defaultScissor) || atLeastOneDrawCall;
+//    if (drawStage->transparentMeshes != nullptr)
+//        atLeastOneDrawCall = drawMeshesInternal(drawStage, commandBufferForFilling, renderPass,
+//                                                drawStage->transparentMeshes, viewportsForThisStage,
+//                                                defaultScissor) || atLeastOneDrawCall;
+//
+//    if (drawStage->target != nullptr) {
+//        vkCmdEndRenderPass(commandBufferForFilling);
+//        renderCommandBuffersForFrameBuffersNotNull[updateFrame] = renderCommandBuffersForFrameBuffersNotNull[updateFrame] || atLeastOneDrawCall;
+//    } else {
+//        renderCommandBuffersNotNull[updateFrame] = renderCommandBuffersNotNull[updateFrame] || atLeastOneDrawCall;
+//    }
+//
+//}
 
 //Returns true if at least once command was written to buffer
-bool GDeviceVLK::drawMeshesInternal(
-    const HDrawStage &drawStage,
-    VkCommandBuffer commandBufferForFilling,
-    std::shared_ptr<GRenderPassVLK> renderPass,
-    const HMeshesToRender &meshes,
-    const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
-    VkRect2D &defaultScissor) {
-
-    int updateFrame = getUpdateFrameNumber();
-
-    ViewportType lastViewPort = ViewportType::vp_none;
-
-    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
-    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
-    int8_t lastIsScissorsEnabled = -1;
-    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
-//    uint32_t dynamicOffset[7] = {};
-
-    auto &iMeshes = meshes->meshes;
-
-    auto dynamicOffsetPerMesh = std::vector<std::array<uint32_t, 7>>(iMeshes.size());
-    auto uboIndPerMesh = std::vector<uint32_t>(iMeshes.size());
-
-    tbb::parallel_for(
-        tbb::blocked_range<size_t>(0, iMeshes.size(), 500),
-    [&](tbb::blocked_range<size_t> r) {
-      for (size_t i = r.begin(); i != r.end(); ++i) {
-          auto *meshVLK = ((GMeshVLK *)iMeshes[i].get());
-          auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
-          uint32_t uboInd = 0;
-          auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
-          if (uboB) {
-              dynamicOffsetPerMesh[i][uboInd++] = (uboB)->getOffset();
-          }
-
-          for (int k = 1; k < 6; k++) {
-              if (shaderVLK->hasBondUBO[k]) {
-                  auto *uboB = (meshVLK->getUniformBuffer(k).get());
-                  if (uboB) {
-                      dynamicOffsetPerMesh[i][uboInd++] = (uboB)->getOffset();
-                  }
-              }
-          }
-          uboIndPerMesh[i] = uboInd;
-      }
-    }, tbb::simple_partitioner());
-
-    bool atLeastOneDrawcall = false;
-    VkDeviceSize offsets[] = {0};
-
-    for (int i = 0; i < iMeshes.size(); i++) {
-        auto *meshVLK = ((GMeshVLK *)iMeshes[i].get());
-//        auto *meshVLK = ((GMeshVLK *)mesh.get());
-        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
-        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
-
-//        uint32_t uboInd = 0;
-//        auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
-//        if (uboB) {
-//            dynamicOffset[uboInd++] = (uboB)->getOffset();
+//bool GDeviceVLK::drawMeshesInternal(
+//    const HDrawStage &drawStage,
+//    VkCommandBuffer commandBufferForFilling,
+//    std::shared_ptr<GRenderPassVLK> renderPass,
+//    const HMeshesToRender &meshes,
+//    const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
+//    VkRect2D &defaultScissor) {
+//
+//    int updateFrame = getUpdateFrameNumber();
+//
+//    ViewportType lastViewPort = ViewportType::vp_none;
+//
+//    VkBuffer lastIndexBuffer = VK_NULL_HANDLE;
+//    VkBuffer lastVertexBuffer = VK_NULL_HANDLE;
+//    int8_t lastIsScissorsEnabled = -1;
+//    std::shared_ptr<GPipelineVLK> lastPipeline = nullptr;
+////    uint32_t dynamicOffset[7] = {};
+//
+//    auto &iMeshes = meshes->meshes;
+//
+//    auto dynamicOffsetPerMesh = std::vector<std::array<uint32_t, 7>>(iMeshes.size());
+//    auto uboIndPerMesh = std::vector<uint32_t>(iMeshes.size());
+//
+//    tbb::parallel_for(
+//        tbb::blocked_range<size_t>(0, iMeshes.size(), 500),
+//    [&](tbb::blocked_range<size_t> r) {
+//      for (size_t i = r.begin(); i != r.end(); ++i) {
+//          auto *meshVLK = ((GMeshVLK *)iMeshes[i].get());
+//          auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
+//          uint32_t uboInd = 0;
+//          auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
+//          if (uboB) {
+//              dynamicOffsetPerMesh[i][uboInd++] = (uboB)->getOffset();
+//          }
+//
+//          for (int k = 1; k < 6; k++) {
+//              if (shaderVLK->hasBondUBO[k]) {
+//                  auto *uboB = (meshVLK->getUniformBuffer(k).get());
+//                  if (uboB) {
+//                      dynamicOffsetPerMesh[i][uboInd++] = (uboB)->getOffset();
+//                  }
+//              }
+//          }
+//          uboIndPerMesh[i] = uboInd;
+//      }
+//    }, tbb::simple_partitioner());
+//
+//    bool atLeastOneDrawcall = false;
+//    VkDeviceSize offsets[] = {0};
+//
+//    for (int i = 0; i < iMeshes.size(); i++) {
+//        auto *meshVLK = ((GMeshVLK *)iMeshes[i].get());
+////        auto *meshVLK = ((GMeshVLK *)mesh.get());
+//        auto *binding = ((GVertexBufferBindingsVLK *)meshVLK->m_bindings.get());
+//        auto *shaderVLK = ((GShaderPermutationVLK*)meshVLK->m_shader.get());
+//
+////        uint32_t uboInd = 0;
+////        auto *uboB = drawStage->sceneWideBlockVSPSChunk.get();
+////        if (uboB) {
+////            dynamicOffset[uboInd++] = (uboB)->getOffset();
+////        }
+////
+////        for (int k = 1; k < 6; k++) {
+////            if (shaderVLK->hasBondUBO[k]) {
+////                auto *uboB = (meshVLK->getUniformBuffer(k).get());
+////                if (uboB) {
+////                    dynamicOffset[uboInd++] = (uboB)->getOffset();
+////                }
+////            }
+////        }
+//
+//        std::shared_ptr<GPipelineVLK> h_pipeLine = meshVLK->getPipeLineForRenderPass(renderPass, drawStage->invertedZ);
+//
+//        if (lastPipeline != h_pipeLine) {
+//            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                              h_pipeLine->graphicsPipeline);
+//
+//            lastPipeline = h_pipeLine;
 //        }
 //
-//        for (int k = 1; k < 6; k++) {
-//            if (shaderVLK->hasBondUBO[k]) {
-//                auto *uboB = (meshVLK->getUniformBuffer(k).get());
-//                if (uboB) {
-//                    dynamicOffset[uboInd++] = (uboB)->getOffset();
-//                }
+//        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
+//        if (lastViewPort != newViewPort) {
+//            if (viewportsForThisStage[+newViewPort].height > 32768) {
+//                std::cout << "newViewPort = " << +newViewPort << std::endl;
 //            }
+//            vkCmdSetViewport(commandBufferForFilling, 0, 1, &viewportsForThisStage[+newViewPort]);
+//
+//            lastViewPort = newViewPort;
 //        }
-
-        std::shared_ptr<GPipelineVLK> h_pipeLine = meshVLK->getPipeLineForRenderPass(renderPass, drawStage->invertedZ);
-
-        if (lastPipeline != h_pipeLine) {
-            vkCmdBindPipeline(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                              h_pipeLine->graphicsPipeline);
-
-            lastPipeline = h_pipeLine;
-        }
-
-        ViewportType newViewPort = meshVLK->m_isSkyBox ? ViewportType::vp_skyBox : ViewportType::vp_usual;
-        if (lastViewPort != newViewPort) {
-            if (viewportsForThisStage[+newViewPort].height > 32768) {
-                std::cout << "newViewPort = " << +newViewPort << std::endl;
-            }
-            vkCmdSetViewport(commandBufferForFilling, 0, 1, &viewportsForThisStage[+newViewPort]);
-
-            lastViewPort = newViewPort;
-        }
-
-
-        if (meshVLK->m_isScissorsEnabled > 0) {
-            VkRect2D rect;
-            rect.offset.x = meshVLK->m_scissorOffset[0];
-            rect.offset.y = meshVLK->m_scissorOffset[1];
-            rect.extent.width = meshVLK->m_scissorSize[0];
-            rect.extent.height = meshVLK->m_scissorSize[1];
-
-            vkCmdSetScissor(commandBufferForFilling, 0, 1, &rect);
-        } else if (lastIsScissorsEnabled != meshVLK->m_isScissorsEnabled) {
-            vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
-        }
-        lastIsScissorsEnabled = meshVLK->m_isScissorsEnabled;
-
-
-        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
-        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
-
-
-        if (lastIndexBuffer != indexBuffer) {
-            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
-            lastIndexBuffer = indexBuffer;
-        }
-
-        if (lastVertexBuffer != vertexBuffer) {
-            uint32_t vboBind = 0;
-
-            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
-            lastVertexBuffer = vertexBuffer;
-        }
-
-        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
-        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
-
-        atLeastOneDrawcall = true;
-
-        //UBO
-        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                h_pipeLine->pipelineLayout, 0, 1, &uboDescSet, uboIndPerMesh[i], dynamicOffsetPerMesh[i].data());
-
-        //Image
-        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                h_pipeLine->pipelineLayout, 1, 1, &imageDescSet, 0, nullptr);
-
-        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
-    }
-
-    return atLeastOneDrawcall;
-}
-
-void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
-    int updateFrame = getUpdateFrameNumber();
-
-//    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
-
-    if (drawStage->target == nullptr &&
-        (
-            (drawStage->viewPortDimensions.maxs[0] != swapChainExtent.width) ||
-            (drawStage->viewPortDimensions.maxs[1] != swapChainExtent.height)
-        )
-    ) {
-        recreateSwapChain();
-    }
-
-    vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-
-    //Update
-    if (m_shaderDescriptorUpdateNeeded) {
-        for (auto shaderVLKRec : m_shaderPermutCache) {
-            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
-        }
-        m_shaderDescriptorUpdateNeeded = false;
-    }
-
-    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
-    auto commandBufferForFillingFrameBuf = renderCommandBuffersForFrameBuffers[updateFrame];
-
-    renderCommandBuffersNotNull[updateFrame] = false;
-    renderCommandBuffersForFrameBuffersNotNull[updateFrame] = false;
-
-    {
-        VkCommandBufferInheritanceInfo bufferInheritanceInfo;
-        bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-        bufferInheritanceInfo.pNext = nullptr;
-        bufferInheritanceInfo.renderPass = swapchainRenderPass->getRenderPass();
-        bufferInheritanceInfo.subpass = 0;
-        bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
-        bufferInheritanceInfo.occlusionQueryEnable = false;
-        bufferInheritanceInfo.queryFlags = 0;
-        bufferInheritanceInfo.pipelineStatistics = 0;
-
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-        beginInfo.pNext = NULL;
-        beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
-
-        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
-    }
-
-    {
-        VkCommandBufferInheritanceInfo bufferInheritanceInfo;
-        bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
-        bufferInheritanceInfo.pNext = nullptr;
-        bufferInheritanceInfo.renderPass = VK_NULL_HANDLE;
-        bufferInheritanceInfo.subpass = 0;
-        bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
-        bufferInheritanceInfo.occlusionQueryEnable = false;
-        bufferInheritanceInfo.queryFlags = 0;
-        bufferInheritanceInfo.pipelineStatistics = 0;
-
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
-        beginInfo.pNext = NULL;
-        beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
-
-        if (vkBeginCommandBuffer(commandBufferForFillingFrameBuf, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
-    }
-
-    internalDrawStageAndDeps(drawStage);
-
-    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
-    if (vkEndCommandBuffer(commandBufferForFillingFrameBuf) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
-}
+//
+//
+//        if (meshVLK->m_isScissorsEnabled > 0) {
+//            VkRect2D rect;
+//            rect.offset.x = meshVLK->m_scissorOffset[0];
+//            rect.offset.y = meshVLK->m_scissorOffset[1];
+//            rect.extent.width = meshVLK->m_scissorSize[0];
+//            rect.extent.height = meshVLK->m_scissorSize[1];
+//
+//            vkCmdSetScissor(commandBufferForFilling, 0, 1, &rect);
+//        } else if (lastIsScissorsEnabled != meshVLK->m_isScissorsEnabled) {
+//            vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+//        }
+//        lastIsScissorsEnabled = meshVLK->m_isScissorsEnabled;
+//
+//
+//        auto indexBuffer = ((GIndexBufferVLK *)binding->m_indexBuffer.get())->g_hIndexBuffer;
+//        auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+//
+//
+//        if (lastIndexBuffer != indexBuffer) {
+//            vkCmdBindIndexBuffer(commandBufferForFilling, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+//            lastIndexBuffer = indexBuffer;
+//        }
+//
+//        if (lastVertexBuffer != vertexBuffer) {
+//            uint32_t vboBind = 0;
+//
+//            vkCmdBindVertexBuffers(commandBufferForFilling, vboBind++, 1, &vertexBuffer, offsets);
+//            lastVertexBuffer = vertexBuffer;
+//        }
+//
+//        auto uboDescSet = shaderVLK->uboDescriptorSets[updateFrame]->getDescSet();
+//        auto imageDescSet = meshVLK->imageDescriptorSets[updateFrame]->getDescSet();
+//
+//        atLeastOneDrawcall = true;
+//
+//        //UBO
+//        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                                h_pipeLine->pipelineLayout, 0, 1, &uboDescSet, uboIndPerMesh[i], dynamicOffsetPerMesh[i].data());
+//
+//        //Image
+//        vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
+//                                h_pipeLine->pipelineLayout, 1, 1, &imageDescSet, 0, nullptr);
+//
+//        vkCmdDrawIndexed(commandBufferForFilling, meshVLK->m_end, 1, meshVLK->m_start/2, 0, 0);
+//    }
+//
+//    return atLeastOneDrawcall;
+//}
+//
+//void GDeviceVLK::drawStageAndDeps(HDrawStage drawStage) {
+//    int updateFrame = getUpdateFrameNumber();
+//
+////    std::cout << "drawStageAndDeps: updateFrame = " << updateFrame << std::endl;
+//
+//    if (drawStage->target == nullptr &&
+//        (
+//            (drawStage->viewPortDimensions.maxs[0] != swapChainExtent.width) ||
+//            (drawStage->viewPortDimensions.maxs[1] != swapChainExtent.height)
+//        )
+//    ) {
+//        recreateSwapChain();
+//    }
+//
+//    vkWaitForFences(device, 1, &inFlightFences[updateFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
+//
+//    //Update
+//    if (m_shaderDescriptorUpdateNeeded) {
+//        for (auto shaderVLKRec : m_shaderPermutCache) {
+//            ((GShaderPermutationVLK *) shaderVLKRec.second.get())->updateDescriptorSet(updateFrame);
+//        }
+//        m_shaderDescriptorUpdateNeeded = false;
+//    }
+//
+//    auto commandBufferForFilling = renderCommandBuffers[updateFrame];
+//    auto commandBufferForFillingFrameBuf = renderCommandBuffersForFrameBuffers[updateFrame];
+//
+//    renderCommandBuffersNotNull[updateFrame] = false;
+//    renderCommandBuffersForFrameBuffersNotNull[updateFrame] = false;
+//
+//    {
+//        VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+//        bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+//        bufferInheritanceInfo.pNext = nullptr;
+//        bufferInheritanceInfo.renderPass = swapchainRenderPass->getRenderPass();
+//        bufferInheritanceInfo.subpass = 0;
+//        bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+//        bufferInheritanceInfo.occlusionQueryEnable = false;
+//        bufferInheritanceInfo.queryFlags = 0;
+//        bufferInheritanceInfo.pipelineStatistics = 0;
+//
+//        VkCommandBufferBeginInfo beginInfo = {};
+//        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+//        beginInfo.pNext = NULL;
+//        beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
+//
+//        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
+//            throw std::runtime_error("failed to begin recording command buffer!");
+//        }
+//    }
+//
+//    {
+//        VkCommandBufferInheritanceInfo bufferInheritanceInfo;
+//        bufferInheritanceInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO;
+//        bufferInheritanceInfo.pNext = nullptr;
+//        bufferInheritanceInfo.renderPass = VK_NULL_HANDLE;
+//        bufferInheritanceInfo.subpass = 0;
+//        bufferInheritanceInfo.framebuffer = VK_NULL_HANDLE;
+//        bufferInheritanceInfo.occlusionQueryEnable = false;
+//        bufferInheritanceInfo.queryFlags = 0;
+//        bufferInheritanceInfo.pipelineStatistics = 0;
+//
+//        VkCommandBufferBeginInfo beginInfo = {};
+//        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT | VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+//        beginInfo.pNext = NULL;
+//        beginInfo.pInheritanceInfo = &bufferInheritanceInfo;
+//
+//        if (vkBeginCommandBuffer(commandBufferForFillingFrameBuf, &beginInfo) != VK_SUCCESS) {
+//            throw std::runtime_error("failed to begin recording command buffer!");
+//        }
+//    }
+//
+//    internalDrawStageAndDeps(drawStage);
+//
+//    if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
+//        throw std::runtime_error("failed to record command buffer!");
+//    }
+//    if (vkEndCommandBuffer(commandBufferForFillingFrameBuf) != VK_SUCCESS) {
+//        throw std::runtime_error("failed to record command buffer!");
+//    }
+//}
 
 void GDeviceVLK::initUploadThread() {
     if (getIsAsynBuffUploadSupported()) {

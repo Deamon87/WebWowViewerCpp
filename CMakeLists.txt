@@ -162,7 +162,6 @@ if (LINK_EGL)
 	add_definitions(-DWITH_GLESv2)
 endif()
 
-
 include_directories(${GLEW_INCLUDE_DIRS})
 
 
@@ -225,9 +224,24 @@ set(SOURCE_FILES
 		src/database/product_db_parser/productDbParser.cpp
 		src/database/product_db_parser/productDbParser.h
 		src/database/buildInfoParser/buildInfoParser.cpp
-		src/database/buildInfoParser/buildInfoParser.h src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.cpp src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h)
+		src/database/buildInfoParser/buildInfoParser.h
+		src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.cpp
+		src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h
+		src/ui/renderer/uiScene/FrontendUIRenderer.cpp
+		src/ui/renderer/uiScene/FrontendUIRenderer.h
+		src/ui/renderer/uiScene/FrontendUIRendererFactory.cpp
+		src/ui/renderer/uiScene/FrontendUIRendererFactory.h
+		src/ui/renderer/uiScene/ImGUIPlan.cpp
+		src/ui/renderer/uiScene/ImGUIPlan.h
+		src/ui/renderer/uiScene/buffers/IVertexBufferDynamicImgui.cpp
+		src/ui/renderer/uiScene/buffers/IVertexBufferDynamicImgui.h)
 
 
+set(SOURCE_FILES_VULKAN
+		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.cpp
+		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.h
+		src/ui/renderer/uiScene/vulkan/buffers/IVertexBufferDynamicImguiVLK.cpp
+		src/ui/renderer/uiScene/vulkan/buffers/IVertexBufferDynamicImguiVLK.h)
 
 #########################################################
 # FIND OPENGL
@@ -260,13 +274,15 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package( Threads REQUIRED )
 
-#if(CMAKE_USE_PTHREADS_INIT)
-#    set(CMAKE_C_FLAGS ${CMAKE_C_FLAGS} "-pthread")
-#endif()
-
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
-add_executable(AWebWoWViewerCpp ${SOURCE_FILES})
+
+if (NOT Vulkan_FOUND)
+	set(SOURCE_FILES_VULKAN "")
+endif()
+
+add_executable(AWebWoWViewerCpp ${SOURCE_FILES} ${SOURCE_FILES_VULKAN})
+
 if (Vulkan_FOUND)
 	add_definitions(-DLINK_VULKAN)
 endif()

@@ -35,7 +35,7 @@
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "ui/FrontendUI.h"
-#include "../wowViewerLib/src/engine/SceneComposer.h"
+#include "../wowViewerLib/src/renderer/frame/SceneComposer.h"
 #include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "screenshots/screenshotMaker.h"
@@ -336,8 +336,6 @@ int main(){
     const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
 #endif
-
-
     signal(SIGABRT, &my_function_to_handle_aborts);
     signal(SIGSEGV, &my_function_to_handle_aborts);
 
@@ -475,8 +473,6 @@ int main(){
         glfwSetWindowSize(window, width, height);
         glfwGetFramebufferSize(window, &canvWidth, &canvHeight);
     }
-
-//    frontendUI->createDefaultprocessor();
     glfwSwapInterval(0);
 
 //try {
@@ -486,15 +482,12 @@ int main(){
         stopKeyboard = frontendUI->getStopKeyboard();
         glfwPollEvents();
 
-        frontendUI->composeUI();
-
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
         {
             auto processor = frontendUI->getProcessor();
             if (frontendUI->getProcessor()) {
-
                 if (!processor->getThreaded()) {
                     processor->processRequests(false);
                 }
@@ -506,11 +499,11 @@ int main(){
             apiContainer->debugCamera->tick(deltaTime * (1000.0f));
         }
 
-        //DrawStage for screenshot
-//        needToMakeScreenshot = true;
         if (apiContainer->getConfig()->pauseAnimation) {
             deltaTime = 0.0;
         }
+
+        frontendUI->composeUI();
         auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);
 
         sceneComposer.draw(sceneScenario);

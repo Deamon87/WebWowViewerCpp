@@ -5,8 +5,13 @@
 
 #include "IDeviceFactory.h"
 
+#ifdef LINK_OGL2
 #include "ogl2.0/GDeviceGL20.h"
+#endif
+
+#ifdef LINK_OGL3
 #include "ogl3.3/GDeviceGL33.h"
+#endif
 #ifdef LINK_OGL4
 #include "ogl4.x/GDeviceGL4x.h"
 #endif

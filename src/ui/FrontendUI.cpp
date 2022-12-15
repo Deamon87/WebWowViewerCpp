@@ -205,71 +205,70 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Separator();
         }
 
-        int currentFrame = m_api->hDevice->getDrawFrameNumber();
-        auto &cullStageData = m_cullstages[currentFrame];
-
-        if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
-            int m2ObjectsBeforeCullingExterior = 0;
-            if (cullStageData->viewsHolder.getExterior() != nullptr) {
-                m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
-            }
-
-            int wmoGroupsInExterior = 0;
-            if (cullStageData->viewsHolder.getExterior() != nullptr) {
-                wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
-            }
-
-            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
-            int wmoObjectsBeforeCull = cullStageData!= nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
-
-            ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
-            ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
-            ImGui::Text("Interiors (aka group WMOs): %s", std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
-            ImGui::Text("M2 Objects Before Culling in Exterior: %s", std::to_string(m2ObjectsBeforeCullingExterior).c_str());
-            ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
-
-            ImGui::Separator();
-        }
-
-        if (ImGui::CollapsingHeader("Current fog params")) {
-            if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr) {
-                ImGui::Text("Fog end: %.3f", cullStageData->frameDependentData->FogEnd);
-                ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDependentData->FogScaler);
-                ImGui::Text("Fog Density: %.3f", cullStageData->frameDependentData->FogDensity);
-                ImGui::Text("Fog Height: %.3f", cullStageData->frameDependentData->FogHeight);
-                ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDependentData->FogHeightScaler);
-                ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDependentData->FogHeightDensity);
-                ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDependentData->SunFogAngle);
-                ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDependentData->FogColor.x,
-                            cullStageData->frameDependentData->FogColor.y,
-                            cullStageData->frameDependentData->FogColor.z);
-                ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDependentData->EndFogColor.x,
-                            cullStageData->frameDependentData->EndFogColor.y,
-                            cullStageData->frameDependentData->EndFogColor.z);
-                ImGui::Text("End Fog Color Distance: %.3f", cullStageData->frameDependentData->EndFogColorDistance);
-                ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDependentData->SunFogColor.x,
-                            cullStageData->frameDependentData->SunFogColor.y,
-                            cullStageData->frameDependentData->SunFogColor.z);
-                ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDependentData->SunFogStrength);
-                ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDependentData->FogHeightColor.x,
-                            cullStageData->frameDependentData->FogHeightColor.y,
-                            cullStageData->frameDependentData->FogHeightColor.z);
-                ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
-                            cullStageData->frameDependentData->FogHeightCoefficients.x,
-                            cullStageData->frameDependentData->FogHeightCoefficients.y,
-                            cullStageData->frameDependentData->FogHeightCoefficients.z);
-                ImGui::Separator();
-            }
-        }
-        if (ImGui::CollapsingHeader("Current light params")) {
-            if (cullStageData->frameDependentData != nullptr) {
-                ImGui::Text("Glow: %.3f", cullStageData->frameDependentData->currentGlow);
-            }
-        }
+//        auto &cullStageData = m_cullstages[currentFrame];
+//
+//        if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
+//            int m2ObjectsBeforeCullingExterior = 0;
+//            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+//                m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
+//            }
+//
+//            int wmoGroupsInExterior = 0;
+//            if (cullStageData->viewsHolder.getExterior() != nullptr) {
+//                wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
+//            }
+//
+//            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
+//            int wmoObjectsBeforeCull = cullStageData!= nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
+//
+//            ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
+//            ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
+//            ImGui::Text("Interiors (aka group WMOs): %s", std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
+//            ImGui::Text("M2 Objects Before Culling in Exterior: %s", std::to_string(m2ObjectsBeforeCullingExterior).c_str());
+//            ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
+//
+//            ImGui::Separator();
+//        }
+//
+//        if (ImGui::CollapsingHeader("Current fog params")) {
+//            if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr) {
+//                ImGui::Text("Fog end: %.3f", cullStageData->frameDependentData->FogEnd);
+//                ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDependentData->FogScaler);
+//                ImGui::Text("Fog Density: %.3f", cullStageData->frameDependentData->FogDensity);
+//                ImGui::Text("Fog Height: %.3f", cullStageData->frameDependentData->FogHeight);
+//                ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDependentData->FogHeightScaler);
+//                ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDependentData->FogHeightDensity);
+//                ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDependentData->SunFogAngle);
+//                ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
+//                            cullStageData->frameDependentData->FogColor.x,
+//                            cullStageData->frameDependentData->FogColor.y,
+//                            cullStageData->frameDependentData->FogColor.z);
+//                ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
+//                            cullStageData->frameDependentData->EndFogColor.x,
+//                            cullStageData->frameDependentData->EndFogColor.y,
+//                            cullStageData->frameDependentData->EndFogColor.z);
+//                ImGui::Text("End Fog Color Distance: %.3f", cullStageData->frameDependentData->EndFogColorDistance);
+//                ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
+//                            cullStageData->frameDependentData->SunFogColor.x,
+//                            cullStageData->frameDependentData->SunFogColor.y,
+//                            cullStageData->frameDependentData->SunFogColor.z);
+//                ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDependentData->SunFogStrength);
+//                ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
+//                            cullStageData->frameDependentData->FogHeightColor.x,
+//                            cullStageData->frameDependentData->FogHeightColor.y,
+//                            cullStageData->frameDependentData->FogHeightColor.z);
+//                ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
+//                            cullStageData->frameDependentData->FogHeightCoefficients.x,
+//                            cullStageData->frameDependentData->FogHeightCoefficients.y,
+//                            cullStageData->frameDependentData->FogHeightCoefficients.z);
+//                ImGui::Separator();
+//            }
+//        }
+//        if (ImGui::CollapsingHeader("Current light params")) {
+//            if (cullStageData->frameDependentData != nullptr) {
+//                ImGui::Text("Glow: %.3f", cullStageData->frameDependentData->currentGlow);
+//            }
+//        }
 
         ImGui::End();
     }
@@ -558,7 +557,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Test export")) {
                 if (currentScene != nullptr) {
                     exporter = std::make_shared<GLTFExporter>("./gltf/");
-                    currentScene->exportScene(exporter.get());
+//                    currentScene->exportScene(exporter.get());
                     exporterFramesReady = 0;
                 }
             }
@@ -1292,195 +1291,10 @@ void FrontendUI::showSettingsDialog() {
         ImGui::End();
     }
 }
-#define logExecution {}
-//#define logExecution { \
-//    std::cout << "Passed "<<__FUNCTION__<<" line " << __LINE__ << std::endl;\
+
+//void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
+
 //}
-void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
-    auto m_device = m_api->hDevice;
-
-    logExecution
-    if (this->fontTexture == nullptr) {
-        logExecution
-        ImGuiIO& io = ImGui::GetIO();
-        logExecution
-        unsigned char* pixels;
-        int width, height;
-        logExecution
-        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
-        logExecution
-        // Upload texture to graphics system
-        logExecution
-        this->fontTexture = m_device->createTexture(false, false);
-        this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
-        logExecution
-        // Store our identifier
-        logExecution
-        io.Fonts->TexID = this->fontTexture;
-        logExecution
-        return;
-    }
-    logExecution
-    if (exporter != nullptr) {
-        if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
-            exporterFramesReady++;
-        }
-        if (exporterFramesReady > 5) {
-            exporter->saveToFile("model.gltf");
-            exporter = nullptr;
-        }
-    }
-    logExecution
-    lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
-    lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
-
-    resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-    logExecution
-    auto *draw_data = ImGui::GetDrawData();
-    logExecution
-    if (draw_data == nullptr)
-        return;
-
-    int  fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
-    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
-    if (fb_width <= 0 || fb_height <= 0) {
-        return;
-    }
-    logExecution
-    ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
-    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
-    logExecution
-    //Create projection matrix:
-    auto uiScale = ImGui::GetIO().uiScale;
-    float L = draw_data->DisplayPos.x * uiScale;
-    float R = (draw_data->DisplayPos.x + draw_data->DisplaySize.x) * uiScale;
-    float T = draw_data->DisplayPos.y * uiScale;
-    float B = (draw_data->DisplayPos.y + draw_data->DisplaySize.y) * uiScale;
-    logExecution
-    mathfu::mat4 ortho_projection =
-        {
-            { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
-            { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
-            { 0.0f,         0.0f,        -1.0f,   0.0f },
-            { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
-        };
-
-    logExecution
-    if (m_device->getIsVulkanAxisSystem()) {
-        static const mathfu::mat4 vulkanMatrixFix1 = mathfu::mat4(1, 0, 0, 0,
-                                                                 0, -1, 0, 0,
-                                                                 0, 0, 1.0/2.0, 1/2.0,
-                                                                 0, 0, 0, 1).Transpose();
-        ortho_projection = vulkanMatrixFix1 * ortho_projection;
-    }
-    logExecution
-    auto uboPart = m_device->createUniformBufferChunk(sizeof(ImgUI::modelWideBlockVS));
-
-
-    uboPart->setUpdateHandler([ortho_projection,uiScale](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
-        auto &uni = self->getObject<ImgUI::modelWideBlockVS>();
-        uni.projectionMat = ortho_projection;
-        uni.scale[0] = uiScale;
-    });
-
-    logExecution
-    auto shaderPermute = m_device->getShader("imguiShader", nullptr);
-    logExecution
-    // Render command lists
-    for (int n = 0; n < draw_data->CmdListsCount; n++)
-    {
-        const ImDrawList* cmd_list = draw_data->CmdLists[n];
-
-        // Upload vertex/index buffers
-        auto vertexBufferBindings = m_device->createVertexBufferBindings();
-        auto vboBuffer = m_device->createVertexBuffer();
-        auto iboBuffer = m_device->createIndexBuffer();
-
-        vboBuffer->uploadData(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
-        iboBuffer->uploadData(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
-
-        //Create vao
-        GVertexBufferBinding vertexBufferBinding;
-        vertexBufferBinding.bindings = std::vector<GBufferBinding>(&imguiBindings[0], &imguiBindings[3]);
-        vertexBufferBinding.vertexBuffer = vboBuffer;
-
-        vertexBufferBindings->setIndexBuffer(iboBuffer);
-        vertexBufferBindings->addVertexBufferBinding(vertexBufferBinding);
-        vertexBufferBindings->save();
-
-        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
-        {
-
-
-            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
-            if (pcmd->UserCallback != NULL)
-            {
-                // User callback, registered via ImDrawList::AddCallback()
-                // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
-//                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
-//                    ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
-//                else
-//                    pcmd->UserCallback(cmd_list, pcmd);
-                assert(pcmd->UserCallback == NULL);
-            }
-            else
-            {
-                // Project scissor/clipping rectangles into framebuffer space
-                ImVec4 clip_rect;
-                clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
-                clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
-                clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
-                clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
-
-                if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
-                {
-                    // Apply scissor/clipping rectangle
-                    // Create mesh add add it to collected meshes
-                    gMeshTemplate meshTemplate(vertexBufferBindings, shaderPermute);
-                    meshTemplate.element = DrawElementMode::TRIANGLES;
-                    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-                    meshTemplate.backFaceCulling = false;
-                    meshTemplate.depthCulling = false;
-
-                    meshTemplate.scissorEnabled = true;
-                    //Vulkan has different clip offset compared to OGL
-                    if (!m_device->getIsVulkanAxisSystem()) {
-                        meshTemplate.scissorOffset = {(int)(clip_rect.x* uiScale), (int)((fb_height - clip_rect.w)* uiScale)};
-                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x) * uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
-                    } else {
-                        meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((clip_rect.y) * uiScale)};
-                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x)* uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
-                    }
-
-                    meshTemplate.ubo[1] = uboPart;
-                    meshTemplate.textureCount = 1;
-                    meshTemplate.texture[0] = pcmd->TextureId;
-
-                    meshTemplate.start = pcmd->IdxOffset * 2;
-                    meshTemplate.end = pcmd->ElemCount;
-
-                    resultDrawStage->opaqueMeshes->meshes.push_back(m_device->createMesh(meshTemplate));
-                }
-            }
-        }
-    }
-
-    //1. Collect buffers
-    auto &bufferChunks = updateStages[0]->uniformBufferChunks;
-    int renderIndex = 0;
-    for (const auto &mesh : resultDrawStage->opaqueMeshes->meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            auto bufferChunk = mesh->getUniformBuffer(i);
-
-            if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk);
-            }
-        }
-    }
-
-    std::sort( bufferChunks.begin(), bufferChunks.end());
-    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
-}
 
 void FrontendUI::getAdtSelectionMinimap(int wdtFileDataId) {
     m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
@@ -1558,12 +1372,6 @@ void FrontendUI::showMakeScreenshotDialog() {
    }
 }
 
-void FrontendUI::produceUpdateStage(HUpdateStage &updateStage) {
-    this->update(updateStage);
-
-
-}
-
 mathfu::mat4 getInfZMatrix(float f, float aspect) {
     return mathfu::mat4(
         f / aspect, 0.0f,  0.0f,  0.0f,
@@ -1572,186 +1380,169 @@ mathfu::mat4 getInfZMatrix(float f, float aspect) {
         0.0f, 0.0f, 1,  0.0f);
 }
 
-HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
-                                bool produceDoubleCamera, bool swapDebugCamera,
-                                ApiContainer &apiContainer, std::shared_ptr<IScene> &currentScene, HCullStage &cullStage) {
-
-
-    static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-                                                              0, -1, 0, 0,
-                                                              0, 0, 1.0/2.0, 1.0/2.0,
-                                                              0, 0, 0, 1).Transpose();
-
-    float farPlaneRendering = apiContainer.getConfig()->farPlane;
-    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
-
-    float nearPlane = 1.0;
-    float fov = toRadian(45.0);
-
-    float canvasAspect = (float)width / (float)height;
-
-    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    HCameraMatrices cameraMatricesUpdate = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-    HCameraMatrices cameraMatricesRendering = cameraMatricesUpdate;
-    HCameraMatrices cameraMatricesRenderingDebug = nullptr;
-
-    if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
-        cameraMatricesRenderingDebug = apiContainer.debugCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-
-
-    //Frustum matrix with reversed Z
-    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    if (isInfZSupported)
-    {
-        float f = 1.0f / tan(fov / 2.0f);
-        cameraMatricesRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
-        if (cameraMatricesRenderingDebug != nullptr) {
-            cameraMatricesRenderingDebug->perspectiveMat = cameraMatricesRendering->perspectiveMat;
-        }
-    }
-
-    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
-        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
-
-        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
-    }
-
-    auto clearColor = apiContainer.getConfig()->clearColor;
-
-    if (cameraMatricesRenderingDebug && swapDebugCamera) {
-        std::swap(cameraMatricesRendering, cameraMatricesRenderingDebug);
-    }
-
-    if (currentScene != nullptr) {
-        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
-
-        HFrameBuffer fb = nullptr;
-        if (isScreenshot) {
-            fb = apiContainer.hDevice->createFrameBuffer(width, height,
-                                                         {ITextureFormat::itRGBA},
-                                                         ITextureFormat::itDepth32,
-                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
-        }
-
-        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesUpdate);
-        std::vector<HUpdateStage> updateStages = {updateStage};
-
-        std::vector<HDrawStage> drawStageDependencies = {};
-        if (produceDoubleCamera) {
-            std::vector<HDrawStage> drawStageDependencies__ = {};
-
-            HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStages, currentScene, cameraMatricesRenderingDebug, drawStageDependencies__,
-                                                                    true,
-                                                                    dimensions,
-                                                                    true, isInfZSupported, clearColor, fb);
-            drawStageDependencies.push_back(sceneDrawStage);
-
-            int newWidth = floor(dimensions.maxs[0]*0.25f);
-            int newHeight = floor((float)newWidth / canvasAspect);
-
-            int newX = dimensions.maxs[0] - newWidth;
-            int newY = dimensions.maxs[1] - newHeight;
-
-            dimensions = {{newX, newY}, {newWidth, newHeight}};
-        }
-
-        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStages, currentScene, cameraMatricesRendering, drawStageDependencies,
-                                                                true,
-                                                                dimensions,
-                                                                true, isInfZSupported, clearColor, fb);
-
-
-        return sceneDrawStage;
-    }
-
-    return nullptr;
-}
+//HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
+//                                bool produceDoubleCamera, bool swapDebugCamera,
+//                                ApiContainer &apiContainer, std::shared_ptr<IScene> &currentScene, HCullStage &cullStage) {
+//
+//
+//    static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
+//                                                              0, -1, 0, 0,
+//                                                              0, 0, 1.0/2.0, 1.0/2.0,
+//                                                              0, 0, 0, 1).Transpose();
+//
+//    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+//    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+//
+//    float nearPlane = 1.0;
+//    float fov = toRadian(45.0);
+//
+//    float canvasAspect = (float)width / (float)height;
+//
+//    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+//    HCameraMatrices cameraMatricesUpdate = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+//    HCameraMatrices cameraMatricesRendering = cameraMatricesUpdate;
+//    HCameraMatrices cameraMatricesRenderingDebug = nullptr;
+//
+//    if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
+//        cameraMatricesRenderingDebug = apiContainer.debugCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+//
+//
+//    //Frustum matrix with reversed Z
+//    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+//    if (isInfZSupported)
+//    {
+//        float f = 1.0f / tan(fov / 2.0f);
+//        cameraMatricesRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
+//        if (cameraMatricesRenderingDebug != nullptr) {
+//            cameraMatricesRenderingDebug->perspectiveMat = cameraMatricesRendering->perspectiveMat;
+//        }
+//    }
+//
+//    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
+//        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
+//
+//        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
+//    }
+//
+//    auto clearColor = apiContainer.getConfig()->clearColor;
+//
+//    if (cameraMatricesRenderingDebug && swapDebugCamera) {
+//        std::swap(cameraMatricesRendering, cameraMatricesRenderingDebug);
+//    }
+//
+//    if (currentScene != nullptr) {
+//        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
+//
+//        HFrameBuffer fb = nullptr;
+//        if (isScreenshot) {
+//            fb = apiContainer.hDevice->createFrameBuffer(width, height,
+//                                                         {ITextureFormat::itRGBA},
+//                                                         ITextureFormat::itDepth32,
+//                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
+//        }
+//
+//        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
+//        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesUpdate);
+//        std::vector<HUpdateStage> updateStages = {updateStage};
+//
+//        std::vector<HDrawStage> drawStageDependencies = {};
+//        if (produceDoubleCamera) {
+//            std::vector<HDrawStage> drawStageDependencies__ = {};
+//
+//            HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStages, currentScene, cameraMatricesRenderingDebug, drawStageDependencies__,
+//                                                                    true,
+//                                                                    dimensions,
+//                                                                    true, isInfZSupported, clearColor, fb);
+//            drawStageDependencies.push_back(sceneDrawStage);
+//
+//            int newWidth = floor(dimensions.maxs[0]*0.25f);
+//            int newHeight = floor((float)newWidth / canvasAspect);
+//
+//            int newX = dimensions.maxs[0] - newWidth;
+//            int newY = dimensions.maxs[1] - newHeight;
+//
+//            dimensions = {{newX, newY}, {newWidth, newHeight}};
+//        }
+//
+//        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStages, currentScene, cameraMatricesRendering, drawStageDependencies,
+//                                                                true,
+//                                                                dimensions,
+//                                                                true, isInfZSupported, clearColor, fb);
+//
+//
+//        return sceneDrawStage;
+//    }
+//
+//    return nullptr;
+//}
 
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
     if (m_minimapGenerationWindow != nullptr) {
         m_minimapGenerationWindow->process();
     }
 
-    if (dataExporter != nullptr) {
-        dataExporter->process();
-        if (dataExporter->isDone()) {
-            delete dataExporter;
-            dataExporter = nullptr;
-        }
-    }
-
-    if (screenshotDS != nullptr) {
-        if (screenshotFrame + 5 <= m_api->hDevice->getFrameNumber()) {
-            std::vector<uint8_t> buffer = std::vector<uint8_t>(screenShotWidth*screenShotHeight*4+1);
-
-            saveDataFromDrawStage(screenshotDS->target, screenshotFilename, screenShotWidth, screenShotHeight, buffer);
-
-            screenshotDS = nullptr;
-        }
-    }
-
-
-    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-    std::vector<HDrawStage> uiDependecies = {};
-
-    if (needToMakeScreenshot)
-    {
-        HCullStage tempCullStage = nullptr;
-        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true,
-                                              false, false, *m_api,
-                                              currentScene,tempCullStage);
-        if (drawStage != nullptr) {
-            uiDependecies.push_back(drawStage);
-            screenshotDS = drawStage;
-            screenshotFrame = m_api->hDevice->getFrameNumber();
-        }
-        needToMakeScreenshot = false;
-    }
-    if (m_minimapGenerationWindow != nullptr) {
-        auto drawStage = m_minimapGenerationWindow->getDrawStage(sceneScenario);
-        if (drawStage != nullptr) {
-            uiDependecies.push_back(drawStage);
-        }
-    }
-
-    //DrawStage for current frame
-    bool clearOnUi = true;
-    if (currentScene != nullptr && m_api->camera != nullptr)
-    {
-        int currentFrame = m_api->hDevice->getDrawFrameNumber();
-        auto &cullStageData = m_cullstages[currentFrame];
-        cullStageData = nullptr;
-
-
-
-        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
-                                              false,
-                                              m_api->getConfig()->doubleCameraDebug,
-                                              m_api->getConfig()->swapMainAndDebug,
-                                              *m_api,
-                                              currentScene, cullStageData);
-        if (drawStage != nullptr) {
-            uiDependecies.push_back(drawStage);
-            clearOnUi = false;
-        }
-    }
-    //DrawStage for UI
-    {
-        ViewPortDimensions dimension = {
-            {0,     0},
-            {canvWidth, canvHeight}
-        };
-        auto clearColor = m_api->getConfig()->clearColor;
-
-        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
-        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-        std::vector<HUpdateStage> updateStages = {uiUpdateStage};
-        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(updateStages, getShared(), nullptr, uiDependecies,
-                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
-    }
-
-    return sceneScenario;
+    return nullptr;
+//
+//    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
+//    std::vector<HDrawStage> uiDependecies = {};
+//
+//    if (needToMakeScreenshot)
+//    {
+//        HCullStage tempCullStage = nullptr;
+//        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true,
+//                                              false, false, *m_api,
+//                                              currentScene,tempCullStage);
+//        if (drawStage != nullptr) {
+//            uiDependecies.push_back(drawStage);
+//            screenshotDS = drawStage;
+//            screenshotFrame = m_api->hDevice->getFrameNumber();
+//        }
+//        needToMakeScreenshot = false;
+//    }
+//    if (m_minimapGenerationWindow != nullptr) {
+//        auto drawStage = m_minimapGenerationWindow->getDrawStage(sceneScenario);
+//        if (drawStage != nullptr) {
+//            uiDependecies.push_back(drawStage);
+//        }
+//    }
+//
+//    //DrawStage for current frame
+//    bool clearOnUi = true;
+//    if (currentScene != nullptr && m_api->camera != nullptr)
+//    {
+//        int currentFrame = m_api->hDevice->getDrawFrameNumber();
+//        auto &cullStageData = m_cullstages[currentFrame];
+//        cullStageData = nullptr;
+//
+//
+//
+//        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
+//                                              false,
+//                                              m_api->getConfig()->doubleCameraDebug,
+//                                              m_api->getConfig()->swapMainAndDebug,
+//                                              *m_api,
+//                                              currentScene, cullStageData);
+//        if (drawStage != nullptr) {
+//            uiDependecies.push_back(drawStage);
+//            clearOnUi = false;
+//        }
+//    }
+//    //DrawStage for UI
+//    {
+//        ViewPortDimensions dimension = {
+//            {0,     0},
+//            {canvWidth, canvHeight}
+//        };
+//        auto clearColor = m_api->getConfig()->clearColor;
+//
+//        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
+//        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
+//        std::vector<HUpdateStage> updateStages = {uiUpdateStage};
+//        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(updateStages, getShared(), nullptr, uiDependecies,
+//                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
+//    }
+//
+//    return sceneScenario;
 }
 
 bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
@@ -1793,8 +1584,9 @@ void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y,
     m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
-    currentScene = std::make_shared<M2Scene>(m_api, m2Fdid);
-    currentScene->setReplaceTextureArray(replacementTextureIds);
+    auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
+    currentScene = m2Scene;
+    m2Scene->setReplaceTextureArray(replacementTextureIds);
 
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
@@ -1804,8 +1596,9 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
     m_api->camera->setCameraPos(0, 0, 0);
 }
 void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
-    currentScene = std::make_shared<M2Scene>(m_api, m2FileName);
-    currentScene->setReplaceTextureArray(replacementTextureIds);
+    auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
+    currentScene = m2Scene;
+    m2Scene->setReplaceTextureArray(replacementTextureIds);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(0, 0, 0);
@@ -1820,9 +1613,9 @@ void FrontendUI::unloadScene() {
 }
 
 int FrontendUI::getCameraNumCallback() {
-    if (currentScene != nullptr) {
-        return currentScene->getCameraNum();
-    }
+//    if (currentScene != nullptr) {
+//        return currentScene->getCameraNum();
+//    }
 
     return 0;
 }
@@ -1830,21 +1623,22 @@ int FrontendUI::getCameraNumCallback() {
 
 
 bool FrontendUI::setNewCameraCallback(int cameraNum) {
-    if (currentScene == nullptr) return false;
-
-    auto newCamera = currentScene->createCamera(cameraNum);
-    if (newCamera == nullptr) {
-        m_api->camera = std::make_shared<FirstPersonCamera>();
-        m_api->camera->setMovementSpeed(movementSpeed);
-        return false;
-    }
-
-    m_api->camera = newCamera;
-    return true;
+    return false;
+//    if (currentScene == nullptr) return false;
+//
+//    auto newCamera = currentScene->createCamera(cameraNum);
+//    if (newCamera == nullptr) {
+//        m_api->camera = std::make_shared<FirstPersonCamera>();
+//        m_api->camera->setMovementSpeed(movementSpeed);
+//        return false;
+//    }
+//
+//    m_api->camera = newCamera;
+//    return true;
 }
 
 void FrontendUI::resetAnimationCallback() {
-    currentScene->resetAnimation();
+//    currentScene->resetAnimation();
 }
 
 void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {

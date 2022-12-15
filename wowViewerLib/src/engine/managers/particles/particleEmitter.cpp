@@ -347,7 +347,7 @@ void ParticleEmitter::createMesh() {
         meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
 
         auto l_blendMode = meshTemplate.blendMode;
-        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
             Particle::meshParticleWideBlockPS &blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
@@ -668,7 +668,9 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
-    auto vboBufferDynamic = frame[m_api->hDevice->getUpdateFrameNumber()].m_bufferVBO;
+//    int frame = m_api->hDevice->getUpdateFrameNumber();
+    int frameNum = 0;
+    auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
     size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
     if ((m_data->old.flags & 0x60000) == 0x60000) {
         maxFutureSize *= 2;
@@ -1130,36 +1132,36 @@ ParticleEmitter::BuildQuadT3(
 }
 
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
-    if (getGenerator() == nullptr) return;
-
-    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
-    if (!currentFrame.active)
-        return;
-
-    HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
-    mesh->setRenderOrder(renderOrder);
-    if (mesh->getIsTransparent()) {
-        transparentMeshes.push_back(mesh);
-    } else {
-        opaqueMeshes.push_back(mesh);
-    }
+//    if (getGenerator() == nullptr) return;
+//
+//    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+//    if (!currentFrame.active)
+//        return;
+//
+//    HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
+//    mesh->setRenderOrder(renderOrder);
+//    if (mesh->getIsTransparent()) {
+//        transparentMeshes.push_back(mesh);
+//    } else {
+//        opaqueMeshes.push_back(mesh);
+//    }
 }
 
 void ParticleEmitter::updateBuffers() {
-    if (getGenerator() == nullptr) return;
-
-    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
-    currentFrame.active = szVertexCnt > 0;
-
-    if (!currentFrame.active)
-        return;
-
-//    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
-    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
-
-    currentFrame.m_mesh->setEnd(szVertexCnt * 6);
-    currentFrame.m_mesh->setSortDistance(m_currentBonePos);
-    currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
+//    if (getGenerator() == nullptr) return;
+//
+//    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+//    currentFrame.active = szVertexCnt > 0;
+//
+//    if (!currentFrame.active)
+//        return;
+//
+////    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+//    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
+//
+//    currentFrame.m_mesh->setEnd(szVertexCnt * 6);
+//    currentFrame.m_mesh->setSortDistance(m_currentBonePos);
+//    currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
 
 }
 

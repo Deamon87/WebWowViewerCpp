@@ -8,6 +8,6 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(HGDeviceVLK hDevice) : m_devi
 
 }
 
-HFrameBuffer MapSceneRenderForwardVLK::putIntoQueue(HCullStage &cullStage) {
+void MapSceneRenderForwardVLK::putIntoQueue(FrameInputParams<MapRenderPlan> &frameInputParams) {
 
 }

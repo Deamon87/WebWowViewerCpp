@@ -10,7 +10,7 @@
 
 void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
-                                    HCullStage &cullStage,
+                                    HMapRenderPlan &mapRenderPlan,
                                     M2ObjectListContainer &potentialM2,
                                     WMOListContainer &potentialWmo) {
     potentialWmo.addCand(this->m_wmoObject);
@@ -18,30 +18,30 @@ void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustu
 
 void WmoScene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                      const mathfu::vec4 &cameraPos,
-                                     HCullStage &cullStage,
+                                     HMapRenderPlan &mapRenderPlan,
                                      M2ObjectListContainer &m2ObjectsCandidates,
                                      WMOListContainer &wmoCandidates) {
 
     wmoCandidates.addCand(this->m_wmoObject);
 };
 
-void WmoScene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                                       StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
+void WmoScene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
+                                        StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
     Config* config = this->m_api->getConfig();
     config->globalFog = EParameterSource::eNone;
 
-    Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    Map::updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
 
     mathfu::vec4 ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-    auto frameDepedantData = cullStage->frameDependentData;
+    auto frameDependantData = mapRenderPlan->frameDependentData;
 
-    frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDepedantData->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDepedantData->exteriorDirectColor = mathfu::vec4(0.3,0.30,0.3,0.3);
-    frameDepedantData->exteriorDirectColorDir = MathHelper::calcExteriorColorDir(
-        cullStage->matricesForCulling->lookAtMat,
+    frameDependantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+    frameDependantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+    frameDependantData->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+    frameDependantData->exteriorDirectColor = mathfu::vec4(0.3, 0.30, 0.3, 0.3);
+    frameDependantData->exteriorDirectColorDir = MathHelper::calcExteriorColorDir(
+        mapRenderPlan->renderingMatrices->lookAtMat,
         m_api->getConfig()->currentTime
     );
 }

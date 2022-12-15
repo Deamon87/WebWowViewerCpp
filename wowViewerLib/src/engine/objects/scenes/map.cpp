@@ -22,8 +22,6 @@
 #endif
 #include "../../algorithms/mathHelper_culling.h"
 
-//#include "../../algorithms/quicksort-dualpivot.h"
-
 static GBufferBinding fullScreen[1] = {
     {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
 };
@@ -309,7 +307,7 @@ Map::Map(HApiContainer api, int mapId, std::string mapName) {
 
 HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config *config, bool conusFor0x4Sky) {
     auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
-    skyVs->setUpdateHandler([config, conusFor0x4Sky](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
+    skyVs->setUpdateHandler([config, conusFor0x4Sky](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
         auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
 
         if (!conusFor0x4Sky) {
@@ -368,20 +366,20 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     return hmesh;
 }
 
-void Map::checkCulling(HCullStage &cullStage) {
+void Map::makeFramePlan(FrameInputParams<HMapRenderPlan> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
     cullCreateVarsCounter.beginMeasurement();
     Config* config = this->m_api->getConfig();
 
-    mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
+    mathfu::vec4 cameraPos = frameInputParams.matricesForCulling->cameraPos;
     mathfu::vec3 cameraVec3 = cameraPos.xyz();
-    mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
-    mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
+    mathfu::mat4 &frustumMat = frameInputParams.matricesForCulling->perspectiveMat;
+    mathfu::mat4 &lookAtMat4 = frameInputParams.matricesForCulling->lookAtMat;
 
-    size_t adtRenderedThisFramePrev = cullStage->adtArray.size();
-    cullStage->adtArray = {};
-    cullStage->adtArray.reserve(adtRenderedThisFramePrev);
+    size_t adtRenderedThisFramePrev = mapRenderPlan->adtArray.size();
+    mapRenderPlan->adtArray = {};
+    mapRenderPlan->adtArray.reserve(adtRenderedThisFramePrev);
 
     mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat4;
     mathfu::vec4 &camera4 = cameraPos;
@@ -402,16 +400,17 @@ void Map::checkCulling(HCullStage &cullStage) {
     frustumData.frustums = {planesUndPoints};
     frustumData.perspectiveMat = frustumMat;
     frustumData.viewMat = lookAtMat4;
+    frustumData.cameraPos = cameraVec3;
     frustumData.farPlane = planesUndPoints.planes[planesUndPoints.planes.size() - 2]; //farPlane is always one before last
 
     m_viewRenderOrder = 0;
 
-    cullStage->m_currentInteriorGroups = {};
-    cullStage->m_currentWMO = nullptr;
+    mapRenderPlan->m_currentInteriorGroups = {};
+    mapRenderPlan->m_currentWMO = nullptr;
 
     int bspNodeId = -1;
     int interiorGroupNum = -1;
-    cullStage->m_currentWmoGroup = -1;
+    mapRenderPlan->m_currentWmoGroup = -1;
 
     //Get potential WMO
     WMOListContainer potentialWmo;
@@ -422,20 +421,20 @@ void Map::checkCulling(HCullStage &cullStage) {
 
     cullGetCurrentWMOCounter.beginMeasurement();
     //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
-    getPotentialEntities(frustumData, cameraPos, cullStage, potentialM2, potentialWmo);
+    getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
 
     for (auto &checkingWmoObj : potentialWmo.getCandidates()) {
         WmoGroupResult groupResult;
         bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
 
         if (result) {
-            cullStage->m_currentWMO = checkingWmoObj;
-            cullStage->m_currentWmoGroup = groupResult.groupIndex;
+            mapRenderPlan->m_currentWMO = checkingWmoObj;
+            mapRenderPlan->m_currentWmoGroup = groupResult.groupIndex;
             if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                cullStage->m_currentInteriorGroups.push_back(groupResult);
+                mapRenderPlan->m_currentInteriorGroups.push_back(groupResult);
                 interiorGroupNum = groupResult.groupIndex;
-                cullStage->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(groupResult.groupIndex);
-                cullStage->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(groupResult.groupIndex);
+                mapRenderPlan->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(groupResult.groupIndex);
+                mapRenderPlan->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(groupResult.groupIndex);
             } else {
             }
             bspNodeId = groupResult.nodeId;
@@ -450,10 +449,10 @@ void Map::checkCulling(HCullStage &cullStage) {
     StateForConditions stateForConditions;
 
     AreaRecord areaRecord;
-    if (cullStage->m_currentWMO != nullptr) {
-        auto nameId = cullStage->m_currentWMO->getNameSet();
-        auto wmoId = cullStage->m_currentWMO->getWmoId();
-        auto groupId = cullStage->m_currentWMO->getWmoGroupId(cullStage->m_currentWmoGroup);
+    if (mapRenderPlan->m_currentWMO != nullptr) {
+        auto nameId = mapRenderPlan->m_currentWMO->getNameSet();
+        auto wmoId = mapRenderPlan->m_currentWMO->getWmoId();
+        auto groupId =  mapRenderPlan->m_currentWMO->getWmoGroupId(mapRenderPlan->m_currentWmoGroup);
 
         if (m_api->databaseHandler != nullptr) {
             areaRecord = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId);
@@ -461,8 +460,8 @@ void Map::checkCulling(HCullStage &cullStage) {
     }
 
     if (areaRecord.areaId == 0) {
-        if (cullStage->adtAreadId > 0 && (m_api->databaseHandler != nullptr)) {
-            areaRecord = m_api->databaseHandler->getArea(cullStage->adtAreadId);
+        if (mapRenderPlan->adtAreadId > 0 && (m_api->databaseHandler != nullptr)) {
+            areaRecord = m_api->databaseHandler->getArea(mapRenderPlan->adtAreadId);
         }
     }
 
@@ -471,58 +470,58 @@ void Map::checkCulling(HCullStage &cullStage) {
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
 
-    cullStage->areaId = areaRecord.areaId;
-    cullStage->parentAreaId = areaRecord.parentAreaId;
+    mapRenderPlan->areaId = areaRecord.areaId;
+    mapRenderPlan->parentAreaId = areaRecord.parentAreaId;
 
     cullGetCurrentZoneCounter.endMeasurement();
 
     //Get lights from DB
     cullUpdateLightsFromDBCounter.beginMeasurement();
-    updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
     cullUpdateLightsFromDBCounter.endMeasurement();
 
     ///-----------------------------------
 
 
-    auto lcurrentWMO = cullStage->m_currentWMO;
-    auto currentWmoGroup = cullStage->m_currentWmoGroup;
+    auto lcurrentWMO = mapRenderPlan->m_currentWMO;
+    auto currentWmoGroup = mapRenderPlan->m_currentWmoGroup;
 
-    if ((lcurrentWMO != nullptr) && (!cullStage->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
+    if ((lcurrentWMO != nullptr) && (!mapRenderPlan->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
         if (lcurrentWMO->startTraversingWMOGroup(
             cameraPos,
             frustumData,
-            cullStage->m_currentInteriorGroups[0].groupIndex,
+            mapRenderPlan->m_currentInteriorGroups[0].groupIndex,
             0,
             m_viewRenderOrder,
             true,
-            cullStage->viewsHolder)) {
-            cullStage->wmoArray.addCand(cullStage->m_currentWMO);
+            mapRenderPlan->viewsHolder)) {
+            mapRenderPlan->wmoArray.addCand(mapRenderPlan->m_currentWMO);
         }
 
         cullExterior.beginMeasurement();
-        auto exterior = cullStage->viewsHolder.getExterior();
+        auto exterior = mapRenderPlan->viewsHolder.getExterior();
         if ( exterior != nullptr ) {
             //Fix FrustumData for exterior was created after WMO traversal. So we need to fix it
             exterior->frustumData.perspectiveMat = frustumData.perspectiveMat;
             exterior->frustumData.viewMat = frustumData.viewMat;
             exterior->frustumData.farPlane = frustumData.farPlane;
 
-            checkExterior(cameraPos, exterior->frustumData, m_viewRenderOrder, cullStage);
+            checkExterior(cameraPos, exterior->frustumData, m_viewRenderOrder, mapRenderPlan);
         }
         cullExterior.endMeasurement();
     } else {
         //Cull exterior
         cullExterior.beginMeasurement();
-        auto exteriorView = cullStage->viewsHolder.getOrCreateExterior(frustumData);
-        checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, cullStage);
+        auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
+        checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, mapRenderPlan);
         cullExterior.endMeasurement();
     }
 
     cullSkyDoms.beginMeasurement();
 
 
-    if ((cullStage->viewsHolder.getExterior() != nullptr || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
-        auto exteriorView = cullStage->viewsHolder.getOrCreateExterior(frustumData);
+    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
+        auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
 
         if (m_wdlObject != nullptr) {
             m_wdlObject->checkSkyScenes(
@@ -544,7 +543,7 @@ void Map::checkCulling(HCullStage &cullStage) {
 
     cullCombineAllObjects.beginMeasurement();
     {
-        auto exteriorView = cullStage->viewsHolder.getExterior();
+        auto exteriorView = mapRenderPlan->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
             exteriorView->addM2FromGroups(frustumData, cameraPos);
             for (auto &adtRes: exteriorView->drawnADTs) {
@@ -552,19 +551,19 @@ void Map::checkCulling(HCullStage &cullStage) {
                                                  exteriorView->m_transparentMeshes,
                                                  exteriorView->renderOrder);
             }
-            cullStage->m2Array.addDrawnAndToLoad(exteriorView->m2List);
-            cullStage->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
+            mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);
+            mapRenderPlan->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
         }
     }
 
     //Fill and collect M2 objects for views from WmoGroups
     {
-        auto &interiorViews = cullStage->viewsHolder.getInteriorViews();
+        auto &interiorViews = mapRenderPlan->viewsHolder.getInteriorViews();
 
         for (auto &interiorView: interiorViews) {
             interiorView->addM2FromGroups(frustumData, cameraPos);
-            cullStage->m2Array.addDrawnAndToLoad(interiorView->m2List);
-            cullStage->wmoGroupArray.addToLoadAndDraw(interiorView->wmoGroupArray);
+            mapRenderPlan->m2Array.addDrawnAndToLoad(interiorView->m2List);
+            mapRenderPlan->wmoGroupArray.addToLoadAndDraw(interiorView->wmoGroupArray);
         }
     }
 
@@ -599,7 +598,7 @@ mathfu::vec3 blendV3(mathfu::vec3 a, mathfu::vec3 b, float alpha) {
     return (a - b) * alpha + a;
 }
 
-void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
+void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
     Config* config = this->m_api->getConfig();
 
@@ -607,14 +606,14 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
     std::vector<LightResult> wmoFogs = {};
-    if (cullStage->m_currentWMO != nullptr) {
-        cullStage->m_currentWMO->checkFog(cameraVec3, wmoFogs);
+    if (mapRenderPlan->m_currentWMO != nullptr) {
+        mapRenderPlan->m_currentWMO->checkFog(frustumData.cameraPos, wmoFogs);
     }
     std::vector<LightResult> lightResults;
 
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
-        getLightResultsFromDB(cameraVec3, config, lightResults, &stateForConditions);
+        getLightResultsFromDB(frustumData.cameraPos, config, lightResults, &stateForConditions);
 
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
@@ -658,7 +657,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
             skyBox->setAlpha(_light.blendCoef);
             if ((_light.skyBoxFlags & 4) > 0 ) {
                 //In this case conus is still rendered been, but all values are final fog values.
-                auto fdd = cullStage->frameDependentData;
+                auto fdd = mapRenderPlan->frameDependentData;
                 fdd->overrideValuesWithFinalFog = true;
             }
 
@@ -718,16 +717,16 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 //        horizontAmbientColor *= ambientMult;
 
         if (config->glowSource == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->currentGlow = currentGlow;
         } else if (config->glowSource == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->currentGlow = config->currentGlow;
         }
 
 
         if (config->globalLighting == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
 
             fdd->exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
             fdd->exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
@@ -736,45 +735,45 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
                                                     horizontAmbientColor[0], 0);
             fdd->exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
             auto extDir = MathHelper::calcExteriorColorDir(
-                cullStage->matricesForCulling->lookAtMat,
+                frustumData.viewMat,
                 m_api->getConfig()->currentTime
             );
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
         } else if (config->globalLighting == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
 
             fdd->exteriorAmbientColor = config->exteriorAmbientColor;
             fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
             fdd->exteriorHorizontAmbientColor = config->exteriorHorizontAmbientColor;
             fdd->exteriorDirectColor = config->exteriorDirectColor;
             auto extDir = MathHelper::calcExteriorColorDir(
-                cullStage->matricesForCulling->lookAtMat,
+                frustumData.viewMat,
                 m_api->getConfig()->currentTime
             );
             fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
         }
 
         {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->useMinimapWaterColor = config->useMinimapWaterColor;
             fdd->useCloseRiverColorForDB = config->useCloseRiverColorForDB;
         }
         if (config->waterColorParams == EParameterSource::eDatabase)
         {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->closeRiverColor = mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
             fdd->farRiverColor = mathfu::vec4(farRiverColor[2], farRiverColor[1], farRiverColor[0], 0);
             fdd->closeOceanColor = mathfu::vec4(closeOceanColor[2], closeOceanColor[1], closeOceanColor[0], 0);
             fdd->farOceanColor = mathfu::vec4(farOceanColor[2], farOceanColor[1], farOceanColor[0], 0);
         } else if (config->waterColorParams == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->closeRiverColor = config->closeRiverColor;
             fdd->farRiverColor = config->farRiverColor;
             fdd->closeOceanColor = config->closeOceanColor;
             fdd->farOceanColor = config->farOceanColor;
         }
         if (config->skyParams == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
             fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
             fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
@@ -909,7 +908,7 @@ void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &ca
 
         //In case of no data -> disable the fog
         {
-            auto fdd = cullStage->frameDependentData;
+            auto fdd = mapRenderPlan->frameDependentData;
             fdd->FogDataFound = !combinedResults.empty();
 //            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
 //            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
@@ -1010,7 +1009,7 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
 }
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
-                               HCullStage &cullStage,
+                               HMapRenderPlan &mapRenderPlan,
                                M2ObjectListContainer &potentialM2,
                                WMOListContainer &potentialWmo) {
 
@@ -1021,7 +1020,7 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
             if ((adt_x >= 64) || (adt_x < 0)) return;
             if ((adt_y >= 64) || (adt_y < 0)) return;
 
-            cullStage->adtAreadId = -1;
+            mapRenderPlan->adtAreadId = -1;
             auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
 
             if (adtObjectCameraAt != nullptr) {
@@ -1043,7 +1042,7 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
                 int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
                 int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
 
-                cullStage->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+                mapRenderPlan->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
             }
         } else {
             if (wmoMap == nullptr) {
@@ -1087,7 +1086,7 @@ void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAr
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         const MathHelper::FrustumCullingData &frustumData,
                         int viewRenderOrder,
-                        HCullStage cullStage
+                        HMapRenderPlan &mapRenderPlan
 ) {
 //    std::cout << "Map::checkExterior finished called" << std::endl;
     if (m_wdlObject == nullptr && m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
@@ -1097,21 +1096,21 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
-    auto exteriorView = cullStage->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
+    auto exteriorView = mapRenderPlan->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
 
     cullExteriorWDLCull.beginMeasurement();
     if (m_wdlObject != nullptr) {
-        m_wdlObject->checkFrustumCulling(frustumData, cameraPos, exteriorView->m2List, cullStage->wmoArray);
+        m_wdlObject->checkFrustumCulling(frustumData, cameraPos, exteriorView->m2List, mapRenderPlan->wmoArray);
     }
     cullExteriorWDLCull.endMeasurement();
 
     cullExteriorGetCands.beginMeasurement();
-    getCandidatesEntities(frustumData, cameraPos, cullStage, exteriorView->m2List, cullStage->wmoArray);
+    getCandidatesEntities(frustumData, cameraPos, mapRenderPlan, exteriorView->m2List, mapRenderPlan->wmoArray);
     cullExteriorGetCands.endMeasurement();
 
     cullExterioFrustumWMO.beginMeasurement();
     //Frustum cull
-    for (auto &wmoCandidate : cullStage->wmoArray.getCandidates()) {
+    for (auto &wmoCandidate : mapRenderPlan->wmoArray.getCandidates()) {
         if (!wmoCandidate->isLoaded()) continue;
 
         if (wmoCandidate->startTraversingWMOGroup(
@@ -1121,7 +1120,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             0,
             viewRenderOrder,
             false,
-            cullStage->viewsHolder)) {
+            mapRenderPlan->viewsHolder)) {
         }
     }
     cullExterioFrustumWMO.endMeasurement();
@@ -1169,7 +1168,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
 void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                 const mathfu::vec4 &cameraPos,
-                                HCullStage &cullStage,
+                                HMapRenderPlan &mapRenderPlan,
                                 M2ObjectListContainer &m2ObjectsCandidates,
                                 WMOListContainer &wmoCandidates) {
     if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
@@ -1217,11 +1216,11 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             for (int i = adt_x_min; i <= adt_x_max; i++) {
                 for (int j = adt_y_min; j <= adt_y_max; j++) {
-                    checkADTCulling(i, j, frustumData, cameraPos, cullStage, m2ObjectsCandidates, wmoCandidates);
+                    checkADTCulling(i, j, frustumData, cameraPos, mapRenderPlan, m2ObjectsCandidates, wmoCandidates);
                 }
             }
             for (auto &mandatoryAdt : m_mandatoryADT) {
-                checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], frustumData, cameraPos, cullStage, m2ObjectsCandidates, wmoCandidates);
+                checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], frustumData, cameraPos, mapRenderPlan, m2ObjectsCandidates, wmoCandidates);
             }
 
         } else {
@@ -1232,7 +1231,8 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
 
 void Map::checkADTCulling(int i, int j,
                           const MathHelper::FrustumCullingData &frustumData,
-                          const mathfu::vec4 &cameraPos, HCullStage &cullStage,
+                          const mathfu::vec4 &cameraPos,
+                          HMapRenderPlan &mapRenderPlan,
                           M2ObjectListContainer &m2ObjectsCandidates,
                           WMOListContainer &wmoCandidates) {
     if ((i < 0) || (i > 64)) return;
@@ -1274,8 +1274,8 @@ void Map::checkADTCulling(int i, int j,
 //        }
 
         if (result) {
-            cullStage->viewsHolder.getExterior()->drawnADTs.push_back(adtFrustRes);
-            cullStage->adtArray.push_back(adtFrustRes);
+            mapRenderPlan->viewsHolder.getExterior()->drawnADTs.push_back(adtFrustRes);
+            mapRenderPlan->adtArray.push_back(adtFrustRes);
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -1305,7 +1305,7 @@ void Map::createAdtFreeLamdas() {
     FreeStrategy lamda;
     auto *config = m_api->getConfig();
     if (m_api->getConfig()->adtFreeStrategy == EFreeStrategy::eTimeBased) {
-        int l_currentTime = 0;
+        animTime_t l_currentTime = 0;
         lamda = [l_currentTime, config](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
             if (doCheck) {
                 return (currentTime - l_currentTime) > config->adtTTLWithoutUpdate;
@@ -1320,10 +1320,10 @@ void Map::createAdtFreeLamdas() {
         auto l_hDevice = m_api->hDevice;
         lamda = [l_currentFrame, config, l_hDevice](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
             if (doCheck) {
-                return (l_hDevice->getFrameNumber() - l_currentFrame) > config->adtFTLWithoutUpdate;
+//                return (l_hDevice->getFrameNumber() - l_currentFrame) > config->adtFTLWithoutUpdate;
             }
             if (doUpdate) {
-                l_currentFrame = l_hDevice->getFrameNumber();
+//                l_currentFrame = l_hDevice->getFrameNumber();
             }
             return false;
         };
@@ -1335,33 +1335,33 @@ void Map::createAdtFreeLamdas() {
 
 
 
-void Map::doPostLoad(HCullStage &cullStage) {
+void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
     int processedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
-    for (auto &m2Object : cullStage->m2Array.getToLoadMain()) {
+    for (auto &m2Object : renderPlan->m2Array.getToLoadMain()) {
         if (m2Object == nullptr) continue;
         m2Object->doLoadMainFile();
     }
-    for (auto &m2Object : cullStage->m2Array.getToLoadGeom()) {
+    for (auto &m2Object : renderPlan->m2Array.getToLoadGeom()) {
         if (m2Object == nullptr) continue;
         m2Object->doLoadGeom();
     }
 //    }
 
-    for (auto &wmoObject : cullStage->wmoArray.getToLoad()) {
+    for (auto &wmoObject : renderPlan->wmoArray.getToLoad()) {
         if (wmoObject == nullptr) continue;
         wmoObject->doPostLoad();
     }
-    for (auto &wmoGroupObject : cullStage->wmoGroupArray.getToLoad()) {
+    for (auto &wmoGroupObject : renderPlan->wmoGroupArray.getToLoad()) {
         if (wmoGroupObject == nullptr) continue;
         wmoGroupObject->doPostLoad();
         wmoGroupsProcessedThisFrame++;
         if (wmoGroupsProcessedThisFrame > 20) break;
     }
 
-    for (auto &adtObject : cullStage->adtArray) {
+    for (auto &adtObject : renderPlan->adtArray) {
         adtObject->adtObject->doPostLoad();
     }
 
@@ -1411,89 +1411,87 @@ void Map::doPostLoad(HCullStage &cullStage) {
     }
 };
 
-void Map::update(HUpdateStage &updateStage) {
-    mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
-    mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
-    mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
-    animTime_t deltaTime = updateStage->delta;
+//void Map::update(const HMapRenderPlan &renderPlan) {
+//    mathfu::vec3 cameraVec3   = updateStage->cameraMatrices->cameraPos.xyz();
+//    mathfu::mat4 &frustumMat  = updateStage->cameraMatrices->perspectiveMat;
+//    mathfu::mat4 &lookAtMat   = updateStage->cameraMatrices->lookAtMat;
+//    animTime_t deltaTime      = updateStage->delta;
+//
+//    Config* config = this->m_api->getConfig();
+//
+//    auto &m2ToDraw = renderPlan->m2Array.getDrawn();
+//    {
+//        m2UpdateframeCounter.beginMeasurement();
+//
+//        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
+//            [&](tbb::blocked_range<size_t> r) {
+//                for (size_t i = r.begin(); i != r.end(); ++i) {
+//                    auto& m2Object = m2ToDraw[i];
+//                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
+//                }
+//            }, tbb::simple_partitioner());
+//
+//        m2UpdateframeCounter.endMeasurement();
+//    }
+//
+//    wmoGroupUpdate.beginMeasurement();
+//    for (const auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
+//        if (wmoGroupObject == nullptr) continue;
+//        wmoGroupObject->update();
+//    }
+//    wmoGroupUpdate.endMeasurement();
+//
+//    adtUpdate.beginMeasurement();
+//    for (const auto &adtObjectRes : renderPlan->adtArray) {
+//        adtObjectRes->adtObject->update(deltaTime);
+//    }
+//    adtUpdate.endMeasurement();
+//
+//    //2. Calc distance every 100 ms
+//    m2calcDistanceCounter.beginMeasurement();
+//    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
+//          [&](tbb::blocked_range<size_t> r) {
+//              for (size_t i = r.begin(); i != r.end(); ++i) {
+//                  auto &m2Object = m2ToDraw[i];
+//                  if (m2Object == nullptr) continue;
+//                  m2Object->calcDistance(cameraVec3);
+//              }
+//          }, tbb::auto_partitioner()
+//    );
+//    m2calcDistanceCounter.endMeasurement();
+//
+//    //Cleanup ADT every 10 seconds
+//    adtCleanupCounter.beginMeasurement();
+//    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
+//        for (int i = 0; i < 64; i++) {
+//            for (int j = 0; j < 64; j++) {
+//                auto adtObj = mapTiles[i][j];
+//                //Free obj, if it was unused for 10 secs
+//                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
+////                    std::cout << "try to free adtObj" << std::endl;
+//
+//                    mapTiles[i][j] = nullptr;
+//                }
+//            }
+//        }
+//
+//        adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
+//    }
+//    adtCleanupCounter.endMeasurement();
+//    this->m_currentTime += updateStage->delta;
+//
+//    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
+//    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
+//    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
+//    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
+//    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
+//    //Collect meshes
+//}
 
-    Config* config = this->m_api->getConfig();
-
-    auto &m2ToDraw = updateStage->cullResult->m2Array.getDrawn();
-    {
-        m2UpdateframeCounter.beginMeasurement();
-
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i != r.end(); ++i) {
-                    auto& m2Object = m2ToDraw[i];
-                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
-                }
-            }, tbb::simple_partitioner());
-
-        m2UpdateframeCounter.endMeasurement();
-    }
-
-    wmoGroupUpdate.beginMeasurement();
-    for (const auto &wmoGroupObject : updateStage->cullResult->wmoGroupArray.getToDraw()) {
-        if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->update();
-    }
-    wmoGroupUpdate.endMeasurement();
-
-    adtUpdate.beginMeasurement();
-    for (const auto &adtObjectRes : updateStage->cullResult->adtArray) {
-        adtObjectRes->adtObject->update(deltaTime);
-    }
-    adtUpdate.endMeasurement();
-
-    //2. Calc distance every 100 ms
-    m2calcDistanceCounter.beginMeasurement();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
-          [&](tbb::blocked_range<size_t> r) {
-              for (size_t i = r.begin(); i != r.end(); ++i) {
-                  auto &m2Object = m2ToDraw[i];
-                  if (m2Object == nullptr) continue;
-                  m2Object->calcDistance(cameraVec3);
-              }
-          }, tbb::auto_partitioner()
-    );
-    m2calcDistanceCounter.endMeasurement();
-
-    //Cleanup ADT every 10 seconds
-    adtCleanupCounter.beginMeasurement();
-    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                auto adtObj = mapTiles[i][j];
-                //Free obj, if it was unused for 10 secs
-                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
-//                    std::cout << "try to free adtObj" << std::endl;
-
-                    mapTiles[i][j] = nullptr;
-                }
-            }
-        }
-
-        adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
-    }
-    adtCleanupCounter.endMeasurement();
-    this->m_currentTime += updateStage->delta;
-
-    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
-    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
-    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
-    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
-    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
-    //Collect meshes
-}
-
-void Map::updateBuffers(HUpdateStage &updateStage) {
-    auto cullStage = updateStage->cullResult;
-
-    for (auto &m2Object : cullStage->m2Array.getDrawn()) {
+void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
+    for (auto &m2Object : renderPlan->m2Array.getDrawn()) {
          if (m2Object != nullptr) {
-            m2Object->uploadGeneratorBuffers(cullStage->matricesForCulling->lookAtMat);
+//            m2Object->uploadGeneratorBuffers(renderPlan->matricesForCulling->lookAtMat);
         }
     }
 
@@ -1502,7 +1500,7 @@ void Map::updateBuffers(HUpdateStage &updateStage) {
 //        wmoGroupObject->uploadGeneratorBuffers();
 //    }
 
-    for (auto &adtRes: cullStage->adtArray) {
+    for (auto &adtRes: renderPlan->adtArray) {
         if (adtRes == nullptr) continue;
         adtRes->adtObject->uploadGeneratorBuffers(*adtRes.get());
     }
@@ -1604,419 +1602,419 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }
-void Map::produceUpdateStage(HUpdateStage &updateStage) {
-    mapProduceUpdateCounter.beginMeasurement();
-    mapUpdateCounter.beginMeasurement();
-    this->update(updateStage);
-    mapUpdateCounter.endMeasurement();
-
-    //Create meshes
-    updateStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-    updateStage->transparentMeshes = std::make_shared<MeshesToRender>();
-
-    auto &opaqueMeshes = updateStage->opaqueMeshes->meshes;
-    auto transparentMeshes = std::vector<HGMesh>();
-
-    opaqueMeshes.reserve(30000);
-    transparentMeshes.reserve(30000);
-
-    auto cullStage = updateStage->cullResult;
-    auto fdd = cullStage->frameDependentData;
-
-    if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
-        (cullStage->viewsHolder.getExterior() || cullStage->currentWmoGroupIsExtLit)) {
-        if (fdd->overrideValuesWithFinalFog) {
-            if (skyMesh0x4Sky != nullptr) {
-                transparentMeshes.push_back(skyMesh0x4Sky);
-                skyMesh0x4Sky->setSortDistance(0);
-
-            }
-        }
-        if ((m_skyConeAlpha > 0) ) {
-            if (skyMesh != nullptr)
-                opaqueMeshes.push_back(skyMesh);
-        }
-    }
-
-    // Put everything into one array and sort
-    interiorViewCollectMeshCounter.beginMeasurement();
-    bool renderPortals = m_api->getConfig()->renderPortals;
-    for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
-        view->collectMeshes(opaqueMeshes, transparentMeshes);
-        if (renderPortals) {
-            view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
-        }
-    }
-    interiorViewCollectMeshCounter.endMeasurement();
-
-    exteriorViewCollectMeshCounter.beginMeasurement();
-    {
-        auto exteriorView = cullStage->viewsHolder.getExterior();
-        if (exteriorView != nullptr) {
-            exteriorView->collectMeshes(opaqueMeshes, transparentMeshes);
-            if (renderPortals) {
-                exteriorView->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
-            }
-        }
-    }
-    exteriorViewCollectMeshCounter.endMeasurement();
-
-    m2CollectMeshCounter.beginMeasurement();
-    if (m_api->getConfig()->renderM2) {
-        for (auto &m2Object : cullStage->m2Array.getDrawn()) {
-            if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
-            m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
-        }
-    }
-    m2CollectMeshCounter.endMeasurement();
-
-    //No need to sort array which has only one element
-    sortMeshCounter.beginMeasurement();
-    if (transparentMeshes.size() > 1) {
-        tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(),
-            #include "../../../gapi/interface/sortLambda.h"
-        );
-
-        updateStage->transparentMeshes->meshes = transparentMeshes;
-
-    } else {
-        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
-        for (int i = 0; i < transparentMeshes.size(); i++) {
-            targetTranspMeshes.push_back(transparentMeshes[i]);
-        }
-    }
-    sortMeshCounter.endMeasurement();
-
-    //Collect textures for upload
-    auto &textureToUpload = updateStage->texturesForUpload;
-    textureToUpload.reserve(10000);
-    for (auto &mesh: updateStage->transparentMeshes->meshes) {
-        for (auto &text : mesh->texture()) {
-            if (text != nullptr && !text->getIsLoaded()) {
-                textureToUpload.push_back(text);
-            }
-        }
-    }
-    for (auto &mesh: updateStage->opaqueMeshes->meshes) {
-        for (auto &text : mesh->texture()) {
-            if (text != nullptr && !text->getIsLoaded()) {
-                textureToUpload.push_back(text);
-            }
-        }
-    }
-
-    tbb::parallel_sort(textureToUpload.begin(), textureToUpload.end(),
-                       [](auto &first, auto &end) { return first < end; }
-    );
-    textureToUpload.erase(unique(textureToUpload.begin(), textureToUpload.end()), textureToUpload.end());
-
-    //1. Collect buffers
-    collectBuffersCounter.beginMeasurement();
-    std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
-    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 5);
-    int renderIndex = 0;
-    for (const auto &mesh : opaqueMeshes) {
-        for (int i = 0; i < 5; i++ ) {
-            auto bufferChunk = mesh->getUniformBuffer(i);
-
-            if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk);
-            }
-        }
-    }
-    for (const auto &mesh : updateStage->transparentMeshes->meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            auto bufferChunk = mesh->getUniformBuffer(i);
-
-            if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk);
-            }
-        }
-    }
-    collectBuffersCounter.endMeasurement();
-
-    sortBuffersCounter.beginMeasurement();
-    tbb::parallel_sort(bufferChunks.begin(), bufferChunks.end(),
-                       [](auto &first, auto &end) { return first < end; }
-    );
-    bufferChunks.erase(unique(bufferChunks.begin(), bufferChunks.end()), bufferChunks.end());
-    sortBuffersCounter.endMeasurement();
-
-    mapProduceUpdateCounter.endMeasurement();
-
-
-    m_api->getConfig()->mapProduceUpdateTime = mapProduceUpdateCounter.getTimePerFrame();
-    m_api->getConfig()->mapUpdateTime = mapUpdateCounter.getTimePerFrame();
-    m_api->getConfig()->interiorViewCollectMeshTime = interiorViewCollectMeshCounter.getTimePerFrame();
-    m_api->getConfig()->exteriorViewCollectMeshTime = exteriorViewCollectMeshCounter.getTimePerFrame();
-    m_api->getConfig()->m2CollectMeshTime = m2CollectMeshCounter.getTimePerFrame();
-    m_api->getConfig()->sortMeshTime = sortMeshCounter.getTimePerFrame();
-    m_api->getConfig()->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
-    m_api->getConfig()->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
-}
-
-void Map::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
-    //Smash all meshes into one array
-
-    auto opaqueMeshes = std::make_shared<MeshesToRender>();
-    auto transparentMeshes = std::make_shared<MeshesToRender>();
-    for (auto &updateStage : updateStages) {
-        auto cullStage = updateStage->cullResult;
-
-        //Create scenewide uniform
-        resultDrawStage->frameDepedantData = updateStage->cullResult->frameDependentData;
-
-        opaqueMeshes->meshes.insert(std::end(opaqueMeshes->meshes),
-                                    std::begin(updateStage->opaqueMeshes->meshes),
-                                    std::end(updateStage->opaqueMeshes->meshes));
-        transparentMeshes->meshes.insert(std::end(transparentMeshes->meshes),
-                                    std::begin(updateStage->transparentMeshes->meshes),
-                                    std::end(updateStage->transparentMeshes->meshes));
-    }
-
-    //Sort transparent meshes. Again
-    tbb::parallel_sort(transparentMeshes->meshes.begin(), transparentMeshes->meshes.end(),
-#include "../../../gapi/interface/sortLambda.h"
-    );
-
-    resultDrawStage->opaqueMeshes = opaqueMeshes;
-    resultDrawStage->transparentMeshes = transparentMeshes;
-
-    HDrawStage origResultDrawStage = resultDrawStage;
-    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
-
-    auto config = m_api->getConfig();
-
-    auto renderMats = resultDrawStage->matricesForRendering;
-    if (renderMats != nullptr) {
-        resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-        resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler(
-            this->generateSceneWideChunk(renderMats, config)
-        );
-        updateStages[0]->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
-    }
-
-
-
-    if (frameBufferSupported ) {
-        //Create a copy of exiting resultDrawStage
-        auto resultDrawStageCpy = std::make_shared<DrawStage>();
-        *resultDrawStageCpy = *resultDrawStage;
-        //Assign a new frame buffer to copy
-        resultDrawStageCpy->target = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0],
-            resultDrawStage->viewPortDimensions.maxs[1],
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32,
-            m_api->hDevice->getMaxSamplesCnt(),
-            4
-        );
-        resultDrawStageCpy->viewPortDimensions.mins = {0,0};
-
-        HDrawStage lastDrawStage = nullptr;
-        HDrawStage prevDrawStage = resultDrawStageCpy;
-
-        if (!config->disableGlow) {
-            lastDrawStage = doGaussBlur(prevDrawStage, updateStages[0]->uniformBufferChunks);
-            if (lastDrawStage != nullptr)
-                prevDrawStage = lastDrawStage;
-        }
-
-
-        //End of effects stack
-        //Make last stage to draw to initial resultDrawStage target
-        prevDrawStage->target = resultDrawStage->target;
-        //Replace all data in target drawStage with new data
-        *resultDrawStage = *prevDrawStage;
-    }
-
-
-
-}
-
-HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const {
-    if (quadBindings == nullptr)
-        return nullptr;
-
-    ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
-    ///With two frameBuffers
-    ///Size for buffers : is 4 times less than current canvas
-    int targetWidth = parentDrawStage->viewPortDimensions.maxs[0] >> 2;
-    int targetHeight = parentDrawStage->viewPortDimensions.maxs[1] >> 2;
-
-    auto frameB1 = m_api->hDevice->createFrameBuffer(
-        targetWidth,
-        targetHeight,
-        {ITextureFormat::itRGBA},
-        ITextureFormat::itDepth32,
-        1,
-        2
-    );
-    auto frameB2 = m_api->hDevice->createFrameBuffer(
-        targetWidth,
-        targetHeight,
-        {ITextureFormat::itRGBA},
-        ITextureFormat::itDepth32,
-        1,
-        2
-    );
-
-    auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-    uniformBufferChunks.push_back(vertexChunk);
-    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-        meshblockVS.x = 1;
-        meshblockVS.y = 1;
-        meshblockVS.z = 0;
-        meshblockVS.w = 0;
-    });
-
-
-    auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    uniformBufferChunks.push_back(ffxGaussFrag);
-    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-        static const float s_texOffsetX[4] = {-1, 0, 0, -1};
-        static const float s_texOffsetY[4] = {2, 2, -1, -1};;
-
-        for (int i = 0; i < 4; i++) {
-            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-        }
-    });
-
-
-    auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    uniformBufferChunks.push_back(ffxGaussFrag2);
-    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-        static const float s_texOffsetX[4] = {-6, -1, 1, 6};
-        static const float s_texOffsetY[4] = {0, 0, 0, 0};;
-
-        for (int i = 0; i < 4; i++) {
-            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-        }
-    });
-    auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    uniformBufferChunks.push_back(ffxGaussFrag3);
-    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-        static const float s_texOffsetX[4] = {0, 0, 0, 0};
-        static const float s_texOffsetY[4] = {10, 2, -2, -10};;
-
-        for (int i = 0; i < 4; i++) {
-            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-        }
-    });
-    HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
-
-    HDrawStage prevStage = parentDrawStage;
-    for (int i = 0; i < 3; i++) {
-        ///1. Create draw stage
-        HDrawStage drawStage = std::make_shared<DrawStage>();
-
-        drawStage->drawStageDependencies = {prevStage};
-        drawStage->matricesForRendering = nullptr;
-        drawStage->setViewPort = true;
-        drawStage->viewPortDimensions = {{0, 0},
-                                         {parentDrawStage->viewPortDimensions.maxs[0] >> 2,
-                                             parentDrawStage->viewPortDimensions.maxs[1] >> 2}};
-        drawStage->clearScreen = false;
-        drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
-
-        ///2. Create mesh
-        auto shader = m_api->hDevice->getShader("fullScreen_ffxgauss4", nullptr);
-        gMeshTemplate meshTemplate(quadBindings, shader);
-        meshTemplate.meshType = MeshType::eGeneralMesh;
-        meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = false;
-        meshTemplate.backFaceCulling = false;
-        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
-
-        meshTemplate.texture.resize(1);
-        meshTemplate.texture[0] = prevStage->target->getAttachment(0);
-
-        meshTemplate.textureCount = 1;
-
-        meshTemplate.ubo[0] = nullptr;
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = vertexChunk;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = frags[i];
-
-        meshTemplate.element = DrawElementMode::TRIANGLES;
-        meshTemplate.start = 0;
-        meshTemplate.end = 6;
-
-        //Make mesh
-        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-        drawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-        drawStage->opaqueMeshes->meshes.push_back(hmesh);
-
-        ///3. Reassign previous frame
-        prevStage = drawStage;
-    }
-
-    //And the final is ffxglow to screen
-    {
-        auto config = m_api->getConfig();;
-
-        auto glow = parentDrawStage->frameDepedantData->currentGlow;
-        auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        uniformBufferChunks.push_back(ffxGlowfragmentChunk);
-        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-            meshblockVS.x = 1;
-            meshblockVS.y = 1;
-            meshblockVS.z = 0; //mix_coeficient
-            meshblockVS.w = glow; //glow multiplier
-        });
-
-        auto shader = m_api->hDevice->getShader("ffxGlowQuad", nullptr);
-        gMeshTemplate meshTemplate(quadBindings, shader);
-        meshTemplate.meshType = MeshType::eGeneralMesh;
-        meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = false;
-        meshTemplate.backFaceCulling = false;
-        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
-
-        meshTemplate.texture.resize(2);
-        meshTemplate.texture[0] = parentDrawStage->target->getAttachment(0);
-        meshTemplate.texture[1] = prevStage->target->getAttachment(0);
-
-        meshTemplate.textureCount = 2;
-
-
-        meshTemplate.ubo[0] = nullptr;
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = vertexChunk;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = ffxGlowfragmentChunk;
-
-        meshTemplate.element = DrawElementMode::TRIANGLES;
-        meshTemplate.start = 0;
-        meshTemplate.end = 6;
-
-        //Make mesh
-        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-
-        auto resultDrawStage = std::make_shared<DrawStage>();
-        *resultDrawStage = *parentDrawStage;
-        resultDrawStage->sceneWideBlockVSPSChunk = nullptr; //Since it's not used but this shader and it's important for vulkan
-        resultDrawStage->drawStageDependencies = {prevStage};
-        resultDrawStage->transparentMeshes = nullptr;
-        resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-        resultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
-        resultDrawStage->target = nullptr;
-
-        return resultDrawStage;
-    }
-}
+//void Map::produceUpdateStage(HUpdateStage &updateStage) {
+//    mapProduceUpdateCounter.beginMeasurement();
+//    mapUpdateCounter.beginMeasurement();
+//    this->update(updateStage);
+//    mapUpdateCounter.endMeasurement();
+//
+//    //Create meshes
+//    updateStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+//    updateStage->transparentMeshes = std::make_shared<MeshesToRender>();
+//
+//    auto &opaqueMeshes = updateStage->opaqueMeshes->meshes;
+//    auto transparentMeshes = std::vector<HGMesh>();
+//
+//    opaqueMeshes.reserve(30000);
+//    transparentMeshes.reserve(30000);
+//
+//    auto cullStage = updateStage->cullResult;
+//    auto fdd = cullStage->frameDependentData;
+//
+//    if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
+//        (cullStage->viewsHolder.getExterior() || cullStage->currentWmoGroupIsExtLit)) {
+//        if (fdd->overrideValuesWithFinalFog) {
+//            if (skyMesh0x4Sky != nullptr) {
+//                transparentMeshes.push_back(skyMesh0x4Sky);
+//                skyMesh0x4Sky->setSortDistance(0);
+//
+//            }
+//        }
+//        if ((m_skyConeAlpha > 0) ) {
+//            if (skyMesh != nullptr)
+//                opaqueMeshes.push_back(skyMesh);
+//        }
+//    }
+//
+//    // Put everything into one array and sort
+//    interiorViewCollectMeshCounter.beginMeasurement();
+//    bool renderPortals = m_api->getConfig()->renderPortals;
+//    for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
+//        view->collectMeshes(opaqueMeshes, transparentMeshes);
+//        if (renderPortals) {
+//            view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
+//        }
+//    }
+//    interiorViewCollectMeshCounter.endMeasurement();
+//
+//    exteriorViewCollectMeshCounter.beginMeasurement();
+//    {
+//        auto exteriorView = cullStage->viewsHolder.getExterior();
+//        if (exteriorView != nullptr) {
+//            exteriorView->collectMeshes(opaqueMeshes, transparentMeshes);
+//            if (renderPortals) {
+//                exteriorView->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
+//            }
+//        }
+//    }
+//    exteriorViewCollectMeshCounter.endMeasurement();
+//
+//    m2CollectMeshCounter.beginMeasurement();
+//    if (m_api->getConfig()->renderM2) {
+//        for (auto &m2Object : cullStage->m2Array.getDrawn()) {
+//            if (m2Object == nullptr) continue;
+//            m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+//            m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+//        }
+//    }
+//    m2CollectMeshCounter.endMeasurement();
+//
+//    //No need to sort array which has only one element
+//    sortMeshCounter.beginMeasurement();
+//    if (transparentMeshes.size() > 1) {
+//        tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(),
+//            #include "../../../gapi/interface/sortLambda.h"
+//        );
+//
+//        updateStage->transparentMeshes->meshes = transparentMeshes;
+//
+//    } else {
+//        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
+//        for (int i = 0; i < transparentMeshes.size(); i++) {
+//            targetTranspMeshes.push_back(transparentMeshes[i]);
+//        }
+//    }
+//    sortMeshCounter.endMeasurement();
+//
+//    //Collect textures for upload
+//    auto &textureToUpload = updateStage->texturesForUpload;
+//    textureToUpload.reserve(10000);
+//    for (auto &mesh: updateStage->transparentMeshes->meshes) {
+//        for (auto &text : mesh->texture()) {
+//            if (text != nullptr && !text->getIsLoaded()) {
+//                textureToUpload.push_back(text);
+//            }
+//        }
+//    }
+//    for (auto &mesh: updateStage->opaqueMeshes->meshes) {
+//        for (auto &text : mesh->texture()) {
+//            if (text != nullptr && !text->getIsLoaded()) {
+//                textureToUpload.push_back(text);
+//            }
+//        }
+//    }
+//
+//    tbb::parallel_sort(textureToUpload.begin(), textureToUpload.end(),
+//                       [](auto &first, auto &end) { return first < end; }
+//    );
+//    textureToUpload.erase(unique(textureToUpload.begin(), textureToUpload.end()), textureToUpload.end());
+//
+//    //1. Collect buffers
+//    collectBuffersCounter.beginMeasurement();
+//    std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
+//    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 5);
+//    int renderIndex = 0;
+//    for (const auto &mesh : opaqueMeshes) {
+//        for (int i = 0; i < 5; i++ ) {
+//            auto bufferChunk = mesh->getUniformBuffer(i);
+//
+//            if (bufferChunk != nullptr) {
+//                bufferChunks.push_back(bufferChunk);
+//            }
+//        }
+//    }
+//    for (const auto &mesh : updateStage->transparentMeshes->meshes) {
+//        for (int i = 0; i < 5; i++ ) {
+//            auto bufferChunk = mesh->getUniformBuffer(i);
+//
+//            if (bufferChunk != nullptr) {
+//                bufferChunks.push_back(bufferChunk);
+//            }
+//        }
+//    }
+//    collectBuffersCounter.endMeasurement();
+//
+//    sortBuffersCounter.beginMeasurement();
+//    tbb::parallel_sort(bufferChunks.begin(), bufferChunks.end(),
+//                       [](auto &first, auto &end) { return first < end; }
+//    );
+//    bufferChunks.erase(unique(bufferChunks.begin(), bufferChunks.end()), bufferChunks.end());
+//    sortBuffersCounter.endMeasurement();
+//
+//    mapProduceUpdateCounter.endMeasurement();
+//
+//
+//    m_api->getConfig()->mapProduceUpdateTime = mapProduceUpdateCounter.getTimePerFrame();
+//    m_api->getConfig()->mapUpdateTime = mapUpdateCounter.getTimePerFrame();
+//    m_api->getConfig()->interiorViewCollectMeshTime = interiorViewCollectMeshCounter.getTimePerFrame();
+//    m_api->getConfig()->exteriorViewCollectMeshTime = exteriorViewCollectMeshCounter.getTimePerFrame();
+//    m_api->getConfig()->m2CollectMeshTime = m2CollectMeshCounter.getTimePerFrame();
+//    m_api->getConfig()->sortMeshTime = sortMeshCounter.getTimePerFrame();
+//    m_api->getConfig()->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
+//    m_api->getConfig()->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
+//}
+
+//void Map::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
+//    //Smash all meshes into one array
+//
+//    auto opaqueMeshes = std::make_shared<MeshesToRender>();
+//    auto transparentMeshes = std::make_shared<MeshesToRender>();
+//    for (auto &updateStage : updateStages) {
+//        auto cullStage = updateStage->cullResult;
+//
+//        //Create scenewide uniform
+//        resultDrawStage->frameDepedantData = updateStage->cullResult->frameDependentData;
+//
+//        opaqueMeshes->meshes.insert(std::end(opaqueMeshes->meshes),
+//                                    std::begin(updateStage->opaqueMeshes->meshes),
+//                                    std::end(updateStage->opaqueMeshes->meshes));
+//        transparentMeshes->meshes.insert(std::end(transparentMeshes->meshes),
+//                                    std::begin(updateStage->transparentMeshes->meshes),
+//                                    std::end(updateStage->transparentMeshes->meshes));
+//    }
+//
+//    //Sort transparent meshes. Again
+//    tbb::parallel_sort(transparentMeshes->meshes.begin(), transparentMeshes->meshes.end(),
+//#include "../../../gapi/interface/sortLambda.h"
+//    );
+//
+//    resultDrawStage->opaqueMeshes = opaqueMeshes;
+//    resultDrawStage->transparentMeshes = transparentMeshes;
+//
+//    HDrawStage origResultDrawStage = resultDrawStage;
+//    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
+//
+//    auto config = m_api->getConfig();
+//
+//    auto renderMats = resultDrawStage->matricesForRendering;
+//    if (renderMats != nullptr) {
+//        resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+//        resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler(
+//            this->generateSceneWideChunk(renderMats, config)
+//        );
+//        updateStages[0]->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
+//    }
+//
+//
+//
+//    if (frameBufferSupported ) {
+//        //Create a copy of exiting resultDrawStage
+//        auto resultDrawStageCpy = std::make_shared<DrawStage>();
+//        *resultDrawStageCpy = *resultDrawStage;
+//        //Assign a new frame buffer to copy
+//        resultDrawStageCpy->target = m_api->hDevice->createFrameBuffer(
+//            resultDrawStage->viewPortDimensions.maxs[0],
+//            resultDrawStage->viewPortDimensions.maxs[1],
+//            {ITextureFormat::itRGBA},
+//            ITextureFormat::itDepth32,
+//            m_api->hDevice->getMaxSamplesCnt(),
+//            4
+//        );
+//        resultDrawStageCpy->viewPortDimensions.mins = {0,0};
+//
+//        HDrawStage lastDrawStage = nullptr;
+//        HDrawStage prevDrawStage = resultDrawStageCpy;
+//
+//        if (!config->disableGlow) {
+//            lastDrawStage = doGaussBlur(prevDrawStage, updateStages[0]->uniformBufferChunks);
+//            if (lastDrawStage != nullptr)
+//                prevDrawStage = lastDrawStage;
+//        }
+//
+//
+//        //End of effects stack
+//        //Make last stage to draw to initial resultDrawStage target
+//        prevDrawStage->target = resultDrawStage->target;
+//        //Replace all data in target drawStage with new data
+//        *resultDrawStage = *prevDrawStage;
+//    }
+//
+//
+//
+//}
+//
+//HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const {
+//    if (quadBindings == nullptr)
+//        return nullptr;
+//
+//    ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
+//    ///With two frameBuffers
+//    ///Size for buffers : is 4 times less than current canvas
+//    int targetWidth = parentDrawStage->viewPortDimensions.maxs[0] >> 2;
+//    int targetHeight = parentDrawStage->viewPortDimensions.maxs[1] >> 2;
+//
+//    auto frameB1 = m_api->hDevice->createFrameBuffer(
+//        targetWidth,
+//        targetHeight,
+//        {ITextureFormat::itRGBA},
+//        ITextureFormat::itDepth32,
+//        1,
+//        2
+//    );
+//    auto frameB2 = m_api->hDevice->createFrameBuffer(
+//        targetWidth,
+//        targetHeight,
+//        {ITextureFormat::itRGBA},
+//        ITextureFormat::itDepth32,
+//        1,
+//        2
+//    );
+//
+//    auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+//    uniformBufferChunks.push_back(vertexChunk);
+//    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
+//        auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+//        meshblockVS.x = 1;
+//        meshblockVS.y = 1;
+//        meshblockVS.z = 0;
+//        meshblockVS.w = 0;
+//    });
+//
+//
+//    auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+//    uniformBufferChunks.push_back(ffxGaussFrag);
+//    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
+//        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+//        static const float s_texOffsetX[4] = {-1, 0, 0, -1};
+//        static const float s_texOffsetY[4] = {2, 2, -1, -1};;
+//
+//        for (int i = 0; i < 4; i++) {
+//            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+//            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+//        }
+//    });
+//
+//
+//    auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+//    uniformBufferChunks.push_back(ffxGaussFrag2);
+//    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
+//        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+//        static const float s_texOffsetX[4] = {-6, -1, 1, 6};
+//        static const float s_texOffsetY[4] = {0, 0, 0, 0};;
+//
+//        for (int i = 0; i < 4; i++) {
+//            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+//            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+//        }
+//    });
+//    auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
+//    uniformBufferChunks.push_back(ffxGaussFrag3);
+//    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
+//        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
+//        static const float s_texOffsetX[4] = {0, 0, 0, 0};
+//        static const float s_texOffsetY[4] = {10, 2, -2, -10};;
+//
+//        for (int i = 0; i < 4; i++) {
+//            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
+//            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
+//        }
+//    });
+//    HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
+//
+//    HDrawStage prevStage = parentDrawStage;
+//    for (int i = 0; i < 3; i++) {
+//        ///1. Create draw stage
+//        HDrawStage drawStage = std::make_shared<DrawStage>();
+//
+//        drawStage->drawStageDependencies = {prevStage};
+//        drawStage->matricesForRendering = nullptr;
+//        drawStage->setViewPort = true;
+//        drawStage->viewPortDimensions = {{0, 0},
+//                                         {parentDrawStage->viewPortDimensions.maxs[0] >> 2,
+//                                             parentDrawStage->viewPortDimensions.maxs[1] >> 2}};
+//        drawStage->clearScreen = false;
+//        drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
+//
+//        ///2. Create mesh
+//        auto shader = m_api->hDevice->getShader("fullScreen_ffxgauss4", nullptr);
+//        gMeshTemplate meshTemplate(quadBindings, shader);
+//        meshTemplate.meshType = MeshType::eGeneralMesh;
+//        meshTemplate.depthWrite = false;
+//        meshTemplate.depthCulling = false;
+//        meshTemplate.backFaceCulling = false;
+//        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+//
+//        meshTemplate.texture.resize(1);
+//        meshTemplate.texture[0] = prevStage->target->getAttachment(0);
+//
+//        meshTemplate.textureCount = 1;
+//
+//        meshTemplate.ubo[0] = nullptr;
+//        meshTemplate.ubo[1] = nullptr;
+//        meshTemplate.ubo[2] = vertexChunk;
+//
+//        meshTemplate.ubo[3] = nullptr;
+//        meshTemplate.ubo[4] = frags[i];
+//
+//        meshTemplate.element = DrawElementMode::TRIANGLES;
+//        meshTemplate.start = 0;
+//        meshTemplate.end = 6;
+//
+//        //Make mesh
+//        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
+//        drawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+//        drawStage->opaqueMeshes->meshes.push_back(hmesh);
+//
+//        ///3. Reassign previous frame
+//        prevStage = drawStage;
+//    }
+//
+//    //And the final is ffxglow to screen
+//    {
+//        auto config = m_api->getConfig();;
+//
+//        auto glow = parentDrawStage->frameDepedantData->currentGlow;
+//        auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
+//        uniformBufferChunks.push_back(ffxGlowfragmentChunk);
+//        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
+//            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
+//            meshblockVS.x = 1;
+//            meshblockVS.y = 1;
+//            meshblockVS.z = 0; //mix_coeficient
+//            meshblockVS.w = glow; //glow multiplier
+//        });
+//
+//        auto shader = m_api->hDevice->getShader("ffxGlowQuad", nullptr);
+//        gMeshTemplate meshTemplate(quadBindings, shader);
+//        meshTemplate.meshType = MeshType::eGeneralMesh;
+//        meshTemplate.depthWrite = false;
+//        meshTemplate.depthCulling = false;
+//        meshTemplate.backFaceCulling = false;
+//        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+//
+//        meshTemplate.texture.resize(2);
+//        meshTemplate.texture[0] = parentDrawStage->target->getAttachment(0);
+//        meshTemplate.texture[1] = prevStage->target->getAttachment(0);
+//
+//        meshTemplate.textureCount = 2;
+//
+//
+//        meshTemplate.ubo[0] = nullptr;
+//        meshTemplate.ubo[1] = nullptr;
+//        meshTemplate.ubo[2] = vertexChunk;
+//
+//        meshTemplate.ubo[3] = nullptr;
+//        meshTemplate.ubo[4] = ffxGlowfragmentChunk;
+//
+//        meshTemplate.element = DrawElementMode::TRIANGLES;
+//        meshTemplate.start = 0;
+//        meshTemplate.end = 6;
+//
+//        //Make mesh
+//        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
+//
+//        auto resultDrawStage = std::make_shared<DrawStage>();
+//        *resultDrawStage = *parentDrawStage;
+//        resultDrawStage->sceneWideBlockVSPSChunk = nullptr; //Since it's not used but this shader and it's important for vulkan
+//        resultDrawStage->drawStageDependencies = {prevStage};
+//        resultDrawStage->transparentMeshes = nullptr;
+//        resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+//        resultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
+//        resultDrawStage->target = nullptr;
+//
+//        return resultDrawStage;
+//    }
+//}
 
 void Map::loadZoneLights() {
     if (m_api->databaseHandler != nullptr) {
@@ -2060,7 +2058,7 @@ void Map::loadZoneLights() {
 }
 
 IChunkHandlerType Map::generateSceneWideChunk(HCameraMatrices &renderMats, Config* config) {
-    return [renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
+    return [renderMats, config](IUniformBufferChunk *chunk, const HFrameDependantData &fdd) -> void {
         auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
 
         blockPSVS->uLookAtMat = renderMats->lookAtMat;

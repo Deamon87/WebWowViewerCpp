@@ -50,11 +50,11 @@ public:
     void initialize() override;
     void reset() override;
 
-    unsigned int getFrameNumber() override { return m_frameNumber; };
-    unsigned int getUpdateFrameNumber() override;
-    unsigned int getCullingFrameNumber() override;
-    unsigned int getOcclusionFrameNumber() override;
-    unsigned int getDrawFrameNumber() override;
+    unsigned int getFrameNumber() { return m_frameNumber; };
+    unsigned int getUpdateFrameNumber() ;
+    unsigned int getCullingFrameNumber() ;
+    unsigned int getOcclusionFrameNumber() ;
+    unsigned int getDrawFrameNumber() ;
 
 
     void increaseFrameNumber() override;
@@ -76,7 +76,7 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantDataVec);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override;

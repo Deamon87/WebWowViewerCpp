@@ -22,6 +22,7 @@
 #include "../exporters/dataExporter/DataExporterClass.h"
 #include "childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h"
 #include "childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h"
+#include "../../wowViewerLib/src/exporters/IExporter.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -52,27 +53,7 @@ public:
         return m_processor;
     }
 
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
-    void setAnimationId(int animationId) override {};
-    void setMeshIds(std::vector<uint8_t> &meshIds) override {};
-
-    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) override;
-    void produceUpdateStage(HUpdateStage &updateStage) override;
-
-    void checkCulling(HCullStage &cullStage) override {};
-
-
-    void doPostLoad(HCullStage &cullStage) override {};
-
-    void update(HUpdateStage &updateStage) {};
-    void updateBuffers(HUpdateStage &updateStage) override {};
-
-
-    int getCameraNum() override {return 0;};
-    std::shared_ptr<ICamera> createCamera(int cameraNum) override {return nullptr;};
-    void resetAnimation() override {};
-
+//    void produceDrawStage(HDrawStage &resultDrawStage);
     HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
 
     void setUIScale(float scale) {
@@ -91,7 +72,7 @@ public:
 private:
     ImGuiContext* imguiContext = nullptr;
 
-    std::array<HCullStage, 4> m_cullstages = {};
+//    HCullStage m_lastCullstage = {};
 
     float uiScale = 1;
 
@@ -138,8 +119,6 @@ private:
     ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory, true);
     ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
 
-    bool show_demo_window = true;
-    bool show_another_window = true;
     bool showCurrentStats = true;
     bool showSelectMap = false;
     bool showMakeScreenshot = false;
@@ -204,7 +183,7 @@ private:
 
     bool needToMakeScreenshot = false;
     std::string screenshotFilename = "";
-    HDrawStage screenshotDS = nullptr;
+    HFrameBuffer screenshotFramebuffer = nullptr;
     int screenShotWidth = 100;
     int screenShotHeight = 100;
     int screenshotFrame = -1;

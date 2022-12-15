@@ -68,11 +68,11 @@ public:
 
     void reset() override;
 
-    unsigned int getFrameNumber() override { return m_frameNumber; };
-    unsigned int getUpdateFrameNumber() override;
-    unsigned int getCullingFrameNumber() override;
-    unsigned int getOcclusionFrameNumber() override;
-    unsigned int getDrawFrameNumber() override;
+    unsigned int getFrameNumber() { return m_frameNumber; };
+    unsigned int getUpdateFrameNumber() ;
+    unsigned int getCullingFrameNumber() ;
+    unsigned int getOcclusionFrameNumber() ;
+    unsigned int getDrawFrameNumber() ;
 
     bool getIsRenderbufferSupported() override {return true;}
 
@@ -105,10 +105,10 @@ public:
     void startUpdateForNextFrame() override;
     void endUpdateForNextFrame() override;
 
-    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantData) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
-    void drawStageAndDeps(HDrawStage drawStage) override;
+//    void drawStageAndDeps(HDrawStage drawStage) override;
     bool wasTexturesUploaded() override {
         return m_texturesWereUploaded;
     };
@@ -239,7 +239,7 @@ public:
     void singleExecuteAndWait(std::function<void(VkCommandBuffer commandBuffer)> callback);
 private:
     void drawMesh(HGMesh &hmesh);
-    void internalDrawStageAndDeps(HDrawStage drawStage);
+//    void internalDrawStageAndDeps(HDrawStage drawStage);
 
     void setupDebugMessenger();
     void pickPhysicalDevice();
@@ -269,13 +269,13 @@ private:
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
-    bool drawMeshesInternal(
-        const HDrawStage &drawStage,
-        VkCommandBuffer commandBufferForFilling,
-        std::shared_ptr<GRenderPassVLK> renderPass,
-        const HMeshesToRender &iMeshes,
-        const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
-        VkRect2D &defaultScissor);
+//    bool drawMeshesInternal(
+//        const HDrawStage &drawStage,
+//        VkCommandBuffer commandBufferForFilling,
+//        std::shared_ptr<GRenderPassVLK> renderPass,
+//        const HMeshesToRender &iMeshes,
+//        const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
+//        VkRect2D &defaultScissor);
 
 protected:
     struct BlpCacheRecord {

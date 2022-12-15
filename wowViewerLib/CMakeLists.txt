@@ -6,8 +6,8 @@ include(CheckCXXCompilerFlag)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(LINK_GLEW 1)
-set(LINK_OGL2 1)
-set(LINK_OGL3 1)
+set(LINK_OGL2 0)
+set(LINK_OGL3 0)
 set(LINK_OGL4 0)
 set(LINK_EGL 1 PARENT_SCOPE)
 set(LINK_EGL 1)
@@ -260,7 +260,6 @@ set(SOURCE_FILES
         src/engine/persistance/m2File.cpp
         src/engine/persistance/m2File.h
         src/gapi/interface/IDevice.cpp
-        src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IIndexBuffer.h
         src/gapi/interface/buffers/IUniformBuffer.h
@@ -291,12 +290,7 @@ set(SOURCE_FILES
         src/engine/algorithms/quick-sort-omp.h
         src/include/databaseHandler.h
         src/engine/persistance/PersistentFile.h
-        src/engine/SceneComposer.cpp
-        src/engine/SceneComposer.h
-        src/engine/SceneScenario.h
         src/gapi/interface/IFrameBuffer.h
-        src/engine/SceneScenario.cpp
-        src/engine/DrawStage.h
         src/include/iostuff.h
         src/engine/ApiContainer.cpp
         src/engine/ApiContainer.h
@@ -321,9 +315,18 @@ set(SOURCE_FILES
         src/engine/algorithms/mathHelper_culling_sse.h
         src/engine/algorithms/mathHelper_culling.cpp
         src/engine/algorithms/mathHelper_culling.h
-        src/renderer/MapSceneRenderer.cpp
-        src/renderer/MapSceneRenderer.h
-        src/renderer/MapSceneRendererFactory.cpp src/renderer/MapSceneRendererFactory.h)
+        src/renderer/frame/SceneScenario.cpp
+        src/renderer/frame/SceneComposer.cpp
+        src/renderer/frame/SceneComposer.h
+        src/renderer/frame/SceneScenario.h
+        src/renderer/mapScene/MapSceneRenderer.cpp
+        src/renderer/mapScene/MapSceneRenderer.h
+        src/renderer/mapScene/MapSceneRendererFactory.cpp src/renderer/mapScene/MapSceneRendererFactory.h
+        src/renderer/IRenderer.h
+        src/renderer/IRenderParameters.h
+        src/renderer/frame/FrameInputParams.h
+        src/renderer/mapScene/FrameDependentData.h
+        src/renderer/buffers/IVertexBufferDynamicTemplate.cpp src/renderer/buffers/IVertexBufferDynamicTemplate.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -365,6 +368,7 @@ if (LINK_OGL2)
         src/gapi/ogl2.0/GOcclusionQueryGL20.h)
 endif()
 
+if (LINK_OGL3)
 set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
@@ -414,6 +418,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GWaterShaderGL33.h
         src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.cpp
         src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.h)
+endif()
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -497,11 +502,17 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp
             src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
             src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
-            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h src/renderer/vulkan/MapSceneRenderForwardVLK.cpp src/renderer/vulkan/MapSceneRenderForwardVLK.h)
-    set(Vulkan_INCLUDE_DIR $ENV{VULKAN_SDK}/Include)
+            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.cpp
+            src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h)
+    if (NOT Vulkan_SDK_DIR)
+        set(Vulkan_SDK_DIR $ENV{VULKAN_SDK})
+    endif()
+
+    set(Vulkan_INCLUDE_DIR ${Vulkan_SDK_DIR}/include)
     IF(WIN32)
         IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
+            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "${Vulkan_SDK_DIR}/lib")
             IF (Vulkan_LIBRARY)
                 set(Vulkan_FOUND ON PARENT_SCOPE)
                 MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
@@ -513,7 +524,7 @@ if (LINK_VULKAN)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
     ELSE(WIN32)
         IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan")
+            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "${Vulkan_SDK_DIR}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan")
             IF (Vulkan_LIBRARY)
                 set(Vulkan_FOUND ON PARENT_SCOPE)
                 MESSAGE("Using bundled Vulkan library version non-win32")

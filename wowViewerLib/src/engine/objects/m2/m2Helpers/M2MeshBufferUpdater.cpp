@@ -27,7 +27,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
     int batchIndex = materialData.batchIndex;
     auto vertexShader = materialData.vertexShader;
 
-    hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData){
+    hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
         auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto batch = m2SkinProfile->batches[batchIndex];
@@ -50,7 +50,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getUniformBuffer(4)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
+    hmesh->getUniformBuffer(4)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
         auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto batch = m2SkinProfile->batches[batchIndex];
