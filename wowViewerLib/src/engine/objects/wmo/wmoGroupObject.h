@@ -10,6 +10,7 @@ class WMOGroupListContainer;
 
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../iWmoApi.h"
+#include "../m2/m2Object.h"
 #include "../../../gapi/interface/meshes/IMesh.h"
 
 class WmoGroupObject {

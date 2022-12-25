@@ -9,7 +9,7 @@
 
 template<typename FramePlan, typename AdditionalParam>
 class IRendererParameters {
-    virtual void putIntoQueue(std::shared_ptr<FrameInputParams<FramePlan, AdditionalParam>> &frameInputParams) = 0;
+    virtual void putIntoQueue(std::shared_ptr<FrameInputParams> &frameInputParams) = 0;
 
 };
 

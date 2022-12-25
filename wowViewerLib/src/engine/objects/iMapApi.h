@@ -8,6 +8,8 @@
 class IMapApi;
 #include "m2/m2Object.h"
 #include "wmo/wmoObject.h"
+#include "../../include/database/dbStructs.h"
+#include "../../include/config.h"
 
 struct StateForConditions {
     int currentAreaId = 0;

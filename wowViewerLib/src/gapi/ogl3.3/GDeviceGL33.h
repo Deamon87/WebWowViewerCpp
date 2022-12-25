@@ -88,7 +88,7 @@ public:
 
     void bindProgram(IShaderPermutation *program) override;
 
-    void bindIndexBuffer(IIndexBuffer *buffer) override;
+    void bindIndexBuffer(IBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
     void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
 

@@ -78,7 +78,7 @@ namespace GL33 {
     }
 }
 
-void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
+void GDeviceGL33::bindIndexBuffer(IBuffer *buffer) {
     GIndexBufferGL33 * gBuffer = (GIndexBufferGL33 *) buffer;
     if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {

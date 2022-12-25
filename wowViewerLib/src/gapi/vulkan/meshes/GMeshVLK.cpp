@@ -7,7 +7,6 @@
 #include "GMeshVLK.h"
 #include "../textures/GTextureVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"
-#include "../buffers/GUniformBufferVLK.h"
 
 GMeshVLK::GMeshVLK(IDevice &device,
              const gMeshTemplate &meshTemplate
@@ -20,8 +19,6 @@ GMeshVLK::GMeshVLK(IDevice &device,
     m_backFaceCulling = (int8_t) (meshTemplate.backFaceCulling ? 1 : 0);
     m_triCCW = meshTemplate.triCCW;
 
-    m_isSkyBox = meshTemplate.skybox;
-
     m_isScissorsEnabled = meshTemplate.scissorEnabled ? 1 : 0;
     if (m_isScissorsEnabled) {
         m_scissorSize = meshTemplate.scissorSize;
@@ -31,12 +28,10 @@ GMeshVLK::GMeshVLK(IDevice &device,
     m_colorMask = meshTemplate.colorMask;
 
     m_blendMode = meshTemplate.blendMode;
-    m_isTransparent = m_blendMode > EGxBlendEnum::GxBlend_AlphaKey || !m_depthWrite ;
 
     m_start = meshTemplate.start;
     m_end = meshTemplate.end;
     m_element = meshTemplate.element;
-    m_textureCount = meshTemplate.textureCount;
 
     m_texture = meshTemplate.texture;
 
@@ -208,19 +203,8 @@ HGUniformBufferChunk GMeshVLK::getUniformBuffer(int slot) {
     return m_UniformBuffer[slot];
 }
 
-EGxBlendEnum GMeshVLK::getGxBlendMode() { return m_blendMode; }
-
 bool GMeshVLK::getIsTransparent() { return m_isTransparent; }
 
 MeshType GMeshVLK::getMeshType() {
     return m_meshType;
 }
-
-void GMeshVLK::setRenderOrder(int renderOrder) {
-    m_renderOrder = renderOrder;
-}
-
-void GMeshVLK::setStart(int start) {m_start = start; }
-void GMeshVLK::setEnd(int end) {m_end = end; }
-
-

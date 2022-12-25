@@ -5,12 +5,12 @@
 #ifndef WEBWOWVIEWERCPP_GINDEXBUFFER_4X_H
 #define WEBWOWVIEWERCPP_GINDEXBUFFER_4X_H
 
-#include "../../interface/buffers/IIndexBuffer.h"
+#include "../../interface/buffers/IBuffer.h"
 #include "../../interface/IDevice.h"
 #include "../GDeviceGL4x.h"
 
 
-class GIndexBufferGL4x : public IIndexBuffer{
+class GIndexBufferGL4x : public IBuffer{
     friend class GDeviceGL4x;
 
     explicit GIndexBufferGL4x(IDevice &device);

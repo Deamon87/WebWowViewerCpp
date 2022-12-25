@@ -6,7 +6,6 @@
 #define AWEBWOWVIEWERCPP_MAPSCENEPLAN_H
 
 #include <vector>
-#include "../../engine/objects/iWmoApi.h"
 #include "FrameDependentData.h"
 #include "../../engine/objects/ViewsObjects.h"
 #include "../../engine/objects/wmo/wmoObject.h"

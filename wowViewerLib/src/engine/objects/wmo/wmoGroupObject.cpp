@@ -410,7 +410,8 @@ void WmoGroupObject::createMeshes() {
     PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
     HGDevice device = m_api->hDevice;
-    HGVertexBufferBindings binding = m_geom->getVertexBindings(device);
+    //TODO:
+    HGVertexBufferBindings binding = nullptr; //m_geom->getVertexBindings(device);
 
     vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
@@ -469,7 +470,7 @@ void WmoGroupObject::createMeshes() {
         cacheRecord.unFogged = true;
         cacheRecord.unShadowed = true;
 
-        HGShaderPermutation shaderPermutation = device->getShader("wmoShader", &cacheRecord);
+        HGShaderPermutation shaderPermutation = device->getShader("wmoShader", "wmoShader", &cacheRecord);
 
         gMeshTemplate meshTemplate(binding, shaderPermutation);
 
@@ -499,21 +500,20 @@ void WmoGroupObject::createMeshes() {
         meshTemplate.texture[1] = texture2;
         meshTemplate.texture[2] = texture3;
 
-        meshTemplate.textureCount = 9;
         if (pixelShader == (int)WmoPixelShader::MapObjParallax) {
             meshTemplate.texture[3] = m_wmoApi->getTexture(material.color_2, false);
             meshTemplate.texture[4] = m_wmoApi->getTexture(material.flags_2, false);
             meshTemplate.texture[5] = m_wmoApi->getTexture(material.runTimeData[0], false);
+            meshTemplate.texture.resize(6);
         } else if (pixelShader == (int)WmoPixelShader::MapObjUnkShader) {
-//            meshTemplate.texture.resize(9);
-//            meshTemplate.textureCount = 9;
-
             meshTemplate.texture[3] = m_wmoApi->getTexture(material.color_2, false);
             meshTemplate.texture[4] = m_wmoApi->getTexture(material.flags_2, false);
             meshTemplate.texture[5] = m_wmoApi->getTexture(material.runTimeData[0], false);
             meshTemplate.texture[6] = m_wmoApi->getTexture(material.runTimeData[1], false);
             meshTemplate.texture[7] = m_wmoApi->getTexture(material.runTimeData[2], false);
             meshTemplate.texture[8] = m_wmoApi->getTexture(material.runTimeData[3], false);
+        } else {
+            meshTemplate.texture.resize(3);
         }
 
 
@@ -641,7 +641,7 @@ void WmoGroupObject::createWaterMeshes() {
         shaderId = 0;
     }
 
-    HGShaderPermutation shaderPermutation = device->getShader("waterShader", nullptr);
+    HGShaderPermutation shaderPermutation = device->getShader("waterShader", "waterShader", nullptr);
 
     gMeshTemplate meshTemplate(binding, shaderPermutation);
 
@@ -673,7 +673,7 @@ void WmoGroupObject::createWaterMeshes() {
             break;
         }
     }
-    meshTemplate.textureCount = 1;
+
     if (basetextureFDID != 0) {
         auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
         meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
@@ -1218,7 +1218,6 @@ void WmoGroupObject::setModelFileId(int fileId) {
 void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     if (!m_loaded) return;
     for (auto &i : this->m_meshArray) {
-        i->setRenderOrder(renderOrder);
         if (i->getIsTransparent()) {
             opaqueMeshes.push_back(i);
         } else {
@@ -1227,7 +1226,6 @@ void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vecto
     }
 
     for (auto &i : this->m_waterMeshArray) {
-        i->setRenderOrder(renderOrder);
         transparentMeshes.push_back(i);
     }
 }

@@ -21,6 +21,7 @@ class WmoGroupObject;
 #include "../iWmoApi.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"
+#include "../../../include/database/dbStructs.h"
 
 class WmoObject : public IWmoApi {
 

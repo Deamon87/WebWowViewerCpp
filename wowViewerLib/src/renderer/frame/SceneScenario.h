@@ -30,7 +30,7 @@ private:
     };
 
 public:
-    template <typename T, typename = std::enable_if_t<std::is_base_of_v<IRendererParameters<T>, T>>>
+    template <typename T, typename R, typename = std::enable_if_t<std::is_base_of_v<IRendererParameters<T, R>, T>>>
     RendererSpecificData<T> withSceneRenderer(T renderer) {
         return RendererSpecificData<T>(this, renderer);
     }

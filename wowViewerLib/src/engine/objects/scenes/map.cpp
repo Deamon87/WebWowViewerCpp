@@ -261,6 +261,8 @@ std::array<uint16_t,300> skyConusIBO = {
 };
 
 HGVertexBufferBindings createSkyBindings(IDevice *device) {
+    //TODO:
+    /*
     auto skyIBO = device->createIndexBuffer();
     skyIBO->uploadData(
         skyConusIBO.data(),
@@ -282,8 +284,9 @@ HGVertexBufferBindings createSkyBindings(IDevice *device) {
 
     skyBindings->addVertexBufferBinding(vertexBinding);
     skyBindings->save();
+*/
 
-    return skyBindings;
+    return nullptr;
 }
 
 Map::Map(HApiContainer api, int mapId, std::string mapName) {
@@ -332,7 +335,7 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     //TODO: Pass m_skyConeAlpha to fragment shader
 
     ///2. Create mesh
-    auto shader = device->getShader("skyConus", nullptr);
+    auto shader = device->getShader("skyConus", "skyConus", nullptr);
     gMeshTemplate meshTemplate(skyBindings, shader);
     meshTemplate.meshType = MeshType::eGeneralMesh;
     meshTemplate.depthWrite = false;
@@ -342,8 +345,6 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     meshTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
 
     meshTemplate.texture.resize(0);
-
-    meshTemplate.textureCount = 0;
 
     meshTemplate.ubo[0] = nullptr;
     meshTemplate.ubo[1] = nullptr;
@@ -366,7 +367,7 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     return hmesh;
 }
 
-void Map::makeFramePlan(FrameInputParams<HMapRenderPlan> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
+void Map::makeFramePlan(FrameInputParams &frameInputParams, HMapRenderPlan &mapRenderPlan) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
     cullCreateVarsCounter.beginMeasurement();
@@ -1382,6 +1383,8 @@ void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
 
 //        std::cout << "indexBuffer.size = " << indexBuffer.size() << std::endl;
 
+//TODO:
+/*
         auto quadIBO = m_api->hDevice->createIndexBuffer();
         quadIBO->uploadData(
             indexBuffer.data(),
@@ -1403,6 +1406,7 @@ void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
 
         quadBindings->addVertexBufferBinding(vertexBinding);
         quadBindings->save();
+        */
     }
     if (skyMesh == nullptr) {
         auto skyMeshBinding = createSkyBindings(m_api->hDevice.get());

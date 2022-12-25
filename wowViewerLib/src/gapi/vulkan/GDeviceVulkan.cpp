@@ -15,10 +15,7 @@
 
 #include "meshes/GM2MeshVLK.h"
 #include "meshes/GMeshVLK.h"
-#include "buffers/GUniformBufferVLK.h"
-#include "buffers/GVertexBufferVLK.h"
 #include "buffers/GVertexBufferDynamicVLK.h"
-#include "buffers/GIndexBufferVLK.h"
 #include "textures/GTextureVLK.h"
 #include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
@@ -39,6 +36,7 @@
 #include "shaders/GWaterfallShaderVLK.h"
 #include "GRenderPassVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
+#include "buffers/GBufferVLK.h"
 //#include "fastmemcp.h"
 #include <tbb/tbb.h>
 
@@ -269,26 +267,6 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     std::cout << "uniformBufferOffsetAlign = " << uniformBufferOffsetAlign << std::endl;
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
-
-    // Create pool
-//    VkBufferCreateInfo exampleBufCreateInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-//    exampleBufCreateInfo.size = 65536; // Whatever.
-//    exampleBufCreateInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // Change if needed.
-//
-//    VmaAllocationCreateInfo allocCreateInfo = {};
-//    allocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY; // Change if needed.
-//
-//    uint32_t memTypeIndex;
-//    vmaFindMemoryTypeIndexForBufferInfo(vmaAllocator, &exampleBufCreateInfo, &allocCreateInfo, &memTypeIndex);
-//
-//    // Create a pool that can have at most 2 blocks, 128 MiB each.
-//    VmaPoolCreateInfo poolCreateInfo = {};
-//    poolCreateInfo.memoryTypeIndex = memTypeIndex;
-//    poolCreateInfo.blockSize = 128ull * 1024 * 1024;
-//    poolCreateInfo.maxBlockCount = 10;
-//
-//    vmaCreatePool(vmaAllocator, &poolCreateInfo, &uboVmaPool);
-
 }
 
 void GDeviceVLK::initialize() {
@@ -431,15 +409,6 @@ void GDeviceVLK::createRenderPass() {
                                                   findDepthFormat(),
                                                   VK_SAMPLE_COUNT_1_BIT,
                                                   true);
-}
-
-void GDeviceVLK::createColorResources() {
-//    VkFormat colorFormat = swapChainImageFormat;
-//
-//    createImage(swapChainExtent.width, swapChainExtent.height, 1, msaaSamples, colorFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, colorImage, colorImageMemory);
-//    colorImageView = createImageView(colorImage, colorFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-//
-//    transitionImageLayout(colorImage, colorFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1);
 }
 
 uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
@@ -872,26 +841,6 @@ float GDeviceVLK::getAnisLevel() {
     return deviceProperties.limits.maxSamplerAnisotropy;
 }
 
-void GDeviceVLK::bindProgram(IShaderPermutation *program) {
-
-}
-
-void GDeviceVLK::bindIndexBuffer(IIndexBuffer *buffer) {
-
-}
-
-void GDeviceVLK::bindVertexBuffer(IVertexBuffer *buffer) {
-
-}
-
-
-void GDeviceVLK::bindVertexBufferBindings(IVertexBufferBindings *buffer) {
-
-}
-
-void GDeviceVLK::bindTexture(ITexture *texture, int slot) {
-
-}
 
 void GDeviceVLK::startUpdateForNextFrame() {
     int uploadFrame = getUpdateFrameNumber();
@@ -993,23 +942,23 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
 
     if (bufferForUpload == nullptr) {
         bufferForUpload = createUniformBuffer(1000);
-        bufferForUpload->createBuffer();
         m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
         m_shaderDescriptorUpdateNeeded = true;
     }
 
-    auto bufferForUploadVLK = ((GUniformBufferVLK *) bufferForUpload.get());
-    size_t old_size = bufferForUploadVLK->m_size;
+    auto bufferForUploadVLK = std::dynamic_pointer_cast<IBufferVLK>(bufferForUpload);
+    size_t old_size = bufferForUploadVLK->getSize();
 
 
     if (old_size < fullSize) {
-        bufferForUploadVLK->resize(fullSize);
+        //TODO:
+        //bufferForUploadVLK->resize(fullSize);
         //Buffer identifier was changed, so we need to update shader UBO descriptor
         m_shaderDescriptorUpdateNeeded = true;
     }
 
     if (fullSize > 0) {
-        char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->stagingUBOBufferAllocInfo.pMappedData);
+        char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->getPointer());
 
         for (int i = 0; i < bufferChunks.size(); i++) {
             auto &bufferVec = bufferChunks[i];
@@ -1046,7 +995,8 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
 //            }
         }
         if (currentSize > 0) {
-            bufferForUploadVLK->uploadFromStaging(currentSize);
+            //TODO:
+            //bufferForUploadVLK->uploadFromStaging(currentSize);
         }
     }
 }
@@ -1062,7 +1012,7 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         mesh->updateDescriptor();
 
 
-        for (int i = 0; i < mesh->m_textureCount; i++) {
+        for (int i = 0; i < mesh->textureCount(); i++) {
             textures.push_back(mesh->m_texture[i]);
         }
     }
@@ -1075,15 +1025,14 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
         if (texture->postLoad()) texturesLoaded++;
         if (texturesLoaded > 4) break;
     }
-    m_texturesWereUploaded = texturesLoaded > 0;
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
 
 }
 
-std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName, void *permutationDescriptor) {
-    const char * cstr = shaderName.c_str();
+std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) {
+    const char * cstr = vertexName.c_str();
     size_t hash = CalculateFNV(cstr);
     if (m_shaderPermutCache.count(hash) > 0) {
         HGShaderPermutation ptr = m_shaderPermutCache.at(hash);
@@ -1092,56 +1041,56 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
 
     std::shared_ptr<IShaderPermutation> sharedPtr;
 
-    if (shaderName == "m2Shader") {
-        IShaderPermutation *iPremutation = new GM2ShaderPermutationVLK(shaderName, this);
+    if (vertexName == "m2Shader") {
+        IShaderPermutation *iPremutation = new GM2ShaderPermutationVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "m2ParticleShader") {
-        IShaderPermutation *iPremutation = new GM2ParticleShaderPermutationVLK(shaderName, this);
+    } else if (vertexName == "m2ParticleShader") {
+        IShaderPermutation *iPremutation = new GM2ParticleShaderPermutationVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "ribbonShader") {
-        IShaderPermutation *iPremutation = new GM2RibbonShaderPermutationVLK(shaderName, this);
+    } else if (vertexName == "ribbonShader") {
+        IShaderPermutation *iPremutation = new GM2RibbonShaderPermutationVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "wmoShader"){
-        IShaderPermutation *iPremutation = new GWMOShaderPermutationVLK(shaderName, this);
+    } else if (vertexName == "wmoShader"){
+        IShaderPermutation *iPremutation = new GWMOShaderPermutationVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "waterShader"){
-        IShaderPermutation *iPremutation = new GWaterShaderPermutation(shaderName, this);
+    } else if (vertexName == "waterShader"){
+        IShaderPermutation *iPremutation = new GWaterShaderPermutation(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "adtShader"){
-        IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(shaderName, this);
+    } else if (vertexName == "adtShader"){
+        IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "skyConus"){
-        IShaderPermutation *iPremutation = new GSkyConusShaderVLK(shaderName, this);
+    } else if (vertexName == "skyConus"){
+        IShaderPermutation *iPremutation = new GSkyConusShaderVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
-    } else if (shaderName == "fullScreen_ffxgauss4") {
-        IShaderPermutation *iPremutation = new GFFXgauss4VLK(shaderName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-        m_shaderPermutCache[hash] = sharedPtr;
-    } else if (shaderName == "ffxGlowQuad") {
-        IShaderPermutation *iPremutation = new GFFXGlowVLK(shaderName, this);
+    } else if (vertexName == "fullScreen_ffxgauss4") {
+        IShaderPermutation *iPremutation = new GFFXgauss4VLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;
-    } else if (shaderName == "waterfallShader") {
-        IShaderPermutation *iPremutation = new GWaterfallShaderVLK(shaderName, this);
+    } else if (vertexName == "ffxGlowQuad") {
+        IShaderPermutation *iPremutation = new GFFXGlowVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;
-    } else if (shaderName == "drawBBShader") {
-        IShaderPermutation *iPremutation = new GDrawBoundingBoxVLK(shaderName, this);
+    } else if (vertexName == "waterfallShader") {
+        IShaderPermutation *iPremutation = new GWaterfallShaderVLK(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;
-    } else if (shaderName == "imguiShader") {
-        IShaderPermutation *iPremutation = new GImguiShaderPermutation(shaderName, this);
+    } else if (vertexName == "drawBBShader") {
+        IShaderPermutation *iPremutation = new GDrawBoundingBoxVLK(vertexName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
+    } else if (vertexName == "imguiShader") {
+        IShaderPermutation *iPremutation = new GImguiShaderPermutation(vertexName, this);
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;
@@ -1154,31 +1103,19 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
     return sharedPtr;
 }
 
-HGUniformBuffer GDeviceVLK::createUniformBuffer(size_t size) {
-    std::shared_ptr<GUniformBufferVLK> h_uniformBuffer;
-    h_uniformBuffer.reset(new GUniformBufferVLK(*this, size));
-
+HGBufferVLK GDeviceVLK::createUniformBuffer(size_t initialSize) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize);
     return h_uniformBuffer;
 }
 
-HGVertexBufferDynamic GDeviceVLK::createVertexBufferDynamic(size_t size) {
-    std::shared_ptr<GVertexBufferDynamicVLK> h_vertexBuffer;
-    h_vertexBuffer.reset(new GVertexBufferDynamicVLK(*this, size));
+HGBufferVLK GDeviceVLK::createVertexBuffer(size_t initialSize) {
+    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize);
 
     return h_vertexBuffer;
 }
 
-HGVertexBuffer GDeviceVLK::createVertexBuffer() {
-    std::shared_ptr<GVertexBufferVLK> h_vertexBuffer;
-    h_vertexBuffer.reset(new GVertexBufferVLK(*this));
-
-    return h_vertexBuffer;
-}
-
-HGIndexBuffer GDeviceVLK::createIndexBuffer() {
-    std::shared_ptr<GIndexBufferVLK> h_indexBuffer;
-    h_indexBuffer.reset(new GIndexBufferVLK(*this));
-
+HGBufferVLK GDeviceVLK::createIndexBuffer(size_t initialSize) {
+    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize);
     return h_indexBuffer;
 }
 
@@ -1232,67 +1169,11 @@ HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {
     return h_mesh;
 }
 
-HGM2Mesh GDeviceVLK::createM2Mesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GM2MeshVLK> h_mesh;
-    h_mesh.reset(new GM2MeshVLK(*this, meshTemplate));
-    h_mesh->m_meshType = MeshType::eM2Mesh;
-
-    return h_mesh;
-}
-
-HGParticleMesh GDeviceVLK::createParticleMesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GM2MeshVLK> h_mesh;
-    h_mesh.reset(new GM2MeshVLK(*this, meshTemplate));
-    h_mesh->m_meshType = MeshType::eParticleMesh;
-
-    return h_mesh;
-}
-
 HGPUFence GDeviceVLK::createFence() {
     return HGPUFence();
 }
 
-HGOcclusionQuery GDeviceVLK::createQuery(HGMesh boundingBoxMesh) {
-    return HGOcclusionQuery();
-}
-
-HGVertexBufferBindings GDeviceVLK::getBBVertexBinding() {
-    return HGVertexBufferBindings();
-}
-
-HGVertexBufferBindings GDeviceVLK::getBBLinearBinding() {
-    return HGVertexBufferBindings();
-}
-
-std::string GDeviceVLK::loadShader(std::string fileName, IShaderType shaderType) {
-    return std::string();
-}
-
-void GDeviceVLK::drawMesh(HGMesh &hmesh) {
-
-}
-
-void GDeviceVLK::reset() {
-
-}
-
-void GDeviceVLK::clearScreen() {
-
-}
-
-void GDeviceVLK::beginFrame() {
-
-// Rebuild pipelines
-//    for (auto &pipelineRec : loadedPipeLines) {
-//        if (!pipelineRec.second.expired()) {
-//            auto pipelineObj = pipelineRec.second.lock();
-//            pipelineObj->createPipeline()
-//        }
-//    }
-
-}
-
-void GDeviceVLK::commitFrame() {
+void GDeviceVLK::drawScenario() {
     if (m_firstFrame) {
         m_firstFrame = false;
         return;
@@ -1358,48 +1239,49 @@ void GDeviceVLK::commitFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
     vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
 
-
-
     //Fill command buffer
+    //TODO:!!!
+    //This stuff creates commands that would write into the frameBuffer of the frame
+    //the problem is that it depends on the imageIndex, which cant be known beforehand
+    //Also, we would need info on the current settings of the clear color and invertZ stuff here
     auto commandBufferForFilling = commandBuffers[currentDrawFrame];
-
-    {
-        VkCommandBufferBeginInfo beginInfo = {};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-        beginInfo.pNext = NULL;
-        beginInfo.pInheritanceInfo = NULL;
-
-        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
-            throw std::runtime_error("failed to begin recording command buffer!");
-        }
-
-        std::array<VkClearValue, 2> clearValues = {};
-        clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
-        clearValues[1].depthStencil = {getInvertZ() ? 0.0f : 1.0f, 0};
-
-        VkRenderPassBeginInfo renderPassInfo = {};
-        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-        renderPassInfo.pNext = NULL;
-        renderPassInfo.renderPass = swapchainRenderPass->getRenderPass();
-        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-        renderPassInfo.renderArea.offset = {0, 0};
-        renderPassInfo.renderArea.extent = swapChainExtent;
-        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-        renderPassInfo.pClearValues = clearValues.data();
-
-        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-
-        if (renderCommandBuffersNotNull[currentDrawFrame]) {
-            vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
-        }
-
-        vkCmdEndRenderPass(commandBufferForFilling);
-
-        if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
-            throw std::runtime_error("failed to record command buffer!");
-        }
-    }
+//    {
+//        VkCommandBufferBeginInfo beginInfo = {};
+//        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+//        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+//        beginInfo.pNext = NULL;
+//        beginInfo.pInheritanceInfo = NULL;
+//
+//        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
+//            throw std::runtime_error("failed to begin recording command buffer!");
+//        }
+//
+//        std::array<VkClearValue, 2> clearValues = {};
+//        clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
+//        clearValues[1].depthStencil = {getInvertZ() ? 0.0f : 1.0f, 0};
+//
+//        VkRenderPassBeginInfo renderPassInfo = {};
+//        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+//        renderPassInfo.pNext = NULL;
+//        renderPassInfo.renderPass = swapchainRenderPass->getRenderPass();
+//        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+//        renderPassInfo.renderArea.offset = {0, 0};
+//        renderPassInfo.renderArea.extent = swapChainExtent;
+//        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+//        renderPassInfo.pClearValues = clearValues.data();
+//
+//        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+//
+//        if (renderCommandBuffersNotNull[currentDrawFrame]) {
+//            vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
+//        }
+//
+//        vkCmdEndRenderPass(commandBufferForFilling);
+//
+//        if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
+//            throw std::runtime_error("failed to record command buffer!");
+//        }
+//    }
 
 
     VkSubmitInfo submitInfo = {};
@@ -1471,16 +1353,6 @@ void GDeviceVLK::commitFrame() {
         std::cout << "failed to present swap chain image!" << std::endl << std::flush;
 //        throw std::runtime_error("failed to present swap chain image!");
     }
-}
-
-void GDeviceVLK::setClearScreenColor(float r, float g, float b) {
-    clearColor[0] = r;
-    clearColor[1] = g;
-    clearColor[2] = b;
-}
-
-void GDeviceVLK::setViewPortDimensions(float x, float y, float width, float height) {
-
 }
 
 std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(

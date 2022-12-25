@@ -34,12 +34,6 @@
 #include "../database/CEmptySqliteDB.h"
 #include "../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 
-static const GBufferBinding imguiBindings[3] = {
-    {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
-    {+imguiShader::Attribute::UV, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, uv)},
-    {+imguiShader::Attribute::Color, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col)},
-};
-
 void FrontendUI::composeUI() {
     if (this->fontTexture == nullptr)
         return;
@@ -1260,6 +1254,8 @@ void FrontendUI::showSettingsDialog() {
                 glowSource = 1;
                 break;
             }
+            default:
+                glowSource = 1;
         }
 
         if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
@@ -1739,3 +1735,171 @@ void FrontendUI::createDatabaseHandler() {
     mapListStringMap = {};
     filteredMapList = {};
 }
+
+//void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
+//    auto m_device = m_api->hDevice;
+//
+//    if (this->fontTexture == nullptr) {
+//        ImGuiIO& io = ImGui::GetIO();
+//        unsigned char* pixels;
+//        int width, height;
+//        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+//        // Upload texture to graphics system
+//        this->fontTexture = m_device->createTexture(false, false);
+//        this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
+//        // Store our identifier
+//        io.Fonts->TexID = this->fontTexture;
+//        return;
+//    }
+////    if (exporter != nullptr) {
+////        if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
+////            exporterFramesReady++;
+////        }
+////        if (exporterFramesReady > 5) {
+////            exporter->saveToFile("model.gltf");
+////            exporter = nullptr;
+////        }
+////    }
+//
+//    lastWidth = resultDrawStage->viewPortDimensions.maxs[0];
+//    lastHeight = resultDrawStage->viewPortDimensions.maxs[1];
+//
+//    resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
+//    auto *draw_data = ImGui::GetDrawData();
+//    if (draw_data == nullptr)
+//        return;
+//
+//    int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
+//    int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+//    if (fb_width <= 0 || fb_height <= 0) {
+//        return;
+//    }
+//    ImVec2 clip_off = draw_data->DisplayPos;         // (0,0) unless using multi-viewports
+//    ImVec2 clip_scale = draw_data->FramebufferScale; // (1,1) unless using retina display which are often (2,2)
+//    //Create projection matrix:
+//    auto uiScale = ImGui::GetIO().uiScale;
+//    float L = draw_data->DisplayPos.x * uiScale;
+//    float R = (draw_data->DisplayPos.x + draw_data->DisplaySize.x) * uiScale;
+//    float T = draw_data->DisplayPos.y * uiScale;
+//    float B = (draw_data->DisplayPos.y + draw_data->DisplaySize.y) * uiScale;
+//    mathfu::mat4 ortho_projection =
+//        {
+//            { 2.0f/(R-L),   0.0f,         0.0f,   0.0f },
+//            { 0.0f,         2.0f/(T-B),   0.0f,   0.0f },
+//            { 0.0f,         0.0f,        -1.0f,   0.0f },
+//            { (R+L)/(L-R),  (T+B)/(B-T),  0.0f,   1.0f },
+//        };
+//
+//    if (m_device->getIsVulkanAxisSystem()) {
+//        static const mathfu::mat4 vulkanMatrixFix1 = mathfu::mat4(1, 0, 0, 0,
+//                                                                  0, -1, 0, 0,
+//                                                                  0, 0, 1.0/2.0, 1/2.0,
+//                                                                  0, 0, 0, 1).Transpose();
+//        ortho_projection = vulkanMatrixFix1 * ortho_projection;
+//    }
+//    auto uboPart = m_device->createUniformBufferChunk(sizeof(ImgUI::modelWideBlockVS));
+//
+//
+//    uboPart->setUpdateHandler([ortho_projection,uiScale](IUniformBufferChunk* self, const HFrameDepedantData &frameDepedantData) {
+//        auto &uni = self->getObject<ImgUI::modelWideBlockVS>();
+//        uni.projectionMat = ortho_projection;
+//        uni.scale[0] = uiScale;
+//    });
+//
+//    auto shaderPermute = m_device->getShader("imguiShader", nullptr);
+//    // Render command lists
+//    for (int n = 0; n < draw_data->CmdListsCount; n++)
+//    {
+//        const ImDrawList* cmd_list = draw_data->CmdLists[n];
+//
+//        // Upload vertex/index buffers
+//        auto vertexBufferBindings = m_device->createVertexBufferBindings();
+//        auto vboBuffer = m_device->createVertexBuffer();
+//        auto iboBuffer = m_device->createIndexBuffer();
+//
+//        vboBuffer->uploadData(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+//        iboBuffer->uploadData(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+//
+//        //Create vao
+//        GVertexBufferBinding vertexBufferBinding;
+//        vertexBufferBinding.bindings = std::vector<GBufferBinding>(&imguiBindings[0], &imguiBindings[3]);
+//        vertexBufferBinding.vertexBuffer = vboBuffer;
+//
+//        vertexBufferBindings->setIndexBuffer(iboBuffer);
+//        vertexBufferBindings->addVertexBufferBinding(vertexBufferBinding);
+//        vertexBufferBindings->save();
+//
+//        for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)
+//        {
+//
+//
+//            const ImDrawCmd* pcmd = &cmd_list->CmdBuffer[cmd_i];
+//            if (pcmd->UserCallback != NULL)
+//            {
+//                // User callback, registered via ImDrawList::AddCallback()
+//                // (ImDrawCallback_ResetRenderState is a special callback value used by the user to request the renderer to reset render state.)
+////                if (pcmd->UserCallback == ImDrawCallback_ResetRenderState)
+////                    ImGui_ImplOpenGL3_SetupRenderState(draw_data, fb_width, fb_height, vertex_array_object);
+////                else
+////                    pcmd->UserCallback(cmd_list, pcmd);
+//                assert(pcmd->UserCallback == NULL);
+//            }
+//            else
+//            {
+//                // Project scissor/clipping rectangles into framebuffer space
+//                ImVec4 clip_rect;
+//                clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
+//                clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
+//                clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
+//                clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
+//
+//                if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
+//                {
+//                    // Apply scissor/clipping rectangle
+//                    // Create mesh add add it to collected meshes
+//                    gMeshTemplate meshTemplate(vertexBufferBindings, shaderPermute);
+//                    meshTemplate.element = DrawElementMode::TRIANGLES;
+//                    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+//                    meshTemplate.backFaceCulling = false;
+//                    meshTemplate.depthCulling = false;
+////void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
+//
+//                    meshTemplate.scissorEnabled = true;
+//                    //Vulkan has different clip offset compared to OGL
+//                    if (!m_device->getIsVulkanAxisSystem()) {
+//                        meshTemplate.scissorOffset = {(int)(clip_rect.x* uiScale), (int)((fb_height - clip_rect.w)* uiScale)};
+//                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x) * uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
+//                    } else {
+//                        meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((clip_rect.y) * uiScale)};
+//                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x)* uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
+//                    }
+//
+//                    meshTemplate.ubo[1] = uboPart;
+//                    meshTemplate.textureCount = 1;
+//                    meshTemplate.texture[0] = pcmd->TextureId;
+//
+//                    meshTemplate.start = pcmd->IdxOffset * 2;
+//                    meshTemplate.end = pcmd->ElemCount;
+//
+//                    resultDrawStage->opaqueMeshes->meshes.push_back(m_device->createMesh(meshTemplate));
+//                }
+//            }
+//        }
+//    }
+//
+//    //1. Collect buffers
+//    auto &bufferChunks = updateStages[0]->uniformBufferChunks;
+//    int renderIndex = 0;
+//    for (const auto &mesh : resultDrawStage->opaqueMeshes->meshes) {
+//        for (int i = 0; i < 5; i++ ) {
+//            auto bufferChunk = mesh->getUniformBuffer(i);
+//
+//            if (bufferChunk != nullptr) {
+//                bufferChunks.push_back(bufferChunk);
+//            }
+//        }
+//    }
+//
+//    std::sort( bufferChunks.begin(), bufferChunks.end());
+//    bufferChunks.erase( unique( bufferChunks.begin(), bufferChunks.end() ), bufferChunks.end() );
+//}

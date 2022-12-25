@@ -6,6 +6,7 @@
 #define WOWVIEWERLIB_M2OBJECT_H
 
 class M2Object;
+class M2ObjectListContainer;
 #define _USE_MATH_DEFINES
 
 #include <cstdint>
@@ -61,7 +62,7 @@ private:
         int batchIndex = -1;
         HGVertexBufferDynamic m_bufferVBO = nullptr;
         HGVertexBufferBindings m_bindings = nullptr;
-        HGParticleMesh m_mesh = nullptr;
+        HGM2Mesh m_mesh = nullptr;
     };
 
 private:
@@ -90,8 +91,7 @@ private:
     HGUniformBufferChunk fragmentModelWideUniformBuffer = nullptr;
 
     HGMesh boundingBoxMesh = nullptr;
-    std::array<HGOcclusionQuery,4> occlusionQueries = {nullptr};
-
+    
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
 
@@ -308,18 +308,6 @@ template<>
 inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
     return object->getAABB();
 }
-
-
-struct M2ObjectHasher
-{
-    size_t operator()(const std::shared_ptr<M2Object>& val)const
-    {
-        return std::hash<std::shared_ptr<M2Object>>()(val);
-    }
-};
-
-//typedef oneapi::tbb::concurrent_unordered_set<std::shared_ptr<M2Object>, M2ObjectHasher> M2ObjectListContainer;
-//typedef std::unordered_set<std::shared_ptr<M2Object>> M2ObjectListContainer;
 
 class M2ObjectListContainer {
 private:

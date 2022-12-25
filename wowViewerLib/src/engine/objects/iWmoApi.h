@@ -6,9 +6,8 @@
 #define WOWVIEWERLIB_IWMOAPI_H
 
 #include <functional>
-#include "m2/m2Object.h"
 #include "../engineClassList.h"
-#include <functional>
+#include "m2/m2Object.h"
 
 struct PortalInfo_t {
     std::vector<mathfu::vec3> sortedVericles;

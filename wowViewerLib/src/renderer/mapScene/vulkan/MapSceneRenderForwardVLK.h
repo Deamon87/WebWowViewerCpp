@@ -13,7 +13,20 @@ class MapSceneRenderForwardVLK : public MapSceneRenderer {
 public:
     explicit MapSceneRenderForwardVLK(HGDeviceVLK hDevice);
 
-    void putIntoQueue(FrameInputParams<MapRenderPlan> &frameInputParams) override;
+    void putIntoQueue(std::shared_ptr<FrameInputParams> &frameInputParams) override;
+
+    //Buffer creation
+    HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
+
+    HGVertexBuffer createADTVertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createADTIndexBuffer(int sizeInBytes) override;
+
+    HGVertexBuffer createWMOVertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createWMOIndexBuffer(int sizeInBytes) override;
+
+    HGVertexBuffer createWaterVertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createWaterIndexBuffer(int sizeInBytes) override;
 private:
     HGDeviceVLK m_device;
 

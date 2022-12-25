@@ -10,7 +10,7 @@
 #include "../persistance/header/wmoFileHeader.h"
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../../include/sharedFile.h"
-#include "../../gapi/interface/IDevice.h"
+#include "../../renderer/mapScene/IMapSceneBufferCreate.h"
 
 PACK(
     struct WMOVertex {
@@ -40,7 +40,6 @@ public:
     bool hasWater() const {return m_mliq != nullptr; };
 
 
-    HGVertexBufferBindings getVertexBindings(const HGDevice &device);
     HGVertexBufferBindings getWaterVertexBindings(const HGDevice &device);
 
     int getFileDataId() const {return m_fileDataId;}
@@ -49,8 +48,8 @@ private:
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 
     int getLegacyWaterType(int a);
-    HGVertexBuffer getVBO(const HGDevice &device);
-    HGIndexBuffer getIBO(const HGDevice &device);
+    HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer);
+    HGIndexBuffer getIBO(const HMapSceneBufferCreate &sceneRenderer);
 public:
     std::string m_fileName = "";
     int m_fileDataId = 0;

@@ -93,8 +93,11 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 
   //Create Buffers
   for (int k = 0; k < 4; k++) {
+      //TODO:
+      /*
     frame[k].m_indexVBO = device->createIndexBuffer();
     frame[k].m_bufferVBO = device->createVertexBuffer();
+       */
 
     frame[k].m_bindings = device->createVertexBufferBindings();
     frame[k].m_bindings->setIndexBuffer(frame[k].m_indexVBO);
@@ -112,7 +115,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         auto &material = materials[i];
         auto &textureIndex = textureIndicies[i];
 
-        HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", nullptr);
+        HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", "ribbonShader", nullptr);
 
         //Create mesh
         gMeshTemplate meshTemplate(frame[k].m_bindings, shaderPermutation);
@@ -133,8 +136,6 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         meshTemplate.end = 0;
         meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
 
-
-        meshTemplate.textureCount = 1;
         meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
         meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
@@ -172,7 +173,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         });
 
         
-        frame[k].m_meshes.push_back(device->createParticleMesh(meshTemplate));
+        frame[k].m_meshes.push_back(device->createMesh(meshTemplate));
     }
   }
 }

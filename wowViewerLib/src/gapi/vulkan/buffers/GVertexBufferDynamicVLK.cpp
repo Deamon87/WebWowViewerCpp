@@ -60,18 +60,11 @@ static int vbo_uploaded = 0;
 void GVertexBufferDynamicVLK::uploadData(void *data, int length) {
 }
 
-void GVertexBufferDynamicVLK::bind() {
-
-}
-
-void GVertexBufferDynamicVLK::unbind() {
-
-}
-
-void *GVertexBufferDynamicVLK::getPointerForModification() {
+void *GVertexBufferDynamicVLK::getPointer() {
     return stagingVertexBufferAllocInfo.pMappedData;
 }
 
+/*
 void GVertexBufferDynamicVLK::save(size_t sizeToSave) {
     VkBufferCopy vbCopyRegion = {};
     vbCopyRegion.srcOffset = 0;
@@ -87,3 +80,4 @@ void GVertexBufferDynamicVLK::resize(size_t sizeToSave) {
         createBuffer();
     }
 }
+ */

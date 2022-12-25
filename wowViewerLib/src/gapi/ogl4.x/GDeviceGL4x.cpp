@@ -51,7 +51,7 @@ namespace GDeviceGL4xNS {
         fflush(stdout);
     }
 }
-void GDeviceGL4x::bindIndexBuffer(IIndexBuffer *buffer) {
+void GDeviceGL4x::bindIndexBuffer(IBuffer *buffer) {
     GIndexBufferGL4x * gBuffer = (GIndexBufferGL4x *) buffer;
     if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {

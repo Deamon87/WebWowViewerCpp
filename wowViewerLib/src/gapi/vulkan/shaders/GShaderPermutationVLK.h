@@ -5,8 +5,6 @@
 #ifndef AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 
-class GDeviceGL33;
-
 #include <string>
 #include <unordered_map>
 #include "../GDeviceVulkan.h"
@@ -51,7 +49,7 @@ protected:
     VkDescriptorSetLayout uboDescriptorSetLayout;
     VkDescriptorSetLayout imageDescriptorSetLayout;
 
-    std::vector<std::shared_ptr<GDescriptorSets>> uboDescriptorSets;
+    std::array<std::shared_ptr<GDescriptorSets>, 4> uboDescriptorSets = {nullptr};
 
     GDeviceVLK *m_device;
 

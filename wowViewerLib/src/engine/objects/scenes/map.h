@@ -202,7 +202,7 @@ public:
 //        std::cout << "Map destroyed " << std::endl;
 	};
 
-    void makeFramePlan(FrameInputParams<HMapRenderPlan> &frameInputParams, HMapRenderPlan &mapRenderPlan);
+    void makeFramePlan(FrameInputParams &frameInputParams, HMapRenderPlan &mapRenderPlan);
 
     void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {
         m_mandatoryADT = mandatoryADTs;

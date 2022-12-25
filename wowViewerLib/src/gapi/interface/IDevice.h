@@ -8,12 +8,13 @@
 class IVertexBuffer;
 class IVertexBufferDynamic;
 class IVertexBufferBindings;
-class IIndexBuffer;
+class IBuffer;
 class IUniformBuffer;
 class IUniformBufferChunk;
 class ITexture;
 class IShaderPermutation;
 class IMesh;
+class IM2Mesh;
 class IDevice;
 class IGPUFence;
 class IFrameBuffer;
@@ -27,15 +28,15 @@ class gMeshTemplate;
 #include <vulkan/vulkan_core.h>
 #endif
 
-typedef std::shared_ptr<IVertexBufferDynamic> HGVertexBufferDynamic;
-typedef std::shared_ptr<IVertexBuffer> HGVertexBuffer;
-typedef std::shared_ptr<IIndexBuffer> HGIndexBuffer;
+typedef std::shared_ptr<IBuffer> HGVertexBufferDynamic;
+typedef std::shared_ptr<IBuffer> HGVertexBuffer;
+typedef std::shared_ptr<IBuffer> HGIndexBuffer;
 typedef std::shared_ptr<IVertexBufferBindings> HGVertexBufferBindings;
-typedef std::shared_ptr<IUniformBuffer> HGUniformBuffer;
+typedef std::shared_ptr<IBuffer> HGUniformBuffer;
 typedef std::shared_ptr<IUniformBufferChunk> HGUniformBufferChunk;
 typedef std::shared_ptr<IShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<IMesh> HGMesh;
-typedef std::shared_ptr<IMesh> HGM2Mesh;
+typedef std::shared_ptr<IM2Mesh> HGM2Mesh;
 typedef std::shared_ptr<IMesh> HGParticleMesh;
 typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<ITexture> HGTexture;
@@ -46,11 +47,8 @@ typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 #include "meshes/IM2Mesh.h"
 #include "IOcclusionQuery.h"
 #include "IShaderPermutation.h"
-#include "buffers/IIndexBuffer.h"
-#include "buffers/IVertexBuffer.h"
-#include "buffers/IVertexBufferDynamic.h"
+#include "buffers/IBuffer.h"
 #include "IVertexBufferBindings.h"
-#include "buffers/IUniformBuffer.h"
 #include "buffers/IUniformBufferChunk.h"
 #include "../../engine/wowCommonClasses.h"
 #include "../../engine/texture/BlpTexture.h"
@@ -143,12 +141,13 @@ enum class GDeviceType {
 
 class IDevice {
     public:
+        static constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 3;
+
         virtual ~IDevice() {};
 
         virtual GDeviceType getDeviceType() = 0;
 
         virtual void initialize() = 0;
-        virtual void reset() = 0;
 
         virtual bool getIsAsynBuffUploadSupported() = 0;
         virtual int getMaxSamplesCnt() = 0;
@@ -156,15 +155,7 @@ class IDevice {
 
         virtual void increaseFrameNumber() = 0;
 
-        virtual void bindProgram(IShaderPermutation *program) = 0;
-
-        virtual void bindIndexBuffer(IIndexBuffer *buffer) = 0;
-        virtual void bindVertexBuffer(IVertexBuffer *buffer) = 0;
-        virtual void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) = 0;
-        virtual void bindVertexBufferBindings(IVertexBufferBindings *buffer) = 0;
-
-        virtual void bindTexture(ITexture *texture, int slot) = 0;
-
+        virtual void drawScenario() {};
 
         virtual void startUpdateForNextFrame() {};
         virtual void endUpdateForNextFrame() {};
@@ -184,20 +175,16 @@ class IDevice {
         virtual double getWaitForUpdate() {return 0;}
 
     public:
-        virtual HGShaderPermutation getShader(std::string shaderName, void *permutationDescriptor) = 0;
+        virtual HGShaderPermutation getShader(std::string shaderName, std::string fragmentName, void *permutationDescriptor) = 0;
 
         virtual HGPUFence createFence() = 0;
 
-        virtual HGUniformBuffer createUniformBuffer(size_t size) = 0;
         virtual HGUniformBufferChunk createUniformBufferChunk(size_t size, size_t realSize = 0) {
             HGUniformBufferChunk h_uniformBuffer;
             h_uniformBuffer.reset(new IUniformBufferChunk(size, realSize));
 
             return h_uniformBuffer;
         };
-        virtual HGVertexBufferDynamic createVertexBufferDynamic(size_t size) = 0;
-        virtual HGVertexBuffer createVertexBuffer() = 0;
-        virtual HGIndexBuffer createIndexBuffer() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
         //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
         virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) = 0;
@@ -205,26 +192,10 @@ class IDevice {
         virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;
         virtual HGTexture getWhiteTexturePixel() = 0;
-        virtual HGTexture getBlackTexturePixel() {return nullptr;};
+        virtual HGTexture getBlackTexturePixel() = 0;
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;
-        virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) = 0;
-        virtual HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) = 0;
-
-        virtual HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) = 0;
-
-        virtual HGVertexBufferBindings getBBVertexBinding() = 0;
-        virtual HGVertexBufferBindings getBBLinearBinding() = 0;
-        virtual std::string loadShader(std::string fileName, IShaderType shaderType) = 0;
-        virtual void clearScreen() = 0;
-        virtual void setClearScreenColor(float r, float g, float b) = 0;
-        virtual void setViewPortDimensions(float x, float y, float width, float height) = 0;
-        virtual void setInvertZ(bool value) = 0;
-
-        virtual void beginFrame() = 0;
-        virtual void commitFrame() = 0;
 
         virtual void shrinkData() {};
-        virtual bool wasTexturesUploaded() = 0;
 
         static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
         virtual void addDeallocationRecord(std::function<void()> callback) {};

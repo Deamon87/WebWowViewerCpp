@@ -68,11 +68,11 @@ void GVertexBufferDynamicGL33::unbind() {
 }
 
 void *GVertexBufferDynamicGL33::getPointerForModification() {
-    return &m_buffer[0];
+    return m_buffer.data();
 }
 
 void GVertexBufferDynamicGL33::save(size_t sizeToSave) {
-    this->uploadData(&m_buffer[0], sizeToSave);
+    this->uploadData(m_buffer.data(), sizeToSave);
 }
 void GVertexBufferDynamicGL33::resize(size_t sizeToSave) {
     if (sizeToSave > m_size) {
@@ -80,7 +80,5 @@ void GVertexBufferDynamicGL33::resize(size_t sizeToSave) {
         m_size = sizeToSave;
         m_buffer.resize(sizeToSave);
 //        createBuffer();
-
-
     }
 }

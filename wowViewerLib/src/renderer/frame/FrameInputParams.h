@@ -14,14 +14,14 @@ struct ViewPortDimensions{
     std::array<int, 2> maxs;
 };
 
-template<typename T, typename R>
+//template<typename T, typename R>
 struct FrameInputParams {
     HCameraMatrices matricesForCulling;
     HCameraMatrices cameraMatricesForRendering;
     HCameraMatrices cameraMatricesForDebugCamera;
     HScene scene;
 
-    std::shared_ptr<R> additionalData;
+//    std::shared_ptr<R> additionalData;
 
     //Time advance
     animTime_t delta = 0;
@@ -30,10 +30,6 @@ struct FrameInputParams {
     ViewPortDimensions viewPortDimensions = {{0,0}, {64, 64}};
     bool invertedZ = false;
     bool clearScreen = false;
-
-    //Callback for culling stuff
-    std::function<void(T&)> cullingDataCallback;
-    std::function<void(T&)> frameBufferCallback;
 };
 
 #endif //AWEBWOWVIEWERCPP_FRAMEINPUTPARAMS_H

@@ -35,8 +35,8 @@ public:
     }
 
     void process(HFileContent m2File, const std::string &fileName) override;
-    HGVertexBuffer getVBO(const HGDevice &device);
-    HGVertexBufferBindings getVAO(const HGDevice& device, SkinGeom *skinGeom);
+    HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer);
+    HGVertexBufferBindings getVAO(const HMapSceneBufferCreate &sceneRenderer, SkinGeom *skinGeom);
     std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
                                                                SkinGeom *skinGeom, M2SkinSection *skinSection);
     void loadLowPriority(const HApiContainer& m_api, uint32_t animationId, uint32_t subAnimationId);
@@ -59,8 +59,8 @@ public:
     std::vector<TXAC> txacMParticle = {};
 
     int m_skid = -1;
-    WaterFallDataV3 *m_wfv3 = 0;
-    WaterFallDataV3 *m_wfv1 = 0;
+    WaterFallDataV3 *m_wfv3 = nullptr;
+    WaterFallDataV3 *m_wfv1 = nullptr;
 
 
 private:

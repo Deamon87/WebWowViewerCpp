@@ -6,28 +6,21 @@
 #define WEBWOWVIEWERCPP_GVERTEXBUFFERDYNAMICVLK_H
 
 #include "../../interface/IDevice.h"
-#include "../../interface/buffers/IVertexBuffer.h"
-#include "../../interface/buffers/IVertexBufferDynamic.h"
 #include "../GDeviceVulkan.h"
 #include <memory>
 
-class GVertexBufferDynamicVLK : public IVertexBufferDynamic {
+class GVertexBufferDynamicVLK : public IBufferVLK {
     friend class GDeviceVLK;
 
     explicit GVertexBufferDynamicVLK(IDevice &device, size_t maxSize);
 public:
     ~GVertexBufferDynamicVLK() override;
 
-    void *getPointerForModification() override;
+    void *getPointer() override;
 
-    void save(size_t sizeToSave) override;
-    void resize(size_t sizeToSave) override;
 private:
     void createBuffer();
     void destroyBuffer();
-    void bind() override; //Should be called only by GDevice
-    void unbind() override;
-
 public:
     void uploadData(void *, int length) override;
 

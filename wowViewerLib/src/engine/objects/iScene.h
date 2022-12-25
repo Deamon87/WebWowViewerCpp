@@ -10,6 +10,7 @@
 class IScene {
 public:
     virtual ~IScene() = 0;
+
 };
 typedef std::shared_ptr<IScene> HScene;
 

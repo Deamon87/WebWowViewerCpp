@@ -20,28 +20,15 @@ protected:
 public:
     ~GMeshVLK() override;
     HGUniformBufferChunk getUniformBuffer(int slot) override;
-    EGxBlendEnum getGxBlendMode() override;
+
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
-    void setRenderOrder(int renderOrder) override;
 
-    void setStart(int start) override;
-    void setEnd(int end) override;
 public:
-    void *getM2Object() override { return nullptr; };
-    void setM2Object(void * m2Object) override { throw "Not Implemented";};
-    void setLayer(int layer) override { throw "Not Implemented";};
-    void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
-    void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
-    void setSortDistance(float distance) override { m_sortDistance = distance;};
-    float getSortDistance() override { return m_sortDistance; };
-
-
     std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
 
 protected:
     MeshType m_meshType;
-private:
 
     HGShaderPermutation m_shader;
 
@@ -51,8 +38,9 @@ private:
     int8_t m_depthCulling;
     int8_t m_backFaceCulling;
     int8_t m_triCCW = 1;
+
     EGxBlendEnum m_blendMode;
-    bool m_isTransparent;
+    bool m_isTransparent = false;
     int8_t m_isScissorsEnabled = -1;
 
     std::array<int, 2> m_scissorOffset = {0,0};
@@ -67,13 +55,9 @@ private:
     std::vector<std::shared_ptr<GDescriptorSets>> imageDescriptorSets;
     std::vector<bool> descriptorSetsUpdated;
 
-    VkDescriptorPool m_descriptorPool;
-
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
     bool m_lastInvertedZ = false;
     std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
-
-
 private:
     GDeviceVLK &m_device;
 

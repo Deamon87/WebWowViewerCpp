@@ -233,15 +233,12 @@ set(SOURCE_FILES
 		src/ui/renderer/uiScene/FrontendUIRendererFactory.h
 		src/ui/renderer/uiScene/ImGUIPlan.cpp
 		src/ui/renderer/uiScene/ImGUIPlan.h
-		src/ui/renderer/uiScene/buffers/IVertexBufferDynamicImgui.cpp
-		src/ui/renderer/uiScene/buffers/IVertexBufferDynamicImgui.h)
+		)
 
 
 set(SOURCE_FILES_VULKAN
 		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.cpp
-		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.h
-		src/ui/renderer/uiScene/vulkan/buffers/IVertexBufferDynamicImguiVLK.cpp
-		src/ui/renderer/uiScene/vulkan/buffers/IVertexBufferDynamicImguiVLK.h)
+		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.h)
 
 #########################################################
 # FIND OPENGL

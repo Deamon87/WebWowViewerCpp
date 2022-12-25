@@ -13,16 +13,20 @@ namespace ImGuiFramePlan {
 
     class ImGUIParam {
     public:
+        explicit ImGUIParam(ImDrawData *imData) {
+            //Do copy of imData into local copy
+
+
+        }
         ~ImGUIParam() {
-            if (imData != nullptr) {
-                for (int i = 0; i < imData->CmdListsCount; i++ ) {
-                    IM_FREE(imData->CmdLists[i]);
-                }
+            for (int i = 0; i < imData.CmdListsCount; i++ ) {
+                IM_FREE(imData.CmdLists[i]);
             }
+
         }
 
     public:
-        ImDrawData *imData = nullptr;
+        ImDrawData imData;
     };
 }
 

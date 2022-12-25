@@ -1253,9 +1253,10 @@ bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
 void M2Object::createBoundingBoxMesh() {
 
     //Create bounding box mesh
-    HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", nullptr);
+    HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", "drawBBShader", nullptr);
 
-    gMeshTemplate meshTemplate(m_api->hDevice->getBBVertexBinding(), boundingBoxshaderPermutation);
+    //TODO:
+    gMeshTemplate meshTemplate(/*m_api->hDevice->getBBVertexBinding()*/ nullptr, boundingBoxshaderPermutation);
 
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
@@ -1267,7 +1268,6 @@ void M2Object::createBoundingBoxMesh() {
     meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
 
     meshTemplate.element = DrawElementMode::TRIANGLES;
-    meshTemplate.textureCount = 0;
 
     HGUniformBufferChunk bbBlockVS = m_api->hDevice->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
 
@@ -1303,10 +1303,6 @@ void M2Object::createBoundingBoxMesh() {
     });
 
     boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
-    boundingBoxMesh->setRenderOrder(1000);
-
-    for (auto &a : occlusionQueries)
-        a = m_api->hDevice->createQuery(boundingBoxMesh);
 }
 
 bool M2Object::checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *skinSection) {
@@ -1349,7 +1345,7 @@ float wfv_convert(float value, int16_t random) {
 }
 
 HGM2Mesh M2Object::createWaterfallMesh() {
-    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterfallShader", nullptr);
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterfallShader", "waterfallShader", nullptr);
 
     gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
 
@@ -1376,7 +1372,6 @@ HGM2Mesh M2Object::createWaterfallMesh() {
 
     HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
     meshTemplate.texture.resize(5);
-    meshTemplate.textureCount = 5;
     meshTemplate.texture[0] = getTexture(0); //mask
     meshTemplate.texture[1] = getTexture(1); //whiteWater
     meshTemplate.texture[2] = getTexture(2); //noise
@@ -1430,13 +1425,10 @@ HGM2Mesh M2Object::createWaterfallMesh() {
     });
 
     //Make mesh
-    auto hmesh = m_api->hDevice->createM2Mesh(meshTemplate);
-    hmesh->setM2Object(this);
-    hmesh->setLayer(0);
-    hmesh->setPriorityPlane(0);
-    hmesh->setQuery(nullptr);
+    //TODO:
+    auto hmesh = m_api->hDevice->createMesh(meshTemplate);
 
-    return hmesh;
+    return nullptr;
 }
 
 void M2Object::createMeshes() {
@@ -1554,7 +1546,7 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     } else {
         cacheRecord.boneInfluences = skinSection->boneCount > 0 ? 1 : 0;
     }
-    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", &cacheRecord);
+    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", "m2Shader", &cacheRecord);
 
     gMeshTemplate meshTemplate(finalBufferBindings, shaderPermutation);
 
@@ -1580,7 +1572,7 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
 
     HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
     meshTemplate.texture.resize(4);
-    meshTemplate.textureCount = 4;
+
     for (int j = 0; j < material.textureCount; j++) {
         meshTemplate.texture[j] = material.textures[j];
     }
@@ -1592,13 +1584,11 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::meshWideBlockPS));
 
     //Make mesh
-    auto hmesh = m_api->hDevice->createM2Mesh(meshTemplate);
-    hmesh->setM2Object(this);
-    hmesh->setLayer(m2Batch->materialLayer);
-    hmesh->setPriorityPlane(m2Batch->priorityPlane);
-    hmesh->setQuery(nullptr);
+    //TODO:
+    auto hmesh = m_api->hDevice->createMesh(meshTemplate);
 
-    return hmesh;
+
+    return nullptr;
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
@@ -1619,7 +1609,6 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
                 mesh = this->m_meshForcedTranspArray[i];
             }
 
-            mesh->setRenderOrder(renderOrder);
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
@@ -1631,7 +1620,6 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
 //            int frame = m_api->hDevice->getUpdateFrameNumber();
             int frame = 0;
             HGParticleMesh mesh = dynMesh[frame].m_mesh;
-            mesh->setRenderOrder(renderOrder);
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
@@ -1918,7 +1906,8 @@ void M2Object::createVertexBindings() {
     HGDevice device = m_api->hDevice;
 
     //2. Create buffer binding and fill it
-    bufferBindings = m_m2Geom->getVAO(device, m_skinGeom.get());
+    //TODO:
+    //bufferBindings = m_m2Geom->getVAO(device, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
@@ -1978,7 +1967,7 @@ void M2Object::updateDynamicMeshes() {
         auto m2Batch = skinProfile->batches[dynMeshData.batchIndex];
         auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
 
-        M2Vertex *overrideVertexes = (M2Vertex *)dynMeshData.m_bufferVBO->getPointerForModification();
+        M2Vertex *overrideVertexes = (M2Vertex *)dynMeshData.m_bufferVBO->getPointer();
 
         for (int vertIndex = skinSection->vertexStart;
              vertIndex < (skinSection->vertexStart + skinSection->vertexCount); ++vertIndex) {
@@ -2005,7 +1994,8 @@ void M2Object::updateDynamicMeshes() {
             overrideVert.bone_indices[3] = 0;
         }
 
-        dynMeshData.m_bufferVBO->save(skinSection->vertexCount*sizeof(M2Vertex));
+        //TODO:
+        //dynMeshData.m_bufferVBO->save(skinSection->vertexCount*sizeof(M2Vertex));
 //        std::cout << "Saved " << skinSection->vertexCount << " vertices " << "at update frame =" << frameNum << std::endl;
     }
 }

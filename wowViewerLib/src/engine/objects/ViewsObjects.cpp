@@ -121,8 +121,9 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
 
     auto hDevice = apiContainer->hDevice;
 
-    portalPointsFrame.m_indexVBO = hDevice->createIndexBuffer();
-    portalPointsFrame.m_bufferVBO = hDevice->createVertexBuffer();
+    //TODO:
+//    portalPointsFrame.m_indexVBO = hDevice->createIndexBuffer();
+//    portalPointsFrame.m_bufferVBO = hDevice->createVertexBuffer();
 
     portalPointsFrame.m_bindings = hDevice->createVertexBufferBindings();
     portalPointsFrame.m_bindings->setIndexBuffer(portalPointsFrame.m_indexVBO);
@@ -139,7 +140,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
     portalPointsFrame.m_bufferVBO->uploadData((void *) verticles.data(), (int) (verticles.size() * sizeof(float)));
 
     {
-        HGShaderPermutation shaderPermutation = hDevice->getShader("drawPortalShader", nullptr);
+        HGShaderPermutation shaderPermutation = hDevice->getShader("drawPortalShader", "drawPortalShader", nullptr);
 
         //Create mesh
         gMeshTemplate meshTemplate(portalPointsFrame.m_bindings, shaderPermutation);
@@ -159,8 +160,6 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
         meshTemplate.end = indiciesArray.size();
         meshTemplate.element = DrawElementMode::TRIANGLES;
 
-        meshTemplate.textureCount = 0;
-
         meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         meshTemplate.ubo[1] = nullptr;
         meshTemplate.ubo[2] = nullptr;
@@ -175,7 +174,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
         });
 
 
-        transparentMeshes.push_back(hDevice->createParticleMesh(meshTemplate));
+        transparentMeshes.push_back(hDevice->createMesh(meshTemplate));
     }
 }
 

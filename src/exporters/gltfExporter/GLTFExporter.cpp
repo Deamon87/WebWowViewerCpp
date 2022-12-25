@@ -656,7 +656,8 @@ void GLTFExporter::createVboAndIbo(M2ModelData &m2ModelData, std::shared_ptr<M2O
             tinygltf::Buffer modelIBO;
             modelIBO.name = "ibo";
 
-            auto indicies = getSkinGeom(m2Object)->generateIndexBuffer();
+            std::vector<uint16_t> indicies = {};
+            getSkinGeom(m2Object)->generateIndexBuffer(indicies);
 
             modelIBO.data = std::vector<uint8_t>((uint8_t *) indicies.data(),
                                                       (uint8_t *) (indicies.data() + indicies.size()));

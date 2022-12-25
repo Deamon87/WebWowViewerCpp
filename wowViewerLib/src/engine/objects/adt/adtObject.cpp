@@ -318,6 +318,8 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
 
     HGDevice device = m_api->hDevice;
 
+    //TODO:
+    /*
     auto waterIBO = device->createIndexBuffer();
     waterIBO->uploadData(
         indexBuffer.data(),
@@ -329,6 +331,7 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
         vertexBuffer.size() * sizeof(LiquidVertexFormat)
     );
 
+
     auto vertexWaterBufferBindings = device->createVertexBufferBindings();
     vertexWaterBufferBindings->setIndexBuffer(waterIBO);
 
@@ -339,6 +342,7 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
 
     vertexWaterBufferBindings->addVertexBufferBinding(vertexBinding);
     vertexWaterBufferBindings->save();
+
 
 
 //Create mesh(es)
@@ -353,7 +357,7 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
 
     meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
-    meshTemplate.textureCount = 1;
+    meshTemplate.texture = {nullptr};
     if (basetextureFDID != 0) {
         auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
         meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
@@ -397,8 +401,9 @@ HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquid
     });
 
     auto mesh = m_api->hDevice->createMesh(meshTemplate);
-    mesh->setSortDistance(0);
     return mesh;
+     */
+    return nullptr;
 }
 void AdtObject::loadWater() {
     if (m_adtFile->mH2OHeader == nullptr) return;
@@ -524,14 +529,15 @@ void AdtObject::createVBO() {
 
     /* 1.3 Make combinedVbo */
     HGDevice device = m_api->hDevice;
-    combinedVbo = device->createVertexBuffer();
-    combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(AdtVertex));
+    //TODO:
+//    combinedVbo = device->createVertexBuffer();
+//    combinedVbo->uploadData(vboArray.data(), vboArray.size()*sizeof(AdtVertex));
 
     /* 2. Strips */
 
     if (m_adtFile->strips.size() > 0) {
-        stripIBO = device->createIndexBuffer();
-        stripIBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
+//        stripIBO = device->createIndexBuffer();
+//        stripIBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
 
         adtVertexBindings = device->createVertexBufferBindings();
         adtVertexBindings->setIndexBuffer(stripIBO);
@@ -564,12 +570,14 @@ void AdtObject::createVBO() {
             vboLod.push_back((float) i);
         }
 
+        //TODO:
+        /*
         heightVboLod = device->createVertexBuffer();
         heightVboLod->uploadData(&vboLod[0], vboLod.size()*sizeof(float));
 
         /* 2. Index buffer */
-        stripVBOLod = device->createIndexBuffer();
-        stripVBOLod->uploadData(&m_adtFileLod->mvli_indicies[0],  m_adtFileLod->mvli_len * sizeof(int16_t));
+//        stripVBOLod = device->createIndexBuffer();
+//        stripVBOLod->uploadData(&m_adtFileLod->mvli_indicies[0],  m_adtFileLod->mvli_len * sizeof(int16_t));
 
 
         lodVertexBindings = device->createVertexBufferBindings();
@@ -643,7 +651,7 @@ void AdtObject::createMeshes() {
             //if (m_adtFile->mapTile[i].nLayers <= 0) continue;
             bool noLayers = m_adtFileTex->mcnkStructs[i].mcly == nullptr || m_adtFileTex->mcnkStructs[i].mclyCnt <= 0;
 
-            HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", nullptr);
+            HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", "adtShader", nullptr);
             gMeshTemplate aTemplate(adtVertexBindings, hgShaderPermutation);
 
             aTemplate.meshType = MeshType::eAdtMesh;
@@ -663,9 +671,7 @@ void AdtObject::createMeshes() {
             aTemplate.ubo[3] = adtWideBlockPS;
             aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
 
-            aTemplate.textureCount = 9;
-
-            aTemplate.texture = std::vector<HGTexture>(aTemplate.textureCount, nullptr);
+            aTemplate.texture = std::vector<HGTexture>(9, nullptr);
 
             int chunkIndex = i;
             aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, chunkIndex, this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
@@ -778,7 +784,6 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaq
     transparentMeshes.reserve(transparentMeshes.size() + waterMeshes.size());
     for (int i = 0; i < meshCount; i++) {
         if (adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
-            adtMeshes[i]->setRenderOrder(renderOrder);
             opaqueMeshes.push_back(adtMeshes[i]);
         }
         if (adtRes.drawWaterChunk[i]) {

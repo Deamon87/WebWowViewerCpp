@@ -109,15 +109,11 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     std::future<bool> cullingFuture;
     std::future<bool> updateFuture;
 
-    m_apiContainer->hDevice->reset();
-
     if (!m_supportThreads) {
         processCaches(10);
         DoCulling();
         DoUpdate();
     }
-    m_apiContainer->hDevice->beginFrame();
-
-    m_apiContainer->hDevice->commitFrame();
+    m_apiContainer->hDevice->drawScenario();
     m_apiContainer->hDevice->increaseFrameNumber();
 }

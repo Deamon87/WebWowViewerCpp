@@ -7,13 +7,6 @@
     if (pA == nullptr) return false;
     if (pB == nullptr) return true;
 
-    if (pA->getIsTransparent() > pB->getIsTransparent()) {
-        return false;
-    }
-    if (pA->getIsTransparent() < pB->getIsTransparent()) {
-        return true;
-}
-
 //    if (pA->getMeshType() > pB->getMeshType()) {
 //        return false;
 //    }
@@ -29,12 +22,6 @@
 //        }
 //    }
 
-    if (pA->isSkyBox() > pB->isSkyBox()) {
-        return true;
-    }
-    if (pA->isSkyBox() < pB->isSkyBox()) {
-        return false;
-    }
 
     if (pA->getIsTransparent() && pB->getIsTransparent()) {
         if (((pA->getMeshType() == MeshType::eM2Mesh || pA->getMeshType() == MeshType::eParticleMesh) &&

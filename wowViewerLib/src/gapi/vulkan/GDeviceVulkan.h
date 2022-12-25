@@ -10,10 +10,8 @@
 #include <mutex>
 
 
-class GVertexBufferVLK;
+
 class GVertexBufferBindingsVLK;
-class GIndexBufferVLK;
-class GUniformBufferVLK;
 class GBlpTextureVLK;
 class GTextureVLK;
 class GShaderPermutationVLK;
@@ -35,6 +33,7 @@ class gMeshTemplate;
 #include "descriptorSets/GDescriptorSet.h"
 #include "descriptorSets/GDescriptorPoolVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
+#include "buffers/GBufferVLK.h"
 #include <optional>
 
 VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount);
@@ -66,8 +65,6 @@ public:
 
     void initialize() override;
 
-    void reset() override;
-
     unsigned int getFrameNumber() { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() ;
     unsigned int getCullingFrameNumber() ;
@@ -93,15 +90,6 @@ public:
 
     float getAnisLevel() override;
 
-    void bindProgram(IShaderPermutation *program) override;
-
-    void bindIndexBuffer(IIndexBuffer *buffer) override;
-    void bindVertexBuffer(IVertexBuffer *buffer) override;
-    void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override {};
-    void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
-
-    void bindTexture(ITexture *texture, int slot) override;
-
     void startUpdateForNextFrame() override;
     void endUpdateForNextFrame() override;
 
@@ -109,9 +97,6 @@ public:
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
 //    void drawStageAndDeps(HDrawStage drawStage) override;
-    bool wasTexturesUploaded() override {
-        return m_texturesWereUploaded;
-    };
 
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
@@ -122,20 +107,19 @@ public:
         return this->waitInDrawStageAndDeps.getTimePerFrame();
     }
 
-    std::shared_ptr<IShaderPermutation> getShader(std::string shaderName, void *permutationDescriptor) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) override;
 
-    HGUniformBuffer createUniformBuffer(size_t size) override;
-    HGVertexBuffer createVertexBuffer() override;
-    HGVertexBufferDynamic createVertexBufferDynamic(size_t size) override;
-    HGIndexBuffer createIndexBuffer() override;
+    HGBufferVLK createUniformBuffer(size_t size);
+    HGBufferVLK createVertexBuffer(size_t size);
+    HGBufferVLK createIndexBuffer(size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
+    HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
-    HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate) override;
-    HGParticleMesh createParticleMesh(gMeshTemplate &meshTemplate) override;
+
     HGPUFence createFence() override;
 
     HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override ;
@@ -156,22 +140,8 @@ public:
                                                   VkSampleCountFlagBits sampleCountFlagBits,
                                                   bool isSwapChainPass);
 
-    HGOcclusionQuery createQuery(HGMesh boundingBoxMesh) override;
 
-    HGVertexBufferBindings getBBVertexBinding() override;
-    HGVertexBufferBindings getBBLinearBinding() override;
-
-    std::string loadShader(std::string fileName, IShaderType shaderType) override;
-
-    virtual void clearScreen() override;
-    virtual void beginFrame() override;
-    virtual void commitFrame() override;
-
-    virtual void setClearScreenColor(float r, float g, float b) override;
-    virtual void setViewPortDimensions(float x, float y, float width, float height) override;
-    void setInvertZ(bool value) override {m_isInvertZ = true;};
-    bool getInvertZ()  { return m_isInvertZ;};
-
+    void drawScenario() override;
 
     std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
 
@@ -190,10 +160,6 @@ public:
 
     VmaAllocator getVMAAllocator() {
         return vmaAllocator;
-    }
-
-    VmaPool getUBOPool() {
-        return uboVmaPool;
     }
 
     VkCommandBuffer getUploadCommandBuffer() {
@@ -238,7 +204,6 @@ public:
 
     void singleExecuteAndWait(std::function<void(VkCommandBuffer commandBuffer)> callback);
 private:
-    void drawMesh(HGMesh &hmesh);
 //    void internalDrawStageAndDeps(HDrawStage drawStage);
 
     void setupDebugMessenger();
@@ -260,7 +225,6 @@ private:
     void createCommandBuffersForUpload();
     void createSyncObjects();
 
-    void createColorResources();
     void createDepthResources();
 
 
@@ -396,49 +360,26 @@ protected:
 
     VkPhysicalDeviceProperties deviceProperties;
 
-    float clearColor[3] = {0,0,0};
-
 
     unsigned int m_frameNumber = 0;
     bool m_firstFrame = true;
     bool m_shaderDescriptorUpdateNeeded = false;
 
-
-    uint8_t m_lastColorMask = 0xFF;
-    int8_t m_lastDepthWrite = -1;
-    int8_t m_lastDepthCulling = -1;
-    int8_t m_backFaceCulling = -1;
-    int8_t m_triCCW = -1;
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
     int maxMultiSample = -1;
     float m_anisotropicLevel = 0.0;
     bool m_isInvertZ = false;
-    EGxBlendEnum m_lastBlendMode = EGxBlendEnum::GxBlend_UNDEFINED;
-    GIndexBufferVLK *m_lastBindIndexBuffer = nullptr;
-    GVertexBufferVLK *m_lastBindVertexBuffer = nullptr;
-    GVertexBufferBindingsVLK *m_vertexBufferBindings = nullptr;
-    GShaderPermutationVLK * m_shaderPermutation = nullptr;
 
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
     HGVertexBufferBindings m_defaultVao;
 
-    GTextureVLK *m_lastTexture[10] = {
-        nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,
-        nullptr};
-
-    GUniformBufferVLK * m_vertexUniformBuffer[3] = {nullptr};
-    GUniformBufferVLK * m_fragmentUniformBuffer[3] = {nullptr};
-
     HGTexture m_blackPixelTexture = nullptr;
     HGTexture m_whitePixelTexture = nullptr;
-
-    bool m_texturesWereUploaded = false;
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
-    std::list<std::weak_ptr<GUniformBufferVLK>> m_unfiormBufferCache;
     struct FrameUniformBuffers {
         HGUniformBuffer m_uniformBufferForUpload;
     };
@@ -448,9 +389,6 @@ protected:
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
     std::list<DeallocationRecord> listOfDeallocators;
-
-    int uniformBuffersCreated = 0;
-    bool attachmentsReady = false;
 
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
@@ -465,7 +403,7 @@ protected:
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
 };
 
-typedef std::shared_ptr<GDeviceVLK> HGDeviceVLK;
+
 
 
 #endif //AWEBWOWVIEWERCPP_GDEVICEVULKAN_H

@@ -11,7 +11,6 @@ class GVertexBufferBindingsVLK;
 
 #include <vector>
 #include <cstdint>
-#include "buffers/GVertexBufferVLK.h"
 #include "../interface/IVertexBufferBindings.h"
 #include "../interface/IDevice.h"
 #include "GDeviceVulkan.h"

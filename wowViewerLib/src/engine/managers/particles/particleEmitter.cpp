@@ -21,11 +21,11 @@ HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
 static GBufferBinding staticM2ParticleBindings[5] = {
-    {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 13*4, 0 },
-    {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 13*4, 12},
-    {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 13*4, 28},
-    {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, 13*4, 36},
-    {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, 13*4, 44},
+    {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),  offsetof(ParticleBuffStruct, position) },
+    {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),     offsetof(ParticleBuffStruct, color)},
+    {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
+    {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
+    {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
 };
 
 
@@ -217,7 +217,6 @@ ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, M2Obje
     }
 
     selectShaderId();
-    createMesh();
 }
 
 void ParticleEmitter::selectShaderId() {
@@ -269,7 +268,8 @@ void ParticleEmitter::createMesh() {
     HGDevice device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
-        m_indexVBO = device->createIndexBuffer();
+        //TODO:
+        //m_indexVBO = device->createIndexBuffer();
         int vo = 0;
         for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
             szIndexBuff.push_back(vo + 0);
@@ -285,7 +285,8 @@ void ParticleEmitter::createMesh() {
 
     //Create Buffers
     for (int i = 0; i < 4; i++) {
-        frame[i].m_bufferVBO = device->createVertexBufferDynamic(10 * sizeof(ParticleBuffStructQuad));
+        //TODO:
+//        frame[i].m_bufferVBO = device->createVertexBufferDynamic(10 * sizeof(ParticleBuffStructQuad));
 
         frame[i].m_bindings = device->createVertexBufferBindings();
         frame[i].m_bindings->setIndexBuffer(m_indexVBO);
@@ -300,7 +301,7 @@ void ParticleEmitter::createMesh() {
 
 
         //Get shader
-        HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", nullptr);
+        HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", "m2ParticleShader", nullptr);
 
         //Create mesh
         gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
@@ -336,8 +337,7 @@ void ParticleEmitter::createMesh() {
             meshTemplate.texture[1] = device->createBlpTexture(tex1, true, true);
             meshTemplate.texture[2] = device->createBlpTexture(tex2, true, true);
         }
-        meshTemplate.texture.resize(3);
-        meshTemplate.textureCount = (multitex) ? 3 : 1;
+        meshTemplate.texture.resize((multitex) ? 3 : 1);
 
         meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
         meshTemplate.ubo[1] = nullptr;
@@ -364,7 +364,7 @@ void ParticleEmitter::createMesh() {
             blockPS.uBlendMode = static_cast<int>(l_blendMode);
         });
 
-        frame[i].m_mesh = device->createParticleMesh(meshTemplate);
+        frame[i].m_mesh = device->createMesh(meshTemplate);
 
     }
 }
@@ -372,13 +372,6 @@ void ParticleEmitter::createMesh() {
 
 bool ParticleEmitter::randTableInited = false;
 float ParticleEmitter::RandTable[128] = {};
-
-const mathfu::mat4 strangeMat = {
-    1.0f, 0, 0, 0,
-    0, 1.0f, 0, 0,
-    0, 0, 1.0f, 0,
-    0, 0, -1.0f, 0.0
-};
 
 void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &translatedViewMat) {
     if ((this->m_data->old.flags & 0x10)) {
@@ -450,6 +443,11 @@ void ParticleEmitter::InternalUpdate(animTime_t delta) {
 }
 void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
+
+    //TODO:
+//    if () {
+//        createMesh();
+//    }
 
 //    if (this->particles.size() <= 0 && !isEnabled) return;
 
@@ -676,9 +674,10 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
         maxFutureSize *= 2;
     }
 
-    vboBufferDynamic->resize(maxFutureSize);
+    //TODO:
+    //vboBufferDynamic->resize(maxFutureSize);
 
-    szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointerForModification();
+    szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointer();
     szVertexCnt = 0;
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
@@ -692,29 +691,6 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
             }
         }
     }
-
-//    std::sort(szVertexBuf.begin(), szVertexBuf.end(), [](const ParticleBuffStructQuad &a, const ParticleBuffStructQuad &b) -> bool {
-//        return
-//        fminf(
-//            fminf(
-//                fminf(
-//                    a.particle[0].position.z,
-//                    a.particle[1].position.z
-//                ),
-//                a.particle[2].position.z
-//            ),
-//            a.particle[0].position.z
-//        ) < fminf(
-//            fminf(
-//                fminf(
-//                    b.particle[0].position.z,
-//                    b.particle[1].position.z
-//                ),
-//                b.particle[2].position.z
-//            ),
-//            b.particle[0].position.z
-//        );
-//    });
 }
 
 int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {

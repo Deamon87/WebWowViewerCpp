@@ -8,7 +8,6 @@
 #include "../../../engine/algorithms/hashString.h"
 #include "../../../engine/shader/ShaderDefinitions.h"
 #include "../../UniformBufferStructures.h"
-#include "../buffers/GUniformBufferVLK.h"
 #include "../../interface/IDevice.h"
 #include <unordered_map>
 
@@ -143,14 +142,14 @@ void GShaderPermutationVLK::updateDescriptorSet(int index) {
     std::vector<VkDescriptorBufferInfo> bufferInfos;
     std::vector<VkWriteDescriptorSet> descriptorWrites;
 
-    auto *uploadBuffer = ((GUniformBufferVLK *) m_device->getUploadBuffer(index).get());
+    auto *uploadBuffer = ((IBufferVLK *) m_device->getUploadBuffer(index).get());
     if (uploadBuffer == nullptr) return;
 
     for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
         auto &uboVertBinding = vertShaderMeta->uboBindings[i];
 
         VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = uploadBuffer->g_buf;
+        bufferInfo.buffer = uploadBuffer->getGPUBuffer();
         bufferInfo.offset = 0;
         bufferInfo.range = uboVertBinding.size;
         bufferInfos.push_back(bufferInfo);
@@ -159,7 +158,7 @@ void GShaderPermutationVLK::updateDescriptorSet(int index) {
         auto &uboFragBinding = fragShaderMeta->uboBindings[i];
 
         VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = uploadBuffer->g_buf;
+        bufferInfo.buffer = uploadBuffer->getGPUBuffer();
         bufferInfo.offset = 0;
         bufferInfo.range = uboFragBinding.size;
         bufferInfos.push_back(bufferInfo);
@@ -204,8 +203,6 @@ void GShaderPermutationVLK::updateDescriptorSet(int index) {
 }
 
 void GShaderPermutationVLK::createUboDescriptorSets() {
-    uboDescriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
-
     for (int j = 0; j < 4; j++) {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
         uboDescriptorSets[j] = m_device->createDescriptorSet(uboDescriptorSetLayout, 5, 0);

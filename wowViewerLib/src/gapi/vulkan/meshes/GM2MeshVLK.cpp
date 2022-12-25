@@ -5,11 +5,8 @@
 #include "GM2MeshVLK.h"
 
 GM2MeshVLK::GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate) : GMeshVLK(device, meshTemplate){
-//    m_meshType = MeshType::eM2Mesh;
-}
 
-void GM2MeshVLK::setM2Object(void *m2Object) {
-    m_m2Object = (m2Object);
+    m_isTransparent = m_blendMode > EGxBlendEnum::GxBlend_AlphaKey || !m_depthWrite ;
 }
 
 void GM2MeshVLK::setLayer(int layer) {
@@ -25,12 +22,4 @@ void GM2MeshVLK::setSortDistance(float distance) {
 }
 float GM2MeshVLK::getSortDistance() {
     return m_sortDistance;
-}
-
-void GM2MeshVLK::setQuery(const HGOcclusionQuery &query) {
-    m_query = query;
-}
-
-void *GM2MeshVLK::getM2Object() {
-    return m_m2Object;
 }

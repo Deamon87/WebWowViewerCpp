@@ -66,7 +66,7 @@ void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei 
 //        }
 }
 
-void GDeviceGL20::bindIndexBuffer(IIndexBuffer *buffer) {
+void GDeviceGL20::bindIndexBuffer(IBuffer *buffer) {
     GIndexBufferGL20 * gBuffer = (GIndexBufferGL20 *) buffer;
     if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {

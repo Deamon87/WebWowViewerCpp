@@ -322,13 +322,13 @@ void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {
     initM2Camera(m2Header, &m2Header->sequences, cm2SequenceLoad);
 }
 
-HGVertexBuffer M2Geom::getVBO(const HGDevice &device) {
+HGVertexBuffer M2Geom::getVBO(const HMapSceneBufferCreate &sceneRenderer) {
     if (vertexVbo.get() == nullptr) {
         if (m_m2Data->vertices.size == 0) {
             return nullptr;
         }
 
-        vertexVbo = device->createVertexBuffer();
+        vertexVbo = sceneRenderer->createM2VertexBuffer(m_m2Data->vertices.size*sizeof(M2Vertex));
         vertexVbo->uploadData(
             m_m2Data->vertices.getElement(0),
             m_m2Data->vertices.size*sizeof(M2Vertex));
@@ -364,6 +364,8 @@ std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
 //        << " vertexCount = " << skinSection->vertexCount
 //        << std::endl;
 
+//TODO:
+/*
 
     auto indexIbo = device.createIndexBuffer();
     indexIbo->uploadData(
@@ -390,23 +392,29 @@ std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
         result[i] = bufferBindings;
     }
 
+
     return result;
+    */
+
+    return {nullptr, nullptr, nullptr, nullptr};
 }
 
-HGVertexBufferBindings M2Geom::getVAO(const HGDevice& device, SkinGeom *skinGeom) {
+HGVertexBufferBindings M2Geom::getVAO(const HMapSceneBufferCreate &sceneRenderer, SkinGeom *skinGeom) {
     HGVertexBufferBindings bufferBindings = nullptr;
     if (vaoMap.find(skinGeom) != vaoMap.end()) {
         bufferBindings = vaoMap.at(skinGeom);
     } else {
-        HGVertexBuffer vboBuffer = this->getVBO(device);
+        HGVertexBuffer vboBuffer = this->getVBO(sceneRenderer);
         if (vboBuffer == nullptr) {
             vaoMap[skinGeom] = nullptr;
             return nullptr;
         }
 
-        HGIndexBuffer iboBuffer = skinGeom->getIBO(device);
+        HGIndexBuffer iboBuffer = skinGeom->getIBO(sceneRenderer);
 
         //2. Create buffer binding and fill it
+        //TODO:
+        /*
         bufferBindings = device->createVertexBufferBindings();
         bufferBindings->setIndexBuffer(iboBuffer);
 
@@ -418,6 +426,7 @@ HGVertexBufferBindings M2Geom::getVAO(const HGDevice& device, SkinGeom *skinGeom
         bufferBindings->save();
 
         vaoMap[skinGeom] = bufferBindings;
+        */
     }
 
     return bufferBindings;
