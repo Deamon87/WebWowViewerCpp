@@ -69,7 +69,7 @@ protected:
     std::vector<std::array<uint8_t, 2>> m_mandatoryADT;
     std::string mapName;
 
-    HGUniformBufferChunk m_sceneWideBlockVSPSChunk;
+    std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> m_sceneWideBlockVSPSChunk;
 
     SceneMode m_sceneMode = SceneMode::smMap;
 
@@ -232,7 +232,7 @@ private:
 
     void createAdtFreeLamdas();
 
-    IChunkHandlerType generateSceneWideChunk(HCameraMatrices &renderMats, Config* config);
+    IChunkHandlerType<sceneWideBlockVSPS> generateSceneWideChunk(HCameraMatrices &renderMats, Config* config);
 };
 typedef std::shared_ptr<Map> HMapScene;
 

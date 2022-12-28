@@ -28,6 +28,10 @@ public:
     void uploadFromStaging(int offset, int destOffset, int length);
 
     void *getPointer() override { return currentBuffer.stagingBufferAllocInfo.pMappedData;};
+    //Submits data edited with Pointer
+    void save(int length) override;
+
+
     size_t getSize() override { return m_bufferSize;};
 
     VkBuffer getGPUBuffer() override {
@@ -66,6 +70,7 @@ private:
         void uploadData(void *data, int length) override;
         void subUploadData(void *data, int offset, int length) override;
         void *getPointer() override;
+        void save(int length) override;
         size_t getSize() override;
 
         VkBuffer getGPUBuffer() override {
@@ -75,7 +80,7 @@ private:
             return m_offset;
         };
     private:
-        HGBufferVLK &m_parentBuffer;
+        HGBufferVLK m_parentBuffer;
 
         VmaVirtualAllocation m_alloc;
         VkDeviceSize m_offset;

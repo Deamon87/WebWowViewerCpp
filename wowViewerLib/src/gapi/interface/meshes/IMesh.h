@@ -71,7 +71,6 @@ public:
     int end;
     DrawElementMode element;
     std::vector<HGTexture> texture = {};
-    std::array<HGUniformBufferChunk, 6> ubo = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
     bool scissorEnabled = false;
     std::array<int, 2> scissorOffset = {0,0};
@@ -97,15 +96,11 @@ protected:
     int m_end;
 
     std::vector<HGTexture> m_texture = {};
-
-    std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-
 public:
     virtual ~IMesh(){
 //        std::cout << "Mesh destroyed" << std::endl;
 
     };
-    virtual inline HGUniformBufferChunk getUniformBuffer(int slot) = 0;
 
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;

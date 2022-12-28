@@ -413,16 +413,18 @@ void WmoGroupObject::createMeshes() {
     //TODO:
     HGVertexBufferBindings binding = nullptr; //m_geom->getVertexBindings(device);
 
-    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
+//    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-        WMO::modelWideBlockVS &blockVS = self->getObject<WMO::modelWideBlockVS>();
+    vertexModelWideUniformBuffer->setUpdateHandler([this](auto &data, const HFrameDependantData &frameDepedantData){
+        WMO::modelWideBlockVS &blockVS = data;
         blockVS.uPlacementMat = *m_modelMatrix;
     });
 
-    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockPS));
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-        WMO::modelWideBlockPS &blockPS = self->getObject<WMO::modelWideBlockPS>();
+//TODO:
+
+//    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockPS));
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](auto &data, const HFrameDependantData &frameDepedantData){
+        WMO::modelWideBlockPS &blockPS = data;
         blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
             mathfu::vec4_packed(
                 mathfu::vec4(
@@ -517,27 +519,28 @@ void WmoGroupObject::createMeshes() {
         }
 
 
+        std::shared_ptr<IBufferChunk<WMO::meshWideBlockVS>> wmoMeshWideBlockVS = nullptr;
+        std::shared_ptr<IBufferChunk<WMO::meshWideBlockPS>> wmoMeshWideBlockPS = nullptr;
 
-
-        meshTemplate.ubo[0] = nullptr;
-        meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-        meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockVS));
-
-        meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockPS));
+//
+//        meshTemplate.ubo[0] = nullptr;
+//        meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+//        meshTemplate.ubo[2] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockVS));
+//
+//        meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
+//        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(WMO::meshWideBlockPS));
 
         //Make mesh
         HGMesh hmesh = device->createMesh(meshTemplate);
         this->m_meshArray.push_back(hmesh);
 
-        hmesh->getUniformBuffer(2)->setUpdateHandler([this, &material, vertexShader](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-            WMO::meshWideBlockVS &blockVS = self->getObject<WMO::meshWideBlockVS>();
+        wmoMeshWideBlockVS->setUpdateHandler([this, &material, vertexShader](auto &data, const HFrameDependantData &frameDepedantData){
+            WMO::meshWideBlockVS &blockVS = data;
             blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
             blockVS.VertexShader = vertexShader;
         });
 
-
-        hmesh->getUniformBuffer(4)->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
+        wmoMeshWideBlockPS->setUpdateHandler([this, isBatchA, isBatchC, &material, blendMode, pixelShader](auto &data, const HFrameDependantData &frameDepedantData) {
 //            mathfu::vec4 globalAmbientColor = m_api->getGlobalAmbientColor();
             mathfu::vec4 localambientColor = this->getAmbientColor();
             mathfu::vec3 directLight = mathfu::vec3(0,0,0);
@@ -550,7 +553,7 @@ void WmoGroupObject::createMeshes() {
             }
             float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
-            auto &blockPS = self->getObject<WMO::meshWideBlockPS>();
+            auto &blockPS = data;
 //            blockPS.uFogStartAndFogEndAndIsBatchA = mathfu::vec4_packed(
 //                mathfu::vec4(
 //                    m_api->getConfig()->getFogStart(),
@@ -681,12 +684,13 @@ void WmoGroupObject::createWaterMeshes() {
         meshTemplate.texture[0] = m_api->hDevice->getBlackTexturePixel();
     }
 
-    meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();
-    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-    meshTemplate.ubo[2] = nullptr;
-
-    meshTemplate.ubo[3] = nullptr;
-    meshTemplate.ubo[4] = device->createUniformBufferChunk(16);
+    //TODO:
+//    meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();
+//    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
+//    meshTemplate.ubo[2] = nullptr;
+//
+//    meshTemplate.ubo[3] = nullptr;
+//    meshTemplate.ubo[4] = device->createUniformBufferChunk(16);
 
     meshTemplate.start = 0;
     meshTemplate.end = m_geom->waterIndexSize;
@@ -694,9 +698,10 @@ void WmoGroupObject::createWaterMeshes() {
 
     auto l_liquidType = liquid_type;
 
+    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> chunkBlock = nullptr;
 
-    meshTemplate.ubo[4]->setUpdateHandler([this, l_liquidType, liquidFlags, color](IUniformBufferChunk* self, const HFrameDependantData &frameDepedantData) -> void {
-        mathfu::vec4_packed &color_ = self->getObject<mathfu::vec4_packed>();
+    chunkBlock->setUpdateHandler([this, l_liquidType, liquidFlags, color](auto &data, const HFrameDependantData &frameDepedantData) -> void {
+        mathfu::vec4_packed &color_ = data;
         if ((liquidFlags & 1024) > 0) {// Ocean
             color_ = frameDepedantData->closeOceanColor;
         } else if (liquidFlags == 15) { //River/Lake

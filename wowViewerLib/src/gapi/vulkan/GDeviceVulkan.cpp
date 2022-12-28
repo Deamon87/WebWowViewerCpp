@@ -907,8 +907,10 @@ void GDeviceVLK::endUpdateForNextFrame() {
 }
 
 typedef std::shared_ptr<GMeshVLK> HVKMesh;
-void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData) {
+
+void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantData) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
+/*
     if (!m_blackPixelTexture) {
         m_blackPixelTexture = createTexture(false, false);
         unsigned int zero = 0;
@@ -999,6 +1001,7 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
             //bufferForUploadVLK->uploadFromStaging(currentSize);
         }
     }
+    */
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {

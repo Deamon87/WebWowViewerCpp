@@ -16,7 +16,7 @@ GBlpTextureVLK::~GBlpTextureVLK() {
 
 
 static int texturesUploaded = 0;
-void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
+void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     VkFormat textureFormatGPU;
@@ -84,7 +84,7 @@ bool GBlpTextureVLK::postLoad() {
     if (m_uploaded) {
         return GTextureVLK::postLoad();
     } else {
-        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+        this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
 //        m_texture = nullptr;
         return false;
     }

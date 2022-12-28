@@ -27,7 +27,9 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
     int batchIndex = materialData.batchIndex;
     auto vertexShader = materialData.vertexShader;
 
-    hmesh->getUniformBuffer(2)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
+    std::shared_ptr<IBufferChunk<M2::meshWideBlockVS>> meshWideBlockVS = nullptr;
+
+    meshWideBlockVS->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, vertexShader](auto &data, const HFrameDependantData &frameDepedantData){
         auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto batch = m2SkinProfile->batches[batchIndex];
@@ -38,19 +40,19 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
 
         float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*m2Object, batchIndex, m2SkinProfile);
 
-        auto &meshblockVS = self->getObject<M2::meshWideBlockVS>();
+        auto &meshblockVS = data;
         meshblockVS.Color_Transparency = mathfu::vec4_packed(mathfu::vec4(meshColor.x, meshColor.y, meshColor.z, finalTransparency));
         meshblockVS.isSkyBox = m2Object->m_boolSkybox ? 1 : 0;
         meshblockVS.VertexShader = vertexShader;
         meshblockVS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
 
         fillTextureMatrices(*m2Object, batchIndex, m2Data, m2SkinProfile, meshblockVS.uTextMat);
-
     });
 
     //3. Update individual PS buffer
     auto pixelShader = materialData.pixelShader;
-    hmesh->getUniformBuffer(4)->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
+    std::shared_ptr<IBufferChunk<M2::meshWideBlockPS>> meshWideBlockPS = nullptr;
+    meshWideBlockPS->setUpdateHandler([m2Object, m2SkinProfile, blendMode, batchIndex, pixelShader](auto &data, const HFrameDependantData &frameDepedantData) {
         auto m2Data = m2Object->m_m2Geom->getM2Data();
 
         auto batch = m2SkinProfile->batches[batchIndex];
@@ -76,7 +78,7 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
 //        mathfu::vec3 uFogColor = getFogColor(blendMode, uGlobalFogColor);
 
         //Fill values into buffer
-        auto &meshblockPS = self->getObject<M2::meshWideBlockPS>();
+        auto &meshblockPS = data;
         meshblockPS.PixelShader = pixelShader;
         meshblockPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
         meshblockPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;

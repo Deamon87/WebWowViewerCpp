@@ -1269,17 +1269,11 @@ void M2Object::createBoundingBoxMesh() {
 
     meshTemplate.element = DrawElementMode::TRIANGLES;
 
-    HGUniformBufferChunk bbBlockVS = m_api->hDevice->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
-
-    meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-    meshTemplate.ubo[1] = bbBlockVS;
-    meshTemplate.ubo[2] = nullptr;
-
-    meshTemplate.ubo[3] = nullptr;
-    meshTemplate.ubo[4] = nullptr;
+//    std::shared_ptr<IBufferChunk<bbModelWideBlockVS>> bbBlockVS = m_api->hDevice->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
+    std::shared_ptr<IBufferChunk<bbModelWideBlockVS>> bbBlockVS = nullptr;
 
     auto l_m2Geom = m_m2Geom;
-    bbBlockVS->setUpdateHandler([this, l_m2Geom](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
+    bbBlockVS->setUpdateHandler([this, l_m2Geom](auto &data, const HFrameDependantData &frameDepedantData){
         M2Data *m2Data = l_m2Geom->getM2Data();
         CAaBox &aaBox = m2Data->bounding_box;
 
@@ -1295,7 +1289,7 @@ void M2Object::createBoundingBoxMesh() {
             aaBox.max.z - center[2]
         );
 
-        bbModelWideBlockVS &blockVS = self->getObject<bbModelWideBlockVS>();
+        bbModelWideBlockVS &blockVS = data;
         blockVS.uPlacementMat = m_placementMatrix;
         blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
         blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
@@ -1378,22 +1372,18 @@ HGM2Mesh M2Object::createWaterfallMesh() {
     meshTemplate.texture[3] = getTexture(3); //bumpTexture
     meshTemplate.texture[4] = getTexture(4); //normalTex
 
-
-    meshTemplate.ubo[0] = nullptr;
-    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-    meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockVS));
-
-    meshTemplate.ubo[2]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-        auto &meshblockVS = self->getObject<M2::WaterfallData::meshWideBlockVS>();
+    std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockVS>> waterFallMeshWideBlockVS = nullptr;
+    waterFallMeshWideBlockVS->setUpdateHandler([this, skinData, m2Data, wfv3Data](auto &data, const HFrameDependantData &frameDepedantData){
+        auto &meshblockVS = data;
         meshblockVS.bumpScale = mathfu::vec4(wfv3Data->bumpScale, 0, 0, 0);
 
         M2MeshBufferUpdater::fillTextureMatrices(*this, 0, m2Data, skinData, meshblockVS.uTextMat);
     });
 
-    meshTemplate.ubo[3] = nullptr;
-    meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::WaterfallData::meshWideBlockPS));
-    meshTemplate.ubo[4]->setUpdateHandler([this, skinData, m2Data, wfv3Data](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-        auto &meshblockPS = self->getObject<M2::WaterfallData::meshWideBlockPS>();
+
+    std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockPS>> waterFallMeshWideBlockPS = nullptr;
+    waterFallMeshWideBlockPS->setUpdateHandler([this, skinData, m2Data, wfv3Data](auto &data, const HFrameDependantData &frameDepedantData){
+        auto &meshblockPS = data;
         meshblockPS.baseColor = mathfu::vec4(
             wfv3Data->basecolor.a / 255.0f,
             wfv3Data->basecolor.r / 255.0f,
@@ -1576,12 +1566,6 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     for (int j = 0; j < material.textureCount; j++) {
         meshTemplate.texture[j] = material.textures[j];
     }
-    meshTemplate.ubo[0] = nullptr;
-    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-    meshTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::meshWideBlockVS));
-
-    meshTemplate.ubo[3] = fragmentModelWideUniformBuffer;
-    meshTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(M2::meshWideBlockPS));
 
     //Make mesh
     //TODO:
@@ -1911,22 +1895,23 @@ void M2Object::createVertexBindings() {
 
     //3. Create model wide uniform buffer
 //    vertexModelWideUniformBuffer = device->createUniformBuffer(sizeof(mathfu::mat4) * (m_m2Geom->m_m2Data->bones.size + 1));
-    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockVS), (m_m2Geom->m_m2Data->bones.size + 1) * sizeof(mathfu::mat4));
-    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockPS));
+    //TODO:
+//    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockVS), (m_m2Geom->m_m2Data->bones.size + 1) * sizeof(mathfu::mat4));
+//    fragmentModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(M2::modelWideBlockPS));
 
-    vertexModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-        auto &blockVS = self->getObject<M2::modelWideBlockVS>();
+    vertexModelWideUniformBuffer->setUpdateHandler([this](auto &data, const HFrameDependantData &frameDepedantData){
+        auto &blockVS = data;
 
         blockVS.uPlacementMat = m_placementMatrix;
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, blockVS.uBoneMatrixes);
     });
 
-    fragmentModelWideUniformBuffer->setUpdateHandler([this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
+    fragmentModelWideUniformBuffer->setUpdateHandler([this](auto &data, const HFrameDependantData &frameDepedantData){
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 
-        M2::modelWideBlockPS &blockPS = self->getObject<M2::modelWideBlockPS>();
+        M2::modelWideBlockPS &blockPS = data;
 
         blockPS.intLight.uInteriorAmbientColorAndApplyInteriorLight =
             mathfu::vec4_packed(mathfu::vec4(

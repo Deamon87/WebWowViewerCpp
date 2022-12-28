@@ -319,7 +319,7 @@ void GDeviceGL20::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     bindVertexBufferBindings(hmesh->m_bindings.get());
     for (int i = 0; i < 5; i++) {
 
-        IUniformBufferChunk *uniformChunk = nullptr;
+        IBufferChunk * uniformChunk = nullptr;
         if (i == 0) {
             uniformChunk = matrixChunk.get();
         } else {

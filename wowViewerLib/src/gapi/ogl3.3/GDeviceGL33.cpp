@@ -518,7 +518,7 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 #ifndef __EMSCRIPTEN__
     for (int i = 0; i < 5; i++) {
 
-        IUniformBufferChunk *uniformChunk = nullptr;
+        IBufferChunk * uniformChunk = nullptr;
         if (i == 0) {
             uniformChunk = matrixChunk.get();
         } else {

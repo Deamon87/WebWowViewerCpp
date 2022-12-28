@@ -160,15 +160,9 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
         meshTemplate.end = indiciesArray.size();
         meshTemplate.element = DrawElementMode::TRIANGLES;
 
-        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = nullptr;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = hDevice->createUniformBufferChunk(sizeof(DrawPortalShader::meshWideBlockPS));
-
-        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
-            auto& blockPS = self->getObject<DrawPortalShader::meshWideBlockPS>();
+        std::shared_ptr<IBufferChunk<DrawPortalShader::meshWideBlockPS>> drawPortalShaderMeshWideBlockPS = nullptr;
+        drawPortalShaderMeshWideBlockPS->setUpdateHandler([](auto &data, const HFrameDependantData &frameDepedantData) {
+            auto& blockPS = data;
 
             blockPS.uColor = {0.058, 0.058, 0.819607843, 0.3};
         });

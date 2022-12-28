@@ -19,7 +19,6 @@ protected:
 
 public:
     ~GMeshVLK() override;
-    HGUniformBufferChunk getUniformBuffer(int slot) override;
 
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
@@ -31,8 +30,6 @@ protected:
     MeshType m_meshType;
 
     HGShaderPermutation m_shader;
-
-    std::array<HGUniformBufferChunk, 6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
@@ -62,7 +59,6 @@ private:
     GDeviceVLK &m_device;
 
     void createDescriptorSets(GShaderPermutationVLK *shaderVLK);
-
     void updateDescriptor();
 };
 

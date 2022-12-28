@@ -27,6 +27,6 @@ public:
 
 
 
-    virtual void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) = 0;
+    virtual void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) = 0;
 };
 #endif //AWEBWOWVIEWERCPP_ITEXTURE_H

@@ -282,7 +282,7 @@ set(SOURCE_FILES
         src/engine/objects/ViewsObjects.cpp
         src/engine/objects/ViewsObjects.h
         src/gapi/interface/sortLambda.h
-        src/gapi/interface/buffers/IUniformBufferChunk.h
+        src/gapi/interface/buffers/IBufferChunk.h
         src/engine/WowFilesCacheStorage.h
         src/engine/WowFilesCacheStorage.cpp
         src/engine/algorithms/quick-sort-omp.h

@@ -10,7 +10,6 @@ class IVertexBufferDynamic;
 class IVertexBufferBindings;
 class IBuffer;
 class IUniformBuffer;
-class IUniformBufferChunk;
 class ITexture;
 class IShaderPermutation;
 class IMesh;
@@ -33,7 +32,6 @@ typedef std::shared_ptr<IBuffer> HGVertexBuffer;
 typedef std::shared_ptr<IBuffer> HGIndexBuffer;
 typedef std::shared_ptr<IVertexBufferBindings> HGVertexBufferBindings;
 typedef std::shared_ptr<IBuffer> HGUniformBuffer;
-typedef std::shared_ptr<IUniformBufferChunk> HGUniformBufferChunk;
 typedef std::shared_ptr<IShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<IMesh> HGMesh;
 typedef std::shared_ptr<IM2Mesh> HGM2Mesh;
@@ -49,7 +47,7 @@ typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 #include "IShaderPermutation.h"
 #include "buffers/IBuffer.h"
 #include "IVertexBufferBindings.h"
-#include "buffers/IUniformBufferChunk.h"
+#include "buffers/IBufferChunk.h"
 #include "../../engine/wowCommonClasses.h"
 #include "../../engine/texture/BlpTexture.h"
 #include "textures/ITexture.h"
@@ -178,13 +176,6 @@ class IDevice {
         virtual HGShaderPermutation getShader(std::string shaderName, std::string fragmentName, void *permutationDescriptor) = 0;
 
         virtual HGPUFence createFence() = 0;
-
-        virtual HGUniformBufferChunk createUniformBufferChunk(size_t size, size_t realSize = 0) {
-            HGUniformBufferChunk h_uniformBuffer;
-            h_uniformBuffer.reset(new IUniformBufferChunk(size, realSize));
-
-            return h_uniformBuffer;
-        };
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
         //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
         virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) = 0;

@@ -339,16 +339,10 @@ void ParticleEmitter::createMesh() {
         }
         meshTemplate.texture.resize((multitex) ? 3 : 1);
 
-        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = nullptr;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
-
         auto l_blendMode = meshTemplate.blendMode;
-        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
-            Particle::meshParticleWideBlockPS &blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
+        std::shared_ptr<IBufferChunk<Particle::meshParticleWideBlockPS>> meshParticleWideBlockPS = nullptr;
+        meshParticleWideBlockPS->setUpdateHandler([this, l_blendMode](auto &data, const HFrameDependantData &frameDepedantData) {
+            Particle::meshParticleWideBlockPS &blockPS = data;
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
                 blockPS.uAlphaTest = -1.0f;

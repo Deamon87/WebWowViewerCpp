@@ -31,7 +31,7 @@ public:
     void readData(std::vector<uint8_t> &buff) override {};
     void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
-    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
+    void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
     bool postLoad() override;;

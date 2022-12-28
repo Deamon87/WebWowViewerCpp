@@ -93,7 +93,7 @@ public:
     void startUpdateForNextFrame() override;
     void endUpdateForNextFrame() override;
 
-    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData);
+    void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
 //    void drawStageAndDeps(HDrawStage drawStage) override;

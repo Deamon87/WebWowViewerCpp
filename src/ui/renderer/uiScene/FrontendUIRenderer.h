@@ -8,6 +8,7 @@
 #include "../../../../wowViewerLib/src/renderer/IRenderParameters.h"
 #include "ImGUIPlan.h"
 #include "../../../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
+#include "IFrontendUIBufferCreate.h"
 
 static const std::array<GBufferBinding, 3> imguiBindings = {{
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
@@ -16,8 +17,9 @@ static const std::array<GBufferBinding, 3> imguiBindings = {{
 }};
 
 
-class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam>  {
+class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam>, public IFrontendUIBufferCreate  {
 public:
+
 };
 
 //typedef FrameInputParams<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;

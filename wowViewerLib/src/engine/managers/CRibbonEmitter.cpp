@@ -140,17 +140,13 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
         meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
 
-        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = nullptr;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Ribbon::meshRibbonWideBlockPS));
 
         auto blendMode = meshTemplate.blendMode;
         auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
-        meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
-            Ribbon::meshRibbonWideBlockPS& blockPS = self->getObject<Ribbon::meshRibbonWideBlockPS>();
+        std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> meshRibbonWideBlockPS = nullptr;
+
+        meshRibbonWideBlockPS->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](auto &data, const HFrameDependantData &frameDepedantData) {
+            Ribbon::meshRibbonWideBlockPS& blockPS = data;
 
             blockPS.uAlphaTest = -1.0f;
             blockPS.uPixelShader = 0;

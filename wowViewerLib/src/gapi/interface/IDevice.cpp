@@ -47,7 +47,6 @@ bool IDevice::getIsAnisFiltrationSupported() {
         }
     }
       return anisFiltrationSupported == 1;
-
 #else
     return true;
 #endif

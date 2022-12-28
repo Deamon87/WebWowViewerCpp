@@ -25,6 +25,7 @@ class M2ObjectListContainer;
 #include "../../managers/CRibbonEmitter.h"
 #include "../../ApiContainer.h"
 #include "m2Helpers/CBoneMasterData.h"
+#include "../../../gapi/UniformBufferStructures.h"
 
 
 class M2Object {
@@ -87,8 +88,8 @@ private:
     std::shared_ptr<CBoneMasterData> m_boneMasterData = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
-    HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
-    HGUniformBufferChunk fragmentModelWideUniformBuffer = nullptr;
+    std::shared_ptr<IBufferChunk<M2::modelWideBlockVS>> vertexModelWideUniformBuffer = nullptr;
+    std::shared_ptr<IBufferChunk<M2::modelWideBlockPS>> fragmentModelWideUniformBuffer = nullptr;
 
     HGMesh boundingBoxMesh = nullptr;
     

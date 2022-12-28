@@ -75,7 +75,6 @@ void main() {
         vec4 weights_temp = (weights * (vec4(1.0) - clamp((vec4(max(max(weightedTexture_x, weightedTexture_y), max(weightedTexture_z, weightedTexture_w))) - weights), 0.0, 1.0)));
         vec4 weightsNormalized = (weights_temp / vec4(dot(vec4(1.0), weights_temp)));
 
-
         vec4 weightedLayer_0 = (texture(uLayer0, tcLayer0) * weightsNormalized.x);
         vec3 matDiffuse_0 = weightedLayer_0.xyz;
         float specBlend_0 = weightedLayer_0.w;

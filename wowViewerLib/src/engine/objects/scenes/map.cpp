@@ -305,13 +305,13 @@ Map::Map(HApiContainer api, int mapId, std::string mapName) {
 
     loadZoneLights();
 
-    m_sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
+    m_sceneWideBlockVSPSChunk = nullptr;
 }
 
 HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config *config, bool conusFor0x4Sky) {
-    auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
-    skyVs->setUpdateHandler([config, conusFor0x4Sky](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
+    std::shared_ptr<IBufferChunk<DnSky::meshWideBlockVS>> skyVs = nullptr;
+    skyVs->setUpdateHandler([config, conusFor0x4Sky](auto &data, const HFrameDependantData &frameDepedantData) -> void {
+        auto &meshblockVS = data;
 
         if (!conusFor0x4Sky) {
             meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
@@ -345,13 +345,6 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     meshTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
 
     meshTemplate.texture.resize(0);
-
-    meshTemplate.ubo[0] = nullptr;
-    meshTemplate.ubo[1] = nullptr;
-    meshTemplate.ubo[2] = skyVs;
-
-    meshTemplate.ubo[3] = nullptr;
-    meshTemplate.ubo[4] = nullptr;
 
     meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
     if (conusFor0x4Sky) {
@@ -2061,9 +2054,9 @@ void Map::loadZoneLights() {
     }
 }
 
-IChunkHandlerType Map::generateSceneWideChunk(HCameraMatrices &renderMats, Config* config) {
-    return [renderMats, config](IUniformBufferChunk *chunk, const HFrameDependantData &fdd) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
+IChunkHandlerType<sceneWideBlockVSPS> Map::generateSceneWideChunk(HCameraMatrices &renderMats, Config* config) {
+    return [renderMats, config](auto &data, const HFrameDependantData &fdd) -> void {
+        auto *blockPSVS = &data;
 
         blockPSVS->uLookAtMat = renderMats->lookAtMat;
         blockPSVS->uPMatrix = renderMats->perspectiveMat;

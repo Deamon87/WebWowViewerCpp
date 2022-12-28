@@ -35,14 +35,6 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
     m_texture = meshTemplate.texture;
 
-    m_UniformBuffer[0] = meshTemplate.ubo[0];
-    m_UniformBuffer[1] = meshTemplate.ubo[1];
-    m_UniformBuffer[2] = meshTemplate.ubo[2];
-    m_UniformBuffer[3] = meshTemplate.ubo[3];
-    m_UniformBuffer[4] = meshTemplate.ubo[4];
-    m_UniformBuffer[5] = meshTemplate.ubo[5];
-
-
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(m_shader.get());
     createDescriptorSets(shaderVLK);
 
@@ -63,19 +55,19 @@ GMeshVLK::GMeshVLK(IDevice &device,
             shaderLayoutBindings.insert({uboFragBinding.binding, uboFragBinding});
         }
     }
-
-    for (int i = 0; i < 5; i++) {
-        auto it = shaderLayoutBindings.find(i);
-        if (it != shaderLayoutBindings.end()) {
-            if ((m_UniformBuffer[i] != nullptr) && (it->second.size != (m_UniformBuffer[i]->getSize()))) {
-                std::cout << "buffers missmatch! for shaderName = " << shaderVLK->getShaderName() <<
-                " index = " << i <<
-                " expected size " << (it->second.size) <<
-                ", provided size = " << (m_UniformBuffer[i]->getSize()) <<
-                std::endl;
-            }
-        }
-    }
+//TODO:
+//    for (int i = 0; i < 5; i++) {
+//        auto it = shaderLayoutBindings.find(i);
+//        if (it != shaderLayoutBindings.end()) {
+//            if ((m_UniformBuffer[i] != nullptr) && (it->second.size != (m_UniformBuffer[i]->getSize()))) {
+//                std::cout << "buffers missmatch! for shaderName = " << shaderVLK->getShaderName() <<
+//                " index = " << i <<
+//                " expected size " << (it->second.size) <<
+//                ", provided size = " << (m_UniformBuffer[i]->getSize()) <<
+//                std::endl;
+//            }
+//        }
+//    }
 }
 
 //Works under assumption that meshes do not often change the renderpass on which they are rendered
@@ -197,10 +189,6 @@ void GMeshVLK::updateDescriptor() {
 
 GMeshVLK::~GMeshVLK() {
 
-}
-
-HGUniformBufferChunk GMeshVLK::getUniformBuffer(int slot) {
-    return m_UniformBuffer[slot];
 }
 
 bool GMeshVLK::getIsTransparent() { return m_isTransparent; }

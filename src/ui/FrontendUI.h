@@ -23,6 +23,7 @@
 #include "childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h"
 #include "childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h"
 #include "../../wowViewerLib/src/exporters/IExporter.h"
+#include "renderer/uiScene/IFrontendUIBufferCreate.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -243,6 +244,9 @@ public:
     void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
 
     void editComponentsForConfig(Config *config);
+
+    //Making the frame
+    void update(HFrontendUIBufferCreate renderer);
 };
 
 

@@ -165,6 +165,10 @@ void GBufferVLK::uploadFromStaging(int offset, int destOffset, int length) {
     vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), currentBuffer.stagingBuffer, currentBuffer.g_hBuffer, 1, &vbCopyRegion);
 }
 
+void GBufferVLK::save(int length) {
+    uploadFromStaging(0, 0, length);
+}
+
 //----------------------------------------------------------------
 //  SubBuffer thing
 //----------------------------------------------------------------
@@ -205,6 +209,14 @@ void GBufferVLK::GSubBufferVLK::subUploadData(void *data, int offset, int length
 
 void *GBufferVLK::GSubBufferVLK::getPointer() {
     return m_dataPointer;
+}
+
+void GBufferVLK::GSubBufferVLK::save(int length) {
+    if (length > m_size) {
+        std::cerr << "invalid dataSize" << std::endl;
+    }
+
+    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
 }
 
 size_t GBufferVLK::GSubBufferVLK::getSize() {

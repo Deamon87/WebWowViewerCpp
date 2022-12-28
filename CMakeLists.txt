@@ -233,7 +233,7 @@ set(SOURCE_FILES
 		src/ui/renderer/uiScene/FrontendUIRendererFactory.h
 		src/ui/renderer/uiScene/ImGUIPlan.cpp
 		src/ui/renderer/uiScene/ImGUIPlan.h
-		)
+        src/ui/renderer/uiScene/IFrontendUIBufferCreate.h)
 
 
 set(SOURCE_FILES_VULKAN
@@ -275,7 +275,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
 
 
 if (NOT Vulkan_FOUND)
-	set(SOURCE_FILES_VULKAN "")
+	set(SOURCE_FILES_VULKAN "" src/ui/renderer/uiScene/materials/UIMaterial.h)
 endif()
 
 add_executable(AWebWoWViewerCpp ${SOURCE_FILES} ${SOURCE_FILES_VULKAN})

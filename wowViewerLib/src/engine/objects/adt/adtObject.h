@@ -125,7 +125,7 @@ private:
 
     HGVertexBufferBindings lodVertexBindings;
 
-    HGUniformBufferChunk adtWideBlockPS;
+    std::shared_ptr<IBufferChunk<ADT::modelWideBlockPS>> adtWideBlockPS;
 
 
 

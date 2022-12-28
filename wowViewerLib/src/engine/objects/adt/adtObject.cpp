@@ -635,13 +635,14 @@ void AdtObject::createMeshes() {
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;
 
-    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
-
+//    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
+    adtWideBlockPS = nullptr;
     int useHeightMixFormula = m_wdtFile->mphd->flags.adt_has_height_texturing > 0;
 //    int useHeightMixFormula = 1;
     auto api = m_api;
-    adtWideBlockPS->setUpdateHandler([api, useHeightMixFormula](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData){
-        auto *adtWideblockPS = &self->getObject<ADT::modelWideBlockPS>();
+
+    adtWideBlockPS->setUpdateHandler([api, useHeightMixFormula](auto &data, const HFrameDependantData &frameDepedantData){
+        auto *adtWideblockPS = &data;
         adtWideblockPS->useHeightMixFormula[0] = useHeightMixFormula;
     });
 
@@ -665,17 +666,18 @@ void AdtObject::createMeshes() {
             aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
             aTemplate.element = DrawElementMode::TRIANGLES;
 
-            aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-            aTemplate.ubo[1] = nullptr;
-            aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockVS));
-            aTemplate.ubo[3] = adtWideBlockPS;
-            aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
+//            aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
+//            aTemplate.ubo[1] = nullptr;
+//            aTemplate.ubo[2] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockVS));
+//            aTemplate.ubo[3] = adtWideBlockPS;
+//            aTemplate.ubo[4] = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::meshWideBlockPS));
 
             aTemplate.texture = std::vector<HGTexture>(9, nullptr);
 
             int chunkIndex = i;
-            aTemplate.ubo[4]->setUpdateHandler([&api, adtFileTex, noLayers, chunkIndex, this](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
-                auto &blockPS = self->getObject<ADT::meshWideBlockPS>();
+            std::shared_ptr<IBufferChunk<ADT::meshWideBlockPS>> meshWideBlockPS = nullptr;
+            meshWideBlockPS->setUpdateHandler([&api, adtFileTex, noLayers, chunkIndex, this](auto &data, const HFrameDependantData &frameDepedantData) {
+                auto &blockPS = data;
 
                 for (int j = 0; j < 4; j++) {
                     blockPS.uHeightOffset[j] = 0.0f;
@@ -693,8 +695,9 @@ void AdtObject::createMeshes() {
                 }
             });
 
-            aTemplate.ubo[2]->setUpdateHandler([this, i](IUniformBufferChunk *self, const HFrameDependantData &frameDepedantData) {
-                auto &blockVS = self->getObject<ADT::meshWideBlockVS>();
+            std::shared_ptr<IBufferChunk<ADT::meshWideBlockVS>> meshWideBlockVS = nullptr;
+            meshWideBlockVS->setUpdateHandler([this, i](auto &data, const HFrameDependantData &frameDepedantData) {
+                auto &blockVS = data;
                 blockVS.uPos = mathfu::vec4(
                     this->m_adtFile->mapTile[i].position.x,
                     this->m_adtFile->mapTile[i].position.y,

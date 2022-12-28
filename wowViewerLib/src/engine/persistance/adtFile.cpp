@@ -45,7 +45,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MHID',
             {
                 [](AdtFile& file, ChunkData& chunkData){
-                    debuglog("Entered MDID");
+                    debuglog("Entered MHID");
                     file.mhid_len = chunkData.chunkLen / 4;
                     chunkData.readValues(file.mhid, file.mhid_len);
                 }

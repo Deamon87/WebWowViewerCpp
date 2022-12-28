@@ -10,6 +10,7 @@
 #include "../FrontendUIRenderer.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/GDeviceVulkan.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/GBufferVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 
 class FrontendUIRenderForwardVLK : public FrontendUIRenderer {
 public:
@@ -17,6 +18,16 @@ public:
     void putIntoQueue(std::shared_ptr<FrontendUIInputParams> &frameInputParams) override;
 
     void update(VkCommandBuffer udBuffer, VkCommandBuffer swapChainDraw);
+public:
+    HGVertexBuffer createVertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createIndexBuffer(int sizeInBytes) override;
+
+    HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override {
+        return nullptr; //VAO doesnt exist in Vulkan
+    };
+    HGMesh createUIMesh(gMeshTemplate &meshTemplate, IBufferChunk<ImgUI::modelWideBlockVS>);;
+
+
 private:
     HGDeviceVLK m_device;
 
