@@ -16,7 +16,8 @@ public:
 
     virtual HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
 
-    virtual HGMesh createUIMesh(gMeshTemplate &meshTemplate, UIMaterial &material) = 0;
+    virtual HGMesh createUIMesh(gMeshTemplate &meshTemplate, const HUIMaterial &material) = 0;
+    virtual HUIMaterial createUIMaterial(const UIMaterialTemplate &materialTemplate) = 0;
 };
 typedef std::shared_ptr<IFrontendUIBufferCreate> HFrontendUIBufferCreate;
 

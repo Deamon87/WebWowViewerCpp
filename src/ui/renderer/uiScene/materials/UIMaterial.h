@@ -20,4 +20,6 @@ public:
     virtual ~IUIMaterial() = 0;
 };
 
+typedef std::shared_ptr<IUIMaterial> HUIMaterial;
+
 #endif //AWEBWOWVIEWERCPP_IUIMATERIAL_H

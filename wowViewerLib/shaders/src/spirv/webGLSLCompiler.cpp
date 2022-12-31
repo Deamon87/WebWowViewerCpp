@@ -3120,7 +3120,7 @@ void WebGLSLCompiler::emit_resources()
             has_block_flags)
         {
             if (options.webgl10) {
-                emit_ubo_as_uniforms(type.parent_type, "_" +std::to_string(r_id));
+                emit_ubo_as_uniforms(type.parent_type, to_name(r_id));
             } else {
                 emit_buffer_block(var);
             }

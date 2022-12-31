@@ -60,7 +60,7 @@ void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion, bo
 //            printf("Image %s at set = %u, binding = %u\n", resource.name.c_str(), set, binding);
 
             // Modify the decoration to prepare it for GLSL.
-            glsl.unset_decoration(resource.id, spv::DecorationDescriptorSet);
+//            glsl.unset_decoration(resource.id, spv::DecorationDescriptorSet);
 
             // Some arbitrary remapping if we want.
 
@@ -69,10 +69,10 @@ void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion, bo
                 options.enable_420pack_extension = false;
             } else {
                 if (glslVersion > 300) {
-                    glsl.unset_decoration(resource.id, spv::DecorationBinding);
+//                    glsl.unset_decoration(resource.id, spv::DecorationBinding);
                     options.enable_420pack_extension = false;
                 } else {
-                    glsl.unset_decoration(resource.id, spv::DecorationBinding);
+//                    glsl.unset_decoration(resource.id, spv::DecorationBinding);
                     options.enable_420pack_extension = false;
                 }
             }

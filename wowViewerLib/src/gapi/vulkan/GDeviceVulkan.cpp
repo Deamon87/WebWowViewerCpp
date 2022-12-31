@@ -1012,22 +1012,23 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
     for (const auto &hmesh : meshes) {
         GMeshVLK * mesh = (GMeshVLK *) hmesh.get();
-        mesh->updateDescriptor();
+        mesh->material->updateImageDescriptorSet();
 
-
-        for (int i = 0; i < mesh->textureCount(); i++) {
-            textures.push_back(mesh->m_texture[i]);
-        }
+//        for (int i = 0; i < mesh->textureCount(); i++) {
+//            textures.push_back(mesh->m_texture[i]);
+//        }
     }
 
-    std::sort(textures.begin(), textures.end());
-    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
-
-    for (const auto &texture : textures) {
-        if (texture == nullptr) continue;
-        if (texture->postLoad()) texturesLoaded++;
-        if (texturesLoaded > 4) break;
-    }
+    //TODO:!!!
+//
+//    std::sort(textures.begin(), textures.end());
+//    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
+//
+//    for (const auto &texture : textures) {
+//        if (texture == nullptr) continue;
+//        if (texture->postLoad()) texturesLoaded++;
+//        if (texturesLoaded > 4) break;
+//    }
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {

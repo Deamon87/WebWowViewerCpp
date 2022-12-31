@@ -52,8 +52,6 @@ layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_blendMode;
     vec4 uFogColorAndAlphaTest;
     vec4 uTexSampleAlpha;
-
-
     vec4 uPcColor;
 };
 

@@ -32,7 +32,12 @@ HGIndexBuffer FrontendUIRenderForwardVLK::createIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGMesh FrontendUIRenderForwardVLK::createUIMesh(gMeshTemplate &meshTemplate, IBufferChunk<ImgUI::modelWideBlockVS>) {
+HUIMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
+    //TODO:
+    return nullptr;
+}
+
+HGMesh FrontendUIRenderForwardVLK::createUIMesh(gMeshTemplate &meshTemplate, const HUIMaterial &material) {
     //TODO:
     return nullptr;
 }

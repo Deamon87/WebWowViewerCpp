@@ -50,10 +50,6 @@ vec3 validateFogColor(in vec3 fogColor, int blendMode) {
 
 vec4 makeFog(const in PSFog fogData, in vec4 final, in vec3 vertexInViewSpace, in vec3 sunDirInViewSpace, in int blendMode) {
 //    //The best solution so far is to not apply fog to blendmode GxBlend_BlendAdd
-//    if (blendMode == 13)
-//        return final;
-
-
 
     vec4 l_densityParams = fogData.densityParams;
     vec4 l_heightPlane = fogData.heightPlane;

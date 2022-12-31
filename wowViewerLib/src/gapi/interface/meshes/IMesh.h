@@ -84,10 +84,10 @@ class IMesh {
 public:
     auto start()       -> int& { return m_start; }
     auto end()       -> int& { return m_end; }
-    auto textureCount()       -> int { return m_texture.size(); }
+//    auto textureCount()       -> int { return m_texture.size(); }
 
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
-    auto texture() const -> const std::vector<HGTexture>& { return m_texture; }
+
 
 //    auto texture() const -> const HGVertexBufferBindings& { return m_bindings; }
 protected:
@@ -95,7 +95,7 @@ protected:
     int m_start;
     int m_end;
 
-    std::vector<HGTexture> m_texture = {};
+
 public:
     virtual ~IMesh(){
 //        std::cout << "Mesh destroyed" << std::endl;

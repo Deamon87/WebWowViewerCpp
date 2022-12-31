@@ -326,7 +326,9 @@ set(SOURCE_FILES
         src/renderer/mapScene/FrameDependentData.h
         src/renderer/buffers/IVertexBufferDynamicTemplate.cpp
         src/renderer/buffers/IVertexBufferDynamicTemplate.h
-        src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ITransparentMesh.h src/renderer/mapScene/IMapSceneBufferCreate.h)
+        src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ITransparentMesh.h
+        src/renderer/mapScene/IMapSceneBufferCreate.h
+        src/gapi/interface/materials/IMaterial.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -504,7 +506,8 @@ if (LINK_VULKAN)
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
             src/gapi/vulkan/buffers/GBufferVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.h
-            src/gapi/vulkan/buffers/IBufferVLK.h)
+            src/gapi/vulkan/buffers/IBufferVLK.h
+            src/gapi/vulkan/materials/IMaterialVLK.cpp src/gapi/vulkan/materials/IMaterialVLK.h)
     if (NOT Vulkan_SDK_DIR)
         set(Vulkan_SDK_DIR $ENV{VULKAN_SDK})
     endif()
@@ -530,7 +533,7 @@ if (LINK_VULKAN)
                 MESSAGE("Using bundled Vulkan library version non-win32")
             ELSE()
                 set(LINK_VULKAN OFF)
-                set(VULKAN_IMPLEMENTATION "" src/gapi/vulkan/buffers/GBufferSuballocation.cpp src/gapi/vulkan/buffers/GBufferSuballocation.h)
+                set(VULKAN_IMPLEMENTATION "" )
             ENDIF()
         ENDIF()
     ENDIF()

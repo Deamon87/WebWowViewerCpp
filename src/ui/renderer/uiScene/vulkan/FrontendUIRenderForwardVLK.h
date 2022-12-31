@@ -25,7 +25,8 @@ public:
     HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override {
         return nullptr; //VAO doesnt exist in Vulkan
     };
-    HGMesh createUIMesh(gMeshTemplate &meshTemplate, IBufferChunk<ImgUI::modelWideBlockVS>);;
+    HGMesh createUIMesh(gMeshTemplate &meshTemplate, const HUIMaterial &material) override;
+    HUIMaterial createUIMaterial(const UIMaterialTemplate &materialTemplate) override;
 
 
 private:

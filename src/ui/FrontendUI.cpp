@@ -1863,7 +1863,14 @@ void FrontendUI::update(HFrontendUIBufferCreate renderer) {
                     meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;
 
-                    renderer->createUIMesh(meshTemplate, uboPart)
+                    UIMaterialTemplate materialTemplate;
+                    materialTemplate.texture = pcmd->TextureId;
+                    materialTemplate.uiUBO = uboPart;
+
+                    auto material = renderer->createUIMaterial(materialTemplate);
+
+
+                    renderer->createUIMesh(meshTemplate, material);
                 }
             }
         }

@@ -31,8 +31,23 @@ struct uboBindingData {
     unsigned long long size;
 };
 
+struct imageBindingData {
+    unsigned int set;
+    unsigned int binding;
+    std::string imageName;
+};
+
+struct imageBindingAmountData {
+    unsigned int start = 999;
+    unsigned int end = 0;
+    unsigned int length = 0;
+
+};
+
 struct shaderMetaData {
     std::vector<uboBindingData> uboBindings;
+    std::vector<imageBindingData> imageBindings;
+    std::array<imageBindingAmountData, 8> imageBindingAmounts;
 };
 
 //Per file
@@ -128,24 +143,39 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                  "    int location;\n"
                  "};" << std::endl;
 
-    std::cout << "struct uboBindingData {\n"
-                 "    int set;\n"
-                 "    int binding;\n"
-                 "    int size;\n"
-                 "};\n"
-                 "\n"
-                 "struct shaderMetaData {\n"
-                 "    std::vector<uboBindingData> uboBindings;\n"
-                 "};\n"
-                 "\n"
-                 "//Per file\n"
-                 "extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;" << std::endl <<
-              "extern const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;"
-              << std::endl <<
-              "extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameVert;"
-              << std::endl <<
-              "extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameFrag;"
-              << std::endl;
+    std::cout <<
+    R"===(
+    struct uboBindingData {
+        int set;
+        int binding;
+        int size;
+    };
+    struct imageBindingData {
+        unsigned int set;
+        unsigned int binding;
+        std::string imageName;
+    };
+
+    struct imageBindingAmountData {
+        unsigned int start = 999;
+        unsigned int end = 0;
+        unsigned int length = 0;
+
+    };
+
+    struct shaderMetaData {
+        std::vector<uboBindingData> uboBindings;
+        std::vector<imageBindingData> imageBindings;
+        std::array<imageBindingAmountData, 8> imageBindingAmounts;
+    };
+    //Per file
+    extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;
+    extern const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;
+
+    extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameVert;
+
+    extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameFrag;
+)===" << std::endl;
 
 
     std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameVert;
@@ -213,6 +243,8 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         // The SPIR-V is now parsed, and we can perform reflection on it.
         spirv_cross::ShaderResources resources = glsl.get_shader_resources();
+
+        //Record data for UBO
         for (auto &resource : resources.uniform_buffers) {
             auto uboType = glsl.get_type(resource.type_id);
 
@@ -232,16 +264,50 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
             for (int j = 0; j < uboType.member_types.size(); j++) {
 
                 auto uboParentType = glsl.get_type(uboType.parent_type);
+//                glsl.get_member_name
                 auto memberSize = glsl.get_declared_struct_member_size(uboParentType, j);
                 auto offset = glsl.type_struct_member_offset(uboParentType, j);
                 auto memberName = glsl.get_member_name(uboType.parent_type, j);
 
 
                 dumpMembers(glsl, fieldVectorDef, uboType.member_types[j],
-                            "_" + std::to_string(resource.id) + "_" + memberName, offset, memberSize);
-
+//                            "_" + std::to_string(resource.id) + "_" + memberName, offset, memberSize);
+                glsl.to_name(resource.id) + "_" + memberName, offset, memberSize);
             }
         }
+
+        //Record data for images
+        for (auto &resource : resources.sampled_images) {
+            unsigned int set = -1;
+            unsigned int binding = -1;
+            if (glsl.has_decoration(resource.id, spv::DecorationDescriptorSet) &&
+                glsl.has_decoration(resource.id, spv::DecorationBinding))
+            {
+                set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
+                binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
+            }
+
+            metaInfo.imageBindings.push_back({set, binding, resource.name});
+            if (set >= 0) {
+                metaInfo.imageBindingAmounts[set].start =
+                    std::min<unsigned int>(metaInfo.imageBindingAmounts[set].start, binding);
+                metaInfo.imageBindingAmounts[set].end =
+                    std::max<unsigned int>(metaInfo.imageBindingAmounts[set].end, binding);
+            }
+
+//            std::cout << "set = " << set << std::endl;
+//            std::cout << "binding = " << binding << std::endl;
+//            std::cout << resource.name << std::endl;
+//            std::cout << glsl.to_name(resource.base_type_id) << std::endl;
+        }
+        for (auto &data: metaInfo.imageBindingAmounts ) {
+            if (data.start < 16) {
+                data.length = data.end - data.start + 1;
+            } else {
+                data.start = 0;
+            }
+        }
+
     }
 
     //2.1 Create attribute enums
@@ -269,29 +335,51 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
               << std::endl;
 
     for (auto it = attributesPerShaderName.begin(); it != attributesPerShaderName.end(); it++) {
-        std::cout << "{\"" << it->first << "\", " << " {" << std::endl;
+        std::cout << "{ \"" << it->first << "\",\n" <<
+            "  {" << std::endl;
 
         for (auto &attributeInfo : it->second) {
-            std::cout << "{\"" << attributeInfo.name << "\", " << attributeInfo.location << "}," << std::endl;
+            std::cout << "    { \"" << attributeInfo.name << "\", " << attributeInfo.location << "}," << std::endl;
         }
 
-        std::cout << "}},";
+        std::cout << "  }\n"<< "}," << std::endl;
     }
     std::cout << "};" << std::endl << std::endl;
 
     //Add shader meta
-    std::cout << "const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {";
+    std::cout << "const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = { \n";
     for (auto it = shaderMetaInfo.begin(); it != shaderMetaInfo.end(); it++) {
-        std::cout << "{ \"" << it->first << "\", {\n";
-        std::cout << "{\n";
+        std::cout << "{ \"" << it->first << "\", \n"<<
+            "  {\n";
 
+        //Dump UBO Bindings per shader
+        std::cout << "    {\n";
         for (auto subIt = it->second.uboBindings.begin(); subIt != it->second.uboBindings.end(); subIt++) {
-            std::cout << "{" << subIt->set << "," << subIt->binding << "," << subIt->size << "}," << std::endl;
+            std::cout << "      {" << subIt->set << "," << subIt->binding << "," << subIt->size << "}," << std::endl;
         }
+        std::cout << "    },\n";
+        //UBO Bindings dump end
 
-        std::cout << "}\n";
-        std::cout << "}\n},";
+        std::cout << "    {\n";
+        for (auto &binding : it->second.imageBindings) {
+            std::cout << "      {" << binding.set << "," << binding.binding << ", \"" << binding.imageName << "\"}," << std::endl;
+        }
+        std::cout << "    },\n";
 
+        std::cout << "    {\n";
+        std::cout << "      {\n";
+        for (auto &bindingAmount : it->second.imageBindingAmounts) {
+            if (bindingAmount.length > 0) {
+                std::cout << "        {" << bindingAmount.start << "," << bindingAmount.end << ", " << bindingAmount.end << "},"
+                          << std::endl;
+            } else {
+                std::cout << "        {0,0,0}," << std::endl;
+            }
+        }
+        std::cout << "      }\n";
+        std::cout << "    }\n";
+
+        std::cout << "  }\n},\n";
 
     }
     std::cout << "};" << std::endl << std::endl;

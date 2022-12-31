@@ -9,6 +9,7 @@
 #include "../../interface/meshes/IMesh.h"
 #include "../GDeviceVulkan.h"
 #include "../descriptorSets/GDescriptorSet.h"
+#include "../materials/IMaterialVLK.h"
 
 class GMeshVLK : public IMesh {
     friend class GDeviceVLK;
@@ -25,11 +26,11 @@ public:
 
 public:
     std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
-
+    HMaterialVLK material;
 protected:
     MeshType m_meshType;
 
-    HGShaderPermutation m_shader;
+
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
@@ -49,7 +50,6 @@ protected:
 
 
 //Vulkan specific
-    std::vector<std::shared_ptr<GDescriptorSets>> imageDescriptorSets;
     std::vector<bool> descriptorSetsUpdated;
 
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
@@ -58,8 +58,7 @@ protected:
 private:
     GDeviceVLK &m_device;
 
-    void createDescriptorSets(GShaderPermutationVLK *shaderVLK);
-    void updateDescriptor();
+
 };
 
 

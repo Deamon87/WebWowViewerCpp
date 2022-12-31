@@ -165,6 +165,37 @@ namespace SPIRV_CROSS_NAMESPACE
             }
         }
 
+        std::string to_name(uint32_t id, bool allow_alias = true) const override
+        {
+            if (allow_alias && ir.ids[id].get_type() == TypeType)
+            {
+                // If this type is a simple alias, emit the
+                // name of the original type instead.
+                // We don't want to override the meta alias
+                // as that can be overridden by the reflection APIs after parse.
+                auto &type = get<SPIRType>(id);
+                if (type.type_alias)
+                {
+                    // If the alias master has been specially packed, we will have emitted a clean variant as well,
+                    // so skip the name aliasing here.
+                    if (!has_extended_decoration(type.type_alias, SPIRVCrossDecorationBufferBlockRepacked))
+                        return to_name(type.type_alias);
+                }
+            }
+
+            auto &alias = ir.get_name(id);
+            if (alias.empty()) {
+                if (has_decoration(id, spv::DecorationDescriptorSet) && has_decoration(id, spv::DecorationBinding)) {
+                    unsigned set = get_decoration(id, spv::DecorationDescriptorSet);
+                    unsigned binding = get_decoration(id, spv::DecorationBinding);
+                    return join("_", set, "_", binding);
+                }
+
+                return join("_", id);
+            } else
+                return alias;
+        }
+
         std::string compile() override;
 
         // Returns the current string held in the conversion buffer. Useful for

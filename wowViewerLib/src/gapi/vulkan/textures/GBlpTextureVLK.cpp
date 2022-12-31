@@ -67,7 +67,7 @@ void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVe
         std::copy(&mipmaps[i].texture[0], &mipmaps[i].texture[0]+mipmaps[i].texture.size(), std::back_inserter(unitedBuffer));
     }
 
-    createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
+    GTextureVLK::createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
 }
 
 //bool GBlpTextureVLK::getIsLoaded() {

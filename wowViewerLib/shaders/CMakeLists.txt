@@ -149,7 +149,7 @@ macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
                     OUTPUT ${GLSL33_FILE}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
                     COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} ${OGL3_GLSL_OPTION} ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
-                    DEPENDS ${SPIRV_NonOpt} spirv_reflection)
+                    DEPENDS spirv_reflection ${SPIRV_NonOpt})
 
             list(APPEND GLSL30Files ${GLSL33_FILE})
 
