@@ -96,11 +96,19 @@ jobs:
         with:
           python-version: '3.10'
       - name: Prepare Vulkan SDK
-        if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
+#       Disable Vulkan for MacOS for now, as it requires MoltenVK 
+        if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'macOS') }}
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.204.0
           vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
+          vulkan-use-cache: true
+      - name: Prepare Vulkan SDK
+        if: ${{ !startsWith(matrix.config.name, 'macOS') }}
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: MoltenVK
           vulkan-use-cache: true
       - name: Print env
         run: |

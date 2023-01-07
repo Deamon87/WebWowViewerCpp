@@ -527,8 +527,11 @@ if (LINK_VULKAN)
         elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
             set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
             #We need to bundle moltenVK and vulkan lib on macos
+            file(GLOB vulkanLibFiles RELATIVE ${srcDir} ${srcDir}/*.*)
+
             install(FILES ${Vulkan_LIBRARY} DESTINATION ${CMAKE_INSTALL_BINDIR})
-            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
+            #TODO: The moltenVK needs to be built separately
+#            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
         set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
