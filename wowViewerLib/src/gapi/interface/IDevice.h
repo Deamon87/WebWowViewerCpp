@@ -27,8 +27,27 @@ class gMeshTemplate;
 #include <functional>
 #include <algorithm>
 #include "syncronization/IGPUFence.h"
+
 #ifdef LINK_VULKAN
-#include <vulkan/vulkan_core.h>
+    #define VK_NO_PROTOTYPES
+    #include "../vulkan/volk.h"
+
+    //HACKS for stupid defines in X11
+    #undef None           // Defined by X11/X.h to 0L
+    #undef Status         // Defined by X11/Xlib.h to int
+    #undef True           // Defined by X11/Xlib.h to 1
+    #undef False          // Defined by X11/Xlib.h to 0
+    #undef Bool           // Defined by X11/Xlib.h to int
+    #undef RootWindow     // Defined by X11/Xlib.h
+    #undef CurrentTime    // Defined by X11/X.h to 0L
+    #undef Success        // Defined by X11/X.h to 0
+    #undef DestroyAll     // Defined by X11/X.h to 0
+    #undef COUNT          // Defined by X11/extensions/XI.h to 0
+    #undef CREATE         // Defined by X11/extensions/XI.h to 1
+    #undef DeviceAdded    // Defined by X11/extensions/XI.h to 0
+    #undef DeviceRemoved  // Defined by X11/extensions/XI.h to 1
+
+    #include "../vulkan/vk_mem_alloc.h"
 #endif
 
 typedef std::shared_ptr<IVertexBufferDynamic> HGVertexBufferDynamic;

@@ -9,7 +9,6 @@ class GDeviceVLK;
 class GDescriptorPoolVLK;
 
 #include <vector>
-#include <vulkan/vulkan.h>
 #include "../../interface/IDevice.h"
 #include "../GDeviceVulkan.h"
 
