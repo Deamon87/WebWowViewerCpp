@@ -392,7 +392,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {{ "wmoSh
 }
 },{ "m2ParticleShader.frag.spv", {
 {
-{0,4,32},
+{0,4,48},
 {0,0,368},
 }
 }
@@ -945,6 +945,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       4, {
         {"_277_uAlphaTestv", true, 0, 1, 4, 0},
         {"_277_uPixelShaderBlendModev", false, 16, 1, 4, 0},
+        {"_277_uTextureTranslate", true, 32, 1, 4, 0},
       }
     },
   }},

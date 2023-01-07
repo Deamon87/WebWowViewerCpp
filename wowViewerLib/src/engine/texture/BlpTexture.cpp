@@ -12,7 +12,7 @@
 #include "../persistance/helper/ChunkFileReader.h"
 
 TextureFormat getTextureType(BlpFile *blpFile) {
-    TextureFormat textureFormat = TextureFormat::None;
+    TextureFormat textureFormat = TextureFormat::Undetected;
     switch (blpFile->preferredFormat) {
         case BLPPixelFormat::PIXEL_DXT1:
             if (blpFile->alphaChannelBitDepth > 0) {
@@ -158,7 +158,7 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     this->m_textureFormat = getTextureType(pBlpFile);
 
     /* Load texture by mipmaps */
-    assert(this->m_textureFormat != TextureFormat::None);
+    assert(this->m_textureFormat != TextureFormat::Undetected);
     m_mipmaps = parseMipmaps(pBlpFile, m_textureFormat);
 
 //    /* Load texture into GL memory */

@@ -115,7 +115,7 @@ void GMeshVLK::createDescriptorSets(GShaderPermutationVLK *shaderVLK) {
         //Bind Black pixel texture
         std::vector<VkDescriptorImageInfo> imageInfos(shaderVLK->getTextureCount());
 
-        auto blackTexture = m_device.getBlackPixelTexture();
+        auto blackTexture = m_device.getBlackTexturePixel();
         GTextureVLK *blackTextureVlk = reinterpret_cast<GTextureVLK *>(blackTexture.get());
 
         int bindIndex = 0;

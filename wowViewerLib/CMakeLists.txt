@@ -450,10 +450,8 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
 
-set(Vulkan_INCLUDE_DIR "")
 if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
-            src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
             src/gapi/vulkan/GDeviceVulkan.h
             src/gapi/vulkan/vkAllocator.cpp
@@ -495,34 +493,55 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
             src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
             src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
-    set(Vulkan_INCLUDE_DIR $ENV{VULKAN_SDK}/Include)
-    IF(WIN32)
-        IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "$ENV{VULKAN_SDK}/lib")
-            IF (Vulkan_LIBRARY)
-                set(Vulkan_FOUND ON PARENT_SCOPE)
-                MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
-            ELSE()
-                set(LINK_VULKAN OFF)
-                set(VULKAN_IMPLEMENTATION "")
-            ENDIF()
-        ENDIF()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
-    ELSE(WIN32)
-        IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "$ENV{VULKAN_SDK}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan")
-            IF (Vulkan_LIBRARY)
-                set(Vulkan_FOUND ON PARENT_SCOPE)
-                MESSAGE("Using bundled Vulkan library version non-win32")
-            ELSE()
-                set(LINK_VULKAN OFF)
-                set(VULKAN_IMPLEMENTATION "")
-            ENDIF()
-        ENDIF()
+
+
+    find_package(Vulkan)
+    IF (Vulkan_LIBRARY)
+        set(Vulkan_FOUND ON PARENT_SCOPE)
+        MESSAGE("Using Vulkan library, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
+    ELSE()
+        MESSAGE("Vulkan Lib was not found. Disabling vulkan build")
+
+        set(LINK_VULKAN OFF)
+        set(VULKAN_IMPLEMENTATION "")
     ENDIF()
+
+
+    if (Vulkan_LIBRARY)
+        message(Vulkan_INCLUDE_DIR = ${Vulkan_INCLUDE_DIR})
+        if (Vulkan_INCLUDE_DIR STREQUAL "")
+            message(FATAL_ERROR "Vulkan_INCLUDE_DIR is empty")
+        endif()
+
+        get_filename_component(Vulkan_LIBRARY_DIR ${Vulkan_LIBRARY} DIRECTORY)
+        message(Vulkan_LIBRARY_DIR = ${Vulkan_LIBRARY_DIR})
+
+#        IF(WIN32)
+#            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+#        endif()
+
+        if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+            set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+            set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
+            #We need to bundle moltenVK and vulkan lib on macos
+            file(GLOB vulkanLibFiles RELATIVE ${srcDir} ${srcDir}/*.*)
+
+            install(FILES ${Vulkan_LIBRARY} DESTINATION ${CMAKE_INSTALL_BINDIR})
+            #TODO: The moltenVK needs to be built separately
+#            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
+        endif()
+        #Add volk loader
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
+    endif()
+
 
     if (LINK_VULKAN)
         add_definitions(-DLINK_VULKAN)
+    else()
+        set(Vulkan_INCLUDE_DIR "")
     endif()
 endif()
 
@@ -566,6 +585,9 @@ add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPE
 if (NOT MSVC)
     target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
 endif()
+if (LINK_VULKAN)
+    target_compile_definitions(WoWViewerLib PUBLIC ${VOLK_STATIC_DEFINES})
+endif()
 
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
@@ -608,7 +630,7 @@ if (LINK_VULKAN)
     message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
     target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
     target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
-    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
+#    target_link_libraries(WoWViewerLib ${Vulkan_LIBRARY})
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
