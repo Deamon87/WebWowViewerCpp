@@ -147,7 +147,7 @@ void GBlpTextureGL20::createGlTexture(TextureFormat textureFormat, const HMipmap
                              &mipmaps[k].texture[0]);
             }
             break;
-        case TextureFormat::None:
+        case TextureFormat::Undetected:
         case TextureFormat::BGRA:
         case TextureFormat::PalARGB1555DitherFloydSteinberg:
         case TextureFormat::PalARGB4444DitherFloydSteinberg:

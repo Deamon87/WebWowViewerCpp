@@ -27,10 +27,11 @@ class gMeshTemplate;
 #include <functional>
 #include <algorithm>
 #include "syncronization/IGPUFence.h"
+
 #ifdef LINK_VULKAN
-#define VK_NO_PROTOTYPES
-#include "../vulkan/volk.h"
-#include "../vulkan/vk_mem_alloc.h"
+    #define VK_NO_PROTOTYPES
+    #include "../vulkan/volk.h"
+    #include "../vulkan/vk_mem_alloc.h"
 #endif
 
 typedef std::shared_ptr<IVertexBufferDynamic> HGVertexBufferDynamic;

@@ -182,7 +182,10 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     enableValidationLayers = false;
 
-    volkInitialize();
+    if (volkInitialize()) {
+        std::cerr << "Failed to initialize volk loader" << std::endl;
+        exit(1);
+    }
 
     this->threadCount = std::max<int>((int)std::thread::hardware_concurrency() - 3, 1);
 

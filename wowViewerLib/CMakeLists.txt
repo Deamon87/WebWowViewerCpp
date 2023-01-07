@@ -494,16 +494,18 @@ if (LINK_VULKAN)
             src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
             src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
 
-    IF (NOT Vulkan_FOUND)
-        find_package(Vulkan)
-        IF (Vulkan_LIBRARY)
-            set(Vulkan_FOUND ON PARENT_SCOPE)
-            MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
-        ELSE()
-            set(LINK_VULKAN OFF)
-            set(VULKAN_IMPLEMENTATION "")
-        ENDIF()
+
+    find_package(Vulkan)
+    IF (Vulkan_LIBRARY)
+        set(Vulkan_FOUND ON PARENT_SCOPE)
+        MESSAGE("Using Vulkan library, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
+    ELSE()
+        MESSAGE("Vulkan Lib was not found. Disabling vulkan build")
+
+        set(LINK_VULKAN OFF)
+        set(VULKAN_IMPLEMENTATION "")
     ENDIF()
+
 
     if (Vulkan_LIBRARY)
         message(Vulkan_INCLUDE_DIR = ${Vulkan_INCLUDE_DIR})
@@ -511,9 +513,12 @@ if (LINK_VULKAN)
             message(FATAL_ERROR "Vulkan_INCLUDE_DIR is empty")
         endif()
 
-        IF(WIN32)
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
-        endif()
+        get_filename_component(Vulkan_LIBRARY_DIR ${Vulkan_LIBRARY} DIRECTORY)
+        message(Vulkan_LIBRARY_DIR = ${Vulkan_LIBRARY_DIR})
+
+#        IF(WIN32)
+#            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+#        endif()
 
         if(CMAKE_SYSTEM_NAME STREQUAL Windows)
             set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
@@ -521,6 +526,9 @@ if (LINK_VULKAN)
             set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
         elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
             set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
+            #We need to bundle moltenVK and vulkan lib on macos
+            install(FILES ${Vulkan_LIBRARY} DESTINATION ${CMAKE_INSTALL_BINDIR})
+            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
         set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
