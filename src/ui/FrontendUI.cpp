@@ -1097,10 +1097,16 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->drawM2BB = drawM2BB;
         }
 
+        bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
+        if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {
+            m_api->getConfig()->usePortalCulling = !disablePortalCulling;
+        }
+
         bool renderPortals = m_api->getConfig()->renderPortals;
         if (ImGui::Checkbox("Render portals", &renderPortals)) {
             m_api->getConfig()->renderPortals = renderPortals;
         }
+
         if (renderPortals) {
             bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
             if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
