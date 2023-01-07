@@ -17,7 +17,7 @@
 
 #ifdef LINK_VULKAN
 #define GLFW_INCLUDE_VULKAN
-#include "../wowViewerLib/src/include/vulkancontext.h"
+#define VK_NO_PROTOTYPES
 #else
 #undef GLFW_INCLUDE_VULKAN
 #endif
@@ -352,8 +352,8 @@ int main(){
 #endif
 
 //    std::string rendererName = "ogl2";
-      std::string rendererName = "ogl3";
-//    std::string rendererName = "vulkan";
+//      std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
     //FOR OGL
 

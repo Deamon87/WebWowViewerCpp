@@ -28,7 +28,9 @@ class gMeshTemplate;
 #include <algorithm>
 #include "syncronization/IGPUFence.h"
 #ifdef LINK_VULKAN
-#include <vulkan/vulkan_core.h>
+#define VK_NO_PROTOTYPES
+#include "../vulkan/volk.h"
+#include "../vulkan/vk_mem_alloc.h"
 #endif
 
 typedef std::shared_ptr<IVertexBufferDynamic> HGVertexBufferDynamic;

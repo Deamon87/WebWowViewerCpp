@@ -5,8 +5,6 @@
 #ifndef AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 #define AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 
-class GDeviceGL33;
-
 #include <string>
 #include <unordered_map>
 #include "../GDeviceVulkan.h"

@@ -11,7 +11,6 @@
 #include <array>
 #include <thread>
 #include "GDeviceVulkan.h"
-#include "../../include/vulkancontext.h"
 
 #include "meshes/GM2MeshVLK.h"
 #include "meshes/GMeshVLK.h"
@@ -183,6 +182,8 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     enableValidationLayers = false;
 
+    volkInitialize();
+
     this->threadCount = std::max<int>((int)std::thread::hardware_concurrency() - 3, 1);
 
     if (enableValidationLayers && !checkValidationLayerSupport()) {
@@ -234,6 +235,8 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
         throw std::runtime_error("failed to create instance!");
     }
 
+    volkLoadInstance(vkInstance);
+
     //Create surface
     vkSurface = callback->createSurface(vkInstance);
 
@@ -243,11 +246,30 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     createLogicalDevice();
 //---------------
     //Init AMD's VMA
+    VmaVulkanFunctions vma_vulkan_func{};
+    vma_vulkan_func.vkAllocateMemory                    = vkAllocateMemory;
+    vma_vulkan_func.vkBindBufferMemory                  = vkBindBufferMemory;
+    vma_vulkan_func.vkBindImageMemory                   = vkBindImageMemory;
+    vma_vulkan_func.vkCreateBuffer                      = vkCreateBuffer;
+    vma_vulkan_func.vkCreateImage                       = vkCreateImage;
+    vma_vulkan_func.vkDestroyBuffer                     = vkDestroyBuffer;
+    vma_vulkan_func.vkDestroyImage                      = vkDestroyImage;
+    vma_vulkan_func.vkFlushMappedMemoryRanges           = vkFlushMappedMemoryRanges;
+    vma_vulkan_func.vkFreeMemory                        = vkFreeMemory;
+    vma_vulkan_func.vkGetBufferMemoryRequirements       = vkGetBufferMemoryRequirements;
+    vma_vulkan_func.vkGetImageMemoryRequirements        = vkGetImageMemoryRequirements;
+    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties = vkGetPhysicalDeviceMemoryProperties;
+    vma_vulkan_func.vkGetPhysicalDeviceProperties       = vkGetPhysicalDeviceProperties;
+    vma_vulkan_func.vkInvalidateMappedMemoryRanges      = vkInvalidateMappedMemoryRanges;
+    vma_vulkan_func.vkMapMemory                         = vkMapMemory;
+    vma_vulkan_func.vkUnmapMemory                       = vkUnmapMemory;
+    vma_vulkan_func.vkCmdCopyBuffer                     = vkCmdCopyBuffer;
+
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = physicalDevice;
     allocatorInfo.device = device;
     allocatorInfo.instance = vkInstance;
-
+    allocatorInfo.pVulkanFunctions = &vma_vulkan_func;
 
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 //---------------

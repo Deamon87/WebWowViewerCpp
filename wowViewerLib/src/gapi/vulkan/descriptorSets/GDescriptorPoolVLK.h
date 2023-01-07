@@ -7,7 +7,6 @@
 
 class GDescriptorSets;
 
-#include <vulkan/vulkan.h>
 #include "../../interface/IDevice.h"
 #include "../GDeviceVulkan.h"
 #include "GDescriptorSet.h"

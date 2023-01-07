@@ -453,7 +453,6 @@ endif()
 set(Vulkan_INCLUDE_DIR "")
 if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
-            src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
             src/gapi/vulkan/GDeviceVulkan.h
             src/gapi/vulkan/vkAllocator.cpp
@@ -531,7 +530,7 @@ if (LINK_VULKAN)
             set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} )
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
     endif()
 
 
