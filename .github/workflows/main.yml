@@ -96,6 +96,7 @@ jobs:
         with:
           python-version: '3.10'
       - name: Prepare Vulkan SDK
+        if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         uses: humbletim/setup-vulkan-sdk@v1.2.0
         with:
           vulkan-query-version: 1.3.204.0
