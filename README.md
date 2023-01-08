@@ -1,4 +1,5 @@
-![github actions state](https://github.com/Deamon87/WebWowViewerCpp/actions/workflows/main.yml/badge.svg?branch=master)
+![github actions state](https://github.com/Deamon87/WebWowViewerCpp/actions/workflows/main.yml/badge.svg?branch=master)   [![Donate to support developer](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=AFUUEL3ZQVVNW)
+
 
 # WebWowViewerCpp
 
@@ -7,7 +8,6 @@ The aim of this project is to create an opensource viewer of models and maps for
 There are two frontends built using this code: standalone map viewer and webgl library built for web.
 
 Webgl version of model viewer runs on https://wow.tools/mv/ page
-
 
 
 ## How to build
@@ -40,6 +40,9 @@ Otherwise, you can look at the github actions script in `.github/workflows/` fol
 - Update the database (File -> Update database).
 - Open Map Selection dialog (File -> Open Map Selection)
 - Select a map and adjust the zoom to find the point on minimap. Select a point and click GO
+
+As an option, after v0.1.5, you can start app with "-vulkan" option from command line, which will switch from OpenGL renderer to Vulkan.
+Vulkan renderer is far from perfect, but it even now shows more performance compared to OGL
 
 Happy exploring :)
 
