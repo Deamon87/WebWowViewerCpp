@@ -8,7 +8,7 @@ There are two frontends built using this code: standalone map viewer and webgl l
 
 Webgl version of model viewer runs on https://wow.tools/mv/ page
 
-
+[![Donate to support developer](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate/?hosted_button_id=AFUUEL3ZQVVNW)
 
 ## How to build
 
