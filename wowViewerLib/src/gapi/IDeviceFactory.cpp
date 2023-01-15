@@ -19,6 +19,7 @@
 #include "vulkan/GDeviceVulkan.h"
 #endif
 
+#if defined(LINK_OGL2) || defined(LINK_OGL3) || defined(LINK_OGL4)
 void initOGLPointers(){
 #if defined(_WIN32) && (!defined(WITH_GLESv2) && !defined(__EMSCRIPTEN__))
     glewExperimental = true; // Needed in core profile
@@ -29,6 +30,7 @@ void initOGLPointers(){
     }
 #endif
 }
+#endif
 
 HGDevice IDeviceFactory::createDevice(std::string gapiName, void * data) {
 #ifdef LINK_OGL2

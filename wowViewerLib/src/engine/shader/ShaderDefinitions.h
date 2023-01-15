@@ -5,6 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <unordered_map>
 
 template <typename T>
@@ -22,10 +23,12 @@ struct attributeDefine {
     int location;
 };
 
+    constexpr const int MAX_SHADER_DESC_SETS = 8;
+
     struct uboBindingData {
-        int set;
-        int binding;
-        int size;
+        unsigned int set;
+        unsigned int binding;
+        unsigned long long size;
     };
     struct imageBindingData {
         unsigned int set;
@@ -33,18 +36,20 @@ struct attributeDefine {
         std::string imageName;
     };
 
-    struct imageBindingAmountData {
+    struct bindingAmountData {
         unsigned int start = 999;
         unsigned int end = 0;
         unsigned int length = 0;
-
     };
 
     struct shaderMetaData {
         std::vector<uboBindingData> uboBindings;
+        std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
+
         std::vector<imageBindingData> imageBindings;
-        std::array<imageBindingAmountData, 8> imageBindingAmounts;
+        std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
     };
+
     //Per file
     extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;
     extern const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;
@@ -286,6 +291,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,2,16},
     },
     {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -309,6 +326,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,3,32},
     },
     {
+      {
+        {3,3,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "uTexture"},
       {1,6, "uTexture2"},
       {1,7, "uTexture3"},
@@ -322,7 +351,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,0},
-        {5,13, 13},
+        {5,13,9},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -340,12 +369,24 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,368},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "uTexture"},
     },
     {
       {
         {0,0,0},
-        {5,5, 5},
+        {5,5,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -363,6 +404,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,368},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,9, "uNormalTex"},
       {1,7, "uNoise"},
       {1,6, "uWhiteWater"},
@@ -371,7 +424,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,0},
-        {5,9, 9},
+        {5,9,5},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -386,6 +439,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -407,6 +472,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,0,144},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -432,12 +509,24 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,368},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,8, "uBumpTexture"},
     },
     {
       {
         {0,0,0},
-        {8,8, 8},
+        {8,8,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -453,6 +542,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {0,0,128},
       {0,1,64},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -476,6 +577,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,128},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -497,13 +610,25 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,4,16},
     },
     {
+      {
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "screenTex"},
       {1,6, "blurTex"},
     },
     {
       {
         {0,0,0},
-        {5,6, 6},
+        {5,6,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -522,6 +647,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,368},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,9, "uAlphaTexture"},
       {1,10, "uLayerHeight0"},
       {1,11, "uLayerHeight1"},
@@ -535,7 +672,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,0},
-        {5,13, 13},
+        {5,13,9},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -551,6 +688,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {0,1,112},
       {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -571,6 +720,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 { "drawFrustumShader.frag.spv", 
   {
     {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -594,11 +755,23 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,2,12},
     },
     {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {0,3, "diffuse"},
     },
     {
       {
-        {3,3, 3},
+        {3,3,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -614,6 +787,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,0,84},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -637,6 +822,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,1,12},
     },
     {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -656,6 +853,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,1,112},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -678,6 +887,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -696,6 +917,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 { "skyConus.frag.spv", 
   {
     {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -719,6 +952,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,4,16},
     },
     {
+      {
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -738,6 +983,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,0,128},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -761,12 +1018,24 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,4,32},
     },
     {
+      {
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "texture0"},
     },
     {
       {
         {0,0,0},
-        {5,5, 5},
+        {5,5,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -782,12 +1051,24 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "Texture"},
     },
     {
       {
         {0,0,0},
-        {5,5, 5},
+        {5,5,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -802,6 +1083,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -825,6 +1118,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,2,16},
     },
     {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -844,6 +1149,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,1,80},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -870,6 +1187,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,1,14144},
     },
     {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "uTexture"},
       {1,6, "uTexture2"},
       {1,7, "uTexture3"},
@@ -878,7 +1207,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,0},
-        {5,8, 8},
+        {5,8,4},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -894,6 +1223,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {0,0,368},
       {0,1,64},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -917,6 +1258,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,128},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -936,6 +1289,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     {
       {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -960,6 +1325,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,2,96},
     },
     {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {
@@ -981,11 +1358,23 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,2,168},
     },
     {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {0,3, "u_sampler"},
     },
     {
       {
-        {3,3, 3},
+        {3,3,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1000,6 +1389,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 { "renderFrameBufferShader.vert.spv", 
   {
     {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -1024,6 +1425,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,368},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "uTexture"},
       {1,6, "uTexture2"},
       {1,7, "uTexture3"},
@@ -1031,7 +1444,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,0},
-        {5,7, 7},
+        {5,7,3},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1048,6 +1461,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,1,14144},
       {0,0,368},
       {0,2,160},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
     },
     {
     },
@@ -1072,12 +1497,24 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,368},
     },
     {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
       {1,5, "uTexture"},
     },
     {
       {
         {0,0,0},
-        {5,5, 5},
+        {5,5,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},

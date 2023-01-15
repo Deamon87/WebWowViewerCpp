@@ -7,10 +7,10 @@
 
 #include "frame/FrameInputParams.h"
 
-template<typename FramePlan, typename AdditionalParam>
+template<typename PlanParams, typename FramePlan>
 class IRendererParameters {
-    virtual void putIntoQueue(std::shared_ptr<FrameInputParams> &frameInputParams) = 0;
-
+    virtual void putIntoQueue(std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams) = 0;
+    virtual std::shared_ptr<FramePlan> getLastPlan() = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_IRENDERPARAMETERS_H

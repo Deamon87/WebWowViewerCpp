@@ -11,6 +11,8 @@
 #include "fileHelpers.h"
 #include "webGLSLCompiler.h"
 
+constexpr const int MAX_SHADER_DESC_SETS = 8;
+
 struct attributeDefine {
     std::string name;
     unsigned int location;
@@ -37,17 +39,18 @@ struct imageBindingData {
     std::string imageName;
 };
 
-struct imageBindingAmountData {
+struct bindingAmountData {
     unsigned int start = 999;
     unsigned int end = 0;
     unsigned int length = 0;
-
 };
 
 struct shaderMetaData {
     std::vector<uboBindingData> uboBindings;
+    std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
+
     std::vector<imageBindingData> imageBindings;
-    std::array<imageBindingAmountData, 8> imageBindingAmounts;
+    std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
 };
 
 //Per file
@@ -122,6 +125,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                  "#include <iostream>\n"
                  "#include <fstream>\n"
                  "#include <vector>\n"
+                 "#include <array>\n"
                  "#include <unordered_map>\n"
                  "\n"
                  "template <typename T>\n"
@@ -145,10 +149,12 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
     std::cout <<
     R"===(
+    constexpr const int MAX_SHADER_DESC_SETS = 8;
+
     struct uboBindingData {
-        int set;
-        int binding;
-        int size;
+        unsigned int set;
+        unsigned int binding;
+        unsigned long long size;
     };
     struct imageBindingData {
         unsigned int set;
@@ -156,18 +162,20 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         std::string imageName;
     };
 
-    struct imageBindingAmountData {
+    struct bindingAmountData {
         unsigned int start = 999;
         unsigned int end = 0;
         unsigned int length = 0;
-
     };
 
     struct shaderMetaData {
         std::vector<uboBindingData> uboBindings;
+        std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
+
         std::vector<imageBindingData> imageBindings;
-        std::array<imageBindingAmountData, 8> imageBindingAmounts;
+        std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
     };
+
     //Per file
     extern const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo;
     extern const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName;
@@ -255,6 +263,13 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
             metaInfo.uboBindings.push_back({set, binding, typeId_size});
 
+            if (set >= 0) {
+                metaInfo.uboBindingAmountsPerSet[set].start =
+                    std::min<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].start, binding);
+                metaInfo.uboBindingAmountsPerSet[set].end =
+                    std::max<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].end, binding);
+            }
+
             if (perSetMap.find(binding) != perSetMap.end()) {
                 perSetMap[binding] = {};
             }
@@ -275,11 +290,18 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                 glsl.to_name(resource.id) + "_" + memberName, offset, memberSize);
             }
         }
+        for (auto &data: metaInfo.uboBindingAmountsPerSet ) {
+            if (data.start < 100) {
+                data.length = data.end - data.start + 1;
+            } else {
+                data.start = 0;
+            }
+        }
 
         //Record data for images
         for (auto &resource : resources.sampled_images) {
-            unsigned int set = -1;
-            unsigned int binding = -1;
+            unsigned int set = 255;
+            unsigned int binding = 255;
             if (glsl.has_decoration(resource.id, spv::DecorationDescriptorSet) &&
                 glsl.has_decoration(resource.id, spv::DecorationBinding))
             {
@@ -288,11 +310,11 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
             }
 
             metaInfo.imageBindings.push_back({set, binding, resource.name});
-            if (set >= 0) {
-                metaInfo.imageBindingAmounts[set].start =
-                    std::min<unsigned int>(metaInfo.imageBindingAmounts[set].start, binding);
-                metaInfo.imageBindingAmounts[set].end =
-                    std::max<unsigned int>(metaInfo.imageBindingAmounts[set].end, binding);
+            if (set < 255) {
+                metaInfo.imageBindingAmountsPerSet[set].start =
+                    std::min<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].start, binding);
+                metaInfo.imageBindingAmountsPerSet[set].end =
+                    std::max<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].end, binding);
             }
 
 //            std::cout << "set = " << set << std::endl;
@@ -300,8 +322,8 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 //            std::cout << resource.name << std::endl;
 //            std::cout << glsl.to_name(resource.base_type_id) << std::endl;
         }
-        for (auto &data: metaInfo.imageBindingAmounts ) {
-            if (data.start < 16) {
+        for (auto &data: metaInfo.imageBindingAmountsPerSet ) {
+            if (data.start < 100) {
                 data.length = data.end - data.start + 1;
             } else {
                 data.start = 0;
@@ -361,6 +383,20 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         //UBO Bindings dump end
 
         std::cout << "    {\n";
+        std::cout << "      {\n";
+        for (auto &bindingAmount : it->second.uboBindingAmountsPerSet) {
+            if (bindingAmount.length > 0) {
+                std::cout << "        {" << bindingAmount.start << "," << bindingAmount.end << "," << bindingAmount.length << "},"
+                          << std::endl;
+            } else {
+                std::cout << "        {0,0,0}," << std::endl;
+            }
+        }
+        std::cout << "      }\n";
+        std::cout << "    },\n";
+
+
+        std::cout << "    {\n";
         for (auto &binding : it->second.imageBindings) {
             std::cout << "      {" << binding.set << "," << binding.binding << ", \"" << binding.imageName << "\"}," << std::endl;
         }
@@ -368,9 +404,9 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         std::cout << "    {\n";
         std::cout << "      {\n";
-        for (auto &bindingAmount : it->second.imageBindingAmounts) {
+        for (auto &bindingAmount : it->second.imageBindingAmountsPerSet) {
             if (bindingAmount.length > 0) {
-                std::cout << "        {" << bindingAmount.start << "," << bindingAmount.end << ", " << bindingAmount.end << "},"
+                std::cout << "        {" << bindingAmount.start << "," << bindingAmount.end << "," << bindingAmount.length << "},"
                           << std::endl;
             } else {
                 std::cout << "        {0,0,0}," << std::endl;

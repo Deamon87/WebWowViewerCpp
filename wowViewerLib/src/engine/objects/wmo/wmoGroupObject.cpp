@@ -474,7 +474,7 @@ void WmoGroupObject::createMeshes() {
 
         HGShaderPermutation shaderPermutation = device->getShader("wmoShader", "wmoShader", &cacheRecord);
 
-        gMeshTemplate meshTemplate(binding, shaderPermutation);
+        gMeshTemplate meshTemplate(binding);
 
         bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
         bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
@@ -646,7 +646,7 @@ void WmoGroupObject::createWaterMeshes() {
 
     HGShaderPermutation shaderPermutation = device->getShader("waterShader", "waterShader", nullptr);
 
-    gMeshTemplate meshTemplate(binding, shaderPermutation);
+    gMeshTemplate meshTemplate(binding);
 
     auto blendMode = material.blendMode;
     float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;

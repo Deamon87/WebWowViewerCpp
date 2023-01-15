@@ -328,7 +328,7 @@ set(SOURCE_FILES
         src/renderer/buffers/IVertexBufferDynamicTemplate.h
         src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ITransparentMesh.h
         src/renderer/mapScene/IMapSceneBufferCreate.h
-        src/gapi/interface/materials/IMaterial.h)
+        src/gapi/interface/materials/IMaterial.h src/renderer/mapScene/MapSceneParams.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -507,7 +507,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/buffers/GBufferVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.h
             src/gapi/vulkan/buffers/IBufferVLK.h
-            src/gapi/vulkan/materials/IMaterialVLK.cpp src/gapi/vulkan/materials/IMaterialVLK.h)
+            src/gapi/vulkan/materials/ISimpleMaterialVLK.cpp src/gapi/vulkan/materials/ISimpleMaterialVLK.h)
     if (NOT Vulkan_SDK_DIR)
         set(Vulkan_SDK_DIR $ENV{VULKAN_SDK})
     endif()

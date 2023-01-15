@@ -220,9 +220,109 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     vertShaderMeta = &shaderMetaInfo.at(m_shaderNameVert + ".vert.spv");
     fragShaderMeta = &shaderMetaInfo.at(m_shaderNameFrag + ".frag.spv");
 
-
+    this->createShaderLayout();
     this->createUBODescriptorLayout();
     this->createImageDescriptorLayout();
     this->createUboDescriptorSets();
+}
+
+int GShaderPermutationVLK::getTextureBindingStart() {
+    return shaderLayout.setLayouts[1].imageBindings.start;
+}
+
+int GShaderPermutationVLK::getTextureCount() {
+    return shaderLayout.setLayouts[1].imageBindings.length;
+}
+
+inline void makeMin(unsigned int &a, const unsigned int b) {
+    a = std::min<unsigned int>(a, b);
+}
+inline void makeMax(unsigned int &a, const unsigned int b) {
+    a = std::max<unsigned int>(a, b);
+}
+
+void GShaderPermutationVLK::createShaderLayout() {
+    //Check the buffer sizes
+
+    //UBO stuff
+    for (int i = 0; i < this->vertShaderMeta->uboBindings.size(); i++) {
+        auto &uboVertBinding = this->vertShaderMeta->uboBindings[i];
+
+        auto &setLayout = shaderLayout.setLayouts[uboVertBinding.set];
+
+        setLayout.uboSizesPerBinding[uboVertBinding.binding] = uboVertBinding.size;
+        makeMin(setLayout.uboBindings.start, uboVertBinding.binding);
+        makeMax(setLayout.uboBindings.end, uboVertBinding.binding);
+    }
+    for (int i = 0; i < this->fragShaderMeta->uboBindings.size(); i++) {
+        auto &uboFragBinding = this->fragShaderMeta->uboBindings[i];
+
+        auto &setLayout = shaderLayout.setLayouts[uboFragBinding.set];
+
+        auto it = setLayout.uboSizesPerBinding.find(uboFragBinding.binding);
+        if (it != std::end(setLayout.uboSizesPerBinding)) {
+            if (it->second != uboFragBinding.size) {
+                std::cerr << "sizes mismatch for set = " << uboFragBinding.set
+                          << " binding = " << uboFragBinding.binding
+                          << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
+                          << std::endl;
+            }
+        } else {
+            setLayout.uboSizesPerBinding[uboFragBinding.binding] = uboFragBinding.size;
+
+            makeMin(setLayout.uboBindings.start, uboFragBinding.binding);
+            makeMax(setLayout.uboBindings.end, uboFragBinding.binding);
+        }
+    }
+
+    //Image stuff
+    for (int i = 0; i < this->vertShaderMeta->imageBindings.size(); i++) {
+        auto &imageVertBinding = this->vertShaderMeta->imageBindings[i];
+        auto &setLayout = shaderLayout.setLayouts[imageVertBinding.set];
+
+        if (setLayout.uboSizesPerBinding.find(imageVertBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
+            std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageVertBinding.set
+                      << " binding = " << imageVertBinding.binding
+                      << " in " << m_shaderNameVert << " and " << m_shaderNameFrag
+                      << std::endl;
+        }
+
+        makeMin(setLayout.imageBindings.start, imageVertBinding.binding);
+        makeMax(setLayout.imageBindings.end, imageVertBinding.binding);
+    }
+    for (int i = 0; i < this->fragShaderMeta->uboBindings.size(); i++) {
+        auto &imageFragBinding = this->fragShaderMeta->imageBindings[i];
+
+        auto &setLayout = shaderLayout.setLayouts[imageFragBinding.set];
+
+        if (setLayout.uboSizesPerBinding.find(imageFragBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
+            std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageFragBinding.set
+                      << " binding = " << imageFragBinding.binding
+                      << " in " << m_shaderNameVert << " and " << m_shaderNameFrag
+                      << std::endl;
+        }
+
+        makeMin(setLayout.imageBindings.start, imageFragBinding.binding);
+        makeMax(setLayout.imageBindings.end, imageFragBinding.binding);
+    }
+    //Cleanup
+    for (auto &shaderLayout : shaderLayout.setLayouts) {
+        {
+            auto &data = shaderLayout.uboBindings;
+            if (shaderLayout.uboBindings.start < 100) {
+                data.length = data.end - data.start + 1;
+            } else {
+                data.start = 0;
+            }
+        }
+        {
+            auto &data = shaderLayout.imageBindings;
+            if (shaderLayout.uboBindings.start < 100) {
+                data.length = data.end - data.start + 1;
+            } else {
+                data.start = 0;
+            }
+        }
+    }
 }
 

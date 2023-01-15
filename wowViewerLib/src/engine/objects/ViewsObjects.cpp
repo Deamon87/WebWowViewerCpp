@@ -143,7 +143,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
         HGShaderPermutation shaderPermutation = hDevice->getShader("drawPortalShader", "drawPortalShader", nullptr);
 
         //Create mesh
-        gMeshTemplate meshTemplate(portalPointsFrame.m_bindings, shaderPermutation);
+        gMeshTemplate meshTemplate(portalPointsFrame.m_bindings);
 
         meshTemplate.depthWrite = false;
         meshTemplate.depthCulling = !apiContainer->getConfig()->renderPortalsIgnoreDepth;

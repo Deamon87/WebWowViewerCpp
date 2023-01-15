@@ -5,6 +5,10 @@
 #ifndef AWEBWOWVIEWERCPP_IDEVICE_H
 #define AWEBWOWVIEWERCPP_IDEVICE_H
 
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 class IVertexBuffer;
 class IVertexBufferDynamic;
 class IVertexBufferBindings;

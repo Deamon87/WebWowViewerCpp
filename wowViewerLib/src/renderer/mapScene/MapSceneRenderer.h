@@ -11,14 +11,14 @@
 #include "../../engine/objects/scenes/map.h"
 #include "IMapSceneBufferCreate.h"
 
-class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapRenderPlan, void>  {
+class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:
     MapSceneRenderer() = default;
     ~MapSceneRenderer() override = 0;
 };
 
 //typedef FrameInputParams<MapRenderPlan, void> MapSceneRendererInputParams;
-typedef FrameInputParams MapSceneRendererInputParams;
+typedef FrameInputParams<MapSceneParams> MapSceneRendererInputParams;
 typedef std::shared_ptr<MapSceneRenderer> HMapSceneRenderer;
 
 #endif //AWEBWOWVIEWERCPP_MAPSCENERENDERER_H

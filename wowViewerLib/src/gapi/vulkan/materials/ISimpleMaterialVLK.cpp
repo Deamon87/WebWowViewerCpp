@@ -2,11 +2,11 @@
 // Created by Deamon on 29.12.22.
 //
 
-#include "IMaterialVLK.h"
+#include "ISimpleMaterialVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"
 #include "../textures/GTextureVLK.h"
 
-void IMaterialVLK::createImageDescriptorSet() {
+void ISimpleMaterialVLK::createImageDescriptorSet() {
     auto shaderVLK = std::dynamic_pointer_cast<GShaderPermutationVLK>(m_shader);
     auto descLayout = shaderVLK->getImageDescriptorLayout();
 
@@ -50,7 +50,7 @@ void IMaterialVLK::createImageDescriptorSet() {
     }
 }
 
-void IMaterialVLK::updateImageDescriptorSet() {
+void ISimpleMaterialVLK::updateImageDescriptorSet() {
     bool allTexturesAreReady = true;
 
     auto shaderVLK = std::dynamic_pointer_cast<GShaderPermutationVLK>(m_shader);
@@ -96,43 +96,50 @@ void IMaterialVLK::updateImageDescriptorSet() {
     }
 }
 
-IMaterialVLK::IMaterialVLK(HGDeviceVLK device) : m_device(device) {
-
-    //TODO:
-    m_shader =  device->getShader("", "", nullptr);
+ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device, std::string vertexShader, std::string pixelShader, std::vector<std::shared_ptr<IBufferVLK>> &ubos, std::vector<HGTextureVLK> &textures) : m_device(device) {
+    m_shader =  device->getShader(vertexShader, pixelShader, nullptr);
 
     auto shaderVLK = std::dynamic_pointer_cast<GShaderPermutationVLK>(m_shader);
+    auto &shaderLayout = shaderVLK->getShaderLayout();
 
+    auto uboSetLayout = shaderLayout.setLayouts[0];
+    if (ubos.size() != uboSetLayout.uboBindings.length) {
+        std::cerr << "not enough ubos for shaderName = " << shaderVLK->getShaderName() << std::endl;
+    }
+    for (unsigned int i = uboSetLayout.uboBindings.start; i <= uboSetLayout.uboBindings.end; i++) {
+        auto it = uboSetLayout.uboSizesPerBinding.find(i);
+        if (it != std::end(uboSetLayout.uboSizesPerBinding)) {
+            auto uboIndex = i - uboSetLayout.uboBindings.start;
+            if (ubos[uboIndex] == nullptr) {
+                std::cerr << "UBO is not set for "
+                          << "shader = " << shaderVLK->getShaderName()
+                          << " set = " << 1
+                          << " binding" << i
+                          << std::endl;
+            }
 
-    //Check the buffer sizes
-    std::unordered_map<int,uboBindingData> shaderLayoutBindings;
-    for (int i = 0; i < shaderVLK->vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = shaderVLK->vertShaderMeta->uboBindings[i];
-
-        auto it = shaderLayoutBindings.find(uboVertBinding.binding);
-        if (it == std::end( shaderLayoutBindings )) {
-            shaderLayoutBindings.insert({uboVertBinding.binding, uboVertBinding});
+            if (it->second != ubos[uboIndex]->getSize()) {
+                std::cout << "buffers missmatch! for"
+                          << " shaderName = " << shaderVLK->getShaderName()
+                          << " set = " << 1
+                          << " binding = " << i
+                          << " expected size " << (it->second)
+                          << ", provided size = " << (ubos[uboIndex]->getSize())
+                          << std::endl;
+            }
         }
     }
-    for (int i = 0; i < shaderVLK->fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = shaderVLK->fragShaderMeta->uboBindings[i];
-        auto it = shaderLayoutBindings.find(uboFragBinding.binding);
-        if (it == std::end( shaderLayoutBindings )) {
-            shaderLayoutBindings.insert({uboFragBinding.binding, uboFragBinding});
-        }
-    }
-//TODO:
-//    for (int i = 0; i < 5; i++) {
-//        auto it = shaderLayoutBindings.find(i);
-//        if (it != shaderLayoutBindings.end()) {
-//            if ((m_UniformBuffer[i] != nullptr) && (it->second.size != (m_UniformBuffer[i]->getSize()))) {
-//                std::cout << "buffers missmatch! for shaderName = " << shaderVLK->getShaderName() <<
-//                " index = " << i <<
-//                " expected size " << (it->second.size) <<
-//                ", provided size = " << (m_UniformBuffer[i]->getSize()) <<
-//                std::endl;
-//            }
-//        }
-//    }
 
+    auto imageSetLayout = shaderLayout.setLayouts[1];
+    if (imageSetLayout.imageBindings.length != textures.size()) {
+        std::cout << "image count mismatch! for"
+                  << " shaderName = " << shaderVLK->getShaderName()
+                  << " set = " << 1
+                  << " expected count " << uboSetLayout.imageBindings.length
+                  << ", provided count = " << textures.size()
+                  << std::endl;
+    }
+
+    m_textures = textures;
+    m_ubos = ubos;
 }

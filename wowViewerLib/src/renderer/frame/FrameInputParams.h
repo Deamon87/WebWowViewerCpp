@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_FRAMEINPUTPARAMS_H
 #define AWEBWOWVIEWERCPP_FRAMEINPUTPARAMS_H
 
+#include <array>
 #include "../../engine/CameraMatrices.h"
 #include "../../engine/objects/iScene.h"
 #include "../../include/iostuff.h"
@@ -14,14 +15,9 @@ struct ViewPortDimensions{
     std::array<int, 2> maxs;
 };
 
-//template<typename T, typename R>
+template<typename PlanParameters>
 struct FrameInputParams {
-    HCameraMatrices matricesForCulling;
-    HCameraMatrices cameraMatricesForRendering;
-    HCameraMatrices cameraMatricesForDebugCamera;
-    HScene scene;
-
-//    std::shared_ptr<R> additionalData;
+    std::shared_ptr<PlanParameters> frameParameters;
 
     //Time advance
     animTime_t delta = 0;

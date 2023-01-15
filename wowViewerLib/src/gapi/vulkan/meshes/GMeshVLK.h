@@ -9,7 +9,7 @@
 #include "../../interface/meshes/IMesh.h"
 #include "../GDeviceVulkan.h"
 #include "../descriptorSets/GDescriptorSet.h"
-#include "../materials/IMaterialVLK.h"
+#include "../materials/ISimpleMaterialVLK.h"
 
 class GMeshVLK : public IMesh {
     friend class GDeviceVLK;
@@ -29,8 +29,6 @@ public:
     HMaterialVLK material;
 protected:
     MeshType m_meshType;
-
-
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;

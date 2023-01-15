@@ -232,7 +232,7 @@ void GPipelineVLK::createPipeline(
     VkPipelineDynamicStateCreateInfo dynamicState = {};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.pNext = NULL;
-    dynamicState.pDynamicStates = &dynamicStateEnables[0];
+    dynamicState.pDynamicStates = dynamicStateEnables.data();
     dynamicState.dynamicStateCount = 2;
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};

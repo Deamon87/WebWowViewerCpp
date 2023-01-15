@@ -6,11 +6,22 @@
 #define AWEBWOWVIEWERCPP_GSHADERPERMUTATION_H
 
 #include <string>
+#include <array>
 #include <unordered_map>
 #include "../GDeviceVulkan.h"
 #include "../../interface/IShaderPermutation.h"
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../../../engine/shader/ShaderDefinitions.h"
+
+struct ShaderSetLayout {
+    std::unordered_map<unsigned int, unsigned int> uboSizesPerBinding;
+    bindingAmountData uboBindings;
+    bindingAmountData imageBindings;
+};
+
+struct CombinedShaderLayout {
+    std::array<ShaderSetLayout, MAX_SHADER_DESC_SETS> setLayouts;
+};
 
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
@@ -23,8 +34,8 @@ public:
     VkDescriptorSetLayout getImageDescriptorLayout() {return imageDescriptorSetLayout;}
     VkDescriptorSetLayout getUboDescriptorLayout() {return uboDescriptorSetLayout;}
 
-    virtual int getTextureBindingStart() = 0;
-    virtual int getTextureCount() = 0;
+    virtual int getTextureBindingStart();
+    virtual int getTextureCount();
 
     const shaderMetaData *fragShaderMeta;
     const shaderMetaData *vertShaderMeta;
@@ -32,6 +43,10 @@ public:
     std::string getShaderName() {
         return m_shaderName;
     }
+
+    const CombinedShaderLayout &getShaderLayout() {
+        return shaderLayout;
+    };
 
 protected:
     explicit GShaderPermutationVLK(std::string &shaderName, IDevice *device);
@@ -62,6 +77,8 @@ private:
     std::string m_shaderNameVert;
     std::string m_shaderNameFrag;
 
+    CombinedShaderLayout shaderLayout;
+
     void createUBODescriptorLayout();
 
     void createImageDescriptorLayout();
@@ -71,6 +88,8 @@ private:
     void updateDescriptorSet(int index);
 
     std::vector<bool> hasBondUBO = std::vector<bool>(7, false);
+
+    void createShaderLayout();
 };
 
 

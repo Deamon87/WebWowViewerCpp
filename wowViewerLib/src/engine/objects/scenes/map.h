@@ -18,6 +18,7 @@
 #include "../../algorithms/FrameCounter.h"
 #include "../../../renderer/frame/FrameInputParams.h"
 #include "../../../renderer/mapScene/MapScenePlan.h"
+#include "../../../renderer/mapScene/MapSceneParams.h"
 
 enum class SceneMode {
    smMap,
@@ -202,7 +203,7 @@ public:
 //        std::cout << "Map destroyed " << std::endl;
 	};
 
-    void makeFramePlan(FrameInputParams &frameInputParams, HMapRenderPlan &mapRenderPlan);
+    void makeFramePlan(FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan);
 
     void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {
         m_mandatoryADT = mandatoryADTs;

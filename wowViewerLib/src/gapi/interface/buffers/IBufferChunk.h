@@ -13,7 +13,7 @@ template <typename T>
 using IChunkHandlerType = std::function<void(T &data, const HFrameDependantData &frameDepedantData)> ;
 
 template<typename T>
-class IBufferChunk {
+class IBufferChunk : public IBuffer {
     friend class IDevice;
 private:
     IChunkHandlerType<T> m_handler;

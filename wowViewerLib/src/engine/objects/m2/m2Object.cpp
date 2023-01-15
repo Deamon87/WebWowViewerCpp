@@ -1256,7 +1256,7 @@ void M2Object::createBoundingBoxMesh() {
     HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", "drawBBShader", nullptr);
 
     //TODO:
-    gMeshTemplate meshTemplate(/*m_api->hDevice->getBBVertexBinding()*/ nullptr, boundingBoxshaderPermutation);
+    gMeshTemplate meshTemplate(/*m_api->hDevice->getBBVertexBinding()*/ nullptr);
 
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
@@ -1341,7 +1341,7 @@ float wfv_convert(float value, int16_t random) {
 HGM2Mesh M2Object::createWaterfallMesh() {
     HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterfallShader", "waterfallShader", nullptr);
 
-    gMeshTemplate meshTemplate(bufferBindings, shaderPermutation);
+    gMeshTemplate meshTemplate(bufferBindings);
 
     auto skinData = m_skinGeom->getSkinData();
     auto m2Data = m_m2Geom->getM2Data();
@@ -1538,7 +1538,7 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     }
     HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", "m2Shader", &cacheRecord);
 
-    gMeshTemplate meshTemplate(finalBufferBindings, shaderPermutation);
+    gMeshTemplate meshTemplate(finalBufferBindings);
 
     int renderFlagIndex = m2Batch->materialIndex;
     auto renderFlag = m_m2Data->materials[renderFlagIndex];

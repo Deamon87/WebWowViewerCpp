@@ -53,7 +53,7 @@ enum class DrawElementMode {
 
 class gMeshTemplate {
 public:
-    gMeshTemplate(HGVertexBufferBindings bindings, HGShaderPermutation shader) : bindings(bindings), shader(shader) {}
+    gMeshTemplate(HGVertexBufferBindings bindings) : bindings(bindings) {}
     HGVertexBufferBindings bindings;
     HGShaderPermutation shader;
     MeshType meshType = MeshType::eGeneralMesh;

@@ -17,12 +17,15 @@ static const std::array<GBufferBinding, 3> imguiBindings = {{
 }};
 
 
-class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam>, public IFrontendUIBufferCreate  {
+class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::ImGUIParam, ImGuiFramePlan::EmptyPlan>, public IFrontendUIBufferCreate  {
 public:
-
+    virtual ~FrontendUIRenderer() = default;
+    void processFramePlan();
+private:
+    HGDevice m_device = nullptr;
 };
 
 //typedef FrameInputParams<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;
-typedef FrameInputParams FrontendUIInputParams;
+typedef FrameInputParams<ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;
 
 #endif //AWEBWOWVIEWERCPP_FRONTENDUIRENDERER_H

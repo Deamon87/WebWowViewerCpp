@@ -77,5 +77,7 @@ protected:
     );
 };
 
+typedef std::shared_ptr<GTextureVLK> HGTextureVLK;
+
 
 #endif //AWEBWOWVIEWERCPP_GTEXTUREVLK_H

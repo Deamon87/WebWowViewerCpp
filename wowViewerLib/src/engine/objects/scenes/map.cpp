@@ -336,7 +336,7 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
 
     ///2. Create mesh
     auto shader = device->getShader("skyConus", "skyConus", nullptr);
-    gMeshTemplate meshTemplate(skyBindings, shader);
+    gMeshTemplate meshTemplate(skyBindings);
     meshTemplate.meshType = MeshType::eGeneralMesh;
     meshTemplate.depthWrite = false;
     meshTemplate.depthCulling = true;
@@ -360,16 +360,16 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     return hmesh;
 }
 
-void Map::makeFramePlan(FrameInputParams &frameInputParams, HMapRenderPlan &mapRenderPlan) {
+void Map::makeFramePlan(FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
 //    std::cout << "Map::checkCulling finished called" << std::endl;
 //    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
     cullCreateVarsCounter.beginMeasurement();
     Config* config = this->m_api->getConfig();
 
-    mathfu::vec4 cameraPos = frameInputParams.matricesForCulling->cameraPos;
+    mathfu::vec4 cameraPos = frameInputParams.frameParameters->matricesForCulling->cameraPos;
     mathfu::vec3 cameraVec3 = cameraPos.xyz();
-    mathfu::mat4 &frustumMat = frameInputParams.matricesForCulling->perspectiveMat;
-    mathfu::mat4 &lookAtMat4 = frameInputParams.matricesForCulling->lookAtMat;
+    mathfu::mat4 &frustumMat = frameInputParams.frameParameters->matricesForCulling->perspectiveMat;
+    mathfu::mat4 &lookAtMat4 = frameInputParams.frameParameters->matricesForCulling->lookAtMat;
 
     size_t adtRenderedThisFramePrev = mapRenderPlan->adtArray.size();
     mapRenderPlan->adtArray = {};

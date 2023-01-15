@@ -4,6 +4,7 @@
 
 #include "FrontendUIRenderForwardVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/materials/ISimpleMaterialVLK.h"
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(HGDeviceVLK hDevice) : m_device(hDevice) {
 }
@@ -14,7 +15,7 @@ void FrontendUIRenderForwardVLK::putIntoQueue(std::shared_ptr<FrontendUIInputPar
     m_inputParams.push(frameInputParams);
 }
 
-void FrontendUIRenderForwardVLK::update(VkCommandBuffer updateBuffer, VkCommandBuffer swapChainDraw) {
+void FrontendUIRenderForwardVLK::update(VkCommandBuffer transferQueueCMD, VkCommandBuffer renderQueueCMD) {
 
 }
 
@@ -32,12 +33,16 @@ HGIndexBuffer FrontendUIRenderForwardVLK::createIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
-HUIMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
-    //TODO:
-    return nullptr;
+HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
+    std::vector<std::shared_ptr<IBufferVLK>> ubos = {std::dynamic_pointer_cast<IBufferVLK>(materialTemplate.uiUBO)};
+    std::vector<HGTextureVLK> texturesVLK = {std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture)};
+    return std::make_shared<ISimpleMaterialVLK>(m_device,
+                                  "imguiShader", "imguiShader",
+                                  ubos,
+                                  texturesVLK);
 }
 
-HGMesh FrontendUIRenderForwardVLK::createUIMesh(gMeshTemplate &meshTemplate, const HUIMaterial &material) {
+HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
     //TODO:
     return nullptr;
 }

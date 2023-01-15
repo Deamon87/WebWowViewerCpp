@@ -169,12 +169,12 @@ GDeviceVLK::SwapChainSupportDetails GDeviceVLK::querySwapChainSupport(VkPhysical
 void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-    createInfo.pNext = NULL;
-    createInfo.flags = NULL;
+    createInfo.pNext = nullptr;
+    createInfo.flags = 0;
     createInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
     createInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT;
     createInfo.pfnUserCallback = debugCallback;
-    createInfo.pUserData = 0;
+    createInfo.pUserData = nullptr;
 }
 
 
@@ -614,6 +614,7 @@ GDeviceVLK::QueueFamilyIndices GDeviceVLK::findQueueFamilies(VkPhysicalDevice de
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
 
     int i = 0;
+    int dedicatedTransferQueue = -1;
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
@@ -623,6 +624,13 @@ GDeviceVLK::QueueFamilyIndices GDeviceVLK::findQueueFamilies(VkPhysicalDevice de
             indices.transferFamily = i;
         }
 
+        if (queueFamily.queueCount > 0
+            && (queueFamily.queueFlags & VK_QUEUE_TRANSFER_BIT)
+            && !(queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            && !(queueFamily.queueFlags & VK_QUEUE_COMPUTE_BIT)) {
+            dedicatedTransferQueue = i;
+        }
+
         VkBool32 presentSupport = false;
         vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vkSurface, &presentSupport);
 
@@ -630,11 +638,10 @@ GDeviceVLK::QueueFamilyIndices GDeviceVLK::findQueueFamilies(VkPhysicalDevice de
             indices.presentFamily = i;
         }
 
-//        if (indices.isComplete()) {
-//            break;
-//        }
-
         i++;
+    }
+    if (dedicatedTransferQueue > -1) {
+        indices.transferFamily = dedicatedTransferQueue;
     }
 
     return indices;

@@ -35,7 +35,7 @@ GMeshVLK::GMeshVLK(IDevice &device,
 
 }
 
-//Works under assumption that meshes do not often change the renderpass on which they are rendered
+//Works under assumption that meshes do not change the renderpass, on which they are rendered, too often
 std::shared_ptr<GPipelineVLK> GMeshVLK::getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ) {
     if (m_lastRenderPass != renderPass || m_lastInvertedZ != invertedZ) {
         m_lastPipelineForRenderPass = m_device.createPipeline(m_bindings,

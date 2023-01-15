@@ -304,7 +304,7 @@ void ParticleEmitter::createMesh() {
         HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", "m2ParticleShader", nullptr);
 
         //Create mesh
-        gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
+        gMeshTemplate meshTemplate(frame[i].m_bindings);
 
 
         uint8_t blendMode = m_data->old.blendingType;

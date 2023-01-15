@@ -118,7 +118,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
         HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", "ribbonShader", nullptr);
 
         //Create mesh
-        gMeshTemplate meshTemplate(frame[k].m_bindings, shaderPermutation);
+        gMeshTemplate meshTemplate(frame[k].m_bindings);
 
         meshTemplate.depthWrite = !(material.flags & 0x10);
         meshTemplate.depthCulling = !(material.flags & 0x8);

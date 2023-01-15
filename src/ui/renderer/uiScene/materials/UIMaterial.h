@@ -15,11 +15,4 @@ struct UIMaterialTemplate {
     std::shared_ptr<ITexture> texture = nullptr;
 };
 
-class IUIMaterial {
-public:
-    virtual ~IUIMaterial() = 0;
-};
-
-typedef std::shared_ptr<IUIMaterial> HUIMaterial;
-
 #endif //AWEBWOWVIEWERCPP_IUIMATERIAL_H

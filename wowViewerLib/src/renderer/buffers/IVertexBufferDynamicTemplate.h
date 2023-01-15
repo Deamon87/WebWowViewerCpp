@@ -13,7 +13,7 @@ public:
     virtual ~IVertexBufferDynamicTemplate() = 0;
 
     virtual const std::vector<T> &getBuffer() = 0;
-    virtual void save(size_t sizeToSave) = 0;
+    virtual void save(std::size_t sizeToSave) = 0;
 };
 
 
