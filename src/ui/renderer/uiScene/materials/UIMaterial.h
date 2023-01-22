@@ -9,10 +9,14 @@
 #include "../../../../wowViewerLib/src/gapi/interface/textures/ITexture.h"
 #include "../../../../wowViewerLib/src/gapi/interface/buffers/IBufferChunk.h"
 #include "../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
+#include "../../../../../wowViewerLib/src/gapi/interface/materials/IMaterial.h"
 
-struct UIMaterialTemplate {
-    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> uiUBO = nullptr;
-    std::shared_ptr<ITexture> texture = nullptr;
+class UIMaterial : public IMaterial {
+    explicit UIMaterial(std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> UIWideChunk) : m_UIWideChunk(UIWideChunk) {
+    }
+
+protected:
+    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_UIWideChunk;
 };
 
 #endif //AWEBWOWVIEWERCPP_IUIMATERIAL_H

@@ -38,13 +38,13 @@ void FrontendUIRenderer::processFramePlan() {
                                                                   0, 0, 0, 1).Transpose();
         ortho_projection = vulkanMatrixFix1 * ortho_projection;
     }
-    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> uboPart = nullptr;
 
-    uboPart->setUpdateHandler([ortho_projection,uiScale](auto &data, const HFrameDependantData &frameDepedantData) {
-        auto &uni = data;
-        uni.projectionMat = ortho_projection;
-        uni.scale[0] = uiScale;
-    });
+    //UBO update start
+    auto &uni = m_imguiUbo->getObject();
+    uni.projectionMat = ortho_projection;
+    uni.scale[0] = uiScale;
+    m_imguiUbo->save(sizeof(decltype(uni)));
+    //UBO update end
 
     auto shaderPermute = m_device->getShader("imguiShader", "imguiShader", nullptr);
     // Render command lists

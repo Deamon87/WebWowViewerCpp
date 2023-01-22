@@ -23,6 +23,7 @@ public:
     void processFramePlan();
 private:
     HGDevice m_device = nullptr;
+    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 };
 
 //typedef FrameInputParams<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;
