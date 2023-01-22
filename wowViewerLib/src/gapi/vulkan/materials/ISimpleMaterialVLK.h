@@ -14,7 +14,8 @@
 
 class ISimpleMaterialVLK : public IMaterial {
 public:
-    ISimpleMaterialVLK(const HGDeviceVLK &device, std::string vertexShader, std::string pixelShader, std::vector<std::shared_ptr<IBufferVLK>> &ubos, std::vector<std::shared_ptr<GTextureVLK>> &textures);
+    explicit ISimpleMaterialVLK(const HGDeviceVLK &device, const std::string &vertexShader, const std::string &pixelShader,
+                                const std::vector<std::shared_ptr<IBufferVLK>> &ubos, const std::vector<std::shared_ptr<GTextureVLK>> &textures);
     ~ISimpleMaterialVLK() override = default;
 
     HGShaderPermutation getShader() {

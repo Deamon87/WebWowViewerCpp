@@ -460,7 +460,6 @@ set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
         src/gapi/ogl4.x/GOcclusionQueryGL4x.h src/gapi/ogl4.x/syncronization/GPUFenceGL44.cpp src/gapi/ogl4.x/syncronization/GPUFenceGL44.h src/engine/persistance/header/skelFileHeader.h)
 endif()
 
-set(Vulkan_INCLUDE_DIR "")
 if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
             src/include/vulkancontext.h
@@ -508,38 +507,57 @@ if (LINK_VULKAN)
             src/gapi/vulkan/buffers/GBufferVLK.h
             src/gapi/vulkan/buffers/IBufferVLK.h
             src/gapi/vulkan/materials/ISimpleMaterialVLK.cpp src/gapi/vulkan/materials/ISimpleMaterialVLK.h)
-    if (NOT Vulkan_SDK_DIR)
-        set(Vulkan_SDK_DIR $ENV{VULKAN_SDK})
+
+    message(VULKAN_SDK = $ENV{VULKAN_SDK})
+    find_package(Vulkan)
+    message(Vulkan_LIBRARY = ${Vulkan_LIBRARY})
+    message(Vulkan_DIR = ${Vulkan_DIR})
+    IF (Vulkan_LIBRARY)
+        set(Vulkan_FOUND ON PARENT_SCOPE)
+        MESSAGE("Using Vulkan library, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
+    ELSE()
+        MESSAGE("Vulkan Lib was not found. Disabling vulkan build")
+
+        set(LINK_VULKAN OFF)
+        set(VULKAN_IMPLEMENTATION "")
+    ENDIF()
+
+
+    if (Vulkan_LIBRARY)
+        message(Vulkan_INCLUDE_DIR = ${Vulkan_INCLUDE_DIR})
+        if (Vulkan_INCLUDE_DIR STREQUAL "")
+            message(FATAL_ERROR "Vulkan_INCLUDE_DIR is empty")
+        endif()
+
+        get_filename_component(Vulkan_LIBRARY_DIR ${Vulkan_LIBRARY} DIRECTORY)
+        message(Vulkan_LIBRARY_DIR = ${Vulkan_LIBRARY_DIR})
+
+        #        IF(WIN32)
+        #            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+        #        endif()
+
+        if(CMAKE_SYSTEM_NAME STREQUAL Windows)
+            set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL Linux)
+            set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_XLIB_KHR)
+        elseif(CMAKE_SYSTEM_NAME STREQUAL Darwin)
+            set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_MACOS_MVK)
+            #We need to bundle moltenVK and vulkan lib on macos
+            file(GLOB vulkanLibFiles RELATIVE ${srcDir} ${srcDir}/*.*)
+
+            install(FILES ${Vulkan_LIBRARY} DESTINATION ${CMAKE_INSTALL_BINDIR})
+            #TODO: The moltenVK needs to be built separately
+            #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
+        endif()
+        #Add volk loader
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
     endif()
 
-    set(Vulkan_INCLUDE_DIR ${Vulkan_SDK_DIR}/include)
-    IF(WIN32)
-        IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan-1 vulkan PATHS "${Vulkan_SDK_DIR}/lib")
-            IF (Vulkan_LIBRARY)
-                set(Vulkan_FOUND ON PARENT_SCOPE)
-                MESSAGE("Using bundled Vulkan library version win32, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
-            ELSE()
-                set(LINK_VULKAN OFF)
-                set(VULKAN_IMPLEMENTATION "")
-            ENDIF()
-        ENDIF()
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
-    ELSE(WIN32)
-        IF (NOT Vulkan_FOUND)
-            find_library(Vulkan_LIBRARY NAMES vulkan HINTS "${Vulkan_SDK_DIR}/lib" "${CMAKE_SOURCE_DIR}/libs/vulkan")
-            IF (Vulkan_LIBRARY)
-                set(Vulkan_FOUND ON PARENT_SCOPE)
-                MESSAGE("Using bundled Vulkan library version non-win32")
-            ELSE()
-                set(LINK_VULKAN OFF)
-                set(VULKAN_IMPLEMENTATION "" )
-            ENDIF()
-        ENDIF()
-    ENDIF()
 
     if (LINK_VULKAN)
         add_definitions(-DLINK_VULKAN)
+    else()
+        set(Vulkan_INCLUDE_DIR "")
     endif()
 endif()
 

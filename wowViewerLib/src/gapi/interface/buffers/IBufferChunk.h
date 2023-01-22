@@ -7,6 +7,7 @@
 
 #include <functional>
 #include <assert.h>
+#include "IBuffer.h"
 #include "../../../renderer/mapScene/FrameDependentData.h"
 
 template <typename T>
@@ -18,17 +19,12 @@ class IBufferChunk : public IBuffer {
 private:
     IChunkHandlerType<T> m_handler;
 public:
-    virtual ~IBufferChunk() = default;
+    ~IBufferChunk() override = default;
     virtual T &getObject() = 0;
 
     virtual void setUpdateHandler(IChunkHandlerType<T> handler) {
         m_handler = handler;
     };
 
-    virtual void update(const HFrameDependantData &frameDepedantData) {
-        if (m_handler) {
-            m_handler(this, frameDepedantData);
-        }
-    };
 };
 #endif //AWEBWOWVIEWERCPP_IBUFFERCHUNK_H

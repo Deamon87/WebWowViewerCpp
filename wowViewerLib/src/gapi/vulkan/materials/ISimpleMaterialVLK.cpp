@@ -96,7 +96,10 @@ void ISimpleMaterialVLK::updateImageDescriptorSet() {
     }
 }
 
-ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device, std::string vertexShader, std::string pixelShader, std::vector<std::shared_ptr<IBufferVLK>> &ubos, std::vector<HGTextureVLK> &textures) : m_device(device) {
+ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device,
+                                       const std::string &vertexShader, const std::string &pixelShader,
+                                       const std::vector<std::shared_ptr<IBufferVLK>> &ubos,
+                                       const std::vector<HGTextureVLK> &textures) : m_device(device) {
     m_shader =  device->getShader(vertexShader, pixelShader, nullptr);
 
     auto shaderVLK = std::dynamic_pointer_cast<GShaderPermutationVLK>(m_shader);

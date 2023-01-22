@@ -19,13 +19,9 @@ struct UIMaterialTemplate {
     };
 };
 
-class UIMaterial : public IMaterial {
-    explicit UIMaterial(std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> &UIWideChunk) : m_UIWideChunk(UIWideChunk) {
-    }
-
-protected:
-    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_UIWideChunk;
-};
+//-------------------------------------------------------
+//              HASHer and CACHE CLASS
+//-------------------------------------------------------
 
 struct UIMaterialHasher {
     std::size_t operator()(const UIMaterialTemplate& k) const {
@@ -33,6 +29,6 @@ struct UIMaterialHasher {
         return hash<void*>{}(k.texture.get());
     };
 };
-typedef std::unordered_map<UIMaterialTemplate, std::weak_ptr<UIMaterial>, UIMaterialHasher> UiMaterialCache;
+typedef std::unordered_map<UIMaterialTemplate, std::weak_ptr<IMaterial>, UIMaterialHasher> UiMaterialCache;
 
 #endif //AWEBWOWVIEWERCPP_IUIMATERIAL_H
