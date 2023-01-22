@@ -357,9 +357,7 @@ protected:
     VmaAllocator vmaAllocator;
     VmaPool uboVmaPool;
 
-
     VkPhysicalDeviceProperties deviceProperties;
-
 
     unsigned int m_frameNumber = 0;
     bool m_firstFrame = true;

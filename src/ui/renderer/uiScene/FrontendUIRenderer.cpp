@@ -93,7 +93,7 @@ void FrontendUIRenderer::processFramePlan() {
                     meshTemplate.scissorEnabled = true;
                     //Vulkan has different clip offset compared to OGL
                     if (!m_device->getIsVulkanAxisSystem()) {
-                        meshTemplate.scissorOffset = {(int)(clip_rect.x* uiScale), (int)((fb_height - clip_rect.w)* uiScale)};
+                        meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((fb_height - clip_rect.w)* uiScale)};
                         meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x) * uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
                     } else {
                         meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((clip_rect.y) * uiScale)};
@@ -107,7 +107,6 @@ void FrontendUIRenderer::processFramePlan() {
 
                     UIMaterialTemplate materialTemplate;
                     materialTemplate.texture = pcmd->TextureId;
-                    materialTemplate.uiUBO = uboPart;
 
                     auto material = this->createUIMaterial(materialTemplate);
 

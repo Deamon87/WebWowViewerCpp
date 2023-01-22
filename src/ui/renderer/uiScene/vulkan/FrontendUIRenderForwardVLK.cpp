@@ -34,12 +34,26 @@ HGIndexBuffer FrontendUIRenderForwardVLK::createIndexBuffer(int sizeInBytes) {
 }
 
 HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
-    std::vector<std::shared_ptr<IBufferVLK>> ubos = {std::dynamic_pointer_cast<IBufferVLK>(materialTemplate.uiUBO)};
+    auto i = m_materialCache.find(materialTemplate);
+    if (i != m_materialCache.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            m_materialCache.erase(i);
+        }
+    }
+
+    std::vector<std::shared_ptr<IBufferVLK>> ubos = {};
     std::vector<HGTextureVLK> texturesVLK = {std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture)};
-    return std::make_shared<ISimpleMaterialVLK>(m_device,
+    auto material = std::make_shared<ISimpleMaterialVLK>(m_device,
                                   "imguiShader", "imguiShader",
                                   ubos,
                                   texturesVLK);
+
+    std::weak_ptr<ISimpleMaterialVLK> weakPtr(material);
+    m_materialCache[materialTemplate] = weakPtr;
+
+    return material;
 }
 
 HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {

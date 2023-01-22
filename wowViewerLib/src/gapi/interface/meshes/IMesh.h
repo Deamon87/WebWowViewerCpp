@@ -97,10 +97,7 @@ protected:
 
 
 public:
-    virtual ~IMesh(){
-//        std::cout << "Mesh destroyed" << std::endl;
-
-    };
+    virtual ~IMesh() = default;
 
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;

@@ -21,8 +21,9 @@ class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::ImGUIParam
 public:
     virtual ~FrontendUIRenderer() = default;
     void processFramePlan();
-private:
+protected:
     HGDevice m_device = nullptr;
+    UiMaterialCache m_materialCache;
     std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 };
 
