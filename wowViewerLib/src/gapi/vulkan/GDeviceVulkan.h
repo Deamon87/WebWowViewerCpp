@@ -27,7 +27,6 @@ class gMeshTemplate;
 
 #include <unordered_set>
 #include <list>
-#include "vk_mem_alloc.h"
 
 #include "../interface/IDevice.h"
 #include "descriptorSets/GDescriptorSet.h"
@@ -84,7 +83,7 @@ public:
         return uploadQueue != graphicsQueue;
     }
 
-    HGTexture getBlackPixelTexture() {
+    HGTexture getBlackTexturePixel() override {
         return m_blackPixelTexture;
     }
 

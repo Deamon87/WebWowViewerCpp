@@ -20,6 +20,7 @@
 #include "../../screenshots/screenshotMaker.h"
 #include "../../../wowViewerLib/src/engine/texture/DxtDecompress.h"
 #include "../../../wowViewerLib/src/include/string_utils.h"
+#include "../../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
 
 void GLTFExporter::addM2Object(std::shared_ptr<M2Object> &m2Object) {
     m2sToExport.push_back(m2Object);
@@ -632,6 +633,10 @@ void GLTFExporter::createAttributesForVBO(M2ModelData &m2ModelData, std::shared_
 
 GLTFExporter::GLTFExporter(std::string folderPath) : m_folderPath(folderPath) {
     model.asset.version = "2.0";
+
+    if (!ghc::filesystem::is_directory(m_folderPath) || !ghc::filesystem::exists(m_folderPath)) {
+        ghc::filesystem::create_directory(m_folderPath); // create src folder
+    }
 }
 
 void GLTFExporter::createVboAndIbo(M2ModelData &m2ModelData, std::shared_ptr<M2Object> &m2Object) {

@@ -23,6 +23,7 @@ layout(std140, binding=0) uniform sceneWideBlockVSPS {
 layout(std140, binding=4) uniform meshWideBlockPS {
     vec4 uAlphaTestv;
     ivec4 uPixelShaderBlendModev;
+    vec4 uTextureTranslate;
 };
 
 layout(set=1,binding=5) uniform sampler2D uTexture;

@@ -9,8 +9,9 @@
 #include "../../include/sharedFile.h"
 #include "../persistance/PersistentFile.h"
 #include <vector>
+
 enum class TextureFormat {
-    None,
+    Undetected,
     S3TC_RGBA_DXT1,
     S3TC_RGB_DXT1,
     S3TC_RGBA_DXT3,
@@ -47,7 +48,7 @@ private:
     std::string m_textureName;
 
     HMipmapsVector m_mipmaps;
-    TextureFormat m_textureFormat = TextureFormat::None;
+    TextureFormat m_textureFormat = TextureFormat::Undetected;
 };
 
 

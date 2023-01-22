@@ -462,7 +462,6 @@ endif()
 
 if (LINK_VULKAN)
     set(VULKAN_IMPLEMENTATION
-            src/include/vulkancontext.h
             src/gapi/vulkan/GDeviceVulkan.cpp
             src/gapi/vulkan/GDeviceVulkan.h
             src/gapi/vulkan/vkAllocator.cpp
@@ -601,6 +600,9 @@ add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPE
 if (NOT MSVC)
     target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
 endif()
+if (LINK_VULKAN)
+    target_compile_definitions(WoWViewerLib PUBLIC ${VOLK_STATIC_DEFINES})
+endif()
 
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
@@ -643,7 +645,7 @@ if (LINK_VULKAN)
     message("Include vulkan include dir ${Vulkan_INCLUDE_DIR}")
     target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
     target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
-    target_link_libraries(WoWViewerLib  ${Vulkan_LIBRARY})
+#    target_link_libraries(WoWViewerLib ${Vulkan_LIBRARY})
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)
