@@ -1484,6 +1484,33 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         m_minimapGenerationWindow->process();
     }
 
+
+    HFrameScenario scenario = std::make_shared<HFrameScenario::element_type>();
+    {
+        ViewPortDimensions dimension = {
+            {0,     0},
+            {canvWidth, canvHeight}
+        };
+
+        auto uiFrameInput = std::make_shared<FrameInputParams<ImGuiFramePlan::ImGUIParam>>();
+        uiFrameInput->delta = deltaTime * (1000.0f);
+        uiFrameInput->viewPortDimensions = dimension;
+        uiFrameInput->invertedZ = false;
+
+
+
+        auto clearColor = m_api->getConfig()->clearColor;
+
+        m_uiRenderer->createPlan(uiFrameInput);
+
+//        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
+//        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
+//        std::vector<HUpdateStage> updateStages = {uiUpdateStage};
+//        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(updateStages, getShared(), nullptr, uiDependecies,
+//                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
+    }
+
+
     return nullptr;
 //
 //    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();

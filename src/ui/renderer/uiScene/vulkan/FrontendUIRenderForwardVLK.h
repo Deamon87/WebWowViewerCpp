@@ -18,10 +18,7 @@ public:
     explicit FrontendUIRenderForwardVLK(HGDeviceVLK hDevice);
     ~FrontendUIRenderForwardVLK() override = default;
 
-    void putIntoQueue(std::shared_ptr<FrontendUIInputParams> &frameInputParams) override;
-    std::shared_ptr<ImGuiFramePlan::EmptyPlan> getLastPlan() override {
-        return nullptr;
-    };
+    void updateAndDraw(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) override;
 
     void update(VkCommandBuffer udBuffer, VkCommandBuffer swapChainDraw);
 public:
@@ -43,9 +40,6 @@ private:
 
     //Rendering pipelining
     std::mutex m_inputParamsMtx;
-    std::queue<std::shared_ptr<FrontendUIInputParams>> m_inputParams;
-    std::queue<std::shared_ptr<FrontendUIInputParams>> m_updateParams;
-
 private:
     HGBufferVLK vboBuffer;
     HGBufferVLK iboBuffer;

@@ -9,12 +9,6 @@
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(HGDeviceVLK hDevice) : m_device(hDevice) {
 }
 
-void FrontendUIRenderForwardVLK::putIntoQueue(std::shared_ptr<FrontendUIInputParams> &frameInputParams) {
-    std::lock_guard<std::mutex> guard(m_inputParamsMtx);
-
-    m_inputParams.push(frameInputParams);
-}
-
 void FrontendUIRenderForwardVLK::update(VkCommandBuffer transferQueueCMD, VkCommandBuffer renderQueueCMD) {
 
 }
@@ -59,4 +53,13 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
 HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
     //TODO:
     return nullptr;
+}
+
+void FrontendUIRenderForwardVLK::updateAndDraw(
+    const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams,
+    const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) {
+
+    this->consumeFrameInput(frameInputParams);
+
+    //
 }

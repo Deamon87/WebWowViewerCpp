@@ -74,7 +74,7 @@ void SceneComposer::consumeDrawAndUpdate(HFrameScenario &frameScenario) {
         return;
 
     for (int i = 0; i < frameScenario->drawUpdateFunction.size(); i++) {
-        frameScenario->drawUpdateFunction[i](m_apiContainer->hDevice);
+        frameScenario->drawUpdateFunction[i]();
     }
 
 //    auto device = m_apiContainer->hDevice;

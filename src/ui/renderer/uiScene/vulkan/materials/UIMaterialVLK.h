@@ -11,7 +11,7 @@
 class UIMaterialVLK : public ISimpleMaterialVLK {
 public:
     UIMaterialVLK(const HGDeviceVLK &device,
-                  std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> UIWideChunk,
+                  std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> &UIWideChunk,
                   std::shared_ptr<GTextureVLK> &texture
                   ) :
         ISimpleMaterialVLK(device, "imguiShader", "imguiShader",

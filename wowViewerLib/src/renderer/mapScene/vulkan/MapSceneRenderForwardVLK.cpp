@@ -8,11 +8,6 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(HGDeviceVLK hDevice) : m_devi
 
 }
 
-void MapSceneRenderForwardVLK::putIntoQueue(std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {
-
-}
-
-
 //Buffer creation
 HGVertexBuffer MapSceneRenderForwardVLK::createM2VertexBuffer(int sizeInBytes) {
     return HGVertexBuffer();
@@ -46,6 +41,16 @@ HGIndexBuffer MapSceneRenderForwardVLK::createWaterIndexBuffer(int sizeInBytes) 
     return HGIndexBuffer();
 }
 
-std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastPlan() {
-    return std::shared_ptr<MapRenderPlan>();
+void MapSceneRenderForwardVLK::updateAndDraw(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
+                                             const std::shared_ptr<MapRenderPlan> &framePlan) {
+
+}
+
+std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastCreatedPlan() {
+    return nullptr;
+}
+
+std::shared_ptr<MapRenderPlan>
+MapSceneRenderForwardVLK::processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {
+    return nullptr;
 }

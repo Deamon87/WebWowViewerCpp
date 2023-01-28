@@ -13,10 +13,15 @@ class MapSceneRenderForwardVLK : public MapSceneRenderer {
 public:
     explicit MapSceneRenderForwardVLK(HGDeviceVLK hDevice);
 
-    void putIntoQueue(std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
-    std::shared_ptr<MapRenderPlan> getLastPlan() override;
+    std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
+    void updateAndDraw(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
 
-    //Buffer creation
+    std::shared_ptr<MapRenderPlan> getLastCreatedPlan() override;
+
+//-------------------------------------
+//  Buffer creation
+//-------------------------------------
+
     HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
 

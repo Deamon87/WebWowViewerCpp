@@ -38,9 +38,6 @@ public:
     }
 };
 
-typedef std::function<void(HGDevice &device)> SceneUpdateRenderLambda;
-typedef std::function<SceneUpdateRenderLambda()> CullLambda;
-
 struct FrameScenario {
     std::vector<CullLambda> cullFunctions;
     std::vector<SceneUpdateRenderLambda> drawUpdateFunction;

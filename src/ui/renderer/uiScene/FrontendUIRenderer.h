@@ -20,11 +20,17 @@ static const std::array<GBufferBinding, 3> imguiBindings = {{
 class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::ImGUIParam, ImGuiFramePlan::EmptyPlan>, public IFrontendUIBufferCreate  {
 public:
     virtual ~FrontendUIRenderer() = default;
-    void processFramePlan();
+
+    std::shared_ptr<ImGuiFramePlan::EmptyPlan> processCulling(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams) override {
+        return nullptr;
+    };
+    std::shared_ptr<ImGuiFramePlan::EmptyPlan> getLastCreatedPlan() override { return nullptr; }
 protected:
     HGDevice m_device = nullptr;
     UiMaterialCache m_materialCache;
     std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
+
+    void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams);
 };
 
 //typedef FrameInputParams<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;

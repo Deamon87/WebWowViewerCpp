@@ -24,6 +24,7 @@
 #include "childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h"
 #include "../../wowViewerLib/src/exporters/IExporter.h"
 #include "renderer/uiScene/IFrontendUIBufferCreate.h"
+#include "renderer/uiScene/FrontendUIRenderer.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -72,6 +73,8 @@ public:
     }
 private:
     ImGuiContext* imguiContext = nullptr;
+    std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
+
 
 //    HCullStage m_lastCullstage = {};
 

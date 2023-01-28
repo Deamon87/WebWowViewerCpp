@@ -4,9 +4,9 @@
 
 #include "FrontendUIRenderer.h"
 
-void FrontendUIRenderer::processFramePlan() {
+void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams) {
 
-    ImGuiFramePlan::ImGUIParam *frameParam = nullptr;
+    auto frameParam = frameInputParams->frameParameters;
 
     auto draw_data = &frameParam->imData;
 
