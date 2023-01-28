@@ -711,18 +711,18 @@ void GDeviceGL20::reset() {
 }
 
 unsigned int GDeviceGL20::getUpdateFrameNumber() {
-    return (m_frameNumber + 1) & 3;
+    return (m_frameNumber + 1) % MAX_FRAMES_IN_FLIGHT;
 //    return 0;
 }
 unsigned int GDeviceGL20::getCullingFrameNumber() {
-    return (m_frameNumber + 3) & 3;
+    return (m_frameNumber + 3) % MAX_FRAMES_IN_FLIGHT;
 //    return 0;
 }
 unsigned int GDeviceGL20::getOcclusionFrameNumber() {
-    return (m_frameNumber + 2) & 3;
+    return (m_frameNumber + 2) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL20::getDrawFrameNumber() {
-    return m_frameNumber & 3;
+    return m_frameNumber % MAX_FRAMES_IN_FLIGHT;
 }
 
 void GDeviceGL20::increaseFrameNumber() {

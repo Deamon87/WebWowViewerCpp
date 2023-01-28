@@ -282,8 +282,8 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 },
 };
 
-const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
-{ "wmoShader.vert.spv",
+const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = { 
+{ "wmoShader.vert.spv", 
   {
     {
       {0,1,64},
@@ -318,7 +318,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "wmoShader.frag.spv",
+{ "wmoShader.frag.spv", 
   {
     {
       {0,4,32},
@@ -362,7 +362,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "waterShader.frag.spv",
+{ "waterShader.frag.spv", 
   {
     {
       {0,4,16},
@@ -397,7 +397,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "waterfallShader.frag.spv",
+{ "waterfallShader.frag.spv", 
   {
     {
       {0,4,96},
@@ -435,7 +435,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "adtShader.vert.spv",
+{ "adtShader.vert.spv", 
   {
     {
       {0,0,368},
@@ -468,7 +468,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "adtLodShader.vert.spv",
+{ "adtLodShader.vert.spv", 
   {
     {
       {0,0,144},
@@ -501,7 +501,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "waterfallShader.vert.spv",
+{ "waterfallShader.vert.spv", 
   {
     {
       {0,2,144},
@@ -537,7 +537,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawPoints.vert.spv",
+{ "drawPoints.vert.spv", 
   {
     {
       {0,0,128},
@@ -571,7 +571,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawFrustumShader.vert.spv",
+{ "drawFrustumShader.vert.spv", 
   {
     {
       {0,0,128},
@@ -604,7 +604,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "ffxglow.frag.spv",
+{ "ffxglow.frag.spv", 
   {
     {
       {0,4,16},
@@ -639,7 +639,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "adtShader.frag.spv",
+{ "adtShader.frag.spv", 
   {
     {
       {0,4,288},
@@ -683,7 +683,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawBBShader.vert.spv",
+{ "drawBBShader.vert.spv", 
   {
     {
       {0,1,112},
@@ -717,7 +717,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawFrustumShader.frag.spv",
+{ "drawFrustumShader.frag.spv", 
   {
     {
     },
@@ -749,7 +749,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawDepthShader.frag.spv",
+{ "drawDepthShader.frag.spv", 
   {
     {
       {0,2,12},
@@ -783,7 +783,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "adtLodShader.frag.spv",
+{ "adtLodShader.frag.spv", 
   {
     {
       {0,0,84},
@@ -816,7 +816,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawPoints.frag.spv",
+{ "drawPoints.frag.spv", 
   {
     {
       {0,1,12},
@@ -849,7 +849,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawBBShader.frag.spv",
+{ "drawBBShader.frag.spv", 
   {
     {
       {0,1,112},
@@ -882,7 +882,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawLinesShader.frag.spv",
+{ "drawLinesShader.frag.spv", 
   {
     {
     },
@@ -914,7 +914,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "skyConus.frag.spv",
+{ "skyConus.frag.spv", 
   {
     {
     },
@@ -946,7 +946,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawPortalShader.frag.spv",
+{ "drawPortalShader.frag.spv", 
   {
     {
       {0,4,16},
@@ -979,7 +979,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawLinesShader.vert.spv",
+{ "drawLinesShader.vert.spv", 
   {
     {
       {0,0,128},
@@ -1012,7 +1012,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "ffxgauss4.frag.spv",
+{ "ffxgauss4.frag.spv", 
   {
     {
       {0,4,32},
@@ -1046,7 +1046,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "imguiShader.frag.spv",
+{ "imguiShader.frag.spv", 
   {
     {
     },
@@ -1079,7 +1079,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "m2ParticleShader.vert.spv",
+{ "m2ParticleShader.vert.spv", 
   {
     {
       {0,0,368},
@@ -1112,7 +1112,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawQuad.vert.spv",
+{ "drawQuad.vert.spv", 
   {
     {
       {0,2,16},
@@ -1145,7 +1145,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "imguiShader.vert.spv",
+{ "imguiShader.vert.spv", 
   {
     {
       {0,1,80},
@@ -1178,7 +1178,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "m2Shader.frag.spv",
+{ "m2Shader.frag.spv", 
   {
     {
       {0,4,64},
@@ -1218,7 +1218,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "waterShader.vert.spv",
+{ "waterShader.vert.spv", 
   {
     {
       {0,0,368},
@@ -1252,7 +1252,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawPortalShader.vert.spv",
+{ "drawPortalShader.vert.spv", 
   {
     {
       {0,0,128},
@@ -1285,7 +1285,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "ribbonShader.vert.spv",
+{ "ribbonShader.vert.spv", 
   {
     {
       {0,0,368},
@@ -1318,7 +1318,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "skyConus.vert.spv",
+{ "skyConus.vert.spv", 
   {
     {
       {0,0,368},
@@ -1352,7 +1352,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "renderFrameBufferShader.frag.spv",
+{ "renderFrameBufferShader.frag.spv", 
   {
     {
       {0,2,168},
@@ -1386,7 +1386,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "renderFrameBufferShader.vert.spv",
+{ "renderFrameBufferShader.vert.spv", 
   {
     {
     },
@@ -1418,10 +1418,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "m2ParticleShader.frag.spv",
+{ "m2ParticleShader.frag.spv", 
   {
     {
-      {0,4,32},
+      {0,4,48},
       {0,0,368},
     },
     {
@@ -1455,7 +1455,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "m2Shader.vert.spv",
+{ "m2Shader.vert.spv", 
   {
     {
       {0,1,14144},
@@ -1490,7 +1490,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "ribbonShader.frag.spv",
+{ "ribbonShader.frag.spv", 
   {
     {
       {0,4,48},
@@ -2045,6 +2045,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       4, {
         {"_0_4_uAlphaTestv", true, 0, 1, 4, 0},
         {"_0_4_uPixelShaderBlendModev", false, 16, 1, 4, 0},
+        {"_0_4_uTextureTranslate", true, 32, 1, 4, 0},
       }
     },
   }},

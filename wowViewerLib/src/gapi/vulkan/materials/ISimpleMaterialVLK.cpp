@@ -18,7 +18,7 @@ void ISimpleMaterialVLK::createImageDescriptorSet() {
         //Bind Black pixel texture
         std::vector<VkDescriptorImageInfo> imageInfos(shaderVLK->getTextureCount());
 
-        auto blackTexture = m_device->getBlackPixelTexture();
+        auto blackTexture = m_device->getBlackTexturePixel();
         auto blackTextureVlk = std::dynamic_pointer_cast<GTextureVLK>(blackTexture);
 
         int bindIndex = 0;

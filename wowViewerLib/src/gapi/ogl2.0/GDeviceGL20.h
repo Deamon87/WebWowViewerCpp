@@ -205,7 +205,7 @@ protected:
         HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
+    std::array<FrameUniformBuffers, MAX_FRAMES_IN_FLIGHT> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 

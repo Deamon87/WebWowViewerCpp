@@ -19,7 +19,6 @@ private:
     HApiContainer m_apiContainer = nullptr;
 private:
     std::thread cullingThread;
-    std::thread updateThread;
     std::thread loadingResourcesThread;
 
     bool m_supportThreads = true;
@@ -27,16 +26,21 @@ private:
 
     FrameCounter updateTimePerFrame;
 
-    void DoCulling();
-    void DoUpdate();
+    void consumeCulling(HFrameScenario &frameScenario);
+    void consumeDrawAndUpdate(HFrameScenario &frameScenario);
     void processCaches(int limit);
 
     //Flip-flop delta promises
     int frameMod = 0;
 
+
+    std::mutex cullingQueueMutex;
+    std::condition_variable cullingCondVar;
     std::queue<HFrameScenario> m_cullingQueue;
-    std::queue<HFrameScenario> m_updateQueue;
-    std::queue<HFrameScenario> m_render;
+
+    std::mutex updateRenderQueueMutex;
+    std::condition_variable updateRenderCondVar;
+    std::queue<HFrameScenario> m_updateRenderQueue;
 
     std::condition_variable startCulling;
     std::mutex cullingMutex;
@@ -49,11 +53,6 @@ public:
         m_isTerminating = true;
 
         cullingThread.join();
-
-        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
-            updateThread.join();
-        }
-
         loadingResourcesThread.join();
     }
 

@@ -64,7 +64,7 @@ public:
 
     void initialize() override;
 
-    unsigned int getFrameNumber() { return m_frameNumber; };
+    unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() ;
     unsigned int getCullingFrameNumber() ;
     unsigned int getOcclusionFrameNumber() ;
@@ -81,10 +81,6 @@ public:
 
     bool canUploadInSeparateThread() {
         return uploadQueue != graphicsQueue;
-    }
-
-    HGTexture getBlackTexturePixel() override {
-        return m_blackPixelTexture;
     }
 
     float getAnisLevel() override;
@@ -140,7 +136,7 @@ public:
                                                   bool isSwapChainPass);
 
 
-    void drawScenario() override;
+    void submitDrawCommands() override;
 
     std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
 
@@ -194,7 +190,7 @@ public:
     void addDeallocationRecord(std::function<void()> callback) override {
         std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
         DeallocationRecord dr;
-        dr.frameNumberToDoAt = m_frameNumber+4;
+        dr.frameNumberToDoAt = m_frameNumber+MAX_FRAMES_IN_FLIGHT;
         dr.callback = callback;
         listOfDeallocators.push_back(dr);
     };
@@ -381,7 +377,7 @@ protected:
         HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames;
+    std::array<FrameUniformBuffers, MAX_FRAMES_IN_FLIGHT> m_UBOFrames;
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 

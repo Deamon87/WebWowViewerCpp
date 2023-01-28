@@ -7,6 +7,8 @@
 
 #include <memory>
 #include "../IRenderParameters.h"
+#include "../../gapi/interface/IDevice.h"
+
 
 struct CameraMatrices;
 
@@ -36,8 +38,12 @@ public:
     }
 };
 
+typedef std::function<void(HGDevice &device)> SceneUpdateRenderLambda;
+typedef std::function<SceneUpdateRenderLambda()> CullLambda;
+
 struct FrameScenario {
-    std::vector<HIRenderer> renderer;
+    std::vector<CullLambda> cullFunctions;
+    std::vector<SceneUpdateRenderLambda> drawUpdateFunction;
 };
 typedef std::shared_ptr<FrameScenario> HFrameScenario;
 

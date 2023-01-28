@@ -704,13 +704,13 @@ void GDeviceGL4x::reset() {
 }
 
 unsigned int GDeviceGL4x::getUpdateFrameNumber() {
-    return (m_frameNumber + 1) & 3;
+    return (m_frameNumber + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL4x::getCullingFrameNumber() {
-    return (m_frameNumber + 3) & 3;
+    return (m_frameNumber + 3) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL4x::getDrawFrameNumber() {
-    return (m_frameNumber) & 3;
+    return (m_frameNumber) % MAX_FRAMES_IN_FLIGHT;
 }
 
 

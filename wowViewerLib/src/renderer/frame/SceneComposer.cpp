@@ -34,35 +34,49 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         cullingThread = std::thread(([&]() {
             using namespace std::chrono_literals;
             while (!this->m_isTerminating) {
-                DoCulling();
+                std::unique_lock<std::mutex> lock{cullingQueueMutex};
+                auto &l_cullingQueue = m_cullingQueue;
+                cullingCondVar.wait(lock, [&l_cullingQueue]() { return !l_cullingQueue.empty(); });
+
+                auto frameScenario = m_cullingQueue.front();
+                m_cullingQueue.pop();
+                lock.unlock();
+
+
+                consumeCulling(frameScenario);
+
+                //Push into updateRenderQueue
+                {
+                    std::lock_guard<std::mutex> l{updateRenderQueueMutex};
+                    m_updateRenderQueue.push(frameScenario);
+                    updateRenderCondVar.notify_one();
+                }
             }
         }));
 
-        if (m_apiContainer->hDevice->getIsAsynBuffUploadSupported()) {
-            updateThread = std::thread(([&]() {
-                this->m_apiContainer->hDevice->initUploadThread();
-                while (!this->m_isTerminating) {
-
-
-                    updateTimePerFrame.beginMeasurement();
-                    DoUpdate();
-                    updateTimePerFrame.endMeasurement();
-                }
-            }));
-        }
+        //Insert one temp element for balancing
+        m_updateRenderQueue.push(std::make_shared<HFrameScenario::element_type>());
     }
 }
 
-void SceneComposer::DoCulling() {
-//    for (int i = 0; i < frameScenario->cullStages.size(); i++) {
-//        auto cullStage = frameScenario->cullStages[i];
-//
-//        cullStage->scene->checkCulling(cullStage);
-//    }
+void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
+    if (frameScenario == nullptr)
+        return;
+
+    for (int i = 0; i < frameScenario->cullFunctions.size(); i++) {
+        frameScenario->drawUpdateFunction.push_back(frameScenario->cullFunctions[i]());
+    }
 }
 
 
-void SceneComposer::DoUpdate() {
+void SceneComposer::consumeDrawAndUpdate(HFrameScenario &frameScenario) {
+    if (frameScenario == nullptr)
+        return;
+
+    for (int i = 0; i < frameScenario->drawUpdateFunction.size(); i++) {
+        frameScenario->drawUpdateFunction[i](m_apiContainer->hDevice);
+    }
+
 //    auto device = m_apiContainer->hDevice;
 //
 //
@@ -106,14 +120,34 @@ void SceneComposer::DoUpdate() {
 
 
 void SceneComposer::draw(HFrameScenario frameScenario) {
-    std::future<bool> cullingFuture;
-    std::future<bool> updateFuture;
-
     if (!m_supportThreads) {
         processCaches(10);
-        DoCulling();
-        DoUpdate();
+        consumeCulling(frameScenario);
+        consumeDrawAndUpdate(frameScenario);
+    } else {
+        {
+            //Add to Queue
+            std::lock_guard<std::mutex> l{cullingQueueMutex};
+            m_cullingQueue.push(frameScenario);
+            cullingCondVar.notify_one();
+        }
+
+        {
+            std::unique_lock<std::mutex> lock{updateRenderQueueMutex};
+            auto &l_updateRenderQueue = m_updateRenderQueue;
+            updateRenderCondVar.wait(lock, [&l_updateRenderQueue]() { return !l_updateRenderQueue.empty(); });
+
+            auto frameScenario = m_updateRenderQueue.front();
+            m_updateRenderQueue.pop();
+            lock.unlock();
+
+            updateTimePerFrame.beginMeasurement();
+            consumeDrawAndUpdate(frameScenario);
+            updateTimePerFrame.endMeasurement();
+        }
     }
-    m_apiContainer->hDevice->drawScenario();
+
+
+    m_apiContainer->hDevice->submitDrawCommands();
     m_apiContainer->hDevice->increaseFrameNumber();
 }

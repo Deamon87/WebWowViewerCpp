@@ -149,7 +149,7 @@ public:
 
     void addDeallocationRecord(std::function<void()> callback) override {
         DeallocationRecord dr;
-        dr.frameNumberToDoAt = m_frameNumber+4;
+        dr.frameNumberToDoAt = m_frameNumber+MAX_FRAMES_IN_FLIGHT;
         dr.callback = callback;
         listOfDeallocators.push_back(dr);
     };
@@ -260,7 +260,7 @@ protected:
 
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
+    std::array<FrameUniformBuffers, MAX_FRAMES_IN_FLIGHT> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload;
 

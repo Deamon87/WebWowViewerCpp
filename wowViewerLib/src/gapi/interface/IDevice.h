@@ -162,7 +162,7 @@ enum class GDeviceType {
 
 class IDevice {
     public:
-        static constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 3;
+        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 3;
 
         virtual ~IDevice() {};
 
@@ -174,9 +174,10 @@ class IDevice {
         virtual int getMaxSamplesCnt() = 0;
         virtual int getUploadSize() {return 0;};
 
+        virtual unsigned int getFrameNumber() = 0;
         virtual void increaseFrameNumber() = 0;
 
-        virtual void drawScenario() {};
+        virtual void submitDrawCommands() {};
 
         virtual void startUpdateForNextFrame() {};
         virtual void endUpdateForNextFrame() {};
