@@ -4,11 +4,12 @@
 
 #include "FrontendUIRenderer.h"
 
+//This should be called during Update/Draw stage, cause this stuff allocates buffers
 void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams) {
 
     auto frameParam = frameInputParams->frameParameters;
 
-    auto draw_data = &frameParam->imData;
+    auto draw_data = frameParam->getImData();
 
     int fb_width = (int)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
     int fb_height = (int)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
@@ -115,4 +116,10 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
             }
         }
     }
+}
+
+HGTexture FrontendUIRenderer::uploadFontTexture(unsigned char *pixels, int width, int height) {
+    this->fontTexture = m_device->createTexture(false, false);
+    this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
+    return this->fontTexture;
 }

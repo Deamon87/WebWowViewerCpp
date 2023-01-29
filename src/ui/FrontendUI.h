@@ -28,19 +28,11 @@
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
-//Implementation of iInnerSceneApi
 public:
     void createDefaultprocessor();
     void createDatabaseHandler();
 
-    FrontendUI(HApiContainer api, HRequestProcessor processor) {
-        m_api = api;
-        m_processor = processor;
-
-        this->createDatabaseHandler();
-        //this->createDefaultprocessor();
-
-    }
+    FrontendUI(HApiContainer api, HRequestProcessor processor);
     ~FrontendUI() override {
         fileDialog.Close();
         createFileDialog.Close();
@@ -174,7 +166,6 @@ private:
 
     HApiContainer m_api;
     HRequestProcessor m_processor;
-    HGTexture fontTexture;
 
     HWdtFile m_wdtFile = nullptr;
 
@@ -250,6 +241,8 @@ public:
 
     //Making the frame
     void update(HFrontendUIBufferCreate renderer);
+
+    void createFontTexture();
 };
 
 

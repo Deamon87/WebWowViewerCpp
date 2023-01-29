@@ -34,11 +34,19 @@
 #include "../database/CEmptySqliteDB.h"
 #include "../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "renderer/uiScene/IFrontendUIBufferCreate.h"
+#include "renderer/uiScene/FrontendUIRendererFactory.h"
+
+FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
+    m_api = api;
+    m_processor = processor;
+
+    this->createDatabaseHandler();
+    m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
+    //this->createDefaultprocessor();
+
+}
 
 void FrontendUI::composeUI() {
-    if (this->fontTexture == nullptr)
-        return;
-
     if (mapCanBeOpened) {
         if (!adtMinimapFilled && fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
 //            fillAdtSelectionminimap = nullptr;
@@ -289,7 +297,6 @@ int ci_find_substr( const T& str1, const T& str2, const std::locale& loc = std::
     if ( it != str1.end() ) return it - str1.begin();
     else return -1; // not found
 }
-
 void FrontendUI::filterMapList(std::string text) {
     filteredMapList = {};
     for (int i = 0; i < mapList.size(); i++) {
@@ -313,6 +320,7 @@ void FrontendUI::showMapConstructionDialog() {
     showMapConstruction = m_mapConstructionWindow->render();
 
 }
+
 void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
         if (mapList.size() == 0) {
@@ -634,14 +642,13 @@ void FrontendUI::initImgui(
 #else
     ImGui_ImplGlfw_InitForOpenGL(window, true);
 #endif
+
+    this->createFontTexture();
 }
 
 void FrontendUI::newFrame() {
 
 //    ImGui_ImplOpenGL3_NewFrame();
-    //Create Font image
-    if (this->fontTexture == nullptr)
-        return;
 
 #ifdef __ANDROID_API__
     ImGui_ImplAndroid_NewFrame();
@@ -1298,10 +1305,10 @@ void FrontendUI::showSettingsDialog() {
 //void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
 
 //}
-
 void FrontendUI::getAdtSelectionMinimap(int wdtFileDataId) {
     m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 }
+
 void FrontendUI::getAdtSelectionMinimap(std::string wdtFilePath) {
     m_wdtFile = m_api->cacheStorage->getWdtFileCache()->get(wdtFilePath);
 }
@@ -1496,12 +1503,11 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         uiFrameInput->delta = deltaTime * (1000.0f);
         uiFrameInput->viewPortDimensions = dimension;
         uiFrameInput->invertedZ = false;
-
-
+        uiFrameInput->frameParameters = std::make_shared<ImGuiFramePlan::ImGUIParam>( ImGui::GetDrawData());
 
         auto clearColor = m_api->getConfig()->clearColor;
 
-        m_uiRenderer->createPlan(uiFrameInput);
+        scenario->cullFunctions.push_back(m_uiRenderer->createPlan(uiFrameInput));
 
 //        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
 //        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
@@ -1511,7 +1517,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     }
 
 
-    return nullptr;
+    return scenario;
 //
 //    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
 //    std::vector<HDrawStage> uiDependecies = {};
@@ -1598,7 +1604,6 @@ void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
     currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
     m_api->camera->setCameraPos(0, 0, 0);
 }
-
 void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
     currentScene = std::make_shared<Map>(m_api, mapId, mapName);
 
@@ -1625,6 +1630,7 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
 //
     m_api->camera->setCameraPos(0, 0, 0);
 }
+
 void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
     currentScene = m2Scene;
@@ -1642,6 +1648,8 @@ void FrontendUI::unloadScene() {
     currentScene = std::make_shared<NullScene>();
 }
 
+
+
 int FrontendUI::getCameraNumCallback() {
 //    if (currentScene != nullptr) {
 //        return currentScene->getCameraNum();
@@ -1649,8 +1657,6 @@ int FrontendUI::getCameraNumCallback() {
 
     return 0;
 }
-
-
 
 bool FrontendUI::setNewCameraCallback(int cameraNum) {
     return false;
@@ -1683,6 +1689,7 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
     cameraZ = currentCameraPos[2];
 }
 
+
 void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
     if (m_api->debugCamera == nullptr) {
         cameraX = 0; cameraY = 0; cameraZ = 0;
@@ -1694,7 +1701,6 @@ void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &camera
     cameraY = currentCameraPos[1];
     cameraZ = currentCameraPos[2];
 }
-
 
 inline bool fileExistsNotNull (const std::string& name) {
 #ifdef ANDROID
@@ -1773,18 +1779,6 @@ void FrontendUI::createDatabaseHandler() {
 void FrontendUI::update(HFrontendUIBufferCreate renderer) {
     auto m_device = m_api->hDevice;
 
-    if (this->fontTexture == nullptr) {
-        ImGuiIO& io = ImGui::GetIO();
-        unsigned char* pixels;
-        int width, height;
-        io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
-        // Upload texture to graphics system
-        this->fontTexture = m_device->createTexture(false, false);
-        this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
-        // Store our identifier
-        io.Fonts->TexID = this->fontTexture;
-        return;
-    }
 //    if (exporter != nullptr) {
 //        if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
 //            exporterFramesReady++;
@@ -1800,4 +1794,15 @@ void FrontendUI::update(HFrontendUIBufferCreate renderer) {
         return;
 
 
+}
+
+void FrontendUI::createFontTexture() {
+    ImGuiIO& io = ImGui::GetIO();
+    unsigned char* pixels;
+    int width, height;
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);   // Load as RGBA 32-bit (75% of the memory is wasted, but default font is so small) because it is more likely to be compatible with user's existing shaders. If your ImTextureId represent a higher-level concept than just a GL texture id, consider calling GetTexDataAsAlpha8() instead to save on GPU memory.
+    // Upload texture to graphics system
+
+    // Store our identifier
+    io.Fonts->TexID = this->m_uiRenderer->uploadFontTexture(pixels, width, height);
 }

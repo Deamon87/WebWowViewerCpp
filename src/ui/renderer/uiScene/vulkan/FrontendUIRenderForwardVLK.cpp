@@ -6,7 +6,8 @@
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/ISimpleMaterialVLK.h"
 
-FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(HGDeviceVLK hDevice) : m_device(hDevice) {
+FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(HGDeviceVLK hDevice) : FrontendUIRenderer(
+    hDevice), m_device(hDevice) {
 }
 
 void FrontendUIRenderForwardVLK::update(VkCommandBuffer transferQueueCMD, VkCommandBuffer renderQueueCMD) {
@@ -17,6 +18,8 @@ void FrontendUIRenderForwardVLK::createBuffers() {
     vboBuffer = m_device->createIndexBuffer(1024*1024);
     iboBuffer = m_device->createVertexBuffer(1024*1024);
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
+
+    m_imguiUbo = uboBuffer->getSubBuffer()
 }
 
 HGVertexBuffer FrontendUIRenderForwardVLK::createVertexBuffer(int sizeInBytes) {
@@ -61,5 +64,5 @@ void FrontendUIRenderForwardVLK::updateAndDraw(
 
     this->consumeFrameInput(frameInputParams);
 
-    //
+    //Record commands to update buffer and draw
 }

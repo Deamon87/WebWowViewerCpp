@@ -19,18 +19,25 @@ static const std::array<GBufferBinding, 3> imguiBindings = {{
 
 class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::ImGUIParam, ImGuiFramePlan::EmptyPlan>, public IFrontendUIBufferCreate  {
 public:
+    FrontendUIRenderer(HGDevice m_device) : m_device(m_device) {
+
+    }
     virtual ~FrontendUIRenderer() = default;
 
     std::shared_ptr<ImGuiFramePlan::EmptyPlan> processCulling(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams) override {
         return nullptr;
     };
     std::shared_ptr<ImGuiFramePlan::EmptyPlan> getLastCreatedPlan() override { return nullptr; }
+    HGTexture uploadFontTexture(unsigned char* pixels, int width, int height);
 protected:
     HGDevice m_device = nullptr;
     UiMaterialCache m_materialCache;
     std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 
     void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams);
+
+private:
+    HGTexture fontTexture;
 };
 
 //typedef FrameInputParams<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;

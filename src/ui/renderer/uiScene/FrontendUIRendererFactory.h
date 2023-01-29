@@ -11,6 +11,7 @@
 #include "../../../../wowViewerLib/src/gapi/interface/IDevice.h"
 
 class FrontendUIRendererFactory {
+public:
     static std::shared_ptr<FrontendUIRenderer> createForwardRenderer(HGDevice &device);
 };
 
