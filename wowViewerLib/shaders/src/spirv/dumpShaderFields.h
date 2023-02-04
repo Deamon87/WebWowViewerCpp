@@ -13,6 +13,23 @@
 
 constexpr const int MAX_SHADER_DESC_SETS = 8;
 
+enum class ShaderStage {
+    Unk, Vertex, Fragment, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
+};
+
+#define printStage(stage) case stage: return #stage; break;
+std::string ShaderStageToStr(ShaderStage stage) {
+    switch (stage) {
+        printStage(ShaderStage::Unk)
+        printStage(ShaderStage::Vertex)
+        printStage(ShaderStage::Fragment)
+        printStage(ShaderStage::RayGenerate)
+        printStage(ShaderStage::RayAnyHit)
+        printStage(ShaderStage::RayClosestHit)
+        printStage(ShaderStage::RayMiss)
+    }
+}
+
 struct attributeDefine {
     std::string name;
     unsigned int location;
@@ -46,6 +63,7 @@ struct bindingAmountData {
 };
 
 struct shaderMetaData {
+    ShaderStage stage;
     std::vector<uboBindingData> uboBindings;
     std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
@@ -151,6 +169,11 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
     R"===(
     constexpr const int MAX_SHADER_DESC_SETS = 8;
 
+    enum class ShaderStage {
+        Unk, Vertex, Fragment, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
+    };
+
+
     struct uboBindingData {
         unsigned int set;
         unsigned int binding;
@@ -169,6 +192,8 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
     };
 
     struct shaderMetaData {
+        ShaderStage stage;
+
         std::vector<uboBindingData> uboBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
@@ -225,6 +250,33 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         }
         auto &perSetMap = fieldDefMapPerShaderName.at(tokens[0]);
         auto &metaInfo = shaderMetaInfo.at(fileName);
+
+
+        auto execModel = glsl.get_entry_points_and_stages()[0].execution_model;
+        metaInfo.stage = [&execModel]() -> ShaderStage {
+            switch (execModel) {
+                case(spv::ExecutionModel::ExecutionModelVertex):
+                    return ShaderStage::Vertex;
+
+                case(spv::ExecutionModel::ExecutionModelFragment):
+                    return ShaderStage::Fragment;
+
+                case(spv::ExecutionModel::ExecutionModelAnyHitKHR):
+                    return ShaderStage::RayAnyHit;
+
+                case(spv::ExecutionModel::ExecutionModelClosestHitKHR):
+                    return ShaderStage::RayClosestHit;
+
+                case(spv::ExecutionModel::ExecutionModelRayGenerationKHR):
+                    return ShaderStage::RayGenerate;
+
+                case(spv::ExecutionModel::ExecutionModelMissKHR):
+                    return ShaderStage::RayMiss;
+
+                default:
+                    return ShaderStage::Unk;
+            }
+        }();
 
         if (glsl.get_entry_points_and_stages()[0].execution_model == spv::ExecutionModel::ExecutionModelVertex) {
             auto it = attributesPerShaderName.find(tokens[0]);
@@ -374,6 +426,8 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         std::cout << "{ \"" << it->first << "\", \n"<<
             "  {\n";
 
+        //Dump stage
+        std::cout << "    " << ShaderStageToStr(it->second.stage) << "," << std::endl;
         //Dump UBO Bindings per shader
         std::cout << "    {\n";
         for (auto subIt = it->second.uboBindings.begin(); subIt != it->second.uboBindings.end(); subIt++) {

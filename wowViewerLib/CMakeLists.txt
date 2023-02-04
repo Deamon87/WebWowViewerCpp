@@ -467,11 +467,6 @@ if (LINK_VULKAN)
             src/gapi/vulkan/vkAllocator.cpp
             src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
             src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GAdtShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GM2RibbonShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
             src/gapi/vulkan/meshes/GM2MeshVLK.cpp
             src/gapi/vulkan/meshes/GMeshVLK.cpp
             src/gapi/vulkan/textures/GTextureVLK.cpp
@@ -482,30 +477,21 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorSet.h
-            src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp
-            src/gapi/vulkan/shaders/GImguiShaderPermutation.h
-            src/gapi/vulkan/shaders/GWaterShaderPermutation.cpp
-            src/gapi/vulkan/shaders/GWaterShaderPermutation.h
-            src/gapi/vulkan/shaders/GSkyConusShaderVLK.cpp
-            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h
             src/gapi/vulkan/GFrameBufferVLK.cpp
             src/gapi/vulkan/GFrameBufferVLK.h
-            src/gapi/vulkan/shaders/GFFXgauss4VLK.cpp
-            src/gapi/vulkan/shaders/GFFXgauss4VLK.h
-            src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
-            src/gapi/vulkan/shaders/GFFXGlowVLK.h
             src/gapi/vulkan/GRenderPassVLK.cpp
             src/gapi/vulkan/GRenderPassVLK.h
-            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp
-            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
-            src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
-            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.cpp
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
             src/gapi/vulkan/buffers/GBufferVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.h
             src/gapi/vulkan/buffers/IBufferVLK.h
-            src/gapi/vulkan/materials/ISimpleMaterialVLK.cpp src/gapi/vulkan/materials/ISimpleMaterialVLK.h)
+            src/gapi/vulkan/materials/ISimpleMaterialVLK.cpp
+            src/gapi/vulkan/materials/ISimpleMaterialVLK.h
+            src/gapi/vulkan/buffers/IBufferChunkVLK.cpp
+            src/gapi/vulkan/buffers/IBufferChunkVLK.h
+            src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
+            src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

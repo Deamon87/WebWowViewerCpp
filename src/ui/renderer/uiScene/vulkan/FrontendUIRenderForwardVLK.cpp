@@ -5,13 +5,11 @@
 #include "FrontendUIRenderForwardVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/ISimpleMaterialVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/IBufferChunkVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 
-FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(HGDeviceVLK hDevice) : FrontendUIRenderer(
+FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) : FrontendUIRenderer(
     hDevice), m_device(hDevice) {
-}
-
-void FrontendUIRenderForwardVLK::update(VkCommandBuffer transferQueueCMD, VkCommandBuffer renderQueueCMD) {
-
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
@@ -19,7 +17,7 @@ void FrontendUIRenderForwardVLK::createBuffers() {
     iboBuffer = m_device->createVertexBuffer(1024*1024);
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
-    m_imguiUbo = uboBuffer->getSubBuffer()
+    m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
 }
 
 HGVertexBuffer FrontendUIRenderForwardVLK::createVertexBuffer(int sizeInBytes) {
@@ -55,14 +53,18 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
 
 HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
     //TODO:
-    return nullptr;
+    return std::make_shared<GMeshVLK>(*m_device, meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
 }
 
 void FrontendUIRenderForwardVLK::updateAndDraw(
     const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams,
     const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) {
 
-    this->consumeFrameInput(frameInputParams);
+    std::vector<HGMesh> meshes;
+    this->consumeFrameInput(frameInputParams, meshes);
 
     //Record commands to update buffer and draw
+    [&meshes](VkCommandBuffer transferQueueCMD, VkCommandBuffer renderFB, VkCommandBuffer renderSwapFB) {
+
+    };
 }

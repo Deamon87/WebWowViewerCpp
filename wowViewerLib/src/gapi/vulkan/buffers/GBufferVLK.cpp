@@ -95,6 +95,7 @@ void GBufferVLK::subUploadData(void *data, int offset, int length) {
 
 void GBufferVLK::resize(int newLength) {
     m_bufferSize = newLength;
+
     BufferInternal newBuffer;
     createBuffer(newBuffer);
 

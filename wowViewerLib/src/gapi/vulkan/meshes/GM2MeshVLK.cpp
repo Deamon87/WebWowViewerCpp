@@ -4,7 +4,8 @@
 
 #include "GM2MeshVLK.h"
 
-GM2MeshVLK::GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate) : GMeshVLK(device, meshTemplate){
+GM2MeshVLK::GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate,
+                       const HMaterialVLK &material) : GMeshVLK(device, meshTemplate, material){
 
     m_isTransparent = m_blendMode > EGxBlendEnum::GxBlend_AlphaKey || !m_depthWrite ;
 }

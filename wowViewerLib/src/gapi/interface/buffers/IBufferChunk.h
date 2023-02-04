@@ -1,4 +1,4 @@
-//
+    //
 // Created by deamon on 09.12.19.
 //
 
@@ -14,17 +14,12 @@ template <typename T>
 using IChunkHandlerType = std::function<void(T &data, const HFrameDependantData &frameDepedantData)> ;
 
 template<typename T>
-class IBufferChunk : public IBuffer {
-    friend class IDevice;
-private:
-    IChunkHandlerType<T> m_handler;
+class IBufferChunk {
 public:
-    ~IBufferChunk() override = default;
+    virtual ~IBufferChunk() = default;
     virtual T &getObject() = 0;
+    virtual void save() = 0;
 
-    virtual void setUpdateHandler(IChunkHandlerType<T> handler) {
-        m_handler = handler;
-    };
-
+    virtual void setUpdateHandler(IChunkHandlerType<T> handler) {};
 };
 #endif //AWEBWOWVIEWERCPP_IBUFFERCHUNK_H

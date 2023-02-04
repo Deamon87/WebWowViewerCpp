@@ -5,18 +5,19 @@
 #ifndef AWEBWOWVIEWERCPP_GDESCRIPTORPOOLVLK_H
 #define AWEBWOWVIEWERCPP_GDESCRIPTORPOOLVLK_H
 
-class GDescriptorSets;
+class GDescriptorSet;
 
 #include "../../interface/IDevice.h"
 #include "../GDeviceVulkan.h"
 #include "GDescriptorSet.h"
+#include "GDescriptorSetLayout.h"
 
-class GDescriptorPoolVLK {
+class GDescriptorPoolVLK : public std::enable_shared_from_this<GDescriptorPoolVLK>{
 public:
     explicit GDescriptorPoolVLK(IDevice &device);
 
-    std::shared_ptr<GDescriptorSets> allocate(VkDescriptorSetLayout layout, int uniforms, int images);
-    void deallocate(GDescriptorSets *set);
+    std::shared_ptr<GDescriptorSet> allocate(std::shared_ptr<GDescriptorSetLayout> &gDescriptorSetLayout);
+    void deallocate(GDescriptorSet *set);
 
 private:
     GDeviceVLK &m_device;

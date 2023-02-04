@@ -138,7 +138,7 @@ public:
 
     void submitDrawCommands() override;
 
-    std::shared_ptr<GDescriptorSets> createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images);
+    std::shared_ptr<GDescriptorSet> createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
 
     virtual VkDevice getVkDevice() {
         return device;
@@ -319,7 +319,6 @@ protected:
 
     std::shared_ptr<GRenderPassVLK> swapchainRenderPass;
 
-
     VkCommandPool commandPool;
     VkCommandPool commandPoolForImageTransfer;
     VkCommandPool renderCommandPool;
@@ -350,7 +349,6 @@ protected:
     std::vector<GDescriptorPoolVLK*> m_descriptorPools;
 
     VmaAllocator vmaAllocator;
-    VmaPool uboVmaPool;
 
     VkPhysicalDeviceProperties deviceProperties;
 
@@ -372,7 +370,7 @@ protected:
     HGTexture m_whitePixelTexture = nullptr;
 protected:
     //Caches
-    std::unordered_map<size_t, HGShaderPermutation> m_shaderPermutCache;
+    std::unordered_map<size_t, HGShaderPermutation> m_shaderPermuteCache;
     struct FrameUniformBuffers {
         HGUniformBuffer m_uniformBufferForUpload;
     };

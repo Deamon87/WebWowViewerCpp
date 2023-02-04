@@ -31,13 +31,13 @@ public:
     HGTexture uploadFontTexture(unsigned char* pixels, int width, int height);
 protected:
     HGDevice m_device = nullptr;
+    HGTexture fontTexture;
+
     UiMaterialCache m_materialCache;
     std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 
-    void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams);
+    void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, std::vector<HGMesh> &meshes);
 
-private:
-    HGTexture fontTexture;
 };
 
 //typedef FrameInputParams<ImGuiFramePlan::EmptyPlan, ImGuiFramePlan::ImGUIParam> FrontendUIInputParams;

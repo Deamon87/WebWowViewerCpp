@@ -10,7 +10,8 @@
 class GM2MeshVLK : public GMeshVLK, public IM2Mesh {
     friend class GDeviceVLK;
 protected:
-    GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate);
+    GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate,
+    const HMaterialVLK &material);
 
 public:
     void setLayer(int layer) override;

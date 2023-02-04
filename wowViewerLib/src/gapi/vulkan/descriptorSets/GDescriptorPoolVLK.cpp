@@ -13,7 +13,7 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<
     setsAvailable = 4096;
 
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(uniformsAvailable);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = static_cast<uint32_t>(imageAvailable);
@@ -31,11 +31,11 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<
     }
 }
 
-std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLayout layout, int uniforms, int images) {
-    if (uniformsAvailable < uniforms || imageAvailable < images || setsAvailable < 1) return nullptr;
+std::shared_ptr<GDescriptorSet> GDescriptorPoolVLK::allocate(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
+    if (uniformsAvailable < hDescriptorSetLayout->getTotalUbos() || imageAvailable <  hDescriptorSetLayout->getTotalImages() || setsAvailable < 1) return nullptr;
 
     constexpr int descSetCount = 1;
-    std::array<VkDescriptorSetLayout, descSetCount> descLayouts = {layout};
+    std::array<VkDescriptorSetLayout, descSetCount> descLayouts = {hDescriptorSetLayout->getSetLayout()};
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = NULL;
@@ -52,25 +52,25 @@ std::shared_ptr<GDescriptorSets> GDescriptorPoolVLK::allocate(VkDescriptorSetLay
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 
-    uniformsAvailable -= uniforms;
-    imageAvailable -= images;
+    uniformsAvailable -= hDescriptorSetLayout->getTotalUbos();
+    imageAvailable -= hDescriptorSetLayout->getTotalImages();
 	setsAvailable -= 1;
 
-    std::shared_ptr<GDescriptorSets> result = std::make_shared<GDescriptorSets>(m_device, descriptorSet, this, uniforms, images);
+    std::shared_ptr<GDescriptorSet> result = std::make_shared<GDescriptorSet>(m_device, hDescriptorSetLayout, descriptorSet, this->shared_from_this());
     return result;
 }
 
-void GDescriptorPoolVLK::deallocate(GDescriptorSets *set) {
+void GDescriptorPoolVLK::deallocate(GDescriptorSet *set) {
     auto descSet = set->getDescSet();
-    auto imgCnt = set->getImageCount();
-    auto uniformCnt = set->getImageCount();
+    auto hDescriptorLayout = set->getSetLayout();
+    auto h_this = this->shared_from_this();
 
-    m_device.addDeallocationRecord([this, imgCnt, uniformCnt, descSet]() {
-        vkFreeDescriptorSets(m_device.getVkDevice(), m_descriptorPool, 1, &descSet);
+    m_device.addDeallocationRecord([h_this, hDescriptorLayout, descSet]() {
+        vkFreeDescriptorSets(h_this->m_device.getVkDevice(), h_this->m_descriptorPool, 1, &descSet);
 
-        imageAvailable+= imgCnt;
-        uniformsAvailable+= uniformCnt;
-        setsAvailable+=1;
+        h_this->imageAvailable+= hDescriptorLayout->getTotalImages();
+        h_this->uniformsAvailable+= hDescriptorLayout->getTotalUbos();
+        h_this->setsAvailable+=1;
     });
 
 }

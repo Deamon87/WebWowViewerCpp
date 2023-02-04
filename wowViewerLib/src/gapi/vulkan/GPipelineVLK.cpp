@@ -210,8 +210,8 @@ void GPipelineVLK::createPipeline(
     depthStencil.stencilTestEnable = VK_FALSE;
 
     std::array<VkDescriptorSetLayout, 2> descLayouts ;
-	descLayouts[0] = shaderVLK->getUboDescriptorLayout();
-	descLayouts[1] = shaderVLK->getImageDescriptorLayout();
+	descLayouts[0] = shaderVLK->getUboDescriptorLayout()->getSetLayout();
+	descLayouts[1] = shaderVLK->getImageDescriptorLayout()->getSetLayout();
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -221,7 +221,7 @@ void GPipelineVLK::createPipeline(
     pipelineLayoutInfo.setLayoutCount = 2;
     pipelineLayoutInfo.pSetLayouts = &descLayouts[0];
 
-    std::cout << "Pipeline layout for "+shaderVLK->getShaderName() << std::endl;
+    std::cout << "Pipeline layout for "+shaderVLK->getShaderCombinedName() << std::endl;
 
     if (vkCreatePipelineLayout(m_device.getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");

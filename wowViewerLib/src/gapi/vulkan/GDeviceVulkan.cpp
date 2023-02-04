@@ -19,20 +19,9 @@
 #include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
 #include "GPipelineVLK.h"
-#include "shaders/GM2ShaderPermutationVLK.h"
-#include "shaders/GM2ParticleShaderPermutationVLK.h"
 #include "../../engine/algorithms/hashString.h"
-#include "shaders/GAdtShaderPermutationVLK.h"
-#include "shaders/GWMOShaderPermutationVLK.h"
-#include "shaders/GWaterShaderPermutation.h"
-#include "shaders/GImguiShaderPermutation.h"
-#include "shaders/GM2RibbonShaderPermutationVLK.h"
-#include "shaders/GSkyConusShaderVLK.h"
-#include "shaders/GDrawBoundingBoxVLK.h"
 #include "GFrameBufferVLK.h"
-#include "shaders/GFFXgauss4VLK.h"
-#include "shaders/GFFXGlowVLK.h"
-#include "shaders/GWaterfallShaderVLK.h"
+#include "shaders/GShaderPermutationVLK.h"
 #include "GRenderPassVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
 #include "buffers/GBufferVLK.h"
@@ -1040,6 +1029,8 @@ void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantDa
 }
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
+    //TODO: REWRITE THIS PART FFS!!!
+
     std::vector<HGTexture> textures;
     textures.reserve(meshes.size() * 3);
 
@@ -1047,23 +1038,23 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
     for (const auto &hmesh : meshes) {
         GMeshVLK * mesh = (GMeshVLK *) hmesh.get();
-        mesh->material->updateImageDescriptorSet();
+        mesh->material()->updateImageDescriptorSet();
 
 //        for (int i = 0; i < mesh->textureCount(); i++) {
 //            textures.push_back(mesh->m_texture[i]);
 //        }
     }
 
-    //TODO:!!!
-//
-//    std::sort(textures.begin(), textures.end());
-//    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
-//
-//    for (const auto &texture : textures) {
-//        if (texture == nullptr) continue;
-//        if (texture->postLoad()) texturesLoaded++;
-//        if (texturesLoaded > 4) break;
-//    }
+
+
+    std::sort(textures.begin(), textures.end());
+    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
+
+    for (const auto &texture : textures) {
+        if (texture == nullptr) continue;
+        if (texture->postLoad()) texturesLoaded++;
+        if (texturesLoaded > 4) break;
+    }
 }
 
 void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
@@ -1071,72 +1062,18 @@ void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) {
-    const char * cstr = vertexName.c_str();
+    std::string combinedName = vertexName + " " + fragmentName;
+    const char * cstr = combinedName.c_str();
     size_t hash = CalculateFNV(cstr);
-    if (m_shaderPermutCache.count(hash) > 0) {
-        HGShaderPermutation ptr = m_shaderPermutCache.at(hash);
+    if (m_shaderPermuteCache.count(hash) > 0) {
+        HGShaderPermutation ptr = m_shaderPermuteCache.at(hash);
         return ptr;
     }
 
-    std::shared_ptr<IShaderPermutation> sharedPtr;
-
-    if (vertexName == "m2Shader") {
-        IShaderPermutation *iPremutation = new GM2ShaderPermutationVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "m2ParticleShader") {
-        IShaderPermutation *iPremutation = new GM2ParticleShaderPermutationVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "ribbonShader") {
-        IShaderPermutation *iPremutation = new GM2RibbonShaderPermutationVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "wmoShader"){
-        IShaderPermutation *iPremutation = new GWMOShaderPermutationVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "waterShader"){
-        IShaderPermutation *iPremutation = new GWaterShaderPermutation(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "adtShader"){
-        IShaderPermutation *iPremutation = new GAdtShaderPermutationVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "skyConus"){
-        IShaderPermutation *iPremutation = new GSkyConusShaderVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-    } else if (vertexName == "fullScreen_ffxgauss4") {
-        IShaderPermutation *iPremutation = new GFFXgauss4VLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-        m_shaderPermutCache[hash] = sharedPtr;
-    } else if (vertexName == "ffxGlowQuad") {
-        IShaderPermutation *iPremutation = new GFFXGlowVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-        m_shaderPermutCache[hash] = sharedPtr;
-    } else if (vertexName == "waterfallShader") {
-        IShaderPermutation *iPremutation = new GWaterfallShaderVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-        m_shaderPermutCache[hash] = sharedPtr;
-    } else if (vertexName == "drawBBShader") {
-        IShaderPermutation *iPremutation = new GDrawBoundingBoxVLK(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-        m_shaderPermutCache[hash] = sharedPtr;
-    } else if (vertexName == "imguiShader") {
-        IShaderPermutation *iPremutation = new GImguiShaderPermutation(vertexName, this);
-        sharedPtr.reset(iPremutation);
-        sharedPtr->compileShader("","");
-        m_shaderPermutCache[hash] = sharedPtr;
-    }
+    std::shared_ptr<GShaderPermutationVLK> sharedPtr = std::make_shared<GShaderPermutationVLK>(vertexName, fragmentName, this->shared_from_this());
 
 
-    m_shaderPermutCache[hash] = sharedPtr;
+    m_shaderPermuteCache[hash] = sharedPtr;
 
 
     return sharedPtr;
@@ -1202,10 +1139,10 @@ HGTexture GDeviceVLK::createTexture(bool xWrapTex, bool yWrapTex) {
 }
 
 HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {
-    std::shared_ptr<GMeshVLK> h_mesh;
-    h_mesh.reset(new GMeshVLK(*this, meshTemplate));
-
-    return h_mesh;
+//    std::shared_ptr<GMeshVLK> h_mesh;
+//    h_mesh.reset(new GMeshVLK(*this, meshTemplate));
+//
+    return nullptr;
 }
 
 HGPUFence GDeviceVLK::createFence() {
@@ -1488,13 +1425,13 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
 
 }
 
-std::shared_ptr<GDescriptorSets>
-GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int images) {
+std::shared_ptr<GDescriptorSet>
+GDeviceVLK::createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
     //1. Try to allocate from existing sets
-    std::shared_ptr<GDescriptorSets> descriptorSet;
+    std::shared_ptr<GDescriptorSet> descriptorSet;
 
     for (size_t i = 0; i < m_descriptorPools.size(); i++) {
-        descriptorSet = m_descriptorPools[i]->allocate(layout, uniforms, images);
+        descriptorSet = m_descriptorPools[i]->allocate(hDescriptorSetLayout);
         if (descriptorSet != nullptr)
             return descriptorSet;
     }
@@ -1503,7 +1440,7 @@ GDeviceVLK::createDescriptorSet(VkDescriptorSetLayout layout, int uniforms, int 
     GDescriptorPoolVLK * newPool = new GDescriptorPoolVLK(*this);
     m_descriptorPools.push_back(newPool);
 
-    return newPool->allocate(layout, uniforms, images);
+    return newPool->allocate(hDescriptorSetLayout);
 }
 
 //void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {

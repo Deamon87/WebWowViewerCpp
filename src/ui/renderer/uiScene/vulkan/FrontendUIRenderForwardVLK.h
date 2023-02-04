@@ -15,12 +15,10 @@
 
 class FrontendUIRenderForwardVLK : public FrontendUIRenderer {
 public:
-    explicit FrontendUIRenderForwardVLK(HGDeviceVLK hDevice);
+    explicit FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice);
     ~FrontendUIRenderForwardVLK() override = default;
 
     void updateAndDraw(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) override;
-
-    void update(VkCommandBuffer udBuffer, VkCommandBuffer swapChainDraw);
 public:
     HGVertexBuffer createVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createIndexBuffer(int sizeInBytes) override;

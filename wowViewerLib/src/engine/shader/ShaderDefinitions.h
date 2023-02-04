@@ -25,6 +25,11 @@ struct attributeDefine {
 
     constexpr const int MAX_SHADER_DESC_SETS = 8;
 
+    enum class ShaderStage {
+        Unk, Vertex, Fragment, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
+    };
+
+
     struct uboBindingData {
         unsigned int set;
         unsigned int binding;
@@ -43,6 +48,8 @@ struct attributeDefine {
     };
 
     struct shaderMetaData {
+        ShaderStage stage;
+
         std::vector<uboBindingData> uboBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
@@ -285,6 +292,7 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = { 
 { "wmoShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,1,64},
       {0,0,368},
@@ -320,6 +328,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "wmoShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,32},
       {0,0,368},
@@ -364,6 +373,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "waterShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,16},
       {0,0,368},
@@ -399,6 +409,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "waterfallShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,96},
       {0,0,368},
@@ -437,6 +448,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "adtShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,368},
     },
@@ -470,6 +482,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "adtLodShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,144},
     },
@@ -503,6 +516,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "waterfallShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,2,144},
       {0,1,14144},
@@ -539,6 +553,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawPoints.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,128},
       {0,1,64},
@@ -573,6 +588,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawFrustumShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,128},
     },
@@ -606,6 +622,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "ffxglow.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,16},
     },
@@ -641,6 +658,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "adtShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,288},
       {0,3,16},
@@ -685,6 +703,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawBBShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,1,112},
       {0,0,368},
@@ -719,6 +738,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawFrustumShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
     },
     {
@@ -751,6 +771,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawDepthShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,2,12},
     },
@@ -785,6 +806,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "adtLodShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,0,84},
     },
@@ -818,6 +840,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawPoints.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,1,12},
     },
@@ -851,6 +874,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawBBShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,1,112},
     },
@@ -884,6 +908,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawLinesShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
     },
     {
@@ -916,6 +941,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "skyConus.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
     },
     {
@@ -948,6 +974,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawPortalShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,16},
     },
@@ -981,6 +1008,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawLinesShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,128},
     },
@@ -1014,6 +1042,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "ffxgauss4.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,32},
     },
@@ -1048,6 +1077,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "imguiShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
     },
     {
@@ -1081,6 +1111,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "m2ParticleShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,368},
     },
@@ -1114,6 +1145,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawQuad.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,2,16},
     },
@@ -1147,6 +1179,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "imguiShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,1,80},
     },
@@ -1180,6 +1213,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "m2Shader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,64},
       {0,3,256},
@@ -1220,6 +1254,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "waterShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,368},
       {0,1,64},
@@ -1254,6 +1289,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "drawPortalShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,128},
     },
@@ -1287,6 +1323,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "ribbonShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,368},
     },
@@ -1320,6 +1357,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "skyConus.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,0,368},
       {0,2,96},
@@ -1354,6 +1392,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "renderFrameBufferShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,2,168},
     },
@@ -1388,6 +1427,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "renderFrameBufferShader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
     },
     {
@@ -1420,6 +1460,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "m2ParticleShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,48},
       {0,0,368},
@@ -1457,6 +1498,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "m2Shader.vert.spv", 
   {
+    ShaderStage::Vertex,
     {
       {0,1,14144},
       {0,0,368},
@@ -1492,6 +1534,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 },
 { "ribbonShader.frag.spv", 
   {
+    ShaderStage::Fragment,
     {
       {0,4,48},
       {0,0,368},

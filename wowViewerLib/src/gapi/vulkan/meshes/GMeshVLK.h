@@ -13,9 +13,10 @@
 
 class GMeshVLK : public IMesh {
     friend class GDeviceVLK;
-protected:
+public:
     explicit GMeshVLK(IDevice &device,
-                   const gMeshTemplate &meshTemplate
+                   const gMeshTemplate &meshTemplate,
+                   const HMaterialVLK &material
     );
 
 public:
@@ -26,17 +27,17 @@ public:
 
 public:
     std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
-    HMaterialVLK material;
+    auto material() const -> const HMaterialVLK& { return m_material; }
 protected:
     MeshType m_meshType;
+    bool m_isTransparent = false;
 
     int8_t m_depthWrite;
     int8_t m_depthCulling;
     int8_t m_backFaceCulling;
-    int8_t m_triCCW = 1;
 
+    int8_t m_triCCW = 1;
     EGxBlendEnum m_blendMode;
-    bool m_isTransparent = false;
     int8_t m_isScissorsEnabled = -1;
 
     std::array<int, 2> m_scissorOffset = {0,0};
@@ -55,8 +56,7 @@ protected:
     std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
 private:
     GDeviceVLK &m_device;
-
-
+    HMaterialVLK m_material;
 };
 
 

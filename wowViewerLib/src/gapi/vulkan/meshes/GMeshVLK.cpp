@@ -9,8 +9,9 @@
 #include "../shaders/GShaderPermutationVLK.h"
 
 GMeshVLK::GMeshVLK(IDevice &device,
-             const gMeshTemplate &meshTemplate
-) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_meshType(meshTemplate.meshType) {
+            const gMeshTemplate &meshTemplate,
+            const HMaterialVLK &material
+) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_meshType(meshTemplate.meshType), m_material(material) {
 
     m_bindings = meshTemplate.bindings;
 
@@ -32,14 +33,13 @@ GMeshVLK::GMeshVLK(IDevice &device,
     m_start = meshTemplate.start;
     m_end = meshTemplate.end;
     m_element = meshTemplate.element;
-
 }
 
 //Works under assumption that meshes do not change the renderpass, on which they are rendered, too often
 std::shared_ptr<GPipelineVLK> GMeshVLK::getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ) {
     if (m_lastRenderPass != renderPass || m_lastInvertedZ != invertedZ) {
         m_lastPipelineForRenderPass = m_device.createPipeline(m_bindings,
-                                                              material->getShader(), renderPass, m_element,
+                                                              m_material->getShader(), renderPass, m_element,
                                                               m_backFaceCulling, m_triCCW,
                                                               m_blendMode, m_depthCulling,
                                                               m_depthWrite, invertedZ);

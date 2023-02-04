@@ -10,7 +10,7 @@ void ISimpleMaterialVLK::createImageDescriptorSet() {
     auto shaderVLK = std::dynamic_pointer_cast<GShaderPermutationVLK>(m_shader);
     auto descLayout = shaderVLK->getImageDescriptorLayout();
 
-    imageDescriptorSets = { m_device->createDescriptorSet(descLayout, 0, shaderVLK->getTextureCount()) };
+    imageDescriptorSets = { m_device->createDescriptorSet(descLayout) };
 
     {
         std::vector<VkWriteDescriptorSet> descriptorWrites;
@@ -107,7 +107,7 @@ ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device,
 
     auto uboSetLayout = shaderLayout.setLayouts[0];
     if (ubos.size() != uboSetLayout.uboBindings.length) {
-        std::cerr << "not enough ubos for shaderName = " << shaderVLK->getShaderName() << std::endl;
+        std::cerr << "not enough ubos for shaderName = " << shaderVLK->getShaderCombinedName() << std::endl;
     }
     for (unsigned int i = uboSetLayout.uboBindings.start; i <= uboSetLayout.uboBindings.end; i++) {
         auto it = uboSetLayout.uboSizesPerBinding.find(i);
@@ -115,7 +115,7 @@ ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device,
             auto uboIndex = i - uboSetLayout.uboBindings.start;
             if (ubos[uboIndex] == nullptr) {
                 std::cerr << "UBO is not set for "
-                          << "shader = " << shaderVLK->getShaderName()
+                          << "shader = " << shaderVLK->getShaderCombinedName()
                           << " set = " << 1
                           << " binding" << i
                           << std::endl;
@@ -123,7 +123,7 @@ ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device,
 
             if (it->second != ubos[uboIndex]->getSize()) {
                 std::cout << "buffers missmatch! for"
-                          << " shaderName = " << shaderVLK->getShaderName()
+                          << " shaderName = " << shaderVLK->getShaderCombinedName()
                           << " set = " << 1
                           << " binding = " << i
                           << " expected size " << (it->second)
@@ -136,7 +136,7 @@ ISimpleMaterialVLK::ISimpleMaterialVLK(const HGDeviceVLK &device,
     auto imageSetLayout = shaderLayout.setLayouts[1];
     if (imageSetLayout.imageBindings.length != textures.size()) {
         std::cout << "image count mismatch! for"
-                  << " shaderName = " << shaderVLK->getShaderName()
+                  << " shaderName = " << shaderVLK->getShaderCombinedName()
                   << " set = " << 1
                   << " expected count " << uboSetLayout.imageBindings.length
                   << ", provided count = " << textures.size()

@@ -148,6 +148,6 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     }
 
 
-    m_apiContainer->hDevice->submitDrawCommands();
+//    m_apiContainer->hDevice->submitDrawCommands();
     m_apiContainer->hDevice->increaseFrameNumber();
 }

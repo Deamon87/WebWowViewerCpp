@@ -4,6 +4,9 @@
 
 #ifndef AWEBWOWVIEWERCPP_IBUFFER_H
 #define AWEBWOWVIEWERCPP_IBUFFER_H
+
+#include <memory>
+
 class IBuffer {
 public:
     virtual ~IBuffer() = default;

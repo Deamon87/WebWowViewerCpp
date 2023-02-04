@@ -5,7 +5,7 @@
 #include "FrontendUIRenderer.h"
 
 //This should be called during Update/Draw stage, cause this stuff allocates buffers
-void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams) {
+void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, std::vector<HGMesh> &meshes) {
 
     auto frameParam = frameInputParams->frameParameters;
 
@@ -44,10 +44,10 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
     auto &uni = m_imguiUbo->getObject();
     uni.projectionMat = ortho_projection;
     uni.scale[0] = uiScale;
-    m_imguiUbo->save(sizeof(decltype(uni)));
+    m_imguiUbo->save();
     //UBO update end
 
-    auto shaderPermute = m_device->getShader("imguiShader", "imguiShader", nullptr);
+
     // Render command lists
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
@@ -85,7 +85,7 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                 if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
                 {
                     // Apply scissor/clipping rectangle
-                    // Create mesh add add it to collected meshes
+                    // Create mesh and add it to collected meshes
                     gMeshTemplate meshTemplate(vertexBufferBindings);
                     meshTemplate.element = DrawElementMode::TRIANGLES;
                     meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
@@ -110,8 +110,7 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                     materialTemplate.texture = pcmd->TextureId;
 
                     auto material = this->createUIMaterial(materialTemplate);
-
-//                    this->createUIMesh(meshTemplate, material);
+                    meshes.push_back(this->createMesh(meshTemplate, material));
                 }
             }
         }

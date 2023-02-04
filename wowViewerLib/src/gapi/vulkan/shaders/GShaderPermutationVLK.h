@@ -27,12 +27,13 @@ class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
 
 public:
+    explicit GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device);
     ~GShaderPermutationVLK() override {};
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
-    VkDescriptorSetLayout getImageDescriptorLayout() {return imageDescriptorSetLayout;}
-    VkDescriptorSetLayout getUboDescriptorLayout() {return uboDescriptorSetLayout;}
+    const std::shared_ptr<GDescriptorSetLayout> getImageDescriptorLayout() {return hImageDescriptorSetLayout;}
+    const std::shared_ptr<GDescriptorSetLayout> getUboDescriptorLayout() {return hUboDescriptorSetLayout;}
 
     virtual int getTextureBindingStart();
     virtual int getTextureCount();
@@ -40,8 +41,8 @@ public:
     const shaderMetaData *fragShaderMeta;
     const shaderMetaData *vertShaderMeta;
 
-    std::string getShaderName() {
-        return m_shaderName;
+    std::string getShaderCombinedName() {
+        return m_combinedName;
     }
 
     const CombinedShaderLayout &getShaderLayout() {
@@ -49,9 +50,6 @@ public:
     };
 
 protected:
-    explicit GShaderPermutationVLK(std::string &shaderName, IDevice *device);
-    explicit GShaderPermutationVLK(std::string &shaderName, std::string &shaderVertName, std::string &shaderFragName, IDevice *device);
-
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
     void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
@@ -61,21 +59,23 @@ protected:
     VkShaderModule fragShaderModule;
 
 
-    VkDescriptorSetLayout uboDescriptorSetLayout;
-    VkDescriptorSetLayout imageDescriptorSetLayout;
+    std::shared_ptr<GDescriptorSetLayout> hUboDescriptorSetLayout;
+    std::shared_ptr<GDescriptorSetLayout> hImageDescriptorSetLayout;
 
-    std::array<std::shared_ptr<GDescriptorSets>, 4> uboDescriptorSets = {nullptr};
+    std::array<std::shared_ptr<GDescriptorSet>, 4> uboDescriptorSets = {nullptr};
 
-    GDeviceVLK *m_device;
+    std::shared_ptr<GDeviceVLK> m_device;
 
 
 private:
     //Used only for logging
-    std::string m_shaderName;
+    std::string m_combinedName;
 
     //Used for getting SPIRV
     std::string m_shaderNameVert;
     std::string m_shaderNameFrag;
+
+
 
     CombinedShaderLayout shaderLayout;
 
