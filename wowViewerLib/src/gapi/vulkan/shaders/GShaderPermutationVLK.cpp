@@ -51,14 +51,11 @@ GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderVertName, std::s
 }
 
 void GShaderPermutationVLK::createUBODescriptorLayout() {
-    const constexpr int UBO_SET_INDEX = 0;
-
     std::vector<const shaderMetaData *> metas = {fragShaderMeta, vertShaderMeta};
     hUboDescriptorSetLayout = std::make_shared<GDescriptorSetLayout>(m_device, metas, UBO_SET_INDEX);
 }
 
 void GShaderPermutationVLK::createImageDescriptorLayout() {
-    const constexpr int IMAGE_SET_INDEX = 0;
     std::vector<const shaderMetaData *> metas = {fragShaderMeta, vertShaderMeta};
     hImageDescriptorSetLayout = std::make_shared<GDescriptorSetLayout>(m_device, metas, IMAGE_SET_INDEX);
 }

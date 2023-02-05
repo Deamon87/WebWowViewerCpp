@@ -1425,22 +1425,36 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
 
 }
 
-std::shared_ptr<GDescriptorSet>
-GDeviceVLK::createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
+VkDescriptorSet
+GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) {
     //1. Try to allocate from existing sets
-    std::shared_ptr<GDescriptorSet> descriptorSet;
 
-    for (size_t i = 0; i < m_descriptorPools.size(); i++) {
-        descriptorSet = m_descriptorPools[i]->allocate(hDescriptorSetLayout);
-        if (descriptorSet != nullptr)
-            return descriptorSet;
+    if (m_descriptorPools.size() == 0) {
+        std::shared_ptr<GDescriptorPoolVLK> newPool = std::make_shared<GDescriptorPoolVLK>(*this);
+        m_descriptorPools.push_back(newPool);
     }
 
-    //2. Create new descriptor set and allocate from it
-    GDescriptorPoolVLK * newPool = new GDescriptorPoolVLK(*this);
-    m_descriptorPools.push_back(newPool);
+    desciptorPool = m_descriptorPools[0];
+    return m_descriptorPools[0]->allocate(hDescriptorSetLayout);
+//
+//    for (size_t i = 0; i < m_descriptorPools.size(); i++) {
+//        descriptorSet = m_descriptorPools[i]->allocate(hDescriptorSetLayout);
+//        if (descriptorSet != nullptr)
+//            return descriptorSet;
+//    }
+//
+//    //2. Create new descriptor set and allocate from it
+//    GDescriptorPoolVLK * newPool = new GDescriptorPoolVLK(*this);
+//    m_descriptorPools.push_back(newPool);
+//
+//    return newPool->allocate(hDescriptorSetLayout);
+}
 
-    return newPool->allocate(hDescriptorSetLayout);
+std::shared_ptr<GDescriptorSet>
+GDeviceVLK::createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
+    std::shared_ptr<GDescriptorSet> result = std::make_shared<GDescriptorSet>(this->shared_from_this(), hDescriptorSetLayout);
+
+    return result;
 }
 
 //void GDeviceVLK::internalDrawStageAndDeps(HDrawStage drawStage) {

@@ -138,6 +138,8 @@ public:
 
     void submitDrawCommands() override;
 
+    VkDescriptorSet
+    allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool);
     std::shared_ptr<GDescriptorSet> createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
 
     virtual VkDevice getVkDevice() {
@@ -346,7 +348,7 @@ protected:
     std::vector<VkSemaphore> uploadSemaphores;
     std::vector<VkFence> uploadFences;
 
-    std::vector<GDescriptorPoolVLK*> m_descriptorPools;
+    std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
 
     VmaAllocator vmaAllocator;
 

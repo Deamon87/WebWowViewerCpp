@@ -12,7 +12,7 @@
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../textures/GTextureVLK.h"
 
-class ISimpleMaterialVLK : public IMaterial {
+class ISimpleMaterialVLK : public IMaterial, public std::enable_shared_from_this<ISimpleMaterialVLK> {
 public:
     explicit ISimpleMaterialVLK(const HGDeviceVLK &device, const std::string &vertexShader, const std::string &pixelShader,
 
@@ -27,15 +27,17 @@ public:
     void createImageDescriptorSet();
     void updateImageDescriptorSet();
 
+    void createUBODescriptorSet();
+
 private:
     HGDeviceVLK m_device;
 
     std::vector<HGTextureVLK> m_textures = {};
     std::vector<std::shared_ptr<IBufferVLK>> m_ubos = {};
 
-    std::vector<std::shared_ptr<GDescriptorSet>> imageDescriptorSets;
-    std::vector<std::shared_ptr<GDescriptorSet>> uboDescriptorSets;
-    std::vector<std::shared_ptr<GDescriptorSet>> ssboDescriptorSets;
+    std::shared_ptr<GDescriptorSet> imageDescriptorSet;
+    std::shared_ptr<GDescriptorSet> uboDescriptorSet;
+    std::shared_ptr<GDescriptorSet> ssboDescriptorSet;
 
     HGShaderPermutation m_shader;
 };

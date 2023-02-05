@@ -25,8 +25,10 @@ struct CombinedShaderLayout {
 
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
-
 public:
+    static const constexpr int UBO_SET_INDEX = 0;
+    static const constexpr int IMAGE_SET_INDEX = 1;
+
     explicit GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device);
     ~GShaderPermutationVLK() override {};
 
@@ -74,8 +76,6 @@ private:
     //Used for getting SPIRV
     std::string m_shaderNameVert;
     std::string m_shaderNameFrag;
-
-
 
     CombinedShaderLayout shaderLayout;
 

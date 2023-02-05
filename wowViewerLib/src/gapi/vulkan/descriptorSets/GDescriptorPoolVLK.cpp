@@ -31,7 +31,7 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<
     }
 }
 
-std::shared_ptr<GDescriptorSet> GDescriptorPoolVLK::allocate(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
+VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
     if (uniformsAvailable < hDescriptorSetLayout->getTotalUbos() || imageAvailable <  hDescriptorSetLayout->getTotalImages() || setsAvailable < 1) return nullptr;
 
     constexpr int descSetCount = 1;
@@ -56,13 +56,10 @@ std::shared_ptr<GDescriptorSet> GDescriptorPoolVLK::allocate(std::shared_ptr<GDe
     imageAvailable -= hDescriptorSetLayout->getTotalImages();
 	setsAvailable -= 1;
 
-    std::shared_ptr<GDescriptorSet> result = std::make_shared<GDescriptorSet>(m_device, hDescriptorSetLayout, descriptorSet, this->shared_from_this());
-    return result;
+    return descriptorSet;
 }
 
-void GDescriptorPoolVLK::deallocate(GDescriptorSet *set) {
-    auto descSet = set->getDescSet();
-    auto hDescriptorLayout = set->getSetLayout();
+void GDescriptorPoolVLK::deallocate(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorLayout, VkDescriptorSet descSet) {
     auto h_this = this->shared_from_this();
 
     m_device.addDeallocationRecord([h_this, hDescriptorLayout, descSet]() {
@@ -72,5 +69,4 @@ void GDescriptorPoolVLK::deallocate(GDescriptorSet *set) {
         h_this->uniformsAvailable+= hDescriptorLayout->getTotalUbos();
         h_this->setsAvailable+=1;
     });
-
 }

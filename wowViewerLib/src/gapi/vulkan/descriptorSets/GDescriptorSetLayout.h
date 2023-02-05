@@ -19,7 +19,9 @@ public:
     ~GDescriptorSetLayout();
 
     const VkDescriptorSetLayout getSetLayout() {return m_descriptorSetLayout;} ;
-    const std::unordered_map<int,VkDescriptorSetLayoutBinding> getShaderLayoutBindings() const {return m_shaderLayoutBindings;} ;
+
+    const std::unordered_map<int,VkDescriptorSetLayoutBinding>& getShaderLayoutBindings() const {return m_shaderLayoutBindings;} ;
+
     int getTotalUbos() { return m_totalUbos; };
     int getTotalImages() { return m_totalImages; };
 private:

@@ -20,18 +20,30 @@ class GDescriptorSet {
 public:
     static const constexpr int MAX_BINDPOINT_NUMBER = 16;
 
-    explicit GDescriptorSet(IDevice &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, VkDescriptorSet descriptorSet, std::shared_ptr<GDescriptorPoolVLK> parentPool);
+    explicit GDescriptorSet(const std::shared_ptr<GDeviceVLK> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
     ~GDescriptorSet();
 
     void update();
     void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites);
-    const std::shared_ptr<GDescriptorSetLayout> getSetLayout() const { return m_hDescriptorSetLayout;};
+    const std::shared_ptr<GDescriptorSetLayout> &getSetLayout() const { return m_hDescriptorSetLayout;};
 
     VkDescriptorSet getDescSet() {return m_descriptorSet;}
 
+    struct DescriptorRecord {
+        enum class DescriptorRecordType {
+            None, UBO, UBODynamic, Texture
+        };
+
+        DescriptorRecordType descType = DescriptorRecordType::None;
+        std::shared_ptr<IBufferVLK> buffer = nullptr;
+        std::shared_ptr<GTextureVLK> textureVlk = nullptr;
+    };
+
     class SetUpdateHelper {
     public:
-        SetUpdateHelper(GDescriptorSet &set) : m_set(set) {}
+        explicit SetUpdateHelper(GDescriptorSet &set, std::array<DescriptorRecord, 16> &boundDescriptors) :
+            m_set(set), m_boundDescriptors(boundDescriptors) {}
+        ~SetUpdateHelper();
 
         SetUpdateHelper& ubo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer);
 
@@ -42,26 +54,29 @@ public:
         //TODO: add version of this array texture case (aka bindless)
         SetUpdateHelper& texture(int bindIndex, const std::shared_ptr<GTextureVLK> &textureVlk);
 
-        std::bitset<MAX_BINDPOINT_NUMBER> m_updateBitSet = 0;
-
     private:
         GDescriptorSet &m_set;
+        std::array<DescriptorRecord, MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
+
         std::vector<VkDescriptorImageInfo> imageInfos;
         std::vector<VkDescriptorBufferInfo> bufferInfos;
 
         std::vector<VkWriteDescriptorSet> updates;
+        std::bitset<MAX_BINDPOINT_NUMBER> m_updateBindPoints = 0;
     };
 
-    SetUpdateHelper beginUpdate() {
-        return SetUpdateHelper(*this);
-    };
+    SetUpdateHelper beginUpdate();
 
 private:
-    GDeviceVLK &m_device;
+    std::shared_ptr<GDeviceVLK> m_device;
     VkDescriptorSet m_descriptorSet;
     std::shared_ptr<GDescriptorPoolVLK> m_parentPool;
 
     std::shared_ptr<GDescriptorSetLayout> m_hDescriptorSetLayout;
+
+    bool m_firstUpdate = true;
+
+    std::array<DescriptorRecord, MAX_BINDPOINT_NUMBER> boundDescriptors;
 
 // Scrapped idea. The VkCopyDescriptorSet can cause copy GPU -> CPU -> GPU. So it's scrapped idea
 //    //Defines amount of frames that the updates has to be copied from previous frame

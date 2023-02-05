@@ -6,19 +6,30 @@
 
 #include "../textures/GTextureVLK.h"
 
-GDescriptorSet::GDescriptorSet(IDevice &device,
-                               std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout,
-                               VkDescriptorSet descriptorSet,
-                               std::shared_ptr<GDescriptorPoolVLK> parentPool)
-    : m_device(dynamic_cast<GDeviceVLK &>(device)),
-      m_parentPool(parentPool),
-      m_descriptorSet(descriptorSet),
-      m_hDescriptorSetLayout(hDescriptorSetLayout) {
+GDescriptorSet::GDescriptorSet(const std::shared_ptr<GDeviceVLK> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
+    : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
 
+    m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
 }
 GDescriptorSet::~GDescriptorSet() {
-    m_parentPool->deallocate(this);
+    m_parentPool->deallocate(m_hDescriptorSetLayout, getDescSet());
 };
+
+GDescriptorSet::SetUpdateHelper GDescriptorSet::beginUpdate() {
+    if (!m_firstUpdate) {
+        //In this implementation of descriptor set, the descriptor set is getting free'd on update
+        //and new one is created
+        auto l_descriptorSet = m_descriptorSet;
+        auto l_parentPool = m_parentPool;
+        auto l_hDescriptorSetLayout = m_hDescriptorSetLayout;
+        m_device->addDeallocationRecord([l_parentPool, l_descriptorSet, l_hDescriptorSetLayout]() {
+            l_parentPool->deallocate(l_hDescriptorSetLayout, l_descriptorSet);
+        });
+
+        m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
+    }
+    return SetUpdateHelper(*this, boundDescriptors);
+}
 
 void GDescriptorSet::update() {
     auto update = beginUpdate();
@@ -29,7 +40,9 @@ void GDescriptorSet::update() {
 //
 // So, writes first, copies second. T_T
 void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites) {
-    vkUpdateDescriptorSets(m_device.getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
+    vkUpdateDescriptorSets(m_device->getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
+
+    m_firstUpdate = false;
 
 //    m_updateBitSet |= updatedBindsBitSet;
 //
@@ -45,6 +58,15 @@ void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &de
 
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GTextureVLK> &textureVlk) {
+    if (m_set.m_hDescriptorSetLayout->getShaderLayoutBindings().at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+        std::cerr << "descriptor mismatch for image" << std::endl;
+        throw std::runtime_error("descriptor mismatch for image");
+    }
+
+    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBODynamic;
+    m_boundDescriptors[bindIndex].textureVlk = textureVlk;
+    m_updateBindPoints[bindIndex] = true;
+
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
     imageInfo = {};
 
@@ -71,6 +93,15 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
 //And this current system of sub-allocation it seems, there is no real reason to rely on this. Sort of.
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
+    if (m_set.m_hDescriptorSetLayout->getShaderLayoutBindings().at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
+        std::cerr << "descriptor mismatch for UBO dynamic" << std::endl;
+        throw std::runtime_error("descriptor mismatch for UBO dynamic");
+    }
+
+    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBODynamic;
+    m_boundDescriptors[bindIndex].buffer = buffer;
+    m_updateBindPoints[bindIndex] = true;
+
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
     bufferInfo = {};
     bufferInfo.buffer = buffer->getGPUBuffer();
@@ -95,6 +126,15 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
 
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
+    if (m_set.m_hDescriptorSetLayout->getShaderLayoutBindings().at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+        std::cerr << "descriptor mismatch for UBO" << std::endl;
+        throw std::runtime_error("descriptor mismatch for UBO");
+    }
+
+    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBO;
+    m_boundDescriptors[bindIndex].buffer = buffer;
+    m_updateBindPoints[bindIndex] = true;
+
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
     bufferInfo = {};
     bufferInfo.buffer = buffer->getGPUBuffer();
@@ -122,5 +162,22 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
     throw "unimplemented";
 
     return *this;
+}
+
+GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
+    //Fill the rest of Descriptor with already bound values
+    for (int bindPoint = 0; m_updateBindPoints.size(); bindPoint++) {
+        if(m_updateBindPoints[bindPoint]) continue;
+
+        if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::UBO) {
+            ubo(bindPoint, m_boundDescriptors[bindPoint].buffer);
+        } else if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
+            ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint].buffer);
+        } else if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::Texture) {
+            texture(bindPoint, m_boundDescriptors[bindPoint].textureVlk);
+        }
+    }
+
+    m_set.writeToDescriptorSets(updates);
 }
 

@@ -16,8 +16,8 @@ class GDescriptorPoolVLK : public std::enable_shared_from_this<GDescriptorPoolVL
 public:
     explicit GDescriptorPoolVLK(IDevice &device);
 
-    std::shared_ptr<GDescriptorSet> allocate(std::shared_ptr<GDescriptorSetLayout> &gDescriptorSetLayout);
-    void deallocate(GDescriptorSet *set);
+    VkDescriptorSet allocate(const std::shared_ptr<GDescriptorSetLayout> &gDescriptorSetLayout);
+    void deallocate(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorLayout, VkDescriptorSet descSet);
 
 private:
     GDeviceVLK &m_device;
