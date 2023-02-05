@@ -12,7 +12,7 @@
 
 class GFrameBufferVLK : public IFrameBuffer {
 public:
-    GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, int width, int height);
+    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, int width, int height);
     ~GFrameBufferVLK() override;
 
     void readRGBAPixels(int x, int y, int width, int height, void *data) override;
@@ -21,14 +21,16 @@ public:
     void bindFrameBuffer() override;
     void copyRenderBufferToTexture() override;
 
-    std::shared_ptr<GRenderPassVLK> m_renderPass;
-    VkFramebuffer m_frameBuffer;
+    static void iterateOverAttachments(const std::vector<ITextureFormat> &textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback);
 
-    static void iterateOverAttachments(std::vector<ITextureFormat> textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback);
-
+    VkFramebuffer getFrameBuffer() {return m_frameBuffer;};
+    int getColorOrDataAttachmentCount() { return attachmentFormats.size(); };
 
 private:
     GDeviceVLK &mdevice;
+
+    std::shared_ptr<GRenderPassVLK> m_renderPass;
+    VkFramebuffer m_frameBuffer;
 
     std::vector<HGTexture> attachmentTextures;
     HGTexture depthTexture;

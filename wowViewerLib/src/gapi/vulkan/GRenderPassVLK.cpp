@@ -10,6 +10,7 @@ GRenderPassVLK::GRenderPassVLK(GDeviceVLK &device, std::vector<VkFormat> texture
 
     std::vector<VkAttachmentDescription> attachments;
     std::vector<VkAttachmentDescription> colorAttachmentsResolves;
+
     std::vector<VkAttachmentReference> colorReferences;
     std::vector<VkAttachmentReference> colorResolveReferences;
 

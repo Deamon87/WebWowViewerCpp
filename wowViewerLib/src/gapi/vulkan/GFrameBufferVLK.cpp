@@ -7,23 +7,30 @@
 #include "textures/GTextureVLK.h"
 #include "GRenderPassVLK.h"
 
-void GFrameBufferVLK::iterateOverAttachments(std::vector<ITextureFormat> textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback) {
+void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback) {
     for (int i = 0; i < textureAttachments.size(); i++) {
-        if (textureAttachments[i] == ITextureFormat::itNone) continue;
-        if (textureAttachments[i] == ITextureFormat::itDepth32) continue;
-
         VkFormat textureFormat;
-        if (textureAttachments[i] == ITextureFormat::itRGBA) {
-            textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
-        } else if (textureAttachments[i] == ITextureFormat::itRGBAFloat32) {
-            textureFormat = VK_FORMAT_R16G16B16_SFLOAT;
+
+        switch (textureAttachments[i]) {
+            case ITextureFormat::itNone:
+            case ITextureFormat::itDepth32:
+                continue;
+
+            case ITextureFormat::itRGBA:
+                textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
+                break;
+
+            case ITextureFormat::itRGBAFloat32:
+                textureFormat = VK_FORMAT_R16G16B16_SFLOAT;
+                break;
         }
 
         callback(i, textureFormat);
     }
 }
 
-GFrameBufferVLK::GFrameBufferVLK(IDevice &device, std::vector<ITextureFormat> textureAttachments,
+GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
+                                 const std::vector<ITextureFormat> &textureAttachments,
                                  ITextureFormat depthAttachment,
                                  int multiSampleCnt,
                                  int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)),

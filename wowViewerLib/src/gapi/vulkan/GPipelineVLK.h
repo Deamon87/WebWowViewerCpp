@@ -41,7 +41,6 @@ public:
 private:
     GDeviceVLK &m_device;
 
-    VkPipelineLayout pipelineLayout;
     VkPipeline graphicsPipeline;
 };
 

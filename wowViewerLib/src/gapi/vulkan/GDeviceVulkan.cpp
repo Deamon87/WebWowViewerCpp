@@ -1429,6 +1429,7 @@ VkDescriptorSet
 GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) {
     //1. Try to allocate from existing sets
 
+    //Keep only one descriptor set pool for now
     if (m_descriptorPools.size() == 0) {
         std::shared_ptr<GDescriptorPoolVLK> newPool = std::make_shared<GDescriptorPoolVLK>(*this);
         m_descriptorPools.push_back(newPool);

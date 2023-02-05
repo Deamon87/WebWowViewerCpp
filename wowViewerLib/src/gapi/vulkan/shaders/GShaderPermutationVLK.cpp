@@ -60,78 +60,6 @@ void GShaderPermutationVLK::createImageDescriptorLayout() {
     hImageDescriptorSetLayout = std::make_shared<GDescriptorSetLayout>(m_device, metas, IMAGE_SET_INDEX);
 }
 
-void GShaderPermutationVLK::updateDescriptorSet(int index) {
-    std::vector<VkDescriptorBufferInfo> bufferInfos;
-    std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-    auto *uploadBuffer = ((IBufferVLK *) m_device->getUploadBuffer(index).get());
-    if (uploadBuffer == nullptr) return;
-
-    for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = vertShaderMeta->uboBindings[i];
-
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = uploadBuffer->getGPUBuffer();
-        bufferInfo.offset = 0;
-        bufferInfo.range = uboVertBinding.size;
-        bufferInfos.push_back(bufferInfo);
-    }
-    for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = fragShaderMeta->uboBindings[i];
-
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = uploadBuffer->getGPUBuffer();
-        bufferInfo.offset = 0;
-        bufferInfo.range = uboFragBinding.size;
-        bufferInfos.push_back(bufferInfo);
-    }
-
-    int buffInd = 0;
-    for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = vertShaderMeta->uboBindings[i];
-
-        VkWriteDescriptorSet writeDescriptor;
-        writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptor.dstSet = uboDescriptorSets[index]->getDescSet();
-        writeDescriptor.pNext = nullptr;
-        writeDescriptor.dstBinding = uboVertBinding.binding;
-        writeDescriptor.dstArrayElement = 0;
-        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptor.descriptorCount = 1;
-        writeDescriptor.pBufferInfo = &bufferInfos[buffInd++];
-        writeDescriptor.pImageInfo = nullptr;
-        writeDescriptor.pTexelBufferView = nullptr;
-        descriptorWrites.push_back(writeDescriptor);
-
-    }
-    for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = fragShaderMeta->uboBindings[i];
-
-        VkWriteDescriptorSet writeDescriptor;
-        writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptor.dstSet = uboDescriptorSets[index]->getDescSet();
-        writeDescriptor.pNext = nullptr;
-        writeDescriptor.dstBinding = uboFragBinding.binding;
-        writeDescriptor.dstArrayElement = 0;
-        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptor.descriptorCount = 1;
-        writeDescriptor.pBufferInfo = &bufferInfos[buffInd++];
-        writeDescriptor.pImageInfo = nullptr;
-        writeDescriptor.pTexelBufferView = nullptr;
-        descriptorWrites.push_back(writeDescriptor);
-    }
-
-    uboDescriptorSets[index]->writeToDescriptorSets(descriptorWrites);
-}
-
-void GShaderPermutationVLK::createUboDescriptorSets() {
-    for (int j = 0; j < 4; j++) {
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        uboDescriptorSets[j] = m_device->createDescriptorSet(hUboDescriptorSetLayout);
-        updateDescriptorSet(j);
-    }
-}
-
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
     auto vertShaderCode = readFile("spirv/" + m_shaderNameVert + ".vert.spv");
     auto fragShaderCode = readFile("spirv/" + m_shaderNameFrag + ".frag.spv");
@@ -143,9 +71,12 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     fragShaderMeta = &shaderMetaInfo.at(m_shaderNameFrag + ".frag.spv");
 
     this->createShaderLayout();
+
     this->createUBODescriptorLayout();
     this->createImageDescriptorLayout();
-    this->createUboDescriptorSets();
+
+    this->createPipelineLayout();
+
 }
 
 int GShaderPermutationVLK::getTextureBindingStart() {
@@ -247,6 +178,26 @@ void GShaderPermutationVLK::createShaderLayout() {
                 data.start = 0;
             }
         }
+    }
+}
+
+void GShaderPermutationVLK::createPipelineLayout() {
+    std::array<VkDescriptorSetLayout, 2> descLayouts ;
+    descLayouts[0] = this->getUboDescriptorLayout()->getSetLayout();
+    descLayouts[1] = this->getImageDescriptorLayout()->getSetLayout();
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.pNext = NULL;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pPushConstantRanges = NULL;
+    pipelineLayoutInfo.setLayoutCount = 2;
+    pipelineLayoutInfo.pSetLayouts = &descLayouts[0];
+
+    std::cout << "Pipeline layout for "+this->getShaderCombinedName() << std::endl;
+
+    if (vkCreatePipelineLayout(m_device->getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
     }
 }
 

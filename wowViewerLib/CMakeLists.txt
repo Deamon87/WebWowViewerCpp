@@ -491,7 +491,9 @@ if (LINK_VULKAN)
             src/gapi/vulkan/buffers/IBufferChunkVLK.cpp
             src/gapi/vulkan/buffers/IBufferChunkVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
-            src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h)
+            src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h
+            src/gapi/vulkan/CommandBuffer.cpp
+            src/gapi/vulkan/CommandBuffer.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

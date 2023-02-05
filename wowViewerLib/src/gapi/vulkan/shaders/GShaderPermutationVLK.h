@@ -51,6 +51,10 @@ public:
         return shaderLayout;
     };
 
+    VkPipelineLayout getPipelineLayout() {
+        return pipelineLayout;
+    }
+
 protected:
     VkShaderModule createShaderModule(const std::vector<char>& code);
 
@@ -60,15 +64,12 @@ protected:
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
 
+    VkPipelineLayout pipelineLayout;
 
     std::shared_ptr<GDescriptorSetLayout> hUboDescriptorSetLayout;
     std::shared_ptr<GDescriptorSetLayout> hImageDescriptorSetLayout;
 
-    std::array<std::shared_ptr<GDescriptorSet>, 4> uboDescriptorSets = {nullptr};
-
     std::shared_ptr<GDeviceVLK> m_device;
-
-
 private:
     //Used only for logging
     std::string m_combinedName;
@@ -83,13 +84,8 @@ private:
 
     void createImageDescriptorLayout();
 
-    void createUboDescriptorSets();
-
-    void updateDescriptorSet(int index);
-
-    std::vector<bool> hasBondUBO = std::vector<bool>(7, false);
-
     void createShaderLayout();
+    void createPipelineLayout();
 };
 
 
