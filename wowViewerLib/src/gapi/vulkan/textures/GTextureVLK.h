@@ -10,6 +10,8 @@ class GFrameBufferVLK;
 #include "../GDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
 
+class
+
 class GTextureVLK : public ITexture {
     friend class GDeviceVLK;
     friend class GFrameBufferVLK;
@@ -34,6 +36,8 @@ public:
     void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
+
+    void updateVulkan();
     bool postLoad() override;;
 
     struct Texture {
@@ -55,6 +59,10 @@ private:
 
     VmaAllocation imageAllocation = VK_NULL_HANDLE;
     VmaAllocationInfo imageAllocationInfo = {};
+
+    std::vector<VkBufferImageCopy> bufferCopyRegions = {};
+
+
 protected:
     GDeviceVLK &m_device;
 
@@ -67,6 +75,7 @@ protected:
 
     int m_width = 0;
     int m_height = 0;
+
 
     void createVulkanImageObject(
         bool isDepthTexture,

@@ -5,6 +5,7 @@
 #include "CommandBuffer.h"
 #include "GRenderPassVLK.h"
 #include "GFrameBufferVLK.h"
+#include "GPipelineVLK.h"
 
 GCommandBuffer::GCommandBuffer(GDeviceVLK &deviceVlk, VkCommandPool commandPool, bool isPrimary) {
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -90,9 +91,27 @@ GCommandBuffer::CmdBufRecorder::RenderPassHelper GCommandBuffer::CmdBufRecorder:
     );
 }
 
-void GCommandBuffer::CmdBufRecorder::bindDescriptorSet(std::shared_ptr<GDescriptorSet> &descriptorSet) {
-    vkCmdBindDescriptorSets(commandBufferForFilling, VK_PIPELINE_BIND_POINT_GRAPHICS,
-        h_pipeLine->pipelineLayout, 0, 1, &uboDescSet, uboIndPerMesh[i], dynamicOffsetPerMesh[i].data());
+void GCommandBuffer::CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, std::shared_ptr<GDescriptorSet> &descriptorSet) {
+    //TODO: bindpoints: VK_PIPELINE_BIND_POINT_GRAPHICS and others
+    //Which leads to three separate states for:
+    // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
+    // Also, implement "Pipeline Layout Compatibility" thing from spec
+
+    if (m_currentDescriptorSet[bindIndex] == descriptorSet) return;
+
+    auto vkDescSet = descriptorSet->getDescSet();
+    constexpr uint32_t vkDescCnt = 1;
+
+    vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+        m_currentPipeline->getLayout(), bindIndex, vkDescCnt, &vkDescSet, 0, nullptr);
+}
+
+void GCommandBuffer::CmdBufRecorder::bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline) {
+    if (m_currentPipeline == pipeline) return;
+
+    vkCmdBindPipeline(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipeline());
+
+    m_currentPipeline = pipeline;
 }
 
 // ----------------------------------------

@@ -42,7 +42,8 @@ public:
                                          const std::array<uint32_t, 2> areaSize,
                                          const std::array<float,3> &colorClearColor, float depthClear);
 
-        void bindDescriptorSet(std::shared_ptr<GDescriptorSet> &descriptorSet);
+        void bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline);
+        void bindDescriptorSet(uint32_t bindIndex, std::shared_ptr<GDescriptorSet> &descriptorSet);
 
         friend RenderPassHelper::~RenderPassHelper();
     private:
@@ -50,6 +51,7 @@ public:
 
         //States
         std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
+        std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
         std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSet::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
     };
 

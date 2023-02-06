@@ -13,9 +13,9 @@ class GPipelineVLK {
     friend class GDeviceVLK;
 public:
     explicit GPipelineVLK(IDevice &m_device,
-                          HGVertexBufferBindings m_bindings,
-                          std::shared_ptr<GRenderPassVLK> renderPass,
-                          HGShaderPermutation shader,
+                          const HGVertexBufferBindings &m_bindings,
+                          const std::shared_ptr<GRenderPassVLK> &renderPass,
+                          const HGShaderPermutation &shader,
                           DrawElementMode element,
                           int8_t backFaceCulling,
                           int8_t triCCW,
@@ -38,9 +38,13 @@ public:
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
+
+    VkPipelineLayout getLayout() { return m_pipelineLayout; };
+    VkPipeline getPipeline() { return graphicsPipeline; };
 private:
     GDeviceVLK &m_device;
 
+    VkPipelineLayout m_pipelineLayout;
     VkPipeline graphicsPipeline;
 };
 

@@ -34,9 +34,9 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 };
 
 GPipelineVLK::GPipelineVLK(IDevice &device,
-    HGVertexBufferBindings m_bindings,
-    std::shared_ptr<GRenderPassVLK> renderPass,
-    HGShaderPermutation shader,
+    const HGVertexBufferBindings &m_bindings,
+    const std::shared_ptr<GRenderPassVLK> &renderPass,
+    const HGShaderPermutation &shader,
     DrawElementMode element,
     int8_t backFaceCulling,
     int8_t triCCW,
@@ -44,7 +44,6 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     int8_t depthCulling,
     int8_t depthWrite,
     bool invertZ) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
-
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
     auto &arrVLKFormat = bufferBindingsVlk->getVLKFormat();
@@ -58,6 +57,8 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         }
     }
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
+
+    m_pipelineLayout = shaderVLK->getPipelineLayout();
 
     createPipeline(shaderVLK,
         renderPass,

@@ -159,20 +159,6 @@ public:
         return vmaAllocator;
     }
 
-    VkCommandBuffer getUploadCommandBuffer() {
-        int uploadFrame = getUpdateFrameNumber();
-        return uploadCommandBuffers[uploadFrame];
-    }
-
-    HGUniformBuffer getUploadBuffer(int index) {
-        return m_UBOFrames[index].m_uniformBufferForUpload;
-    }
-
-    VkCommandBuffer getTextureTransferCommandBuffer() {
-        int uploadFrame = getUpdateFrameNumber();
-        return textureTransferCommandBuffers[uploadFrame];
-    }
-
     void signalTextureTransferCommandRecorded() {
         int uploadFrame = getUpdateFrameNumber();
         textureTransferCommandBufferNull[uploadFrame] = false;
@@ -376,8 +362,6 @@ protected:
     struct FrameUniformBuffers {
         HGUniformBuffer m_uniformBufferForUpload;
     };
-
-    std::array<FrameUniformBuffers, MAX_FRAMES_IN_FLIGHT> m_UBOFrames;
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
