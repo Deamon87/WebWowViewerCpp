@@ -163,7 +163,7 @@ void GBufferVLK::uploadFromStaging(int offset, int destOffset, int length) {
     vbCopyRegion.srcOffset = offset;
     vbCopyRegion.dstOffset = destOffset;
     vbCopyRegion.size = length;
-    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), currentBuffer.stagingBuffer, currentBuffer.g_hBuffer, 1, &vbCopyRegion);
+//    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), currentBuffer.stagingBuffer, currentBuffer.g_hBuffer, 1, &vbCopyRegion);
 }
 
 void GBufferVLK::save(int length) {

@@ -159,11 +159,6 @@ public:
         return vmaAllocator;
     }
 
-    void signalTextureTransferCommandRecorded() {
-        int uploadFrame = getUpdateFrameNumber();
-        textureTransferCommandBufferNull[uploadFrame] = false;
-    }
-
     QueueFamilyIndices getQueueFamilyIndices() {
         return indices;
     }
@@ -317,13 +312,7 @@ protected:
     VkImageView depthImageView;
 
     std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<VkCommandBuffer> renderCommandBuffers;
-    std::vector<bool> renderCommandBuffersNotNull;
-    std::vector<VkCommandBuffer> renderCommandBuffersForFrameBuffers;
-    std::vector<bool> renderCommandBuffersForFrameBuffersNotNull;
-    std::vector<VkCommandBuffer> uploadCommandBuffers;
-    std::vector<VkCommandBuffer> textureTransferCommandBuffers;
-    std::vector<bool> textureTransferCommandBufferNull;
+
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;

@@ -1,0 +1,53 @@
+//
+// Created by Deamon on 06.02.23.
+//
+
+#ifndef AWEBWOWVIEWERCPP_COMMANDBUFFERRECORDER_H
+#define AWEBWOWVIEWERCPP_COMMANDBUFFERRECORDER_H
+
+#include <memory>
+#include "../../GRenderPassVLK.h"
+#include "../../GFrameBufferVLK.h"
+
+
+class CmdBufRecorder;
+class RenderPassHelper;
+class GCommandBuffer;
+
+#include "../CommandBuffer.h"
+#include "RenderPassHelper.h"
+
+class CmdBufRecorder {
+public:
+    friend RenderPassHelper;
+
+    CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass);
+    ~CmdBufRecorder();
+
+    uint32_t getQueueFamily();
+
+    RenderPassHelper beginRenderPass(
+        bool isAboutToExecSecondaryCMD,
+        const std::shared_ptr<GRenderPassVLK> &renderPassVlk,
+        const std::shared_ptr<GFrameBufferVLK> &frameBuffer,
+        const std::array<int32_t, 2> &areaOffset,
+        const std::array<uint32_t, 2> &areaSize,
+        const std::array<float,3> &colorClearColor, float depthClear);
+
+    void bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline);
+    void bindDescriptorSet(uint32_t bindIndex, std::shared_ptr<GDescriptorSet> &descriptorSet);
+
+    void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, VkImageLayout imageLayout, const std::vector<VkBufferImageCopy> &regions);
+
+    friend RenderPassHelper::~RenderPassHelper();
+private:
+    const GCommandBuffer &m_gCmdBuffer;
+
+    //States
+    std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
+    std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
+    std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSet::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
+};
+
+#endif //AWEBWOWVIEWERCPP_COMMANDBUFFERRECORDER_H

@@ -283,44 +283,12 @@ bool GTextureVLK::postLoad() {
 
 }
 
-void GTextureVLK::updateVulkan() {
+void GTextureVLK::updateVulkan(CmdBufRecorder &renderCmd, CmdBufRecorder &uploadCmd) {
 ///4. Fill commands to copy from CPU staging buffer to GPU buffer
 
-    // Image memory barriers for the texture image
 
-    // The sub resource range describes the regions of the image that will be transitioned using the memory barriers below
-    VkImageSubresourceRange subresourceRange = {};
-    // Image only contains color data
-    subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    // Start at first mip level
-    subresourceRange.baseMipLevel = 0;
-    // We will transition on all mip levels
-    subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-    // The 2D texture only has one layer
-    subresourceRange.layerCount = 1;
 
-    // Transition the texture image layout to transfer target, so we can safely copy our buffer data to it.
-    VkImageMemoryBarrier imageMemoryBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER};
-    imageMemoryBarrier.subresourceRange = subresourceRange;
-    imageMemoryBarrier.srcAccessMask = 0;
-    imageMemoryBarrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    imageMemoryBarrier.image = texture.image;
-    imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
 
-    // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
-    // Source pipeline stage is host write/read execution (VK_PIPELINE_STAGE_HOST_BIT)
-    // Destination pipeline stage is copy command execution (VK_PIPELINE_STAGE_TRANSFER_BIT)
-    vkCmdPipelineBarrier(
-        m_device.getUploadCommandBuffer(),
-        VK_PIPELINE_STAGE_HOST_BIT,
-        VK_PIPELINE_STAGE_TRANSFER_BIT,
-        0,
-        0, nullptr,
-        0, nullptr,
-        1, &imageMemoryBarrier);
 
     // Copy mip levels from staging buffer
     vkCmdCopyBufferToImage(
@@ -349,7 +317,7 @@ void GTextureVLK::updateVulkan() {
 
 
     // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
-    // Source pipeline stage stage is copy command exection (VK_PIPELINE_STAGE_TRANSFER_BIT)
+    // Source pipeline stage is copy command execution (VK_PIPELINE_STAGE_TRANSFER_BIT)
     // Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
 
     if (m_device.canUploadInSeparateThread()) {

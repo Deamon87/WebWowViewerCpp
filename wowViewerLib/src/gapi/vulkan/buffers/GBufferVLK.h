@@ -91,6 +91,8 @@ private:
 
 
     std::list<std::weak_ptr<GBufferVLK::GSubBufferVLK>> currentSubBuffers;
+
+//    uploadCache = {};
 public:
     std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes);
     void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it);

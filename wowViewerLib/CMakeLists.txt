@@ -492,8 +492,8 @@ if (LINK_VULKAN)
             src/gapi/vulkan/buffers/IBufferChunkVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h
-            src/gapi/vulkan/CommandBuffer.cpp
-            src/gapi/vulkan/CommandBuffer.h)
+            src/gapi/vulkan/commandBuffer/CommandBuffer.cpp
+            src/gapi/vulkan/commandBuffer/CommandBuffer.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

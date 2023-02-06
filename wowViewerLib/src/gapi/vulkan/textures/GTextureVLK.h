@@ -7,10 +7,12 @@
 
 class GDeviceVLK;
 class GFrameBufferVLK;
+class GCommandBuffer;
+
 #include "../GDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
+#include "../commandBuffer/CommandBuffer.h"
 
-class
 
 class GTextureVLK : public ITexture {
     friend class GDeviceVLK;
@@ -37,7 +39,7 @@ public:
         throw "Not Implemented in this class";
     }
 
-    void updateVulkan();
+    void updateVulkan(CmdBufRecorder &renderCmd, CmdBufRecorder &uploadCmd);
     bool postLoad() override;;
 
     struct Texture {
