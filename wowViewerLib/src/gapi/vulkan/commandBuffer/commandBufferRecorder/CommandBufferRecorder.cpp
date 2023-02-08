@@ -107,7 +107,7 @@ void CmdBufRecorder::recordPipelineBarrier(VkPipelineStageFlags srcStageMask, Vk
         imageBarrierData.size(), imageBarrierData.data());
 }
 
-void CmdBufRecorder::copyBufferToImage(VkBuffer buffer, VkImage image, VkImageLayout imageLayout, const std::vector<VkBufferImageCopy> &regions) {
+void CmdBufRecorder::copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions) {
     vkCmdCopyBufferToImage(
         m_gCmdBuffer.m_cmdBuffer,
         buffer,

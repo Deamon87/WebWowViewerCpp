@@ -8,15 +8,7 @@
 #include <vector>
 #include "../../textures/GTextureVLK.h"
 
-class TextureUploadHelper {
-    TextureUploadHelper(CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder);
-    ~TextureUploadHelper();
-
-private:
-    CmdBufRecorder &m_renderCmdBufRecorder;
-    CmdBufRecorder &m_uploadCmdBufRecorder;
-    std::vector<GTextureVLK> m_texturesToUpload;
-};
+void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder);
 
 
 #endif //AWEBWOWVIEWERCPP_TEXTUREUPLOADHELPER_H

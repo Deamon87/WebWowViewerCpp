@@ -70,10 +70,6 @@ void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVe
     GTextureVLK::createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
 }
 
-//bool GBlpTextureVLK::getIsLoaded() {
-//    return m_loaded;
-//}
-
 bool GBlpTextureVLK::postLoad() {
     if (m_loaded) return false;
     if (!m_uploaded) {

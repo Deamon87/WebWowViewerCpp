@@ -38,7 +38,7 @@ public:
     void bindDescriptorSet(uint32_t bindIndex, std::shared_ptr<GDescriptorSet> &descriptorSet);
 
     void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
-    void copyBufferToImage(VkBuffer buffer, VkImage image, VkImageLayout imageLayout, const std::vector<VkBufferImageCopy> &regions);
+    void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);
 
     friend RenderPassHelper::~RenderPassHelper();
 private:

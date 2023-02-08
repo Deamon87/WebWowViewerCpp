@@ -39,7 +39,27 @@ public:
         throw "Not Implemented in this class";
     }
 
-    void updateVulkan(CmdBufRecorder &renderCmd, CmdBufRecorder &uploadCmd);
+    auto * getAndPlanDestroy() {
+        if (!stagingBufferCreated || m_tempUpdateData == nullptr) {
+            return (decltype(m_tempUpdateData)) nullptr;
+        }
+        auto *l_device = &m_device;
+        auto *l_tempUpdateData = m_tempUpdateData;
+
+        auto &l_stagingBuffer = m_tempUpdateData->stagingBuffer;
+        auto &l_stagingBufferAlloc = m_tempUpdateData->stagingBufferAlloc;
+
+
+        m_device.addDeallocationRecord([l_tempUpdateData, l_device, l_stagingBuffer, l_stagingBufferAlloc]() {
+            vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
+
+            delete l_tempUpdateData;
+        });
+
+        m_tempUpdateData = nullptr;
+
+        return l_tempUpdateData;
+    }
     bool postLoad() override;;
 
     struct Texture {
@@ -54,16 +74,18 @@ private:
     virtual void bind(); //Should be called only by GDevice
     void unbind();
 
-    VkBuffer stagingBuffer;
-    VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
-    VmaAllocationInfo stagingBufferAllocInfo = {};
+
+    struct updateData {
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
+        VmaAllocationInfo stagingBufferAllocInfo = {};
+
+        std::vector<VkBufferImageCopy> bufferCopyRegions = {};
+    } * m_tempUpdateData = nullptr;
 
 
     VmaAllocation imageAllocation = VK_NULL_HANDLE;
     VmaAllocationInfo imageAllocationInfo = {};
-
-    std::vector<VkBufferImageCopy> bufferCopyRegions = {};
-
 
 protected:
     GDeviceVLK &m_device;

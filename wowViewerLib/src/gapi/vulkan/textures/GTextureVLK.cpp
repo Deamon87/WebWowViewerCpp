@@ -52,6 +52,9 @@ GTextureVLK::~GTextureVLK() {
 void GTextureVLK::createBuffer() {
 }
 
+
+
+
 void GTextureVLK::destroyBuffer() {
     if (!m_uploaded) return;
 
@@ -59,19 +62,15 @@ void GTextureVLK::destroyBuffer() {
     auto &l_texture = texture;
 
     auto &l_imageAllocation = imageAllocation;
-    auto &l_stagingBuffer = stagingBuffer;
-    auto &l_stagingBufferAlloc = stagingBufferAlloc;
-    auto l_stagingBufferCreated = stagingBufferCreated;
+
 
     m_device.addDeallocationRecord(
-        [l_device, l_texture, l_imageAllocation, l_stagingBuffer, l_stagingBufferAlloc, l_stagingBufferCreated]() {
+        [l_device, l_texture, l_imageAllocation]() {
             vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
             vkDestroySampler(l_device->getVkDevice(), l_texture.sampler, nullptr);
             vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
 
-            if (l_stagingBufferCreated) {
-                vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
-            }
+
     });
 }
 
@@ -109,6 +108,8 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
         std::cout << "oops!" << std::endl << std::flush;
     }
 
+    m_tempUpdateData = new std::remove_pointer<decltype(m_tempUpdateData)>::type();
+
     auto &mipmaps = *hmipmaps;
 
     m_width = mipmaps[0].width;
@@ -128,18 +129,20 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
     allocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
     allocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device.getVMAAllocator(), &createInfo, &allocCreateInfo, &stagingBuffer,
-                                     &stagingBufferAlloc, &stagingBufferAllocInfo));
+    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device.getVMAAllocator(), &createInfo, &allocCreateInfo,
+                                     &m_tempUpdateData->stagingBuffer,
+                                     &m_tempUpdateData->stagingBufferAlloc,
+                                     &m_tempUpdateData->stagingBufferAllocInfo));
 
     // Copy texture data into host local staging buffer
 
 
-    memcpy(stagingBufferAllocInfo.pMappedData, unitedBuffer.data(), unitedBuffer.size());
+    memcpy(m_tempUpdateData->stagingBufferAllocInfo.pMappedData, unitedBuffer.data(), unitedBuffer.size());
 
 
     ///2. Create regions to copy from CPU staging buffer to GPU buffer
 // Setup buffer copy regions for each mip level
-    bufferCopyRegions = {};
+
     uint32_t offset = 0;
 
     int vulkanMipMapCount = 0;
@@ -150,9 +153,9 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
             (textureFormatGPU != VK_FORMAT_R8G8B8A8_UNORM) &&
             ((mipmaps[i].width < 4) || (mipmaps[i].height < 4))
             )
-            break;
+        break;
 
-        VkBufferImageCopy bufferCopyRegion;
+        VkBufferImageCopy &bufferCopyRegion = m_tempUpdateData->bufferCopyRegions.emplace_back();
         bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         bufferCopyRegion.imageSubresource.mipLevel = i;
         bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
@@ -164,8 +167,6 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
         bufferCopyRegion.bufferImageHeight = 0;
         bufferCopyRegion.bufferOffset = offset;
         bufferCopyRegion.imageOffset = {0, 0, 0};
-
-        bufferCopyRegions.push_back(bufferCopyRegion);
 
         offset += static_cast<uint32_t>(mipmaps[i].texture.size());
         vulkanMipMapCount++;
@@ -286,18 +287,6 @@ bool GTextureVLK::postLoad() {
 void GTextureVLK::updateVulkan(CmdBufRecorder &renderCmd, CmdBufRecorder &uploadCmd) {
 ///4. Fill commands to copy from CPU staging buffer to GPU buffer
 
-
-
-
-
-    // Copy mip levels from staging buffer
-    vkCmdCopyBufferToImage(
-        m_device.getUploadCommandBuffer(),
-        stagingBuffer,
-        texture.image,
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        static_cast<uint32_t>(bufferCopyRegions.size()),
-        bufferCopyRegions.data());
 
     // Once the data has been uploaded we transfer to the texture image to the shader read layout, so it can be sampled from
 
