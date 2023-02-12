@@ -2,10 +2,12 @@
 // Created by Deamon on 12/14/2020.
 //
 
+#include <stdexcept>
 #include "GRenderPassVLK.h"
 
-GRenderPassVLK::GRenderPassVLK(GDeviceVLK &device, std::vector<VkFormat> textureAttachments, VkFormat depthAttachmentFormat,
-                               VkSampleCountFlagBits sampleCountBit, bool isSwapChainPass) : mdevice(device) {
+
+GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice, std::vector<VkFormat> textureAttachments, VkFormat depthAttachmentFormat,
+                               VkSampleCountFlagBits sampleCountBit, bool isSwapChainPass) {
     m_sampleCountBit = sampleCountBit;
 
     std::vector<VkAttachmentDescription> attachments;
@@ -130,7 +132,7 @@ GRenderPassVLK::GRenderPassVLK(GDeviceVLK &device, std::vector<VkFormat> texture
     renderPassInfo.dependencyCount = dependencies.size();
     renderPassInfo.pDependencies = dependencies.data();
 
-    if (vkCreateRenderPass(device.getVkDevice(), &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
+    if (vkCreateRenderPass(vkDevice, &renderPassInfo, nullptr, &renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
 }

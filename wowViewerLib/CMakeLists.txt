@@ -493,7 +493,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h
             src/gapi/vulkan/commandBuffer/CommandBuffer.cpp
-            src/gapi/vulkan/commandBuffer/CommandBuffer.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.h)
+            src/gapi/vulkan/commandBuffer/CommandBuffer.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.h src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.cpp src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.h src/gapi/vulkan/IDeviceVulkan.h src/gapi/vulkan/syncronization/GSemaphoreVLK.cpp src/gapi/vulkan/syncronization/GSemaphoreVLK.h src/gapi/vulkan/syncronization/GFenceVLK.cpp src/gapi/vulkan/syncronization/GFenceVLK.h src/renderer/vulkan/IRenderFunctionVLK.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
@@ -537,7 +537,7 @@ if (LINK_VULKAN)
             #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c src/gapi/vulkan/context/vulkan_context.h)
     endif()
 
 

@@ -25,6 +25,8 @@
 #include "GRenderPassVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
 #include "buffers/GBufferVLK.h"
+#include "syncronization/GFenceVLK.h"
+#include "../../renderer/vulkan/IRenderFunctionVLK.h"
 //#include "fastmemcp.h"
 #include <tbb/tbb.h>
 
@@ -203,7 +205,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     }
 
     createInfo.enabledExtensionCount = extensionsVec.size();
-    createInfo.ppEnabledExtensionNames = &extensionsVec[0];
+    createInfo.ppEnabledExtensionNames = extensionsVec.data();
 
 
     //Request validation layers
@@ -272,11 +274,11 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     createDepthResources();
     createFramebuffers();
     createCommandPool();
+    createCommandPoolForUpload();
+
     createCommandBuffers();
     createSyncObjects();
 
-    createCommandPoolForUpload();
-    createCommandBuffersForUpload();
 
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
     uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
@@ -421,7 +423,7 @@ VkFormat GDeviceVLK::findDepthFormat() {
 }
 
 void GDeviceVLK::createRenderPass() {
-    swapchainRenderPass = std::make_shared<GRenderPassVLK>(*this,
+    swapchainRenderPass = std::make_shared<GRenderPassVLK>(this->device,
                                                   std::vector({swapChainImageFormat}),
                                                   findDepthFormat(),
                                                   VK_SAMPLE_COUNT_1_BIT,
@@ -716,129 +718,74 @@ void GDeviceVLK::createCommandPoolForUpload(){
 }
 
 void GDeviceVLK::createCommandBuffers() {
-    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-
-
-    VkCommandBufferAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = commandPool;
-    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfo.commandBufferCount = (uint32_t) commandBuffers.size();
-
-    if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
+    for (auto & commandBuffer : commandBuffers) {
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, false, indices.graphicsFamily);
     }
 
-    if (!getIsAsynBuffUploadSupported()) {
-        createCommandBuffersForUpload();
+
+    for (auto & commandBuffer : uploadCommandBuffers) {
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, uploadCommandPool, true, indices.graphicsFamily);
+    }
+
+    for (auto & commandBuffer : presentCommandBuffers) {
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily);
     }
 }
-void GDeviceVLK::createCommandBuffersForUpload() {
-    renderCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    renderCommandBuffersNotNull.resize(MAX_FRAMES_IN_FLIGHT);
-    renderCommandBuffersForFrameBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    renderCommandBuffersForFrameBuffersNotNull.resize(MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) renderCommandBuffersNotNull[i] = false;
-    {
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = renderCommandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-        allocInfo.commandBufferCount = (uint32_t) renderCommandBuffers.size();
 
-        if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
-    }
-
-    {
-        VkCommandBufferAllocateInfo allocInfo = {};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = renderCommandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t) renderCommandBuffersForFrameBuffers.size();
-
-        if (vkAllocateCommandBuffers(device, &allocInfo, renderCommandBuffersForFrameBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
-    }
-
-    uploadCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    VkCommandBufferAllocateInfo allocInfoUpload = {};
-    allocInfoUpload.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfoUpload.commandPool = uploadCommandPool;
-    allocInfoUpload.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    allocInfoUpload.commandBufferCount = (uint32_t) commandBuffers.size();
-
-    if (vkAllocateCommandBuffers(device, &allocInfoUpload, uploadCommandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate upload command buffers!");
-    }
-
-    textureTransferCommandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    textureTransferCommandBufferNull.resize(MAX_FRAMES_IN_FLIGHT);
-    for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) textureTransferCommandBufferNull[i] = true;
-    VkCommandBufferAllocateInfo texttrAllocInfoUpload = {};
-    texttrAllocInfoUpload.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    texttrAllocInfoUpload.commandPool = commandPoolForImageTransfer;
-    texttrAllocInfoUpload.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-    texttrAllocInfoUpload.commandBufferCount = (uint32_t) textureTransferCommandBuffers.size();
-
-    if (vkAllocateCommandBuffers(device, &texttrAllocInfoUpload, textureTransferCommandBuffers.data()) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate upload command buffers!");
-    }
-}
 
 void GDeviceVLK::createSyncObjects() {
-    imageAvailableSemaphores.resize(commandBuffers.size());
-    renderFinishedSemaphores.resize(commandBuffers.size());
-    textureTransferFinishedSemaphores.resize(commandBuffers.size());
+//TODO:
 
-
-    VkSemaphoreCreateInfo semaphoreInfo = {};
-    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    semaphoreInfo.pNext = NULL;
-
-    for (size_t i = 0; i < commandBuffers.size(); i++) {
-        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &textureTransferFinishedSemaphores[i]) != VK_SUCCESS) {
-
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
-        }
-    }
-
-    VkFenceCreateInfo fenceInfo = {};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.pNext = NULL;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create synchronization objects for a frame!");
-        }
-    }
-    inFlightTextureTransferFences.resize(MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightTextureTransferFences[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create synchronization objects for a textureUpdate!");
-        }
-    }
-
-
-    VkFenceCreateInfo uploadFenceInfo = {};
-    uploadFenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    uploadFenceInfo.pNext = NULL;
-    uploadFenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-
-    uploadSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    uploadFences.resize(MAX_FRAMES_IN_FLIGHT);
-    uploadSemaphoresSubmited.resize(MAX_FRAMES_IN_FLIGHT);
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &uploadSemaphores[i]);
-        vkCreateFence(device, &uploadFenceInfo, nullptr, &uploadFences[i]);
-        uploadSemaphoresSubmited[i] = false;
-    }
+//    imageAvailableSemaphores.resize(commandBuffers.size());
+//    renderFinishedSemaphores.resize(commandBuffers.size());
+//    textureTransferFinishedSemaphores.resize(commandBuffers.size());
+//
+//
+//    VkSemaphoreCreateInfo semaphoreInfo = {};
+//    semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+//    semaphoreInfo.pNext = NULL;
+//
+//    for (size_t i = 0; i < commandBuffers.size(); i++) {
+//        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailableSemaphores[i]) != VK_SUCCESS ||
+//            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinishedSemaphores[i]) != VK_SUCCESS ||
+//            vkCreateSemaphore(device, &semaphoreInfo, nullptr, &textureTransferFinishedSemaphores[i]) != VK_SUCCESS) {
+//
+//            throw std::runtime_error("failed to create synchronization objects for a frame!");
+//        }
+//    }
+//
+//    VkFenceCreateInfo fenceInfo = {};
+//    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+//    fenceInfo.pNext = NULL;
+//    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+//
+//    inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
+//    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+//        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) != VK_SUCCESS) {
+//            throw std::runtime_error("failed to create synchronization objects for a frame!");
+//        }
+//    }
+//    inFlightTextureTransferFences.resize(MAX_FRAMES_IN_FLIGHT);
+//    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+//        if (vkCreateFence(device, &fenceInfo, nullptr, &inFlightTextureTransferFences[i]) != VK_SUCCESS) {
+//            throw std::runtime_error("failed to create synchronization objects for a textureUpdate!");
+//        }
+//    }
+//
+//
+//    VkFenceCreateInfo uploadFenceInfo = {};
+//    uploadFenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
+//    uploadFenceInfo.pNext = NULL;
+//    uploadFenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
+//
+//    uploadSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+//    uploadFences.resize(MAX_FRAMES_IN_FLIGHT);
+//    uploadSemaphoresSubmited.resize(MAX_FRAMES_IN_FLIGHT);
+//    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+//        vkCreateSemaphore(device, &semaphoreInfo, nullptr, &uploadSemaphores[i]);
+//        vkCreateFence(device, &uploadFenceInfo, nullptr, &uploadFences[i]);
+//        uploadSemaphoresSubmited[i] = false;
+//    }
 
 }
 
@@ -865,68 +812,20 @@ float GDeviceVLK::getAnisLevel() {
     return deviceProperties.limits.maxSamplerAnisotropy;
 }
 
-
-void GDeviceVLK::startUpdateForNextFrame() {
+void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
     int uploadFrame = getUpdateFrameNumber();
-    VkCommandBufferBeginInfo beginInfo = {};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-    beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = NULL;
-
-//    std::cout << "updateBuffers: updateFrame = " << uploadFrame << std::endl;
 
     this->waitInDrawStageAndDeps.beginMeasurement();
-    vkWaitForFences(device, 1, &uploadFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkWaitForFences(device, 1, &inFlightFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(device, 1, &uploadFences[uploadFrame]);
+    uploadFences[uploadFrame]->wait(std::numeric_limits<uint64_t>::max());
+    inFlightFences[uploadFrame]->wait(std::numeric_limits<uint64_t>::max());
+    uploadFences[uploadFrame]->reset();
     this->waitInDrawStageAndDeps.endMeasurement();
 
-    if (vkBeginCommandBuffer(uploadCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
-        std::cout << "failed to begin recording uploadCommandBuffer command buffer!" << std::endl;
-    }
 
-    textureTransferCommandBufferNull[uploadFrame] = true;
-//    vkWaitForFences(device, 1, &inFlightTextureTransferFences[uploadFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    if (vkBeginCommandBuffer(textureTransferCommandBuffers[uploadFrame], &beginInfo) != VK_SUCCESS) {
-        std::cout << "failed to begin recording textureTransferCommandBuffers command buffer!"  << std::endl;
-    }
-}
-void GDeviceVLK::endUpdateForNextFrame() {
-    int uploadFrame = getUpdateFrameNumber();
-    if (vkEndCommandBuffer(uploadCommandBuffers[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to record uploadCommandBuffer command buffer!" << std::endl;
-    }
-    if (vkEndCommandBuffer(textureTransferCommandBuffers[uploadFrame]) != VK_SUCCESS) {
-        std::cout << "failed to record textureTransferCommandBuffers command buffer!" << std::endl;
-    }
+    auto uploadCmd = std::move(uploadCommandBuffers[uploadFrame]->beginRecord(nullptr));
 
-    if (this->canUploadInSeparateThread()) {
-        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &uploadCommandBuffers[uploadFrame];
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &uploadSemaphores[uploadFrame];
-        uploadSemaphoresSubmited[uploadFrame] = true;
-
-        {
-            auto result = vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[uploadFrame]);
-            if ( result != VK_SUCCESS) {
-                std::cout << "failed to submit uploadCommandBuffer command buffer! result = " << result << std::endl << std::flush;
-            }
-        }
-    }
-
-    {
-        std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
-        while ((!listOfDeallocators.empty()) && (listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-            auto stuff = listOfDeallocators.front();
-            if (stuff.callback != nullptr) {
-                stuff.callback();
-            }
-
-            listOfDeallocators.pop_front();
-        }
+    for (int i = 0; i < renderFuncs.size(); i++) {
+        dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, )
     }
 }
 
@@ -1164,21 +1063,6 @@ void GDeviceVLK::submitDrawCommands() {
         std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
         recreateSwapChain();
 
-        if (!this->canUploadInSeparateThread()) {
-            VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-            submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
-            submitInfo.signalSemaphoreCount = 1;
-            submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
-            uploadSemaphoresSubmited[currentDrawFrame] = true;
-
-
-
-            if (vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]) != VK_SUCCESS) {
-                std::cout << "failed to submit uploadCommandBuffer command buffer!" << std::endl << std::flush;
-            }
-        }
-
         return;
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::cout << "error happened " << result << std::endl << std::flush;
@@ -1195,25 +1079,8 @@ void GDeviceVLK::submitDrawCommands() {
 //        std::cout << "imageIndex != currentDrawFrame" << std::endl;
     }
 
-    if (!this->canUploadInSeparateThread()) {
-        VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &uploadCommandBuffers[currentDrawFrame];
-        submitInfo.signalSemaphoreCount = 1;
-        submitInfo.pSignalSemaphores = &uploadSemaphores[currentDrawFrame];
-        uploadSemaphoresSubmited[currentDrawFrame] = true;
-
-        vkResetFences(device, 1, &uploadFences[currentDrawFrame]);
-        {
-            auto result = vkQueueSubmit(uploadQueue, 1, &submitInfo, uploadFences[currentDrawFrame]);
-            if ( result != VK_SUCCESS) {
-                std::cout << "failed to submit uploadCommandBuffer command buffer! result = " << result << std::endl << std::flush;
-            }
-        }
-    }
-
-    vkWaitForFences(device, 1, &inFlightFences[currentDrawFrame], VK_TRUE, std::numeric_limits<uint64_t>::max());
-    vkResetFences(device, 1, &inFlightFences[currentDrawFrame]);
+    inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+    inFlightFences[currentDrawFrame]->reset();
 
     //Fill command buffer
     //TODO:!!!
@@ -1328,6 +1195,20 @@ void GDeviceVLK::submitDrawCommands() {
     } else if (result != VK_SUCCESS) {
         std::cout << "failed to present swap chain image!" << std::endl << std::flush;
 //        throw std::runtime_error("failed to present swap chain image!");
+    }
+
+    executeDeallocators();
+}
+
+void GDeviceVLK::executeDeallocators() {
+    std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
+    while ((!listOfDeallocators.empty()) && (listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+        auto stuff = listOfDeallocators.front();
+        if (stuff.callback != nullptr) {
+            stuff.callback();
+        }
+
+        listOfDeallocators.pop_front();
     }
 }
 
@@ -1880,20 +1761,13 @@ void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callb
     submitInfo.signalSemaphoreCount = 0;
     submitInfo.pSignalSemaphores = nullptr;
 
-    // Create fence to ensure that the command buffer has finished executing
-    VkFenceCreateInfo fenceInfo = {};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.pNext = NULL;
-    fenceInfo.flags = 0;
+    GFenceVLK fenceVlk(this->shared_from_this());
 
-    VkFence fence;
-    ERR_GUARD_VULKAN(vkCreateFence(device, &fenceInfo, nullptr, &fence));
-    // Submit to the queue
-    ERR_GUARD_VULKAN(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fence));
+        // Submit to the queue
+    ERR_GUARD_VULKAN(vkQueueSubmit(graphicsQueue, 1, &submitInfo, fenceVlk.getNativeFence()));
     // Wait for the fence to signal that command buffer has finished executing
-    ERR_GUARD_VULKAN(vkWaitForFences(device, 1, &fence, VK_TRUE, std::numeric_limits<uint64_t>::max()));
+    fenceVlk.wait(std::numeric_limits<uint64_t>::max());
 
-    vkDestroyFence(device, fence, nullptr);
     vkFreeCommandBuffers(device, commandPool, 1, &copyCmd);
 }
 

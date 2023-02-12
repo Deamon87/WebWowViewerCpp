@@ -6,19 +6,19 @@
 #include "GTextureVLK.h"
 #include "../../interface/IDevice.h"
 
-GTextureVLK::GTextureVLK(IDevice &device, bool xWrapTex, bool yWrapTex) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
+GTextureVLK::GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex) : m_device(device) {
     this->m_wrapX = xWrapTex;
     this->m_wrapY = yWrapTex;
 
     createBuffer();
 }
-GTextureVLK::GTextureVLK(IDevice &device,
+GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          int width, int height,
                          bool xWrapTex, bool yWrapTex,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
                          VkSampleCountFlagBits numSamples,
-                         int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
+                         int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device) {
     //For use in frameBuffer
 
     this->m_wrapX = xWrapTex;
@@ -281,60 +281,5 @@ bool GTextureVLK::postLoad() {
     }
 
     return false;
-
 }
-
-void GTextureVLK::updateVulkan(CmdBufRecorder &renderCmd, CmdBufRecorder &uploadCmd) {
-///4. Fill commands to copy from CPU staging buffer to GPU buffer
-
-
-    // Once the data has been uploaded we transfer to the texture image to the shader read layout, so it can be sampled from
-
-    imageMemoryBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT ;
-    imageMemoryBarrier.dstAccessMask = 0;
-    imageMemoryBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    imageMemoryBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (m_device.canUploadInSeparateThread()) {
-        imageMemoryBarrier.srcQueueFamilyIndex = indicies.transferFamily.value();
-        imageMemoryBarrier.dstQueueFamilyIndex = indicies.graphicsFamily.value();
-    } else {
-        imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    }
-    //SeparateUploadQueue reference: https://github.com/KhronosGroup/Vulkan-Docs/wiki/Synchronization-Examples
-    //"Upload data from the CPU to an image sampled in a fragment shader"
-
-
-    // Insert a memory dependency at the proper pipeline stages that will execute the image layout transition
-    // Source pipeline stage is copy command execution (VK_PIPELINE_STAGE_TRANSFER_BIT)
-    // Destination pipeline stage fragment shader access (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT)
-
-    if (m_device.canUploadInSeparateThread()) {
-        vkCmdPipelineBarrier(
-            m_device.getTextureTransferCommandBuffer(),
-            VK_PIPELINE_STAGE_TRANSFER_BIT,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &imageMemoryBarrier);
-
-        m_device.signalTextureTransferCommandRecorded();
-    } else {
-        vkCmdPipelineBarrier(
-            m_device.getUploadCommandBuffer(),
-            VK_PIPELINE_STAGE_TRANSFER_BIT ,
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-            0,
-            0, nullptr,
-            0, nullptr,
-            1, &imageMemoryBarrier);
-    }
-
-    // Store current layout for later reuse
-    texture.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-
-    m_uploaded = true;
-}
-
 

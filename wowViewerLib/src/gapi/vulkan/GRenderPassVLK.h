@@ -5,12 +5,13 @@
 #ifndef AWEBWOWVIEWERCPP_GRENDERPASSVLK_H
 #define AWEBWOWVIEWERCPP_GRENDERPASSVLK_H
 
-#include "GDeviceVulkan.h"
+#include "context/vulkan_context.h"
 #include <vector>
+#include <array>
 
 class GRenderPassVLK {
 public:
-    GRenderPassVLK(GDeviceVLK &device, std::vector<VkFormat> textureAttachments,
+    GRenderPassVLK(VkDevice vkDevice, std::vector<VkFormat> textureAttachments,
                    VkFormat depthAttachment, VkSampleCountFlagBits sampleCountBit,
                    bool isSwapChainPass);
 
@@ -21,7 +22,6 @@ public:
 
 private:
     VkSampleCountFlagBits m_sampleCountBit;
-    GDeviceVLK &mdevice;
     VkRenderPass renderPass;
 
     enum class AttachmentType {

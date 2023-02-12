@@ -4,6 +4,7 @@
 
 #include "TextureUploadHelper.h"
 
+
 struct TransitionParams {
     VkAccessFlags srcAccessMask;
     VkAccessFlags dstAccessMask;
@@ -94,7 +95,7 @@ void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &r
     }
 
     // --------------------------------------------------------
-    // 3. Transition ownage from upload queue to render queue
+    // 3. Transition ownership from upload queue to render queue
     // --------------------------------------------------------
     {
         if (uploadCmdBufRecorder.getQueueFamily() == renderCmdBufRecorder.getQueueFamily()) {
@@ -124,39 +125,37 @@ void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &r
             };
 
             transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
-            }
+        }
 
-            //Change ownership
-            {
-                 TransitionParams transitionParams = {
-                    .srcAccessMask = 0,
-                    .dstAccessMask = 0,
-                    .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .srcQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
-                    .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
-                    .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
-                };
+        //Change ownership
+        {
+             TransitionParams transitionParams = {
+                .srcAccessMask = 0,
+                .dstAccessMask = 0,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .srcQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
+                .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
+                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
+            };
 
-                transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
-                transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
-            }
+            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
+            transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
+        }
 
-            {
-                TransitionParams transitionParams = {
-                    .srcAccessMask = 0,
-                    .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                    .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                    .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                    .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    .dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
-                };
-                transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
-            }
+        {
+            TransitionParams transitionParams = {
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
+            };
+            transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
         }
     }
-
 }

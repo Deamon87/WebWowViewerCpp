@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "../../textures/GTextureVLK.h"
+#include "CommandBufferRecorder.h"
 
 void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder);
 

@@ -11,6 +11,7 @@
 #include "../../interface/materials/IMaterial.h"
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../textures/GTextureVLK.h"
+#include "../GDeviceVulkan.h"
 
 class ISimpleMaterialVLK : public IMaterial, public std::enable_shared_from_this<ISimpleMaterialVLK> {
 public:

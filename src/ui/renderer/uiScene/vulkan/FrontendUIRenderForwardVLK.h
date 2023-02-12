@@ -12,13 +12,14 @@
 #include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/GBufferVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "../../../../../wowViewerLib/src/gapi/interface/materials/IMaterial.h"
+#include "../../../../../wowViewerLib/src/renderer/vulkan/IRenderFunctionVLK.h"
 
 class FrontendUIRenderForwardVLK : public FrontendUIRenderer {
 public:
     explicit FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice);
     ~FrontendUIRenderForwardVLK() override = default;
 
-    void updateAndDraw(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) override;
+    std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) override;
 public:
     HGVertexBuffer createVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createIndexBuffer(int sizeInBytes) override;

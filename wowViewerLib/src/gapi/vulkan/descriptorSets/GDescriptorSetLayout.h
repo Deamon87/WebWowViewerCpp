@@ -8,13 +8,15 @@
 #include <memory>
 
 class GDescriptorSetLayout;
+class IDeviceVulkan;
 
-#include "../GDeviceVulkan.h"
+#include "../context/vulkan_context.h"
+#include "../IDeviceVulkan.h"
 #include "../../../engine/shader/ShaderDefinitions.h"
 
 class GDescriptorSetLayout {
 public:
-    GDescriptorSetLayout(std::shared_ptr<GDeviceVLK> &device, const std::vector<const shaderMetaData*> &metaData, int setIndex);
+    GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device, const std::vector<const shaderMetaData*> &metaData, int setIndex);
 
     ~GDescriptorSetLayout();
 
@@ -30,7 +32,7 @@ private:
     int m_totalImages = 0;
     int m_totalUbos = 0;
 
-    std::shared_ptr<GDeviceVLK> m_device;
+    std::shared_ptr<IDeviceVulkan> m_device;
 };
 
 

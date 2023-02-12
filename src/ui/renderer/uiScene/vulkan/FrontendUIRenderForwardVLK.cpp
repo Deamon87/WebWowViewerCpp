@@ -7,6 +7,7 @@
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/ISimpleMaterialVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/IBufferChunkVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h"
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) : FrontendUIRenderer(
     hDevice), m_device(hDevice) {
@@ -56,15 +57,16 @@ HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const
     return std::make_shared<GMeshVLK>(*m_device, meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
 }
 
-void FrontendUIRenderForwardVLK::updateAndDraw(
+std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
     const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams,
     const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) {
 
-    std::vector<HGMesh> meshes;
-    this->consumeFrameInput(frameInputParams, meshes);
+    auto meshes = std::make_unique<std::vector<HGMesh>>();
+    this->consumeFrameInput(frameInputParams, *meshes);
 
     //Record commands to update buffer and draw
-    [&meshes](VkCommandBuffer transferQueueCMD, VkCommandBuffer renderFB, VkCommandBuffer renderSwapFB) {
 
-    };
+    return createRenderFuncVLK(std::move([meshes = std::move(meshes)](CmdBufRecorder &transferQueueCMD, CmdBufRecorder &renderFB, CmdBufRecorder &renderSwapFB) {
+
+    }));
 }

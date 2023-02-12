@@ -14,7 +14,7 @@ public:
     explicit MapSceneRenderForwardVLK(HGDeviceVLK hDevice);
 
     std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
-    void updateAndDraw(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
+    std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
 
     std::shared_ptr<MapRenderPlan> getLastCreatedPlan() override;
 

@@ -6,7 +6,7 @@
 #include "../../../engine/persistance/helper/ChunkFileReader.h"
 #include "../../../engine/texture/DxtDecompress.h"
 
-GBlpTextureVLK::GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
+GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
     : GTextureVLK(device,xWrapTex,yWrapTex), m_texture(texture) {
 }
 

@@ -6,12 +6,11 @@
 #define WEBWOWVIEWERCPP_GBLPTEXTUREVLK_H
 
 #include "GTextureVLK.h"
-#include "../GDeviceVulkan.h"
+#include "../IDeviceVulkan.h"
 
 class GBlpTextureVLK : public GTextureVLK {
-    friend class GDeviceVLK;
-    explicit GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
+    explicit GBlpTextureVLK(IDeviceVulkan &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
     ~GBlpTextureVLK() override;
     void createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
 

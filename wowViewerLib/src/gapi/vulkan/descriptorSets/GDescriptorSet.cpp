@@ -6,7 +6,7 @@
 
 #include "../textures/GTextureVLK.h"
 
-GDescriptorSet::GDescriptorSet(const std::shared_ptr<GDeviceVLK> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
+GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
     : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
 
     m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);

@@ -5,22 +5,19 @@
 #ifndef AWEBWOWVIEWERCPP_GTEXTUREVLK_H
 #define AWEBWOWVIEWERCPP_GTEXTUREVLK_H
 
-class GDeviceVLK;
 class GFrameBufferVLK;
 class GCommandBuffer;
 
-#include "../GDeviceVulkan.h"
+#include "../IDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
-#include "../commandBuffer/CommandBuffer.h"
 
 
 class GTextureVLK : public ITexture {
-    friend class GDeviceVLK;
     friend class GFrameBufferVLK;
-protected:
-    explicit GTextureVLK(IDevice &device, bool xWrapTex, bool yWrapTex);
+public:
+    explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex);
     //Used for rendering to texture in framebuffer
-    explicit GTextureVLK(IDevice &device,
+    explicit GTextureVLK(IDeviceVulkan &device,
                          int width, int height,
                          bool xWrapTex, bool yWrapTex,
                          bool isDepthTexture,
@@ -88,7 +85,7 @@ private:
     VmaAllocationInfo imageAllocationInfo = {};
 
 protected:
-    GDeviceVLK &m_device;
+    IDeviceVulkan &m_device;
 
     bool stagingBufferCreated = false;
 

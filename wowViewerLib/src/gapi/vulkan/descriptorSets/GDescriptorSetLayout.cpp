@@ -4,8 +4,10 @@
 
 #include <algorithm>
 #include "GDescriptorSetLayout.h"
+#include "../GDeviceVulkan.h"
 
-GDescriptorSetLayout::GDescriptorSetLayout(std::shared_ptr<GDeviceVLK> &device, const std::vector<const shaderMetaData*> &metaDatas, int setIndex) : m_device(device) {
+
+GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device, const std::vector<const shaderMetaData*> &metaDatas, int setIndex) : m_device(device) {
     //Create Layout
     std::unordered_map<int,VkDescriptorSetLayoutBinding> shaderLayoutBindings;
 

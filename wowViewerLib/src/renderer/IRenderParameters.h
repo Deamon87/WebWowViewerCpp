@@ -8,14 +8,18 @@
 #include <memory>
 #include "frame/FrameInputParams.h"
 
-typedef std::function<void()> SceneUpdateRenderLambda;
-typedef std::function<SceneUpdateRenderLambda()> CullLambda;
+class IRenderFunction {
+public:
+    virtual ~IRenderFunction() = default;
+};
+typedef std::function<std::unique_ptr<IRenderFunction>()> SceneUpdateLambda;
+typedef std::function<SceneUpdateLambda()> CullLambda;
 
 template<typename PlanParams, typename FramePlan>
 class IRendererParameters : public std::enable_shared_from_this<IRendererParameters<PlanParams, FramePlan>> {
 public:
     virtual std::shared_ptr<FramePlan> processCulling(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams) = 0;
-    virtual void updateAndDraw(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams, const std::shared_ptr<FramePlan> &framePlan) = 0;
+    virtual std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams, const std::shared_ptr<FramePlan> &framePlan) = 0;
 
     //This function is to be used to display data in UI
     virtual std::shared_ptr<FramePlan> getLastCreatedPlan() = 0;
@@ -23,11 +27,11 @@ public:
     CullLambda createPlan(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams) {
         auto this_s = this->shared_from_this();
 
-        return [frameInputParams, this_s]() -> SceneUpdateRenderLambda {
+        return [frameInputParams, this_s]() -> SceneUpdateLambda {
             std::shared_ptr<FramePlan> framePlan = this_s->processCulling(frameInputParams);
 
             return [framePlan, frameInputParams, this_s]() -> void {
-                this_s->updateAndDraw(frameInputParams, framePlan);
+                return this_s->update(frameInputParams, framePlan);
             };
         };
     }

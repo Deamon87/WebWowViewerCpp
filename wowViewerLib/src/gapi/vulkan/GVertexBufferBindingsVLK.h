@@ -13,7 +13,6 @@ class GVertexBufferBindingsVLK;
 #include <cstdint>
 #include "../interface/IVertexBufferBindings.h"
 #include "../interface/IDevice.h"
-#include "GDeviceVulkan.h"
 
 
 struct vkBufferFormatHolder {
@@ -22,7 +21,6 @@ struct vkBufferFormatHolder {
 };
 
 class GVertexBufferBindingsVLK : public IVertexBufferBindings {
-    friend class GDeviceVLK;
 private:
     std::vector<GVertexBufferBinding> m_bindings;
     std::vector<vkBufferFormatHolder> m_BufferBindingsVLK;

@@ -13,18 +13,24 @@
 
 class GCommandBuffer {
 public:
-    friend CmdBufRecorder;
-    friend RenderPassHelper;
+    friend class CmdBufRecorder;
+    friend class RenderPassHelper;
 
 public:
-    GCommandBuffer(GDeviceVLK &deviceVlk, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
+    GCommandBuffer(IDeviceVulkan &deviceVlk, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
 
     CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass);
 private:
+    void createCommandBufVLK();
+
+private:
+    IDeviceVulkan &m_device;
     VkCommandBuffer m_cmdBuffer;
     bool m_isPrimary = true;
-
     const uint32_t m_queueFamilyIndex;
+    VkCommandPool m_commandPool;
+
+    bool m_cmdBufWasCreated = false;
 };
 
 

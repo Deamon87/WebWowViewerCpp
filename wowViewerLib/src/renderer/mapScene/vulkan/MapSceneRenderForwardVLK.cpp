@@ -41,9 +41,10 @@ HGIndexBuffer MapSceneRenderForwardVLK::createWaterIndexBuffer(int sizeInBytes) 
     return HGIndexBuffer();
 }
 
-void MapSceneRenderForwardVLK::updateAndDraw(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
+std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                              const std::shared_ptr<MapRenderPlan> &framePlan) {
 
+    return nullptr;
 }
 
 std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastCreatedPlan() {

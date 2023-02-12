@@ -5,9 +5,8 @@
 
 #include <array>
 #include "GDescriptorPoolVLK.h"
-#include "../shaders/GShaderPermutationVLK.h"
 
-GDescriptorPoolVLK::GDescriptorPoolVLK(IDevice &device) : m_device(dynamic_cast<GDeviceVLK &>(device)) {
+GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device) {
     uniformsAvailable = 5*4096;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096;

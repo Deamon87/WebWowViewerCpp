@@ -32,12 +32,16 @@ class gMeshTemplate;
 #include "descriptorSets/GDescriptorSet.h"
 #include "descriptorSets/GDescriptorPoolVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
+#include "../../renderer/IRenderParameters.h"
 #include "buffers/GBufferVLK.h"
+#include "IDeviceVulkan.h"
+#include "syncronization/GFenceVLK.h"
+
 #include <optional>
 
 VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount);
 
-class GDeviceVLK : public IDevice, public std::enable_shared_from_this<GDeviceVLK> {
+class GDeviceVLK : public IDevice, public std::enable_shared_from_this<GDeviceVLK>, public IDeviceVulkan {
     struct QueueFamilyIndices {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
@@ -85,8 +89,10 @@ public:
 
     float getAnisLevel() override;
 
-    void startUpdateForNextFrame() override;
-    void endUpdateForNextFrame() override;
+    void startUpdateForNextFrame() override {};
+    void endUpdateForNextFrame() override {};
+
+    void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs);
 
     void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
@@ -138,11 +144,13 @@ public:
 
     void submitDrawCommands() override;
 
-    VkDescriptorSet
-    allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool);
+    VkDescriptorSet allocateDescriptorSetPrimitive(
+        const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout,
+        std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) override;
+
     std::shared_ptr<GDescriptorSet> createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
 
-    virtual VkDevice getVkDevice() {
+    virtual VkDevice getVkDevice() override {
         return device;
     };
     virtual VkPhysicalDevice getVkPhysicalDevice() {
@@ -155,7 +163,7 @@ public:
     //    int currentFrameSemaphore = 0;
     bool framebufferResized = false;
 
-    VmaAllocator getVMAAllocator() {
+    VmaAllocator getVMAAllocator() override {
         return vmaAllocator;
     }
 
@@ -200,7 +208,6 @@ private:
     void createCommandPool();
     void createCommandPoolForUpload();
     void createCommandBuffers();
-    void createCommandBuffersForUpload();
     void createSyncObjects();
 
     void createDepthResources();
@@ -311,17 +318,13 @@ protected:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> commandBuffers = {nullptr};
+    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> uploadCommandBuffers = {nullptr};
+    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> presentCommandBuffers = {nullptr};
 
 
-    std::vector<VkSemaphore> imageAvailableSemaphores;
-    std::vector<VkSemaphore> renderFinishedSemaphores;
-    std::vector<VkSemaphore> textureTransferFinishedSemaphores;
-    std::vector<VkFence> inFlightFences;
-    std::vector<VkFence> inFlightTextureTransferFences;
-    std::vector<bool> uploadSemaphoresSubmited;
-    std::vector<VkSemaphore> uploadSemaphores;
-    std::vector<VkFence> uploadFences;
+    std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> uploadFences;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
 
@@ -367,6 +370,8 @@ protected:
     };
 
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
+
+    void executeDeallocators();
 };
 
 

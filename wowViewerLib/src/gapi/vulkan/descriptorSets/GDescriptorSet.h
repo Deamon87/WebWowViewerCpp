@@ -11,8 +11,9 @@ class GDescriptorPoolVLK;
 #include <vector>
 #include <bitset>
 #include "../../interface/IDevice.h"
-#include "../GDeviceVulkan.h"
+#include "../IDeviceVulkan.h"
 #include "../buffers/IBufferVLK.h"
+#include "../textures/GTextureVLK.h"
 #include "GDescriptorSetLayout.h"
 
 
@@ -20,7 +21,7 @@ class GDescriptorSet {
 public:
     static const constexpr int MAX_BINDPOINT_NUMBER = 16;
 
-    explicit GDescriptorSet(const std::shared_ptr<GDeviceVLK> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
+    explicit GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
     ~GDescriptorSet();
 
     void update();
@@ -68,7 +69,7 @@ public:
     SetUpdateHelper beginUpdate();
 
 private:
-    std::shared_ptr<GDeviceVLK> m_device;
+    std::shared_ptr<IDeviceVulkan> m_device;
     VkDescriptorSet m_descriptorSet;
     std::shared_ptr<GDescriptorPoolVLK> m_parentPool;
 

@@ -40,7 +40,7 @@ public:
 
 struct FrameScenario {
     std::vector<CullLambda> cullFunctions;
-    std::vector<SceneUpdateRenderLambda> drawUpdateFunction;
+    std::vector<SceneUpdateLambda> drawUpdateFunction;
 };
 typedef std::shared_ptr<FrameScenario> HFrameScenario;
 

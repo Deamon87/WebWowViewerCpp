@@ -1,0 +1,14 @@
+//
+// Created by Deamon on 11.02.23.
+//
+
+#ifndef AWEBWOWVIEWERCPP_GSEMAPHOREVLK_H
+#define AWEBWOWVIEWERCPP_GSEMAPHOREVLK_H
+
+
+class GSemaphoreVLK {
+
+};
+
+
+#endif //AWEBWOWVIEWERCPP_GSEMAPHOREVLK_H

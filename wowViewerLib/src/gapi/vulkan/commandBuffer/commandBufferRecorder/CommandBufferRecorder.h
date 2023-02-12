@@ -10,12 +10,14 @@
 #include "../../GFrameBufferVLK.h"
 
 
+
 class CmdBufRecorder;
 class RenderPassHelper;
 class GCommandBuffer;
 
 #include "../CommandBuffer.h"
 #include "RenderPassHelper.h"
+#include "../../descriptorSets/GDescriptorSet.h"
 
 class CmdBufRecorder {
 public:
@@ -40,7 +42,7 @@ public:
     void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
     void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);
 
-    friend RenderPassHelper::~RenderPassHelper();
+    friend class RenderPassHelper;
 private:
     const GCommandBuffer &m_gCmdBuffer;
 

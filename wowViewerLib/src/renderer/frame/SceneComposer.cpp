@@ -73,8 +73,9 @@ void SceneComposer::consumeDrawAndUpdate(HFrameScenario &frameScenario) {
     if (frameScenario == nullptr)
         return;
 
+    std::vector<std::unique_ptr<IRenderFunction>> renderFunctions;
     for (int i = 0; i < frameScenario->drawUpdateFunction.size(); i++) {
-        frameScenario->drawUpdateFunction[i]();
+        renderFunctions.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
     }
 
 //    auto device = m_apiContainer->hDevice;
