@@ -142,6 +142,7 @@ public:
                                                   VkSampleCountFlagBits sampleCountFlagBits,
                                                   bool isSwapChainPass);
 
+    std::shared_ptr<GRenderPassVLK> getSwapChainRenderPass();
 
     void submitDrawCommands() override;
     void submitQueue(

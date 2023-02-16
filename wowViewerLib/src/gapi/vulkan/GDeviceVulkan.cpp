@@ -7,14 +7,11 @@
 #include <set>
 #include <vector>
 #include <algorithm>
-#include <ctime>
 #include <array>
 #include <thread>
 #include "GDeviceVulkan.h"
 
-#include "meshes/GM2MeshVLK.h"
 #include "meshes/GMeshVLK.h"
-#include "buffers/GVertexBufferDynamicVLK.h"
 #include "textures/GTextureVLK.h"
 #include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
@@ -27,7 +24,6 @@
 #include "buffers/GBufferVLK.h"
 #include "syncronization/GFenceVLK.h"
 #include "../../renderer/vulkan/IRenderFunctionVLK.h"
-//#include "fastmemcp.h"
 #include <tbb/tbb.h>
 
 const int WIDTH = 1900;
@@ -719,15 +715,15 @@ void GDeviceVLK::createCommandPoolForUpload(){
 
 void GDeviceVLK::createCommandBuffers() {
     for (auto & commandBuffer : fbCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, false, indices.graphicsFamily);
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, false, indices.graphicsFamily.value());
     }
     for (auto & commandBuffer : swapChainCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily);
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily.value());
     }
 
 
     for (auto & commandBuffer : uploadCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, uploadCommandPool, true, indices.graphicsFamily);
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, uploadCommandPool, true, indices.transferFamily.value());
     }
 
 }
@@ -1094,7 +1090,7 @@ void GDeviceVLK::submitDrawCommands() {
         },
         {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
 
-        {fbCommandBuffer->m_cmdBuffer, swapChainCmd->m_cmdBuffer},
+        {fbCommandBuffer->getNativeCmdBuffer(), swapChainCmd->getNativeCmdBuffer()},
         {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()}
     );
 
@@ -1206,11 +1202,12 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     });
     VkFormat fbDepthFormat = findDepthFormat();
 
-    auto renderPass = std::make_shared<GRenderPassVLK>(*this,
-        attachmentFormats,
-       findDepthFormat(),
-        sampleCountFlagBits,
-       false);
+    auto renderPass = std::make_shared<GRenderPassVLK>(this->device,
+    attachmentFormats,
+    findDepthFormat(),
+    sampleCountFlagBits,
+    false
+    );
 
     RenderPassAvalabilityStruct avalabilityStruct;
     avalabilityStruct.attachments = textureAttachments;
@@ -1222,6 +1219,10 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     m_createdRenderPasses.push_back(avalabilityStruct);
 
     return renderPass;
+}
+
+std::shared_ptr<GRenderPassVLK> GDeviceVLK::getSwapChainRenderPass() {
+    return swapchainRenderPass;
 }
 
 HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,

@@ -11,6 +11,8 @@
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) : FrontendUIRenderer(
     hDevice), m_device(hDevice) {
+
+    m_lastRenderPass = m_device->getSwapChainRenderPass();
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
@@ -81,14 +83,20 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
         for (auto const &mesh : *meshes) {
             const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
 
-            meshVlk->getPipeLineForRenderPass();
+            //1. Bind pipeline
+            auto pipeline = meshVlk->getPipeLineForRenderPass(l_this->m_lastRenderPass, false);
+            swapChainCmd.bindPipeline(pipeline);
 
+            //2. Bind Descriptor sets
             auto const &descSets = meshVlk->material()->getDescriptorSets();
             for (int i = 0; i < descSets.size(); i++) {
                 if (descSets[i] != nullptr) {
-                    frameBufCmd.bindDescriptorSet(i, descSets[i]);
+                    swapChainCmd.bindDescriptorSet(i, descSets[i]);
                 }
             }
+
+            //3. Draw the mesh
+            swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0, 0);
         }
     }));
 }

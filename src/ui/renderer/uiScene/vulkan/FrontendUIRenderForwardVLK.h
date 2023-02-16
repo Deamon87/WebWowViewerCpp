@@ -46,6 +46,7 @@ private:
 
     void createBuffers();
 
+    std::shared_ptr<GRenderPassVLK> m_lastRenderPass;
 };
 
 

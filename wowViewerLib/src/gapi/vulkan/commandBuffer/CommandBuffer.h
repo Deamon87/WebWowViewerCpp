@@ -21,6 +21,9 @@ public:
     GCommandBuffer(IDeviceVulkan &deviceVlk, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
 
     CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass);
+    VkCommandBuffer getNativeCmdBuffer() {
+        return m_cmdBuffer;
+    }
 private:
     void createCommandBufVLK();
 

@@ -95,6 +95,10 @@ void CmdBufRecorder::bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline) {
     m_currentPipeline = pipeline;
 }
 
+void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) {
+    vkCmdDrawIndexed(m_gCmdBuffer.m_cmdBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
+}
+
 void CmdBufRecorder::recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
                                            const std::vector<VkImageMemoryBarrier> &imageBarrierData) {
     vkCmdPipelineBarrier(

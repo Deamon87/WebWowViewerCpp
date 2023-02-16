@@ -30,7 +30,7 @@ public:
         return [frameInputParams, this_s]() -> SceneUpdateLambda {
             std::shared_ptr<FramePlan> framePlan = this_s->processCulling(frameInputParams);
 
-            return [framePlan, frameInputParams, this_s]() -> void {
+            return [framePlan, frameInputParams, this_s]() -> std::unique_ptr<IRenderFunction> {
                 return this_s->update(frameInputParams, framePlan);
             };
         };
