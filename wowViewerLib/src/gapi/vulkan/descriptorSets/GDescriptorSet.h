@@ -28,7 +28,7 @@ public:
     void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites);
     const std::shared_ptr<GDescriptorSetLayout> &getSetLayout() const { return m_hDescriptorSetLayout;};
 
-    VkDescriptorSet getDescSet() {return m_descriptorSet;}
+    VkDescriptorSet getDescSet() const {return m_descriptorSet;}
 
     struct DescriptorRecord {
         enum class DescriptorRecordType {

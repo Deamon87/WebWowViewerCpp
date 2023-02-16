@@ -37,10 +37,11 @@ public:
         const std::array<float,3> &colorClearColor, float depthClear);
 
     void bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline);
-    void bindDescriptorSet(uint32_t bindIndex, std::shared_ptr<GDescriptorSet> &descriptorSet);
+    void bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
 
     void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
     void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);
+    void submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK);
 
     friend class RenderPassHelper;
 private:
@@ -49,7 +50,7 @@ private:
     //States
     std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
     std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
-    std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSet::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
+    std::array<const std::shared_ptr<GDescriptorSet>, GDescriptorSet::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
 };
 
 #endif //AWEBWOWVIEWERCPP_COMMANDBUFFERRECORDER_H

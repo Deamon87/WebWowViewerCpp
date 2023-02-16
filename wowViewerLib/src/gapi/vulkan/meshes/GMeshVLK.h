@@ -26,7 +26,7 @@ public:
     MeshType getMeshType()  override;
 
 public:
-    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
+    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass, bool invertedZ);
     auto material() const -> const HMaterialVLK& { return m_material; }
 protected:
     MeshType m_meshType;

@@ -11,7 +11,7 @@
 
 class GFenceVLK {
 public:
-    GFenceVLK(const std::shared_ptr<IDeviceVulkan> &deviceVulkan);
+    GFenceVLK(const std::shared_ptr<IDeviceVulkan> &deviceVulkan, bool createInSignalledState);
     ~GFenceVLK();
 
     void wait(uint64_t maxWaitTime);

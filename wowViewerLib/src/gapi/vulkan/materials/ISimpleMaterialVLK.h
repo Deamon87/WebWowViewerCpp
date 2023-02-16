@@ -28,7 +28,11 @@ public:
     void createImageDescriptorSet();
     void updateImageDescriptorSet();
 
-    void createUBODescriptorSet();
+    void createAndUpdateUBODescriptorSet();
+
+    const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &getDescriptorSets() {
+        return descriptors;
+    }
 
 private:
     HGDeviceVLK m_device;
@@ -36,9 +40,8 @@ private:
     std::vector<HGTextureVLK> m_textures = {};
     std::vector<std::shared_ptr<IBufferVLK>> m_ubos = {};
 
-    std::shared_ptr<GDescriptorSet> imageDescriptorSet;
-    std::shared_ptr<GDescriptorSet> uboDescriptorSet;
-    std::shared_ptr<GDescriptorSet> ssboDescriptorSet;
+
+    std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptors;
 
     HGShaderPermutation m_shader;
 };

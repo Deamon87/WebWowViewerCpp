@@ -15,6 +15,7 @@ class GCommandBuffer {
 public:
     friend class CmdBufRecorder;
     friend class RenderPassHelper;
+    friend class IDeviceVulkan;
 
 public:
     GCommandBuffer(IDeviceVulkan &deviceVlk, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
@@ -31,6 +32,7 @@ private:
     VkCommandPool m_commandPool;
 
     bool m_cmdBufWasCreated = false;
+    bool m_hasData = false;
 };
 
 

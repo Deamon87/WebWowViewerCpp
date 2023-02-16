@@ -159,11 +159,12 @@ void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_
 }
 
 void GBufferVLK::uploadFromStaging(int offset, int destOffset, int length) {
-    VkBufferCopy vbCopyRegion = {};
+    std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
+
+    VkBufferCopy &vbCopyRegion = dataToBeUploaded.emplace_back();
     vbCopyRegion.srcOffset = offset;
     vbCopyRegion.dstOffset = destOffset;
     vbCopyRegion.size = length;
-//    vkCmdCopyBuffer(m_device->getUploadCommandBuffer(), currentBuffer.stagingBuffer, currentBuffer.g_hBuffer, 1, &vbCopyRegion);
 }
 
 void GBufferVLK::save(int length) {

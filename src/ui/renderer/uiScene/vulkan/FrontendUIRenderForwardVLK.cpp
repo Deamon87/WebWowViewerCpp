@@ -65,8 +65,30 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
     this->consumeFrameInput(frameInputParams, *meshes);
 
     //Record commands to update buffer and draw
+    auto l_this = std::dynamic_pointer_cast<FrontendUIRenderForwardVLK>(this->shared_from_this());
+    return createRenderFuncVLK(std::move([meshes = std::move(meshes), l_this](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
+        // ---------------------
+        // Upload stuff
+        // ---------------------
+        uploadCmd.submitBufferUploads(l_this->uboBuffer);
+        uploadCmd.submitBufferUploads(l_this->vboBuffer);
+        uploadCmd.submitBufferUploads(l_this->iboBuffer);
 
-    return createRenderFuncVLK(std::move([meshes = std::move(meshes)](CmdBufRecorder &transferQueueCMD, CmdBufRecorder &renderFB, CmdBufRecorder &renderSwapFB) {
+        // ----------------------
+        // Draw meshes
+        // ----------------------
 
+        for (auto const &mesh : *meshes) {
+            const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
+
+            meshVlk->getPipeLineForRenderPass();
+
+            auto const &descSets = meshVlk->material()->getDescriptorSets();
+            for (int i = 0; i < descSets.size(); i++) {
+                if (descSets[i] != nullptr) {
+                    frameBufCmd.bindDescriptorSet(i, descSets[i]);
+                }
+            }
+        }
     }));
 }

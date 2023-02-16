@@ -12,7 +12,7 @@ class IRenderFunctionVLK : public IRenderFunction {
 public:
     ~IRenderFunctionVLK() override = default;
 
-    virtual void execute(CmdBufRecorder &transferQueueCMD, CmdBufRecorder &renderFB, CmdBufRecorder &renderSwapFB) = 0;
+    virtual void execute(CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) = 0;
 };
 
 template<typename T>
@@ -21,8 +21,8 @@ public:
     TemplateIRenderFunctionVLK(T a) : m_a(std::move(a)){
 
     };
-    void execute(CmdBufRecorder &transferQueueCMD, CmdBufRecorder &renderFB, CmdBufRecorder &renderSwapFB) override {
-        m_a(transferQueueCMD, renderFB, renderSwapFB);
+    void execute(CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) override {
+        m_a(uploadCmd, frameBufCmd, swapChainCmd);
     };
 private:
     T m_a;

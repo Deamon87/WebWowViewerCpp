@@ -36,6 +36,7 @@ class gMeshTemplate;
 #include "buffers/GBufferVLK.h"
 #include "IDeviceVulkan.h"
 #include "syncronization/GFenceVLK.h"
+#include "syncronization/GSemaphoreVLK.h"
 
 #include <optional>
 
@@ -143,6 +144,15 @@ public:
 
 
     void submitDrawCommands() override;
+    void submitQueue(
+        const std::vector<VkSemaphore> &waitSemaphores,
+        const std::vector<VkPipelineStageFlags> &waitStages,
+        const std::vector<VkCommandBuffer> &commandBuffers,
+        const std::vector<VkSemaphore> &signalSemaphoresOnCompletion) ;
+
+    void presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
+                      const std::vector<VkSwapchainKHR> &swapchains,
+                      const std::vector<uint32_t> &imageIndexes);
 
     VkDescriptorSet allocateDescriptorSetPrimitive(
         const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout,
@@ -217,14 +227,6 @@ private:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
     void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
-
-//    bool drawMeshesInternal(
-//        const HDrawStage &drawStage,
-//        VkCommandBuffer commandBufferForFilling,
-//        std::shared_ptr<GRenderPassVLK> renderPass,
-//        const HMeshesToRender &iMeshes,
-//        const std::array<VkViewport, (int) ViewportType::vp_MAX> &viewportsForThisStage,
-//        VkRect2D &defaultScissor);
 
 protected:
     struct BlpCacheRecord {
@@ -318,13 +320,19 @@ protected:
     VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
 
-    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> commandBuffers = {nullptr};
+    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> fbCommandBuffers = {nullptr};
+    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> swapChainCommandBuffers = {nullptr};
     std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> uploadCommandBuffers = {nullptr};
-    std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> presentCommandBuffers = {nullptr};
 
 
     std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
     std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> uploadFences;
+
+    std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
+    // Is used to signal for present queue that frame has finished rendering and it can be presented on screen
+    std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
+
+    std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSemaphores;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
 

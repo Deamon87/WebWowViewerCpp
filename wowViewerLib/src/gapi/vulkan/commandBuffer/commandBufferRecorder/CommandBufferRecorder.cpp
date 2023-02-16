@@ -72,7 +72,7 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     );
 }
 
-void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, std::shared_ptr<GDescriptorSet> &descriptorSet) {
+void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet) {
     //TODO: bindpoints: VK_PIPELINE_BIND_POINT_GRAPHICS and others
     //Which leads to three separate states for:
     // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
@@ -115,4 +115,17 @@ void CmdBufRecorder::copyBufferToImage(VkBuffer buffer, VkImage image, const std
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         static_cast<uint32_t>(regions.size()),
         regions.data());
+}
+
+void CmdBufRecorder::   submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK) {
+    auto submitRecords = bufferVLK->getSubmitRecords();
+
+    if (submitRecords.get().empty())
+        return;
+
+    vkCmdCopyBuffer(m_gCmdBuffer.m_cmdBuffer,
+                    bufferVLK->getCPUBuffer(),
+                    bufferVLK->getGPUBuffer(),
+                    submitRecords.get().size(),
+                    submitRecords.get().data());
 }

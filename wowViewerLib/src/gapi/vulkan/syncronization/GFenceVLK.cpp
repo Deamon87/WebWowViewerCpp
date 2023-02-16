@@ -5,11 +5,13 @@
 #include "GFenceVLK.h"
 #include "../../interface/IDevice.h"
 
-GFenceVLK::GFenceVLK(const std::shared_ptr<IDeviceVulkan> &deviceVulkan) : m_device(deviceVulkan) {
+GFenceVLK::GFenceVLK(const std::shared_ptr<IDeviceVulkan> &deviceVulkan, bool createInSignalledState) : m_device(deviceVulkan) {
     VkFenceCreateInfo fenceInfo = {};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.pNext = NULL;
-    fenceInfo.flags = 0;
+    fenceInfo.flags =
+        (createInSignalledState ? VK_FENCE_CREATE_SIGNALED_BIT : 0) |
+        0;
 
     ERR_GUARD_VULKAN(vkCreateFence(m_device->getVkDevice(), &fenceInfo, nullptr, &m_fence));
 }
