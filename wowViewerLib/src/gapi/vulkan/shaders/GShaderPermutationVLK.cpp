@@ -76,7 +76,6 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     this->createImageDescriptorLayout();
 
     this->createPipelineLayout();
-
 }
 
 int GShaderPermutationVLK::getTextureBindingStart() {
@@ -182,17 +181,18 @@ void GShaderPermutationVLK::createShaderLayout() {
 }
 
 void GShaderPermutationVLK::createPipelineLayout() {
-    std::array<VkDescriptorSetLayout, 2> descLayouts ;
-    descLayouts[0] = this->getUboDescriptorLayout()->getSetLayout();
-    descLayouts[1] = this->getImageDescriptorLayout()->getSetLayout();
+    std::array<VkDescriptorSetLayout, 2> descLayouts = {
+        this->getUboDescriptorLayout()->getSetLayout(),
+        this->getImageDescriptorLayout()->getSetLayout()
+    };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.pNext = NULL;
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     pipelineLayoutInfo.pPushConstantRanges = NULL;
-    pipelineLayoutInfo.setLayoutCount = 2;
-    pipelineLayoutInfo.pSetLayouts = &descLayouts[0];
+    pipelineLayoutInfo.setLayoutCount = descLayouts.size();
+    pipelineLayoutInfo.pSetLayouts = descLayouts.data();
 
     std::cout << "Pipeline layout for "+this->getShaderCombinedName() << std::endl;
 

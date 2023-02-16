@@ -36,9 +36,11 @@ public:
         const std::array<uint32_t, 2> &areaSize,
         const std::array<float,3> &colorClearColor, float depthClear);
 
+    void bindIndexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk);
+    void bindVertexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk);
     void bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline);
     void bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
-    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance);
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
 
 
     void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
@@ -52,6 +54,8 @@ private:
     //States
     std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
     std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
+    std::shared_ptr<GBufferVLK> m_currentIndexBuffer = nullptr;
+    std::shared_ptr<GBufferVLK> m_currentVertexBuffer = nullptr;
     std::array<const std::shared_ptr<GDescriptorSet>, GDescriptorSet::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
 };
 

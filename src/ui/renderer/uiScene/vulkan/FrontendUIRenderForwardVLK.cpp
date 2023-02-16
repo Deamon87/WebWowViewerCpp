@@ -13,6 +13,8 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
     hDevice), m_device(hDevice) {
 
     m_lastRenderPass = m_device->getSwapChainRenderPass();
+
+    createBuffers();
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
@@ -41,7 +43,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
         }
     }
 
-    std::vector<std::shared_ptr<IBufferVLK>> ubos = {};
+    std::vector<std::shared_ptr<IBufferVLK>> ubos = {m_imguiUbo->};
     std::vector<HGTextureVLK> texturesVLK = {std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture)};
     auto material = std::make_shared<ISimpleMaterialVLK>(m_device,
                                   "imguiShader", "imguiShader",
@@ -83,11 +85,17 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
         for (auto const &mesh : *meshes) {
             const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
 
-            //1. Bind pipeline
+            //1. Bind VBOs
+            swapChainCmd.bindVertexBuffer(l_this->vboBuffer);
+
+            //2. Bind IBOs
+            swapChainCmd.bindVertexBuffer(l_this->iboBuffer);
+
+            //3. Bind pipeline
             auto pipeline = meshVlk->getPipeLineForRenderPass(l_this->m_lastRenderPass, false);
             swapChainCmd.bindPipeline(pipeline);
 
-            //2. Bind Descriptor sets
+            //4. Bind Descriptor sets
             auto const &descSets = meshVlk->material()->getDescriptorSets();
             for (int i = 0; i < descSets.size(); i++) {
                 if (descSets[i] != nullptr) {
@@ -95,8 +103,8 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
                 }
             }
 
-            //3. Draw the mesh
-            swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0, 0);
+            //5. Draw the mesh
+            swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
         }
     }));
 }

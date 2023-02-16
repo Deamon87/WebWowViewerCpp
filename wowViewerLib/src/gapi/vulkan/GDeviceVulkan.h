@@ -93,12 +93,11 @@ public:
     void startUpdateForNextFrame() override {};
     void endUpdateForNextFrame() override {};
 
-    void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs);
+    void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) override;
 
     void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
-    void drawMeshes(std::vector<HGMesh> &meshes) override;
-//    void drawStageAndDeps(HDrawStage drawStage) override;
+    //    void drawStageAndDeps(HDrawStage drawStage) override;
 
     //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
@@ -146,10 +145,12 @@ public:
 
     void submitDrawCommands() override;
     void submitQueue(
+        VkQueue graphicsQueue,
         const std::vector<VkSemaphore> &waitSemaphores,
         const std::vector<VkPipelineStageFlags> &waitStages,
         const std::vector<VkCommandBuffer> &commandBuffers,
-        const std::vector<VkSemaphore> &signalSemaphoresOnCompletion) ;
+        const std::vector<VkSemaphore> &signalSemaphoresOnCompletion,
+        const VkFence signalFenceOnCompletion) ;
 
     void presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
                       const std::vector<VkSwapchainKHR> &swapchains,

@@ -101,8 +101,6 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                         meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x)* uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
                     }
 
-                    meshTemplate.texture[0] = pcmd->TextureId;
-
                     meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;
 

@@ -227,13 +227,15 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
 
     //Create surface
     vkSurface = callback->createSurface(vkInstance);
+}
 
+void GDeviceVLK::initialize() {
     setupDebugMessenger();
 
     pickPhysicalDevice();
     createLogicalDevice();
 //---------------
-    //Init AMD's VMA
+//Init AMD's VMA
     VmaVulkanFunctions vma_vulkan_func{};
     vma_vulkan_func.vkAllocateMemory                    = vkAllocateMemory;
     vma_vulkan_func.vkBindBufferMemory                  = vkBindBufferMemory;
@@ -284,9 +286,6 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
 }
 
-void GDeviceVLK::initialize() {
-
-}
 
 void GDeviceVLK::recreateSwapChain() {
     createSwapChain();
@@ -739,6 +738,7 @@ void GDeviceVLK::createSyncObjects() {
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         inFlightFences[i] = std::make_shared<GFenceVLK>(this->shared_from_this(), true);
+        uploadFences[i] = std::make_shared<GFenceVLK>(this->shared_from_this(), true);
     }
 }
 
@@ -775,16 +775,28 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     this->waitInDrawStageAndDeps.endMeasurement();
 
 
-    auto uploadCmd = std::move(uploadCommandBuffers[uploadFrame]->beginRecord(nullptr));
-    auto swapChainCmd = std::move(uploadCommandBuffers[uploadFrame]->beginRecord(nullptr));
-    auto frameBufCmd = std::move(uploadCommandBuffers[uploadFrame]->beginRecord(nullptr));
+    auto &uploadCmdBuf = uploadCommandBuffers[uploadFrame];
+    auto &swapChainCmdBuf = swapChainCommandBuffers[uploadFrame];
+    auto &frameBufCmdBuf = fbCommandBuffers[uploadFrame];
+    {
+        auto uploadCmd = std::move(uploadCmdBuf->beginRecord(nullptr));
+        auto swapChainCmd = std::move(swapChainCmdBuf->beginRecord(nullptr));
+        auto frameBufCmd = std::move(frameBufCmdBuf->beginRecord(nullptr));
 
-    for (int i = 0; i < renderFuncs.size(); i++) {
-        dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, frameBufCmd, swapChainCmd);
+        for (int i = 0; i < renderFuncs.size(); i++) {
+            dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, frameBufCmd, swapChainCmd);
+        }
     }
-}
 
-typedef std::shared_ptr<GMeshVLK> HVKMesh;
+    submitQueue(
+        uploadQueue,
+        {},
+        {},
+        {uploadCmdBuf->getNativeCmdBuffer()},
+        {uploadSemaphores[uploadFrame]->getNativeSemaphore()},
+        uploadFences[uploadFrame]->getNativeFence()
+    );
+}
 
 void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantData) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
@@ -911,10 +923,6 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
     }
 }
 
-void GDeviceVLK::drawMeshes(std::vector<HGMesh> &meshes) {
-
-}
-
 std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) {
     std::string combinedName = vertexName + " " + fragmentName;
     const char * cstr = combinedName.c_str();
@@ -925,7 +933,7 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName
     }
 
     std::shared_ptr<GShaderPermutationVLK> sharedPtr = std::make_shared<GShaderPermutationVLK>(vertexName, fragmentName, this->shared_from_this());
-
+    sharedPtr->compileShader("", "");
 
     m_shaderPermuteCache[hash] = sharedPtr;
 
@@ -1084,6 +1092,7 @@ void GDeviceVLK::submitDrawCommands() {
     auto fbCommandBuffer = fbCommandBuffers[currentDrawFrame];
 
     submitQueue(
+        graphicsQueue,
         {
             uploadSemaphores[currentDrawFrame]->getNativeSemaphore(),
             imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore()
@@ -1091,7 +1100,8 @@ void GDeviceVLK::submitDrawCommands() {
         {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
 
         {fbCommandBuffer->getNativeCmdBuffer(), swapChainCmd->getNativeCmdBuffer()},
-        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()}
+        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
+        inFlightFences[currentDrawFrame]->getNativeFence()
     );
 
     presentQueue(
@@ -1103,29 +1113,29 @@ void GDeviceVLK::submitDrawCommands() {
     executeDeallocators();
 }
 
-void GDeviceVLK::submitQueue( const std::vector<VkSemaphore> &waitSemaphores,
+void GDeviceVLK::submitQueue( VkQueue queue,
+                              const std::vector<VkSemaphore> &waitSemaphores,
                               const std::vector<VkPipelineStageFlags> &waitStages,
                               const std::vector<VkCommandBuffer> &commandBuffers,
-                              const std::vector<VkSemaphore> &signalSemaphoresOnCompletion) {
+                              const std::vector<VkSemaphore> &signalSemaphoresOnCompletion,
+                              const VkFence signalFenceOnCompletion) {
 
     VkSubmitInfo submitInfo = {};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
     submitInfo.pNext = NULL;
 
     submitInfo.waitSemaphoreCount = waitSemaphores.size();
-    submitInfo.pWaitDstStageMask = waitStages.data();
-    submitInfo.pWaitSemaphores = waitSemaphores.data();
+    submitInfo.pWaitDstStageMask = waitSemaphores.empty() ? nullptr : waitStages.data();
+    submitInfo.pWaitSemaphores = waitSemaphores.empty() ? nullptr : waitSemaphores.data();
 
     submitInfo.commandBufferCount = commandBuffers.size();
     submitInfo.pCommandBuffers = commandBuffers.data();
 
     submitInfo.signalSemaphoreCount = signalSemaphoresOnCompletion.size();
-    submitInfo.pSignalSemaphores = signalSemaphoresOnCompletion.data();
-
-    int currentDrawFrame = getDrawFrameNumber();
+    submitInfo.pSignalSemaphores = signalSemaphoresOnCompletion.empty() ? nullptr : signalSemaphoresOnCompletion.data();
 
     {
-        auto result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentDrawFrame]->getNativeFence());
+        auto result = vkQueueSubmit(queue, 1, &submitInfo, signalFenceOnCompletion);
         if (result != VK_SUCCESS) {
             std::cout << "failed to submit draw command buffer! result = " << result << std::endl << std::flush;
         }

@@ -62,7 +62,9 @@ HGDevice IDeviceFactory::createDevice(std::string gapiName, void * data) {
 
 #ifndef SKIP_VULKAN
     if (gapiName == "vulkan") {
-        return std::make_shared<GDeviceVLK>((vkCallInitCallback *) data);
+        auto deviceVlk = std::make_shared<GDeviceVLK>((vkCallInitCallback *) data);
+        deviceVlk->initialize();
+        return deviceVlk;
     } else
 #endif
     {}

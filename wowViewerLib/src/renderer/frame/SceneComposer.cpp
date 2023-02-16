@@ -78,41 +78,7 @@ void SceneComposer::consumeDrawAndUpdate(HFrameScenario &frameScenario) {
         renderFunctions.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
     }
 
-//    auto device = m_apiContainer->hDevice;
-//
-//
-//    auto frameScenario = m_frameScenarios[updateObjFrame];
-//    if (frameScenario == nullptr) return;
-//    device->startUpdateForNextFrame();
-//    for (auto updateStage : frameScenario->updateStages) {
-//        updateStage->cullResult->scene->produceUpdateStage(updateStage);
-//    }
-//    std::vector<HGMesh> meshes;
-//    collectMeshes(frameScenario->getDrawStage(), meshes);
-//
-//    for (auto updateStage : frameScenario->updateStages) {
-//            updateStage->cullResult->scene->updateBuffers(updateStage);
-//        }
-//
-//    std::vector<std::vector<HGUniformBufferChunk>*> uniformChunkVec;
-//    std::vector<HFrameDependantData> frameDepDataVec;
-//
-//    for (auto &updateStage : frameScenario->updateStages) {
-//        frameDepDataVec.push_back(updateStage->cullResult->frameDependentData);
-//        uniformChunkVec.push_back(&updateStage->uniformBufferChunks);
-//    }
-//    device->updateBuffers(uniformChunkVec, frameDepDataVec);
-//    for (auto cullStage : frameScenario->cullStages) {
-//            cullStage->scene->doPostLoad(cullStage); //Do post load after rendering is done!
-//        }
-//    device->uploadTextureForMeshes(meshes);
-//
-//    if (device->getIsVulkanAxisSystem()) {
-//        if (frameScenario != nullptr) {
-//            m_apiContainer->hDevice->drawStageAndDeps(frameScenario->getDrawStage());
-//        }
-//    }
-//    device->endUpdateForNextFrame();
+    m_apiContainer->hDevice->drawFrame(renderFunctions);
 }
 #define logExecution {}
 //#define logExecution { \

@@ -32,7 +32,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
         for (int i = 0; i < p_metaData->uboBindings.size(); i++) {
             auto &uboBinding = p_metaData->uboBindings[i];
 
-            if (uboBinding.set != setIndex) return;
+            if (uboBinding.set != setIndex) continue;
 
             auto it = shaderLayoutBindings.find(uboBinding.binding);
             if (it != std::end( shaderLayoutBindings )) {
@@ -57,7 +57,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
         for (int i = 0; i < p_metaData->imageBindings.size(); i++) {
             auto &imageBinding = p_metaData->imageBindings[i];
 
-            if (imageBinding.set != setIndex) return;
+            if (imageBinding.set != setIndex) continue;
 
             auto it = shaderLayoutBindings.find(imageBinding.binding);
             if (it != std::end( shaderLayoutBindings )) {

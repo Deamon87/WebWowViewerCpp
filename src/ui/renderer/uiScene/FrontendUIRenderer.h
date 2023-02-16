@@ -9,6 +9,7 @@
 #include "ImGUIPlan.h"
 #include "../../../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "IFrontendUIBufferCreate.h"
+#include "../../../../wowViewerLib/src/gapi/vulkan/buffers/IBufferChunkVLK.h"
 
 static const std::array<GBufferBinding, 3> imguiBindings = {{
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
@@ -34,7 +35,7 @@ protected:
     HGTexture fontTexture;
 
     UiMaterialCache m_materialCache;
-    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
+    std::shared_ptr<CBufferChunkVLK<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 
     void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, std::vector<HGMesh> &meshes);
 
