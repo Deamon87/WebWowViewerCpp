@@ -35,8 +35,8 @@ class gMeshTemplate;
 #include "../../renderer/IRenderParameters.h"
 #include "buffers/GBufferVLK.h"
 #include "IDeviceVulkan.h"
-#include "syncronization/GFenceVLK.h"
-#include "syncronization/GSemaphoreVLK.h"
+#include "synchronization/GFenceVLK.h"
+#include "synchronization/GSemaphoreVLK.h"
 
 #include <optional>
 

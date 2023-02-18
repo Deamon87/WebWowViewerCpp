@@ -128,11 +128,9 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
     portalPointsFrame.m_bindings = hDevice->createVertexBufferBindings();
     portalPointsFrame.m_bindings->setIndexBuffer(portalPointsFrame.m_indexVBO);
 
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = portalPointsFrame.m_bufferVBO;
-    vertexBinding.bindings = std::vector<GBufferBinding>(DrawPortalBindings.begin(), DrawPortalBindings.end());
+    auto const drawPortalBindings = std::vector<GBufferBinding>(DrawPortalBindings.begin(), DrawPortalBindings.end());
 
-    portalPointsFrame.m_bindings->addVertexBufferBinding(vertexBinding);
+    portalPointsFrame.m_bindings->addVertexBufferBinding(portalPointsFrame.m_bufferVBO, drawPortalBindings);
     portalPointsFrame.m_bindings->save();
 
 

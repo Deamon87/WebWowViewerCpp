@@ -20,13 +20,13 @@ HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
 
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
-static GBufferBinding staticM2ParticleBindings[5] = {
+static const std::array<GBufferBinding, 5> staticM2ParticleBindings = {{
     {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),  offsetof(ParticleBuffStruct, position) },
     {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),     offsetof(ParticleBuffStruct, color)},
     {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
     {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
     {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
-};
+}};
 
 
 enum class ParticleVertexShader : int {
@@ -284,6 +284,8 @@ void ParticleEmitter::createMesh() {
     }
 
     //Create Buffers
+    auto bindingVector = std::vector<GBufferBinding>(staticM2ParticleBindings.begin(),
+                                staticM2ParticleBindings.end());
     for (int i = 0; i < 4; i++) {
         //TODO:
 //        frame[i].m_bufferVBO = device->createVertexBufferDynamic(10 * sizeof(ParticleBuffStructQuad));
@@ -291,14 +293,8 @@ void ParticleEmitter::createMesh() {
         frame[i].m_bindings = device->createVertexBufferBindings();
         frame[i].m_bindings->setIndexBuffer(m_indexVBO);
 
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = frame[i].m_bufferVBO;
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2ParticleBindings[0],
-                                                             &staticM2ParticleBindings[5]);
-
-        frame[i].m_bindings->addVertexBufferBinding(vertexBinding);
+        frame[i].m_bindings->addVertexBufferBinding(frame[i].m_bufferVBO, bindingVector);
         frame[i].m_bindings->save();
-
 
         //Get shader
         HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", "m2ParticleShader", nullptr);

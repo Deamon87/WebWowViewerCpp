@@ -240,7 +240,7 @@ set(SOURCE_FILES
 
 set(SOURCE_FILES_VULKAN
 		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.cpp
-		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.h src/ui/renderer/uiScene/vulkan/materials/UIMaterialVLK.cpp src/ui/renderer/uiScene/vulkan/materials/UIMaterialVLK.h)
+		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.h)
 
 #########################################################
 # FIND OPENGL

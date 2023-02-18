@@ -6,7 +6,7 @@
 #include "GVertexBufferBindingsVLK.h"
 #include "../interface/IDevice.h"
 
-GVertexBufferBindingsVLK::GVertexBufferBindingsVLK(IDevice &m_device) : m_device(m_device) {
+GVertexBufferBindingsVLK::GVertexBufferBindingsVLK()  {
 
 }
 
@@ -64,19 +64,17 @@ VkFormat gBindingToVkFormat(GBindingType gType, uint32_t size, bool normalized )
 
 
 void GVertexBufferBindingsVLK::setIndexBuffer(HGIndexBuffer indexBuffer) {
-    m_indexBuffer = indexBuffer;
+    //Not used in VULKAN
 }
 
-void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding binding) {
-    m_bindings.push_back(binding);
-
+void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings) {
     int bindingIdx = 0;
-    for (auto &gVertexBinding : m_bindings) {
+//    for (auto &gVertexBinding : m_bindings) {
         uint32_t stride = 0;
-        if (gVertexBinding.bindings[0].stride != 0) {
-            stride = gVertexBinding.bindings[0].stride;
+        if (bindings[0].stride != 0) {
+            stride = bindings[0].stride;
         } else {
-            stride = gVertexBinding.bindings[0].size * ((gVertexBinding.bindings[0].type == GBindingType::GFLOAT) ? 4 : 1);
+            stride = bindings[0].size * ((bindings[0].type == GBindingType::GFLOAT) ? 4 : 1);
         }
 
         vkBufferFormatHolder bufferFormatHolder;
@@ -84,7 +82,7 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding bindi
         bufferFormatHolder.bindingDescription.stride = stride;
         bufferFormatHolder.bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        for (auto &gBinding : gVertexBinding.bindings) {
+        for (auto &gBinding : bindings) {
             VkVertexInputAttributeDescription attributeDescription = {};
             attributeDescription.binding = bindingIdx;
             attributeDescription.location = gBinding.position;
@@ -96,10 +94,11 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding bindi
         bindingIdx++;
 
         m_BufferBindingsVLK.push_back(bufferFormatHolder);
-    }
+//    }
 }
 
 void GVertexBufferBindingsVLK::save() {
+    //Not used in VULKAN
 }
 
 std::vector<vkBufferFormatHolder> &GVertexBufferBindingsVLK::getVLKFormat() {

@@ -117,9 +117,9 @@ void GPipelineVLK::createPipeline(
 
 
     vertexInputInfo.vertexBindingDescriptionCount = vertexBindingDescriptions.size();
-    vertexInputInfo.vertexAttributeDescriptionCount = vertexAttributeDescriptions.size();
-    vertexInputInfo.pVertexBindingDescriptions = &vertexBindingDescriptions[0];
-    vertexInputInfo.pVertexAttributeDescriptions = &vertexAttributeDescriptions[0];
+    vertexInputInfo.pVertexBindingDescriptions =    vertexBindingDescriptions.data();
+    vertexInputInfo.vertexAttributeDescriptionCount =   vertexAttributeDescriptions.size();
+    vertexInputInfo.pVertexAttributeDescriptions =      vertexAttributeDescriptions.data();
 
     VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

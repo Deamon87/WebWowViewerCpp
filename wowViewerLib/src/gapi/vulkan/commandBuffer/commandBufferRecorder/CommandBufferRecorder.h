@@ -56,7 +56,7 @@ private:
     std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
     std::shared_ptr<GBufferVLK> m_currentIndexBuffer = nullptr;
     std::shared_ptr<GBufferVLK> m_currentVertexBuffer = nullptr;
-    std::array<const std::shared_ptr<GDescriptorSet>, GDescriptorSet::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
+    std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
 };
 
 #endif //AWEBWOWVIEWERCPP_COMMANDBUFFERRECORDER_H

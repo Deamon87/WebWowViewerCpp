@@ -24,9 +24,7 @@ public:
     HGVertexBuffer createVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createIndexBuffer(int sizeInBytes) override;
 
-    HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override {
-        return nullptr; //VAO doesnt exist in Vulkan
-    };
+    HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;;
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
     HMaterial createUIMaterial(const UIMaterialTemplate &materialTemplate) override;
 
@@ -43,6 +41,8 @@ private:
     HGBufferVLK vboBuffer;
     HGBufferVLK iboBuffer;
     HGBufferVLK uboBuffer;
+
+    HGVertexBufferBindings m_imguiVAO;
 
     void createBuffers();
 

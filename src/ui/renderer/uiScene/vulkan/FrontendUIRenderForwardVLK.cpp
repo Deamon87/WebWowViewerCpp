@@ -8,6 +8,7 @@
 #include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/IBufferChunkVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/materials/MaterialBuilderVLK.h"
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) : FrontendUIRenderer(
     hDevice), m_device(hDevice) {
@@ -23,6 +24,9 @@ void FrontendUIRenderForwardVLK::createBuffers() {
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
+
+    m_imguiVAO = m_device->createVertexBufferBindings();
+    m_imguiVAO->addVertexBufferBinding(nullptr, std::vector(imguiBindings.begin(), imguiBindings.end()));
 }
 
 HGVertexBuffer FrontendUIRenderForwardVLK::createVertexBuffer(int sizeInBytes) {
@@ -31,6 +35,11 @@ HGVertexBuffer FrontendUIRenderForwardVLK::createVertexBuffer(int sizeInBytes) {
 
 HGIndexBuffer FrontendUIRenderForwardVLK::createIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
+}
+
+HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules
+    return m_imguiVAO;
 }
 
 HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
@@ -43,12 +52,25 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
         }
     }
 
-    std::vector<std::shared_ptr<IBufferVLK>> ubos = {m_imguiUbo->};
-    std::vector<HGTextureVLK> texturesVLK = {std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture)};
-    auto material = std::make_shared<ISimpleMaterialVLK>(m_device,
-                                  "imguiShader", "imguiShader",
-                                  ubos,
-                                  texturesVLK);
+    auto &l_imguiUbo = m_imguiUbo;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"})
+        .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(1, l_imguiUbo->getSubBuffer());
+        })
+        .createDescriptorSet(1, [&materialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture));
+        })
+        .toMaterial();
+
+//
+//    std::vector<std::shared_ptr<IBufferVLK>> ubos = {m_imguiUbo->getSubBuffer()};
+//    std::vector<HGTextureVLK> texturesVLK = {std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture)};
+//    auto material = std::make_shared<ISimpleMaterialVLK>(m_device,
+//                                  "imguiShader", "imguiShader",
+//                                  ubos,
+//                                  texturesVLK);
 
     std::weak_ptr<ISimpleMaterialVLK> weakPtr(material);
     m_materialCache[materialTemplate] = weakPtr;
@@ -89,7 +111,7 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             swapChainCmd.bindVertexBuffer(l_this->vboBuffer);
 
             //2. Bind IBOs
-            swapChainCmd.bindVertexBuffer(l_this->iboBuffer);
+            swapChainCmd.bindIndexBuffer(l_this->iboBuffer);
 
             //3. Bind pipeline
             auto pipeline = meshVlk->getPipeLineForRenderPass(l_this->m_lastRenderPass, false);

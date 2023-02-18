@@ -50,14 +50,14 @@ GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderVertName, std::s
 
 }
 
-void GShaderPermutationVLK::createUBODescriptorLayout() {
+void GShaderPermutationVLK::createSetDescriptorLayouts() {
     std::vector<const shaderMetaData *> metas = {fragShaderMeta, vertShaderMeta};
-    hUboDescriptorSetLayout = std::make_shared<GDescriptorSetLayout>(m_device, metas, UBO_SET_INDEX);
-}
+    for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
+        auto &setLayout = combinedShaderLayout.setLayouts[i];
+        if (setLayout.imageBindings.length == 0 && setLayout.uboBindings.length == 0) continue;
 
-void GShaderPermutationVLK::createImageDescriptorLayout() {
-    std::vector<const shaderMetaData *> metas = {fragShaderMeta, vertShaderMeta};
-    hImageDescriptorSetLayout = std::make_shared<GDescriptorSetLayout>(m_device, metas, IMAGE_SET_INDEX);
+        descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i);
+    }
 }
 
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
@@ -72,18 +72,17 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
 
     this->createShaderLayout();
 
-    this->createUBODescriptorLayout();
-    this->createImageDescriptorLayout();
+    this->createSetDescriptorLayouts();
 
     this->createPipelineLayout();
 }
 
 int GShaderPermutationVLK::getTextureBindingStart() {
-    return shaderLayout.setLayouts[1].imageBindings.start;
+    return combinedShaderLayout.setLayouts[1].imageBindings.start;
 }
 
 int GShaderPermutationVLK::getTextureCount() {
-    return shaderLayout.setLayouts[1].imageBindings.length;
+    return combinedShaderLayout.setLayouts[1].imageBindings.length;
 }
 
 inline void makeMin(unsigned int &a, const unsigned int b) {
@@ -100,7 +99,7 @@ void GShaderPermutationVLK::createShaderLayout() {
     for (int i = 0; i < this->vertShaderMeta->uboBindings.size(); i++) {
         auto &uboVertBinding = this->vertShaderMeta->uboBindings[i];
 
-        auto &setLayout = shaderLayout.setLayouts[uboVertBinding.set];
+        auto &setLayout = combinedShaderLayout.setLayouts[uboVertBinding.set];
 
         setLayout.uboSizesPerBinding[uboVertBinding.binding] = uboVertBinding.size;
         makeMin(setLayout.uboBindings.start, uboVertBinding.binding);
@@ -109,7 +108,7 @@ void GShaderPermutationVLK::createShaderLayout() {
     for (int i = 0; i < this->fragShaderMeta->uboBindings.size(); i++) {
         auto &uboFragBinding = this->fragShaderMeta->uboBindings[i];
 
-        auto &setLayout = shaderLayout.setLayouts[uboFragBinding.set];
+        auto &setLayout = combinedShaderLayout.setLayouts[uboFragBinding.set];
 
         auto it = setLayout.uboSizesPerBinding.find(uboFragBinding.binding);
         if (it != std::end(setLayout.uboSizesPerBinding)) {
@@ -130,7 +129,7 @@ void GShaderPermutationVLK::createShaderLayout() {
     //Image stuff
     for (int i = 0; i < this->vertShaderMeta->imageBindings.size(); i++) {
         auto &imageVertBinding = this->vertShaderMeta->imageBindings[i];
-        auto &setLayout = shaderLayout.setLayouts[imageVertBinding.set];
+        auto &setLayout = combinedShaderLayout.setLayouts[imageVertBinding.set];
 
         if (setLayout.uboSizesPerBinding.find(imageVertBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
             std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageVertBinding.set
@@ -146,7 +145,7 @@ void GShaderPermutationVLK::createShaderLayout() {
     for (int i = 0; i < this->fragShaderMeta->uboBindings.size(); i++) {
         auto &imageFragBinding = this->fragShaderMeta->imageBindings[i];
 
-        auto &setLayout = shaderLayout.setLayouts[imageFragBinding.set];
+        auto &setLayout = combinedShaderLayout.setLayouts[imageFragBinding.set];
 
         if (setLayout.uboSizesPerBinding.find(imageFragBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
             std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageFragBinding.set
@@ -160,7 +159,7 @@ void GShaderPermutationVLK::createShaderLayout() {
         makeMax(setLayout.imageBindings.end, imageFragBinding.binding);
     }
     //Cleanup
-    for (auto &shaderLayout : shaderLayout.setLayouts) {
+    for (auto &shaderLayout : combinedShaderLayout.setLayouts) {
         {
             auto &data = shaderLayout.uboBindings;
             if (shaderLayout.uboBindings.start < 100) {
@@ -182,8 +181,8 @@ void GShaderPermutationVLK::createShaderLayout() {
 
 void GShaderPermutationVLK::createPipelineLayout() {
     std::array<VkDescriptorSetLayout, 2> descLayouts = {
-        this->getUboDescriptorLayout()->getSetLayout(),
-        this->getImageDescriptorLayout()->getSetLayout()
+        this->getDescriptorLayout(0)->getSetLayout(),
+        this->getDescriptorLayout(1)->getSetLayout()
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};

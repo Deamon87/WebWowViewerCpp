@@ -10,8 +10,6 @@
 
 class IMaterial {
 public:
-    HGShaderPermutation m_shader = nullptr;
-
     virtual ~IMaterial() = default;
 };
 

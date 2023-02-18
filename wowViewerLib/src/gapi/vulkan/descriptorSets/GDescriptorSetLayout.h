@@ -10,12 +10,15 @@
 class GDescriptorSetLayout;
 class IDeviceVulkan;
 
+#include <bitset>
 #include "../context/vulkan_context.h"
 #include "../IDeviceVulkan.h"
 #include "../../../engine/shader/ShaderDefinitions.h"
 
 class GDescriptorSetLayout {
 public:
+    static const constexpr int MAX_BINDPOINT_NUMBER = 16;
+
     GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device, const std::vector<const shaderMetaData*> &metaData, int setIndex);
 
     ~GDescriptorSetLayout();
@@ -23,11 +26,16 @@ public:
     const VkDescriptorSetLayout getSetLayout() {return m_descriptorSetLayout;} ;
 
     const std::unordered_map<int,VkDescriptorSetLayoutBinding>& getShaderLayoutBindings() const {return m_shaderLayoutBindings;} ;
+    const std::unordered_map<int, int>& getRequiredUBOSize() const {return m_requiredUBOSize;} ;
 
     int getTotalUbos() { return m_totalUbos; };
     int getTotalImages() { return m_totalImages; };
+    std::bitset<MAX_BINDPOINT_NUMBER> getRequiredBindPoints() {return m_requiredBindPoints;};
 private:
     std::unordered_map<int,VkDescriptorSetLayoutBinding> m_shaderLayoutBindings;
+    std::unordered_map<int, int> m_requiredUBOSize;
+
+    std::bitset<MAX_BINDPOINT_NUMBER> m_requiredBindPoints = 0;
     VkDescriptorSetLayout m_descriptorSetLayout;
     int m_totalImages = 0;
     int m_totalUbos = 0;

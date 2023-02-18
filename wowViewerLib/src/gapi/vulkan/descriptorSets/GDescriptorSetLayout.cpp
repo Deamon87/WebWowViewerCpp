@@ -9,7 +9,7 @@
 
 GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device, const std::vector<const shaderMetaData*> &metaDatas, int setIndex) : m_device(device) {
     //Create Layout
-    std::unordered_map<int,VkDescriptorSetLayoutBinding> shaderLayoutBindings;
+    auto &shaderLayoutBindings = m_shaderLayoutBindings;
 
     for (const auto p_metaData : metaDatas) {
         auto const &metaData = *p_metaData;
@@ -26,8 +26,6 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                     return (VkShaderStageFlagBits)0;
             }
         }(metaData.stage);
-
-
 
         for (int i = 0; i < p_metaData->uboBindings.size(); i++) {
             auto &uboBinding = p_metaData->uboBindings[i];
@@ -50,7 +48,12 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                 uboLayoutBinding.stageFlags = vkStageFlag;
 
                 shaderLayoutBindings.insert({uboBinding.binding, uboLayoutBinding});
+                if (uboBinding.size > 0) {
+                    m_requiredUBOSize.insert({uboBinding.binding,uboBinding.size});
+                }
                 m_totalUbos++;
+
+                m_requiredBindPoints[uboBinding.binding] = true;
             }
         }
 
@@ -68,7 +71,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                 }
             } else {
                 VkDescriptorSetLayoutBinding imageLayoutBinding = {};
-                imageLayoutBinding.binding = p_metaData->imageBindings[i].binding;
+                imageLayoutBinding.binding = imageBinding.binding;
                 imageLayoutBinding.descriptorCount = 1;
                 imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
                 imageLayoutBinding.pImmutableSamplers = nullptr;
@@ -76,6 +79,8 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
 
                 shaderLayoutBindings.insert({imageBinding.binding, imageLayoutBinding});
                 m_totalImages++;
+
+                m_requiredBindPoints[imageBinding.binding] = true;
             }
         }
     }
@@ -87,8 +92,8 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
     //Create VK descriptor layout
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = shaderLayoutBindings.size();
-    layoutInfo.pBindings = (shaderLayoutBindings.size() > 0) ? &shaderLayoutBindings[0] : nullptr;
+    layoutInfo.bindingCount = layouts.size();
+    layoutInfo.pBindings = (!layouts.empty()) ? layouts.data() : nullptr;
 
     if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");

@@ -22,6 +22,10 @@ public:
     void save() override {
         subBuffer->save(sizeof(T));
     };
+
+    const std::shared_ptr<IBufferVLK> getSubBuffer() {
+        return subBuffer;
+    }
 private:
     std::shared_ptr<IBufferVLK> subBuffer = nullptr;
 

@@ -6,12 +6,12 @@
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "../../gapi/UniformBufferStructures.h"
 
-static GBufferBinding staticRibbonBindings[3] = {
-    {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
-    {+ribbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
-    {+ribbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
+static std::array<GBufferBinding, 3> staticRibbonBindings = {{
+    {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(CRibbonVertex), offsetof(CRibbonVertex, pos) }, // 0
+    {+ribbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(CRibbonVertex), offsetof(CRibbonVertex, diffuseColor)}, // 12
+    {+ribbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(CRibbonVertex), offsetof(CRibbonVertex, texCoord)}, // 16
     //24
-};
+}};
 
 //----- (00A19710) --------------------------------------------------------
 CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object,
@@ -92,6 +92,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
   auto device = m_api->hDevice;
 
   //Create Buffers
+  auto ribbonBindings = std::vector<GBufferBinding>(staticRibbonBindings.begin(), staticRibbonBindings.end());
   for (int k = 0; k < 4; k++) {
       //TODO:
       /*
@@ -102,11 +103,7 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
     frame[k].m_bindings = device->createVertexBufferBindings();
     frame[k].m_bindings->setIndexBuffer(frame[k].m_indexVBO);
 
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = frame[k].m_bufferVBO;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&staticRibbonBindings[0],&staticRibbonBindings[3]);
-
-    frame[k].m_bindings->addVertexBufferBinding(vertexBinding);
+    frame[k].m_bindings->addVertexBufferBinding(frame[k].m_bufferVBO, ribbonBindings);
     frame[k].m_bindings->save();
 
 

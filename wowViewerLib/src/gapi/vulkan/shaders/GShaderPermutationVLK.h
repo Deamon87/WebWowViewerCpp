@@ -34,8 +34,9 @@ public:
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
-    const std::shared_ptr<GDescriptorSetLayout> getImageDescriptorLayout() {return hImageDescriptorSetLayout;}
-    const std::shared_ptr<GDescriptorSetLayout> getUboDescriptorLayout() {return hUboDescriptorSetLayout;}
+
+
+    const std::shared_ptr<GDescriptorSetLayout> getDescriptorLayout(int bindPoint) {return descriptorSetLayouts[bindPoint];}
 
     virtual int getTextureBindingStart();
     virtual int getTextureCount();
@@ -48,7 +49,7 @@ public:
     }
 
     const CombinedShaderLayout &getShaderLayout() {
-        return shaderLayout;
+        return combinedShaderLayout;
     };
 
     VkPipelineLayout getPipelineLayout() {
@@ -66,8 +67,7 @@ protected:
 
     VkPipelineLayout pipelineLayout;
 
-    std::shared_ptr<GDescriptorSetLayout> hUboDescriptorSetLayout;
-    std::shared_ptr<GDescriptorSetLayout> hImageDescriptorSetLayout;
+    std::array<std::shared_ptr<GDescriptorSetLayout>, MAX_SHADER_DESC_SETS> descriptorSetLayouts;
 
     std::shared_ptr<GDeviceVLK> m_device;
 private:
@@ -78,11 +78,9 @@ private:
     std::string m_shaderNameVert;
     std::string m_shaderNameFrag;
 
-    CombinedShaderLayout shaderLayout;
+    CombinedShaderLayout combinedShaderLayout;
 
-    void createUBODescriptorLayout();
-
-    void createImageDescriptorLayout();
+    void createSetDescriptorLayouts();
 
     void createShaderLayout();
     void createPipelineLayout();

@@ -22,7 +22,7 @@
 #include "GRenderPassVLK.h"
 #include "../../engine/algorithms/FrameCounter.h"
 #include "buffers/GBufferVLK.h"
-#include "syncronization/GFenceVLK.h"
+#include "synchronization/GFenceVLK.h"
 #include "../../renderer/vulkan/IRenderFunctionVLK.h"
 #include <tbb/tbb.h>
 
@@ -904,7 +904,7 @@ void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
 
     for (const auto &hmesh : meshes) {
         GMeshVLK * mesh = (GMeshVLK *) hmesh.get();
-        mesh->material()->updateImageDescriptorSet();
+//        mesh->material()->updateImageDescriptorSet();
 
 //        for (int i = 0; i < mesh->textureCount(); i++) {
 //            textures.push_back(mesh->m_texture[i]);
@@ -959,7 +959,7 @@ HGBufferVLK GDeviceVLK::createIndexBuffer(size_t initialSize) {
 
 HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
     std::shared_ptr<GVertexBufferBindingsVLK> h_vertexBindings;
-    h_vertexBindings.reset(new GVertexBufferBindingsVLK(*this));
+    h_vertexBindings.reset(new GVertexBufferBindingsVLK());
 
     return h_vertexBindings;
 }

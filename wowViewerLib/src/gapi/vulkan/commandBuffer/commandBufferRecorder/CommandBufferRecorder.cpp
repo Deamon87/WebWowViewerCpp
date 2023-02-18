@@ -85,6 +85,8 @@ void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr
 
     vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                             m_currentPipeline->getLayout(), bindIndex, vkDescCnt, &vkDescSet, 0, nullptr);
+
+    m_currentDescriptorSet[bindIndex] = descriptorSet;
 }
 
 void CmdBufRecorder::bindIndexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk) {
@@ -95,7 +97,7 @@ void CmdBufRecorder::bindIndexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk) {
     m_currentIndexBuffer = bufferVlk;
 }
 void CmdBufRecorder::bindVertexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk){
-    if (m_currentIndexBuffer == bufferVlk) return;
+    if (m_currentVertexBuffer == bufferVlk) return;
 
     constexpr const int firstBinding = 0;
     constexpr const int bindingCount = 1;
@@ -104,7 +106,7 @@ void CmdBufRecorder::bindVertexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk){
 
     vkCmdBindVertexBuffers(m_gCmdBuffer.m_cmdBuffer, firstBinding, bindingCount, vbos.data(), offsets.data());
 
-    m_currentIndexBuffer = bufferVlk;
+    m_currentVertexBuffer = bufferVlk;
 }
 
 void CmdBufRecorder::bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline) {

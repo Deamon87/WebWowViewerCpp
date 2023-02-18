@@ -6,7 +6,7 @@
 
 #include "../textures/GTextureVLK.h"
 
-GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
+GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
     : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
 
     m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
@@ -40,7 +40,7 @@ void GDescriptorSet::update() {
 //
 // So, writes first, copies second. T_T
 void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites) {
-    vkUpdateDescriptorSets(m_device->getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), &descriptorWrites[0], 0, nullptr);
+    vkUpdateDescriptorSets(m_device->getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
     m_firstUpdate = false;
 
@@ -58,23 +58,24 @@ void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &de
 
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GTextureVLK> &textureVlk) {
-    if (m_set.m_hDescriptorSetLayout->getShaderLayoutBindings().at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+    auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
+
+    if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         std::cerr << "descriptor mismatch for image" << std::endl;
         throw std::runtime_error("descriptor mismatch for image");
     }
 
-    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBODynamic;
+    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::Texture;
     m_boundDescriptors[bindIndex].textureVlk = textureVlk;
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
     imageInfo = {};
-
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     imageInfo.imageView = textureVlk->texture.view;
     imageInfo.sampler = textureVlk->texture.sampler;
 
-    VkWriteDescriptorSet writeDescriptor = updates.emplace_back();
+    VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
     writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
     writeDescriptor.dstSet = m_set.getDescSet();
     writeDescriptor.pNext = nullptr;
@@ -93,7 +94,9 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
 //And this current system of sub-allocation it seems, there is no real reason to rely on this. Sort of.
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
-    if (m_set.m_hDescriptorSetLayout->getShaderLayoutBindings().at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
+    auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
+
+    if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
         std::cerr << "descriptor mismatch for UBO dynamic" << std::endl;
         throw std::runtime_error("descriptor mismatch for UBO dynamic");
     }
@@ -126,9 +129,19 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
 
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
-    if (m_set.m_hDescriptorSetLayout->getShaderLayoutBindings().at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+    auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
+    auto &uboSizes = m_set.m_hDescriptorSetLayout->getRequiredUBOSize();
+
+    if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         std::cerr << "descriptor mismatch for UBO" << std::endl;
         throw std::runtime_error("descriptor mismatch for UBO");
+    }
+    if (uboSizes.find(bindIndex) != uboSizes.end() && buffer->getSize() != uboSizes.at(bindIndex)) {
+        std::cout << "buffers missmatch! for"
+                  << " binding = " << bindIndex
+                  << " expected size " << uboSizes.at(bindIndex)
+                  << ", provided size = " << (buffer->getSize())
+                  << std::endl;
     }
 
     m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBO;
@@ -140,7 +153,6 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
     bufferInfo.buffer = buffer->getGPUBuffer();
     bufferInfo.offset = buffer->getOffset();
     bufferInfo.range = buffer->getSize();
-
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
     writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -165,8 +177,10 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
 }
 
 GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
+    //FOR DEBUG AND STABILITY
+
     //Fill the rest of Descriptor with already bound values
-    for (int bindPoint = 0; m_updateBindPoints.size(); bindPoint++) {
+    for (int bindPoint = 0; bindPoint < m_updateBindPoints.size(); bindPoint++) {
         if(m_updateBindPoints[bindPoint]) continue;
 
         if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::UBO) {
@@ -178,6 +192,22 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
         }
     }
 
+    auto noSetBitSet =
+        m_set.getDescSetLayout()->getRequiredBindPoints() & m_updateBindPoints.flip();
+
+    if (!noSetBitSet.none()) {
+        std::string notSetBits;
+        for (int i = 0; i < noSetBitSet.size(); i++) {
+            notSetBits += " " + std::to_string(i);
+        }
+
+        std::cerr << "required descriptors " << notSetBits << " were not set during update" << std::endl;
+        throw std::runtime_error("required descriptors were not set");
+    }
+
+
     m_set.writeToDescriptorSets(updates);
+
+
 }
 
