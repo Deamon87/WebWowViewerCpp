@@ -1,10 +1,10 @@
 //
 // Created by Deamon on 12/11/2020.
 //
-
 #include <cstring>
 #include "GFrameBufferVLK.h"
 #include "textures/GTextureVLK.h"
+
 #include "GRenderPassVLK.h"
 
 void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback) {
@@ -27,6 +27,52 @@ void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &
 
         callback(i, textureFormat);
     }
+}
+
+//Support for swapchain framebuffer
+GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
+                                 const HGTexture &colorImage,
+                                 int width, int height,
+                                 const std::shared_ptr<GRenderPassVLK> &renderPass)
+                                 : mdevice(dynamic_cast<GDeviceVLK &>(device)),
+                                   m_renderPass(renderPass),
+                                   m_attachmentTextures({colorImage}) {
+
+    {
+        // Find a suitable depth format
+        VkFormat fbDepthFormat = mdevice.findDepthFormat();
+
+        std::shared_ptr<GTextureVLK> h_depthTexture;
+        h_depthTexture.reset(new GTextureVLK(
+            mdevice,
+            width, height,
+            false, false,
+            true,
+            fbDepthFormat,
+            VK_SAMPLE_COUNT_1_BIT,
+            1,
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+        ));
+
+        m_depthTexture = h_depthTexture;
+    }
+
+    std::array<VkImageView,2> attachments = {
+        std::dynamic_pointer_cast<GTextureVLK>(colorImage)->texture.view,
+        std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.view
+    };
+
+    VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+    fbufCreateInfo.pNext = nullptr;
+    fbufCreateInfo.flags = 0;
+    fbufCreateInfo.renderPass = m_renderPass->getRenderPass();
+    fbufCreateInfo.attachmentCount = attachments.size();
+    fbufCreateInfo.pAttachments = attachments.data();
+    fbufCreateInfo.width = width;
+    fbufCreateInfo.height = height;
+    fbufCreateInfo.layers = 1;
+
+    ERR_GUARD_VULKAN(vkCreateFramebuffer(mdevice.getVkDevice(), &fbufCreateInfo, nullptr, &m_frameBuffer));
 }
 
 GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
@@ -52,9 +98,9 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
             1,
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
         ));
-        attachmentTextures.push_back(h_texture);
+        m_attachmentTextures.push_back(h_texture);
         attachments.push_back(h_texture->texture.view);
-        attachmentFormats.push_back(textureFormat);
+        m_attachmentFormats.push_back(textureFormat);
 
         if (multiSampleCnt > 1) {
             std::shared_ptr<GTextureVLK> h_texture;
@@ -68,11 +114,9 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                 1,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT
             ));
-            attachmentTextures.push_back(h_texture);
+            m_attachmentTextures.push_back(h_texture);
             attachments.push_back(h_texture->texture.view);
         }
-
-
     });
 
     //Depth attachment
@@ -92,7 +136,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
             VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         ));
 
-        depthTexture = h_depthTexture;
+        m_depthTexture = h_depthTexture;
         attachments.push_back(h_depthTexture->texture.view);
     }
 
@@ -120,14 +164,20 @@ GFrameBufferVLK::~GFrameBufferVLK() {
 }
 
 void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *outputdata) {
-// Check blit support for source and destination
+    if (m_attachmentFormats.empty()) {
+        //Cant read from swapchain framebuffer
+        return;
+    }
+
+
+    // Check blit support for source and destination
     VkFormatProperties formatProps;
 
     VkPhysicalDevice physicalDevice = mdevice.getVkPhysicalDevice();
 
     int attachmentIndex = 0;
 
-    VkFormat colorFormat = attachmentFormats[attachmentIndex];
+    VkFormat colorFormat = m_attachmentFormats[attachmentIndex];
     bool supportsBlit = false;
 
     // Check if the device supports blitting from optimal images (the swapchain images are in optimal format)
@@ -358,11 +408,11 @@ HGTexture GFrameBufferVLK::getAttachment(int index) {
         index = 2*index+1;
     }
 
-    return attachmentTextures[index];
+    return m_attachmentTextures[index];
 }
 
 HGTexture GFrameBufferVLK::getDepthTexture() {
-    return depthTexture;
+    return m_depthTexture;
 }
 
 void GFrameBufferVLK::bindFrameBuffer() {

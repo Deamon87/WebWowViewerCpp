@@ -125,7 +125,24 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
                 }
             }
 
-            //5. Draw the mesh
+            //5. Set view port
+
+//            swapChainCmd.setViewPort();
+
+            //5. Set view port
+//            swapChainCmd.setScissors(defaultScissor);
+
+            //    //Set scissors
+//    VkRect2D defaultScissor = {};
+//    defaultScissor.offset = {0, 0};
+//    defaultScissor.extent = {
+//        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]),
+//        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])
+//    };
+//
+//    vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
+
+            //6. Draw the mesh
             swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
         }
     }));

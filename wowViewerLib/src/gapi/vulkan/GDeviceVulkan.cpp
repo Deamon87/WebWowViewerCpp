@@ -165,7 +165,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
@@ -264,13 +264,8 @@ void GDeviceVLK::initialize() {
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 //---------------
 
-    createSwapChain();
-    createImageViews();
+    createSwapChainAndFramebuffer();
 
-    createRenderPass();
-
-    createDepthResources();
-    createFramebuffers();
     createCommandPool();
     createCommandPoolForUpload();
 
@@ -287,12 +282,35 @@ void GDeviceVLK::initialize() {
 }
 
 
-void GDeviceVLK::recreateSwapChain() {
-    createSwapChain();
-    createImageViews();
+void GDeviceVLK::createSwapChainAndFramebuffer() {
+    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
+    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
-    createDepthResources();
-    createFramebuffers();
+    createSwapChain(swapChainSupport, surfaceFormat, extent);
+
+    uint32_t imageCount;
+    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+
+    //Create swapchainImages and framebuffer
+    std::vector<VkImage> swapChainImages = {};
+    swapChainImages.resize(imageCount);
+
+    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+
+    swapChainExtent = extent;
+
+    //Create imageView
+    std::vector<VkImageView> swapChainImageViews;
+    createSwapChainImageViews(swapChainImages, swapChainImageViews, surfaceFormat.format);
+
+    std::vector<HGTextureVLK> swapChainTextures;
+    swapChainTextures.resize(swapChainImages.size());
+    for (int i = 0; i < swapChainImages.size(); i++) {
+        swapChainTextures[i] = std::make_shared<GTextureVLK>(*this, swapChainImages[i], swapChainImageViews[i]);
+    }
+
+    createFramebuffers(swapChainTextures, extent);
 }
 
 void GDeviceVLK::setupDebugMessenger() {
@@ -306,12 +324,8 @@ void GDeviceVLK::setupDebugMessenger() {
     }
 }
 
-void GDeviceVLK::createSwapChain() {
-    SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
-
-    VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
+void GDeviceVLK::createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSurfaceFormatKHR &surfaceFormat, VkExtent2D &extent) {
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
-    VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
 
     uint32_t imageCount = MAX_FRAMES_IN_FLIGHT;
     if ((imageCount > swapChainSupport.capabilities.maxImageCount && (swapChainSupport.capabilities.maxImageCount != 0))
@@ -359,16 +373,9 @@ void GDeviceVLK::createSwapChain() {
         std::cout << "error = " << error << std::endl << std::flush;
         throw std::runtime_error("failed to create swap chain!");
     }
-
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
-    swapChainImages.resize(imageCount);
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
-
-    swapChainImageFormat = surfaceFormat.format;
-    swapChainExtent = extent;
 }
 
-void GDeviceVLK::createImageViews() {
+void GDeviceVLK::createSwapChainImageViews(std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews, VkFormat swapChainImageFormat) {
     swapChainImageViews.resize(swapChainImages.size());
 
     for (size_t i = 0; i < swapChainImages.size(); i++) {
@@ -417,7 +424,7 @@ VkFormat GDeviceVLK::findDepthFormat() {
     );
 }
 
-void GDeviceVLK::createRenderPass() {
+void GDeviceVLK::createSwapChainRenderPass(VkFormat swapChainImageFormat) {
     swapchainRenderPass = std::make_shared<GRenderPassVLK>(this->device,
                                                   std::vector({swapChainImageFormat}),
                                                   findDepthFormat(),
@@ -438,104 +445,17 @@ uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, Vk
     throw std::runtime_error("failed to find suitable memory type!");
 }
 
+void GDeviceVLK::createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures, VkExtent2D &extent) {
+    swapChainFramebuffers.resize(swapChainTextures.size());
 
-VkImageView GDeviceVLK::createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels) {
-    VkImageViewCreateInfo viewInfo = {};
-    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-    viewInfo.image = image;
-    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    viewInfo.format = format;
-    viewInfo.subresourceRange.aspectMask = aspectFlags;
-    viewInfo.subresourceRange.baseMipLevel = 0;
-    viewInfo.subresourceRange.levelCount = mipLevels;
-    viewInfo.subresourceRange.baseArrayLayer = 0;
-    viewInfo.subresourceRange.layerCount = 1;
-
-    VkImageView imageView;
-    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture image view!");
-    }
-
-    return imageView;
-}
-
-
-void GDeviceVLK::createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
-    VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-    VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout) {
-    VkImageCreateInfo imageInfo = {};
-    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    imageInfo.imageType = VK_IMAGE_TYPE_2D;
-    imageInfo.extent.width = width;
-    imageInfo.extent.height = height;
-    imageInfo.extent.depth = 1;
-    imageInfo.mipLevels = mipLevels;
-    imageInfo.arrayLayers = 1;
-    imageInfo.format = format;
-    imageInfo.tiling = tiling;
-    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    imageInfo.usage = usage;
-    imageInfo.samples = numSamples;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//    if (indices.graphicsFamily != indices.presentFamily) {
-//        imageInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
-//    } else {
-//        imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//    }
-
-    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create image!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(device, image, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties);
-
-    if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate image memory!");
-    }
-
-    vkBindImageMemory(device, image, imageMemory, 0);
-}
-
-void GDeviceVLK::createDepthResources() {
-    VkFormat depthFormat = findDepthFormat();
-//
-    createImage(swapChainExtent.width, swapChainExtent.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-        depthImage, depthImageMemory, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-    depthImageView = createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
-//    transitionImageLayout(depthImage, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
-}
-
-void GDeviceVLK::createFramebuffers() {
-    swapChainFramebuffers.resize(swapChainImageViews.size());
-
-    for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-        VkImageView attachments[] = {
-            swapChainImageViews[i],
-            depthImageView
-        };
-
-        VkFramebufferCreateInfo framebufferInfo = {};
-        framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-        framebufferInfo.pNext = NULL;
-        framebufferInfo.flags = 0;
-        framebufferInfo.renderPass = swapchainRenderPass->getRenderPass();
-        framebufferInfo.attachmentCount = 2;
-        framebufferInfo.pAttachments = &attachments[0];
-        framebufferInfo.width = swapChainExtent.width;
-        framebufferInfo.height = swapChainExtent.height;
-        framebufferInfo.layers = 1;
-
-        if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &swapChainFramebuffers[i]) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create framebuffer!");
-        }
+    for (size_t i = 0; i < swapChainFramebuffers.size(); i++) {
+        swapChainFramebuffers[i] = std::make_shared<GFrameBufferVLK>(
+            *this,
+            swapChainTextures[i],
+            extent.width,
+            extent.height,
+            swapchainRenderPass
+            );
     }
 }
 
@@ -714,12 +634,11 @@ void GDeviceVLK::createCommandPoolForUpload(){
 
 void GDeviceVLK::createCommandBuffers() {
     for (auto & commandBuffer : fbCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, false, indices.graphicsFamily.value());
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily.value());
     }
     for (auto & commandBuffer : swapChainCommandBuffers) {
         commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily.value());
     }
-
 
     for (auto & commandBuffer : uploadCommandBuffers) {
         commandBuffer = std::make_shared<GCommandBuffer>(*this, uploadCommandPool, true, indices.transferFamily.value());
@@ -766,22 +685,36 @@ float GDeviceVLK::getAnisLevel() {
 }
 
 void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
-    int uploadFrame = getUpdateFrameNumber();
+    int currentDrawFrame = getDrawFrameNumber();
 
     this->waitInDrawStageAndDeps.beginMeasurement();
-    uploadFences[uploadFrame]->wait(std::numeric_limits<uint64_t>::max());
-    inFlightFences[uploadFrame]->wait(std::numeric_limits<uint64_t>::max());
-    uploadFences[uploadFrame]->reset();
+    uploadFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+    inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+    uploadFences[currentDrawFrame]->reset();
     this->waitInDrawStageAndDeps.endMeasurement();
 
 
-    auto &uploadCmdBuf = uploadCommandBuffers[uploadFrame];
-    auto &swapChainCmdBuf = swapChainCommandBuffers[uploadFrame];
-    auto &frameBufCmdBuf = fbCommandBuffers[uploadFrame];
+    auto &uploadCmdBuf = uploadCommandBuffers[currentDrawFrame];
+    auto &swapChainCmdBuf = swapChainCommandBuffers[currentDrawFrame];
+    auto &frameBufCmdBuf = fbCommandBuffers[currentDrawFrame];
+
+    uint32_t imageIndex = -1;
     {
-        auto uploadCmd = std::move(uploadCmdBuf->beginRecord(nullptr));
-        auto swapChainCmd = std::move(swapChainCmdBuf->beginRecord(nullptr));
-        auto frameBufCmd = std::move(frameBufCmdBuf->beginRecord(nullptr));
+        auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
+        auto frameBufCmd = frameBufCmdBuf->beginRecord(nullptr);
+
+        {
+            //Wait for SwapChain CMD buffer to become available
+            inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+            inFlightFences[currentDrawFrame]->reset();
+        }
+        auto swapChainCmd = swapChainCmdBuf->beginRecord(nullptr);
+
+        {
+            //Begin render pass for Swap chain
+            this->getNextSwapImageIndex(imageIndex);
+            this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
+        }
 
         for (int i = 0; i < renderFuncs.size(); i++) {
             dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, frameBufCmd, swapChainCmd);
@@ -793,10 +726,74 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         {},
         {},
         {uploadCmdBuf->getNativeCmdBuffer()},
-        {uploadSemaphores[uploadFrame]->getNativeSemaphore()},
-        uploadFences[uploadFrame]->getNativeFence()
+        {uploadSemaphores[currentDrawFrame]->getNativeSemaphore()},
+        uploadFences[currentDrawFrame]->getNativeFence()
+    );
+
+    submitQueue(
+        graphicsQueue,
+        {
+            uploadSemaphores[currentDrawFrame]->getNativeSemaphore(),
+            imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore()
+        },
+        {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
+
+        {frameBufCmdBuf->getNativeCmdBuffer(), swapChainCmdBuf->getNativeCmdBuffer()},
+        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
+        inFlightFences[currentDrawFrame]->getNativeFence()
+    );
+
+    presentQueue(
+        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
+        {swapChain},
+        {imageIndex}
+    );
+
+    executeDeallocators();
+}
+
+RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd) {
+    int currentDrawFrame = getDrawFrameNumber();
+
+    //Begin render pass for swap CMD buffer.
+    //It used to execute secondary command buffer, but now this is altered
+
+    return swapChainCmd.beginRenderPass(false,
+                                        swapchainRenderPass,
+                                        swapChainFramebuffers[imageIndex],
+                                        {0,0},
+                                        {swapChainExtent.width, swapChainExtent.height},
+                                        {0, 0, 0},
+                                        1.0f
     );
 }
+
+void GDeviceVLK::getNextSwapImageIndex(uint32_t &imageIndex) {
+    int currentDrawFrame = getDrawFrameNumber();
+
+    VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore(), VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
+        createSwapChainAndFramebuffer();
+
+        return;
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        std::cout << "error happened " << result << std::endl << std::flush;
+//        throw std::runtime_error("failed to acquire swap chain image!");
+    }
+
+    if (imageIndex >= inFlightFences.size()) {
+        std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
+    }
+
+//    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
+
+    if (((imageIndex+1)&3) != currentDrawFrame) {
+//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
+    }
+}
+
 
 void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantData) {
 //    aggregationBufferForUpload.resize(maxUniformBufferSize);
@@ -1017,100 +1014,6 @@ void GDeviceVLK::submitDrawCommands() {
         return;
     }
 
-    int currentDrawFrame = getDrawFrameNumber();
-
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore(), VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        std::cout << "got VK_ERROR_OUT_OF_DATE_KHR" << std::endl << std::flush;
-        recreateSwapChain();
-
-        return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        std::cout << "error happened " << result << std::endl << std::flush;
-//        throw std::runtime_error("failed to acquire swap chain image!");
-    }
-
-    if (imageIndex >= inFlightFences.size()) {
-        std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
-    }
-
-//    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;
-
-    if (((imageIndex+1)&3) != currentDrawFrame) {
-//        std::cout << "imageIndex != currentDrawFrame" << std::endl;
-    }
-
-    inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
-    inFlightFences[currentDrawFrame]->reset();
-
-    //Fill command buffer
-    //TODO:!!!
-    //This stuff creates commands that would write into the frameBuffer of the frame
-    //the problem is that it depends on the imageIndex, which cant be known beforehand
-    //Also, we would need info on the current settings of the clear color and invertZ stuff here
-    auto swapChainCmd = swapChainCommandBuffers[currentDrawFrame];
-//    {
-//        VkCommandBufferBeginInfo beginInfo = {};
-//        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-//        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
-//        beginInfo.pNext = NULL;
-//        beginInfo.pInheritanceInfo = NULL;
-//
-//        if (vkBeginCommandBuffer(commandBufferForFilling, &beginInfo) != VK_SUCCESS) {
-//            throw std::runtime_error("failed to begin recording command buffer!");
-//        }
-//
-//        std::array<VkClearValue, 2> clearValues = {};
-//        clearValues[0].color = {clearColor[0], clearColor[1], clearColor[2], 1.0f};
-//        clearValues[1].depthStencil = {getInvertZ() ? 0.0f : 1.0f, 0};
-//
-//        VkRenderPassBeginInfo renderPassInfo = {};
-//        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-//        renderPassInfo.pNext = NULL;
-//        renderPassInfo.renderPass = swapchainRenderPass->getRenderPass();
-//        renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
-//        renderPassInfo.renderArea.offset = {0, 0};
-//        renderPassInfo.renderArea.extent = swapChainExtent;
-//        renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
-//        renderPassInfo.pClearValues = clearValues.data();
-//
-//        vkCmdBeginRenderPass(commandBufferForFilling, &renderPassInfo, VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
-//
-//        if (renderCommandBuffersNotNull[currentDrawFrame]) {
-//            vkCmdExecuteCommands(commandBufferForFilling, 1, &renderCommandBuffers[currentDrawFrame]);
-//        }
-//
-//        vkCmdEndRenderPass(commandBufferForFilling);
-//
-//        if (vkEndCommandBuffer(commandBufferForFilling) != VK_SUCCESS) {
-//            throw std::runtime_error("failed to record command buffer!");
-//        }
-//    }
-
-    auto fbCommandBuffer = fbCommandBuffers[currentDrawFrame];
-
-    submitQueue(
-        graphicsQueue,
-        {
-            uploadSemaphores[currentDrawFrame]->getNativeSemaphore(),
-            imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore()
-        },
-        {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
-
-        {fbCommandBuffer->getNativeCmdBuffer(), swapChainCmd->getNativeCmdBuffer()},
-        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
-        inFlightFences[currentDrawFrame]->getNativeFence()
-    );
-
-    presentQueue(
-        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
-        {swapChain},
-        {imageIndex}
-    );
-
-    executeDeallocators();
 }
 
 void GDeviceVLK::submitQueue( VkQueue queue,
@@ -1160,7 +1063,7 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
         framebufferResized = false;
-        recreateSwapChain();
+        createSwapChainAndFramebuffer();
         return;
     } else if (result != VK_SUCCESS) {
         std::cout << "failed to present swap chain image!" << std::endl << std::flush;

@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_IRENDERPARAMETERS_H
 
 #include <memory>
+#include <functional>
 #include "frame/FrameInputParams.h"
 
 class IRenderFunction {

@@ -43,7 +43,18 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
     stagingBufferCreated = false;
 }
 
+GTextureVLK::GTextureVLK(IDeviceVulkan &device, VkImageView imageView, VkImage image) :
+            m_device(device) {
 
+    //This image is used as holder for framebuffer data (swapchain framebuffer one)
+    texture.image = image;
+    texture.view = imageView;
+
+    //this is texture for use in framebuffer, that's why it is set as initialized
+    m_loaded = true;
+    m_uploaded = true;
+    stagingBufferCreated = false;
+}
 
 GTextureVLK::~GTextureVLK() {
     destroyBuffer();
@@ -51,9 +62,6 @@ GTextureVLK::~GTextureVLK() {
 
 void GTextureVLK::createBuffer() {
 }
-
-
-
 
 void GTextureVLK::destroyBuffer() {
     if (!m_uploaded) return;
@@ -69,8 +77,6 @@ void GTextureVLK::destroyBuffer() {
             vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
             vkDestroySampler(l_device->getVkDevice(), l_texture.sampler, nullptr);
             vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
-
-
     });
 }
 
@@ -84,8 +90,8 @@ void GTextureVLK::unbind() {
 bool GTextureVLK::getIsLoaded() {
     return m_loaded;
 }
-
 static int pureTexturesUploaded = 0;
+
 void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
 //    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
     std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));

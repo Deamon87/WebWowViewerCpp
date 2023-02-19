@@ -24,6 +24,8 @@ public:
     friend RenderPassHelper;
 
     CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass);
+    CmdBufRecorder(const CmdBufRecorder&) = delete;
+    CmdBufRecorder operator=(const CmdBufRecorder&) = delete;
     ~CmdBufRecorder();
 
     uint32_t getQueueFamily();
@@ -42,6 +44,8 @@ public:
     void bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
 
+    void setViewport();
+    void setScissors();
 
     void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
     void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);

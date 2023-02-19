@@ -12,12 +12,12 @@
 // ----------------------------------------
 
 RenderPassHelper::RenderPassHelper(CmdBufRecorder &cmdBufRecorder,
-                                                                   bool isAboutToExecSecondaryCMD,
-                                                                   const std::shared_ptr<GRenderPassVLK> &renderPassVlk,
-                                                                   const std::shared_ptr<GFrameBufferVLK> &frameBuffer,
-                                                                   const std::array<int32_t, 2> &areaOffset,
-                                                                   const std::array<uint32_t, 2> &areaSize,
-                                                                   const std::array<float,3> &colorClearColor, float depthClear
+                                   bool isAboutToExecSecondaryCMD,
+                                   const std::shared_ptr<GRenderPassVLK> &renderPassVlk,
+                                   const std::shared_ptr<GFrameBufferVLK> &frameBuffer,
+                                   const std::array<int32_t, 2> &areaOffset,
+                                   const std::array<uint32_t, 2> &areaSize,
+                                   const std::array<float,3> &colorClearColor, float depthClear
 ) : m_cmdBufRecorder(cmdBufRecorder) {
 
     auto clearValues = renderPassVlk->produceClearColorVec(colorClearColor, depthClear);

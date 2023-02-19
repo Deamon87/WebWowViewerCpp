@@ -124,7 +124,7 @@ void GBufferVLK::resize(int newLength) {
     }
 
     destroyBuffer(currentBuffer);
-    newBuffer = currentBuffer;
+    currentBuffer = newBuffer;
 }
 
 std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBytes) {

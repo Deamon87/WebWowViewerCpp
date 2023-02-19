@@ -25,6 +25,11 @@ public:
                          VkSampleCountFlagBits numSamples,
                          int vulkanMipMapCount,
                          VkImageUsageFlags imageUsageFlags);
+
+    explicit GTextureVLK(IDeviceVulkan &device,
+                         VkImageView imageView,
+                         VkImage image);
+
     void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
     ~GTextureVLK() override;
@@ -46,7 +51,6 @@ public:
         auto &l_stagingBuffer = m_tempUpdateData->stagingBuffer;
         auto &l_stagingBufferAlloc = m_tempUpdateData->stagingBufferAlloc;
 
-
         m_device.addDeallocationRecord([l_tempUpdateData, l_device, l_stagingBuffer, l_stagingBufferAlloc]() {
             vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
 
@@ -60,9 +64,8 @@ public:
     bool postLoad() override;;
 
     struct Texture {
-        VkSampler sampler;
+        VkSampler sampler = VK_NULL_HANDLE;
         VkImage image;
-        VkImageLayout imageLayout;
         VkImageView view;
     } texture;
 private:

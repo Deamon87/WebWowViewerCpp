@@ -20,6 +20,8 @@ class GM2MeshVLK;
 class GPipelineVLK;
 class GRenderPassVLK;
 class GDescriptorPoolVLK;
+class CmdBufRecorder;
+class RenderPassHelper;
 
 typedef std::shared_ptr<GPipelineVLK> HPipelineVLK;
 
@@ -37,6 +39,7 @@ class gMeshTemplate;
 #include "IDeviceVulkan.h"
 #include "synchronization/GFenceVLK.h"
 #include "synchronization/GSemaphoreVLK.h"
+#include "commandBuffer/commandBufferRecorder/RenderPassHelper.h"
 
 #include <optional>
 
@@ -145,7 +148,7 @@ public:
 
     void submitDrawCommands() override;
     void submitQueue(
-        VkQueue graphicsQueue,
+        VkQueue queue,
         const std::vector<VkSemaphore> &waitSemaphores,
         const std::vector<VkPipelineStageFlags> &waitStages,
         const std::vector<VkCommandBuffer> &commandBuffers,
@@ -210,25 +213,22 @@ private:
     bool isDeviceSuitable(VkPhysicalDevice device);
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    void createSwapChain();
-    void createImageViews();
-    void createFramebuffers();
-    void createRenderPass();
 
-    void recreateSwapChain();
+
+    void createSwapChainAndFramebuffer();
+    void createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSurfaceFormatKHR &surfaceFormat, VkExtent2D &extent);
+    void createSwapChainImageViews(std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews, VkFormat swapChainImageFormat);
+
+    void createSwapChainRenderPass(VkFormat swapChainImageFormat);
+
+    void createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures, VkExtent2D &extent);
 
     void createCommandPool();
     void createCommandPoolForUpload();
     void createCommandBuffers();
     void createSyncObjects();
 
-    void createDepthResources();
-
-
-
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
-    void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory, VkImageLayout vkLaylout);
-    VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags, uint32_t mipLevels);
 
 protected:
     struct BlpCacheRecord {
@@ -305,11 +305,11 @@ protected:
     VkQueue uploadQueue;
 
     VkSwapchainKHR swapChain = VK_NULL_HANDLE;
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
+
+
     VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
-    std::vector<VkFramebuffer> swapChainFramebuffers;
+
+    std::vector<std::shared_ptr<GFrameBufferVLK>> swapChainFramebuffers;
 
     std::shared_ptr<GRenderPassVLK> swapchainRenderPass;
 
@@ -317,10 +317,6 @@ protected:
     VkCommandPool commandPoolForImageTransfer;
     VkCommandPool renderCommandPool;
     VkCommandPool uploadCommandPool;
-
-    VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
-    VkImageView depthImageView;
 
     std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> fbCommandBuffers = {nullptr};
     std::array<std::shared_ptr<GCommandBuffer>, MAX_FRAMES_IN_FLIGHT> swapChainCommandBuffers = {nullptr};
@@ -382,6 +378,10 @@ protected:
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
 
     void executeDeallocators();
+
+    RenderPassHelper beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd);
+
+    void getNextSwapImageIndex(uint32_t &imageIndex);
 };
 
 

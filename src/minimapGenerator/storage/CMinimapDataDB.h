@@ -5,7 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_CMINIMAPDATADB_H
 #define AWEBWOWVIEWERCPP_CMINIMAPDATADB_H
 
-#include "../../../3rdparty/sqlite_orm//sqlite_orm.h"
+#include "../../../3rdparty/sqlite_orm/sqlite_orm.h"
 #include "../entities.h"
 #include "../minimapGenerator.h"
 namespace CMinimapDataDB {
