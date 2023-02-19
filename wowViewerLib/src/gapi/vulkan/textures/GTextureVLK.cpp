@@ -43,7 +43,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
     stagingBufferCreated = false;
 }
 
-GTextureVLK::GTextureVLK(IDeviceVulkan &device, VkImageView imageView, VkImage image) :
+GTextureVLK::GTextureVLK(IDeviceVulkan &device, const VkImage &image, const VkImageView &imageView, bool dumbParam) :
             m_device(device) {
 
     //This image is used as holder for framebuffer data (swapchain framebuffer one)
@@ -194,6 +194,14 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
 void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat textureFormatGPU,
                                           VkSampleCountFlagBits numSamples, int vulkanMipMapCount,
                                           VkImageUsageFlags imageUsageFlags) {
+    if (!isDepthTexture) {
+        m_device.findSupportedFormat(
+            {textureFormatGPU},
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT
+        );
+    }
+
     //3. Create Image on GPU side
     VkImageCreateInfo imageCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};
     imageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -238,7 +246,7 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     // This feature is optional, so we must check if it's supported on the device
     if (m_device.getIsAnisFiltrationSupported()) {
       // Use max. level of anisotropy for this example
-      sampler.maxAnisotropy = std::min<float>(m_device.getAnisLevel(), vulkanMipMapCount);
+      sampler.maxAnisotropy = std::min<float>(m_device.getAnisLevel(), 16.0);
       sampler.anisotropyEnable = VK_TRUE;
     } else {
       // The device does not support anisotropic filtering

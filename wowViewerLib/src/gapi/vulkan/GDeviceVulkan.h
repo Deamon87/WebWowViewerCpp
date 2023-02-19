@@ -228,7 +228,7 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
-    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features);
+    VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) override;
 
 protected:
     struct BlpCacheRecord {

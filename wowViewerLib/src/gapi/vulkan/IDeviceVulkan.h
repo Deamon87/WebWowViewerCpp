@@ -19,6 +19,7 @@ public:
         const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) = 0;
 
     virtual VmaAllocator getVMAAllocator() = 0;
+    virtual VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) = 0;
 
     //TODO:
     bool getIsAnisFiltrationSupported() {return true;};

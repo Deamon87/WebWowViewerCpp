@@ -15,7 +15,6 @@ class GCommandBuffer;
 class GTextureVLK : public ITexture {
     friend class GFrameBufferVLK;
 public:
-    explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex);
     //Used for rendering to texture in framebuffer
     explicit GTextureVLK(IDeviceVulkan &device,
                          int width, int height,
@@ -26,9 +25,13 @@ public:
                          int vulkanMipMapCount,
                          VkImageUsageFlags imageUsageFlags);
 
+    //Dumb param is introduced only so that compiler would not invoke constructor with two bools, instead with one
     explicit GTextureVLK(IDeviceVulkan &device,
-                         VkImageView imageView,
-                         VkImage image);
+                         const VkImage &image,
+                         const VkImageView &imageView,
+                         bool dumbParam);
+
+    explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex);
 
     void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:

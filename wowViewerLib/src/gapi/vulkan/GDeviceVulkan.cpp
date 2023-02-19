@@ -263,6 +263,10 @@ void GDeviceVLK::initialize() {
 
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 //---------------
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
+    maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
+//---------------
 
     createSwapChainAndFramebuffer();
 
@@ -271,11 +275,6 @@ void GDeviceVLK::initialize() {
 
     createCommandBuffers();
     createSyncObjects();
-
-
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
-    maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
 
     std::cout << "uniformBufferOffsetAlign = " << uniformBufferOffsetAlign << std::endl;
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
@@ -304,10 +303,14 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
     std::vector<VkImageView> swapChainImageViews;
     createSwapChainImageViews(swapChainImages, swapChainImageViews, surfaceFormat.format);
 
+    //Create swapchain renderPass
+    createSwapChainRenderPass(surfaceFormat.format);
+
+    //Create textures for automatic cleanup
     std::vector<HGTextureVLK> swapChainTextures;
     swapChainTextures.resize(swapChainImages.size());
     for (int i = 0; i < swapChainImages.size(); i++) {
-        swapChainTextures[i] = std::make_shared<GTextureVLK>(*this, swapChainImages[i], swapChainImageViews[i]);
+        swapChainTextures[i] = std::make_shared<GTextureVLK>(*this, swapChainImages[i], swapChainImageViews[i], false);
     }
 
     createFramebuffers(swapChainTextures, extent);
@@ -430,19 +433,6 @@ void GDeviceVLK::createSwapChainRenderPass(VkFormat swapChainImageFormat) {
                                                   findDepthFormat(),
                                                   VK_SAMPLE_COUNT_1_BIT,
                                                   true);
-}
-
-uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
 }
 
 void GDeviceVLK::createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures, VkExtent2D &extent) {
