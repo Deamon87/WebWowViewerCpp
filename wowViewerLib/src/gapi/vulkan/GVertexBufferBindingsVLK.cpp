@@ -64,7 +64,7 @@ VkFormat gBindingToVkFormat(GBindingType gType, uint32_t size, bool normalized )
 
 
 void GVertexBufferBindingsVLK::setIndexBuffer(HGIndexBuffer indexBuffer) {
-    //Not used in VULKAN
+    m_indexBuffer = indexBuffer;
 }
 
 void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings) {
@@ -94,6 +94,7 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vert
         bindingIdx++;
 
         m_BufferBindingsVLK.push_back(bufferFormatHolder);
+        m_vertexBuffers.push_back(vertexBuffer);
 //    }
 }
 

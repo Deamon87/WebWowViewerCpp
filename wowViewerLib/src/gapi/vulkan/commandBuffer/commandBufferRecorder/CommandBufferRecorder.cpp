@@ -64,6 +64,9 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
         throw std::runtime_error("tried to start render pass with another pass being active already");
     }
 
+    createViewPortTypes(areaOffset, areaSize);
+    createDefaultScissors(areaOffset, areaSize);
+
     m_currentRenderPass = renderPassVlk;
     return RenderPassHelper(
         *this,
@@ -89,24 +92,42 @@ void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr
     m_currentDescriptorSet[bindIndex] = descriptorSet;
 }
 
-void CmdBufRecorder::bindIndexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk) {
+void CmdBufRecorder::bindIndexBuffer(const std::shared_ptr<IBuffer> &buffer) {
+    auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffer);
     if (m_currentIndexBuffer == bufferVlk) return;
 
-    vkCmdBindIndexBuffer(m_gCmdBuffer.m_cmdBuffer, bufferVlk->getGPUBuffer(), 0, VK_INDEX_TYPE_UINT16);
+    VkDeviceSize offset = bufferVlk->getOffset();
+    vkCmdBindIndexBuffer(m_gCmdBuffer.m_cmdBuffer, bufferVlk->getGPUBuffer(), offset, VK_INDEX_TYPE_UINT16);
 
     m_currentIndexBuffer = bufferVlk;
 }
-void CmdBufRecorder::bindVertexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk){
-    if (m_currentVertexBuffer == bufferVlk) return;
+void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer>> &buffers){
+    if (buffers.empty()) return;
 
-    constexpr const int firstBinding = 0;
-    constexpr const int bindingCount = 1;
-    const std::array<VkBuffer, 1> vbos = {bufferVlk->getGPUBuffer()};
-    const std::array<VkDeviceSize, 1> offsets = {0};
+    int firstBinding = 0;
+
+    std::vector<VkBuffer> vbos = {};
+    std::vector<VkDeviceSize> offsets = {};
+
+    for (int i = 0; i < buffers.size(); i++) {
+        auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
+
+        //firstBinding == i <- means we can only skip the start of the list;
+        if (firstBinding == i && m_currentVertexBuffers[i] == bufferVlk) {
+            firstBinding++;
+            continue;
+        }
+
+        vbos.push_back(bufferVlk->getGPUBuffer());
+        offsets.push_back(bufferVlk->getOffset());
+
+        m_currentVertexBuffers[i] = bufferVlk;
+    }
+
+    int bindingCount = vbos.size();
+    if (vbos.empty()) return;
 
     vkCmdBindVertexBuffers(m_gCmdBuffer.m_cmdBuffer, firstBinding, bindingCount, vbos.data(), offsets.data());
-
-    m_currentVertexBuffer = bufferVlk;
 }
 
 void CmdBufRecorder::bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline) {
@@ -148,7 +169,7 @@ void CmdBufRecorder::copyBufferToImage(VkBuffer buffer, VkImage image, const std
         regions.data());
 }
 
-void CmdBufRecorder::   submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK) {
+void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK) {
     auto submitRecords = bufferVLK->getSubmitRecords();
 
     if (submitRecords.get().empty())
@@ -159,4 +180,68 @@ void CmdBufRecorder::   submitBufferUploads(const std::shared_ptr<GBufferVLK> &b
                     bufferVLK->getGPUBuffer(),
                     submitRecords.get().size(),
                     submitRecords.get().data());
+}
+
+void CmdBufRecorder::setViewPort() {
+
+}
+void CmdBufRecorder::setViewPort(ViewportType viewportType) {
+    const constexpr uint32_t firstViewport = 0;
+    const constexpr uint32_t viewportCount = 1;
+
+    vkCmdSetViewport(m_gCmdBuffer.m_cmdBuffer, firstViewport, viewportCount, &viewportsForThisStage[(int)viewportType]);
+}
+
+void CmdBufRecorder::setScissors() {
+    const constexpr uint32_t firstScissor = 0;
+    const constexpr uint32_t scissorCount = 1;
+    vkCmdSetScissor(m_gCmdBuffer.m_cmdBuffer, firstScissor, scissorCount, &defaultScissor);
+}
+
+
+void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
+                                         const std::array<uint32_t, 2> &areaSize) {
+    VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
+    usualViewport.width = areaSize[0];
+    usualViewport.height = areaSize[1];
+    usualViewport.x = areaOffset[0];
+    usualViewport.y = areaOffset[1];
+    bool invertZ = false;
+    if (invertZ) {
+        usualViewport.minDepth = 0;
+        usualViewport.maxDepth = 0.990f;
+    } else {
+        usualViewport.minDepth = 0.06f;
+        usualViewport.maxDepth = 1.0f;
+    }
+
+    VkViewport &mapAreaViewport = viewportsForThisStage[(int)ViewportType::vp_mapArea];
+    mapAreaViewport = usualViewport;
+    if (invertZ) {
+        mapAreaViewport.minDepth = 0.991f;
+        mapAreaViewport.maxDepth = 0.996f;
+    } else {
+        mapAreaViewport.minDepth = 0.04f;
+        mapAreaViewport.maxDepth = 0.05f;
+    }
+
+    VkViewport &skyBoxViewport = viewportsForThisStage[(int)ViewportType::vp_skyBox];
+    skyBoxViewport = usualViewport;
+    if (invertZ) {
+        skyBoxViewport.minDepth = 0.997f;
+        skyBoxViewport.maxDepth = 1.0f;
+    } else {
+        skyBoxViewport.minDepth = 0;
+        skyBoxViewport.maxDepth = 0.03f;
+    }
+}
+
+void CmdBufRecorder::createDefaultScissors(const std::array<int32_t, 2> &areaOffset,
+                                           const std::array<uint32_t, 2> &areaSize) {
+    defaultScissor = {};
+    defaultScissor.offset = {areaOffset[0], areaOffset[1]};
+    defaultScissor.extent = {
+        static_cast<uint32_t>(areaSize[0]),
+        static_cast<uint32_t>(areaSize[1])
+    };
 }

@@ -6,8 +6,11 @@
 #include "../../../engine/persistance/helper/ChunkFileReader.h"
 #include "../../../engine/texture/DxtDecompress.h"
 
-GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureVLK(device,xWrapTex,yWrapTex), m_texture(texture) {
+GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
+                               HBlpTexture texture,
+                               bool xWrapTex, bool yWrapTex,
+                               const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
+    : GTextureVLK(device,xWrapTex,yWrapTex, onUpdateCallback), m_texture(texture) {
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {
@@ -85,7 +88,6 @@ bool GBlpTextureVLK::postLoad() {
         return false;
     }
 }
-
 
 void GBlpTextureVLK::decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 

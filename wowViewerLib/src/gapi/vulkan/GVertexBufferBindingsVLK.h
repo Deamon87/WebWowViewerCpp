@@ -23,6 +23,8 @@ struct vkBufferFormatHolder {
 class GVertexBufferBindingsVLK : public IVertexBufferBindings {
 private:
     std::vector<vkBufferFormatHolder> m_BufferBindingsVLK;
+    std::vector<HGVertexBuffer> m_vertexBuffers;
+    HGIndexBuffer m_indexBuffer = nullptr;
 public:
     explicit GVertexBufferBindingsVLK();
     ~GVertexBufferBindingsVLK() override;
@@ -35,6 +37,10 @@ public:
     void setIndexBuffer(HGIndexBuffer indexBuffer) override;
     void addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings) override;
     std::vector<vkBufferFormatHolder> &getVLKFormat();
+
+
+    const HGIndexBuffer &getIndexBuffer() {return m_indexBuffer;};
+    const std::vector<HGVertexBuffer> &getVertexBuffers() {return m_vertexBuffers;};
 
 };
 

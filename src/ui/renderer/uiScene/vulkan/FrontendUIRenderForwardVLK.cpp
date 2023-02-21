@@ -24,9 +24,6 @@ void FrontendUIRenderForwardVLK::createBuffers() {
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
-
-    m_imguiVAO = m_device->createVertexBufferBindings();
-    m_imguiVAO->addVertexBufferBinding(nullptr, std::vector(imguiBindings.begin(), imguiBindings.end()));
 }
 
 HGVertexBuffer FrontendUIRenderForwardVLK::createVertexBuffer(int sizeInBytes) {
@@ -38,7 +35,11 @@ HGIndexBuffer FrontendUIRenderForwardVLK::createIndexBuffer(int sizeInBytes) {
 }
 
 HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
-    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules
+    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
+    auto m_imguiVAO = m_device->createVertexBufferBindings();
+    m_imguiVAO->addVertexBufferBinding(vertexBuffer, std::vector(imguiBindings.begin(), imguiBindings.end()));
+    m_imguiVAO->setIndexBuffer(indexBuffer);
+
     return m_imguiVAO;
 }
 
@@ -107,11 +108,16 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
         for (auto const &mesh : *meshes) {
             const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
 
+            auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
+
+//            auto indexBuffer = (vulkanBindings->m_indexBuffer.get())->g_hIndexBuffer;
+//            auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
+
             //1. Bind VBOs
-            swapChainCmd.bindVertexBuffer(l_this->vboBuffer);
+            swapChainCmd.bindVertexBuffers(vulkanBindings->getVertexBuffers());
 
             //2. Bind IBOs
-            swapChainCmd.bindIndexBuffer(l_this->iboBuffer);
+            swapChainCmd.bindIndexBuffer(vulkanBindings->getIndexBuffer());
 
             //3. Bind pipeline
             auto pipeline = meshVlk->getPipeLineForRenderPass(l_this->m_lastRenderPass, false);
@@ -126,23 +132,12 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             }
 
             //5. Set view port
+            swapChainCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
 
-//            swapChainCmd.setViewPort();
+            //6. Set view port
+            swapChainCmd.setScissors();
 
-            //5. Set view port
-//            swapChainCmd.setScissors(defaultScissor);
-
-            //    //Set scissors
-//    VkRect2D defaultScissor = {};
-//    defaultScissor.offset = {0, 0};
-//    defaultScissor.extent = {
-//        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[0]),
-//        static_cast<uint32_t>(drawStage->viewPortDimensions.maxs[1])
-//    };
-//
-//    vkCmdSetScissor(commandBufferForFilling, 0, 1, &defaultScissor);
-
-            //6. Draw the mesh
+            //7. Draw the mesh
             swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
         }
     }));

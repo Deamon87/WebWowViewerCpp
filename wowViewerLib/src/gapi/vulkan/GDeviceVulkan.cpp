@@ -24,6 +24,7 @@
 #include "buffers/GBufferVLK.h"
 #include "synchronization/GFenceVLK.h"
 #include "../../renderer/vulkan/IRenderFunctionVLK.h"
+#include "commandBuffer/commandBufferRecorder/TextureUploadHelper.h"
 #include <tbb/tbb.h>
 
 const int WIDTH = 1900;
@@ -164,8 +165,10 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 }
 
 
-GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) {
-    enableValidationLayers = true;
+GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)){
+    enableValidationLayers = false;
+
+    m_textureManager->initialize();
 
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
@@ -278,6 +281,14 @@ void GDeviceVLK::initialize() {
 
     std::cout << "uniformBufferOffsetAlign = " << uniformBufferOffsetAlign << std::endl;
     std::cout << "maxUniformBufferSize = " << maxUniformBufferSize << std::endl;
+
+    m_blackPixelTexture = createTexture(false, false);
+    unsigned int zero = 0;
+    m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
+
+    m_whitePixelTexture = createTexture(false, false);
+    unsigned int ff = 0xffffffff;
+    m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
 }
 
 
@@ -700,14 +711,20 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         }
         auto swapChainCmd = swapChainCmdBuf->beginRecord(nullptr);
 
+        //Do Texture update
+        {
+            auto textureVector = m_textureManager->getReadyToUploadTextures();
+            textureUploadStrategy(textureVector.get(), frameBufCmd, uploadCmd);
+        }
+
         {
             //Begin render pass for Swap chain
             this->getNextSwapImageIndex(imageIndex);
-            this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
-        }
+            auto swapChainRenderPass = this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
 
-        for (int i = 0; i < renderFuncs.size(); i++) {
-            dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, frameBufCmd, swapChainCmd);
+            for (int i = 0; i < renderFuncs.size(); i++) {
+                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, frameBufCmd, swapChainCmd);
+            }
         }
     }
 
@@ -753,8 +770,8 @@ RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBu
                                         swapChainFramebuffers[imageIndex],
                                         {0,0},
                                         {swapChainExtent.width, swapChainExtent.height},
-                                        {0, 0, 0},
-                                        1.0f
+                                        {0.117647, 0.207843, 0.392157},
+                                        0.0f
     );
 }
 
@@ -952,39 +969,11 @@ HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
 }
 
 HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
-//    std::shared_ptr<GTextureVLK> h_texture;
-//    h_texture.reset(new GBlpTextureVLK(*this, texture, xWrapTex, yWrapTex));
-//
-//    return h_texture;
-
-    BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture.get();
-//    blpCacheRecord.wrapX = xWrapTex;
-//    blpCacheRecord.wrapY = yWrapTex;
-
-    auto i = loadedTextureCache.find(blpCacheRecord);
-    if (i != loadedTextureCache.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
-        } else {
-            loadedTextureCache.erase(i);
-        }
-    }
-
-    std::shared_ptr<GBlpTextureVLK> hgTexture;
-    hgTexture.reset(new GBlpTextureVLK(*this, texture, xWrapTex, yWrapTex));
-
-    std::weak_ptr<GBlpTextureVLK> weakPtr(hgTexture);
-    loadedTextureCache[blpCacheRecord] = weakPtr;
-
-    return hgTexture;
+    return m_textureManager->createBlpTexture(texture);
 }
 
 HGTexture GDeviceVLK::createTexture(bool xWrapTex, bool yWrapTex) {
-    std::shared_ptr<GTextureVLK> h_texture;
-    h_texture.reset(new GTextureVLK(*this, xWrapTex, yWrapTex));
-
-    return h_texture;
+    return m_textureManager->createTexture();
 }
 
 HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {

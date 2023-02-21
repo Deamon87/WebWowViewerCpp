@@ -12,7 +12,7 @@ class GCommandBuffer;
 #include "../../interface/textures/ITexture.h"
 
 
-class GTextureVLK : public ITexture {
+class GTextureVLK : public ITexture, public std::enable_shared_from_this<GTextureVLK> {
     friend class GFrameBufferVLK;
 public:
     //Used for rendering to texture in framebuffer
@@ -31,7 +31,7 @@ public:
                          const VkImageView &imageView,
                          bool dumbParam);
 
-    explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex);
+    explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 
     void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer);
 public:
@@ -89,6 +89,8 @@ private:
 
     VmaAllocation imageAllocation = VK_NULL_HANDLE;
     VmaAllocationInfo imageAllocationInfo = {};
+
+    std::function<void(const std::weak_ptr<GTextureVLK>&)> m_onDataUpdate = nullptr;
 
 protected:
     IDeviceVulkan &m_device;

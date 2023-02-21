@@ -22,6 +22,7 @@ class GRenderPassVLK;
 class GDescriptorPoolVLK;
 class CmdBufRecorder;
 class RenderPassHelper;
+class TextureManagerVLK;
 
 typedef std::shared_ptr<GPipelineVLK> HPipelineVLK;
 
@@ -40,6 +41,7 @@ class gMeshTemplate;
 #include "synchronization/GFenceVLK.h"
 #include "synchronization/GSemaphoreVLK.h"
 #include "commandBuffer/commandBufferRecorder/RenderPassHelper.h"
+#include "TextureManagerVLK.h"
 
 #include <optional>
 
@@ -63,8 +65,6 @@ class GDeviceVLK : public IDevice, public std::enable_shared_from_this<GDeviceVL
     };
 
 public:
-    enum class ViewportType {vp_none = -1, vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
-
     explicit GDeviceVLK(vkCallInitCallback * callBacks);
     ~GDeviceVLK() override = default;;
 
@@ -87,10 +87,6 @@ public:
     int getMaxSamplesCnt() override;
     VkSampleCountFlagBits getMaxSamplesBit();
 
-    bool canUploadInSeparateThread() {
-        return uploadQueue != graphicsQueue;
-    }
-
     float getAnisLevel() override;
 
     void startUpdateForNextFrame() override {};
@@ -100,9 +96,6 @@ public:
 
     void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
-    //    void drawStageAndDeps(HDrawStage drawStage) override;
-
-    //    void drawM2Meshes(std::vector<HGM2Mesh> &meshes);
     bool getIsVulkanAxisSystem() override {return true;}
 
     void initUploadThread() override;
@@ -231,23 +224,6 @@ private:
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) override;
 
 protected:
-    struct BlpCacheRecord {
-        BlpTexture* texture;
-
-
-        bool operator==(const BlpCacheRecord &other) const {
-            return
-                (texture == other.texture);
-        };
-    };
-    struct BlpCacheRecordHasher {
-        std::size_t operator()(const BlpCacheRecord& k) const {
-            using std::hash;
-            return hash<void*>{}(k.texture);
-        };
-    };
-    std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;
-
     struct PipelineCacheRecord {
         HGShaderPermutation shader;
         std::shared_ptr<GRenderPassVLK> renderPass;
@@ -306,7 +282,6 @@ protected:
 
     VkSwapchainKHR swapChain = VK_NULL_HANDLE;
 
-
     VkExtent2D swapChainExtent;
 
     std::vector<std::shared_ptr<GFrameBufferVLK>> swapChainFramebuffers;
@@ -346,7 +321,6 @@ protected:
     int uniformBufferOffsetAlign = -1;
     int maxMultiSample = -1;
     float m_anisotropicLevel = 0.0;
-    bool m_isInvertZ = false;
 
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
@@ -354,6 +328,8 @@ protected:
 
     HGTexture m_blackPixelTexture = nullptr;
     HGTexture m_whitePixelTexture = nullptr;
+
+    std::shared_ptr<TextureManagerVLK> m_textureManager;
 protected:
     //Caches
     std::unordered_map<size_t, HGShaderPermutation> m_shaderPermuteCache;

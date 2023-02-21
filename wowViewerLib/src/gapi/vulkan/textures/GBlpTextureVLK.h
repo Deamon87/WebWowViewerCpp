@@ -10,7 +10,7 @@
 
 class GBlpTextureVLK : public GTextureVLK {
 public:
-    explicit GBlpTextureVLK(IDeviceVulkan &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
+    explicit GBlpTextureVLK(IDeviceVulkan &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
     ~GBlpTextureVLK() override;
     void createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
 

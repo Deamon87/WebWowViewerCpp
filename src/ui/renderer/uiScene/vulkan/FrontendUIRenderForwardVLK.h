@@ -42,8 +42,6 @@ private:
     HGBufferVLK iboBuffer;
     HGBufferVLK uboBuffer;
 
-    HGVertexBufferBindings m_imguiVAO;
-
     void createBuffers();
 
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass;

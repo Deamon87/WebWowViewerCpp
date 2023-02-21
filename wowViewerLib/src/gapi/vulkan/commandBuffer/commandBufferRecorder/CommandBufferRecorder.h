@@ -21,6 +21,7 @@ class GCommandBuffer;
 
 class CmdBufRecorder {
 public:
+    enum class ViewportType: int {vp_none = -1, vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
     friend RenderPassHelper;
 
     CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass);
@@ -38,8 +39,8 @@ public:
         const std::array<uint32_t, 2> &areaSize,
         const std::array<float,3> &colorClearColor, float depthClear);
 
-    void bindIndexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk);
-    void bindVertexBuffer(std::shared_ptr<GBufferVLK> &bufferVlk);
+    void bindIndexBuffer(const std::shared_ptr<IBuffer> &bufferVlk);
+    void bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer>> &bufferVlk);
     void bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline);
     void bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
@@ -52,15 +53,29 @@ public:
     void submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK);
 
     friend class RenderPassHelper;
+
+    void setViewPort();
+    void setViewPort(ViewportType viewportType);
 private:
     const GCommandBuffer &m_gCmdBuffer;
 
     //States
     std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
     std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
-    std::shared_ptr<GBufferVLK> m_currentIndexBuffer = nullptr;
-    std::shared_ptr<GBufferVLK> m_currentVertexBuffer = nullptr;
+    std::shared_ptr<IBufferVLK> m_currentIndexBuffer = nullptr;
+    std::array<std::shared_ptr<IBufferVLK>, 2> m_currentVertexBuffers;
     std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
+
+
+    //Viewports
+    std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
+    VkRect2D defaultScissor;
+
+    void createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
+                             const std::array<uint32_t, 2> &areaSize);
+
+    void createDefaultScissors(const std::array<int32_t, 2> &areaOffset,
+                               const std::array<uint32_t, 2> &areaSize);
 };
 
 #endif //AWEBWOWVIEWERCPP_COMMANDBUFFERRECORDER_H

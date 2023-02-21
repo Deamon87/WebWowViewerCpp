@@ -9,7 +9,9 @@
 #include "../../textures/GTextureVLK.h"
 #include "CommandBufferRecorder.h"
 
-void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder);
+void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textures,
+                           CmdBufRecorder &renderCmdBufRecorder,
+                           CmdBufRecorder &uploadCmdBufRecorder);
 
 
 #endif //AWEBWOWVIEWERCPP_TEXTUREUPLOADHELPER_H

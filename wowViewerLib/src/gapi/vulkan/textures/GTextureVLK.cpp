@@ -6,7 +6,8 @@
 #include "GTextureVLK.h"
 #include "../../interface/IDevice.h"
 
-GTextureVLK::GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex) : m_device(device) {
+GTextureVLK::GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
+    : m_device(device), m_onDataUpdate(onUpdateCallback) {
     this->m_wrapX = xWrapTex;
     this->m_wrapY = yWrapTex;
 
@@ -27,8 +28,6 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
     m_width = width;
     m_height = height;
 
-    createBuffer();
-
     createVulkanImageObject(
         isDepthTexture,
         textureFormatGPU,
@@ -43,8 +42,11 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
     stagingBufferCreated = false;
 }
 
-GTextureVLK::GTextureVLK(IDeviceVulkan &device, const VkImage &image, const VkImageView &imageView, bool dumbParam) :
-            m_device(device) {
+GTextureVLK::GTextureVLK(IDeviceVulkan &device,
+                         const VkImage &image,
+                         const VkImageView &imageView,
+                         bool dumbParam) :
+                         m_device(device) {
 
     //This image is used as holder for framebuffer data (swapchain framebuffer one)
     texture.image = image;
@@ -76,7 +78,12 @@ void GTextureVLK::destroyBuffer() {
         [l_device, l_texture, l_imageAllocation]() {
             vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
             vkDestroySampler(l_device->getVkDevice(), l_texture.sampler, nullptr);
-            vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
+            if (l_imageAllocation != nullptr) {
+                vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
+            } else {
+                //This is swapchain image. Deleting swapchain image leads to exception
+//                vkDestroyImage(l_device->getVkDevice(), l_texture.image, nullptr);
+            }
     });
 }
 
@@ -93,7 +100,6 @@ bool GTextureVLK::getIsLoaded() {
 static int pureTexturesUploaded = 0;
 
 void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
-//    std::cout << "pureTexturesUploaded = " << pureTexturesUploaded++ << std::endl;
     std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
 
 
@@ -189,6 +195,8 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
 
     stagingBufferCreated = true;
 
+    if (m_onDataUpdate)
+        m_onDataUpdate(this->weak_from_this());
 }
 
 void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat textureFormatGPU,

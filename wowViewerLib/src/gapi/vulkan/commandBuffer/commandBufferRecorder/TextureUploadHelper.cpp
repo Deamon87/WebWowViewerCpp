@@ -18,12 +18,15 @@ struct TransitionParams {
 
 
 void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
-                                       const std::vector<GTextureVLK> &textures,
+                                       const std::vector<std::weak_ptr<GTextureVLK>> &textures,
                                        const TransitionParams &transitionParams) {
     std::vector<VkImageMemoryBarrier> imageMemoryBarriers;
     imageMemoryBarriers.reserve(textures.size());
 
-    for ( auto &textureVlk : textures) {
+    for ( auto &wtextureVlk : textures) {
+        if (wtextureVlk.expired()) continue;
+        auto textureVlk = wtextureVlk.lock();
+
         // Image memory barriers for the texture image
         VkImageMemoryBarrier &imageMemoryBarrier = imageMemoryBarriers.emplace_back();
 
@@ -45,7 +48,7 @@ void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
         imageMemoryBarrier.dstAccessMask = transitionParams.dstAccessMask;
         imageMemoryBarrier.oldLayout = transitionParams.oldLayout;
         imageMemoryBarrier.newLayout = transitionParams.newLayout;
-        imageMemoryBarrier.image = textureVlk.texture.image;
+        imageMemoryBarrier.image = textureVlk->texture.image;
         imageMemoryBarrier.srcQueueFamilyIndex = transitionParams.srcQueueFamilyIndex;
         imageMemoryBarrier.dstQueueFamilyIndex = transitionParams.dstQueueFamilyIndex;
     }
@@ -60,9 +63,11 @@ void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
     );
 }
 
-void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder) {
+void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textures, CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder) {
+    if (textures.empty()) return;
+
     // ------------------------------------
-    // 1. Transition ownage to upload queue
+    // 1. Transition ownership to upload queue
     // ------------------------------------
 
     {
@@ -84,12 +89,15 @@ void textureUploadStrategy(std::vector<GTextureVLK> &textures, CmdBufRecorder &r
     // 2. Do copy of texture to GPU memory
     // ------------------------------------
 
-    for ( auto &textureVlk : textures) {
-        auto updateRecord = textureVlk.getAndPlanDestroy();
+    for ( auto &wtextureVlk : textures) {
+        if (wtextureVlk.expired()) continue;
+        auto textureVlk = wtextureVlk.lock();
+
+        auto updateRecord = textureVlk->getAndPlanDestroy();
 
         uploadCmdBufRecorder.copyBufferToImage(
             updateRecord->stagingBuffer,
-            textureVlk.texture.image,
+            textureVlk->texture.image,
             updateRecord->bufferCopyRegions
         );
     }

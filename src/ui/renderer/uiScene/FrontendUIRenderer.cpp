@@ -58,6 +58,9 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
         auto vboBuffer = this->createVertexBuffer(cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
         auto iboBuffer = this->createIndexBuffer(cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
 
+        vboBuffer->uploadData(cmd_list->VtxBuffer.Data, cmd_list->VtxBuffer.Size * sizeof(ImDrawVert));
+        iboBuffer->uploadData(cmd_list->IdxBuffer.Data, cmd_list->IdxBuffer.Size * sizeof(ImDrawIdx));
+
         auto vertexBufferBindings = this->createVAO(vboBuffer, iboBuffer);
 
         for (int cmd_i = 0; cmd_i < cmd_list->CmdBuffer.Size; cmd_i++)

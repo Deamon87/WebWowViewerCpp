@@ -15,20 +15,7 @@ typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 
 #include "../GDeviceVulkan.h"
 #include "IBufferVLK.h"
-
-template <typename T>
-class MutexLockedVector {
-public:
-    MutexLockedVector(std::vector<T> &vec, std::mutex &m) : m_vec(vec), m_lockGuard(std::lock_guard(m)) {
-
-    }
-    const std::vector<T> &get() const {
-        return m_vec;
-    }
-private:
-    std::vector<T> &m_vec;
-    std::lock_guard<std::mutex> m_lockGuard;
-};
+#include "../utils/MutexLockedVector.h"
 
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {
     friend class GDeviceVLK;
@@ -59,7 +46,7 @@ public:
     };
 
     MutexLockedVector<VkBufferCopy> getSubmitRecords() {
-        return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx);
+        return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx, true);
     }
 
     void resize(int newLength);
