@@ -14,7 +14,7 @@ public:
     ~GBlpTextureVLK() override;
     void createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
 
-    bool postLoad() override;
+    TextureStatus postLoad() override;
 private:
     void decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps);
 private:

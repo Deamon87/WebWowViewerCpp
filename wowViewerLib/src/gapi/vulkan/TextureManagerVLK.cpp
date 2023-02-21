@@ -56,3 +56,21 @@ void TextureManagerVLK::createUpdateCallback() {
         }
     };
 }
+
+void TextureManagerVLK::processBLPTextures() {
+    std::lock_guard<std::mutex> lock(this->blpTextureLoadMutex);
+
+    auto i = m_blpTextLoadQueue.begin();
+    while (i != m_blpTextLoadQueue.end())
+    {
+        if (auto texture = i->lock()) {
+            if (texture->postLoad() == TextureStatus::TSHasUpdates) {
+                m_blpTextLoadQueue.erase(i++);
+            } else {
+                i++;
+            }
+        } else {
+            m_blpTextLoadQueue.erase(i++);
+        }
+    }
+}

@@ -65,15 +65,20 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
         throw std::runtime_error("descriptor mismatch for image");
     }
 
-    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::Texture;
-    m_boundDescriptors[bindIndex].textureVlk = textureVlk;
+    assignBoundDescriptors(bindIndex, textureVlk, DescriptorRecord::DescriptorRecordType::Texture);
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
     imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imageInfo.imageView = textureVlk->texture.view;
-    imageInfo.sampler = textureVlk->texture.sampler;
+    if (!textureVlk->getIsLoaded()) {
+        auto blackTexture = std::dynamic_pointer_cast<GTextureVLK>(m_set.m_device->getBlackTexturePixel());
+        imageInfo.imageView = blackTexture->texture.view;
+        imageInfo.sampler = blackTexture->texture.sampler;
+    } else {
+        imageInfo.imageView = textureVlk->texture.view;
+        imageInfo.sampler = textureVlk->texture.sampler;
+    }
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
     writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -101,8 +106,7 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
         throw std::runtime_error("descriptor mismatch for UBO dynamic");
     }
 
-    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBODynamic;
-    m_boundDescriptors[bindIndex].buffer = buffer;
+    assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::UBODynamic);
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
@@ -144,8 +148,7 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
                   << std::endl;
     }
 
-    m_boundDescriptors[bindIndex].descType = DescriptorRecord::DescriptorRecordType::UBO;
-    m_boundDescriptors[bindIndex].buffer = buffer;
+    assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::UBO);
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
@@ -180,20 +183,22 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     //FOR DEBUG AND STABILITY
 
     //Fill the rest of Descriptor with already bound values
+    //This is needed, cause In this implementation of descriptor set, the descriptor set is getting free'd on update
+    //and new one is created
     for (int bindPoint = 0; bindPoint < m_updateBindPoints.size(); bindPoint++) {
-        if(m_updateBindPoints[bindPoint]) continue;
+        if(m_updateBindPoints[bindPoint] || m_boundDescriptors[bindPoint] == nullptr) continue;
 
-        if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::UBO) {
-            ubo(bindPoint, m_boundDescriptors[bindPoint].buffer);
-        } else if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
-            ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint].buffer);
-        } else if (m_boundDescriptors[bindPoint].descType == DescriptorRecord::DescriptorRecordType::Texture) {
-            texture(bindPoint, m_boundDescriptors[bindPoint].textureVlk);
+        if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
+            ubo(bindPoint, m_boundDescriptors[bindPoint]->buffer);
+        } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
+            ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint]->buffer);
+        } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
+            texture(bindPoint, m_boundDescriptors[bindPoint]->textureVlk);
         }
     }
 
     auto noSetBitSet =
-        m_set.getDescSetLayout()->getRequiredBindPoints() & m_updateBindPoints.flip();
+        m_set.getDescSetLayout()->getRequiredBindPoints() & ~m_updateBindPoints;
 
     if (!noSetBitSet.none()) {
         std::string notSetBits;

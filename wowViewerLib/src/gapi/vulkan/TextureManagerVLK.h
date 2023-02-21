@@ -24,6 +24,8 @@ public:
         return MutexLockedVector<std::weak_ptr<GTextureVLK>>(m_texturesReadyToBeUploaded, textUpdateMutex, true);
     }
 
+    void processBLPTextures();
+
 protected:
     struct BlpCacheRecord {
         BlpTexture* texture;

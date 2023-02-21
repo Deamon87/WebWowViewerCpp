@@ -7,9 +7,12 @@
 
 #include <vulkan/vulkan.h>
 #include "../../interface/buffers/IBuffer.h"
+#include "../bindable/DSBindable.h"
 
-class IBufferVLK : public IBuffer {
+class IBufferVLK : public IBuffer, public IDSBindable {
 public:
+    IBufferVLK() : IDSBindable(false) {};
+
     virtual VkBuffer getGPUBuffer() = 0;
     virtual size_t getOffset() = 0;
 };

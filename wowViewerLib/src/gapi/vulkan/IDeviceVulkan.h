@@ -9,6 +9,7 @@
 #include "descriptorSets/GDescriptorSetLayout.h"
 #include "descriptorSets/GDescriptorPoolVLK.h"
 
+#include "../interface/textures/ITexture.h"
 class IDeviceVulkan {
 public:
     virtual ~IDeviceVulkan() = default;
@@ -21,11 +22,15 @@ public:
     virtual VmaAllocator getVMAAllocator() = 0;
     virtual VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) = 0;
 
+    virtual std::shared_ptr<ITexture> getWhiteTexturePixel() = 0;
+    virtual std::shared_ptr<ITexture> getBlackTexturePixel() = 0;
+
     //TODO:
     bool getIsAnisFiltrationSupported() {return true;};
     //TODO:
     bool getIsCompressedTexturesSupported() {return true;};
     virtual float getAnisLevel() = 0;
+
 };
 
 #endif //AWEBWOWVIEWERCPP_IDEVICEVULKAN_H

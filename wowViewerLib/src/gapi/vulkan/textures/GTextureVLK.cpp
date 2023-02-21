@@ -7,7 +7,7 @@
 #include "../../interface/IDevice.h"
 
 GTextureVLK::GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
-    : m_device(device), m_onDataUpdate(onUpdateCallback) {
+    : m_device(device), m_onDataUpdate(onUpdateCallback), IDSBindable(true) {
     this->m_wrapX = xWrapTex;
     this->m_wrapY = yWrapTex;
 
@@ -19,7 +19,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
                          VkSampleCountFlagBits numSamples,
-                         int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device) {
+                         int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device), IDSBindable(true) {
     //For use in frameBuffer
 
     this->m_wrapX = xWrapTex;
@@ -46,7 +46,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          const VkImage &image,
                          const VkImageView &imageView,
                          bool dumbParam) :
-                         m_device(device) {
+                         m_device(device), IDSBindable(true) {
 
     //This image is used as holder for framebuffer data (swapchain framebuffer one)
     texture.image = image;
@@ -295,13 +295,14 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     ERR_GUARD_VULKAN(vkCreateImageView(m_device.getVkDevice(), &view, nullptr, &texture.view));
 }
 
-bool GTextureVLK::postLoad() {
-    if (m_loaded) return false;
+TextureStatus GTextureVLK::postLoad() {
+    if (m_loaded) return TextureStatus::TSLoaded;
 
     if (m_uploaded) {
         m_loaded = true;
+        return TextureStatus::TSLoaded;
     }
 
-    return false;
+    return TextureStatus::TSNotLoaded;
 }
 

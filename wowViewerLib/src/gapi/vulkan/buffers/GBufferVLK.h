@@ -16,11 +16,12 @@ typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 #include "../GDeviceVulkan.h"
 #include "IBufferVLK.h"
 #include "../utils/MutexLockedVector.h"
+#include "../bindable/DSBindable.h"
 
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {
     friend class GDeviceVLK;
 public:
-    explicit GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize);
+    GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize);
     ~GBufferVLK() override;
 
     //Doesn't make actual upload, only queues it.

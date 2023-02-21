@@ -10,9 +10,10 @@ class GCommandBuffer;
 
 #include "../IDeviceVulkan.h"
 #include "../../interface/textures/ITexture.h"
+#include "../bindable/DSBindable.h"
 
 
-class GTextureVLK : public ITexture, public std::enable_shared_from_this<GTextureVLK> {
+class GTextureVLK : public ITexture, public std::enable_shared_from_this<GTextureVLK>, public IDSBindable {
     friend class GFrameBufferVLK;
 public:
     //Used for rendering to texture in framebuffer
@@ -61,10 +62,12 @@ public:
         });
 
         m_tempUpdateData = nullptr;
+        m_uploaded = true;
+        m_loaded = true;
 
         return l_tempUpdateData;
     }
-    bool postLoad() override;;
+    TextureStatus postLoad() override;
 
     struct Texture {
         VkSampler sampler = VK_NULL_HANDLE;

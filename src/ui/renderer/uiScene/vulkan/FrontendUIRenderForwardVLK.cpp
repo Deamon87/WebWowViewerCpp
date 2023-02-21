@@ -73,7 +73,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
 //                                  ubos,
 //                                  texturesVLK);
 
-    std::weak_ptr<ISimpleMaterialVLK> weakPtr(material);
+    std::weak_ptr<ISimpleMaterialVLK> weakPtr = material;
     m_materialCache[materialTemplate] = weakPtr;
 
     return material;

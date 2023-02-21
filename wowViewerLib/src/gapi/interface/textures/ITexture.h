@@ -15,6 +15,12 @@ enum class ITextureFormat {
     itDepth32
 };
 
+enum class TextureStatus {
+    TSNotLoaded,
+    TSHasUpdates,
+    TSLoaded
+};
+
 class ITexture {
 public:
     virtual ~ITexture() {};
@@ -23,9 +29,7 @@ public:
     virtual void readData(std::vector<uint8_t> &buff) = 0;
 
     virtual bool getIsLoaded() = 0;
-    virtual bool postLoad() = 0;
-
-
+    virtual TextureStatus postLoad() = 0;
 
     virtual void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) = 0;
 };

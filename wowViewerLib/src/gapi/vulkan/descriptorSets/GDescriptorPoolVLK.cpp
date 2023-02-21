@@ -9,7 +9,7 @@
 GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device) {
     uniformsAvailable = 5*4096;
     imageAvailable = 4096 * 4;
-    setsAvailable = 4096;
+    setsAvailable = 4096 * 4;
 
     std::array<VkDescriptorPoolSize, 2> poolSizes = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;

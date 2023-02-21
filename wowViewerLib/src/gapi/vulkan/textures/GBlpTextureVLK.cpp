@@ -73,11 +73,11 @@ void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVe
     GTextureVLK::createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
 }
 
-bool GBlpTextureVLK::postLoad() {
-    if (m_loaded) return false;
+TextureStatus GBlpTextureVLK::postLoad() {
+    if (m_loaded) return TextureStatus::TSLoaded;
     if (!m_uploaded) {
-        if (m_texture == nullptr) return false;
-        if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
+        if (m_texture == nullptr) return TextureStatus::TSNotLoaded;
+        if (m_texture->getStatus() != FileStatus::FSLoaded) return TextureStatus::TSNotLoaded;
     }
 
     if (m_uploaded) {
@@ -85,7 +85,7 @@ bool GBlpTextureVLK::postLoad() {
     } else {
         this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
 //        m_texture = nullptr;
-        return false;
+        return TextureStatus::TSHasUpdates;
     }
 }
 

@@ -713,8 +713,15 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 
         //Do Texture update
         {
+            m_textureManager->processBLPTextures();
             auto textureVector = m_textureManager->getReadyToUploadTextures();
             textureUploadStrategy(textureVector.get(), frameBufCmd, uploadCmd);
+            //The next loop updates DescriptorSets
+            for(auto &wtexture : textureVector.get()) {
+                if( auto texture = wtexture.lock()) {
+                    texture->executeOnChange();
+                }
+            }
         }
 
         {
@@ -898,34 +905,7 @@ void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantDa
     */
 }
 
-void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {
-    //TODO: REWRITE THIS PART FFS!!!
-
-    std::vector<HGTexture> textures;
-    textures.reserve(meshes.size() * 3);
-
-    int texturesLoaded = 0;
-
-    for (const auto &hmesh : meshes) {
-        GMeshVLK * mesh = (GMeshVLK *) hmesh.get();
-//        mesh->material()->updateImageDescriptorSet();
-
-//        for (int i = 0; i < mesh->textureCount(); i++) {
-//            textures.push_back(mesh->m_texture[i]);
-//        }
-    }
-
-
-
-    std::sort(textures.begin(), textures.end());
-    textures.erase( unique( textures.begin(), textures.end() ), textures.end() );
-
-    for (const auto &texture : textures) {
-        if (texture == nullptr) continue;
-        if (texture->postLoad()) texturesLoaded++;
-        if (texturesLoaded > 4) break;
-    }
-}
+void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {}
 
 std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) {
     std::string combinedName = vertexName + " " + fragmentName;

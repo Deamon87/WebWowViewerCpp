@@ -16,9 +16,10 @@ class GDescriptorPoolVLK;
 #include "../textures/GTextureVLK.h"
 #include "GDescriptorSetLayout.h"
 #include "DescriptorRecord.h"
+#include "../bindable/DSBindable.h"
 
 
-class GDescriptorSet {
+class GDescriptorSet : std::enable_shared_from_this<GDescriptorSet> {
 public:
     explicit GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
     ~GDescriptorSet();
@@ -33,7 +34,7 @@ public:
 
     class SetUpdateHelper {
     public:
-        explicit SetUpdateHelper(GDescriptorSet &set, std::array<DescriptorRecord, 16> &boundDescriptors) :
+        explicit SetUpdateHelper(GDescriptorSet &set, std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &boundDescriptors) :
             m_set(set), m_boundDescriptors(boundDescriptors) {}
         ~SetUpdateHelper();
 
@@ -46,9 +47,23 @@ public:
         //TODO: add version of this array texture case (aka bindless)
         SetUpdateHelper& texture(int bindIndex, const std::shared_ptr<GTextureVLK> &textureVlk);
 
+        template <typename T>
+        void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, DescriptorRecord::DescriptorRecordType descType) {
+            static_assert(std::is_base_of<IDSBindable, T>::value, "T should inherit from B");
+
+            auto ds_weak = m_set.weak_from_this();
+
+            auto callback = ([ds_weak]() -> void {
+                if (auto ds = ds_weak.lock()) {
+                    ds->update();
+                }
+            });
+
+            m_boundDescriptors[bindPoint] = std::make_unique<DescriptorRecord>(descType, object, callback);
+        }
     private:
         GDescriptorSet &m_set;
-        std::array<DescriptorRecord, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
+        std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
 
         std::vector<VkDescriptorImageInfo> imageInfos;
         std::vector<VkDescriptorBufferInfo> bufferInfos;
@@ -68,7 +83,7 @@ private:
 
     bool m_firstUpdate = true;
 
-    std::array<DescriptorRecord, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> boundDescriptors;
+    std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> boundDescriptors;
 
 // Scrapped idea. The VkCopyDescriptorSet can cause copy GPU -> CPU -> GPU. So it's scrapped idea
 //    //Defines amount of frames that the updates has to be copied from previous frame
