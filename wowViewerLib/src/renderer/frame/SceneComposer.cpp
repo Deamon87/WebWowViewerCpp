@@ -36,7 +36,13 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
             while (!this->m_isTerminating) {
                 std::unique_lock<std::mutex> lock{cullingQueueMutex};
                 auto &l_cullingQueue = m_cullingQueue;
-                cullingCondVar.wait(lock, [&l_cullingQueue]() { return !l_cullingQueue.empty(); });
+                auto &l_terminated = this->m_isTerminating;
+                cullingCondVar.wait(lock, [&l_cullingQueue, &l_terminated]() { 
+                    return !l_cullingQueue.empty() || l_terminated; 
+                });
+
+                if (l_terminated)
+                    continue;
 
                 auto frameScenario = m_cullingQueue.front();
                 m_cullingQueue.pop();

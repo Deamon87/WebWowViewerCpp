@@ -52,6 +52,10 @@ public:
     ~SceneComposer() {
         m_isTerminating = true;
 
+        {
+            std::lock_guard<std::mutex> l{ cullingQueueMutex };
+            cullingCondVar.notify_one();
+        }
         cullingThread.join();
         loadingResourcesThread.join();
     }

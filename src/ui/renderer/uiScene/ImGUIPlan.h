@@ -30,6 +30,7 @@ namespace ImGuiFramePlan {
         ~ImGUIParam() {
             if (m_imData.CmdLists != nullptr) {
                 for (int i = 0; i < m_imData.CmdListsCount; i++) {
+                    m_imData.CmdLists[i]->ClearFreeMemory();
                     IM_FREE(m_imData.CmdLists[i]);
                 }
                 delete m_imData.CmdLists;

@@ -116,7 +116,8 @@ void GBufferVLK::resize(int newLength) {
                    subBuffer->m_size
                );
 
-            vmaVirtualFree(currentBuffer.virtualBlock, subBuffer->m_alloc);
+            deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
+            
 
             subBuffer->m_offset = offset;
             subBuffer->m_alloc = alloc;
@@ -150,11 +151,9 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     }
 }
 
-void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it) {
-    if(auto subBuffer = it->lock()) {
-        deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
-    }
-
+void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &m_alloc) {
+    deallocateSubBuffer(currentBuffer, m_alloc);
+    
     currentSubBuffers.erase(it);
 }
 
@@ -186,7 +185,7 @@ GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
 }
 
 GBufferVLK::GSubBufferVLK::~GSubBufferVLK() {
-    m_parentBuffer->deleteSubBuffer(m_iterator);
+    m_parentBuffer->deleteSubBuffer(m_iterator, m_alloc);
 }
 
 void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {

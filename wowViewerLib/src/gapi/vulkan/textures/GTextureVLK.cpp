@@ -7,7 +7,7 @@
 #include "../../interface/IDevice.h"
 
 GTextureVLK::GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
-    : m_device(device), m_onDataUpdate(onUpdateCallback), IDSBindable(true) {
+    : m_device(device), m_onDataUpdate(onUpdateCallback), IDSBindable(false) {
     this->m_wrapX = xWrapTex;
     this->m_wrapY = yWrapTex;
 
@@ -19,7 +19,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
                          VkSampleCountFlagBits numSamples,
-                         int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device), IDSBindable(true) {
+                         int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device), IDSBindable(false) {
     //For use in frameBuffer
 
     this->m_wrapX = xWrapTex;
@@ -46,7 +46,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          const VkImage &image,
                          const VkImageView &imageView,
                          bool dumbParam) :
-                         m_device(device), IDSBindable(true) {
+                         m_device(device), IDSBindable(false) {
 
     //This image is used as holder for framebuffer data (swapchain framebuffer one)
     texture.image = image;
@@ -115,7 +115,7 @@ void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat tex
     createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
 }
 
-void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &textureFormatGPU, std::vector<uint8_t> unitedBuffer) {// Copy data to an optimal tiled image
+void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer) {// Copy data to an optimal tiled image
     if (m_uploaded) {
         std::cout << "oops!" << std::endl << std::flush;
     }

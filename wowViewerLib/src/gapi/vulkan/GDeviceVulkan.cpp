@@ -197,7 +197,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     char** extensions;
     int extensionCnt = 0;
     callback->getRequiredExtensions(extensions, extensionCnt);
-    std::vector<char *> extensionsVec(extensions, extensions+extensionCnt);
+    std::vector<const char *> extensionsVec(extensions, extensions+extensionCnt);
     if (enableValidationLayers) {
         extensionsVec.push_back("VK_EXT_debug_report");
         extensionsVec.push_back("VK_EXT_debug_utils");
@@ -1128,10 +1128,9 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
         }
     }
 
-    std::shared_ptr<GPipelineVLK> hgPipeline;
-    hgPipeline.reset(new GPipelineVLK(*this, m_bindings, renderPass,
+    std::shared_ptr<GPipelineVLK> hgPipeline = std::make_shared<GPipelineVLK>(*this, m_bindings, renderPass,
                                       shader, element, backFaceCulling, triCCW, blendMode,
-                                      depthCulling, depthWrite, invertZ));
+                                      depthCulling, depthWrite, invertZ);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;

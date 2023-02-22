@@ -78,14 +78,12 @@ TextureStatus GBlpTextureVLK::postLoad() {
     if (!m_uploaded) {
         if (m_texture == nullptr) return TextureStatus::TSNotLoaded;
         if (m_texture->getStatus() != FileStatus::FSLoaded) return TextureStatus::TSNotLoaded;
-    }
 
-    if (m_uploaded) {
-        return GTextureVLK::postLoad();
-    } else {
         this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
 //        m_texture = nullptr;
         return TextureStatus::TSHasUpdates;
+    } else {
+        return GTextureVLK::postLoad();
     }
 }
 

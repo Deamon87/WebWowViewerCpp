@@ -47,4 +47,6 @@ void GCommandBuffer::createCommandBufVLK() {
     if (vkAllocateCommandBuffers(m_device.getVkDevice(), &allocInfo, &m_cmdBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to allocate command buffers!");
     }
+
+    m_cmdBufWasCreated = true;
 }

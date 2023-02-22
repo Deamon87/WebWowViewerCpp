@@ -73,7 +73,13 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
 }
 
 GPipelineVLK::~GPipelineVLK() {
+    auto l_deviceVlk = m_device.getVkDevice();
+    auto l_pipelineVlk = graphicsPipeline;
 
+    m_device.addDeallocationRecord(
+    [l_deviceVlk, l_pipelineVlk]() {
+        vkDestroyPipeline(l_deviceVlk, l_pipelineVlk, nullptr);
+    });
 }
 
 

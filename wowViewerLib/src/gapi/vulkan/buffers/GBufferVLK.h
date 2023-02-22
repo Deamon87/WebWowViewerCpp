@@ -105,7 +105,7 @@ private:
 //    uploadCache = {};
 public:
     std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes);
-    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it);
+    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &m_alloc);
 private:
     void createBuffer(BufferInternal &buffer);
     void destroyBuffer(BufferInternal &buffer);

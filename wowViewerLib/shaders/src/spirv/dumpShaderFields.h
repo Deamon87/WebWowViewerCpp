@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include <array>
 #include <iostream>
 #include "fileHelpers.h"
 #include "webGLSLCompiler.h"
