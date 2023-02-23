@@ -17,24 +17,22 @@ public:
                           const std::shared_ptr<GRenderPassVLK> &renderPass,
                           const HGShaderPermutation &shader,
                           DrawElementMode element,
-                          int8_t backFaceCulling,
-                          int8_t triCCW,
+                          bool backFaceCulling,
+                          bool triCCW,
                           EGxBlendEnum blendMode,
-                          int8_t depthCulling,
-                          int8_t depthWrite,
-                          bool invertZ);
+                          bool depthCulling,
+                          bool depthWrite);
     ~GPipelineVLK();
 
     void createPipeline(
         GShaderPermutationVLK *shaderVLK,
-        std::shared_ptr<GRenderPassVLK> renderPass,
+        const std::shared_ptr<GRenderPassVLK> &renderPass,
         DrawElementMode m_element,
-        int8_t m_backFaceCulling,
-        int8_t m_triCCW,
+        bool m_backFaceCulling,
+        bool m_triCCW,
         EGxBlendEnum m_blendMode,
-        int8_t m_depthCulling,
-        int8_t m_depthWrite,
-        bool invertZ,
+        bool m_depthCulling,
+        bool m_depthWrite,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);

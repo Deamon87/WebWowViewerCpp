@@ -6,8 +6,12 @@
 #include "GRenderPassVLK.h"
 
 
-GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice, std::vector<VkFormat> textureAttachments, VkFormat depthAttachmentFormat,
-                               VkSampleCountFlagBits sampleCountBit, bool isSwapChainPass) {
+GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
+                               std::vector<VkFormat> textureAttachments,
+                               VkFormat depthAttachmentFormat,
+                               VkSampleCountFlagBits sampleCountBit,
+                               bool invertZ,
+                               bool isSwapChainPass) : m_invertZ(invertZ) {
     m_sampleCountBit = sampleCountBit;
 
     std::vector<VkAttachmentDescription> attachments;
@@ -154,7 +158,7 @@ std::vector<VkClearValue> GRenderPassVLK::produceClearColorVec(std::array<float,
         } else if (attachmentTypes[i] == AttachmentType::atData) {
             clearValue.color = {0,0,0,0};
         } else if (attachmentTypes[i] == AttachmentType::atDepth) {
-            clearValue.depthStencil = {depthClear,0};
+            clearValue.depthStencil = {m_invertZ ? 0.0f : 1.0f,0};
         }
         result.push_back(clearValue);
     }

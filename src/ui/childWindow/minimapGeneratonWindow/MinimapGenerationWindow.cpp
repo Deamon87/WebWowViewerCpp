@@ -74,7 +74,7 @@ void MinimapGenerationWindow::render() {
 
                 const int imageSize = 512;
 
-                if (ImGui::ImageButton2(texture, "previewImage",
+                if (ImGui::ImageButton2(m_renderer->createUIMaterial({texture}), "previewImage",
                                         ImVec2(imageSize, imageSize),
                                         ImVec2(0,1),
                                         ImVec2(1,0)))

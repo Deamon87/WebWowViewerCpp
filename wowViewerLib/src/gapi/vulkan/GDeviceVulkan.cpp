@@ -506,7 +506,7 @@ void GDeviceVLK::createSwapChainRenderPass(VkFormat swapChainImageFormat) {
                                                   std::vector({swapChainImageFormat}),
                                                   findDepthFormat(),
                                                   VK_SAMPLE_COUNT_1_BIT,
-                                                  true);
+                                                  false, true);
 }
 
 void GDeviceVLK::createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures, VkExtent2D &extent) {
@@ -1097,13 +1097,16 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     std::vector<ITextureFormat> textureAttachments,
     ITextureFormat depthAttachment,
     VkSampleCountFlagBits sampleCountFlagBits,
+    bool invertZ,
     bool isSwapChainPass
 ) {
     for (auto &renderPassAvalability : m_createdRenderPasses) {
         if (renderPassAvalability.attachments.size() == textureAttachments.size() &&
             renderPassAvalability.depthAttachment == depthAttachment &&
             renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
-            renderPassAvalability.isSwapChainPass == isSwapChainPass)
+            renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
+            renderPassAvalability.isSwapChainPass == isSwapChainPass &&
+            renderPassAvalability.invertZ == invertZ)
         {
             //Check frame definition
             bool notEqual = false;
@@ -1127,10 +1130,11 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     VkFormat fbDepthFormat = findDepthFormat();
 
     auto renderPass = std::make_shared<GRenderPassVLK>(this->device,
-    attachmentFormats,
-    findDepthFormat(),
-    sampleCountFlagBits,
-    false
+        attachmentFormats,
+        findDepthFormat(),
+        sampleCountFlagBits,
+        invertZ,
+        false
     );
 
     RenderPassAvalabilityStruct avalabilityStruct;
@@ -1149,16 +1153,15 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getSwapChainRenderPass() {
     return swapchainRenderPass;
 }
 
-HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
-                                        HGShaderPermutation shader,
-                                        std::shared_ptr<GRenderPassVLK> renderPass,
+HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings,
+                                        const HGShaderPermutation &shader,
+                                        const std::shared_ptr<GRenderPassVLK> &renderPass,
                                         DrawElementMode element,
                                         int8_t backFaceCulling,
                                         int8_t triCCW,
                                         EGxBlendEnum blendMode,
                                         int8_t depthCulling,
-                                        int8_t depthWrite,
-                                        bool invertZ) {
+                                        int8_t depthWrite) {
 
     PipelineCacheRecord pipelineCacheRecord;
     pipelineCacheRecord.shader = shader;
@@ -1169,7 +1172,6 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
     pipelineCacheRecord.blendMode = blendMode;
     pipelineCacheRecord.depthCulling = depthCulling;
     pipelineCacheRecord.depthWrite = depthWrite;
-    pipelineCacheRecord.invertZ = invertZ;
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
     if (i != loadedPipeLines.end()) {
@@ -1182,7 +1184,7 @@ HPipelineVLK GDeviceVLK::createPipeline(HGVertexBufferBindings m_bindings,
 
     std::shared_ptr<GPipelineVLK> hgPipeline = std::make_shared<GPipelineVLK>(*this, m_bindings, renderPass,
                                       shader, element, backFaceCulling, triCCW, blendMode,
-                                      depthCulling, depthWrite, invertZ);
+                                      depthCulling, depthWrite);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;

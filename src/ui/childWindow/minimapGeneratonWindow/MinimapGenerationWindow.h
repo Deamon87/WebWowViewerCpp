@@ -9,11 +9,12 @@
 #include "../../../minimapGenerator/entities.h"
 #include "../../../minimapGenerator/minimapGenerator.h"
 #include "../../../minimapGenerator/storage/CMinimapDataDB.h"
+#include "../../renderer/uiScene/FrontendUIRenderer.h"
 
 class MinimapGenerationWindow {
 public:
-    MinimapGenerationWindow(HApiContainer api, HRequestProcessor processor, bool &showMinimapGeneratorSettings) :
-    m_showMinimapGeneratorSettings(showMinimapGeneratorSettings) {
+    MinimapGenerationWindow(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, HRequestProcessor processor, bool &showMinimapGeneratorSettings) :
+    m_showMinimapGeneratorSettings(showMinimapGeneratorSettings), m_renderer(renderer) {
         m_api = api;
         m_processor = processor;
 
@@ -30,6 +31,7 @@ public:
 private:
     HApiContainer m_api;
     HRequestProcessor m_processor;
+    std::shared_ptr<FrontendUIRenderer> m_renderer;
 
     bool &m_showMinimapGeneratorSettings;
 

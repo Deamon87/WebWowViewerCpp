@@ -195,9 +195,7 @@ set(SOURCE_FILES
 		src/exporters/gltfExporter/GLTFExporter.cpp
 		src/exporters/gltfExporter/GLTFExporter.h
 
-        src/ui/childWindow/mapConstructionWindow/mapConstructionWindow.cpp
-        src/ui/childWindow/mapConstructionWindow/mapConstructionWindow.h
-		src/ui/imguiLib/groupPanel/groupPanel.cpp
+        src/ui/imguiLib/groupPanel/groupPanel.cpp
 		src/ui/imguiLib/groupPanel/groupPanel.h
 
 		src/main.cpp

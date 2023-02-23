@@ -38,12 +38,11 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     const std::shared_ptr<GRenderPassVLK> &renderPass,
     const HGShaderPermutation &shader,
     DrawElementMode element,
-    int8_t backFaceCulling,
-    int8_t triCCW,
+    bool backFaceCulling,
+    bool triCCW,
     EGxBlendEnum blendMode,
-    int8_t depthCulling,
-    int8_t depthWrite,
-    bool invertZ) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    bool depthCulling,
+    bool depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
     auto &arrVLKFormat = bufferBindingsVlk->getVLKFormat();
@@ -68,8 +67,8 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         blendMode,
         depthCulling,
         depthWrite,
-        invertZ,
-        vertexBindingDescriptions, vertexAttributeDescriptions);
+        vertexBindingDescriptions,
+        vertexAttributeDescriptions);
 }
 
 GPipelineVLK::~GPipelineVLK() {
@@ -85,14 +84,13 @@ GPipelineVLK::~GPipelineVLK() {
 
 void GPipelineVLK::createPipeline(
         GShaderPermutationVLK *shaderVLK,
-        std::shared_ptr<GRenderPassVLK> renderPass,
+        const std::shared_ptr<GRenderPassVLK> &renderPass,
         DrawElementMode m_element,
-        int8_t m_backFaceCulling,
-        int8_t m_triCCW,
+        bool backFaceCulling,
+        bool triCCW,
         EGxBlendEnum m_blendMode,
-        int8_t m_depthCulling,
-        int8_t m_depthWrite,
-        bool invertZ,
+        bool depthCulling,
+        bool depthWrite,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
@@ -175,8 +173,8 @@ void GPipelineVLK::createPipeline(
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = m_backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
-    rasterizer.frontFace = m_triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.cullMode = backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+    rasterizer.frontFace = triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -210,9 +208,9 @@ void GPipelineVLK::createPipeline(
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencil.pNext = NULL;
     depthStencil.flags = 0;
-    depthStencil.depthTestEnable = m_depthCulling ? VK_TRUE : VK_FALSE;
-    depthStencil.depthWriteEnable = m_depthWrite ? VK_TRUE : VK_FALSE;
-    depthStencil.depthCompareOp = invertZ ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencil.depthTestEnable = depthCulling ? VK_TRUE : VK_FALSE;
+    depthStencil.depthWriteEnable = depthWrite ? VK_TRUE : VK_FALSE;
+    depthStencil.depthCompareOp = renderPass->getInvertZ() ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 

@@ -115,20 +115,20 @@ public:
 
     HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override ;
 
-    HPipelineVLK createPipeline(HGVertexBufferBindings m_bindings,
-                                HGShaderPermutation shader,
-                                std::shared_ptr<GRenderPassVLK> renderPass,
+    HPipelineVLK createPipeline(const HGVertexBufferBindings &m_bindings,
+                                const HGShaderPermutation &shader,
+                                const std::shared_ptr<GRenderPassVLK> &renderPass,
                                 DrawElementMode element,
                                 int8_t backFaceCulling,
                                 int8_t triCCW,
                                 EGxBlendEnum blendMode,
                                 int8_t depthCulling,
-                                int8_t depthWrite,
-                                bool invertZ);
+                                int8_t depthWrite);
 
     std::shared_ptr<GRenderPassVLK> getRenderPass(std::vector<ITextureFormat> textureAttachments,
                                                   ITextureFormat depthAttachment,
                                                   VkSampleCountFlagBits sampleCountFlagBits,
+                                                  bool invertZ,
                                                   bool isSwapChainPass);
 
     std::shared_ptr<GRenderPassVLK> getSwapChainRenderPass();
@@ -223,7 +223,6 @@ protected:
         EGxBlendEnum blendMode;
         int8_t depthCulling;
         int8_t depthWrite;
-        bool invertZ;
 
 
         bool operator==(const PipelineCacheRecord &other) const {
@@ -235,8 +234,7 @@ protected:
                 (triCCW == other.triCCW) &&
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite) &&
-                (invertZ == other.invertZ);
+                (depthWrite == other.depthWrite);
         };
     };
     struct PipelineCacheRecordHasher {
@@ -248,7 +246,6 @@ protected:
             (hash<int8_t >{}(k.triCCW) << 4) ^
             (hash<int8_t >{}(k.depthCulling) << 8) ^
             (hash<int8_t >{}(k.depthWrite) << 10) ^
-            (hash<int8_t >{}(k.invertZ) << 12) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 14) ^
             (hash<DrawElementMode>{}(k.element) << 16);
         };
@@ -339,6 +336,7 @@ protected:
         std::shared_ptr<GRenderPassVLK> renderPass;
         VkSampleCountFlagBits sampleCountFlagBits;
         bool isSwapChainPass;
+        bool invertZ;
     };
 
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;

@@ -140,7 +140,8 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
         attachments.push_back(h_depthTexture->texture.view);
     }
 
-    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, sampleCountToVkSampleCountFlagBits(multiSampleCnt), false);
+    bool invertZ = true;
+    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, sampleCountToVkSampleCountFlagBits(multiSampleCnt), invertZ, false);
 
     VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     fbufCreateInfo.pNext = nullptr;

@@ -41,7 +41,7 @@ public:
 
     void bindIndexBuffer(const std::shared_ptr<IBuffer> &bufferVlk);
     void bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer>> &bufferVlk);
-    void bindPipeline(std::shared_ptr<GPipelineVLK> &pipeline);
+    void bindPipeline(const std::shared_ptr<GPipelineVLK> &pipeline);
     void bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
 

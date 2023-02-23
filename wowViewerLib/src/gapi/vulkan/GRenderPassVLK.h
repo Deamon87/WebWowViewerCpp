@@ -11,18 +11,26 @@
 
 class GRenderPassVLK {
 public:
-    GRenderPassVLK(VkDevice vkDevice, std::vector<VkFormat> textureAttachments,
-                   VkFormat depthAttachment, VkSampleCountFlagBits sampleCountBit,
+    GRenderPassVLK(VkDevice vkDevice,
+                   std::vector<VkFormat> textureAttachments,
+                   VkFormat depthAttachment,
+                   VkSampleCountFlagBits sampleCountBit,
+                   bool invertZ,
                    bool isSwapChainPass);
 
     VkSampleCountFlagBits getSampleCountBit();
     VkRenderPass getRenderPass();
 
     std::vector<VkClearValue> produceClearColorVec(std::array<float,3> colorClearColor, float depthClear);
+    bool getInvertZ() {
+        return m_invertZ;
+    }
 
 private:
     VkSampleCountFlagBits m_sampleCountBit;
     VkRenderPass renderPass;
+
+    bool m_invertZ = false;
 
     enum class AttachmentType {
         atColor,

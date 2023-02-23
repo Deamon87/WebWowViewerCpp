@@ -23,6 +23,9 @@ public:
 
     MaterialBuilderVLK& bindDescriptorSet(int bindPoint, std::shared_ptr<GDescriptorSet> &ds);
     MaterialBuilderVLK& createDescriptorSet(int bindPoint, const std::function<void(std::shared_ptr<GDescriptorSet> &ds)> &callback);
+    MaterialBuilderVLK& createPipeline(const HGVertexBufferBindings &bindings,
+                                       const std::shared_ptr<GRenderPassVLK> &renderPass,
+                                       const PipelineTemplate &pipelineTemplate);
     std::shared_ptr<ISimpleMaterialVLK> toMaterial();
 
     ~MaterialBuilderVLK() = default;
@@ -36,6 +39,7 @@ private:
     const std::shared_ptr<IDeviceVulkan> &m_device;
 
     HGShaderPermutation m_shader;
+    HPipelineVLK m_pipeline;
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptorSets;
 };
 

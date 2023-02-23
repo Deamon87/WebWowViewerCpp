@@ -19,7 +19,6 @@
 #include <stateSaver/stateSaver.h>
 #include "imguiLib/fileBrowser/imfilebrowser.h"
 #include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
-#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
@@ -48,7 +47,7 @@ FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
 
 void FrontendUI::composeUI() {
     if (mapCanBeOpened) {
-        if (!adtMinimapFilled && fillAdtSelectionminimap(adtSelectionMinimap, isWmoMap, mapCanBeOpened )) {
+        if (!adtMinimapFilled && fillAdtSelectionminimap(isWmoMap, mapCanBeOpened )) {
 //            fillAdtSelectionminimap = nullptr;
             adtMinimapFilled = true;
         }
@@ -117,7 +116,6 @@ void FrontendUI::composeUI() {
     showSettingsDialog();
     showQuickLinksDialog();
 
-    showMapConstructionDialog();
     showMapSelectionDialog();
     showMakeScreenshotDialog();
     showCurrentStatsDialog();
@@ -311,16 +309,6 @@ void FrontendUI::filterMapList(std::string text) {
         }
     }
 }
-void FrontendUI::showMapConstructionDialog() {
-    if (!showMapConstruction) return;
-
-    if (m_mapConstructionWindow == nullptr)
-        m_mapConstructionWindow = std::make_shared<MapConstructionWindow>(m_api);
-
-    showMapConstruction = m_mapConstructionWindow->render();
-
-}
-
 void FrontendUI::showMapSelectionDialog() {
     if (showSelectMap) {
         if (mapList.size() == 0) {
@@ -383,7 +371,8 @@ void FrontendUI::showMapSelectionDialog() {
                             prevMapRec = mapRec;
 
                             isWmoMap = false;
-                            adtSelectionMinimap = {};
+                            adtSelectionMinimapTextures = {};
+                            adtSelectionMinimapMaterials = {};
                             if (mapRec.WdtFileID > 0) {
                                 getAdtSelectionMinimap(mapRec.WdtFileID);
                             } else {
@@ -462,8 +451,8 @@ void FrontendUI::showAdtSelectionMinimap() {
     const float defaultImageDimension = 100;
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
-            if (adtSelectionMinimap[i][j] != nullptr) {
-                if (ImGui::ImageButton(adtSelectionMinimap[i][j],
+            if (adtSelectionMinimapMaterials[i][j] != nullptr) {
+                if (ImGui::ImageButton(adtSelectionMinimapMaterials[i][j],
                                        ImVec2(defaultImageDimension * minimapZoom, defaultImageDimension * minimapZoom))) {
                     auto mousePos = ImGui::GetMousePos();
                     ImGuiStyle &style = ImGui::GetStyle();
@@ -1319,8 +1308,7 @@ void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
     m_api->databaseHandler->getMapArray(mapList);
 }
 
-bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap,
-                                         bool &wdtFileExists) {
+bool FrontendUI::fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists) {
     if (m_wdtFile == nullptr) return false;
 
     if (m_wdtFile->getStatus() == FileStatus::FSRejected) {
@@ -1337,11 +1325,14 @@ bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 6
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
                 if (m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture > 0) {
-                    auto texture = m_api->cacheStorage->getTextureCache()->getFileId(
+                    auto blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(
                         m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture);
-                    minimap[i][j] = m_api->hDevice->createBlpTexture(texture, false, false);
+                    auto textureObj = m_api->hDevice->createBlpTexture(blpTexture, false, false);
+                    adtSelectionMinimapTextures[i][j] = textureObj;
+                    adtSelectionMinimapMaterials[i][j] = m_uiRenderer->createUIMaterial({textureObj});
                 } else {
-                    minimap[i][j] = nullptr;
+                    adtSelectionMinimapTextures[i][j] = nullptr;
+                    adtSelectionMinimapMaterials[i][j] = nullptr;
                 }
             }
         }
@@ -1746,6 +1737,7 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
     if(showMinimapGeneratorSettings) {
         if (m_minimapGenerationWindow == nullptr)
             m_minimapGenerationWindow = std::make_shared<MinimapGenerationWindow>(m_api,
+                                                                                  m_uiRenderer,
                                                                                   m_processor,
                                                                                  showMinimapGeneratorSettings);
 
@@ -1807,5 +1799,5 @@ void FrontendUI::createFontTexture() {
     // Upload texture to graphics system
 
     // Store our identifier
-    io.Fonts->TexID = this->m_uiRenderer->uploadFontTexture(pixels, width, height);
+    io.Fonts->TexID = this->m_uiRenderer->createUIMaterial({this->m_uiRenderer->uploadFontTexture(pixels, width, height)});
 }

@@ -46,6 +46,8 @@ private:
 
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass;
     std::shared_ptr<std::vector<HGMesh>> m_previousMeshes = nullptr;
+
+    HGVertexBufferBindings m_emptyImguiVAO = nullptr;
 };
 
 

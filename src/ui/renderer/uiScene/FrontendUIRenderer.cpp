@@ -107,10 +107,7 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                     meshTemplate.start = pcmd->IdxOffset * 2;
                     meshTemplate.end = pcmd->ElemCount;
 
-                    UIMaterialTemplate materialTemplate;
-                    materialTemplate.texture = pcmd->TextureId;
-
-                    auto material = this->createUIMaterial(materialTemplate);
+                    auto material = pcmd->TextureId;
                     meshes.push_back(this->createMesh(meshTemplate, material));
                 }
             }

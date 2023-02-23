@@ -17,6 +17,16 @@ static const std::array<GBufferBinding, 3> imguiBindings = {{
     {+imguiShader::Attribute::Color, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col)},
 }};
 
+static const PipelineTemplate s_imguiPipelineTemplate = {
+    DrawElementMode::TRIANGLES,
+    true,
+    true,
+    false,
+    false,
+    EGxBlendEnum::GxBlend_Alpha,
+    0xFF
+};
+
 
 class FrontendUIRenderer : public IRendererParameters<ImGuiFramePlan::ImGUIParam, ImGuiFramePlan::EmptyPlan>, public IFrontendUIBufferCreate  {
 public:

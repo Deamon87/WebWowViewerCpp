@@ -15,7 +15,6 @@
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
-#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../minimapGenerator/minimapGenerator.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../minimapGenerator/storage/CMinimapDataDB.h"
@@ -88,7 +87,7 @@ private:
     void getAdtSelectionMinimap(std::string wdtFilePath);
     void getMapList(std::vector<MapRecord> &mapList);
     std::string getCurrentAreaName();
-    bool fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists);
+    bool fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists);
 
 
     void unloadScene();
@@ -96,12 +95,14 @@ private:
     bool setNewCameraCallback(int cameraNum);
     void resetAnimationCallback();
 
-    std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
+    std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimapTextures;
+    std::array<std::array<HMaterial, 64>, 64> adtSelectionMinimapMaterials;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
-                adtSelectionMinimap[i][j] = nullptr;
+                adtSelectionMinimapTextures[i][j] = nullptr;
+                adtSelectionMinimapMaterials[i][j] = nullptr;
             }
         }
     }
@@ -186,8 +187,7 @@ private:
     std::shared_ptr<IExporter> exporter;
     int exporterFramesReady = 0;
 
-   std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
-   std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
+    std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
 
 
 //Test export

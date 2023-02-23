@@ -14,6 +14,7 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
     hDevice), m_device(hDevice) {
 
     m_lastRenderPass = m_device->getSwapChainRenderPass();
+    m_emptyImguiVAO = createVAO(nullptr,nullptr);
 
     createBuffers();
 }
@@ -36,11 +37,11 @@ HGIndexBuffer FrontendUIRenderForwardVLK::createIndexBuffer(int sizeInBytes) {
 
 HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
-    auto m_imguiVAO = m_device->createVertexBufferBindings();
-    m_imguiVAO->addVertexBufferBinding(vertexBuffer, std::vector(imguiBindings.begin(), imguiBindings.end()));
-    m_imguiVAO->setIndexBuffer(indexBuffer);
+    auto imguiVAO = m_device->createVertexBufferBindings();
+    imguiVAO->addVertexBufferBinding(vertexBuffer, std::vector(imguiBindings.begin(), imguiBindings.end()));
+    imguiVAO->setIndexBuffer(indexBuffer);
 
-    return m_imguiVAO;
+    return imguiVAO;
 }
 
 HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
@@ -55,6 +56,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
 
     auto &l_imguiUbo = m_imguiUbo;
     auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"})
+        .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(1, l_imguiUbo->getSubBuffer());
@@ -112,7 +114,6 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
 
         for (auto const &mesh : *meshes) {
             const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
-
             auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
 
 //            auto indexBuffer = (vulkanBindings->m_indexBuffer.get())->g_hIndexBuffer;
@@ -125,11 +126,11 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             swapChainCmd.bindIndexBuffer(vulkanBindings->getIndexBuffer());
 
             //3. Bind pipeline
-            auto pipeline = meshVlk->getPipeLineForRenderPass(l_this->m_lastRenderPass, false);
-            swapChainCmd.bindPipeline(pipeline);
+            auto material = meshVlk->material();
+            swapChainCmd.bindPipeline(material->getPipeline());
 
             //4. Bind Descriptor sets
-            auto const &descSets = meshVlk->material()->getDescriptorSets();
+            auto const &descSets = material->getDescriptorSets();
             for (int i = 0; i < descSets.size(); i++) {
                 if (descSets[i] != nullptr) {
                     swapChainCmd.bindDescriptorSet(i, descSets[i]);
