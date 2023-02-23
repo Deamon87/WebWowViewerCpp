@@ -14,7 +14,7 @@ GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {
-    std::cout << "destroyed blp text!" << std::endl;
+//    std::cout << "destroyed blp text!" << std::endl;
 }
 
 

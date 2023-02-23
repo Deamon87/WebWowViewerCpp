@@ -44,8 +44,9 @@ HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vert
     return imguiVAO;
 }
 
-HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate &materialTemplate) {
-    auto i = m_materialCache.find(materialTemplate);
+HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGTexture &hgtexture) {
+    auto weakTexture = std::weak_ptr(hgtexture);
+    auto i = m_materialCache.find(weakTexture);
     if (i != m_materialCache.end()) {
         if (!i->second.expired()) {
             return i->second.lock();
@@ -61,9 +62,9 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
             ds->beginUpdate()
                 .ubo(1, l_imguiUbo->getSubBuffer());
         })
-        .createDescriptorSet(1, [&materialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(1, [&hgtexture](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture));
+                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(hgtexture));
         })
         .toMaterial();
 
@@ -76,7 +77,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const UIMaterialTemplate 
 //                                  texturesVLK);
 
     std::weak_ptr<ISimpleMaterialVLK> weakPtr = material;
-    m_materialCache[materialTemplate] = weakPtr;
+    m_materialCache[weakTexture] = weakPtr;
 
     return material;
 }
