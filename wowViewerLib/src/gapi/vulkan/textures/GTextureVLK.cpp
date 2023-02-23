@@ -73,7 +73,6 @@ void GTextureVLK::destroyBuffer() {
 
     auto &l_imageAllocation = imageAllocation;
 
-
     m_device.addDeallocationRecord(
         [l_device, l_texture, l_imageAllocation]() {
             vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);

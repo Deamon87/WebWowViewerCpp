@@ -19,7 +19,7 @@ class GDescriptorPoolVLK;
 #include "../bindable/DSBindable.h"
 
 
-class GDescriptorSet : std::enable_shared_from_this<GDescriptorSet> {
+class GDescriptorSet : public std::enable_shared_from_this<GDescriptorSet> {
 public:
     explicit GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
     ~GDescriptorSet();
@@ -51,15 +51,25 @@ public:
         void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, DescriptorRecord::DescriptorRecordType descType) {
             static_assert(std::is_base_of<IDSBindable, T>::value, "T should inherit from B");
 
-            auto ds_weak = m_set.weak_from_this();
-
-            auto callback = ([ds_weak]() -> void {
-                if (auto ds = ds_weak.lock()) {
-                    ds->update();
+            bool createDescRecord = !m_boundDescriptors[bindPoint];
+            if (!createDescRecord) {
+                if constexpr (std::is_base_of<IBufferVLK, T>::value) {
+                    createDescRecord = (m_boundDescriptors[bindPoint]->buffer != object);
+                } else if constexpr (std::is_base_of<GTextureVLK, T>::value) {
+                    createDescRecord = (m_boundDescriptors[bindPoint]->textureVlk != object);
                 }
-            });
+            }
+            if (createDescRecord) {
+                auto ds_weak = m_set.weak_from_this();
 
-            m_boundDescriptors[bindPoint] = std::make_unique<DescriptorRecord>(descType, object, callback);
+                auto callback = ([ds_weak]() -> void {
+                    if (auto ds = ds_weak.lock()) {
+                        ds->update();
+                    }
+                    });
+
+                m_boundDescriptors[bindPoint] = std::make_unique<DescriptorRecord>(descType, object, callback);
+            }
         }
     private:
         GDescriptorSet &m_set;

@@ -19,13 +19,10 @@ GDescriptorSet::SetUpdateHelper GDescriptorSet::beginUpdate() {
     if (!m_firstUpdate) {
         //In this implementation of descriptor set, the descriptor set is getting free'd on update
         //and new one is created
-        auto l_descriptorSet = m_descriptorSet;
-        auto l_parentPool = m_parentPool;
-        auto l_hDescriptorSetLayout = m_hDescriptorSetLayout;
-        m_device->addDeallocationRecord([l_parentPool, l_descriptorSet, l_hDescriptorSetLayout]() {
-            l_parentPool->deallocate(l_hDescriptorSetLayout, l_descriptorSet);
-        });
-
+        
+        //This deallocate already have deallocate queue queue submission inside
+        m_parentPool->deallocate(m_hDescriptorSetLayout, m_descriptorSet);
+        
         m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
     }
     return SetUpdateHelper(*this, boundDescriptors);
