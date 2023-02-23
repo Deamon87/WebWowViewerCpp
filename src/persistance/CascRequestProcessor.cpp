@@ -170,9 +170,9 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         fileContent = this->tryGetFile(this->m_storage, fileNameToPass, openFlags);
         if (fileContent == nullptr) {
             if (fileDataId > 0) {
-                std::cout << "Could read fileDataId " << fileDataId << " from local " << std::endl << std::flush;
+                std::cout << "Could not read fileDataId " << fileDataId << " from local " << std::endl << std::flush;
             } else {
-                std::cout << "Could read file " << fileName << " from local " << std::endl << std::flush;
+                std::cout << "Could not read file " << fileName << " from local " << std::endl << std::flush;
             }
         }
     }

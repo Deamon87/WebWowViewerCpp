@@ -328,7 +328,7 @@ set(SOURCE_FILES
         src/renderer/buffers/IVertexBufferDynamicTemplate.h
         src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ITransparentMesh.h
         src/renderer/mapScene/IMapSceneBufferCreate.h
-        src/gapi/interface/materials/IMaterial.h src/renderer/mapScene/MapSceneParams.h)
+        src/gapi/interface/materials/IMaterial.h src/renderer/mapScene/MapSceneParams.h src/include/custom_container_key.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION

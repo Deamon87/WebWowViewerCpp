@@ -1850,7 +1850,6 @@ HBlpTexture M2Object::getBlpTextureData(int textureInd) {
 }
 
 HGTexture M2Object::getTexture(int textureInd) {
-    std::unordered_map<int, HBlpTexture> &loadedTextureCache = loadedTextures;
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
 
     HBlpTexture blpData = getBlpTextureData(textureInd);
