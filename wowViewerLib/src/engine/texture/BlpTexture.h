@@ -23,7 +23,8 @@ enum class TextureFormat {
     PalARGB2565DitherFloydSteinberg
 };
 
-struct mipmapStruct_t {
+class mipmapStruct_t {
+public:
     std::vector<uint8_t> texture;
     int32_t width;
     int32_t height;

@@ -41,6 +41,7 @@ typedef std::shared_ptr<IM2Mesh> HGM2Mesh;
 typedef std::shared_ptr<IMesh> HGParticleMesh;
 typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<ITexture> HGTexture;
+typedef std::weak_ptr<ITexture> WGTexture;
 typedef std::shared_ptr<IGPUFence> HGPUFence;
 typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 

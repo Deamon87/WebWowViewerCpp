@@ -24,7 +24,9 @@ public:
         this->descType = DescriptorRecord::DescriptorRecordType::Texture;
         this->textureVlk = texture;
 
-        iteratorUnique = texture->addOnHandleChange(OnHandleChange);
+        if (texture != nullptr) {
+            iteratorUnique = texture->addOnHandleChange(OnHandleChange);
+        }
     }
     explicit DescriptorRecord(DescriptorRecord::DescriptorRecordType descType, const std::shared_ptr<IBufferVLK> &buffer, const std::function<void()> &OnHandleChange) {
         this->descType = descType;

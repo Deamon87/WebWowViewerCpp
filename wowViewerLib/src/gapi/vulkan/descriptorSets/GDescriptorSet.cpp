@@ -65,13 +65,15 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
         throw std::runtime_error("descriptor mismatch for image");
     }
 
-    assignBoundDescriptors(bindIndex, textureVlk, DescriptorRecord::DescriptorRecordType::Texture);
+    if (textureVlk != nullptr) {
+        assignBoundDescriptors(bindIndex, textureVlk, DescriptorRecord::DescriptorRecordType::Texture);
+    }
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
     imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (!textureVlk->getIsLoaded()) {
+    if (textureVlk == nullptr || !textureVlk->getIsLoaded()) {
         auto blackTexture = std::dynamic_pointer_cast<GTextureVLK>(m_set.m_device->getBlackTexturePixel());
         imageInfo.imageView = blackTexture->texture.view;
         imageInfo.sampler = blackTexture->texture.sampler;

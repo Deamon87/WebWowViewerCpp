@@ -48,16 +48,6 @@ class gMeshTemplate;
 VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount);
 
 class GDeviceVLK : public IDevice, public std::enable_shared_from_this<GDeviceVLK>, public IDeviceVulkan {
-    struct QueueFamilyIndices {
-        std::optional<uint32_t> graphicsFamily;
-        std::optional<uint32_t> presentFamily;
-        std::optional<uint32_t> transferFamily;
-
-        bool isComplete() {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
-    };
-
     struct SwapChainSupportDetails {
         VkSurfaceCapabilitiesKHR capabilities;
         std::vector<VkSurfaceFormatKHR> formats;
@@ -99,6 +89,10 @@ public:
     bool getIsVulkanAxisSystem() override {return true;}
 
     void initUploadThread() override;
+
+    const QueueFamilyIndices &getQueueFamilyIndices() override {
+        return indices;
+    }
 public:
     double getWaitForUpdate() override {
         return this->waitInDrawStageAndDeps.getTimePerFrame();
@@ -175,10 +169,6 @@ public:
         return vmaAllocator;
     }
 
-    QueueFamilyIndices getQueueFamilyIndices() {
-        return indices;
-    }
-
     struct DeallocationRecord {
         unsigned int frameNumberToDoAt;
         std::function<void()> callback;
@@ -204,7 +194,7 @@ private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     bool isDeviceSuitable(VkPhysicalDevice device);
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+    void findQueueFamilies(VkPhysicalDevice device);
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
 
 

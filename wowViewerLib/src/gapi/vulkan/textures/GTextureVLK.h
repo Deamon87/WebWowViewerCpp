@@ -55,10 +55,17 @@ public:
         auto &l_stagingBuffer = m_tempUpdateData->stagingBuffer;
         auto &l_stagingBufferAlloc = m_tempUpdateData->stagingBufferAlloc;
 
-        m_device.addDeallocationRecord([l_tempUpdateData, l_device, l_stagingBuffer, l_stagingBufferAlloc]() {
+        auto w_this = weak_from_this();
+
+        m_device.addDeallocationRecord([w_this, l_device, l_stagingBuffer, l_stagingBufferAlloc]() {
             vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
 
-            delete l_tempUpdateData;
+            if (auto texture = w_this.lock()) {
+                delete texture->m_tempUpdateData;
+                texture->m_tempUpdateData = nullptr;
+
+            }
+
         });
 
         m_tempUpdateData = nullptr;
@@ -79,7 +86,6 @@ private:
     void destroyBuffer();
     virtual void bind(); //Should be called only by GDevice
     void unbind();
-
 
     struct updateData {
         VkBuffer stagingBuffer;
@@ -116,6 +122,8 @@ protected:
         int vulkanMipMapCount,
         VkImageUsageFlags imageUsageFlags
     );
+
+    virtual void freeMipmaps() {return;};
 };
 
 typedef std::shared_ptr<GTextureVLK> HGTextureVLK;

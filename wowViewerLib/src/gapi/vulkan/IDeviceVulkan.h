@@ -6,10 +6,21 @@
 #define AWEBWOWVIEWERCPP_IDEVICEVULKAN_H
 
 #include <functional>
+#include <optional>
 #include "descriptorSets/GDescriptorSetLayout.h"
 #include "descriptorSets/GDescriptorPoolVLK.h"
 
 #include "../interface/textures/ITexture.h"
+struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
+    std::optional<uint32_t> transferFamily;
+
+    bool isComplete() {
+        return graphicsFamily.has_value() && presentFamily.has_value();
+    }
+};
+
 class IDeviceVulkan {
 public:
     virtual ~IDeviceVulkan() = default;
@@ -30,6 +41,8 @@ public:
     //TODO:
     bool getIsCompressedTexturesSupported() {return true;};
     virtual float getAnisLevel() = 0;
+
+    virtual const QueueFamilyIndices &getQueueFamilyIndices() = 0;
 
 };
 

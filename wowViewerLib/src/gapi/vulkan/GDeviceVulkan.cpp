@@ -38,7 +38,12 @@ const std::vector<const char*> deviceExtensions = {
 };
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageType, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData) {
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        std::cerr << "error ";
+
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl << std::flush;
+
+    
 
     return VK_FALSE;
 }
@@ -237,6 +242,8 @@ void GDeviceVLK::initialize() {
 
     pickPhysicalDevice();
     createLogicalDevice();
+
+    findQueueFamilies(physicalDevice);
 //---------------
 //Init AMD's VMA
     VmaVulkanFunctions vma_vulkan_func{};
@@ -292,10 +299,67 @@ void GDeviceVLK::initialize() {
 }
 
 
+std::vector<std::string> VkFormatFeatureFlagBitsGetStrings(VkFormatFeatureFlags value) {
+    std::vector<std::string> strings;
+    if (value == 0) { strings.push_back("None"); return strings; }
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_BIT");
+    if (VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT & value) strings.push_back("FORMAT_FEATURE_STORAGE_IMAGE_BIT");
+    if (VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT & value) strings.push_back("FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT");
+    if (VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT & value) strings.push_back("FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT");
+    if (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT & value) strings.push_back("FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT");
+    if (VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT & value) strings.push_back("FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT");
+    if (VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT & value) strings.push_back("FORMAT_FEATURE_VERTEX_BUFFER_BIT");
+    if (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT & value) strings.push_back("FORMAT_FEATURE_COLOR_ATTACHMENT_BIT");
+    if (VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT & value) strings.push_back("FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT");
+    if (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT & value) strings.push_back("FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT");
+    if (VK_FORMAT_FEATURE_BLIT_SRC_BIT & value) strings.push_back("FORMAT_FEATURE_BLIT_SRC_BIT");
+    if (VK_FORMAT_FEATURE_BLIT_DST_BIT & value) strings.push_back("FORMAT_FEATURE_BLIT_DST_BIT");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT");
+    if (VK_FORMAT_FEATURE_TRANSFER_SRC_BIT & value) strings.push_back("FORMAT_FEATURE_TRANSFER_SRC_BIT");
+    if (VK_FORMAT_FEATURE_TRANSFER_DST_BIT & value) strings.push_back("FORMAT_FEATURE_TRANSFER_DST_BIT");
+    if (VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT & value) strings.push_back("FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT");
+    if (VK_FORMAT_FEATURE_DISJOINT_BIT & value) strings.push_back("FORMAT_FEATURE_DISJOINT_BIT");
+    if (VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT & value) strings.push_back("FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_MINMAX_BIT");
+    if (VK_FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR & value) strings.push_back("FORMAT_FEATURE_ACCELERATION_STRUCTURE_VERTEX_BUFFER_BIT_KHR");
+    if (VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT & value) strings.push_back("FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_EXT");
+    if (VK_FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT & value) strings.push_back("FORMAT_FEATURE_FRAGMENT_DENSITY_MAP_BIT_EXT");
+    if (VK_FORMAT_FEATURE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR & value) strings.push_back("FORMAT_FEATURE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR");
+    return strings;
+}
+
 void GDeviceVLK::createSwapChainAndFramebuffer() {
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
+
+    VkFormatProperties swapChainFormatProps;
+    vkGetPhysicalDeviceFormatProperties(physicalDevice, surfaceFormat.format, &swapChainFormatProps);
+
+    //auto linearTilingFeatures = VkFormatFeatureFlagBitsGetStrings(swapChainFormatProps.linearTilingFeatures);
+    //auto optimalTilingFeatures = VkFormatFeatureFlagBitsGetStrings(swapChainFormatProps.optimalTilingFeatures);
+
+    //std::cout << "linear tiling features = ";
+    //for (auto feature : linearTilingFeatures) std::cout << feature << " ";
+    //std::cout << std::endl;
+
+    //std::cout << "optimal tiling features = ";
+    //for (auto feature : optimalTilingFeatures) std::cout << feature << " ";
+    //std::cout << std::endl;
+
+    //VkImageFormatProperties imageFormatProperties;
+    //ERR_GUARD_VULKAN(vkGetPhysicalDeviceImageFormatProperties(physicalDevice,
+    //                                         surfaceFormat.format,
+    //                                         VK_IMAGE_TYPE_2D,
+    //                                         VK_IMAGE_TILING_OPTIMAL,
+    //                                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+    //                                         0,
+    //                                         &imageFormatProperties));
+
 
     createSwapChain(swapChainSupport, surfaceFormat, extent);
 
@@ -364,7 +428,6 @@ void GDeviceVLK::createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSu
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-    indices = findQueueFamilies(physicalDevice);
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
 
 //    if (indices.graphicsFamily != indices.presentFamily) {
@@ -486,8 +549,6 @@ void GDeviceVLK::pickPhysicalDevice() {
 
 
 void GDeviceVLK::createLogicalDevice() {
-    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
-
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value()};
 
@@ -534,14 +595,11 @@ void GDeviceVLK::createLogicalDevice() {
 }
 
 bool GDeviceVLK::isDeviceSuitable(VkPhysicalDevice device) {
-    QueueFamilyIndices indices = findQueueFamilies(device);
-
+    findQueueFamilies(device);
     return indices.isComplete();
 }
 
-GDeviceVLK::QueueFamilyIndices GDeviceVLK::findQueueFamilies(VkPhysicalDevice device) {
-    QueueFamilyIndices indices;
-
+void GDeviceVLK::findQueueFamilies(VkPhysicalDevice device) {
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
@@ -578,18 +636,14 @@ GDeviceVLK::QueueFamilyIndices GDeviceVLK::findQueueFamilies(VkPhysicalDevice de
     if (dedicatedTransferQueue > -1) {
         indices.transferFamily = dedicatedTransferQueue;
     }
-
-    return indices;
 }
 
 void GDeviceVLK::createCommandPool() {
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-
     VkCommandPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.pNext = NULL;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = indices.graphicsFamily.value();
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics command pool!");
@@ -600,13 +654,11 @@ void GDeviceVLK::createCommandPool() {
     }
 }
 void GDeviceVLK::createCommandPoolForUpload(){
-    QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
-
     VkCommandPoolCreateInfo renderPoolInfo = {};
     renderPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     renderPoolInfo.pNext = NULL;
     renderPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    renderPoolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    renderPoolInfo.queueFamilyIndex = indices.graphicsFamily.value();
 
     if (vkCreateCommandPool(device, &renderPoolInfo, nullptr, &renderCommandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render command pool!");
@@ -616,7 +668,7 @@ void GDeviceVLK::createCommandPoolForUpload(){
     uploadPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     uploadPoolInfo.pNext = NULL;
     uploadPoolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    uploadPoolInfo.queueFamilyIndex = queueFamilyIndices.transferFamily.value();
+    uploadPoolInfo.queueFamilyIndex = indices.transferFamily.value();
 
     if (vkCreateCommandPool(device, &uploadPoolInfo, nullptr, &uploadCommandPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics command pool!");
@@ -626,7 +678,7 @@ void GDeviceVLK::createCommandPoolForUpload(){
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.pNext = NULL;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = indices.graphicsFamily.value();
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPoolForImageTransfer) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics command pool!");

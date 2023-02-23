@@ -13,6 +13,7 @@ class IDSBindable {
 public:
     IDSBindable(bool clearListOnExecution) : m_clearListExecution(clearListOnExecution){
     }
+    virtual ~IDSBindable() {};
 
     std::unique_ptr<std::list<std::function<void()>>::const_iterator> addOnHandleChange(const std::function<void()> &callback) {
         std::lock_guard lock(m_callbackMtx);

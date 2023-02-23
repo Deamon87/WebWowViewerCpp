@@ -19,8 +19,8 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
-    vboBuffer = m_device->createIndexBuffer(1024*1024);
-    iboBuffer = m_device->createVertexBuffer(1024*1024);
+    iboBuffer = m_device->createIndexBuffer(1024*1024);
+    vboBuffer = m_device->createVertexBuffer(1024*1024);
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
@@ -88,12 +88,17 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
     const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams,
     const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) {
 
-    auto meshes = std::make_unique<std::vector<HGMesh>>();
+    auto meshes = std::make_shared<std::vector<HGMesh>>();
     this->consumeFrameInput(frameInputParams, *meshes);
+
+    {
+        //Prevents material from being created over and over again
+        m_previousMeshes = meshes;
+    }
 
     //Record commands to update buffer and draw
     auto l_this = std::dynamic_pointer_cast<FrontendUIRenderForwardVLK>(this->shared_from_this());
-    return createRenderFuncVLK(std::move([meshes = std::move(meshes), l_this](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
+    return createRenderFuncVLK(std::move([meshes, l_this](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
         // ---------------------
         // Upload stuff
         // ---------------------
@@ -141,4 +146,6 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
         }
     }));
+
+
 }

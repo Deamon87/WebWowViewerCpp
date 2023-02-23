@@ -1333,13 +1333,16 @@ bool FrontendUI::fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 6
 
     isWMOMap = m_wdtFile->mphd->flags.wdt_uses_global_map_obj != 0;
 
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            if (m_wdtFile->mapFileDataIDs[i*64 + j].minimapTexture > 0) {
-                auto texture = m_api->cacheStorage->getTextureCache()->getFileId(m_wdtFile->mapFileDataIDs[i*64 + j].minimapTexture);
-                minimap[i][j] = m_api->hDevice->createBlpTexture(texture, false, false);
-            } else {
-                minimap[i][j] = nullptr;
+    if (!isWMOMap) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                if (m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture > 0) {
+                    auto texture = m_api->cacheStorage->getTextureCache()->getFileId(
+                        m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture);
+                    minimap[i][j] = m_api->hDevice->createBlpTexture(texture, false, false);
+                } else {
+                    minimap[i][j] = nullptr;
+                }
             }
         }
     }

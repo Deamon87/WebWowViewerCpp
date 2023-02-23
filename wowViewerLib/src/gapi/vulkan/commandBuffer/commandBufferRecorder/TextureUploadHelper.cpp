@@ -77,11 +77,12 @@ void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textur
             .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
             .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-            .dstQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
+            .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
             .srcStageMask = VK_PIPELINE_STAGE_HOST_BIT,
             .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
         };
 
+//        transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
         transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
     }
 
@@ -101,69 +102,69 @@ void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textur
             updateRecord->bufferCopyRegions
         );
     }
-
-    // --------------------------------------------------------
-    // 3. Transition ownership from upload queue to render queue
-    // --------------------------------------------------------
-    {
-        if (uploadCmdBufRecorder.getQueueFamily() == renderCmdBufRecorder.getQueueFamily()) {
-            TransitionParams transitionParams = {
-                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                .srcQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
-                .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
-                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
-            };
-
-            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
-        } else {
+//
+//    // --------------------------------------------------------
+//    // 3. Transition ownership from upload queue to render queue
+//    // --------------------------------------------------------
+//    {
+//        if (uploadCmdBufRecorder.getQueueFamily() == renderCmdBufRecorder.getQueueFamily()) {
+//            TransitionParams transitionParams = {
+//                .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+//                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+//                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+//                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+//                .srcQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
+//                .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
+//                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+//                .dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
+//            };
+//
+//            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
+//        } else {
             //Change access mask
             TransitionParams transitionParams = {
                 .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
                 .dstAccessMask = 0,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
-            };
-
-            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
-        }
-
-        //Change ownership
-        {
-             TransitionParams transitionParams = {
-                .srcAccessMask = 0,
-                .dstAccessMask = 0,
-                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                .srcQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
-                .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
-                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
-            };
-
-            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
-            transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
-        }
-
-        {
-            TransitionParams transitionParams = {
-                .srcAccessMask = 0,
-                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+                .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
+            };
+
+            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
+//        }
+//
+//        //Change ownership
+//        {
+//             TransitionParams transitionParams = {
+//                .srcAccessMask = 0,
+//                .dstAccessMask = 0,
+//                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+//                .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+//                .srcQueueFamilyIndex = uploadCmdBufRecorder.getQueueFamily(),
+//                .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
+//                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
+//                .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
+//            };
+//
+//            transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);
+//            transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
+//        }
+
+       /* {
+            TransitionParams transitionParams = {
+                .srcAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                .srcQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
+                .dstQueueFamilyIndex = renderCmdBufRecorder.getQueueFamily(),
+                .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
                 .dstStageMask = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT
             };
             transitionLayoutAndOwnageTextures(renderCmdBufRecorder, textures, transitionParams);
-        }
-    }
+        }*/
+    //}
 }

@@ -17,6 +17,7 @@ public:
     TextureStatus postLoad() override;
 private:
     void decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps);
+    void freeMipmaps() override {m_texture = nullptr;};
 private:
     HBlpTexture m_texture;
 };
