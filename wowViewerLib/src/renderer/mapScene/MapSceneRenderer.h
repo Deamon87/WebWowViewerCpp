@@ -14,7 +14,9 @@
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:
     MapSceneRenderer() = default;
-    ~MapSceneRenderer() override = 0;
+    ~MapSceneRenderer() override = default;
+
+    std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;;
 };
 
 //typedef FrameInputParams<MapRenderPlan, void> MapSceneRendererInputParams;

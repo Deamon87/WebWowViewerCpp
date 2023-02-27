@@ -360,9 +360,7 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     return hmesh;
 }
 
-void Map::makeFramePlan(FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
-//    std::cout << "Map::checkCulling finished called" << std::endl;
-//    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
+void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
     cullCreateVarsCounter.beginMeasurement();
     Config* config = this->m_api->getConfig();
 
@@ -370,6 +368,9 @@ void Map::makeFramePlan(FrameInputParams<MapSceneParams> &frameInputParams, HMap
     mathfu::vec3 cameraVec3 = cameraPos.xyz();
     mathfu::mat4 &frustumMat = frameInputParams.frameParameters->matricesForCulling->perspectiveMat;
     mathfu::mat4 &lookAtMat4 = frameInputParams.frameParameters->matricesForCulling->lookAtMat;
+
+    mapRenderPlan->renderingMatrices = frameInputParams.frameParameters->cameraMatricesForRendering;
+    mapRenderPlan->deltaTime = frameInputParams.delta;
 
     size_t adtRenderedThisFramePrev = mapRenderPlan->adtArray.size();
     mapRenderPlan->adtArray = {};
@@ -1408,82 +1409,82 @@ void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
     }
 };
 
-//void Map::update(const HMapRenderPlan &renderPlan) {
-//    mathfu::vec3 cameraVec3   = updateStage->cameraMatrices->cameraPos.xyz();
-//    mathfu::mat4 &frustumMat  = updateStage->cameraMatrices->perspectiveMat;
-//    mathfu::mat4 &lookAtMat   = updateStage->cameraMatrices->lookAtMat;
-//    animTime_t deltaTime      = updateStage->delta;
-//
-//    Config* config = this->m_api->getConfig();
-//
-//    auto &m2ToDraw = renderPlan->m2Array.getDrawn();
-//    {
-//        m2UpdateframeCounter.beginMeasurement();
-//
-//        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
-//            [&](tbb::blocked_range<size_t> r) {
-//                for (size_t i = r.begin(); i != r.end(); ++i) {
-//                    auto& m2Object = m2ToDraw[i];
-//                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
-//                }
-//            }, tbb::simple_partitioner());
-//
-//        m2UpdateframeCounter.endMeasurement();
-//    }
-//
-//    wmoGroupUpdate.beginMeasurement();
-//    for (const auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
-//        if (wmoGroupObject == nullptr) continue;
-//        wmoGroupObject->update();
-//    }
-//    wmoGroupUpdate.endMeasurement();
-//
-//    adtUpdate.beginMeasurement();
-//    for (const auto &adtObjectRes : renderPlan->adtArray) {
-//        adtObjectRes->adtObject->update(deltaTime);
-//    }
-//    adtUpdate.endMeasurement();
-//
-//    //2. Calc distance every 100 ms
-//    m2calcDistanceCounter.beginMeasurement();
-//    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
-//          [&](tbb::blocked_range<size_t> r) {
-//              for (size_t i = r.begin(); i != r.end(); ++i) {
-//                  auto &m2Object = m2ToDraw[i];
-//                  if (m2Object == nullptr) continue;
-//                  m2Object->calcDistance(cameraVec3);
-//              }
-//          }, tbb::auto_partitioner()
-//    );
-//    m2calcDistanceCounter.endMeasurement();
-//
-//    //Cleanup ADT every 10 seconds
-//    adtCleanupCounter.beginMeasurement();
-//    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
-//        for (int i = 0; i < 64; i++) {
-//            for (int j = 0; j < 64; j++) {
-//                auto adtObj = mapTiles[i][j];
-//                //Free obj, if it was unused for 10 secs
-//                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
-////                    std::cout << "try to free adtObj" << std::endl;
-//
-//                    mapTiles[i][j] = nullptr;
-//                }
-//            }
-//        }
-//
-//        adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
-//    }
-//    adtCleanupCounter.endMeasurement();
-//    this->m_currentTime += updateStage->delta;
-//
-//    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
-//    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
-//    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
-//    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
-//    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
-//    //Collect meshes
-//}
+void Map::update(const HMapRenderPlan &renderPlan) {
+    mathfu::vec3 cameraVec3   = renderPlan->renderingMatrices->cameraPos.xyz();
+    mathfu::mat4 &frustumMat  = renderPlan->renderingMatrices->perspectiveMat;
+    mathfu::mat4 &lookAtMat   = renderPlan->renderingMatrices->lookAtMat;
+    animTime_t deltaTime      = renderPlan->deltaTime;
+
+    Config* config = this->m_api->getConfig();
+
+    auto &m2ToDraw = renderPlan->m2Array.getDrawn();
+    {
+        m2UpdateframeCounter.beginMeasurement();
+
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto& m2Object = m2ToDraw[i];
+                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
+                }
+            }, tbb::simple_partitioner());
+
+        m2UpdateframeCounter.endMeasurement();
+    }
+
+    wmoGroupUpdate.beginMeasurement();
+    for (const auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
+        if (wmoGroupObject == nullptr) continue;
+        wmoGroupObject->update();
+    }
+    wmoGroupUpdate.endMeasurement();
+
+    adtUpdate.beginMeasurement();
+    for (const auto &adtObjectRes : renderPlan->adtArray) {
+        adtObjectRes->adtObject->update(deltaTime);
+    }
+    adtUpdate.endMeasurement();
+
+    //2. Calc distance every 100 ms
+    m2calcDistanceCounter.beginMeasurement();
+    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
+          [&](tbb::blocked_range<size_t> r) {
+              for (size_t i = r.begin(); i != r.end(); ++i) {
+                  auto &m2Object = m2ToDraw[i];
+                  if (m2Object == nullptr) continue;
+                  m2Object->calcDistance(cameraVec3);
+              }
+          }, tbb::auto_partitioner()
+    );
+    m2calcDistanceCounter.endMeasurement();
+
+    //Cleanup ADT every 10 seconds
+    adtCleanupCounter.beginMeasurement();
+    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
+        for (int i = 0; i < 64; i++) {
+            for (int j = 0; j < 64; j++) {
+                auto adtObj = mapTiles[i][j];
+                //Free obj, if it was unused for 10 secs
+                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
+//                    std::cout << "try to free adtObj" << std::endl;
+
+                    mapTiles[i][j] = nullptr;
+                }
+            }
+        }
+
+        adtFreeLambda(false, true, this->m_currentTime + deltaTime);
+    }
+    adtCleanupCounter.endMeasurement();
+    this->m_currentTime += deltaTime;
+
+    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
+    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
+    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
+    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
+    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
+    //Collect meshes
+}
 
 void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
     for (auto &m2Object : renderPlan->m2Array.getDrawn()) {

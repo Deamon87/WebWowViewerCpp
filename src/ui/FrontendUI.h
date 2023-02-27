@@ -24,6 +24,7 @@
 #include "../../wowViewerLib/src/exporters/IExporter.h"
 #include "renderer/uiScene/IFrontendUIBufferCreate.h"
 #include "renderer/uiScene/FrontendUIRenderer.h"
+#include "../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -71,7 +72,8 @@ private:
 
     float uiScale = 1;
 
-    std::shared_ptr<IScene> currentScene = nullptr;
+    std::shared_ptr<MapSceneRenderer> m_sceneRenderer = nullptr;
+    std::shared_ptr<IScene> m_currentScene = nullptr;
 
     bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 

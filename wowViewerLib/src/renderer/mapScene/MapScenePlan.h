@@ -15,6 +15,7 @@ struct MapRenderPlan {
     int areaId = -1;
     int parentAreaId = -1;
 
+    animTime_t deltaTime;
     HCameraMatrices renderingMatrices;
 
     //Result of culling test

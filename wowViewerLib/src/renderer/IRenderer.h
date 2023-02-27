@@ -9,7 +9,7 @@
 
 class IRenderer {
 public:
-    virtual ~IRenderer() = 0;
+    virtual ~IRenderer() = default;
 };
 
 typedef std::shared_ptr<IRenderer> HIRenderer;

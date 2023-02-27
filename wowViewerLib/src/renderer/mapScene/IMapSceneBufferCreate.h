@@ -10,6 +10,7 @@
 
 class IMapSceneBufferCreate {
 public:
+    virtual ~IMapSceneBufferCreate() = default;
     virtual HGVertexBuffer createM2VertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) = 0;
 

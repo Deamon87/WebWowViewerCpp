@@ -203,7 +203,7 @@ public:
 //        std::cout << "Map destroyed " << std::endl;
 	};
 
-    void makeFramePlan(FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan);
+    void makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan);
 
     void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {
         m_mandatoryADT = mandatoryADTs;
@@ -218,8 +218,6 @@ public:
 
     void update(const HMapRenderPlan &renderPlan);
     void updateBuffers(const HMapRenderPlan &renderPlan);
-//    void produceUpdateStage(HUpdateStage &updateStage) override;
-//    void produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) override;
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,

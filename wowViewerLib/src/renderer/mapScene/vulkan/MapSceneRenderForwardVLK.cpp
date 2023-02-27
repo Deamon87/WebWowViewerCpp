@@ -3,6 +3,7 @@
 //
 
 #include "MapSceneRenderForwardVLK.h"
+#include "../../vulkan/IRenderFunctionVLK.h"
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(HGDeviceVLK hDevice) : m_device(hDevice) {
 
@@ -44,14 +45,18 @@ HGIndexBuffer MapSceneRenderForwardVLK::createWaterIndexBuffer(int sizeInBytes) 
 std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                              const std::shared_ptr<MapRenderPlan> &framePlan) {
 
-    return nullptr;
+    auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
+
+    mapScene->doPostLoad(framePlan);
+    mapScene->update(framePlan);
+
+
+    return createRenderFuncVLK([](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+
+    });
 }
 
 std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastCreatedPlan() {
     return nullptr;
 }
 
-std::shared_ptr<MapRenderPlan>
-MapSceneRenderForwardVLK::processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {
-    return nullptr;
-}

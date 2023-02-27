@@ -34,6 +34,7 @@
 #include "../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "renderer/uiScene/IFrontendUIBufferCreate.h"
 #include "renderer/uiScene/FrontendUIRendererFactory.h"
+#include "../../wowViewerLib/src/renderer/mapScene/MapSceneRendererFactory.h"
 
 FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
     m_api = api;
@@ -547,7 +548,7 @@ void FrontendUI::showMainMenu() {
                 showMinimapGeneratorSettings = true;
             }
             if (ImGui::MenuItem("Test export")) {
-                if (currentScene != nullptr) {
+                if (m_currentScene != nullptr) {
                     exporter = std::make_shared<GLTFExporter>("./gltf/");
 //                    currentScene->exportScene(exporter.get());
                     exporterFramesReady = 0;
@@ -969,7 +970,7 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(3732303, replacementTextureFDids);
     }
     if (ImGui::Button("Bugged ADT (SL)", ImVec2(-1, 0))) {
-        currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
+        m_currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
     }
     ImGui::Separator();
     ImGui::Text("Models for billboard checking");
@@ -1322,19 +1323,25 @@ bool FrontendUI::fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists) {
     isWMOMap = m_wdtFile->mphd->flags.wdt_uses_global_map_obj != 0;
 
     if (!isWMOMap) {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                if (m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture > 0) {
-                    auto blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(
-                        m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture);
-                    auto textureObj = m_api->hDevice->createBlpTexture(blpTexture, false, false);
-                    adtSelectionMinimapTextures[i][j] = textureObj;
-                    adtSelectionMinimapMaterials[i][j] = m_uiRenderer->createUIMaterial({textureObj});
-                } else {
-                    adtSelectionMinimapTextures[i][j] = nullptr;
-                    adtSelectionMinimapMaterials[i][j] = nullptr;
+        if (m_wdtFile->mphd->flags.wdt_has_maid) {
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    if (m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture > 0) {
+                        auto blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(
+                            m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture);
+                        auto textureObj = m_api->hDevice->createBlpTexture(blpTexture, false, false);
+                        adtSelectionMinimapTextures[i][j] = textureObj;
+                        adtSelectionMinimapMaterials[i][j] = m_uiRenderer->createUIMaterial({textureObj});
+                    } else {
+                        adtSelectionMinimapTextures[i][j] = nullptr;
+                        adtSelectionMinimapMaterials[i][j] = nullptr;
+                    }
                 }
+
             }
+        }
+        else {
+            std::cout << "wdtId = " << prevMapRec.WdtFileID << std::endl;
         }
     }
     return true;
@@ -1480,11 +1487,55 @@ mathfu::mat4 getInfZMatrix(float f, float aspect) {
 //    return nullptr;
 //}
 
+HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
+                                                     int width, int height,
+                                                     bool produceDoubleCamera,
+                                                     bool swapDebugCamera,
+                                                     const std::shared_ptr<IScene> &currentScene) {
+
+    auto result = std::make_shared<MapSceneParams>();
+    result->scene = currentScene;
+
+    float farPlaneRendering = apiContainer.getConfig()->farPlane;
+    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+
+    float nearPlane = 1.0;
+    float fov = toRadian(45.0);
+
+    float canvasAspect = (float)width / (float)height;
+
+    result->matricesForCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    result->cameraMatricesForRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    result->cameraMatricesForDebugCamera = nullptr;
+
+    if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
+        result->cameraMatricesForDebugCamera = apiContainer.debugCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+
+
+    //Frustum matrix with reversed Z
+    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    if (isInfZSupported)
+    {
+        float f = 1.0f / tan(fov / 2.0f);
+        result->cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
+        if (result->cameraMatricesForDebugCamera != nullptr) {
+            result->cameraMatricesForDebugCamera->perspectiveMat = result->cameraMatricesForDebugCamera->perspectiveMat;
+        }
+    }
+
+    result->clearColor = apiContainer.getConfig()->clearColor;
+
+    if (result->cameraMatricesForDebugCamera && swapDebugCamera) {
+        std::swap(result->cameraMatricesForDebugCamera, result->cameraMatricesForRendering);
+    }
+
+    return result;
+}
+
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
     if (m_minimapGenerationWindow != nullptr) {
         m_minimapGenerationWindow->process();
     }
-
 
     HFrameScenario scenario = std::make_shared<HFrameScenario::element_type>();
     {
@@ -1492,6 +1543,21 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             {0,     0},
             {canvWidth, canvHeight}
         };
+
+        if (m_currentScene) {
+            auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
+            wowSceneFrameInput->delta = deltaTime * (1000.0f);
+            wowSceneFrameInput->viewPortDimensions = dimension;
+            wowSceneFrameInput->invertedZ = true;
+            wowSceneFrameInput->clearScreen = true;
+            wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
+                                                                       canvWidth, canvHeight,
+                                                                       m_api->getConfig()->doubleCameraDebug,
+                                                                       m_api->getConfig()->swapMainAndDebug,
+                                                                       m_currentScene);
+
+            scenario->cullFunctions.push_back(m_sceneRenderer->createCullUpdateRenderChain(wowSceneFrameInput));
+        }
 
         auto uiFrameInput = std::make_shared<FrameInputParams<ImGuiFramePlan::ImGUIParam>>();
         uiFrameInput->delta = deltaTime * (1000.0f);
@@ -1501,7 +1567,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
         auto clearColor = m_api->getConfig()->clearColor;
 
-        scenario->cullFunctions.push_back(m_uiRenderer->createPlan(uiFrameInput));
+        scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput));
 
 //        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
 //        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
@@ -1595,26 +1661,30 @@ bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
 }
 
 void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
-    currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
     m_api->camera->setCameraPos(0, 0, 0);
 }
 void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
-    currentScene = std::make_shared<Map>(m_api, mapId, mapName);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_currentScene = std::make_shared<Map>(m_api, mapId, mapName);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x,y,z);
     m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
-    currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(x,y,z);
     m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
-    currentScene = m2Scene;
+    m_currentScene = m2Scene;
     m2Scene->setReplaceTextureArray(replacementTextureIds);
 
 
@@ -1626,8 +1696,10 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
 }
 
 void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
-    currentScene = m2Scene;
+    m_currentScene = m2Scene;
     m2Scene->setReplaceTextureArray(replacementTextureIds);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
@@ -1639,7 +1711,8 @@ void FrontendUI::unloadScene() {
     if (m_api->cacheStorage) {
         m_api->cacheStorage->actuallDropCache();
     }
-    currentScene = std::make_shared<NullScene>();
+    m_sceneRenderer = nullptr;
+    m_currentScene = std::make_shared<NullScene>();
 }
 
 
@@ -1769,26 +1842,6 @@ void FrontendUI::createDatabaseHandler() {
     mapList = {};
     mapListStringMap = {};
     filteredMapList = {};
-}
-
-void FrontendUI::update(HFrontendUIBufferCreate renderer) {
-    auto m_device = m_api->hDevice;
-
-//    if (exporter != nullptr) {
-//        if (m_processor->completedAllJobs() && !m_api->hDevice->wasTexturesUploaded()) {
-//            exporterFramesReady++;
-//        }
-//        if (exporterFramesReady > 5) {
-//            exporter->saveToFile("model.gltf");
-//            exporter = nullptr;
-//        }
-//    }
-
-    auto *draw_data = ImGui::GetDrawData();
-    if (draw_data == nullptr)
-        return;
-
-
 }
 
 void FrontendUI::createFontTexture() {

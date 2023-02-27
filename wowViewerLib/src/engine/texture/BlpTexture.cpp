@@ -148,12 +148,11 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
 void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
-//    std::cout << fileName << std::endl;
     int fileSize = blpFile->size();
-//    std::cout << fileSize << std::endl;
-    BlpFile *pBlpFile = (BlpFile *) &(*blpFile.get())[0];
+    BlpFile *pBlpFile = (BlpFile *) blpFile->data();
     if (pBlpFile->fileIdent != '2PLB') {
-        std::cout << pBlpFile->fileIdent;
+        std::cerr << "Wrong ident for BLP2 file " << pBlpFile->fileIdent << " " << fileName << std::endl;
+        throw std::runtime_error("Wrong ident for BLP2 file");
     }
     this->m_textureFormat = getTextureType(pBlpFile);
 
