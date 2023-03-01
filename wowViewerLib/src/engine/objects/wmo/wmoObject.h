@@ -126,7 +126,7 @@ public:
 
     void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
 
-    bool doPostLoad();
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
     void uploadGeneratorBuffers();
 

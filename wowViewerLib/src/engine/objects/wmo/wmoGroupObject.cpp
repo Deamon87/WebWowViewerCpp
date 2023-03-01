@@ -294,7 +294,7 @@ static const struct {
 };
 
 
-bool WmoGroupObject::doPostLoad() {
+bool WmoGroupObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (this->m_loaded) return false;
 
     if (!this->m_loading) {
@@ -304,7 +304,7 @@ bool WmoGroupObject::doPostLoad() {
 
     if ((m_geom == nullptr) || (m_geom->getStatus() != FileStatus::FSLoaded) || (!m_wmoApi->isLoaded())) return false;
 
-    this->postLoad();
+    this->postLoad(sceneRenderer);
     this->m_loaded = true;
     this->m_loading = false;
     return true;
@@ -385,18 +385,18 @@ void WmoGroupObject::startLoading() {
     }
 }
 
-void WmoGroupObject::postLoad() {
+void WmoGroupObject::postLoad(const HMapSceneBufferCreate &sceneRenderer) {
 
     this->m_useLocalLightingForM2 =
         ((m_geom->mogp->flags.INTERIOR) > 0) && ((m_geom->mogp->flags.EXTERIOR_LIT) == 0);
     m_localGroupBorder = m_geom->mogp->boundingBox;
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
-    this->createMeshes();
-    this->createWaterMeshes();
+    this->createMeshes(sceneRenderer);
+    this->createWaterMeshes(sceneRenderer);
 }
 
-void WmoGroupObject::createMeshes() {
+void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     Config *config = m_api->getConfig();
 
     int minBatch = config->wmoMinBatch;
@@ -410,8 +410,7 @@ void WmoGroupObject::createMeshes() {
     PointerChecker<SMOMaterial> &materials = m_wmoApi->getMaterials();
 
     HGDevice device = m_api->hDevice;
-    //TODO:
-    HGVertexBufferBindings binding = nullptr; //m_geom->getVertexBindings(device);
+    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer);
 
 //    vertexModelWideUniformBuffer = device->createUniformBufferChunk(sizeof(WMO::modelWideBlockVS));
 
@@ -626,10 +625,10 @@ void WmoGroupObject::setLiquidType() {
     }
 }
 
-void WmoGroupObject::createWaterMeshes() {
+void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     HGDevice device = m_api->hDevice;
-    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(device);
+    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer);
     if (binding == nullptr)
         return;
 

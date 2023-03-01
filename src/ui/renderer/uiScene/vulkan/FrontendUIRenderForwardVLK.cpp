@@ -68,14 +68,6 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGTexture &hgtextur
         })
         .toMaterial();
 
-//
-//    std::vector<std::shared_ptr<IBufferVLK>> ubos = {m_imguiUbo->getSubBuffer()};
-//    std::vector<HGTextureVLK> texturesVLK = {std::dynamic_pointer_cast<GTextureVLK>(materialTemplate.texture)};
-//    auto material = std::make_shared<ISimpleMaterialVLK>(m_device,
-//                                  "imguiShader", "imguiShader",
-//                                  ubos,
-//                                  texturesVLK);
-
     std::weak_ptr<ISimpleMaterialVLK> weakPtr = material;
     m_materialCache[weakTexture] = weakPtr;
 
@@ -115,9 +107,6 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
         for (auto const &mesh : *meshes) {
             const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
             auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
-
-//            auto indexBuffer = (vulkanBindings->m_indexBuffer.get())->g_hIndexBuffer;
-//            auto vertexBuffer = ((GVertexBufferVLK *)binding->m_bindings[0].vertexBuffer.get())->g_hVertexBuffer;
 
             //1. Bind VBOs
             swapChainCmd.bindVertexBuffers(vulkanBindings->getVertexBuffers());

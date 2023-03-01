@@ -3,6 +3,7 @@
 //
 
 #include "MapSceneRenderer.h"
+#include "../../engine/objects/scenes/map.h"
 
 std::shared_ptr<MapRenderPlan>
 MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {

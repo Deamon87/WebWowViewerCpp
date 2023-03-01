@@ -17,22 +17,13 @@
 PACK(
     struct AdtVertex {
         mathfu::vec3_packed pos;
-        float helpIndex = 0.0f;
         mathfu::vec3_packed normal;
         mathfu::vec4_packed mccv;
         mathfu::vec4_packed mclv;
     }
 );
-PACK(
-    struct LiquidVertexFormat {
-        mathfu::vec4_packed pos_transp;
-        mathfu::vec2_packed uv;
-    }
-);
-
 
 static std::array<GBufferBinding,5> adtVertexBufferBinding = {{
-    {+adtShader::Attribute::aIndex, 1,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, helpIndex)},
     {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
     {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
     {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
@@ -43,15 +34,6 @@ static std::array<GBufferBinding, 2> adtVertexBufferLODBinding = {{
     {+adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 8, 0 },
     {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 8, 4}
 }};
-
-static GBufferBinding staticWaterBindings[2] = {
-    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, pos_transp)},
-    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false,       sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, uv)},
-//    {+waterShader::Attribute::aDepth, 1, GBindingType::GFLOAT, false, 24, 0 },
-//    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 4},
-
-};
-
 
 
 void AdtObject::loadingFinished() {
@@ -482,8 +464,7 @@ void AdtObject::createVBO() {
     for (int i = 0; i <= m_adtFile->mcnkRead; i++) {
         for (int j = 0; j < 9 * 9 + 8 * 8; j++) {
             AdtVertex &adtVertex = vboArray.emplace_back();
-            /* 1.1 help index */
-            adtVertex.helpIndex = j;
+
             /* 1.2 Heights */
             float iX = fmod(j, 17.0f);
             float iY = floor(j/17.0f);

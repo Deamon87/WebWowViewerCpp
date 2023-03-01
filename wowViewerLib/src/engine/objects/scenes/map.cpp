@@ -22,13 +22,13 @@
 #endif
 #include "../../algorithms/mathHelper_culling.h"
 
-static GBufferBinding fullScreen[1] = {
+std::array<GBufferBinding,1> fullScreen = {{
     {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
-};
+}};
 
-static GBufferBinding skyConusBinding[1] = {
+std::array<GBufferBinding, 1> skyConusBinding = {{
     {+drawQuad::Attribute::position, 4, GBindingType::GFLOAT, false, 0, 0},
-};
+}};
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
     {
@@ -262,7 +262,7 @@ std::array<uint16_t,300> skyConusIBO = {
 
 HGVertexBufferBindings createSkyBindings(IDevice *device) {
     //TODO:
-    /*
+
     auto skyIBO = device->createIndexBuffer();
     skyIBO->uploadData(
         skyConusIBO.data(),
@@ -277,19 +277,15 @@ HGVertexBufferBindings createSkyBindings(IDevice *device) {
     auto skyBindings = device->createVertexBufferBindings();
     skyBindings->setIndexBuffer(skyIBO);
 
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = skyVBO;
-
-    vertexBinding.bindings = std::vector<GBufferBinding>(&skyConusBinding[0], &skyConusBinding[1]);
-
-    skyBindings->addVertexBufferBinding(vertexBinding);
+    skyBindings->addVertexBufferBinding(skyVBO,
+                                        std::vector<GBufferBinding>(skyConusBinding.begin(), skyConusBinding.end()));
     skyBindings->save();
-*/
+
 
     return nullptr;
 }
 
-Map::Map(HApiContainer api, int mapId, std::string mapName) {
+Map::Map(HApiContainer api, int mapId, const std::string &mapName) {
     initMapTiles();
 
     m_mapId = mapId; m_api = api; this->mapName = mapName;
@@ -1330,7 +1326,7 @@ void Map::createAdtFreeLamdas() {
 
 
 
-void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
+void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
     int processedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
@@ -1341,17 +1337,17 @@ void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
     }
     for (auto &m2Object : renderPlan->m2Array.getToLoadGeom()) {
         if (m2Object == nullptr) continue;
-        m2Object->doLoadGeom();
+        m2Object->doLoadGeom(sceneRenderer);
     }
 //    }
 
     for (auto &wmoObject : renderPlan->wmoArray.getToLoad()) {
         if (wmoObject == nullptr) continue;
-        wmoObject->doPostLoad();
+        wmoObject->doPostLoad(sceneRenderer);
     }
     for (auto &wmoGroupObject : renderPlan->wmoGroupArray.getToLoad()) {
         if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->doPostLoad();
+        wmoGroupObject->doPostLoad(sceneRenderer);
         wmoGroupsProcessedThisFrame++;
         if (wmoGroupsProcessedThisFrame > 20) break;
     }
@@ -1396,7 +1392,7 @@ void Map::doPostLoad(const HMapRenderPlan &renderPlan) {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = quadVBO;
 
-        vertexBinding.bindings = std::vector<GBufferBinding>(&fullScreen[0], &fullScreen[1]);
+        vertexBinding.bindings = std::vector<GBufferBinding>(fullScreen.begin(), fullScreen.end());
 
         quadBindings->addVertexBufferBinding(vertexBinding);
         quadBindings->save();

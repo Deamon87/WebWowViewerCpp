@@ -200,16 +200,6 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
     }
 };
 
-static GBufferBinding staticM2Bindings[6] = {
-        {+m2Shader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 48, 0 },
-        {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true, 48, 12},  // bonesWeight
-        {+m2Shader::Attribute::bones, 4, GBindingType::GUNSIGNED_BYTE, false, 48, 16},  // bones
-        {+m2Shader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 48, 20}, // normal
-        {+m2Shader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 48, 32}, // texcoord
-        {+m2Shader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 48, 40} // texcoord
-};
-
-
 
 void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     this->m2File = m2File;
@@ -323,7 +313,7 @@ void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {
 }
 
 HGVertexBuffer M2Geom::getVBO(const HMapSceneBufferCreate &sceneRenderer) {
-    if (vertexVbo.get() == nullptr) {
+    if (vertexVbo == nullptr) {
         if (m_m2Data->vertices.size == 0) {
             return nullptr;
         }

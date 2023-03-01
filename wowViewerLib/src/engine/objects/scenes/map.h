@@ -161,7 +161,7 @@ protected:
     explicit Map() {
     }
 public:
-    explicit Map(HApiContainer api, int mapId, std::string mapName);;
+    explicit Map(HApiContainer api, int mapId, const std::string &mapName);;
 
     explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
         initMapTiles();
@@ -214,7 +214,7 @@ public:
         m_adtConfigHolder = adtConfig;
     }
 
-    void doPostLoad(const HMapRenderPlan &renderPlan);
+    void doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan);
 
     void update(const HMapRenderPlan &renderPlan);
     void updateBuffers(const HMapRenderPlan &renderPlan);

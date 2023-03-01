@@ -72,7 +72,7 @@ private:
     bool useFileId = false;
     int m_modelFileId;
 
-    HGVertexBuffer vertexVbo = HGVertexBuffer(nullptr);
+    HGVertexBuffer vertexVbo = nullptr;
     std::unordered_map<SkinGeom *, HGVertexBufferBindings> vaoMap;
 
 

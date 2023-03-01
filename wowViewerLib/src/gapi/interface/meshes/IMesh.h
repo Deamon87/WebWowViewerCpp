@@ -55,21 +55,12 @@ class gMeshTemplate {
 public:
     gMeshTemplate(HGVertexBufferBindings bindings) : bindings(bindings) {}
     HGVertexBufferBindings bindings;
-    HGShaderPermutation shader;
     MeshType meshType = MeshType::eGeneralMesh;
 
-    int8_t triCCW = 1; //counter-clockwise
-    bool depthWrite = true;
-    bool depthCulling = true;
-    bool backFaceCulling = true;
-    EGxBlendEnum blendMode;
     bool skybox = false;
-
-    uint8_t colorMask = 0xFF;
 
     int start;
     int end;
-    DrawElementMode element;
     std::vector<HGTexture> texture = {};
 
     bool scissorEnabled = false;

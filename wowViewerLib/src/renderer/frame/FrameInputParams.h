@@ -6,8 +6,6 @@
 #define AWEBWOWVIEWERCPP_FRAMEINPUTPARAMS_H
 
 #include <array>
-#include "../../engine/CameraMatrices.h"
-#include "../../engine/objects/iScene.h"
 #include "../../include/iostuff.h"
 
 struct ViewPortDimensions{

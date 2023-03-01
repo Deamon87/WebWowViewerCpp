@@ -47,7 +47,7 @@ public:
 
 
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
-    bool doPostLoad();
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
     void uploadGeneratorBuffers();
     void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
@@ -101,9 +101,9 @@ private:
     void updateWorldGroupBBWithM2();
     void checkDoodads(M2ObjectListContainer &wmoM2Candidates);
 
-    void postLoad();
-    void createMeshes();
-    void createWaterMeshes();
+    void postLoad(const HMapSceneBufferCreate &sceneRenderer);
+    void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
+    void createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer);
 
     int to_wmo_liquid (int x);
     void setLiquidType();

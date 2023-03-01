@@ -596,8 +596,8 @@ inline void addSquare(int offset, int x, int y, std::vector<int16_t> &strips) {
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
 
-//    strips = std::vector<int16_t>();
-//    stripOffsets = std::vector<int>();
+    strips = std::vector<int16_t>();
+    stripOffsets = std::vector<int>();
 
     for (int i = 0; i <= mcnkRead; i++) {
         SMChunk &mcnkObj = mapTile[i];

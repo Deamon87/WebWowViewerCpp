@@ -384,28 +384,15 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     return indexVBO;
 }
 
-static const std::array<GBufferBinding, 9> staticWMOBindings = {{
-    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false,          sizeof(WMOVertex), offsetof(WMOVertex, pos) },
-    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false,            sizeof(WMOVertex), offsetof(WMOVertex, normal)},
-    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false,          sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate)},
-    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false,         sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate2)},
-    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false,         sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate3)},
-    {+wmoShader::Attribute::aTexCoord4, 2, GBindingType::GFLOAT, false,         sizeof(WMOVertex), offsetof(WMOVertex, textCoordinate4)},
-    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true,      sizeof(WMOVertex), offsetof(WMOVertex, color)},
-    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true,     sizeof(WMOVertex), offsetof(WMOVertex, color2)},
-    {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true,sizeof(WMOVertex), offsetof(WMOVertex, colorSecond)}
-}};
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer) {
+    if (vertexBufferBindings == nullptr) {
 
-PACK(
-struct LiquidVertexFormat {
-    mathfu::vec4_packed pos_transp;
-    mathfu::vec2_packed uv;
-});
+        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer));
+    }
 
-static GBufferBinding staticWMOWaterBindings[2] = {
-    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, pos_transp)},
-    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, uv)}
-};
+    return vertexBufferBindings;
+}
+
 
 int WmoGroupGeom::getLegacyWaterType(int a) {
     a = a + 1;
@@ -435,10 +422,8 @@ int WmoGroupGeom::getLegacyWaterType(int a) {
     return a;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &device) {
-    return nullptr;
-    //TODO:
-    /*
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer) {
+
     if (vertexWaterBufferBindings == nullptr) {
         if (this->m_mliq == nullptr) return nullptr;
 
@@ -447,10 +432,8 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &devi
 
         mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
 
-        for (int j = 0; j < m_mliq->yverts; j++)
-        {
-            for (int i = 0; i < m_mliq->xverts; i++)
-            {
+        for (int j = 0; j < m_mliq->yverts; j++) {
+            for (int i = 0; i < m_mliq->xverts; i++) {
                 int p = j*m_mliq->xverts + i;
 
                 LiquidVertexFormat lvfVertex;
@@ -499,31 +482,22 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &devi
             }
         }
 
-        waterIBO = device->createIndexBuffer();
+        waterIBO = sceneRenderer->createWaterIndexBuffer(iboBuffer.size() * sizeof(uint16_t));
         waterIBO->uploadData(
             &iboBuffer[0],
             iboBuffer.size() * sizeof(uint16_t));
 
-        waterVBO = device->createVertexBuffer();
+        waterVBO = sceneRenderer->createWaterVertexBuffer(lVertices.size() * sizeof(LiquidVertexFormat));
         waterVBO->uploadData(
             &lVertices[0],
             lVertices.size() * sizeof(LiquidVertexFormat)
         );
 
-        vertexWaterBufferBindings = device->createVertexBufferBindings();
-        vertexWaterBufferBindings->setIndexBuffer(waterIBO);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = waterVBO;
-
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOWaterBindings[0], &staticWMOWaterBindings[1]);
-
-        vertexWaterBufferBindings->addVertexBufferBinding(vertexBinding);
-        vertexWaterBufferBindings->save();
+        vertexWaterBufferBindings = sceneRenderer->createWaterVAO(waterVBO, waterIBO);
 
         waterIndexSize = iboBuffer.size();
     }
 
     return vertexWaterBufferBindings;
-     */
+
 }

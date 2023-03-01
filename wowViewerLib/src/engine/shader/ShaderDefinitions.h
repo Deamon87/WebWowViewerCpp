@@ -79,7 +79,7 @@ struct adtLodShader {
 
 struct adtShader {
     enum class Attribute {
-        aPos = 0, aColor = 1, aVertexLighting = 2, aNormal = 3, aIndex = 4, adtShaderAttributeEnd
+        aPos = 0, aColor = 1, aVertexLighting = 2, aNormal = 3, adtShaderAttributeEnd
     };
 };
 
@@ -192,7 +192,6 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "aColor", 1},
     { "aVertexLighting", 2},
     { "aNormal", 3},
-    { "aIndex", 4},
   }
 },
 { "drawBBShader",

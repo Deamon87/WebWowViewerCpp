@@ -7,10 +7,40 @@
 
 #include <memory>
 #include "../../gapi/interface/IDevice.h"
+#include "../../engine/persistance/header/commonFileStructs.h"
+
+
+PACK(
+    struct WMOVertex {
+        C3Vector pos;
+        C3Vector normal;
+        C2Vector textCoordinate;
+        C2Vector textCoordinate2;
+        C2Vector textCoordinate3;
+        C2Vector textCoordinate4;
+        CImVector color;
+        CImVector color2;
+        CImVector colorSecond;
+    }
+);
+
+PACK(
+    struct LiquidVertexFormat {
+        mathfu::vec4_packed pos_transp;
+        mathfu::vec2_packed uv;
+    }
+);
+
 
 class IMapSceneBufferCreate {
 public:
     virtual ~IMapSceneBufferCreate() = default;
+
+    virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+//    virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+
     virtual HGVertexBuffer createM2VertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) = 0;
 

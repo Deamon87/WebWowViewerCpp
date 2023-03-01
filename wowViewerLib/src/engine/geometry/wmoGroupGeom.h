@@ -12,20 +12,6 @@
 #include "../../include/sharedFile.h"
 #include "../../renderer/mapScene/IMapSceneBufferCreate.h"
 
-PACK(
-    struct WMOVertex {
-        C3Vector pos;
-        C3Vector normal;
-        C2Vector textCoordinate;
-        C2Vector textCoordinate2;
-        C2Vector textCoordinate3;
-        C2Vector textCoordinate4;
-        CImVector color;
-        CImVector color2;
-        CImVector colorSecond;
-    }
-);
-
 class WmoGroupGeom : public PersistentFile {
 public:
     WmoGroupGeom(std::string fileName){ m_fileName = fileName; };
@@ -40,7 +26,8 @@ public:
     bool hasWater() const {return m_mliq != nullptr; };
 
 
-    HGVertexBufferBindings getWaterVertexBindings(const HGDevice &device);
+    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
+    HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
 
     int getFileDataId() const {return m_fileDataId;}
     const std::string &getFileName() const {return m_fileName;}

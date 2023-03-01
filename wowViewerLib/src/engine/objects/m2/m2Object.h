@@ -263,7 +263,7 @@ public:
     bool getHasBoundingBox() {return m_hasAABB;}
 
     void doLoadMainFile();
-    void doLoadGeom();
+    void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
@@ -288,7 +288,7 @@ public:
 
     void drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes,  int renderOrder);
 
-    void createVertexBindings();
+    void createVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
 
     int getCameraNum() {
         if (!getGetIsLoaded()) return 0;

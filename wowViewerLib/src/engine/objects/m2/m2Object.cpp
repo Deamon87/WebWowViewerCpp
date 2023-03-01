@@ -888,7 +888,7 @@ void M2Object::doLoadMainFile(){
     this->createAABB();
 }
 
-void M2Object:: doLoadGeom(){
+void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     //0. If loading procedures were already done - exit
     if (this->m_loaded) return;
 
@@ -934,7 +934,7 @@ void M2Object:: doLoadGeom(){
     //3. Do post load procedures
     m_skinGeom->fixData(m_m2Geom->getM2Data());
 
-    this->createVertexBindings();
+    this->createVertexBindings(sceneRenderer);
     this->createMeshes();
 
     m_boneMasterData = std::make_shared<CBoneMasterData>(m_m2Geom, m_skelGeom, m_parentSkelGeom);
@@ -1885,7 +1885,7 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
     return texture;
 }
 
-void M2Object::createVertexBindings() {
+void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) {
     HGDevice device = m_api->hDevice;
 
     //2. Create buffer binding and fill it

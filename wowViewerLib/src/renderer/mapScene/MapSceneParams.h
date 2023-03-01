@@ -7,6 +7,7 @@
 
 
 #include "../../engine/CameraMatrices.h"
+#include "../../engine/objects/iScene.h"
 
 struct MapSceneParams {
     std::shared_ptr<IScene> scene;

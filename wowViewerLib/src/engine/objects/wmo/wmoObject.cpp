@@ -320,7 +320,7 @@ void WmoObject::createWorldPortals() {
     }
 }
 
-bool WmoObject::doPostLoad() {
+bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
             this->createGroupObjects();
@@ -350,23 +350,6 @@ bool WmoObject::doPostLoad() {
 
         return false;
     }
-
-//    for (auto &groupObject : groupObjects) {
-//        if (groupsProcessedThisFrame > 3) return false;
-//        groupObject->doPostLoad();
-//    }
-//    for (auto &groupObjectLod : groupObjectsLod1) {
-//        if (groupsProcessedThisFrame > 3) return false;
-//        if (groupObjectLod != nullptr) {
-//            if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
-//        }
-//    }
-//    for (auto &groupObjectLod2 : groupObjectsLod2) {
-//        if (groupsProcessedThisFrame > 3) return false;
-//        if (groupObjectLod2 != nullptr) {
-//            if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
-//        }
-//    }
 
     return false;
 }
