@@ -39,6 +39,8 @@ MaterialBuilderVLK &MaterialBuilderVLK::bindDescriptorSet(int bindPoint, std::sh
 MaterialBuilderVLK &MaterialBuilderVLK::createPipeline(const HGVertexBufferBindings &bindings,
                                                        const std::shared_ptr<GRenderPassVLK> &renderPass,
                                                        const PipelineTemplate &pipelineTemplate) {
+
+    m_pipelineTemplate = pipelineTemplate;
     m_pipeline = std::dynamic_pointer_cast<GDeviceVLK>(m_device)->createPipeline(
         bindings,
         m_shader,
@@ -57,6 +59,7 @@ MaterialBuilderVLK &MaterialBuilderVLK::createPipeline(const HGVertexBufferBindi
 std::shared_ptr<ISimpleMaterialVLK> MaterialBuilderVLK::toMaterial() {
     return std::make_shared<ISimpleMaterialVLK>(
         m_shader,
+        m_pipelineTemplate,
         m_pipeline,
         descriptorSets
       );

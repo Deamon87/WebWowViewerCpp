@@ -11,6 +11,7 @@
 #include "../algorithms/mathHelper_culling_sse.h"
 #endif
 #include "../algorithms/mathHelper_culling.h"
+#include "../../gapi/interface/materials/IMaterial.h"
 
 void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
     {
@@ -142,21 +143,17 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
 
         //Create mesh
         gMeshTemplate meshTemplate(portalPointsFrame.m_bindings);
+        PipelineTemplate pipelineTemplate;
 
-        meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = !apiContainer->getConfig()->renderPortalsIgnoreDepth;
-        meshTemplate.backFaceCulling = false;
+        pipelineTemplate.element = DrawElementMode::TRIANGLES;
+        pipelineTemplate.depthWrite = false;
+        pipelineTemplate.depthCulling = !apiContainer->getConfig()->renderPortalsIgnoreDepth;
+        pipelineTemplate.backFaceCulling = false;
 
-        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-
-        //Let's assume ribbons are always at least transparent
-        if (meshTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
-            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-        }
+        pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
         meshTemplate.start = 0;
         meshTemplate.end = indiciesArray.size();
-        meshTemplate.element = DrawElementMode::TRIANGLES;
 
         std::shared_ptr<IBufferChunk<DrawPortalShader::meshWideBlockPS>> drawPortalShaderMeshWideBlockPS = nullptr;
         drawPortalShaderMeshWideBlockPS->setUpdateHandler([](auto &data, const HFrameDependantData &frameDepedantData) {

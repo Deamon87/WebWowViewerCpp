@@ -39,7 +39,7 @@ public:
     virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
-//    virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    virtual HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
 
     virtual HGVertexBuffer createM2VertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) = 0;
@@ -52,6 +52,9 @@ public:
 
     virtual HGVertexBuffer createWaterVertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createWaterIndexBuffer(int sizeInBytes) = 0;
+
+    virtual HGVertexBuffer createSkyVertexBuffer(int sizeInBytes) = 0;
+    virtual HGIndexBuffer  createSkyIndexBuffer(int sizeInBytes) = 0;
 };
 typedef std::shared_ptr<IMapSceneBufferCreate> HMapSceneBufferCreate;
 

@@ -16,6 +16,7 @@
 #include "../../../gapi/interface/IOcclusionQuery.h"
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/interface/meshes/IM2Mesh.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
 
 //Shader stuff
 enum class M2PixelShader : int {
@@ -1256,18 +1257,18 @@ void M2Object::createBoundingBoxMesh() {
     HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", "drawBBShader", nullptr);
 
     //TODO:
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
+
     gMeshTemplate meshTemplate(/*m_api->hDevice->getBBVertexBinding()*/ nullptr);
 
-    meshTemplate.depthWrite = false;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
 //    meshTemplate.colorMask = 0;
     meshTemplate.start = 0;
     meshTemplate.end = 36;
-
-    meshTemplate.blendMode = EGxBlendEnum ::GxBlend_Alpha;
-
-    meshTemplate.element = DrawElementMode::TRIANGLES;
 
 //    std::shared_ptr<IBufferChunk<bbModelWideBlockVS>> bbBlockVS = m_api->hDevice->createUniformBufferChunk(sizeof(bbModelWideBlockVS));
     std::shared_ptr<IBufferChunk<bbModelWideBlockVS>> bbBlockVS = nullptr;
@@ -1352,16 +1353,17 @@ HGM2Mesh M2Object::createWaterfallMesh() {
 
     int renderFlagIndex = m2Batch->materialIndex;
 
-    meshTemplate.depthWrite = false;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
-    meshTemplate.triCCW = 1;
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.triCCW = 1;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
-    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
     meshTemplate.end = skinSection->indexCount;
-    meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.skybox = m_boolSkybox;
 
     HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
@@ -1539,25 +1541,26 @@ M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrecti
     HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", "m2Shader", &cacheRecord);
 
     gMeshTemplate meshTemplate(finalBufferBindings);
+    PipelineTemplate pipelineTemplate;
 
     int renderFlagIndex = m2Batch->materialIndex;
     auto renderFlag = m_m2Data->materials[renderFlagIndex];
 
-    meshTemplate.depthWrite = !(renderFlag->flags & 0x10);
-    meshTemplate.depthCulling = !(renderFlag->flags & 0x8);
-    meshTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
-    meshTemplate.triCCW = 1;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = !(renderFlag->flags & 0x10);
+    pipelineTemplate.depthCulling = !(renderFlag->flags & 0x8);
+    pipelineTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
+    pipelineTemplate.triCCW = 1;
 
     if (overrideBlend) {
-        meshTemplate.blendMode = blendMode;
+        pipelineTemplate.blendMode = blendMode;
     } else {
-        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
-        blendMode = meshTemplate.blendMode;
+        pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+        blendMode = pipelineTemplate.blendMode;
     }
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
-    meshTemplate.element = DrawElementMode::TRIANGLES;
     meshTemplate.skybox = m_boolSkybox;
 
     HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};

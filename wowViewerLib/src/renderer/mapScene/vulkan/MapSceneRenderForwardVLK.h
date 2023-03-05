@@ -21,9 +21,10 @@ public:
 //-------------------------------------
 //  Buffer creation
 //-------------------------------------
-    virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
-    virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
-    virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
 
 
     HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
@@ -37,8 +38,12 @@ public:
 
     HGVertexBuffer createWaterVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createWaterIndexBuffer(int sizeInBytes) override;
+
+    HGVertexBuffer createSkyVertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createSkyIndexBuffer(int sizeInBytes) override;
 private:
     HGDeviceVLK m_device;
+
 
 
 };

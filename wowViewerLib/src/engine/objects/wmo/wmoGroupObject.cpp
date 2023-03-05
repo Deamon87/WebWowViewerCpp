@@ -7,6 +7,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../persistance/header/wmoFileHeader.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
 #include <algorithm>
 
 /*
@@ -480,15 +481,17 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
         auto blendMode = material.blendMode;
         meshTemplate.meshType = MeshType::eWmoMesh;
-        meshTemplate.depthWrite = blendMode <= 1;
-        meshTemplate.depthCulling = true;
-        meshTemplate.backFaceCulling = !(material.flags.F_UNCULLED);
 
-        meshTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+        PipelineTemplate pipelineTemplate;
+        pipelineTemplate.element = DrawElementMode::TRIANGLES;
+        pipelineTemplate.depthWrite = blendMode <= 1;
+        pipelineTemplate.depthCulling = true;
+        pipelineTemplate.backFaceCulling = !(material.flags.F_UNCULLED);
+
+        pipelineTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
 
         meshTemplate.start = renderBatch.first_index * 2;
         meshTemplate.end = renderBatch.num_indices;
-        meshTemplate.element = DrawElementMode::TRIANGLES;
 
         bool isSecondTextSpec = material.shader == 8;
 
@@ -646,15 +649,18 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     HGShaderPermutation shaderPermutation = device->getShader("waterShader", "waterShader", nullptr);
 
     gMeshTemplate meshTemplate(binding);
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
 
     auto blendMode = material.blendMode;
     float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
     meshTemplate.meshType = MeshType::eWmoMesh;
-    meshTemplate.depthWrite = false;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
 
-    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+
 
     std::vector<LiquidTypeData> liquidTypeData;
     int basetextureFDID = 0;
@@ -693,7 +699,6 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
 
     meshTemplate.start = 0;
     meshTemplate.end = m_geom->waterIndexSize;
-    meshTemplate.element = DrawElementMode::TRIANGLES;
 
     auto l_liquidType = liquid_type;
 

@@ -38,7 +38,7 @@ struct SMOMaterial {
         uint32_t F_UNFOGGED : 1;                 // disable fog shading (rarely used)
         uint32_t F_UNCULLED : 1;                 // two-sided
         uint32_t F_EXTLIGHT : 1;                 // darkened, the intern face of windows are flagged 0x08
-        uint32_t F_SIDN : 1;                    // (bright at night, unshaded) (used on windows and lamps in Stormwind, for example) (see emissive color)
+        uint32_t F_SIDN : 1;                     // (bright at night, unshaded) (used on windows and lamps in Stormwind, for example) (see emissive color)
         uint32_t F_WINDOW : 1;                   // lighting related (flag checked in CMapObj::UpdateSceneMaterials)
         uint32_t F_CLAMP_S : 1;                  // tex clamp S (force this material's textures to use clamp s addressing)
         uint32_t F_CLAMP_T : 1;                  // tex clamp T (force this material's textures to use clamp t addressing)

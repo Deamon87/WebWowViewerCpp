@@ -45,8 +45,9 @@ public:
     void bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
 
-    void setViewport();
-    void setScissors();
+    void setScissors(const std::array<int32_t, 2> &areaOffset,
+                     const std::array<uint32_t, 2> &areaSize);
+    void setDefaultScissors();
 
     void recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
     void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);
@@ -65,6 +66,7 @@ private:
     std::shared_ptr<IBufferVLK> m_currentIndexBuffer = nullptr;
     std::array<std::shared_ptr<IBufferVLK>, 2> m_currentVertexBuffers;
     std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
+    bool m_currentScissorsIsDefault = false;
 
 
     //Viewports

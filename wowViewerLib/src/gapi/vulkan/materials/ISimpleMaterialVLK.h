@@ -16,6 +16,7 @@
 class ISimpleMaterialVLK : public IMaterial, public std::enable_shared_from_this<ISimpleMaterialVLK> {
 public:
     explicit ISimpleMaterialVLK(const HGShaderPermutation &shader,
+                                const PipelineTemplate &pipelineTemplate,
                                 const HPipelineVLK &pipeline,
                                 const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets);
     ~ISimpleMaterialVLK() override = default;
@@ -30,12 +31,14 @@ public:
     HPipelineVLK getPipeline() {
         return m_pipeline;
     }
+    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass);
 
 private:
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptors;
 
     HGShaderPermutation m_shader;
     HPipelineVLK m_pipeline;
+    PipelineTemplate m_pipelineTemplate;
 };
 
 typedef std::shared_ptr<ISimpleMaterialVLK> HMaterialVLK;

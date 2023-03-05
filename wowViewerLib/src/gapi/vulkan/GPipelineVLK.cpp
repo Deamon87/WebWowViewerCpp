@@ -59,6 +59,8 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
 
     m_pipelineLayout = shaderVLK->getPipelineLayout();
 
+    m_isTransparent = blendMode > EGxBlendEnum::GxBlend_AlphaKey || !depthWrite;
+
     createPipeline(shaderVLK,
         renderPass,
         element,

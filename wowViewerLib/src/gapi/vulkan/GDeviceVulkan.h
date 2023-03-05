@@ -119,11 +119,11 @@ public:
                                 const HGShaderPermutation &shader,
                                 const std::shared_ptr<GRenderPassVLK> &renderPass,
                                 DrawElementMode element,
-                                int8_t backFaceCulling,
-                                int8_t triCCW,
+                                bool backFaceCulling,
+                                bool triCCW,
                                 EGxBlendEnum blendMode,
-                                int8_t depthCulling,
-                                int8_t depthWrite);
+                                bool depthCulling,
+                                bool depthWrite);
 
     std::shared_ptr<GRenderPassVLK> getRenderPass(std::vector<ITextureFormat> textureAttachments,
                                                   ITextureFormat depthAttachment,
@@ -218,11 +218,11 @@ protected:
         HGShaderPermutation shader;
         std::shared_ptr<GRenderPassVLK> renderPass;
         DrawElementMode element;
-        int8_t backFaceCulling;
-        int8_t triCCW;
+        bool backFaceCulling;
+        bool triCCW;
         EGxBlendEnum blendMode;
-        int8_t depthCulling;
-        int8_t depthWrite;
+        bool depthCulling;
+        bool depthWrite;
 
 
         bool operator==(const PipelineCacheRecord &other) const {
@@ -242,10 +242,10 @@ protected:
             using std::hash;
             return hash<void*>{}(k.shader.get()) ^
             hash<void*>{}(k.renderPass.get()) ^
-            (hash<int8_t >{}(k.backFaceCulling) << 2) ^
-            (hash<int8_t >{}(k.triCCW) << 4) ^
-            (hash<int8_t >{}(k.depthCulling) << 8) ^
-            (hash<int8_t >{}(k.depthWrite) << 10) ^
+            (hash<bool >{}(k.backFaceCulling) << 2) ^
+            (hash<bool >{}(k.triCCW) << 4) ^
+            (hash<bool >{}(k.depthCulling) << 8) ^
+            (hash<bool >{}(k.depthWrite) << 10) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 14) ^
             (hash<DrawElementMode>{}(k.element) << 16);
         };

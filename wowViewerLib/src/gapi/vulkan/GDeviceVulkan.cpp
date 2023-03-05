@@ -1157,11 +1157,11 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                         const HGShaderPermutation &shader,
                                         const std::shared_ptr<GRenderPassVLK> &renderPass,
                                         DrawElementMode element,
-                                        int8_t backFaceCulling,
-                                        int8_t triCCW,
+                                        bool backFaceCulling,
+                                        bool triCCW,
                                         EGxBlendEnum blendMode,
-                                        int8_t depthCulling,
-                                        int8_t depthWrite) {
+                                        bool depthCulling,
+                                        bool depthWrite) {
 
     PipelineCacheRecord pipelineCacheRecord;
     pipelineCacheRecord.shader = shader;

@@ -182,9 +182,6 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
                     submitRecords.get().data());
 }
 
-void CmdBufRecorder::setViewPort() {
-
-}
 void CmdBufRecorder::setViewPort(ViewportType viewportType) {
     const constexpr uint32_t firstViewport = 0;
     const constexpr uint32_t viewportCount = 1;
@@ -192,12 +189,36 @@ void CmdBufRecorder::setViewPort(ViewportType viewportType) {
     vkCmdSetViewport(m_gCmdBuffer.m_cmdBuffer, firstViewport, viewportCount, &viewportsForThisStage[(int)viewportType]);
 }
 
-void CmdBufRecorder::setScissors() {
+void CmdBufRecorder::setScissors(const std::array<int32_t, 2> &areaOffset,
+                                 const std::array<uint32_t, 2> &areaSize) {
+    const constexpr uint32_t firstScissor = 0;
+    const constexpr uint32_t scissorCount = 1;
+
+    VkRect2D vkRect2D = {
+        .offset = {
+            areaOffset[0],
+            areaOffset[1]
+        },
+        .extent = {
+            areaSize[0],
+            areaSize[1]
+        }
+    };
+
+    vkCmdSetScissor(m_gCmdBuffer.m_cmdBuffer, firstScissor, scissorCount, &vkRect2D);
+
+    m_currentScissorsIsDefault = false;
+}
+
+void CmdBufRecorder::setDefaultScissors() {
+    if (m_currentScissorsIsDefault) return;
+
     const constexpr uint32_t firstScissor = 0;
     const constexpr uint32_t scissorCount = 1;
     vkCmdSetScissor(m_gCmdBuffer.m_cmdBuffer, firstScissor, scissorCount, &defaultScissor);
-}
 
+    m_currentScissorsIsDefault = true;
+}
 
 void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
                                          const std::array<uint32_t, 2> &areaSize) {

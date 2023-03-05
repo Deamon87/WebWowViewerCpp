@@ -10,6 +10,7 @@
 #include "utils/MutexLockedVector.h"
 #include "../../engine/texture/BlpTexture.h"
 #include "textures/GTextureVLK.h"
+#include "../../include/custom_container_key.h"
 
 class TextureManagerVLK : public std::enable_shared_from_this<TextureManagerVLK> {
 public:
@@ -28,7 +29,7 @@ public:
 
 protected:
     struct BlpCacheRecord {
-        BlpTexture* texture;
+        wtf::KeyContainer<std::weak_ptr<HBlpTexture::element_type>> texture;
 
         bool operator==(const BlpCacheRecord &other) const {
             return
@@ -38,7 +39,7 @@ protected:
     struct BlpCacheRecordHasher {
         std::size_t operator()(const BlpCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.texture);
+            return hash<decltype(k.texture)>{}(k.texture);
         };
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;

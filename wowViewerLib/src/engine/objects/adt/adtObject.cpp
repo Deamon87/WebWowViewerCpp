@@ -13,6 +13,7 @@
 #include "../../persistance/header/adtFileHeader.h"
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range2d.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
 
 PACK(
     struct AdtVertex {
@@ -636,17 +637,19 @@ void AdtObject::createMeshes() {
 
             HGShaderPermutation hgShaderPermutation = device->getShader("adtShader", "adtShader", nullptr);
             gMeshTemplate aTemplate(adtVertexBindings);
+            PipelineTemplate pipelineTemplate;
+            pipelineTemplate.element = DrawElementMode::TRIANGLES;
+            pipelineTemplate.triCCW = 1;
+            pipelineTemplate.depthWrite = 1;
+            pipelineTemplate.depthCulling = 1;
+            pipelineTemplate.backFaceCulling = 1;
+            pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
 
             aTemplate.meshType = MeshType::eAdtMesh;
-            aTemplate.triCCW = 1;
-            aTemplate.depthWrite = 1;
-            aTemplate.depthCulling = 1;
-            aTemplate.backFaceCulling = 1;
-            aTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
             aTemplate.start = m_adtFile->stripOffsets[i] * 2;
             aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
-            aTemplate.element = DrawElementMode::TRIANGLES;
 
 //            aTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
 //            aTemplate.ubo[1] = nullptr;

@@ -3,11 +3,13 @@
 //
 
 #include "GM2MeshVLK.h"
+#include "../GPipelineVLK.h"
+
 
 GM2MeshVLK::GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate,
                        const HMaterialVLK &material) : GMeshVLK(device, meshTemplate, material){
 
-    m_isTransparent = m_blendMode > EGxBlendEnum::GxBlend_AlphaKey || !m_depthWrite ;
+    m_isTransparent = material->getPipeline()->getIsTransparent();
 }
 
 void GM2MeshVLK::setLayer(int layer) {

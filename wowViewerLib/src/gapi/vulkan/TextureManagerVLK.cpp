@@ -14,8 +14,9 @@ void TextureManagerVLK::initialize() {
 }
 
 HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
-    BlpCacheRecord blpCacheRecord;
-    blpCacheRecord.texture = texture.get();
+    BlpCacheRecord blpCacheRecord = {
+        .texture = std::weak_ptr<HBlpTexture::element_type>(texture)
+    };
 //    blpCacheRecord.wrapX = xWrapTex;
 //    blpCacheRecord.wrapY = yWrapTex;
 

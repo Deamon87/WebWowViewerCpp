@@ -21,14 +21,13 @@
 #include "../../algorithms/mathHelper_culling_sse.h"
 #endif
 #include "../../algorithms/mathHelper_culling.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
 
 std::array<GBufferBinding,1> fullScreen = {{
     {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
 }};
 
-std::array<GBufferBinding, 1> skyConusBinding = {{
-    {+drawQuad::Attribute::position, 4, GBindingType::GFLOAT, false, 0, 0},
-}};
+
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
     {
@@ -260,27 +259,19 @@ std::array<uint16_t,300> skyConusIBO = {
     121 ,  97 ,  121  ,
 };
 
-HGVertexBufferBindings createSkyBindings(IDevice *device) {
-    //TODO:
-
-    auto skyIBO = device->createIndexBuffer();
+HGVertexBufferBindings createSkyBindings(const HMapSceneBufferCreate &sceneRenderer) {
+    auto skyIBO = sceneRenderer->createSkyIndexBuffer(skyConusIBO.size() * sizeof(uint16_t));
     skyIBO->uploadData(
         skyConusIBO.data(),
         skyConusIBO.size() * sizeof(uint16_t));
 
-    auto skyVBO = device->createVertexBuffer();
+    auto skyVBO = sceneRenderer->createSkyVertexBuffer(skyConusVBO.size() * sizeof(mathfu::vec4_packed));
     skyVBO->uploadData(
         skyConusVBO.data(),
         skyConusVBO.size() * sizeof(mathfu::vec4_packed)
     );
 
-    auto skyBindings = device->createVertexBufferBindings();
-    skyBindings->setIndexBuffer(skyIBO);
-
-    skyBindings->addVertexBufferBinding(skyVBO,
-                                        std::vector<GBufferBinding>(skyConusBinding.begin(), skyConusBinding.end()));
-    skyBindings->save();
-
+    auto skyBindings = sceneRenderer->createSkyVAO(skyVBO, skyIBO);
 
     return nullptr;
 }
@@ -333,16 +324,18 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     ///2. Create mesh
     auto shader = device->getShader("skyConus", "skyConus", nullptr);
     gMeshTemplate meshTemplate(skyBindings);
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
+    pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+
     meshTemplate.meshType = MeshType::eGeneralMesh;
-    meshTemplate.depthWrite = false;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
     meshTemplate.skybox = true;
-    meshTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
 
     meshTemplate.texture.resize(0);
 
-    meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
     if (conusFor0x4Sky) {
         meshTemplate.start = 198 * 2;
         meshTemplate.end = 102;
@@ -1399,7 +1392,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         */
     }
     if (skyMesh == nullptr) {
-        auto skyMeshBinding = createSkyBindings(m_api->hDevice.get());
+        auto skyMeshBinding = createSkyBindings(sceneRenderer);
         skyMesh = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), false);
         skyMesh0x4Sky = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), true);
     }

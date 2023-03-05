@@ -38,6 +38,15 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createWaterVAO(HGVertexBuffer v
     return waterVAO;
 };
 
+HGVertexBufferBindings MapSceneRenderForwardVLK::createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
+    auto skyVAO = m_device->createVertexBufferBindings();
+    skyVAO->addVertexBufferBinding(vertexBuffer, std::vector(staticWaterBindings.begin(), staticWaterBindings.end()));
+    skyVAO->setIndexBuffer(indexBuffer);
+
+    return skyVAO;
+}
+
 HGVertexBuffer MapSceneRenderForwardVLK::createM2VertexBuffer(int sizeInBytes) {
     return HGVertexBuffer();
 }
@@ -67,6 +76,13 @@ HGVertexBuffer MapSceneRenderForwardVLK::createWaterVertexBuffer(int sizeInBytes
 }
 
 HGIndexBuffer MapSceneRenderForwardVLK::createWaterIndexBuffer(int sizeInBytes) {
+    return HGIndexBuffer();
+}
+
+HGVertexBuffer MapSceneRenderForwardVLK::createSkyVertexBuffer(int sizeInBytes) {
+    return HGVertexBuffer();
+};
+HGIndexBuffer  MapSceneRenderForwardVLK::createSkyIndexBuffer(int sizeInBytes) {
     return HGIndexBuffer();
 }
 

@@ -14,6 +14,7 @@
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "generators/CSplineGenerator.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
 
 
 HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
@@ -302,21 +303,21 @@ void ParticleEmitter::createMesh() {
         //Create mesh
         gMeshTemplate meshTemplate(frame[i].m_bindings);
 
-
+        PipelineTemplate pipelineTemplate;
         uint8_t blendMode = m_data->old.blendingType;
-        meshTemplate.meshType = MeshType::eParticleMesh;
-        meshTemplate.depthWrite = blendMode <= 1;
-        meshTemplate.depthCulling = true;
-        meshTemplate.backFaceCulling = false;
-
-        meshTemplate.blendMode =
+        pipelineTemplate.element =  DrawElementMode::TRIANGLES;
+        pipelineTemplate.depthWrite = blendMode <= 1;
+        pipelineTemplate.depthCulling = true;
+        pipelineTemplate.backFaceCulling = false;
+        pipelineTemplate.blendMode =
             blendMode < PaticleBlendingModeToEGxBlendEnum1.size() ?
             PaticleBlendingModeToEGxBlendEnum1[blendMode] :
             EGxBlendEnum::GxBlend_Opaque;
 
+
+        meshTemplate.meshType = MeshType::eParticleMesh;
         meshTemplate.start = 0;
         meshTemplate.end = 0;
-        meshTemplate.element =  DrawElementMode::TRIANGLES;
 
         bool multitex = m_data->old.flags_per_number.hex_10000000 > 0;
         HBlpTexture tex0 = nullptr;
@@ -335,7 +336,7 @@ void ParticleEmitter::createMesh() {
         }
         meshTemplate.texture.resize((multitex) ? 3 : 1);
 
-        auto l_blendMode = meshTemplate.blendMode;
+        auto l_blendMode = pipelineTemplate.blendMode;
         std::shared_ptr<IBufferChunk<Particle::meshParticleWideBlockPS>> meshParticleWideBlockPS = nullptr;
         meshParticleWideBlockPS->setUpdateHandler([this, l_blendMode](auto &data, const HFrameDependantData &frameDepedantData) {
             Particle::meshParticleWideBlockPS &blockPS = data;

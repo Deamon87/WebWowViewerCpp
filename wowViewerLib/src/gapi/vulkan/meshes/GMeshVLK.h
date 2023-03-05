@@ -26,26 +26,19 @@ public:
     MeshType getMeshType()  override;
 
 public:
-    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass);
     auto material() const -> const HMaterialVLK& { return m_material; }
+    auto scissorOffset() const -> const  std::array<int, 2>& { return m_scissorOffset; }
+    auto scissorSize() const -> const std::array<uint32_t, 2>& { return m_scissorSize; }
+    auto scissorEnabled() const -> const bool {return m_isScissorsEnabled;};
 protected:
     MeshType m_meshType;
     bool m_isTransparent = false;
 
-    int8_t m_depthWrite;
-    int8_t m_depthCulling;
-    int8_t m_backFaceCulling;
-
-    int8_t m_triCCW = 1;
-    EGxBlendEnum m_blendMode;
-    int8_t m_isScissorsEnabled = -1;
+    bool m_isScissorsEnabled = false;
 
     std::array<int, 2> m_scissorOffset = {0,0};
-    std::array<int, 2> m_scissorSize = {0,0};
+    std::array<uint32_t, 2> m_scissorSize = {0,0};
 
-    uint8_t m_colorMask = 0;
-
-    DrawElementMode m_element;
 
 
 //Vulkan specific

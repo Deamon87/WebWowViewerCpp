@@ -90,10 +90,6 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                     // Apply scissor/clipping rectangle
                     // Create mesh and add it to collected meshes
                     gMeshTemplate meshTemplate(vertexBufferBindings);
-                    meshTemplate.element = DrawElementMode::TRIANGLES;
-                    meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-                    meshTemplate.backFaceCulling = false;
-                    meshTemplate.depthCulling = false;
                     meshTemplate.scissorEnabled = true;
                     //Vulkan has different clip offset compared to OGL
                     if (!m_device->getIsVulkanAxisSystem()) {

@@ -26,18 +26,22 @@ static const std::array<GBufferBinding, 9> staticWMOBindings = {{
     {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true,sizeof(WMOVertex), offsetof(WMOVertex, colorSecond)}
 }};
 
-static std::array<GBufferBinding, 2> staticWaterBindings = {{
+static const std::array<GBufferBinding, 2> staticWaterBindings = {{
     {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, pos_transp)},
     {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, sizeof(LiquidVertexFormat), offsetof(LiquidVertexFormat, uv)}
 }};
 
-static std::array<GBufferBinding, 6> staticM2Bindings = {{
+static const std::array<GBufferBinding, 6> staticM2Bindings = {{
     {+m2Shader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 48, 0 },
     {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true, 48, 12},  // bonesWeight
     {+m2Shader::Attribute::bones, 4, GBindingType::GUNSIGNED_BYTE, false, 48, 16},  // bones
     {+m2Shader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 48, 20}, // normal
     {+m2Shader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 48, 32}, // texcoord
     {+m2Shader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 48, 40} // texcoord
+}};
+
+static const std::array<GBufferBinding, 1> skyConusBinding = {{
+    {+drawQuad::Attribute::position, 4, GBindingType::GFLOAT, false, 0, 0},
 }};
 
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {

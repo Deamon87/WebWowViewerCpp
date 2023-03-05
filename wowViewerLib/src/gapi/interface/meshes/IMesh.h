@@ -65,7 +65,7 @@ public:
 
     bool scissorEnabled = false;
     std::array<int, 2> scissorOffset = {0,0};
-    std::array<int, 2> scissorSize = {0,0};
+    std::array<uint32_t, 2> scissorSize = {0,0};
 };
 
 

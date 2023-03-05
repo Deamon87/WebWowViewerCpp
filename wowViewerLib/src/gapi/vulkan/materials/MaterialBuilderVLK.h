@@ -40,6 +40,7 @@ private:
 
     HGShaderPermutation m_shader;
     HPipelineVLK m_pipeline;
+    PipelineTemplate m_pipelineTemplate;
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptorSets;
 };
 

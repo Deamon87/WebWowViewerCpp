@@ -39,11 +39,22 @@ public:
 
     VkPipelineLayout getLayout() { return m_pipelineLayout; };
     VkPipeline getPipeline() { return graphicsPipeline; };
+    bool getIsTransparent() const {
+        return m_isTransparent;
+    }
+
+    const std::shared_ptr<GRenderPassVLK> getRenderPass() {
+        return m_renderPass;
+    }
 private:
     GDeviceVLK &m_device;
 
     VkPipelineLayout m_pipelineLayout;
     VkPipeline graphicsPipeline;
+
+    std::shared_ptr<GRenderPassVLK> m_renderPass;
+
+    bool m_isTransparent = false;
 };
 
 

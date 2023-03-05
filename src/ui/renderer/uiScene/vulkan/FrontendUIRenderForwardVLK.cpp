@@ -129,8 +129,12 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             //5. Set view port
             swapChainCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
 
-            //6. Set view port
-            swapChainCmd.setScissors();
+            //6. Set scissors
+            if (meshVlk->scissorEnabled()) {
+                swapChainCmd.setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
+            } else {
+                swapChainCmd.setDefaultScissors();
+            }
 
             //7. Draw the mesh
             swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);

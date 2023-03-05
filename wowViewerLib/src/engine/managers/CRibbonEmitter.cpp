@@ -5,6 +5,7 @@
 #include "../shader/ShaderDefinitions.h"
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "../../gapi/UniformBufferStructures.h"
+#include "../../gapi/interface/materials/IMaterial.h"
 
 static std::array<GBufferBinding, 3> staticRibbonBindings = {{
     {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(CRibbonVertex), offsetof(CRibbonVertex, pos) }, // 0
@@ -114,31 +115,32 @@ void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &mat
 
         HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", "ribbonShader", nullptr);
 
+
+        //TODO:
+        PipelineTemplate pipelineTemplate;
+        pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+        pipelineTemplate.depthWrite =  !(material.flags & 0x10);;
+        pipelineTemplate.depthCulling = !(material.flags & 0x8);;
+        pipelineTemplate.backFaceCulling = !(material.flags & 0x4);;
+        pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
+
+
+        //Let's assume ribbons are always at least transparent
+        if (pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
+            pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+        }
+
         //Create mesh
         gMeshTemplate meshTemplate(frame[k].m_bindings);
 
-        meshTemplate.depthWrite = !(material.flags & 0x10);
-        meshTemplate.depthCulling = !(material.flags & 0x8);
-        meshTemplate.backFaceCulling = !(material.flags & 0x4);
-
-        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
-
-        //Let's assume ribbons are always at least transparent
-        if (meshTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
-            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-        }
-
-
         meshTemplate.start = 0;
         meshTemplate.end = 0;
-        meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
 
         meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
         meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
 
-
-        auto blendMode = meshTemplate.blendMode;
+        auto blendMode = pipelineTemplate.blendMode;
         auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
         std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> meshRibbonWideBlockPS = nullptr;
 
