@@ -161,7 +161,7 @@ void main() {
         finalOpacity = tex.a;
     } else if (uPixelShader == 7) { //MapObjTwoLayerEnvMetal
 
-        vec4 colorMix = mix(tex, tex2, vColor2.a);
+        vec4 colorMix = mix(tex, tex2, 1.0 - vColor2.a);
 
         matDiffuse = colorMix.rgb ;
         emissive = (colorMix.rgb * colorMix.a) * tex3.rgb * distFade;
