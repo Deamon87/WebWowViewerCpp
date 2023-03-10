@@ -76,7 +76,7 @@ void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
-static std::array<GBufferBinding, 3> DrawPortalBindings = {
+static std::array<GBufferBinding, 1> DrawPortalBindings = {
     {+drawPortalShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0 }, // 0
     //24
 };

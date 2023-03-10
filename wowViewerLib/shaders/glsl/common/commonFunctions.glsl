@@ -1,12 +1,10 @@
-vec2 posToTexCoord(vec3 cameraPoint, vec3 normal){
-//    vec3 normPos = -normalize(cameraPoint.xyz);
-//    vec3 normPos = cameraPoint.xyz;
-//    vec3 reflection = reflect(normPos, normal);
-//    return (normalize(vec3(reflection.r, reflection.g, reflection.b + 1.0)).rg * 0.5) + vec2(0.5);
-
-    vec3 normPos_495 = normalize(cameraPoint.xyz);
-    vec3 temp_500 = (normPos_495 - (normal * (2.0 * dot(normPos_495, normal))));
-    vec3 temp_657 = vec3(temp_500.x, temp_500.y, (temp_500.z + 1.0));
+vec2 posToTexCoord(const vec3 vertexPosInView, const vec3 normal){
+    //Blizz seems to have vertex in view space as vector from "vertex to eye", while in this implementation, it's
+    //vector from "eye to vertex". So the minus here is not needed
+    //vec3 viewVecNormalized = -normalize(cameraPoint.xyz);
+    vec3 viewVecNormalized = normalize(vertexPosInView.xyz);
+    vec3 reflection = reflect(viewVecNormalized, normalize(normal));
+    vec3 temp_657 = vec3(reflection.x, reflection.y, (reflection.z + 1.0));
 
     return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
 }
@@ -24,3 +22,29 @@ mat3 blizzTranspose(mat4 value) {
     );
 }
 
+
+#ifdef FRAGMENT_SHADER
+//From: https://pdfslide.tips/technology/shaderx5-26normalmappingwithoutprecomputedtangents-130318-1.html?page=14
+mat3 contangent_frame(vec3 N, vec3 p, vec2 uv)
+{
+    // Get edge vectors of the pixel triangle
+    vec3 dp1 = dFdx(p);
+    vec3 dp2 = dFdy(p);
+    vec2 duv1 = dFdx(uv);
+    vec2 duv2 = dFdy(uv);
+    // Solve the linear system
+    vec3 dp2perp = cross(dp2, N);
+    vec3 dp1perp = cross(N, dp1);
+    vec3 T = dp2perp * duv1.x + dp1perp * duv2.x;
+    vec3 B = dp2perp * duv1.y + dp1perp * duv2.y;
+    // Construct a scale-invariant frame
+    float invmax = inversesqrt(max(dot(T,T), dot(B,B)));
+    return mat3(T * invmax, B * invmax, N);
+}
+#else
+//Temp implementation.
+//TODO: add implementation for raytracing case
+mat3 contangent_frame(vec3 N, vec3 p, vec2 uv) {
+    return mat3(1.0);
+}
+#endif

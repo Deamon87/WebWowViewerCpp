@@ -1165,6 +1165,11 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string shaderName
         sharedPtr.reset(iPremutation);
         sharedPtr->compileShader("","");
         m_shaderPermutCache[hash] = sharedPtr;
+    } else if (shaderName == "drawPortalShader") {
+        IShaderPermutation *iPremutation = new GDrawBoundingBoxVLK(shaderName, this);
+        sharedPtr.reset(iPremutation);
+        sharedPtr->compileShader("","");
+        m_shaderPermutCache[hash] = sharedPtr;
     } else if (shaderName == "imguiShader") {
         IShaderPermutation *iPremutation = new GImguiShaderPermutation(shaderName, this);
         sharedPtr.reset(iPremutation);
