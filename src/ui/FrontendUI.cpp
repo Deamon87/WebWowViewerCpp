@@ -715,8 +715,8 @@ void FrontendUI::showQuickLinksDialog() {
     std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
-    if (ImGui::Button("nightborne model", ImVec2(-1, 0))) {
-        openM2SceneByfdid(1810676, replacementTextureFDids);
+    if (ImGui::Button("Primal enchant", ImVec2(-1, 0))) {
+        openM2SceneByfdid(4636728, replacementTextureFDids);
     }
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);

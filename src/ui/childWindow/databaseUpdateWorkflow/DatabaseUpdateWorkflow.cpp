@@ -11,6 +11,7 @@
 #include "../../../../3rdparty/DBImporter/fileReaders/DBD/DBDFileStorage.h"
 #include "../../../../3rdparty/DBImporter/exporters/sqlite/CSQLLiteExporter.h"
 #include "../../../../3rdparty/DBImporter/importers/WDC3/WDC3Importer.h"
+#include "../../../../3rdparty/DBImporter/fileReaders/WDC4/DB2Ver4.h"
 
 struct RequiredTableStruct {
     int fileDataId;
@@ -195,7 +196,13 @@ void DatabaseUpdateWorkflow::db2UpdateLogic() {
         std::shared_ptr<CSQLLiteExporter> csqlLiteExporter = std::make_shared<CSQLLiteExporter>("export.db3");
 
         addTableLambda = [fileDBDStorage, csqlLiteExporter](std::string tableName, std::shared_ptr<Db2File> db2File) -> bool {
-            std::shared_ptr<WDC3::DB2Base> db2Base = std::make_shared<WDC3::DB2Base>();
+            std::shared_ptr<WDC3::DB2Ver3> db2Base = nullptr;
+            if (*(uint32_t *)db2File->getContent()->data() == '4CDW') {
+                db2Base = std::make_shared<WDC4::DB2Ver4>();
+            } else {
+                db2Base = std::make_shared<WDC3::DB2Ver3>();
+            }
+
             db2Base->process(db2File->getContent(), "");
 
             DBDFile::BuildConfig *buildConfig = nullptr;

@@ -4,6 +4,8 @@
 precision highp float;
 precision highp int;
 
+#define FRAGMENT_SHADER
+
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 #include "../common/commonFunctions.glsl"
@@ -243,22 +245,14 @@ void main() {
         finalOpacity = tex.a;
     } if (uPixelShader == 19) { //MapObjParallax
         vec4 tex_6 = texture(uTexture6, vTexCoord2).rgba;
-        vec3 crossDy = cross(dFdy(vPosition.xyz), vNormal);
-        vec3 crossDx = cross(vNormal, dFdx(vPosition.xyz));
-        vec2 dTexCoord2Dx = dFdx(vTexCoord2);
-        vec2 dTexCoord2Dy = dFdy(vTexCoord2);
 
-        vec3 sum1 = dTexCoord2Dy.x * crossDx + dTexCoord2Dx.x * crossDy;
-        vec3 sum2 = dTexCoord2Dy.y * crossDx + dTexCoord2Dx.y * crossDy;
+        mat3 TBN = contangent_frame(vNormal.xyz, -vPosition.xyz, vTexCoord2);
 
-        float maxInverseDot = inversesqrt(max(dot(sum1,sum1), dot(sum2, sum2)));
-        float cosAlpha = dot(normalize(vPosition.xyz), vNormal);
+        float cosAlpha = dot(normalize(vPosition.xyz), vNormal.xyz);
+        vec2 dotResult = (TBN * (normalize(-vPosition.xyz) / cosAlpha)).xy;
 
-        float dot1 = dot(maxInverseDot * sum1, normalize(vPosition.xyz)) / cosAlpha;
-        float dot2 = dot(maxInverseDot * sum2, normalize(vPosition.xyz)) / cosAlpha;
-
-        vec4 tex_4 = texture(uTexture4, vTexCoord2 - (vec2(dot1, dot2)* tex_6.r * 0.25)).rgba;
-        vec4 tex_5 = texture(uTexture5, vTexCoord3 - (vec2(dot1, dot2)* tex_6.r * 0.25)).rgba;
+        vec4 tex_4 = texture(uTexture4, vTexCoord2 - (dotResult * tex_6.r * 0.25)).rgba;
+        vec4 tex_5 = texture(uTexture5, vTexCoord3 - (dotResult * tex_6.r * 0.25)).rgba;
         vec4 tex_3 = texture(uTexture3, vTexCoord2).rgba;
 
         vec3 mix1 = tex_5.rgb + tex_4.rgb * tex_4.a;
