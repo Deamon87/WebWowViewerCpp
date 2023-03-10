@@ -27,6 +27,7 @@ layout(std140, binding=4) uniform meshWideBlockPS {
 };
 
 layout(set=1,binding=5) uniform sampler2D uTexture;
+
 layout(set=1,binding=6) uniform sampler2D uTexture2;
 layout(set=1,binding=7) uniform sampler2D uTexture3;
 
