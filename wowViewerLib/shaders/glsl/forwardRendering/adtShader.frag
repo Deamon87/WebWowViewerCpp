@@ -29,16 +29,17 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, set=0, binding=3) uniform modelWideBlockPS {
+layout(std140, binding=1) uniform meshWideBlockVSPS {
+    vec4 uPos;
     ivec4 uUseHeightMixFormula;
-
-};
-
-layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     vec4 uHeightScale;
     vec4 uHeightOffset;
+};
+
+layout(std140, binding=2) uniform meshWideBlockPS {
     mat4 animationMat[4];
 };
+
 
 layout(location = 0) out vec4 outColor;
 

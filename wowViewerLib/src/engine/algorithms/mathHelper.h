@@ -97,13 +97,6 @@ public:
     };
 
     static inline const mathfu::mat4 &getAdtToWorldMat4() {
-
-//        mathfu::mat4 adtToWorldMat4 = mathfu::mat4::Identity();
-//        adtToWorldMat4 *= MathHelper::RotationX(toRadian(90));
-//        adtToWorldMat4 *= MathHelper::RotationY(toRadian(90));
-//        adtToWorldMat4 *= mathfu::mat4::FromTranslationVector(mathfu::vec3(32*TILESIZE, 0, 32*TILESIZE));
-//        adtToWorldMat4 *= mathfu::mat4::FromScaleVector(mathfu::vec3(-1, 1, -1));
-
         static const mathfu::mat4 adtToWorldMat4 = {
                 {0, -1, 0, 0},
                 {0, 0, 1, 0},

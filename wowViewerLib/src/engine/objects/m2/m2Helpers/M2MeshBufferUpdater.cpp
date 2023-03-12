@@ -8,7 +8,6 @@
 
 float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int batchIndex, M2SkinProfile * m2SkinProfile){
     auto textMaterial = m2SkinProfile->batches[batchIndex];
-    int renderFlagIndex = textMaterial->materialIndex;
 
     mathfu::vec4 meshColor = M2Object::getCombinedColor(m2SkinProfile, batchIndex, m2Object.subMeshColors);
     float transparency = M2Object::getTextureWeight(m2SkinProfile, m2Object.m_m2Geom->getM2Data(), batchIndex, 0, m2Object.transparencies);
@@ -66,8 +65,6 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
             uTexSampleAlpha[i] = M2Object::getTextureWeight(m2SkinProfile, m2Data, batchIndex, i, m2Object->transparencies);
         }
 
-
-
         float uAlphaTest;
         if (blendMode == EGxBlendEnum::GxBlend_AlphaKey) {
             uAlphaTest = 128.0f/255.0f * finalTransparency; //Maybe move this to shader logic?
@@ -83,16 +80,14 @@ void M2MeshBufferUpdater::assignUpdateEvents(HGM2Mesh &hmesh, M2Object *m2Object
         meshblockPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
         meshblockPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
         meshblockPS.BlendMode = static_cast<int>(blendMode);
-        meshblockPS.uFogColorAndAlphaTest = mathfu::vec4(mathfu::vec3(0,0,0), uAlphaTest);
-
         meshblockPS.uTexSampleAlpha = uTexSampleAlpha;
     });
 }
 
-void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, M2MaterialInst &materialData,
+void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, int batchIndex,
                                          const M2Data * m2File, const M2SkinProfile *m2SkinProfile, mathfu::mat4 &modelViewMat) {
 
-    M2Batch *textMaterial = m2SkinProfile->batches.getElement(materialData.batchIndex);
+    M2Batch *textMaterial = m2SkinProfile->batches.getElement(batchIndex);
     M2SkinSection *submesh = m2SkinProfile->skinSections.getElement(textMaterial->skinSectionIndex);
 
     mathfu::vec4 sortCenterPosition = mathfu::vec4(mathfu::vec3(submesh->sortCenterPosition), 1.0);

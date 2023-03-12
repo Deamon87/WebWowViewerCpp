@@ -8,6 +8,7 @@
 #include <memory>
 #include "../../gapi/interface/IDevice.h"
 #include "../../engine/persistance/header/commonFileStructs.h"
+#include "materials/IMaterialStructs.h"
 
 
 PACK(
@@ -55,6 +56,16 @@ public:
 
     virtual HGVertexBuffer createSkyVertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createSkyIndexBuffer(int sizeInBytes) = 0;
+
+
+    virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount) = 0;
+    virtual std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                          const PipelineTemplate &pipelineTemplate,
+                                                          const M2MaterialTemplate &m2MaterialTemplate) = 0;
+
+    virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
+
+    virtual HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) = 0;
 };
 typedef std::shared_ptr<IMapSceneBufferCreate> HMapSceneBufferCreate;
 

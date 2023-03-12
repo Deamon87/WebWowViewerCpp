@@ -18,8 +18,12 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
-layout(std140, binding=2) uniform meshWideBlockVS {
+
+layout(std140, binding=1) uniform meshWideBlockVSPS {
     vec4 uPos;
+    ivec4 uUseHeightMixFormula;
+    vec4 uHeightScale;
+    vec4 uHeightOffset;
 };
 
 mat3 blizzTranspose(mat4 value) {

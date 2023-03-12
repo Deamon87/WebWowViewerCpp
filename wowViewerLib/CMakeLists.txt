@@ -328,7 +328,10 @@ set(SOURCE_FILES
         src/renderer/buffers/IVertexBufferDynamicTemplate.h
         src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ITransparentMesh.h
         src/renderer/mapScene/IMapSceneBufferCreate.h
-        src/gapi/interface/materials/IMaterial.h src/renderer/mapScene/MapSceneParams.h src/include/custom_container_key.h)
+        src/gapi/interface/materials/IMaterial.h
+        src/renderer/mapScene/MapSceneParams.h
+        src/include/custom_container_key.h
+        src/renderer/mapScene/materials/IMaterialStructs.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -506,7 +509,15 @@ if (LINK_VULKAN)
             src/gapi/vulkan/synchronization/GFenceVLK.cpp
             src/gapi/vulkan/synchronization/GFenceVLK.h
             src/renderer/vulkan/IRenderFunctionVLK.h
-            src/gapi/vulkan/descriptorSets/DescriptorRecord.h src/gapi/vulkan/materials/MaterialBuilderVLK.cpp src/gapi/vulkan/materials/MaterialBuilderVLK.h src/gapi/vulkan/TextureManagerVLK.cpp src/gapi/vulkan/TextureManagerVLK.h src/gapi/vulkan/utils/MutexLockedVector.h src/gapi/vulkan/descriptorSets/DescriptorResourceCallBack.h src/gapi/vulkan/bindable/DSBindable.h)
+            src/gapi/vulkan/descriptorSets/DescriptorRecord.h
+            src/gapi/vulkan/materials/MaterialBuilderVLK.cpp
+            src/gapi/vulkan/materials/MaterialBuilderVLK.h
+            src/gapi/vulkan/TextureManagerVLK.cpp
+            src/gapi/vulkan/TextureManagerVLK.h
+            src/gapi/vulkan/utils/MutexLockedVector.h
+            src/gapi/vulkan/descriptorSets/DescriptorResourceCallBack.h
+            src/gapi/vulkan/bindable/DSBindable.h
+            src/renderer/mapScene/vulkan/materials/IMaterialInstance.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

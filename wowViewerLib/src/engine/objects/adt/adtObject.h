@@ -125,10 +125,6 @@ private:
 
     HGVertexBufferBindings lodVertexBindings;
 
-    std::shared_ptr<IBufferChunk<ADT::modelWideBlockPS>> adtWideBlockPS;
-
-
-
 private:
     std::vector<HGTexture> alphaTextures;
     HBlpTexture lodDiffuseTexture  = nullptr;

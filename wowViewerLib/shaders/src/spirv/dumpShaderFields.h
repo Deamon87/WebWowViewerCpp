@@ -95,9 +95,6 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
         if (parentTypeId == spirv_cross::TypeID(0)) {
             parentTypeId = memberType.self;
         }
-//
-//        auto submemberType = glsl.get_type(submemberTypeId);
-//        int structSize = submemberType.vecsize * submemberType.columns*(submemberType.width/8);
 
         if (arrayLiteral) {
             for (int j = 0; j < arraySize; j++) {
@@ -332,7 +329,6 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
             for (int j = 0; j < uboType.member_types.size(); j++) {
 
                 auto uboParentType = glsl.get_type(uboType.parent_type);
-//                glsl.get_member_name
                 auto memberSize = glsl.get_declared_struct_member_size(uboParentType, j);
                 auto offset = glsl.type_struct_member_offset(uboParentType, j);
                 auto memberName = glsl.get_member_name(uboType.parent_type, j);

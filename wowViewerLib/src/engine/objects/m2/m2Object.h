@@ -88,8 +88,7 @@ private:
     std::shared_ptr<CBoneMasterData> m_boneMasterData = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
-    std::shared_ptr<IBufferChunk<M2::modelWideBlockVS>> vertexModelWideUniformBuffer = nullptr;
-    std::shared_ptr<IBufferChunk<M2::modelWideBlockPS>> fragmentModelWideUniformBuffer = nullptr;
+    std::shared_ptr<IM2ModelData> m_modelWideDataBuff = nullptr;
 
     HGMesh boundingBoxMesh = nullptr;
     
@@ -133,12 +132,13 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    std::vector<HGM2Mesh> m_meshNaturalArray;
-    std::vector<HGM2Mesh> m_meshForcedTranspArray;
+    //Tuple of Mesh and batchIndex
+    std::vector<std::tuple<HGM2Mesh, int>> m_meshNaturalArray;
+    std::vector<std::tuple<HGM2Mesh, int>> m_meshForcedTranspArray;
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
-    std::vector<M2MaterialInst> m_materialArray;
+    std::vector<IM2Material> m_materialArray;
     AnimationManager *m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
@@ -163,6 +163,7 @@ private:
     bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
 
 
+    void createMaterials(const HMapSceneBufferCreate &sceneRenderer);
     void createMeshes();
     void createBoundingBoxMesh();
 
@@ -265,7 +266,7 @@ public:
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
-    void uploadGeneratorBuffers(mathfu::mat4 &viewMat);
+    void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();
 

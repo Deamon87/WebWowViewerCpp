@@ -659,8 +659,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
-      {0,4,288},
-      {0,3,16},
+      {0,2,256},
+      {0,1,64},
       {0,0,368},
     },
     {
@@ -1359,11 +1359,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     ShaderStage::Vertex,
     {
       {0,0,368},
-      {0,2,96},
+      {0,1,96},
     },
     {
       {
-        {2,2,1},
+        {1,1,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1749,8 +1749,8 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"skyConus",  {
     {
-      2, {
-        {"_0_2_skyColor[0]", true, 0, 1, 4, 6},
+      1, {
+        {"_0_1_skyColor[0]", true, 0, 1, 4, 6},
       }
     },
     {
@@ -1979,15 +1979,16 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      3, {
-        {"_0_3_uUseHeightMixFormula", false, 0, 1, 4, 0},
+      1, {
+        {"_0_1_uPos", true, 0, 1, 4, 0},
+        {"_0_1_uUseHeightMixFormula", false, 16, 1, 4, 0},
+        {"_0_1_uHeightScale", true, 32, 1, 4, 0},
+        {"_0_1_uHeightOffset", true, 48, 1, 4, 0},
       }
     },
     {
-      4, {
-        {"_0_4_uHeightScale", true, 0, 1, 4, 0},
-        {"_0_4_uHeightOffset", true, 16, 1, 4, 0},
-        {"_0_4_animationMat[0]", true, 32, 4, 4, 4},
+      2, {
+        {"_0_2_animationMat[0]", true, 0, 4, 4, 4},
       }
     },
   }},

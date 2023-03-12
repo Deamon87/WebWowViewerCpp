@@ -36,13 +36,7 @@ private:
         }
     }
 protected:
-    FrameCounter mapProduceUpdateCounter;
-    FrameCounter interiorViewCollectMeshCounter;
-    FrameCounter exteriorViewCollectMeshCounter;
-    FrameCounter m2CollectMeshCounter;
-    FrameCounter sortMeshCounter;
-    FrameCounter collectBuffersCounter;
-    FrameCounter sortBuffersCounter;
+
 
     FrameCounter mapUpdateCounter;
     FrameCounter m2UpdateframeCounter;
@@ -92,7 +86,10 @@ protected:
     HGVertexBufferBindings quadBindings;
     float m_skyConeAlpha = 0.0;
     HGMesh skyMesh = nullptr;
+    std::shared_ptr<ISkyMeshMaterial> skyMeshMat = nullptr;
+
     HGMesh skyMesh0x4Sky = nullptr;
+    std::shared_ptr<ISkyMeshMaterial> skyMeshMat0x4 = nullptr;
 
     //Map mode
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};

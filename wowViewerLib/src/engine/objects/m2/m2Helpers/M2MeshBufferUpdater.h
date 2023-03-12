@@ -26,7 +26,7 @@ public:
 
     static inline mathfu::vec3 &getFogColor(EGxBlendEnum blendMode, mathfu::vec3 &originalFogColor);
 
-    static void updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, M2MaterialInst &materialData,
+    static void updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, int batchIndex,
                                const M2Data * m2File, const M2SkinProfile *m2SkinProfile, mathfu::mat4 &modelViewMat);
 };
 

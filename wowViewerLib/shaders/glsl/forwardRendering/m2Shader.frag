@@ -50,9 +50,7 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
 //Individual meshes
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_blendMode;
-    vec4 uFogColorAndAlphaTest;
     vec4 uTexSampleAlpha;
-    vec4 uPcColor;
 };
 
 layout(set=1,binding=5) uniform sampler2D uTexture;

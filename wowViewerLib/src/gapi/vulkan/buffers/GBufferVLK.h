@@ -75,7 +75,9 @@ private:
     class GSubBufferVLK : public IBufferVLK {
         friend class GBufferVLK;
     public:
-        explicit GSubBufferVLK(HGBufferVLK parent, VmaVirtualAllocation alloc, VkDeviceSize offset, int size, uint8_t * dataPointer);
+        explicit GSubBufferVLK(HGBufferVLK parent, VmaVirtualAllocation alloc, VkDeviceSize offset,
+                               int size, int fakeSize,
+                               uint8_t * dataPointer);
         ~GSubBufferVLK() override;
         void uploadData(void *data, int length) override;
         void subUploadData(void *data, int offset, int length) override;
@@ -95,6 +97,7 @@ private:
         VmaVirtualAllocation m_alloc;
         VkDeviceSize m_offset;
         int m_size;
+        int m_fakeSize;
         uint8_t * m_dataPointer = nullptr;
         std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator m_iterator;
     };
@@ -104,13 +107,13 @@ private:
 
 //    uploadCache = {};
 public:
-    std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes);
+    std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes, int fakeSize = -1);
     void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &m_alloc);
 private:
     void createBuffer(BufferInternal &buffer);
     void destroyBuffer(BufferInternal &buffer);
 
-    VkResult allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, VmaVirtualAllocation &alloc, VkDeviceSize &offset);
+    VkResult allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, VmaVirtualAllocation &alloc, VkDeviceSize &offset);
     void deallocateSubBuffer(BufferInternal &buffer, VmaVirtualAllocation &alloc);
 };
 

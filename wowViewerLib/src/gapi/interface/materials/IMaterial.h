@@ -11,7 +11,7 @@
 struct PipelineTemplate {
     DrawElementMode element;
 
-    int8_t triCCW = 1; //counter-clockwise
+    bool triCCW = true; //counter-clockwise
     bool depthWrite = true;
     bool depthCulling = true;
     bool backFaceCulling = true;

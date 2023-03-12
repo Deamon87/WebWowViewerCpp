@@ -33,7 +33,7 @@ public:
     FrontendUIRenderer(HGDevice m_device) : m_device(m_device) {
 
     }
-    virtual ~FrontendUIRenderer() = default;
+    ~FrontendUIRenderer() override = default;
 
     std::shared_ptr<ImGuiFramePlan::EmptyPlan> processCulling(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams) override {
         return nullptr;

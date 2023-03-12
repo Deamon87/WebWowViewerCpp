@@ -8,10 +8,11 @@
 
 #include "../MapSceneRenderer.h"
 #include "../../../gapi/vulkan/GDeviceVulkan.h"
+#include "../materials/IMaterialStructs.h"
 
 class MapSceneRenderForwardVLK : public MapSceneRenderer {
 public:
-    explicit MapSceneRenderForwardVLK(HGDeviceVLK hDevice);
+    explicit MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config);
     ~MapSceneRenderForwardVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
@@ -25,7 +26,6 @@ public:
     HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
-
 
     HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
@@ -41,10 +41,33 @@ public:
 
     HGVertexBuffer createSkyVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createSkyIndexBuffer(int sizeInBytes) override;
+
+    std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount) override;
+    std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                  const PipelineTemplate &pipelineTemplate,
+                                                  const M2MaterialTemplate &m2MaterialTemplate) override;
+    std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) override;
+
+    HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
 private:
     HGDeviceVLK m_device;
 
 
+    HGBufferVLK vboM2Buffer;
+    HGBufferVLK vboAdtBuffer;
+    HGBufferVLK vboWMOBuffer;
+    HGBufferVLK vboWaterBuffer;
+    HGBufferVLK vboSkyBuffer;
+
+    HGBufferVLK iboBuffer;
+    HGBufferVLK uboBuffer;
+
+    std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> sceneWideChunk;
+
+    std::shared_ptr<GRenderPassVLK> m_renderPass;
+    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
+
+    HGVertexBufferBindings m_emptyM2VAO = nullptr;
 
 };
 

@@ -142,7 +142,7 @@ void GShaderPermutationVLK::createShaderLayout() {
         makeMin(setLayout.imageBindings.start, imageVertBinding.binding);
         makeMax(setLayout.imageBindings.end, imageVertBinding.binding);
     }
-    for (int i = 0; i < this->fragShaderMeta->uboBindings.size(); i++) {
+    for (int i = 0; i < this->fragShaderMeta->imageBindings.size(); i++) {
         auto &imageFragBinding = this->fragShaderMeta->imageBindings[i];
 
         auto &setLayout = combinedShaderLayout.setLayouts[imageFragBinding.set];

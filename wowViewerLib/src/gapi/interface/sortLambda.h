@@ -1,6 +1,8 @@
-[](const HGMesh &indexA, const HGMesh &indexB) {
-    IMesh * pA = indexA.get();
-    IMesh* pB = indexB.get();
+#include "IDevice.h"
+
+static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
+    ITransparentMesh * pA = dynamic_cast<ITransparentMesh *>(indexA.get());
+    ITransparentMesh * pB = dynamic_cast<ITransparentMesh *>(indexB.get());
 
 //    HGMesh pA = sortedArrayPtr[indexA];
 //    HGMesh pB = sortedArrayPtr[indexB];
@@ -26,20 +28,24 @@
     if (pA->getIsTransparent() && pB->getIsTransparent()) {
         if (((pA->getMeshType() == MeshType::eM2Mesh || pA->getMeshType() == MeshType::eParticleMesh) &&
             (pB->getMeshType() == MeshType::eM2Mesh || pB->getMeshType() == MeshType::eParticleMesh))) {
-            if (pA->priorityPlane()!= pB->priorityPlane()) {
-                return pB->priorityPlane() > pA->priorityPlane();
+            IM2Mesh *pA1 = dynamic_cast<IM2Mesh *>(pA);
+            IM2Mesh *pB1 = dynamic_cast<IM2Mesh *>(pB);
+
+            if (pA1->priorityPlane()!= pB1->priorityPlane()) {
+                return pB1->priorityPlane() > pA1->priorityPlane();
             }
 
-            if (pA->getSortDistance() < pB->getSortDistance()) {
+            if (pA1->getSortDistance() < pB1->getSortDistance()) {
                 return true;
             }
-            if (pA->getSortDistance() > pB->getSortDistance()) {
+            if (pA1->getSortDistance() > pB1->getSortDistance()) {
                 return false;
             }
 
-            if (pA->getM2Object() == pB->getM2Object()) {
-                if (pB->layer() != pA->layer()) {
-                    return pB->layer() < pA->layer();
+//            if (pA1->getM2Object() == pB1->getM2Object()) {
+            if (pA1->bindings() == pB1->bindings()) {
+                if (pB1->layer() != pA1->layer()) {
+                    return pB1->layer() < pA1->layer();
                 }
             }
         } else {
@@ -61,21 +67,6 @@
 
     if (pA->bindings() != pB->bindings()) {
         return pA->bindings() > pB->bindings();
-    }
-
-    if (pA->getGxBlendMode() != pB->getGxBlendMode()) {
-        return pA->getGxBlendMode() < pB->getGxBlendMode();
-    }
-
-    int minTextureCount = pA->textureCount() < pB->textureCount() ? pA->textureCount() : pB->textureCount();
-    for (int i = 0; i < minTextureCount; i++) {
-        if (pA->texture()[i] != pB->texture()[i]) {
-            return pA->texture()[i] < pB->texture()[i];
-        }
-    }
-
-    if (pA->textureCount() != pB->textureCount()) {
-        return pA->textureCount() < pB->textureCount();
     }
 
     if (pA->start() != pB->start()) {

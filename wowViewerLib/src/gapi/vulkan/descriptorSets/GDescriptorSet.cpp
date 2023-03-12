@@ -197,7 +197,7 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     }
 
     auto noSetBitSet =
-        m_set.getDescSetLayout()->getRequiredBindPoints() & ~m_updateBindPoints;
+        m_set.getDescSetLayout()->getRequiredBindPoints() & (~m_updateBindPoints);
 
     if (!noSetBitSet.none()) {
         std::string notSetBits;

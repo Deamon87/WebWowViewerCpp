@@ -13,6 +13,7 @@
 #include "MapScenePlan.h"
 
 #include "../../engine/shader/ShaderDefinitions.h"
+#include "../../engine/algorithms/FrameCounter.h"
 
 static const std::array<GBufferBinding, 9> staticWMOBindings = {{
     {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false,          sizeof(WMOVertex), offsetof(WMOVertex, pos) },
@@ -46,10 +47,23 @@ static const std::array<GBufferBinding, 1> skyConusBinding = {{
 
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:
-    MapSceneRenderer() = default;
+    MapSceneRenderer(Config *config) : m_config(config) {};
     ~MapSceneRenderer() override = default;
 
-    std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;;
+    std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
+
+    void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan);
+
+private:
+    FrameCounter mapProduceUpdateCounter;
+    FrameCounter interiorViewCollectMeshCounter;
+    FrameCounter exteriorViewCollectMeshCounter;
+    FrameCounter m2CollectMeshCounter;
+    FrameCounter sortMeshCounter;
+    FrameCounter collectBuffersCounter;
+    FrameCounter sortBuffersCounter;
+
+    Config *m_config;
 };
 
 //typedef FrameInputParams<MapRenderPlan, void> MapSceneRendererInputParams;

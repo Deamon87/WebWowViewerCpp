@@ -9,6 +9,7 @@
 #include <string>
 #include "../../interface/IDevice.h"
 #include "ISimpleMaterialVLK.h"
+#include "../../../renderer/mapScene/vulkan/materials/IMaterialInstance.h"
 #include "../descriptorSets/GDescriptorSet.h"
 
 class MaterialBuilderVLK {
@@ -27,6 +28,15 @@ public:
                                        const std::shared_ptr<GRenderPassVLK> &renderPass,
                                        const PipelineTemplate &pipelineTemplate);
     std::shared_ptr<ISimpleMaterialVLK> toMaterial();
+
+    template<typename T>
+    std::shared_ptr<T> toMaterial(const std::function<void(T *)> &initializer) {
+        return std::make_shared<IMaterialInstance<T>>(initializer,
+                                   m_shader,
+                                   m_pipelineTemplate,
+                                   m_pipeline,
+                                   descriptorSets);
+    }
 
     ~MaterialBuilderVLK() = default;
 private:

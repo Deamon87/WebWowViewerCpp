@@ -295,41 +295,20 @@ Map::Map(HApiContainer api, int mapId, const std::string &mapName) {
     m_sceneWideBlockVSPSChunk = nullptr;
 }
 
-HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config *config, bool conusFor0x4Sky) {
-    std::shared_ptr<IBufferChunk<DnSky::meshWideBlockVS>> skyVs = nullptr;
-    skyVs->setUpdateHandler([config, conusFor0x4Sky](auto &data, const HFrameDependantData &frameDepedantData) -> void {
-        auto &meshblockVS = data;
+std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSceneBufferCreate &sceneRenderer,
+                                                              const HGVertexBufferBindings &skyBindings, bool conusFor0x4Sky) {
 
-        if (!conusFor0x4Sky) {
-            meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
-            meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
-            meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
-            meshblockVS.skyColor[3] = frameDepedantData->SkyBand2Color;
-            meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
-            meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
-        } else {
-            auto EndFogColorV4_1 = mathfu::vec4(frameDepedantData->EndFogColor, 0.0);
-            auto EndFogColorV4_2 = mathfu::vec4(frameDepedantData->EndFogColor, 1.0);
-            meshblockVS.skyColor[0] = EndFogColorV4_1;
-            meshblockVS.skyColor[1] = EndFogColorV4_1;
-            meshblockVS.skyColor[2] = EndFogColorV4_1;
-            meshblockVS.skyColor[3] = EndFogColorV4_1;
-            meshblockVS.skyColor[4] = EndFogColorV4_1;
-            meshblockVS.skyColor[5] = EndFogColorV4_2;
-        }
-    });
-
-    //TODO: Pass m_skyConeAlpha to fragment shader
-
-    ///2. Create mesh
-    auto shader = device->getShader("skyConus", "skyConus", nullptr);
-    gMeshTemplate meshTemplate(skyBindings);
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.depthWrite = false;
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = false;
     pipelineTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
     pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+
+    auto material = sceneRenderer->createSkyMeshMaterial(pipelineTemplate);
+    //TODO: Pass m_skyConeAlpha to fragment shader
+
+    gMeshTemplate meshTemplate(skyBindings);
 
     meshTemplate.meshType = MeshType::eGeneralMesh;
     meshTemplate.skybox = true;
@@ -345,8 +324,8 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     }
 
     //Make mesh
-    HGMesh hmesh =  device->createMesh(meshTemplate);
-    return hmesh;
+    HGMesh hmesh = sceneRenderer->createMesh(meshTemplate, material);
+    return {hmesh, material};
 }
 
 void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
@@ -1393,8 +1372,8 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     }
     if (skyMesh == nullptr) {
         auto skyMeshBinding = createSkyBindings(sceneRenderer);
-        skyMesh = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), false);
-        skyMesh0x4Sky = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), true);
+        std::tie(skyMesh, skyMeshMat) = createSkyMesh(sceneRenderer, skyMeshBinding, false);
+        std::tie(skyMesh0x4Sky, skyMeshMat0x4) = createSkyMesh(sceneRenderer, skyMeshBinding, true);
     }
 };
 
@@ -1476,6 +1455,29 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 }
 
 void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
+    {
+        auto &meshblockVS = skyMeshMat0x4->m_skyColors->getObject();
+        auto EndFogColorV4_1 = mathfu::vec4(renderPlan->frameDependentData->EndFogColor, 0.0);
+        auto EndFogColorV4_2 = mathfu::vec4(renderPlan->frameDependentData->EndFogColor, 1.0);
+        meshblockVS.skyColor[0] = EndFogColorV4_1;
+        meshblockVS.skyColor[1] = EndFogColorV4_1;
+        meshblockVS.skyColor[2] = EndFogColorV4_1;
+        meshblockVS.skyColor[3] = EndFogColorV4_1;
+        meshblockVS.skyColor[4] = EndFogColorV4_1;
+        meshblockVS.skyColor[5] = EndFogColorV4_2;
+        skyMeshMat0x4->m_skyColors->save();
+    }
+    {
+        auto &meshblockVS = skyMeshMat->m_skyColors->getObject();
+        meshblockVS.skyColor[0] = renderPlan->frameDependentData->SkyTopColor;
+        meshblockVS.skyColor[1] = renderPlan->frameDependentData->SkyMiddleColor;
+        meshblockVS.skyColor[2] = renderPlan->frameDependentData->SkyBand1Color;
+        meshblockVS.skyColor[3] = renderPlan->frameDependentData->SkyBand2Color;
+        meshblockVS.skyColor[4] = renderPlan->frameDependentData->SkySmogColor;
+        meshblockVS.skyColor[5] = renderPlan->frameDependentData->SkyFogColor;
+        skyMeshMat->m_skyColors->save();
+    }
+
     for (auto &m2Object : renderPlan->m2Array.getDrawn()) {
          if (m2Object != nullptr) {
 //            m2Object->uploadGeneratorBuffers(renderPlan->matricesForCulling->lookAtMat);

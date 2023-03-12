@@ -54,8 +54,10 @@ struct LocalLight
 };
 
 namespace M2 {
-    struct modelWideBlockVS {
+    struct PlacementMatrix {
         mathfu::mat4 uPlacementMat;
+    };
+    struct Bones {
         mathfu::mat4 uBoneMatrixes[MAX_MATRIX_NUM];
     };
 
@@ -86,10 +88,7 @@ namespace M2 {
         int IsAffectedByLight;
         int BlendMode;
 
-        mathfu::vec4_packed uFogColorAndAlphaTest;
         mathfu::vec4_packed uTexSampleAlpha;
-
-        mathfu::vec4_packed uPcColor;
     };
 
     namespace WaterfallData {
@@ -166,17 +165,14 @@ namespace WMO {
     };
 }
 namespace ADT {
-    struct meshWideBlockVS {
+    struct meshWideBlockVSPS {
         mathfu::vec4 uPos;
-    };
-
-    struct modelWideBlockPS {
         int useHeightMixFormula[4];
-    };
-
-    struct meshWideBlockPS {
         float uHeightScale[4];
         float uHeightOffset[4];
+    };
+    //This one needs to be updated every frame. The one above - doesn't
+    struct meshWideBlockPS {
         mathfu::mat4 animationMat[4];
     };
 }

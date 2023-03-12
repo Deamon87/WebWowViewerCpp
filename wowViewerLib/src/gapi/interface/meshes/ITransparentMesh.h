@@ -7,7 +7,7 @@
 
 #include "IMesh.h"
 
-class ITransparentMesh : public IMesh {
+class ITransparentMesh : virtual public IMesh {
     friend class IDevice;
 protected:
     float m_sortDistance = 0;

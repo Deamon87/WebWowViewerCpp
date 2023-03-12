@@ -241,6 +241,7 @@ void calcM2FragMaterial(const in int uPixelShader,
             matDiffuse = meshColor * tex.rgb * tex2.rgb;
             discardAlpha = tex.a * tex2.a;
             canDiscard = true;
+            break;
         }
     }
 
@@ -279,66 +280,106 @@ void calcM2VertexMat(in int vertexShader,
     float edgeScanVal = edgeScan(vertexPosInView, normal);
 
     vMeshColorAlpha = color_Transparency;
-    if ( vertexShader == 0 ) {//Diffuse_T1
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 1 ) {//Diffuse_Env
-        vTexCoord = envCoord;
-    } else if ( vertexShader == 2 ) {//Diffuse_T1_T2
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 3 ) {//Diffuse_T1_Env
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = envCoord;
-    } else if ( vertexShader == 4 ) {//Diffuse_Env_T1
-        vTexCoord = envCoord;
-        vTexCoord2 = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 5 ) {//Diffuse_Env_Env
-        vTexCoord = envCoord;
-        vTexCoord2 = envCoord;
-    } else if ( vertexShader == 6 ) {//Diffuse_T1_Env_T1
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000) ).xy;
-        vTexCoord2 = envCoord;
-        vTexCoord3 = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 7 ) {//Diffuse_T1_T1
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 8 ) {//Diffuse_T1_T1_T1
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord3 = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 9 ) {//Diffuse_EdgeFade_T1
-        vMeshColorAlpha.a *= edgeScanVal;
-        vTexCoord = ((textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy).xy;
-    } else if ( vertexShader == 10 ) {//Diffuse_T2
-        vTexCoord = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 11 ) {//Diffuse_T1_Env_T2
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = envCoord;
-        vTexCoord3 = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 12 ) {//Diffuse_EdgeFade_T1_T2
-        vMeshColorAlpha.a *= edgeScanVal;
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 13 ) {//Diffuse_EdgeFade_Env
-        vMeshColorAlpha.a *= edgeScanVal;
-        vTexCoord = envCoord;
-    } else if ( vertexShader == 14 ) {//Diffuse_T1_T2_T1
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord3 = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 15 ) {//Diffuse_T1_T2_T3
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-        vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord3 = vTexCoord3;
-    } else if ( vertexShader == 16 ) {//Color_T1_T2_T3
-        vec4 in_col0 = vec4(1.0, 1.0, 1.0, 1.0);
-        vMeshColorAlpha = vec4((in_col0.rgb * 0.500000).r, (in_col0.rgb * 0.500000).g, (in_col0.rgb * 0.500000).b, in_col0.a);
-        vTexCoord = (textMat[1] * vec4(texCoord2, 0.000000, 1.000000)).xy;
-        vTexCoord2 = vec2(0.000000, 0.000000);
-        vTexCoord3 = vTexCoord3;
-    } else if ( vertexShader == 17 ) {//BW_Diffuse_T1
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
-    } else if ( vertexShader == 18 ) {//BW_Diffuse_T1_T2
-        vTexCoord = (textMat[0] * vec4(texCoord, 0.000000, 1.000000)).xy;
+
+    switch(vertexShader) {
+        case (0): { //Diffuse_T1
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (1): { //Diffuse_Env
+            vTexCoord = envCoord;
+            break;
+        }
+        case (2): { //Diffuse_T1_T2
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            break;
+        }
+        case (3): { //Diffuse_T1_Env
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = envCoord;
+            break;
+        }
+        case (4): { //Diffuse_Env_T1
+            vTexCoord = envCoord;
+            vTexCoord2 = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (5): { //Diffuse_Env_Env
+            vTexCoord = envCoord;
+            vTexCoord2 = envCoord;
+            break;
+        }
+        case (6): { //Diffuse_T1_Env_T1
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0) ).xy;
+            vTexCoord2 = envCoord;
+            vTexCoord3 = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (7): { //Diffuse_T1_T1
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (8): { //Diffuse_T1_T1_T1
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord3 = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (9): { //Diffuse_EdgeFade_T1
+            vMeshColorAlpha.a *= edgeScanVal;
+            vTexCoord = ((textMat[0] * vec4(texCoord, 0.0, 1.0)).xy).xy;
+            break;
+        }
+        case (10): { //Diffuse_T2
+            vTexCoord = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            break;
+        }
+        case (11): { //Diffuse_T1_Env_T2
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = envCoord;
+            vTexCoord3 = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            break;
+        }
+        case (12): { //Diffuse_EdgeFade_T1_T2
+            vMeshColorAlpha.a *= edgeScanVal;
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            break;
+        }
+        case (13): { //Diffuse_EdgeFade_Env
+            vMeshColorAlpha.a *= edgeScanVal;
+            vTexCoord = envCoord;
+            break;
+        }
+        case (14): { //Diffuse_T1_T2_T1
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            vTexCoord3 = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (15): { //Diffuse_T1_T2_T3
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            vTexCoord3 = vTexCoord3;
+            break;
+        }
+        case (16): { //Color_T1_T2_T3
+            vec4 in_col0 = vec4(1.0, 1.0, 1.0, 1.0);
+            vMeshColorAlpha = vec4((in_col0.rgb * 0.5).r, (in_col0.rgb * 0.5).g, (in_col0.rgb * 0.5).b, in_col0.a);
+            vTexCoord = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
+            vTexCoord2 = vec2(0.0, 0.0);
+            vTexCoord3 = vTexCoord3;
+            break;
+        }
+        case (17): { //BW_Diffuse_T1
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
+        case (18): { //BW_Diffuse_T1_T2
+            vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
+            break;
+        }
     }
 }

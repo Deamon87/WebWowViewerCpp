@@ -24,7 +24,7 @@ PACK(
     }
 );
 
-static std::array<GBufferBinding,5> adtVertexBufferBinding = {{
+static std::array<GBufferBinding,4> adtVertexBufferBinding = {{
     {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
     {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
     {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
@@ -618,7 +618,8 @@ void AdtObject::createMeshes() {
     auto adtFileTex = m_adtFileTex;
     auto adtFile = m_adtFile;
 
-//    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
+    /*
+    adtWideBlockPS = m_api->hDevice->createUniformBufferChunk(sizeof(ADT::modelWideBlockPS));
     adtWideBlockPS = nullptr;
     int useHeightMixFormula = m_wdtFile->mphd->flags.adt_has_height_texturing > 0;
 //    int useHeightMixFormula = 1;
@@ -639,10 +640,10 @@ void AdtObject::createMeshes() {
             gMeshTemplate aTemplate(adtVertexBindings);
             PipelineTemplate pipelineTemplate;
             pipelineTemplate.element = DrawElementMode::TRIANGLES;
-            pipelineTemplate.triCCW = 1;
-            pipelineTemplate.depthWrite = 1;
-            pipelineTemplate.depthCulling = 1;
-            pipelineTemplate.backFaceCulling = 1;
+            pipelineTemplate.triCCW = true;
+            pipelineTemplate.depthWrite = true;
+            pipelineTemplate.depthCulling = true;
+            pipelineTemplate.backFaceCulling = true;
             pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
 
@@ -734,7 +735,7 @@ void AdtObject::createMeshes() {
             HGMesh hgMesh = device->createMesh(aTemplate);
             adtMeshes[i] = hgMesh;
         }
-    }
+    }*/
 }
 
 void AdtObject::loadAlphaTextures() {
@@ -862,10 +863,9 @@ void AdtObject::update(animTime_t deltaTime ) {
     if (!m_loaded) {
         return;
     }
-    if (adtWideBlockPS == nullptr) return;
+//    if (adtWideBlockPS == nullptr) return;
 
     for (int i = 0; i < 256; i++) {
-
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             texturesPerMCNK[i].animTexture[j] = mathfu::mat4::Identity();
             if (m_adtFileTex->mtxp_len > 0) {

@@ -14,7 +14,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
-layout(std140, set=0, binding=2) uniform meshWideBlockVS {
+layout(std140, set=0, binding=1) uniform meshWideBlockVS {
     vec4 skyColor[6];
 };
 

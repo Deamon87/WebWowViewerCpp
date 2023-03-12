@@ -16,6 +16,8 @@ using IChunkHandlerType = std::function<void(T &data, const HFrameDependantData 
 template<typename T>
 class IBufferChunk {
 public:
+    using structureType = T;
+
     virtual ~IBufferChunk() = default;
     virtual T &getObject() = 0;
     virtual void save() = 0;

@@ -29,7 +29,7 @@ if(NOT ANDROID)
             src/spirv/spirv_refl_main.cpp
             src/spirv/webGLSLCompiler.cpp
             src/spirv/webGLSLCompiler.h
-            src/spirv/dumpShaderFields.h src/spirv/dumpShaderMetaData.h src/spirv/dumpGLSLShader.h)
+            src/spirv/dumpShaderFields.h src/spirv/dumpGLSLShader.h)
 
     add_executable(spirv_reflection ${SPIRV_REF_SOURCES})
     set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")

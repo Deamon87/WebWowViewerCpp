@@ -1661,12 +1661,12 @@ bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
 }
 
 void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
     m_api->camera->setCameraPos(0, 0, 0);
 }
 void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<Map>(m_api, mapId, mapName);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
@@ -1674,7 +1674,7 @@ void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x,
     m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
@@ -1682,7 +1682,7 @@ void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y,
     m_api->camera->setMovementSpeed(movementSpeed);
 }
 void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
     m_currentScene = m2Scene;
     m2Scene->setReplaceTextureArray(replacementTextureIds);
@@ -1696,7 +1696,7 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
 }
 
 void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice);
+    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
 
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
     m_currentScene = m2Scene;

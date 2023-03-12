@@ -11,7 +11,7 @@
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../materials/ISimpleMaterialVLK.h"
 
-class GMeshVLK : public IMesh {
+class GMeshVLK : virtual public IMesh {
     friend class GDeviceVLK;
 public:
     explicit GMeshVLK(IDevice &device,

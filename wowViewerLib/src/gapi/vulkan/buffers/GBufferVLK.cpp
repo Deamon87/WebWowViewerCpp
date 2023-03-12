@@ -65,11 +65,23 @@ void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
     );
 }
 
-VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, VmaVirtualAllocation &alloc, VkDeviceSize &offset) {
+VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, VmaVirtualAllocation &alloc, VkDeviceSize &offset) {
+    bool minAddressStrategy = fakeSize != -1 && fakeSize > sizeInBytes;
+
     VmaVirtualAllocationCreateInfo allocCreateInfo = {};
     allocCreateInfo.size = sizeInBytes; //Size in bytes
+    if (minAddressStrategy) {
+        allocCreateInfo.flags = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT;
+    }
 
-    return vmaVirtualAllocate(buffer.virtualBlock, &allocCreateInfo, &alloc, &offset);
+    auto result = vmaVirtualAllocate(buffer.virtualBlock, &allocCreateInfo, &alloc, &offset);
+    if (minAddressStrategy) {
+        if (result == VK_SUCCESS && (offset+fakeSize) > m_bufferSize) {
+            vmaVirtualFree(buffer.virtualBlock, alloc);
+            result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+        }
+    }
+    return result;
 }
 
 void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, VmaVirtualAllocation &alloc) {
@@ -105,7 +117,7 @@ void GBufferVLK::resize(int newLength) {
         if (subBuffer != nullptr) {
             VmaVirtualAllocation alloc;
             VkDeviceSize offset;
-            VkResult res = allocateSubBuffer(newBuffer, subBuffer->m_size, alloc, offset);
+            VkResult res = allocateSubBuffer(newBuffer, subBuffer->m_size, subBuffer->m_fakeSize, alloc, offset);
 
             if (res != VK_SUCCESS)  {
                 std::cerr << "Could not allocate sub-buffer during resize " << std::endl;
@@ -128,17 +140,20 @@ void GBufferVLK::resize(int newLength) {
     currentBuffer = newBuffer;
 }
 
-std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBytes) {
+//fakeSize is used to make sure the subBuffer has enough bytes left till end of main buffer.
+//used for allocating data for UBO, when you don't want to suballocate whole size.
+//For example if only one bone matrix is used out 220, sizeInBytes will be size of one matrix, while fakeSize is 220 matrices
+std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBytes, int fakeSize) {
     VmaVirtualAllocation alloc;
     VkDeviceSize offset;
-    VkResult res = allocateSubBuffer(currentBuffer, sizeInBytes, alloc, offset);
+    VkResult res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc, offset);
 
     if(res == VK_SUCCESS)
     {
         auto subBuffer = std::make_shared<GSubBufferVLK>(
                                                           shared_from_this(),
                                                          alloc,
-                                                         offset, sizeInBytes,
+                                                         offset, sizeInBytes, fakeSize,
                                                          (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+offset);
         currentSubBuffers.push_back(subBuffer);
         subBuffer->m_iterator = std::prev(currentSubBuffers.end());
@@ -176,11 +191,13 @@ void GBufferVLK::save(int length) {
 
 GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
                                          VmaVirtualAllocation alloc,
-                                         VkDeviceSize offset, int size,
+                                         VkDeviceSize offset,
+                                         int size, int fakeSize,
                                          uint8_t *dataPointer) : m_parentBuffer(parent) {
     m_alloc = alloc;
     m_offset = offset;
     m_size = size;
+    m_fakeSize = fakeSize;
     m_dataPointer = dataPointer;
 }
 
