@@ -6,10 +6,8 @@
 #include "../GPipelineVLK.h"
 
 
-GM2MeshVLK::GM2MeshVLK(IDevice &device, const gMeshTemplate &meshTemplate,
-                       const HMaterialVLK &material) : GMeshVLK(device, meshTemplate, material){
-
-    m_isTransparent = material->getPipeline()->getIsTransparent();
+GM2MeshVLK::GM2MeshVLK(const gMeshTemplate &meshTemplate,
+                       const HMaterialVLK &material) : GMeshVLK(meshTemplate, material){
 }
 
 void GM2MeshVLK::setLayer(int layer) {

@@ -7,11 +7,11 @@
 #include "GMeshVLK.h"
 #include "../textures/GTextureVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"
+#include "../GPipelineVLK.h"
 
-GMeshVLK::GMeshVLK(IDevice &device,
-            const gMeshTemplate &meshTemplate,
-            const HMaterialVLK &material
-) : m_device(dynamic_cast<GDeviceVLK &>(device)), m_meshType(meshTemplate.meshType), m_material(material) {
+GMeshVLK::GMeshVLK(const gMeshTemplate &meshTemplate,
+                   const HMaterialVLK &material
+) : m_meshType(meshTemplate.meshType), m_material(material) {
 
     m_bindings = meshTemplate.bindings;
 
@@ -20,6 +20,8 @@ GMeshVLK::GMeshVLK(IDevice &device,
         m_scissorSize = meshTemplate.scissorSize;
         m_scissorOffset = meshTemplate.scissorOffset;
     }
+
+    m_isTransparent = material->getPipeline()->getIsTransparent();
 
     m_start = meshTemplate.start;
     m_end = meshTemplate.end;

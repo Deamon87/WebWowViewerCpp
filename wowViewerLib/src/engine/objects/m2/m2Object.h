@@ -132,13 +132,14 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    //Tuple of Mesh and batchIndex
-    std::vector<std::tuple<HGM2Mesh, int>> m_meshNaturalArray;
+    //Material
+    std::vector<std::shared_ptr<IM2Material>> m_materialArray;
+    //Tuple of Mesh and BatchIndex
     std::vector<std::tuple<HGM2Mesh, int>> m_meshForcedTranspArray;
+    std::vector<std::tuple<HGM2Mesh, int>> m_meshArray;
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
-    std::vector<IM2Material> m_materialArray;
     AnimationManager *m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
@@ -163,8 +164,7 @@ private:
     bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
 
 
-    void createMaterials(const HMapSceneBufferCreate &sceneRenderer);
-    void createMeshes();
+    void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
     void createBoundingBoxMesh();
 
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
@@ -197,8 +197,8 @@ public:
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<HBlpTexture> replaceTextures);
 
-    void setReplaceTextures(std::vector<HBlpTexture> &replaceTextures);
-    void setMeshIds(std::vector<uint8_t> &meshIds);
+    void setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, std::vector<HBlpTexture> &replaceTextures);
+    void setMeshIds(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds);
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
     void resetReplaceParticleColor();
     bool getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
@@ -240,7 +240,7 @@ public:
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
-    bool prepearMaterial(M2MaterialInst &materialData, int materialIndex);
+    bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
@@ -297,8 +297,10 @@ public:
         return m_m2Geom->m_m2Data->cameras.size;
     }
 
-    HGM2Mesh createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
-                              const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend);
+    HGM2Mesh createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
+                              const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings,
+                              const M2Batch *m2Batch, const M2SkinSection *skinSection,
+                              EGxBlendEnum &blendMode, bool overrideBlend);
 
     HGM2Mesh createWaterfallMesh();
     void updateDynamicMeshes();

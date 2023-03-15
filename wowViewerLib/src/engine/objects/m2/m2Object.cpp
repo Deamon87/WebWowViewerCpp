@@ -823,15 +823,15 @@ void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
     if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
-        for (int i = 0; i < this->m_meshNaturalArray.size(); i++) {
+        for (int i = 0; i < this->m_meshArray.size(); i++) {
             //Update info for sorting
-            M2MeshBufferUpdater::updateSortData(this->m_meshNaturalArray[i], *this, i, m2File,
+            M2MeshBufferUpdater::updateSortData(std::get<0>(this->m_meshArray[i]), *this, i, m2File,
                                                 skinData, modelViewMat);
         }
         for (int i = 0; i < this->m_meshForcedTranspArray.size(); i++) {
             //Update info for sorting
-            if (this->m_meshForcedTranspArray[i] != nullptr) {
-                M2MeshBufferUpdater::updateSortData(this->m_meshForcedTranspArray[i], *this, i, m2File,
+            if (std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
+                M2MeshBufferUpdater::updateSortData(std::get<0>(this->m_meshForcedTranspArray[i]), *this, i, m2File,
                                                     skinData, modelViewMat);
             }
         }
@@ -1234,7 +1234,7 @@ void M2Object::drawBB(mathfu::vec3 &color) {
 
 }
 
-bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
+bool M2Object::prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex) {
     auto &skinSections = m_skinGeom->getSkinData()->skinSections;
     M2Array<M2Batch>* batches = &m_skinGeom->getSkinData()->batches;
 
@@ -1243,7 +1243,6 @@ bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
     M2Batch* m2Batch = batches->getElement(batchIndex);
     auto skinSection = skinSections[m2Batch->skinSectionIndex];
 
-
     {
         auto meshGroup = (skinSection->skinSectionId / 100);
         if ((meshGroup < this->m_meshIds.size()) && (skinSection->skinSectionId > 0) &&
@@ -1251,42 +1250,28 @@ bool M2Object::prepearMaterial(M2MaterialInst &materialData, int batchIndex) {
             return false;
         }
     }
-//        materialArray.push(materialData);
 
-    auto op_count = m2Batch->textureCount;
-
-    auto renderFlagIndex = m2Batch->materialIndex;
-    auto isTransparent = (m2File->materials[renderFlagIndex]->blending_mode >= 2) ||
-                         ((m2File->materials[renderFlagIndex]->flags & 0x10) > 0);
-
-    materialData.layer = m2Batch->materialLayer;
-    materialData.isRendered = true;
-    materialData.isTransparent = isTransparent;
-    materialData.renderFlagIndex = m2Batch->materialIndex;
-    materialData.batchIndex = batchIndex;
-    materialData.flags = m2Batch->flags;
-    materialData.priorityPlane = m2Batch->priorityPlane;
+    auto textureCount = m2Batch->textureCount;
 
     if (m_api->getConfig()->useWotlkLogic) {
         std::string vertexShader;
         std::string pixelShader;
         getShaderNames(m2Batch, vertexShader, pixelShader);
-        //TODO: this his hack!!!
-        if (pixelShader == "") {
-            materialData.pixelShader = 0;
+        //TODO: this is hack!!!
+        if (pixelShader.empty()) {
+            materialTemplate.pixelShader = 0;
         } else {
-            materialData.pixelShader = pixelShaderTable.at(pixelShader);
+            materialTemplate.pixelShader = pixelShaderTable.at(pixelShader);
         }
     } else {
         //Legion logic
-        materialData.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
-        materialData.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
+        materialTemplate.pixelShader = getPixelShaderId(m2Batch->textureCount, m2Batch->shader_id);
+        materialTemplate.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
     }
 
-    materialData.textureCount = op_count;
-    for (int j = 0; j < op_count; j++) {
+    for (int j = 0; j < textureCount; j++) {
         auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
-        materialData.textures[j] = getTexture(m2TextureIndex);
+        materialTemplate.textures[j] = getTexture(m2TextureIndex);
     }
 
     return true;
@@ -1399,7 +1384,7 @@ HGM2Mesh M2Object::createWaterfallMesh() {
     pipelineTemplate.depthWrite = false;
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = false;
-    pipelineTemplate.triCCW = 1;
+    pipelineTemplate.triCCW = true;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
 
@@ -1464,39 +1449,10 @@ HGM2Mesh M2Object::createWaterfallMesh() {
     return nullptr;
 }
 
-void M2Object::createMaterials(const HMapSceneBufferCreate &sceneRenderer) {
-    //Create materials
-    const auto &materials = m_skinGeom->getSkinData()->skinSections;
 
-    for (int i = 0; i < materials.size; i++) {
-        M2SkinSection * material = materials[i];
-
-        PipelineTemplate pipelineTemplate;
-
-        int renderFlagIndex = m2Batch->materialIndex;
-        auto renderFlag = m_m2Data->materials[renderFlagIndex];
-
-        pipelineTemplate.element = DrawElementMode::TRIANGLES;
-        pipelineTemplate.depthWrite = !(renderFlag->flags & 0x10);
-        pipelineTemplate.depthCulling = !(renderFlag->flags & 0x8);
-        pipelineTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
-        pipelineTemplate.triCCW = true;
-
-        if (overrideBlend) {
-            pipelineTemplate.blendMode = blendMode;
-        } else {
-            pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
-            blendMode = pipelineTemplate.blendMode;
-        }
-
-        sceneRenderer->createM2Material()
-
-    }
-}
-
-void M2Object::createMeshes() {
+void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     /* 1. Free previous subMeshArray */
-    this->m_meshNaturalArray.clear();
+    this->m_meshArray.clear();
     this->m_meshForcedTranspArray.clear();
     this->m_materialArray.clear();
 
@@ -1513,45 +1469,35 @@ void M2Object::createMeshes() {
     const auto &batches = m_skinGeom->getSkinData()->batches;
 
     if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
-
-
-        for (int i = 0; i < batches.size; i++) {
-            auto m2Batch = batches[i];
+        for (int batchIndex = 0; batchIndex < batches.size; batchIndex++) {
+            auto m2Batch = batches[batchIndex];
             auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
             if (!checkifBonesAreInRange(skinProfile, skinSection)) {
-                batchesRequiringDynamicVao.push_back(i);
+                batchesRequiringDynamicVao.push_back(batchIndex);
                 continue;
             }
 
             EGxBlendEnum mainBlendMode;
-            HGM2Mesh hmesh = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection, material,
-                                              mainBlendMode, false);
+            HGM2Mesh hmesh = createSingleMesh(sceneRenderer, m_m2Data, batchIndex, 0, bufferBindings, m2Batch, skinSection, mainBlendMode, false);
 
             if (hmesh == nullptr)
                 continue;
 
-            this->m_materialArray.push_back(material);
-            this->m_meshNaturalArray.push_back({hmesh, i});
-            M2MeshBufferUpdater::assignUpdateEvents(hmesh, this, m_materialArray[m_materialArray.size() - 1], m_m2Data,
-                                                    skinProfile);
+            this->m_meshArray.emplace_back(hmesh, batchIndex);
 
             if (mainBlendMode == EGxBlendEnum::GxBlend_Opaque) {
                 EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
-                M2MaterialInst materialTransp;
-                HGM2Mesh hmeshTrans = createSingleMesh(m_m2Data, i, 0, bufferBindings, m2Batch, skinSection,
-                                                       materialTransp, blendMode, true);
+                HGM2Mesh hmeshTrans = createSingleMesh(sceneRenderer, m_m2Data, batchIndex, 0, bufferBindings, m2Batch, skinSection, blendMode, true);
 
-                this->m_materialArray.push_back(material);
-                this->m_meshForcedTranspArray.push_back(hmeshTrans);
-                M2MeshBufferUpdater::assignUpdateEvents(hmeshTrans, this, m_materialArray[m_materialArray.size() - 1],
-                                                        m_m2Data, skinProfile);
-
+                this->m_meshForcedTranspArray.emplace_back(hmeshTrans, batchIndex);
             } else {
-                m_meshForcedTranspArray.push_back(nullptr);
+                m_meshForcedTranspArray.emplace_back(nullptr, -1);
             }
         }
 
         // Create meshes requiring dynamic
+        //TODO:
+        /*
         for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
             int i = batchesRequiringDynamicVao[j];
             auto m2Batch = skinProfile->batches[i];
@@ -1587,61 +1533,61 @@ void M2Object::createMeshes() {
             }
 
             dynamicMeshes.push_back(dynamicMeshData);
-        }
+        }*/
     } else {
-        m_meshNaturalArray.push_back(createWaterfallMesh());
+        m_meshArray.push_back({createWaterfallMesh(), 0});
     }
 }
 
 HGM2Mesh
-M2Object::createSingleMesh(const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings, const M2Batch *m2Batch,
-                           const M2SkinSection *skinSection, M2MaterialInst &material, EGxBlendEnum &blendMode, bool overrideBlend) {
+M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
+                           const M2Data *m_m2Data, int batchIndex, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings,
+                           const M2Batch *m2Batch, const M2SkinSection *skinSection,
+                           EGxBlendEnum &blendMode, bool overrideBlend) {
 
-    if (!prepearMaterial(material, i)) return nullptr;
+    M2MaterialTemplate materialTemplate;
 
-    M2ShaderCacheRecord cacheRecord{};
-    cacheRecord.vertexShader = material.vertexShader;
-    cacheRecord.pixelShader  = material.pixelShader;
-    cacheRecord.unlit = true;
-    cacheRecord.alphaTestOn = true;
-    cacheRecord.unFogged = true;
-    cacheRecord.unShadowed = true;
-    if (skinSection->boneInfluences > 0) {
-        cacheRecord.boneInfluences = skinSection->boneInfluences;
-    } else {
-        cacheRecord.boneInfluences = skinSection->boneCount > 0 ? 1 : 0;
-    }
-    HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("m2Shader", "m2Shader", &cacheRecord);
+    if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
 
     gMeshTemplate meshTemplate(finalBufferBindings);
 
+    int materialIndex = m2Batch->materialIndex;
+    auto renderFlag = m_m2Data->materials[materialIndex];
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = !(renderFlag->flags & 0x10);
+    pipelineTemplate.depthCulling = !(renderFlag->flags & 0x8);
+    pipelineTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
+    pipelineTemplate.triCCW = true;
+    if (overrideBlend) {
+        pipelineTemplate.blendMode = blendMode;
+    } else {
+        pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+        blendMode = pipelineTemplate.blendMode;
+    }
+
+    auto renderFlagIndex = m2Batch->materialIndex;
+    auto isTransparent = (m_m2Data->materials[renderFlagIndex]->blending_mode >= 2) ||
+                         ((m_m2Data->materials[renderFlagIndex]->flags & 0x10) > 0);
+
+    auto m2Material = sceneRenderer->createM2Material(m_modelWideDataBuff, pipelineTemplate, materialTemplate);
+    this->m_materialArray.emplace_back(m2Material);
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
     meshTemplate.skybox = m_boolSkybox;
 
-    HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
-    meshTemplate.texture.resize(4);
+    auto m2Mesh = sceneRenderer->createM2Mesh(meshTemplate, m2Material, isTransparent, m2Batch->materialLayer, m2Batch->priorityPlane);
 
-    for (int j = 0; j < material.textureCount; j++) {
-        meshTemplate.texture[j] = material.textures[j];
-    }
-
-    //Make mesh
-    //TODO:
-    auto hmesh = m_api->hDevice->createMesh(meshTemplate);
-    hmesh->setLayer(m2Batch->materialLayer);
-    hmesh->setPriorityPlane(m2Batch->priorityPlane);
-    hmesh->setQuery(nullptr);
-
-    return hmesh;
+    return m2Mesh;
 }
 
 void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;
-    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshNaturalArray.size());
+    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshArray.size());
 
     if (m_api->getConfig()->renderM2) {
         for (int i = minBatch; i < maxBatch; i++) {
@@ -1649,10 +1595,10 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
             if ((finalTransparency < 0.0001))
                 continue;
 
-            HGM2Mesh mesh = this->m_meshNaturalArray[i];
+            HGM2Mesh mesh = std::get<0>(this->m_meshArray[i]);
             if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() &&
-                this->m_meshForcedTranspArray[i] != nullptr) {
-                mesh = this->m_meshForcedTranspArray[i];
+                std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
+                mesh = std::get<0>(this->m_meshForcedTranspArray[i]);
             }
 
             if (mesh->getIsTransparent()) {
@@ -1723,7 +1669,6 @@ void M2Object::initParticleEmitters() {
 }
 
 void M2Object::initRibbonEmitters() {
-//    return;
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
     auto m2Data = m_m2Geom->getM2Data();
@@ -2001,18 +1946,18 @@ void M2Object::updateDynamicMeshes() {
 //        std::cout << "Saved " << skinSection->vertexCount << " vertices " << "at update frame =" << frameNum << std::endl;
     }
 }
-void M2Object::setReplaceTextures(std::vector<HBlpTexture> &replaceTextures) {
+void M2Object::setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, std::vector<HBlpTexture> &replaceTextures) {
     m_replaceTextures = replaceTextures;
 
     if (m_loaded) {
-        createMeshes(); // recreate meshes
+        createMeshes(sceneRenderer); // recreate meshes
     }
 }
-void M2Object::setMeshIds(std::vector<uint8_t> &meshIds) {
+void M2Object::setMeshIds(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds) {
     m_meshIds = meshIds;
 
     if (m_loaded) {
-        createMeshes(); // recreate meshes
+        createMeshes(sceneRenderer); // recreate meshes
     }
 }
 

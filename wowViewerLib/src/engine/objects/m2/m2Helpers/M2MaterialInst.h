@@ -15,12 +15,6 @@ class M2MaterialInst;
 
 class M2MaterialInst {
 public:
-    bool isRendered= false;
-    bool isTransparent= false;
-
-    int textureCount;
-    std::array<HGTexture, 6> textures;
-
     int layer = 0;
     int renderFlagIndex = -1;
     int batchIndex = -1;

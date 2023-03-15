@@ -14,10 +14,8 @@
 class GMeshVLK : virtual public IMesh {
     friend class GDeviceVLK;
 public:
-    explicit GMeshVLK(IDevice &device,
-                   const gMeshTemplate &meshTemplate,
-                   const HMaterialVLK &material
-    );
+    explicit GMeshVLK(const gMeshTemplate &meshTemplate,
+                      const HMaterialVLK &material);
 
 public:
     ~GMeshVLK() override;
@@ -47,7 +45,6 @@ protected:
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
     std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
 private:
-    GDeviceVLK &m_device;
     HMaterialVLK m_material;
 };
 

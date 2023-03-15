@@ -1214,7 +1214,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
-      {0,4,64},
+      {0,4,32},
       {0,3,256},
       {0,0,368},
       {0,1,14144},
@@ -2171,9 +2171,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       4, {
         {"_0_4_PixelShader_UnFogged_IsAffectedByLight_blendMode", false, 0, 1, 4, 0},
-        {"_0_4_uFogColorAndAlphaTest", true, 16, 1, 4, 0},
-        {"_0_4_uTexSampleAlpha", true, 32, 1, 4, 0},
-        {"_0_4_uPcColor", true, 48, 1, 4, 0},
+        {"_0_4_uTexSampleAlpha", true, 16, 1, 4, 0},
       }
     },
   }},

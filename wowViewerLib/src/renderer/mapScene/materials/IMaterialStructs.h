@@ -9,9 +9,9 @@
 #include "../../../gapi/UniformBufferStructures.h"
 
 struct M2MaterialTemplate {
-    const HGTexture texture0 = nullptr;
-    const HGTexture texture1 = nullptr;
-    const HGTexture texture2 = nullptr;
+    int vertexShader;
+    int pixelShader;
+    std::array<HGTexture, 3> textures = {nullptr, nullptr, nullptr};
 };
 
 class IM2ModelData {
@@ -23,6 +23,9 @@ public:
 
 class IM2Material : public IMaterial {
 public:
+    int vertexShader;
+    int pixelShader;
+    EGxBlendEnum blendMode;
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVS>> m_vertexData = nullptr;
     std::shared_ptr<IBufferChunk<M2::meshWideBlockPS>> m_fragmentData = nullptr;
 };
