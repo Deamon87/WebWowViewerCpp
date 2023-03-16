@@ -33,3 +33,7 @@ std::shared_ptr<GPipelineVLK> ISimpleMaterialVLK::getPipeLineForRenderPass(const
 
     return m_pipeline;
 }
+
+EGxBlendEnum ISimpleMaterialVLK::getBlendMode() {
+    return m_pipelineTemplate.blendMode;
+}

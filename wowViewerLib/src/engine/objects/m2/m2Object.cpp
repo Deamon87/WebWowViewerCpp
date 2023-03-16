@@ -825,13 +825,13 @@ void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
         for (int i = 0; i < this->m_meshArray.size(); i++) {
             //Update info for sorting
-            M2MeshBufferUpdater::updateSortData(std::get<0>(this->m_meshArray[i]), *this, i, m2File,
+            M2MeshBufferUpdater::updateSortData(this->m_meshArray[i], *this, i, m2File,
                                                 skinData, modelViewMat);
         }
         for (int i = 0; i < this->m_meshForcedTranspArray.size(); i++) {
             //Update info for sorting
-            if (std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
-                M2MeshBufferUpdater::updateSortData(std::get<0>(this->m_meshForcedTranspArray[i]), *this, i, m2File,
+            if (this->m_meshForcedTranspArray[i] != nullptr) {
+                M2MeshBufferUpdater::updateSortData(this->m_meshForcedTranspArray[i], *this, i, m2File,
                                                     skinData, modelViewMat);
             }
         }
@@ -1096,8 +1096,12 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_modelFragmentData->save();
     }
 
+    for (auto [material, batchIndex] : m_materialArray) {
+        M2MeshBufferUpdater::updateMaterialData(material, batchIndex, this, m2File, skinData);
+    }
+
     //Manually update vertices for dynamics
-    updateDynamicMeshes();
+//    updateDynamicMeshes();
 
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
@@ -1269,7 +1273,7 @@ bool M2Object::prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIn
         materialTemplate.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
     }
 
-    for (int j = 0; j < textureCount; j++) {
+    for (int j = 0; j < std::min<int>(textureCount, 4); j++) {
         auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
         materialTemplate.textures[j] = getTexture(m2TextureIndex);
     }
@@ -1277,8 +1281,9 @@ bool M2Object::prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIn
     return true;
 }
 
-void M2Object::createBoundingBoxMesh() {
+void M2Object::createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer) {
 
+    return;
     //Create bounding box mesh
     HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", "drawBBShader", nullptr);
 
@@ -1456,7 +1461,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     this->m_meshForcedTranspArray.clear();
     this->m_materialArray.clear();
 
-    createBoundingBoxMesh();
+    createBoundingBoxMesh(sceneRenderer);
 
     if (bufferBindings == nullptr)
         return;
@@ -1483,15 +1488,15 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             if (hmesh == nullptr)
                 continue;
 
-            this->m_meshArray.emplace_back(hmesh, batchIndex);
+            this->m_meshArray.emplace_back(hmesh);
 
             if (mainBlendMode == EGxBlendEnum::GxBlend_Opaque) {
                 EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
                 HGM2Mesh hmeshTrans = createSingleMesh(sceneRenderer, m_m2Data, batchIndex, 0, bufferBindings, m2Batch, skinSection, blendMode, true);
 
-                this->m_meshForcedTranspArray.emplace_back(hmeshTrans, batchIndex);
+                this->m_meshForcedTranspArray.emplace_back(hmeshTrans);
             } else {
-                m_meshForcedTranspArray.emplace_back(nullptr, -1);
+                m_meshForcedTranspArray.emplace_back(nullptr);
             }
         }
 
@@ -1572,13 +1577,13 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
                          ((m_m2Data->materials[renderFlagIndex]->flags & 0x10) > 0);
 
     auto m2Material = sceneRenderer->createM2Material(m_modelWideDataBuff, pipelineTemplate, materialTemplate);
-    this->m_materialArray.emplace_back(m2Material);
+    this->m_materialArray.emplace_back(m2Material, batchIndex);
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
     meshTemplate.skybox = m_boolSkybox;
 
-    auto m2Mesh = sceneRenderer->createM2Mesh(meshTemplate, m2Material, isTransparent, m2Batch->materialLayer, m2Batch->priorityPlane);
+    auto m2Mesh = sceneRenderer->createM2Mesh(meshTemplate, m2Material, m2Batch->materialLayer, m2Batch->priorityPlane);
 
     return m2Mesh;
 }
@@ -1595,10 +1600,10 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMe
             if ((finalTransparency < 0.0001))
                 continue;
 
-            HGM2Mesh mesh = std::get<0>(this->m_meshArray[i]);
+            HGM2Mesh mesh = this->m_meshArray[i];
             if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() &&
-                std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
-                mesh = std::get<0>(this->m_meshForcedTranspArray[i]);
+                this->m_meshForcedTranspArray[i] != nullptr) {
+                mesh = this->m_meshForcedTranspArray[i];
             }
 
             if (mesh->getIsTransparent()) {

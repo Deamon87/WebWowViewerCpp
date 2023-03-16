@@ -76,8 +76,8 @@ void M2Scene::setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer,
     m_m2Object->setReplaceTextures(sceneRenderer, replaceTextures);
 }
 
-void M2Scene::setMeshIdArray(std::vector<uint8_t> &meshIds) {
-    m_m2Object->setMeshIds(meshIds);
+void M2Scene::setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds) {
+    m_m2Object->setMeshIds(sceneRenderer, meshIds);
 }
 
 int M2Scene::getCameraNum() {

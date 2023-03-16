@@ -66,7 +66,7 @@ public:
     virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
 
     virtual HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) = 0;
-    virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, bool isTransparent, int layer, int priorityPlane) = 0;
+    virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
 };
 typedef std::shared_ptr<IMapSceneBufferCreate> HMapSceneBufferCreate;
 

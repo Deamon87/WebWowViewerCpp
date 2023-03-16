@@ -1480,7 +1480,8 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
 
     for (auto &m2Object : renderPlan->m2Array.getDrawn()) {
          if (m2Object != nullptr) {
-//            m2Object->uploadGeneratorBuffers(renderPlan->matricesForCulling->lookAtMat);
+            m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                             renderPlan->frameDependentData);
         }
     }
 
@@ -2050,57 +2051,6 @@ IChunkHandlerType<sceneWideBlockVSPS> Map::generateSceneWideChunk(HCameraMatrice
     return [renderMats, config](auto &data, const HFrameDependantData &fdd) -> void {
         auto *blockPSVS = &data;
 
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
-
-        blockPSVS->extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
-        blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
-        blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
-        blockPSVS->extLight.uAdtSpecMult = mathfu::vec4(config->adtSpecMult, 0, 0, 1.0);
-
-//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
-        float fogEnd = config->farPlane;
-        if (config->disableFog || !fdd->FogDataFound) {
-            fogEnd = 100000000.0f;
-            fdd->FogScaler = 0;
-            fdd->FogDensity = 0;
-        }
-
-        float fogStart = std::max<float>(config->farPlane - 250, 0);
-        fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
-
-
-        blockPSVS->fogData.densityParams = mathfu::vec4(
-            fogStart,
-            fogEnd,
-            fdd->FogDensity / 1000,
-            0);
-        blockPSVS->fogData.heightPlane = mathfu::vec4(0, 0, 0, 0);
-        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor, fdd->FogHeightScaler);
-        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
-            fdd->FogHeightDensity,
-            fdd->EndFogColor.x,
-            fdd->EndFogColor.y,
-            fdd->EndFogColor.z
-        );
-        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
-            fdd->SunFogAngle,
-            fdd->SunFogColor.x * fdd->SunFogStrength,
-            fdd->SunFogColor.y * fdd->SunFogStrength,
-            fdd->SunFogColor.z * fdd->SunFogStrength
-        );
-        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
-            fdd->FogHeightColor,
-            (fdd->EndFogColorDistance > 0) ?
-            fdd->EndFogColorDistance :
-            1000.0f
-        );
-        blockPSVS->fogData.sunPercentage = mathfu::vec4(
-            (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f, 0, 0, 0);
 
     };
 }

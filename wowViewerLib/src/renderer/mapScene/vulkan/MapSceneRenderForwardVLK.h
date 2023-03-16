@@ -16,6 +16,7 @@ public:
     ~MapSceneRenderForwardVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
+    inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh);
 
     std::shared_ptr<MapRenderPlan> getLastCreatedPlan() override;
 
@@ -49,6 +50,7 @@ public:
     std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) override;
 
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
+    HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
 private:
     HGDeviceVLK m_device;
 

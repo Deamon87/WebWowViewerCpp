@@ -31,11 +31,14 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 // Whole model
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
+};
+
+layout(std140, set=0, binding=2) uniform boneMats {
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 
 //Individual meshes
-layout(std140, set=0, binding=2) uniform meshWideBlockVS {
+layout(std140, set=0, binding=4) uniform meshWideBlockVS {
     ivec4 vertexShader_IsAffectedByLight;
     vec4 color_Transparency;
     mat4 uTextMat[2];

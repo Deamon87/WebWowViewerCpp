@@ -93,11 +93,11 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                     meshTemplate.scissorEnabled = true;
                     //Vulkan has different clip offset compared to OGL
                     if (!m_device->getIsVulkanAxisSystem()) {
-                        meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((fb_height - clip_rect.w)* uiScale)};
-                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x) * uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
+                        meshTemplate.scissorOffset = {static_cast<int>(clip_rect.x * uiScale), static_cast<int>((fb_height - clip_rect.w)* uiScale)};
+                        meshTemplate.scissorSize = {static_cast<uint32_t>((clip_rect.z - clip_rect.x) * uiScale), static_cast<uint32_t>((clip_rect.w - clip_rect.y)* uiScale)};
                     } else {
-                        meshTemplate.scissorOffset = {(int)(clip_rect.x * uiScale), (int)((clip_rect.y) * uiScale)};
-                        meshTemplate.scissorSize = {(int)((clip_rect.z - clip_rect.x)* uiScale), (int)((clip_rect.w - clip_rect.y)* uiScale)};
+                        meshTemplate.scissorOffset = {static_cast<int>(clip_rect.x * uiScale), static_cast<int>((clip_rect.y) * uiScale)};
+                        meshTemplate.scissorSize = {static_cast<uint32_t>((clip_rect.z - clip_rect.x)* uiScale), static_cast<uint32_t>((clip_rect.w - clip_rect.y)* uiScale)};
                     }
 
                     meshTemplate.start = pcmd->IdxOffset * 2;

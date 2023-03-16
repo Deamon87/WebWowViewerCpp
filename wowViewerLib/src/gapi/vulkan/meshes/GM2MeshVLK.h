@@ -8,8 +8,7 @@
 #include "GMeshVLK.h"
 
 class GM2MeshVLK : public GMeshVLK, public IM2Mesh {
-    friend class GDeviceVLK;
-protected:
+public:
     GM2MeshVLK(const gMeshTemplate &meshTemplate, const HMaterialVLK &material);
 
 public:
@@ -17,5 +16,6 @@ public:
     void setPriorityPlane(int priorityPlane) override;
     void setSortDistance(float distance) override;
     float getSortDistance() override;
+    EGxBlendEnum getGxBlendMode() override;
 };
 #endif //AWEBWOWVIEWERCPP_GM2MESH_H

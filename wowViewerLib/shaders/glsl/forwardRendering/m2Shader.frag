@@ -34,10 +34,10 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, set=0, binding=1) uniform modelWideBlockVS {
+layout(std140, set=0, binding=1) uniform placementMat {
     mat4 uPlacementMat;
-    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
+
 
 //Whole model
 layout(std140, set=0, binding=3) uniform modelWideBlockPS {
@@ -48,15 +48,15 @@ layout(std140, set=0, binding=3) uniform modelWideBlockPS {
 };
 
 //Individual meshes
-layout(std140, set=0, binding=4) uniform meshWideBlockPS {
+layout(std140, set=0, binding=5) uniform meshWideBlockPS {
     ivec4 PixelShader_UnFogged_IsAffectedByLight_blendMode;
     vec4 uTexSampleAlpha;
 };
 
-layout(set=1,binding=5) uniform sampler2D uTexture;
-layout(set=1,binding=6) uniform sampler2D uTexture2;
-layout(set=1,binding=7) uniform sampler2D uTexture3;
-layout(set=1,binding=8) uniform sampler2D uTexture4;
+layout(set=1,binding=6) uniform sampler2D uTexture;
+layout(set=1,binding=7) uniform sampler2D uTexture2;
+layout(set=1,binding=8) uniform sampler2D uTexture3;
+layout(set=1,binding=9) uniform sampler2D uTexture4;
 
 void main() {
     /* Animation support */

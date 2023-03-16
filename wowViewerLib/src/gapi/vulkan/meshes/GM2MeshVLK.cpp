@@ -24,3 +24,7 @@ void GM2MeshVLK::setSortDistance(float distance) {
 float GM2MeshVLK::getSortDistance() {
     return m_sortDistance;
 }
+
+EGxBlendEnum GM2MeshVLK::getGxBlendMode() {
+    return material()->getBlendMode();
+}

@@ -402,21 +402,8 @@ HGVertexBufferBindings M2Geom::getVAO(const HMapSceneBufferCreate &sceneRenderer
 
         HGIndexBuffer iboBuffer = skinGeom->getIBO(sceneRenderer);
 
-        //2. Create buffer binding and fill it
-        //TODO:
-        /*
-        bufferBindings = device->createVertexBufferBindings();
-        bufferBindings->setIndexBuffer(iboBuffer);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = vboBuffer;
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
-
-        bufferBindings->addVertexBufferBinding(vertexBinding);
-        bufferBindings->save();
-
+        bufferBindings = sceneRenderer->createM2VAO(vertexVbo, iboBuffer);
         vaoMap[skinGeom] = bufferBindings;
-        */
     }
 
     return bufferBindings;

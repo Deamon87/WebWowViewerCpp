@@ -8,6 +8,7 @@
 #include "../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
 #include "../../../gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../gapi/vulkan/buffers/IBufferChunkVLK.h"
+#include "../../../gapi/vulkan/meshes/GM2MeshVLK.h"
 #include "materials/IMaterialInstance.h"
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
@@ -157,14 +158,20 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
         })
         .createDescriptorSet(1, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.texture0))
-                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.texture1))
-                .texture(8, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.texture2));
+                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[0]))
+                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[1]))
+                .texture(8, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[2]))
+                .texture(9, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[3]));
         })
         .toMaterial<IM2Material>([&vertexData, &fragmentData](IM2Material *instance) -> void {
             instance->m_fragmentData = fragmentData;
             instance->m_vertexData = vertexData;
         });
+
+    material->blendMode = pipelineTemplate.blendMode;
+    material->vertexShader = m2MaterialTemplate.vertexShader;
+    material->pixelShader = m2MaterialTemplate.pixelShader;
+
 
     return material;
 }
@@ -187,19 +194,80 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
     return material;
 }
 
+inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh) {
+    const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
+    auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
+
+    //1. Bind VBOs
+    cmdBuf.bindVertexBuffers(vulkanBindings->getVertexBuffers());
+
+    //2. Bind IBOs
+    cmdBuf.bindIndexBuffer(vulkanBindings->getIndexBuffer());
+
+    //3. Bind pipeline
+    auto material = meshVlk->material();
+    cmdBuf.bindPipeline(material->getPipeline());
+
+    //4. Bind Descriptor sets
+    auto const &descSets = material->getDescriptorSets();
+    for (int i = 0; i < descSets.size(); i++) {
+        if (descSets[i] != nullptr) {
+            cmdBuf.bindDescriptorSet(i, descSets[i]);
+        }
+    }
+
+    //5. Set view port
+    cmdBuf.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
+
+    //6. Set scissors
+    if (meshVlk->scissorEnabled()) {
+        cmdBuf.setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
+    } else {
+        cmdBuf.setDefaultScissors();
+    }
+
+    //7. Draw the mesh
+    cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
+}
+
 std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                              const std::shared_ptr<MapRenderPlan> &framePlan) {
 
-    auto hthis = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
+    auto l_this = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
     auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
 
-    mapScene->doPostLoad(hthis, framePlan);
+    mapScene->doPostLoad(l_this, framePlan);
     mapScene->update(framePlan);
 
 
+    updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData);
 
-    return createRenderFuncVLK([](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+    auto [opaqueMeshes, transparentMeshes] = collectMeshes(framePlan);
+    return createRenderFuncVLK([opaqueMeshes, transparentMeshes, l_this](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+        // ---------------------
+        // Upload stuff
+        // ---------------------
+        uploadCmd.submitBufferUploads(l_this->uboBuffer);
 
+        uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
+        uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
+        uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
+        uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
+        uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
+
+        uploadCmd.submitBufferUploads(l_this->iboBuffer);
+
+        // ----------------------
+        // Draw meshes
+        // ----------------------
+
+        for (auto const &mesh : *opaqueMeshes) {
+            MapSceneRenderForwardVLK::drawMesh(swapChainCmd, mesh);
+        }
+
+        for (auto const &mesh : *transparentMeshes) {
+            MapSceneRenderForwardVLK::drawMesh(swapChainCmd, mesh);
+        }
     });
 }
 
@@ -218,6 +286,16 @@ std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bon
 }
 
 HGMesh MapSceneRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
-    return std::make_shared<GMeshVLK>(*m_device, meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
+    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
+}
+
+HGM2Mesh
+MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
+                                       int layer, int priorityPlane) {
+
+    auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
+    mesh->setLayer(layer);
+    mesh->setPriorityPlane(priorityPlane);
+    return mesh;
 }
 

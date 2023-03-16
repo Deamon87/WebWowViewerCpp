@@ -36,10 +36,11 @@ void GDescriptorSet::update() {
 // The operations described by pDescriptorWrites are performed first, followed by the operations described by pDescriptorCopies.
 //
 // So, writes first, copies second. T_T
-void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites) {
+void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo) {
     vkUpdateDescriptorSets(m_device->getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
     m_firstUpdate = false;
+
 
 //    m_updateBitSet |= updatedBindsBitSet;
 //
@@ -62,22 +63,20 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
         throw std::runtime_error("descriptor mismatch for image");
     }
 
-    if (textureVlk != nullptr) {
-        assignBoundDescriptors(bindIndex, textureVlk, DescriptorRecord::DescriptorRecordType::Texture);
-    }
-    m_updateBindPoints[bindIndex] = true;
+    assignBoundDescriptors(bindIndex, textureVlk, DescriptorRecord::DescriptorRecordType::Texture);
 
+    auto texture = textureVlk;
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
+
     imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     if (textureVlk == nullptr || !textureVlk->getIsLoaded()) {
         auto blackTexture = std::dynamic_pointer_cast<GTextureVLK>(m_set.m_device->getBlackTexturePixel());
-        imageInfo.imageView = blackTexture->texture.view;
-        imageInfo.sampler = blackTexture->texture.sampler;
-    } else {
-        imageInfo.imageView = textureVlk->texture.view;
-        imageInfo.sampler = textureVlk->texture.sampler;
+        texture = blackTexture;
     }
+
+    imageInfo.imageView = texture->texture.view;
+    imageInfo.sampler = texture->texture.sampler;
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
     writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -90,6 +89,10 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
     writeDescriptor.pBufferInfo = nullptr;
     writeDescriptor.pImageInfo = &imageInfo;
     writeDescriptor.pTexelBufferView = nullptr;
+
+    assert(writeDescriptor.pImageInfo == &imageInfos[imageInfos.size()-1]);
+
+    m_updateBindPoints[bindIndex] = true;
 
     return *this;
 }
@@ -113,7 +116,6 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
     bufferInfo.buffer = buffer->getGPUBuffer();
     bufferInfo.offset = buffer->getOffset();
     bufferInfo.range = buffer->getSize();
-
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
     writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -202,7 +204,9 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     if (!noSetBitSet.none()) {
         std::string notSetBits;
         for (int i = 0; i < noSetBitSet.size(); i++) {
-            notSetBits += " " + std::to_string(i);
+            if(noSetBitSet[i]) {
+                notSetBits += " " + std::to_string(i);
+            }
         }
 
         std::cerr << "required descriptors " << notSetBits << " were not set during update" << std::endl;
@@ -210,8 +214,6 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     }
 
 
-    m_set.writeToDescriptorSets(updates);
-
-
+    m_set.writeToDescriptorSets(updates, imageInfos);
 }
 

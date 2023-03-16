@@ -32,6 +32,7 @@ public:
         return m_pipeline;
     }
     std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass);
+    EGxBlendEnum getBlendMode();
 
 private:
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptors;

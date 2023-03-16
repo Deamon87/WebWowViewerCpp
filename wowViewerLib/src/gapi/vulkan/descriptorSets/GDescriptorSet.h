@@ -25,7 +25,7 @@ public:
     ~GDescriptorSet();
 
     void update();
-    void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites);
+    void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo);
     const std::shared_ptr<GDescriptorSetLayout> &getDescSetLayout() const { return m_hDescriptorSetLayout;};
 
     VkDescriptorSet getDescSet() const {return m_descriptorSet;}

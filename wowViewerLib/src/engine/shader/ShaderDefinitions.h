@@ -1214,10 +1214,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
-      {0,4,32},
+      {0,5,32},
       {0,3,256},
       {0,0,368},
-      {0,1,14144},
+      {0,1,64},
     },
     {
       {
@@ -1232,15 +1232,15 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,5, "uTexture"},
-      {1,6, "uTexture2"},
-      {1,7, "uTexture3"},
-      {1,8, "uTexture4"},
+      {1,6, "uTexture"},
+      {1,7, "uTexture2"},
+      {1,8, "uTexture3"},
+      {1,9, "uTexture4"},
     },
     {
       {
         {0,0,0},
-        {5,8,4},
+        {6,9,4},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1499,13 +1499,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Vertex,
     {
-      {0,1,14144},
+      {0,2,14080},
+      {0,1,64},
       {0,0,368},
-      {0,2,160},
+      {0,4,160},
     },
     {
       {
-        {2,2,1},
+        {4,4,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1777,10 +1778,10 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"m2Shader",  {
     {
-      2, {
-        {"_0_2_vertexShader_IsAffectedByLight", false, 0, 1, 4, 0},
-        {"_0_2_color_Transparency", true, 16, 1, 4, 0},
-        {"_0_2_uTextMat[0]", true, 32, 4, 4, 2},
+      4, {
+        {"_0_4_vertexShader_IsAffectedByLight", false, 0, 1, 4, 0},
+        {"_0_4_color_Transparency", true, 16, 1, 4, 0},
+        {"_0_4_uTextMat[0]", true, 32, 4, 4, 2},
       }
     },
     {
@@ -1807,7 +1808,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       1, {
         {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
-        {"_0_1_uBoneMatrixes[0]", true, 64, 4, 4, 220},
+      }
+    },
+    {
+      2, {
+        {"_0_2_uBoneMatrixes[0]", true, 0, 4, 4, 220},
       }
     },
   }},
@@ -2124,7 +2129,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       1, {
         {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
-        {"_0_1_uBoneMatrixes[0]", true, 64, 4, 4, 220},
       }
     },
     {
@@ -2169,9 +2173,9 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      4, {
-        {"_0_4_PixelShader_UnFogged_IsAffectedByLight_blendMode", false, 0, 1, 4, 0},
-        {"_0_4_uTexSampleAlpha", true, 16, 1, 4, 0},
+      5, {
+        {"_0_5_PixelShader_UnFogged_IsAffectedByLight_blendMode", false, 0, 1, 4, 0},
+        {"_0_5_uTexSampleAlpha", true, 16, 1, 4, 0},
       }
     },
   }},

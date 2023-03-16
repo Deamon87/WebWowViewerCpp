@@ -132,11 +132,11 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    //Material
-    std::vector<std::shared_ptr<IM2Material>> m_materialArray;
-    //Tuple of Mesh and BatchIndex
-    std::vector<std::tuple<HGM2Mesh, int>> m_meshForcedTranspArray;
-    std::vector<std::tuple<HGM2Mesh, int>> m_meshArray;
+    //Tuple of Material and BatchIndex
+    std::vector<std::tuple<std::shared_ptr<IM2Material>, int>> m_materialArray;
+
+    std::vector<HGM2Mesh> m_meshForcedTranspArray;
+    std::vector<HGM2Mesh> m_meshArray;
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
@@ -165,7 +165,7 @@ private:
 
 
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
-    void createBoundingBoxMesh();
+    void createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer);
 
     static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
     static float getTextureWeight(M2SkinProfile *skinData, M2Data *m2data, int batchIndex, int textureIndex, const std::vector<float> &transparencies) ;

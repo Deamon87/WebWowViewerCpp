@@ -41,7 +41,7 @@ public:
     }
 
     void setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer, std::vector<int> &replaceTextureArray) ;
-    void setMeshIdArray(std::vector<uint8_t> &meshIds) ;
+    void setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds) ;
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) ;
     void resetReplaceParticleColor() ;
 

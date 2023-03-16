@@ -1685,7 +1685,7 @@ void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementText
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
     m_currentScene = m2Scene;
-    m2Scene->setReplaceTextureArray(replacementTextureIds);
+    m2Scene->setReplaceTextureArray(m_sceneRenderer, replacementTextureIds);
 
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
@@ -1700,7 +1700,7 @@ void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &rep
 
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
     m_currentScene = m2Scene;
-    m2Scene->setReplaceTextureArray(replacementTextureIds);
+    m2Scene->setReplaceTextureArray(m_sceneRenderer, replacementTextureIds);
 
     m_api->camera = std::make_shared<FirstPersonCamera>();
     m_api->camera->setCameraPos(0, 0, 0);

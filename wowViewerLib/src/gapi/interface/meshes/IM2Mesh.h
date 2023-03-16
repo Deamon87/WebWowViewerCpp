@@ -19,7 +19,6 @@ public:
 
     virtual void setPriorityPlane(int priorityPlane) = 0;
     virtual void setLayer(int layer)  = 0;
-    virtual EGxBlendEnum getGxBlendMode() = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_IM2MESH_H

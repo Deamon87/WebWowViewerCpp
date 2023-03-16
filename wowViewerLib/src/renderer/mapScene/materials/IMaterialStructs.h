@@ -11,7 +11,7 @@
 struct M2MaterialTemplate {
     int vertexShader;
     int pixelShader;
-    std::array<HGTexture, 3> textures = {nullptr, nullptr, nullptr};
+    std::array<HGTexture, 4> textures = {nullptr, nullptr, nullptr, nullptr};
 };
 
 class IM2ModelData {

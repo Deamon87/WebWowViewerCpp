@@ -49,7 +49,14 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
 
                 shaderLayoutBindings.insert({uboBinding.binding, uboLayoutBinding});
                 if (uboBinding.size > 0) {
-                    m_requiredUBOSize.insert({uboBinding.binding,uboBinding.size});
+                    if (m_requiredUBOSize.find(uboBinding.binding) == m_requiredUBOSize.end()) {
+                        m_requiredUBOSize.insert({uboBinding.binding, uboBinding.size});
+                    } else {
+                        if (m_requiredUBOSize.at(uboBinding.binding) != uboBinding.size) {
+                            std::cerr << "Size mismatch for ubo for binding " << uboBinding.binding << std::endl;
+                            throw std::runtime_error("UBO size mismatch");
+                        }
+                    }
                 }
                 m_totalUbos++;
 

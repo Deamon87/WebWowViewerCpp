@@ -52,7 +52,13 @@ public:
 
     std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
 
-    void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan);
+    std::tuple<
+        std::shared_ptr<std::vector<HGMesh>>,
+        std::shared_ptr<std::vector<HGMesh>>
+    > collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan);
+    void updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
+                              const HCameraMatrices &renderingMatrices,
+                              const HFrameDependantData &fdd);
 
 private:
     FrameCounter mapProduceUpdateCounter;

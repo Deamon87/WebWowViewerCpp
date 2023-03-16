@@ -18,5 +18,7 @@ public:
 
     virtual void setSortDistance(float distance) = 0;
     virtual float getSortDistance() = 0;
+
+    virtual EGxBlendEnum getGxBlendMode() = 0;
 };
 #endif //AWEBWOWVIEWERCPP_ITRANSPARENTMESH_H
