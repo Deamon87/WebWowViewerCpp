@@ -9,8 +9,8 @@
 #include "../../include/iostuff.h"
 
 struct ViewPortDimensions{
-    std::array<int, 2> mins;
-    std::array<int, 2> maxs;
+    std::array<int32_t, 2> mins;
+    std::array<uint32_t, 2> maxs;
 };
 
 template<typename PlanParameters>

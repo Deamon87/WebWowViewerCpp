@@ -114,11 +114,21 @@ std::tuple<
 
 void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
                                             const HCameraMatrices &renderingMatrices,
-                                            const HFrameDependantData &fdd
+                                            const HFrameDependantData &fdd,
+                                            bool isVulkan
                                             ) {
+
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
+                                                              0, -1, 0, 0,
+                                                              0, 0, 1.0/2.0, 1/2.0,
+                                                              0, 0, 0, 1).Transpose();
+
+
     auto &blockPSVS = sceneWideChunk->getObject();
     blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
-    blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
+    if (isVulkan) {
+        blockPSVS.uPMatrix = vulkanMatrixFix*renderingMatrices->perspectiveMat;
+    }
     blockPSVS.uInteriorSunDir = renderingMatrices->interiorDirectLightDir;
     blockPSVS.uViewUp = renderingMatrices->viewUp;
 

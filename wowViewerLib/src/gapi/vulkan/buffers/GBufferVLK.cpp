@@ -67,7 +67,7 @@ void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
 }
 
 VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, VmaVirtualAllocation &alloc, VkDeviceSize &offset) {
-    bool minAddressStrategy = fakeSize != -1 && fakeSize > sizeInBytes;
+    bool minAddressStrategy = sizeInBytes < fakeSize && fakeSize > 0;
 
     VmaVirtualAllocationCreateInfo allocCreateInfo = {};
     allocCreateInfo.size = sizeInBytes; //Size in bytes
@@ -137,11 +137,21 @@ void GBufferVLK::resize(int newLength) {
 
             subBuffer->m_offset = offset;
             subBuffer->m_alloc = alloc;
+            subBuffer->m_dataPointer = (uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData+offset;
         }
     }
 
     destroyBuffer(currentBuffer);
     currentBuffer = newBuffer;
+
+    for (std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator it = currentSubBuffers.begin(); it != currentSubBuffers.end(); ++it){
+        auto subBuffer = it->lock();
+        if (subBuffer != nullptr) {
+            subBuffer->executeOnChange();
+        }
+    }
+
+    executeOnChange();
 }
 
 //fakeSize is used to make sure the subBuffer has enough bytes left till end of main buffer.
@@ -165,8 +175,8 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     }
     else
     {
-        resize(m_bufferSize*2);
-        return getSubBuffer(sizeInBytes);
+        resize(std::max<int>(m_bufferSize*2, m_bufferSize + fakeSize));
+        return getSubBuffer(sizeInBytes, fakeSize);
     }
 }
 
@@ -242,5 +252,5 @@ void GBufferVLK::GSubBufferVLK::save(int length) {
 }
 
 size_t GBufferVLK::GSubBufferVLK::getSize() {
-    return m_size;
+    return m_fakeSize;
 }

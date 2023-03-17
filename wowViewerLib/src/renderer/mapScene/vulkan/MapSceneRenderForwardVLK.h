@@ -54,6 +54,8 @@ public:
 private:
     HGDeviceVLK m_device;
 
+    int m_width = 640;
+    int m_height = 480;
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboAdtBuffer;
@@ -66,11 +68,18 @@ private:
 
     std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> sceneWideChunk;
 
+
     std::shared_ptr<GRenderPassVLK> m_renderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
 
-    HGVertexBufferBindings m_emptyM2VAO = nullptr;
 
+    HGVertexBufferBindings m_emptyM2VAO = nullptr;
+    HGVertexBufferBindings m_emptySkyVAO = nullptr;
+
+    void assignFFXGlowUBOConsts();
+    void createFrameBuffers();
+
+    void createFFXGlowMats();
 };
 
 

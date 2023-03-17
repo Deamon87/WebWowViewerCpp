@@ -1182,8 +1182,12 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
         }
     }
 
-    std::shared_ptr<GPipelineVLK> hgPipeline = std::make_shared<GPipelineVLK>(*this, m_bindings, renderPass,
-                                      shader, element, backFaceCulling, triCCW, blendMode,
+    std::shared_ptr<GPipelineVLK> hgPipeline = std::make_shared<GPipelineVLK>(*this,
+                                      m_bindings, renderPass,
+                                      shader, element,
+                                      backFaceCulling,
+                                      triCCW,
+                                      blendMode,
                                       depthCulling, depthWrite);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);

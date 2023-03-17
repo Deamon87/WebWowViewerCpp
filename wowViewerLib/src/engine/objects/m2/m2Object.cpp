@@ -1058,19 +1058,19 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
 
     //Update materials
     {
-        auto placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
+        auto &placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
         placementMatrix.uPlacementMat = m_placementMatrix;
         m_modelWideDataBuff->m_placementMatrix->save();
     }
     {
-        auto bonesData = m_modelWideDataBuff->m_bonesData->getObject();
+        auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
         m_modelWideDataBuff->m_bonesData->save();
     }
     {
-        auto modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
+        auto &modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 
@@ -1562,8 +1562,8 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = !(renderFlag->flags & 0x10);
-    pipelineTemplate.depthCulling = !(renderFlag->flags & 0x8);
-    pipelineTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
+    pipelineTemplate.depthCulling = false; !(renderFlag->flags & 0x8);
+    pipelineTemplate.backFaceCulling = false; !(renderFlag->flags & 0x4);
     pipelineTemplate.triCCW = true;
     if (overrideBlend) {
         pipelineTemplate.blendMode = blendMode;

@@ -22,8 +22,6 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
 }
 
 void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, int batchIndex, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile){
-    std::shared_ptr<IBufferChunk<M2::meshWideBlockVS>> meshWideBlockVS = nullptr;
-
     auto batch = m2SkinProfile->batches[batchIndex];
     int renderFlagIndex = batch->materialIndex;
     auto renderFlag = m2Data->materials[renderFlagIndex];
@@ -39,6 +37,7 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
     meshblockVS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
 
     fillTextureMatrices(*m2Object, batchIndex, m2Data, m2SkinProfile, meshblockVS.uTextMat);
+    m2Material->m_vertexData->save();
 
 
     //3. Update individual PS buffer
@@ -61,6 +60,7 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
     meshBlockPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
     meshBlockPS.BlendMode = static_cast<int>(m2Material->blendMode);
     meshBlockPS.uTexSampleAlpha = uTexSampleAlpha;
+    m2Material->m_fragmentData->save();
 }
 
 void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, int batchIndex,

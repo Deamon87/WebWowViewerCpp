@@ -13,27 +13,27 @@ template<typename T>
 class CBufferChunkVLK : public IBufferChunk<T> {
 public:
     CBufferChunkVLK(const std::shared_ptr<GBufferVLK> &mainBuffer, int realSize = -1) {
-        int realSize1 = realSize;
+        m_realSize = realSize;
 
-        if (realSize <= (int)sizeof(T))
-            realSize1 = sizeof(T);
+        if (m_realSize <= 0)
+            m_realSize = sizeof(T);
 
-        subBuffer = mainBuffer->getSubBuffer(realSize1,sizeof(T));
+        subBuffer = mainBuffer->getSubBuffer(m_realSize,sizeof(T));
     }
 
     T &getObject() override {
         return *(T*)subBuffer->getPointer();
     };
     void save() override {
-        subBuffer->save(sizeof(T));
+        subBuffer->save(m_realSize);
     };
 
     const std::shared_ptr<IBufferVLK> getSubBuffer() {
         return subBuffer;
     }
 private:
+    int m_realSize = 0;
     std::shared_ptr<IBufferVLK> subBuffer = nullptr;
-
 };
 
 

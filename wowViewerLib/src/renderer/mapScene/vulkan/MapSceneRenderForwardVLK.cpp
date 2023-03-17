@@ -24,26 +24,22 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
+    m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
 
     //Framebuffers for rendering
-    auto const dataFormat = { ITextureFormat::itRGBA };
+    auto const dataFormat = { ITextureFormat::itRGBA};
 
     m_renderPass = hDevice->getRenderPass(dataFormat, ITextureFormat::itDepth32,
                                           VK_SAMPLE_COUNT_1_BIT,
 //                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
                                           true, false);
 
-    for (auto & colorFrameBuffer : m_colorFrameBuffers) {
-        colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
-            *hDevice,
-            dataFormat,
-            ITextureFormat::itDepth32,
-            1,
-            640, 480
-        );
-    }
+
+    createFrameBuffers();
 
     sceneWideChunk = std::make_shared<CBufferChunkVLK<sceneWideBlockVSPS>>(uboBuffer);
+
+    assignFFXGlowUBOConsts();
 }
 
 // ------------------
@@ -61,7 +57,7 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer ver
 HGVertexBufferBindings MapSceneRenderForwardVLK::createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto m2VAO = m_device->createVertexBufferBindings();
-    m2VAO->addVertexBufferBinding(vertexBuffer, std::vector(staticM2Bindings.begin(), staticM2Bindings.end()));
+    m2VAO->addVertexBufferBinding(vertexBuffer, staticM2Bindings);
     m2VAO->setIndexBuffer(indexBuffer);
 
     return m2VAO;
@@ -182,7 +178,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"})
-        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptySkyVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(0, BufferChunkHelper::cast(l_sceneWideChunk)->getSubBuffer())
@@ -194,6 +190,8 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
 
     return material;
 }
+
+
 
 inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh) {
     const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
@@ -237,14 +235,24 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     auto l_this = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
     auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
 
+    if (frameInputParams->viewPortDimensions.maxs[0] != m_width ||
+        frameInputParams->viewPortDimensions.maxs[1] != m_height) {
+        m_width = frameInputParams->viewPortDimensions.maxs[0];
+        m_height = frameInputParams->viewPortDimensions.maxs[1];
+
+        createFrameBuffers();
+        createFFXGlowMats();
+    }
+
     mapScene->doPostLoad(l_this, framePlan);
     mapScene->update(framePlan);
+    mapScene->updateBuffers(framePlan);
 
-
-    updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData);
+    updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
+    assignFFXGlowUBOConsts();
 
     auto [opaqueMeshes, transparentMeshes] = collectMeshes(framePlan);
-    return createRenderFuncVLK([opaqueMeshes, transparentMeshes, l_this](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+    return createRenderFuncVLK([opaqueMeshes, transparentMeshes, l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
         // ---------------------
         // Upload stuff
         // ---------------------
@@ -261,14 +269,26 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         // ----------------------
         // Draw meshes
         // ----------------------
+        {
+            auto passHelper = frameBufCmd.beginRenderPass(false,
+                                                          l_this->m_renderPass,
+                                                          l_this->m_colorFrameBuffers[l_this->m_device->getDrawFrameNumber()],
+                                                          {0,0},//frameInputParams->viewPortDimensions.mins,
+                                                          {640, 480},//frameInputParams->viewPortDimensions.maxs,
+                                                          {0, 0, 0},//todo
+                                                          true
+            );
 
-        for (auto const &mesh : *opaqueMeshes) {
-            MapSceneRenderForwardVLK::drawMesh(swapChainCmd, mesh);
+            for (auto const &mesh: *opaqueMeshes) {
+                MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh);
+            }
+
+            for (auto const &mesh: *transparentMeshes) {
+                MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh);
+            }
         }
 
-        for (auto const &mesh : *transparentMeshes) {
-            MapSceneRenderForwardVLK::drawMesh(swapChainCmd, mesh);
-        }
+
     });
 }
 
@@ -298,5 +318,27 @@ MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::s
     mesh->setLayer(layer);
     mesh->setPriorityPlane(priorityPlane);
     return mesh;
+}
+
+
+void MapSceneRenderForwardVLK::createFrameBuffers() {
+    {
+        auto const dataFormat = {ITextureFormat::itRGBA};
+
+        for (auto &colorFrameBuffer: m_colorFrameBuffers) {
+            colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
+                *m_device,
+                dataFormat,
+                ITextureFormat::itDepth32,
+                1,
+                m_width, m_height
+            );
+        }
+    }
+
+}
+
+void MapSceneRenderForwardVLK::createFFXGlowMats() {
+    for ()
 }
 

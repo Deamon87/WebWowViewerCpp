@@ -233,7 +233,7 @@ set(SOURCE_FILES
 		src/ui/renderer/uiScene/ImGUIPlan.h
         src/ui/renderer/uiScene/IFrontendUIBufferCreate.h
 		src/ui/renderer/uiScene/materials/UIMaterial.h
-		)
+        src/ui/renderer/uiScene/vulkan/FFXGlowPassVLK.cpp src/ui/renderer/uiScene/vulkan/FFXGlowPassVLK.h)
 
 
 set(SOURCE_FILES_VULKAN
