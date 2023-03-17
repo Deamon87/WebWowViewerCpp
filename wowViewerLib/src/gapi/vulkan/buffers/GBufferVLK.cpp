@@ -4,9 +4,10 @@
 
 #include "GBufferVLK.h"
 
-GBufferVLK::GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize) : m_device(device) {
+GBufferVLK::GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize, int alignment) : m_device(device) {
     m_usageFlags = usageFlags;
     m_bufferSize = maxSize;
+    m_alignment = alignment;
 
     createBuffer(currentBuffer);
 }
@@ -72,6 +73,9 @@ VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, 
     allocCreateInfo.size = sizeInBytes; //Size in bytes
     if (minAddressStrategy) {
         allocCreateInfo.flags = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT;
+    }
+    if (m_alignment > 0) {
+        allocCreateInfo.alignment = m_alignment;
     }
 
     auto result = vmaVirtualAllocate(buffer.virtualBlock, &allocCreateInfo, &alloc, &offset);

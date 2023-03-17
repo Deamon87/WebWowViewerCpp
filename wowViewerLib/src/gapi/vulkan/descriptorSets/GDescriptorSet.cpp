@@ -181,6 +181,19 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
 }
 
 GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
+    {
+        int bufferIndex = 0;
+
+        int imageIndex = 0;
+        for (int i = 0; i < updates.size(); i++) {
+            if (updates[i].pBufferInfo != nullptr) {
+                assert(updates[i].pBufferInfo == &bufferInfos[bufferIndex++]);
+            } else if (updates[i].pImageInfo != nullptr) {
+                assert(updates[i].pImageInfo == &imageInfos[imageIndex++]);
+            }
+        }
+    }
+
     //FOR DEBUG AND STABILITY
 
     //Fill the rest of Descriptor with already bound values
@@ -215,5 +228,18 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
 
 
     m_set.writeToDescriptorSets(updates, imageInfos);
+
+    {
+        int bufferIndex = 0;
+
+        int imageIndex = 0;
+        for (int i = 0; i < updates.size(); i++) {
+            if (updates[i].pBufferInfo != nullptr) {
+                assert(updates[i].pBufferInfo == &bufferInfos[bufferIndex++]);
+            } else if (updates[i].pImageInfo != nullptr) {
+                assert(updates[i].pImageInfo == &imageInfos[imageIndex++]);
+            }
+        }
+    }
 }
 

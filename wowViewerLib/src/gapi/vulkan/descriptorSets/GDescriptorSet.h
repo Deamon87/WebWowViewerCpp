@@ -35,8 +35,15 @@ public:
     class SetUpdateHelper {
     public:
         explicit SetUpdateHelper(GDescriptorSet &set, std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &boundDescriptors) :
-            m_set(set), m_boundDescriptors(boundDescriptors) {}
+            m_set(set), m_boundDescriptors(boundDescriptors) {
+            //So that the resize of these vectors would not lead to pointer invalidation in updates vector
+            bufferInfos.reserve(32);
+            imageInfos.reserve(32);
+        }
         ~SetUpdateHelper();
+        // SetUpdateHelper is non-copyable
+        SetUpdateHelper(const SetUpdateHelper&) = delete;
+        SetUpdateHelper& operator=(const SetUpdateHelper&) = delete;
 
         SetUpdateHelper& ubo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer);
 

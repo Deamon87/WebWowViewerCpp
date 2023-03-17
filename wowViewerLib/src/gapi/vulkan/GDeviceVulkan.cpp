@@ -171,7 +171,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)){
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     m_textureManager->initialize();
 
@@ -978,7 +978,7 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName
 }
 
 HGBufferVLK GDeviceVLK::createUniformBuffer(size_t initialSize) {
-    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize);
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize, uniformBufferOffsetAlign);
     return h_uniformBuffer;
 }
 

@@ -29,8 +29,8 @@ std::tuple<
     auto hopaqueMeshes = std::make_shared<std::vector<HGMesh>>();
     auto htransparentMeshes = std::make_shared<std::vector<HGMesh>>();
 
-    auto opaqueMeshes = *hopaqueMeshes;
-    auto transparentMeshes = *htransparentMeshes;
+    auto &opaqueMeshes = *hopaqueMeshes;
+    auto &transparentMeshes = *htransparentMeshes;
 
     opaqueMeshes.reserve(30000);
     transparentMeshes.reserve(30000);

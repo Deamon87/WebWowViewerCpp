@@ -29,7 +29,8 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     auto const dataFormat = { ITextureFormat::itRGBA };
 
     m_renderPass = hDevice->getRenderPass(dataFormat, ITextureFormat::itDepth32,
-                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
+                                          VK_SAMPLE_COUNT_1_BIT,
+//                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
                                           true, false);
 
     for (auto & colorFrameBuffer : m_colorFrameBuffers) {
@@ -37,7 +38,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
             *hDevice,
             dataFormat,
             ITextureFormat::itDepth32,
-            hDevice->getMaxSamplesCnt(),
+            1,
             640, 480
         );
     }

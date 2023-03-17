@@ -21,7 +21,7 @@ typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {
     friend class GDeviceVLK;
 public:
-    GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize);
+    GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize, int alignment = -1);
     ~GBufferVLK() override;
 
     //Doesn't make actual upload, only queues it.
@@ -56,6 +56,7 @@ private:
 
     VkBufferUsageFlags m_usageFlags;
     int m_bufferSize;
+    int m_alignment;
     //Buffers
     struct BufferInternal {
         VkBuffer g_hBuffer = VK_NULL_HANDLE;
