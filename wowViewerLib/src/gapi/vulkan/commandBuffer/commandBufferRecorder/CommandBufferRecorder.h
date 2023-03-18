@@ -55,7 +55,6 @@ public:
 
     friend class RenderPassHelper;
 
-    void setViewPort();
     void setViewPort(ViewportType viewportType);
 private:
     const GCommandBuffer &m_gCmdBuffer;
@@ -74,7 +73,8 @@ private:
     VkRect2D defaultScissor;
 
     void createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
-                             const std::array<uint32_t, 2> &areaSize);
+                             const std::array<uint32_t, 2> &areaSize,
+                             bool invertZ);
 
     void createDefaultScissors(const std::array<int32_t, 2> &areaOffset,
                                const std::array<uint32_t, 2> &areaSize);

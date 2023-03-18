@@ -50,7 +50,7 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
 
     //Fill values into buffer
     mathfu::vec4 uTexSampleAlpha = mathfu::vec4(1.0, 1.0, 1.0, 1.0);
-    for (int i = 0; i < std::max<int>(batch->textureCount, 4); i++) {
+    for (int i = 0; i < std::min<int>(batch->textureCount, 4); i++) {
         uTexSampleAlpha[i] = M2Object::getTextureWeight(m2SkinProfile, m2Data, batchIndex, i, m2Object->transparencies);
     }
 

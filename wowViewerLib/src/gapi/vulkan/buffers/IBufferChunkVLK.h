@@ -36,5 +36,16 @@ private:
     std::shared_ptr<IBufferVLK> subBuffer = nullptr;
 };
 
+namespace BufferChunkHelperVLK {
+    template<typename T>
+    static const inline std::shared_ptr<CBufferChunkVLK<T>> cast(const std::shared_ptr<IBufferChunk<T>> &chunk) {
+        return std::dynamic_pointer_cast<CBufferChunkVLK<T>>(chunk);
+    }
+
+    template<typename T>
+    static const inline void create(const HGBufferVLK &parentBuffer, std::shared_ptr<IBufferChunk<T>> &chunk, int realSize = -1) {
+        chunk = std::make_shared<CBufferChunkVLK<T>>(parentBuffer, realSize);
+    }
+};
 
 #endif //AWEBWOWVIEWERCPP_IBUFFERCHUNKVLK_H

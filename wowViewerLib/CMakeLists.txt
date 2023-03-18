@@ -319,7 +319,8 @@ set(SOURCE_FILES
         src/renderer/frame/SceneScenario.h
         src/renderer/mapScene/MapSceneRenderer.cpp
         src/renderer/mapScene/MapSceneRenderer.h
-        src/renderer/mapScene/MapSceneRendererFactory.cpp src/renderer/mapScene/MapSceneRendererFactory.h
+        src/renderer/mapScene/MapSceneRendererFactory.cpp
+        src/renderer/mapScene/MapSceneRendererFactory.h
         src/renderer/IRenderer.h
         src/renderer/IRenderParameters.h
         src/renderer/frame/FrameInputParams.h
@@ -486,6 +487,8 @@ if (LINK_VULKAN)
             src/gapi/vulkan/GRenderPassVLK.h
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.cpp
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
+            src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.h
+            src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.h
             src/gapi/vulkan/buffers/IBufferVLK.h
@@ -607,8 +610,8 @@ if (MSVC)
     if (_cpp_17_flag_supported)
         message("/std:c++17 is supported")
         #target_compile_options(AWebWoWViewerCpp "/std:c++17")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++latest")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++latest")
+        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
+        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
         target_compile_options(WoWViewerLib PRIVATE "/std:c++latest")
     endif()

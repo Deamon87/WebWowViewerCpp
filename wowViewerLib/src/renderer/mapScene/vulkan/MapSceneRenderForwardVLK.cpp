@@ -21,6 +21,29 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     vboWaterBuffer  = m_device->createVertexBuffer(1024*1024);
     vboSkyBuffer    = m_device->createVertexBuffer(1024*1024);
 
+    {
+        const float epsilon = 0.f;
+        std::array<mathfu::vec2_packed, 4> vertexBuffer = {
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon, -1.0f + epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon, 1.0f - epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f - epsilon, -1.0f + epsilon)),
+            mathfu::vec2_packed(mathfu::vec2(1.0f - epsilon, 1.f - epsilon))
+        };
+        std::vector<uint16_t> indexBuffer = {
+            0, 1, 2,
+            2, 1, 3
+        };
+        m_vboQuad = m_device->createVertexBuffer(vertexBuffer.size() * sizeof(mathfu::vec2_packed));
+        m_iboQuad = m_device->createIndexBuffer(indexBuffer.size() * sizeof(uint16_t));
+        m_vboQuad->uploadData(vertexBuffer.data(), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
+        m_iboQuad->uploadData(indexBuffer.data(), indexBuffer.size() * sizeof(uint16_t));
+
+        m_drawQuadVao = m_device->createVertexBufferBindings();
+        m_drawQuadVao->addVertexBufferBinding(m_vboQuad, std::vector(fullScreenQuad.begin(), fullScreenQuad.end()));
+        m_drawQuadVao->setIndexBuffer(m_iboQuad);
+        m_drawQuadVao->save();
+    }
+
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
@@ -34,12 +57,11 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
 //                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
                                           true, false);
 
+    glowPass = std::make_unique<FFXGlowPassVLK>(hDevice, uboBuffer, m_drawQuadVao);
 
     createFrameBuffers();
 
     sceneWideChunk = std::make_shared<CBufferChunkVLK<sceneWideBlockVSPS>>(uboBuffer);
-
-    assignFFXGlowUBOConsts();
 }
 
 // ------------------
@@ -119,20 +141,6 @@ HGIndexBuffer  MapSceneRenderForwardVLK::createSkyIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
-struct BufferChunkHelper {
-public:
-    template<typename T>
-    static const inline std::shared_ptr<CBufferChunkVLK<T>> cast(const std::shared_ptr<IBufferChunk<T>> &chunk) {
-        return std::dynamic_pointer_cast<CBufferChunkVLK<T>>(chunk);
-    }
-
-    template<typename T>
-    static const inline void create(const HGBufferVLK &parentBuffer, std::shared_ptr<IBufferChunk<T>> &chunk, int realSize = -1) {
-        chunk = std::make_shared<CBufferChunkVLK<T>>(parentBuffer, realSize);
-    }
-};
-
-
 std::shared_ptr<IM2Material>
 MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                            const PipelineTemplate &pipelineTemplate,
@@ -146,10 +154,10 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&m2ModelData, &vertexData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelper::cast(l_sceneWideChunk)->getSubBuffer())
-                .ubo(1, BufferChunkHelper::cast(m2ModelData->m_placementMatrix)->getSubBuffer())
-                .ubo(2, BufferChunkHelper::cast(m2ModelData->m_bonesData)->getSubBuffer())
-                .ubo(3, BufferChunkHelper::cast(m2ModelData->m_modelFragmentData)->getSubBuffer())
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(1, BufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix)->getSubBuffer())
+                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
+                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_modelFragmentData)->getSubBuffer())
                 .ubo(4, vertexData->getSubBuffer())
                 .ubo(5, fragmentData->getSubBuffer());
         })
@@ -181,7 +189,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
         .createPipeline(m_emptySkyVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelper::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
                 .ubo(1, skyColors->getSubBuffer());
         })
         .toMaterial<ISkyMeshMaterial>([&skyColors](ISkyMeshMaterial *instance) -> void {
@@ -229,6 +237,10 @@ inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGM
     cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
 }
 
+static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
+    return {vec[0], vec[1], vec[2]};
+}
+
 std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                              const std::shared_ptr<MapRenderPlan> &framePlan) {
 
@@ -241,15 +253,27 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         m_height = frameInputParams->viewPortDimensions.maxs[1];
 
         createFrameBuffers();
-        createFFXGlowMats();
+
+        {
+            std::vector<std::shared_ptr<GTextureVLK>> inputColorTextures;
+            for (int i = 0; i < m_colorFrameBuffers.size(); i++) {
+                inputColorTextures.emplace_back(std::dynamic_pointer_cast<GTextureVLK>(m_colorFrameBuffers[i]->getAttachment(0)));
+            }
+
+            glowPass->updateDimensions(m_width, m_height,
+                                       inputColorTextures,
+                                       m_device->getSwapChainRenderPass());
+        }
+
     }
 
     mapScene->doPostLoad(l_this, framePlan);
     mapScene->update(framePlan);
     mapScene->updateBuffers(framePlan);
+    glowPass->assignFFXGlowUBOConsts(framePlan->frameDependentData->currentGlow);
 
     updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
-    assignFFXGlowUBOConsts();
+
 
     auto [opaqueMeshes, transparentMeshes] = collectMeshes(framePlan);
     return createRenderFuncVLK([opaqueMeshes, transparentMeshes, l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
@@ -265,6 +289,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
 
         uploadCmd.submitBufferUploads(l_this->iboBuffer);
+        uploadCmd.submitBufferUploads(l_this->m_vboQuad);
+        uploadCmd.submitBufferUploads(l_this->m_iboQuad);
 
         // ----------------------
         // Draw meshes
@@ -273,9 +299,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             auto passHelper = frameBufCmd.beginRenderPass(false,
                                                           l_this->m_renderPass,
                                                           l_this->m_colorFrameBuffers[l_this->m_device->getDrawFrameNumber()],
-                                                          {0,0},//frameInputParams->viewPortDimensions.mins,
-                                                          {640, 480},//frameInputParams->viewPortDimensions.maxs,
-                                                          {0, 0, 0},//todo
+                                                          frameInputParams->viewPortDimensions.mins,
+                                                          frameInputParams->viewPortDimensions.maxs,
+                                                          vec4ToArr3(frameInputParams->frameParameters->clearColor),
                                                           true
             );
 
@@ -288,7 +314,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             }
         }
 
-
+        l_this->glowPass->doPass(frameBufCmd, swapChainCmd,
+                         l_this->m_device->getSwapChainRenderPass(),
+                         frameInputParams->viewPortDimensions);
     });
 }
 
@@ -299,9 +327,9 @@ std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastCreatedPlan() {
 std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bonesCount) {
     auto result = std::make_shared<IM2ModelData>();
 
-    BufferChunkHelper::create(uboBuffer, result->m_placementMatrix);
-    BufferChunkHelper::create(uboBuffer, result->m_bonesData, sizeof(mathfu::mat4) * bonesCount);
-    BufferChunkHelper::create(uboBuffer, result->m_modelFragmentData);
+    BufferChunkHelperVLK::create(uboBuffer, result->m_placementMatrix);
+    BufferChunkHelperVLK::create(uboBuffer, result->m_bonesData, sizeof(mathfu::mat4) * bonesCount);
+    BufferChunkHelperVLK::create(uboBuffer, result->m_modelFragmentData);
 
     return result;
 }
@@ -337,8 +365,3 @@ void MapSceneRenderForwardVLK::createFrameBuffers() {
     }
 
 }
-
-void MapSceneRenderForwardVLK::createFFXGlowMats() {
-    for ()
-}
-

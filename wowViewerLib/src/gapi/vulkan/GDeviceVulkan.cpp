@@ -171,7 +171,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)){
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     m_textureManager->initialize();
 

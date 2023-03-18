@@ -44,8 +44,13 @@ static const std::vector<GBufferBinding> staticM2Bindings = {{
 static_assert(sizeof(M2Vertex) == 48);
 
 static const std::vector<GBufferBinding> skyConusBinding = {{
-    {+drawQuad::Attribute::position, 4, GBindingType::GFLOAT, false, 0, 0},
+    {+skyConus::Attribute::aPosition, 4, GBindingType::GFLOAT, false, 0, 0},
 }};
+
+static const std::vector<GBufferBinding> fullScreenQuad = {{
+   {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
+}};
+
 
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:

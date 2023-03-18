@@ -1562,8 +1562,8 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = !(renderFlag->flags & 0x10);
-    pipelineTemplate.depthCulling = false; !(renderFlag->flags & 0x8);
-    pipelineTemplate.backFaceCulling = false; !(renderFlag->flags & 0x4);
+    pipelineTemplate.depthCulling = !(renderFlag->flags & 0x8);
+    pipelineTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
     pipelineTemplate.triCCW = true;
     if (overrideBlend) {
         pipelineTemplate.blendMode = blendMode;

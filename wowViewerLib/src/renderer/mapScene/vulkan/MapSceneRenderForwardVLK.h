@@ -9,6 +9,7 @@
 #include "../MapSceneRenderer.h"
 #include "../../../gapi/vulkan/GDeviceVulkan.h"
 #include "../materials/IMaterialStructs.h"
+#include "passes/FFXGlowPassVLK.h"
 
 class MapSceneRenderForwardVLK : public MapSceneRenderer {
 public:
@@ -57,6 +58,8 @@ private:
     int m_width = 640;
     int m_height = 480;
 
+    std::unique_ptr<FFXGlowPassVLK> glowPass;
+
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboAdtBuffer;
     HGBufferVLK vboWMOBuffer;
@@ -65,6 +68,11 @@ private:
 
     HGBufferVLK iboBuffer;
     HGBufferVLK uboBuffer;
+
+    HGBufferVLK m_vboQuad;
+    HGBufferVLK m_iboQuad;
+
+    HGVertexBufferBindings m_drawQuadVao = nullptr;
 
     std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> sceneWideChunk;
 
@@ -76,10 +84,7 @@ private:
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
 
-    void assignFFXGlowUBOConsts();
     void createFrameBuffers();
-
-    void createFFXGlowMats();
 };
 
 

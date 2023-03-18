@@ -64,7 +64,7 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
         throw std::runtime_error("tried to start render pass with another pass being active already");
     }
 
-    createViewPortTypes(areaOffset, areaSize);
+    createViewPortTypes(areaOffset, areaSize, renderPassVlk->getInvertZ());
     createDefaultScissors(areaOffset, areaSize);
 
     m_currentRenderPass = renderPassVlk;
@@ -221,13 +221,13 @@ void CmdBufRecorder::setDefaultScissors() {
 }
 
 void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
-                                         const std::array<uint32_t, 2> &areaSize) {
+                                         const std::array<uint32_t, 2> &areaSize,
+                                         bool invertZ) {
     VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
     usualViewport.width = areaSize[0];
     usualViewport.height = areaSize[1];
     usualViewport.x = areaOffset[0];
     usualViewport.y = areaOffset[1];
-    bool invertZ = false;
     if (invertZ) {
         usualViewport.minDepth = 0;
         usualViewport.maxDepth = 0.990f;

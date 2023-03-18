@@ -23,9 +23,6 @@
 #include "../../algorithms/mathHelper_culling.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
 
-std::array<GBufferBinding,1> fullScreen = {{
-    {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
-}};
 
 
 
