@@ -90,7 +90,7 @@ private:
     HGVertexBufferBindings bufferBindings = nullptr;
     std::shared_ptr<IM2ModelData> m_modelWideDataBuff = nullptr;
 
-    HGMesh boundingBoxMesh = nullptr;
+    HGSortableMesh boundingBoxMesh = nullptr;
     
     mathfu::vec4 m_ambientColorOverride;
     bool m_setAmbientColor = false;
@@ -127,7 +127,7 @@ private:
     std::vector<mathfu::vec4> subMeshColors;
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
-    std::vector<ParticleEmitter*> particleEmitters;
+    std::vector<std::unique_ptr<ParticleEmitter>> particleEmitters;
     std::vector<CRibbonEmitter*> ribbonEmitters;
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
@@ -157,7 +157,7 @@ private:
     void initSubmeshColors();
     void initTransparencies();
     void initLights();
-    void initParticleEmitters();
+    void initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer);
     void initRibbonEmitters();
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
@@ -241,7 +241,7 @@ public:
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
     bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
 //        if (hasModf0x2Flag) {
@@ -287,7 +287,7 @@ public:
         m_ambientColorOverride = ambientColor;
     }
 
-    void drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes,  int renderOrder);
+    void drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes,  int renderOrder);
 
     void createVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
 

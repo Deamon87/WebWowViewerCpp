@@ -95,7 +95,7 @@ enum class M2VertexShader : int {
 inline constexpr const int operator+ (M2PixelShader const val) { return static_cast<const int>(val); };
 inline constexpr const int operator+ (M2VertexShader const val) { return static_cast<const int>(val); };
 
-EGxBlendEnum M2BlendingModeToEGxBlendEnum [8] =
+const static EGxBlendEnum M2BlendingModeToEGxBlendEnum [8] =
     {
         EGxBlendEnum::GxBlend_Opaque,
         EGxBlendEnum::GxBlend_AlphaKey,
@@ -459,9 +459,6 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
 M2Object::~M2Object() {
     delete m_animationManager;
 
-    for (auto obj: particleEmitters) {
-        delete obj;
-    }
     for (auto obj: ribbonEmitters) {
         delete obj;
     }
@@ -946,7 +943,7 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     this->initSubmeshColors();
     this->initTransparencies();
     this->initLights();
-    this->initParticleEmitters();
+    this->initParticleEmitters(sceneRenderer);
     this->initRibbonEmitters();
 
 
@@ -1328,7 +1325,8 @@ void M2Object::createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer)
         blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
     });
 
-    boundingBoxMesh = m_api->hDevice->createMesh(meshTemplate);
+    //TODO:
+//    boundingBoxMesh = sceneRenderer->createSortableMesh(meshTemplate);
 }
 
 bool M2Object::checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *skinSection) {
@@ -1588,7 +1586,7 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
     return m2Mesh;
 }
 
-void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;
@@ -1655,21 +1653,21 @@ void M2Object::initTransparencies() {
 void M2Object::initLights() {
     lights = std::vector<M2LightResult>(m_m2Geom->getM2Data()->lights.size);
 }
-void M2Object::initParticleEmitters() {
-//    return;
-    particleEmitters = std::vector<ParticleEmitter *>();
-//    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
+void M2Object::initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer) {
+    particleEmitters.clear();
+    particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
         int txacVal = 0;
         if (m_m2Geom->txacMParticle.size() > 0) {
             txacVal = m_m2Geom->txacMParticle[i].value;
         }
 
-        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
-        particleEmitters.push_back(emitter);
+        auto emitter = std::make_unique<ParticleEmitter>(m_api, sceneRenderer,m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
         if (m_m2Geom->exp2 != nullptr && emitter->getGenerator() != nullptr) {
             emitter->getGenerator()->getAniProp()->zSource = m_m2Geom->exp2->content.getElement(i)->zSource;
         }
+
+        particleEmitters.push_back(std::move(emitter));
     }
 }
 
@@ -1817,7 +1815,7 @@ mathfu::mat4 M2Object::getTextureTransformByLookup(int textureTrasformlookup) {
 }
 
 
-void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
 //    return;
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->minParticle;

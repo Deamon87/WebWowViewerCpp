@@ -7,24 +7,9 @@
 
 
 GM2MeshVLK::GM2MeshVLK(const gMeshTemplate &meshTemplate,
-                       const HMaterialVLK &material) : GMeshVLK(meshTemplate, material){
-}
+                       const HMaterialVLK &material, int priorityPlane, int layer) :
+                       GSortableMeshVLK(meshTemplate, material, priorityPlane), IM2Mesh(layer, priorityPlane),
+                       ISortableMesh(priorityPlane) {
 
-void GM2MeshVLK::setLayer(int layer) {
     m_layer = layer;
-}
-
-void GM2MeshVLK::setPriorityPlane(int priorityPlane) {
-    m_priorityPlane = priorityPlane;
-}
-
-void GM2MeshVLK::setSortDistance(float distance) {
-    m_sortDistance = distance;
-}
-float GM2MeshVLK::getSortDistance() {
-    return m_sortDistance;
-}
-
-EGxBlendEnum GM2MeshVLK::getGxBlendMode() {
-    return material()->getBlendMode();
 }

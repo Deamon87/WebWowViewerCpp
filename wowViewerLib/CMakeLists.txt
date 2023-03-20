@@ -327,7 +327,7 @@ set(SOURCE_FILES
         src/renderer/mapScene/FrameDependentData.h
         src/renderer/buffers/IVertexBufferDynamicTemplate.cpp
         src/renderer/buffers/IVertexBufferDynamicTemplate.h
-        src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ITransparentMesh.h
+        src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ISortableMesh.h
         src/renderer/mapScene/IMapSceneBufferCreate.h
         src/gapi/interface/materials/IMaterial.h
         src/renderer/mapScene/MapSceneParams.h
@@ -520,7 +520,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/utils/MutexLockedVector.h
             src/gapi/vulkan/descriptorSets/DescriptorResourceCallBack.h
             src/gapi/vulkan/bindable/DSBindable.h
-            src/renderer/mapScene/vulkan/materials/IMaterialInstance.h)
+            src/renderer/mapScene/vulkan/materials/IMaterialInstance.h src/gapi/vulkan/meshes/GSortableMeshVLK.cpp src/gapi/vulkan/meshes/GSortableMeshVLK.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

@@ -17,6 +17,7 @@ class IUniformBuffer;
 class ITexture;
 class IShaderPermutation;
 class IMesh;
+class ISortableMesh;
 class IM2Mesh;
 class IDevice;
 class IGPUFence;
@@ -38,15 +39,17 @@ typedef std::shared_ptr<IBuffer> HGUniformBuffer;
 typedef std::shared_ptr<IShaderPermutation> HGShaderPermutation;
 typedef std::shared_ptr<IMesh> HGMesh;
 typedef std::shared_ptr<IM2Mesh> HGM2Mesh;
-typedef std::shared_ptr<IMesh> HGParticleMesh;
+typedef std::shared_ptr<ISortableMesh> HGSortableMesh;
+typedef std::shared_ptr<ISortableMesh> HGParticleMesh;
 typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<ITexture> HGTexture;
 typedef std::weak_ptr<ITexture> WGTexture;
 typedef std::shared_ptr<IGPUFence> HGPUFence;
 typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 
-#include "meshes/IMesh.h"
 #include "meshes/IM2Mesh.h"
+#include "meshes/IMesh.h"
+#include "meshes/ISortableMesh.h"
 #include "IOcclusionQuery.h"
 #include "IShaderPermutation.h"
 #include "buffers/IBuffer.h"
@@ -157,6 +160,7 @@ class IDevice {
         virtual int getUploadSize() {return 0;};
 
         virtual unsigned int getFrameNumber() = 0;
+        virtual unsigned int getDrawFrameNumber() = 0;
         virtual void increaseFrameNumber() = 0;
 
         virtual void submitDrawCommands() {};

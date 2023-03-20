@@ -5,17 +5,13 @@
 #ifndef AWEBWOWVIEWERCPP_GM2MESH_H
 #define AWEBWOWVIEWERCPP_GM2MESH_H
 
-#include "GMeshVLK.h"
+#include "../../interface/meshes/IM2Mesh.h"
+#include "GSortableMeshVLK.h"
 
-class GM2MeshVLK : public GMeshVLK, public IM2Mesh {
+class GM2MeshVLK : public GSortableMeshVLK, public IM2Mesh {
 public:
-    GM2MeshVLK(const gMeshTemplate &meshTemplate, const HMaterialVLK &material);
-
-public:
-    void setLayer(int layer) override;
-    void setPriorityPlane(int priorityPlane) override;
-    void setSortDistance(float distance) override;
-    float getSortDistance() override;
-    EGxBlendEnum getGxBlendMode() override;
+    GM2MeshVLK(const gMeshTemplate &meshTemplate, const HMaterialVLK &material, int priorityPlane, int layer);
+    ~GM2MeshVLK() override = default ;
 };
+
 #endif //AWEBWOWVIEWERCPP_GM2MESH_H

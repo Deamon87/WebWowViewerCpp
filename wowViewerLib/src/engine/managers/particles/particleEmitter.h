@@ -56,7 +56,7 @@ struct CParticleMaterialFlags {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(HApiContainer api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
+    ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
     ~ParticleEmitter() {
         delete generator;
     }
@@ -67,7 +67,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
     void updateBuffers();
 
     int flags = 6;
@@ -193,9 +193,10 @@ private:
 		HGParticleMesh m_mesh = nullptr;
 		bool active = false;
 	} ;
-    std::array<particleFrame, 4> frame;
+    std::shared_ptr<IM2ParticleMaterial> m_material = nullptr;
+    std::array<particleFrame, IDevice::MAX_FRAMES_IN_FLIGHT> frame;
 
-    void createMesh();
+    void createMesh(const HMapSceneBufferCreate &sceneRenderer);
 
     static HGIndexBuffer m_indexVBO;
 

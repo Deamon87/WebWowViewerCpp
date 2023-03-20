@@ -51,6 +51,14 @@ static const std::vector<GBufferBinding> fullScreenQuad = {{
    {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
 }};
 
+static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
+   {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),  offsetof(ParticleBuffStruct, position) },
+   {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),     offsetof(ParticleBuffStruct, color)},
+   {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
+   {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
+   {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
+}};
+
 
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:
@@ -59,10 +67,9 @@ public:
 
     std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
 
-    std::tuple<
-        std::shared_ptr<std::vector<HGMesh>>,
-        std::shared_ptr<std::vector<HGMesh>>
-    > collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan);
+    void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                       const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
+                       const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes);
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
                               const HCameraMatrices &renderingMatrices,
                               const HFrameDependantData &fdd,

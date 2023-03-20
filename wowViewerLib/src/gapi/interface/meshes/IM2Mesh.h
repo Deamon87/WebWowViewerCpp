@@ -5,20 +5,16 @@
 #ifndef AWEBWOWVIEWERCPP_IM2MESH_H
 #define AWEBWOWVIEWERCPP_IM2MESH_H
 
-#include "ITransparentMesh.h"
+#include "ISortableMesh.h"
 
-class IM2Mesh : public ITransparentMesh {
+class IM2Mesh : virtual public ISortableMesh {
 protected:
-    int m_priorityPlane = 0;
     int m_layer = 0;
 public:
+    IM2Mesh(int layer, int priority) : ISortableMesh(priority) { m_layer = layer;}
     ~IM2Mesh() override = default;
 
-    auto priorityPlane()       -> int { return m_priorityPlane; }
-    auto layer()       -> int& { return m_layer; }
-
-    virtual void setPriorityPlane(int priorityPlane) = 0;
-    virtual void setLayer(int layer)  = 0;
+    auto layer() const -> int { return m_layer; }
 };
 
 #endif //AWEBWOWVIEWERCPP_IM2MESH_H

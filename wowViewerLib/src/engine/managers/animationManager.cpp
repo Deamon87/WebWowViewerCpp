@@ -738,7 +738,7 @@ void AnimationManager::update(
     std::vector<mathfu::vec4> &subMeshColors,
     std::vector<float> &transparencies,
     std::vector<M2LightResult> &lights,
-    std::vector<ParticleEmitter *> &particleEmitters,
+    std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
     std::vector<CRibbonEmitter *> &ribbonEmitters) {
 
 
@@ -1191,7 +1191,7 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
     camera.diagFov = fov;
 }
 
-void AnimationManager::calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
+void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
                                             std::vector<mathfu::mat4> &bonesMatrices) {
     auto &peRecords = boneMasterData->getM2Geom()->getM2Data()->particle_emitters;
     if (peRecords.size <= 0) return;

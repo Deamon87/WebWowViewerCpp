@@ -63,7 +63,7 @@ public:
         std::vector<mathfu::vec4> &subMeshColors,
         std::vector<float> &transparencies,
         std::vector<M2LightResult> &lights,
-        std::vector<ParticleEmitter *> &particleEmitters,
+        std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
         std::vector<CRibbonEmitter *> &ribbonEmitters
 
         /*cameraDetails, particleEmitters*/);
@@ -84,8 +84,9 @@ public:
 
     void calcLights(std::vector<M2LightResult> &lights,
                     std::vector<mathfu::mat4> &bonesMatrices);
-    void calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
-                    std::vector<mathfu::mat4> &bonesMatrices);
+    void calcParticleEmitters(
+        const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+        std::vector<mathfu::mat4> &bonesMatrices);
 
     void calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters);
 

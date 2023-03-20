@@ -715,8 +715,9 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
         }
     });
 
-    HGMesh hmesh = device->createMesh(meshTemplate);
-    m_waterMeshArray.push_back(hmesh);
+    //TODO:
+//    HGMesh hmesh = device->createMesh(meshTemplate);
+//    m_waterMeshArray.push_back(hmesh);
 }
 
 void WmoGroupObject::loadDoodads() {
@@ -1224,9 +1225,12 @@ void WmoGroupObject::setModelFileId(int fileId) {
     m_modelFileId = fileId;
 }
 
-void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (!m_loaded) return;
     for (auto &i : this->m_meshArray) {
+        opaqueMeshes.push_back(i);
+    }
+    for (auto &i : this->m_sortableMeshArray) {
         if (i->getIsTransparent()) {
             opaqueMeshes.push_back(i);
         } else {

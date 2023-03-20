@@ -49,10 +49,10 @@ public:
         std::vector<HGMesh> m_meshes = {};
     } portalPointsFrame;
 
-    virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
+    virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
-    void produceTransformedPortalMeshes(HApiContainer &apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
+    void produceTransformedPortalMeshes(HApiContainer &apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
     void addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos);
 };
 
@@ -67,10 +67,10 @@ class ExteriorView : public GeneralView {
 public:
 	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
     std::vector<HGMesh> m_opaqueMeshes = {};
-    std::vector<HGMesh> m_transparentMeshes = {};
+    std::vector<HGSortableMesh> m_transparentMeshes = {};
 
 public:
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) override;
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) override;
 };
 
 class FrameViewsHolder {

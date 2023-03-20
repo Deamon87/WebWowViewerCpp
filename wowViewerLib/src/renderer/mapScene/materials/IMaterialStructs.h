@@ -14,6 +14,11 @@ struct M2MaterialTemplate {
     std::array<HGTexture, 4> textures = {nullptr, nullptr, nullptr, nullptr};
 };
 
+struct M2ParticleMaterialTemplate {
+    std::array<HGTexture, 3> textures = {nullptr, nullptr, nullptr};
+};
+
+
 class IM2ModelData {
 public:
     std::shared_ptr<IBufferChunk<M2::PlacementMatrix>> m_placementMatrix = nullptr;
@@ -28,6 +33,10 @@ public:
     EGxBlendEnum blendMode;
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVS>> m_vertexData = nullptr;
     std::shared_ptr<IBufferChunk<M2::meshWideBlockPS>> m_fragmentData = nullptr;
+};
+class IM2ParticleMaterial : public IMaterial {
+public:
+    std::shared_ptr<IBufferChunk<Particle::meshParticleWideBlockPS>> m_fragmentData = nullptr;
 };
 
 class ISkyMeshMaterial : public IMaterial {

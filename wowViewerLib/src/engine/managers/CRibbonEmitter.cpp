@@ -91,86 +91,86 @@ CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object,
 extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
 void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) {
   auto device = m_api->hDevice;
-
-  //Create Buffers
-  auto ribbonBindings = std::vector<GBufferBinding>(staticRibbonBindings.begin(), staticRibbonBindings.end());
-  for (int k = 0; k < 4; k++) {
-      //TODO:
-      /*
-    frame[k].m_indexVBO = device->createIndexBuffer();
-    frame[k].m_bufferVBO = device->createVertexBuffer();
-       */
-
-    frame[k].m_bindings = device->createVertexBufferBindings();
-    frame[k].m_bindings->setIndexBuffer(frame[k].m_indexVBO);
-
-    frame[k].m_bindings->addVertexBufferBinding(frame[k].m_bufferVBO, ribbonBindings);
-    frame[k].m_bindings->save();
-
-
-    //Get shader
-    for(int i = 0; i < materials.size(); i++) {
-        auto &material = materials[i];
-        auto &textureIndex = textureIndicies[i];
-
-        HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", "ribbonShader", nullptr);
-
-
-        //TODO:
-        PipelineTemplate pipelineTemplate;
-        pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
-        pipelineTemplate.depthWrite =  !(material.flags & 0x10);;
-        pipelineTemplate.depthCulling = !(material.flags & 0x8);;
-        pipelineTemplate.backFaceCulling = !(material.flags & 0x4);;
-        pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
-
-
-        //Let's assume ribbons are always at least transparent
-        if (pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
-            pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-        }
-
-        //Create mesh
-        gMeshTemplate meshTemplate(frame[k].m_bindings);
-
-        meshTemplate.start = 0;
-        meshTemplate.end = 0;
-
-        meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
-        HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
-        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
-
-        auto blendMode = pipelineTemplate.blendMode;
-        auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
-        std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> meshRibbonWideBlockPS = nullptr;
-
-        meshRibbonWideBlockPS->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](auto &data, const HFrameDependantData &frameDepedantData) {
-            Ribbon::meshRibbonWideBlockPS& blockPS = data;
-
-            blockPS.uAlphaTest = -1.0f;
-            blockPS.uPixelShader = 0;
-            blockPS.uBlendMode = static_cast<int>(blendMode);
-
-            mathfu::mat4 textureTransformMat = mathfu::mat4::Identity();
-            if (textureTransformLookupIndex >= 0) {
-                textureTransformMat = m2Object->getTextureTransformByLookup(textureTransformLookupIndex);
-            }
-
-            auto textureTranslate = textureTransformMat.GetColumn(3);
-            blockPS.textureTranslate0 = textureTranslate.x;
-            blockPS.textureTranslate1 = textureTranslate.y;
-            blockPS.textureTranslate2 = textureTranslate.z;
-
-            blockPS.textureScale0 = textureTransformMat.GetColumn(0).Length();
-            blockPS.textureScale1 = textureTransformMat.GetColumn(1).Length();
-            blockPS.textureScale2 = textureTransformMat.GetColumn(2).Length();
-
-        });
-
-        
-        frame[k].m_meshes.push_back(device->createMesh(meshTemplate));
-    }
-  }
+//
+//  //Create Buffers
+//  auto ribbonBindings = std::vector<GBufferBinding>(staticRibbonBindings.begin(), staticRibbonBindings.end());
+//  for (int k = 0; k < 4; k++) {
+//      //TODO:
+//      /*
+//    frame[k].m_indexVBO = device->createIndexBuffer();
+//    frame[k].m_bufferVBO = device->createVertexBuffer();
+//       */
+//
+//    frame[k].m_bindings = device->createVertexBufferBindings();
+//    frame[k].m_bindings->setIndexBuffer(frame[k].m_indexVBO);
+//
+//    frame[k].m_bindings->addVertexBufferBinding(frame[k].m_bufferVBO, ribbonBindings);
+//    frame[k].m_bindings->save();
+//
+//
+//    //Get shader
+//    for(int i = 0; i < materials.size(); i++) {
+//        auto &material = materials[i];
+//        auto &textureIndex = textureIndicies[i];
+//
+//        HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", "ribbonShader", nullptr);
+//
+//
+//        //TODO:
+//        PipelineTemplate pipelineTemplate;
+//        pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+//        pipelineTemplate.depthWrite =  !(material.flags & 0x10);;
+//        pipelineTemplate.depthCulling = !(material.flags & 0x8);;
+//        pipelineTemplate.backFaceCulling = !(material.flags & 0x4);;
+//        pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
+//
+//
+//        //Let's assume ribbons are always at least transparent
+//        if (pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
+//            pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+//        }
+//
+//        //Create mesh
+//        gMeshTemplate meshTemplate(frame[k].m_bindings);
+//
+//        meshTemplate.start = 0;
+//        meshTemplate.end = 0;
+//
+//        meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
+//        HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
+//        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
+//
+//        auto blendMode = pipelineTemplate.blendMode;
+//        auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
+//        std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> meshRibbonWideBlockPS = nullptr;
+//
+//        meshRibbonWideBlockPS->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](auto &data, const HFrameDependantData &frameDepedantData) {
+//            Ribbon::meshRibbonWideBlockPS& blockPS = data;
+//
+//            blockPS.uAlphaTest = -1.0f;
+//            blockPS.uPixelShader = 0;
+//            blockPS.uBlendMode = static_cast<int>(blendMode);
+//
+//            mathfu::mat4 textureTransformMat = mathfu::mat4::Identity();
+//            if (textureTransformLookupIndex >= 0) {
+//                textureTransformMat = m2Object->getTextureTransformByLookup(textureTransformLookupIndex);
+//            }
+//
+//            auto textureTranslate = textureTransformMat.GetColumn(3);
+//            blockPS.textureTranslate0 = textureTranslate.x;
+//            blockPS.textureTranslate1 = textureTranslate.y;
+//            blockPS.textureTranslate2 = textureTranslate.z;
+//
+//            blockPS.textureScale0 = textureTransformMat.GetColumn(0).Length();
+//            blockPS.textureScale1 = textureTransformMat.GetColumn(1).Length();
+//            blockPS.textureScale2 = textureTransformMat.GetColumn(2).Length();
+//
+//        });
+//
+//
+//        frame[k].m_meshes.push_back(device->createMesh(meshTemplate));
+//    }
+//  }
 }
 
 //----- (00A199E0) --------------------------------------------------------
@@ -860,7 +860,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
 
 //    auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
 //    if (currFrame.isDead) return;

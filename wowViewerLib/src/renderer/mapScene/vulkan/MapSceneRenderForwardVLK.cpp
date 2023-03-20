@@ -10,12 +10,14 @@
 #include "../../../gapi/vulkan/buffers/IBufferChunkVLK.h"
 #include "../../../gapi/vulkan/meshes/GM2MeshVLK.h"
 #include "materials/IMaterialInstance.h"
+#include "../../../gapi/vulkan/meshes/GSortableMeshVLK.h"
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
     iboBuffer   = m_device->createIndexBuffer(1024*1024);
 
     vboM2Buffer     = m_device->createVertexBuffer(1024*1024);
+    vboM2ParticleBuffer     = m_device->createVertexBuffer(1024*1024);
     vboAdtBuffer    = m_device->createVertexBuffer(1024*1024);
     vboWMOBuffer    = m_device->createVertexBuffer(1024*1024);
     vboWaterBuffer  = m_device->createVertexBuffer(1024*1024);
@@ -47,6 +49,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
+    m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
 
     //Framebuffers for rendering
@@ -84,6 +87,15 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createM2VAO(HGVertexBuffer vert
 
     return m2VAO;
 }
+HGVertexBufferBindings MapSceneRenderForwardVLK::createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
+    auto m2ParticleVAO = m_device->createVertexBufferBindings();
+    m2ParticleVAO->addVertexBufferBinding(vertexBuffer, staticM2ParticleBindings);
+    m2ParticleVAO->setIndexBuffer(indexBuffer);
+
+    return m2ParticleVAO;
+}
+
 HGVertexBufferBindings MapSceneRenderForwardVLK::createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto waterVAO = m_device->createVertexBufferBindings();
@@ -104,6 +116,10 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createSkyVAO(HGVertexBuffer ver
 
 HGVertexBuffer MapSceneRenderForwardVLK::createM2VertexBuffer(int sizeInBytes) {
     return vboM2Buffer->getSubBuffer(sizeInBytes);
+}
+
+HGVertexBuffer MapSceneRenderForwardVLK::createM2ParticleVertexBuffer(int sizeInBytes) {
+    return vboM2ParticleBuffer->getSubBuffer(sizeInBytes);
 }
 
 HGIndexBuffer MapSceneRenderForwardVLK::createM2IndexBuffer(int sizeInBytes) {
@@ -133,10 +149,10 @@ HGVertexBuffer MapSceneRenderForwardVLK::createWaterVertexBuffer(int sizeInBytes
 HGIndexBuffer MapSceneRenderForwardVLK::createWaterIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
-
 HGVertexBuffer MapSceneRenderForwardVLK::createSkyVertexBuffer(int sizeInBytes) {
     return vboSkyBuffer->getSubBuffer(sizeInBytes);;
 };
+
 HGIndexBuffer  MapSceneRenderForwardVLK::createSkyIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
@@ -181,6 +197,35 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
     return material;
 }
 
+std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleMaterial(
+    const PipelineTemplate &pipelineTemplate,
+    const M2ParticleMaterialTemplate &m2ParticleMatTemplate) {
+
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto l_fragmentData = std::make_shared<CBufferChunkVLK<Particle::meshParticleWideBlockPS>>(uboBuffer); ;
+
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"})
+        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .createDescriptorSet(0, [&l_sceneWideChunk, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(4, l_fragmentData->getSubBuffer());
+        })
+        .createDescriptorSet(1, [&m2ParticleMatTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(m2ParticleMatTemplate.textures[0]))
+                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(m2ParticleMatTemplate.textures[1]))
+                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(m2ParticleMatTemplate.textures[2]));
+        })
+        .toMaterial<IM2ParticleMaterial>([l_fragmentData](IM2ParticleMaterial *instance) -> void {
+            instance->m_fragmentData = l_fragmentData;
+        });
+
+    return material;
+}
+
+
+
 std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
@@ -198,8 +243,6 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
 
     return material;
 }
-
-
 
 inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh) {
     const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
@@ -274,8 +317,11 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 
     updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
 
+    //Create meshes
+    auto opaqueMeshes = std::make_shared<std::vector<HGMesh>>();
+    auto transparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
 
-    auto [opaqueMeshes, transparentMeshes] = collectMeshes(framePlan);
+    collectMeshes(framePlan, opaqueMeshes, transparentMeshes);
     return createRenderFuncVLK([opaqueMeshes, transparentMeshes, l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
         // ---------------------
         // Upload stuff
@@ -338,16 +384,18 @@ HGMesh MapSceneRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const H
     return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
 }
 
+HGSortableMesh MapSceneRenderForwardVLK::createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
+    auto mesh = std::make_shared<GSortableMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane);
+    return mesh;
+}
+
 HGM2Mesh
 MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
                                        int layer, int priorityPlane) {
 
-    auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
-    mesh->setLayer(layer);
-    mesh->setPriorityPlane(priorityPlane);
+    auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     return mesh;
 }
-
 
 void MapSceneRenderForwardVLK::createFrameBuffers() {
     {

@@ -19,15 +19,8 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
     return mapPlan;
 }
 
-std::tuple<
-    std::shared_ptr<std::vector<HGMesh>>,
-    std::shared_ptr<std::vector<HGMesh>>
-> MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan) {
+void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan, const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes, const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes) {
     mapProduceUpdateCounter.beginMeasurement();
-
-    //Create meshes
-    auto hopaqueMeshes = std::make_shared<std::vector<HGMesh>>();
-    auto htransparentMeshes = std::make_shared<std::vector<HGMesh>>();
 
     auto &opaqueMeshes = *hopaqueMeshes;
     auto &transparentMeshes = *htransparentMeshes;
@@ -108,8 +101,6 @@ std::tuple<
     m_config->sortMeshTime = sortMeshCounter.getTimePerFrame();
     m_config->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
     m_config->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
-
-    return {hopaqueMeshes, htransparentMeshes};
 }
 
 void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,

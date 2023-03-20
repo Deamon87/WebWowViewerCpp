@@ -146,7 +146,7 @@ void AdtObject::loadWmos() {
     }
 }
 
-HGMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos) {
+HGSortableMesh AdtObject::createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos) {
     uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
     if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
     {
@@ -761,7 +761,7 @@ void AdtObject::loadAlphaTextures() {
 
 
 
-void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (m_freeStrategy != nullptr) m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
     if (!m_loaded) return;

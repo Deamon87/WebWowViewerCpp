@@ -43,7 +43,7 @@ public:
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
 
 
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
@@ -81,7 +81,8 @@ private:
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> vertexModelWideUniformBuffer = nullptr;
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockPS>> fragmentModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray = {};
-    std::vector<HGMesh> m_waterMeshArray = {};
+    std::vector<HGSortableMesh> m_sortableMeshArray = {};
+    std::vector<HGSortableMesh> m_waterMeshArray = {};
 
     SMOGroupInfo *m_main_groupInfo;
 

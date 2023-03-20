@@ -66,7 +66,7 @@ public:
     unsigned int getUpdateFrameNumber() ;
     unsigned int getCullingFrameNumber() ;
     unsigned int getOcclusionFrameNumber() ;
-    unsigned int getDrawFrameNumber() ;
+    unsigned int getDrawFrameNumber() override;
 
     bool getIsRenderbufferSupported() override {return true;}
 

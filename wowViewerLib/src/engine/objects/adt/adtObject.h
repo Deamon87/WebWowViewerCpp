@@ -43,7 +43,7 @@ public:
 
     FileStatus getLoadedStatus();
 
-    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
     void update(animTime_t deltaTime);
@@ -133,7 +133,7 @@ private:
 
     std::array<HGMesh, 16*16> adtMeshes = {};
     //16x16, then layer
-    std::array<std::vector<HGMesh>, 16*16> waterMeshes = {};
+    std::array<std::vector<HGSortableMesh>, 16*16> waterMeshes = {};
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
@@ -172,7 +172,7 @@ private:
     void loadM2s();
     void loadWmos();
     void loadWater();
-    HGMesh createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
+    HGSortableMesh createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
 
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,

@@ -1,8 +1,8 @@
 #include "IDevice.h"
 
 static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
-    ITransparentMesh * pA = dynamic_cast<ITransparentMesh *>(indexA.get());
-    ITransparentMesh * pB = dynamic_cast<ITransparentMesh *>(indexB.get());
+    ISortableMesh * pA = dynamic_cast<ISortableMesh *>(indexA.get());
+    ISortableMesh * pB = dynamic_cast<ISortableMesh *>(indexB.get());
 
 //    HGMesh pA = sortedArrayPtr[indexA];
 //    HGMesh pB = sortedArrayPtr[indexB];
@@ -28,8 +28,8 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
     if (pA->getIsTransparent() && pB->getIsTransparent()) {
         if (((pA->getMeshType() == MeshType::eM2Mesh || pA->getMeshType() == MeshType::eParticleMesh) &&
             (pB->getMeshType() == MeshType::eM2Mesh || pB->getMeshType() == MeshType::eParticleMesh))) {
-            IM2Mesh *pA1 = dynamic_cast<IM2Mesh *>(pA);
-            IM2Mesh *pB1 = dynamic_cast<IM2Mesh *>(pB);
+            ISortableMesh *pA1 = dynamic_cast<ISortableMesh *>(pA);
+            ISortableMesh *pB1 = dynamic_cast<ISortableMesh *>(pB);
 
             if (pA1->priorityPlane()!= pB1->priorityPlane()) {
                 return pB1->priorityPlane() > pA1->priorityPlane();
@@ -43,9 +43,12 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
             }
 
 //            if (pA1->getM2Object() == pB1->getM2Object()) {
-            if (pA1->bindings() == pB1->bindings()) {
-                if (pB1->layer() != pA1->layer()) {
-                    return pB1->layer() < pA1->layer();
+            if (pA1->bindings() == pB1->bindings() && pA->getMeshType() == pB->getMeshType() && pB->getMeshType() == MeshType::eM2Mesh) {
+                IM2Mesh *pA2 = dynamic_cast<IM2Mesh *>(pA);
+                IM2Mesh *pB2 = dynamic_cast<IM2Mesh *>(pB);
+
+                if (pB2->layer() != pA2->layer()) {
+                    return pB2->layer() < pA2->layer();
                 }
             }
         } else {
@@ -56,7 +59,7 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
                 return false;
             }
         }
-    }else {
+    } else {
         if (pA->getSortDistance() > pB->getSortDistance()) {
             return true;
         }

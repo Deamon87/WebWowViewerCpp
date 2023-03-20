@@ -13,7 +13,7 @@
 #include "../algorithms/mathHelper_culling.h"
 #include "../../gapi/interface/materials/IMaterial.h"
 
-void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
+void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
     {
         auto inserter = std::back_inserter(opaqueMeshes);
         std::copy(this->m_opaqueMeshes.begin(), this->m_opaqueMeshes.end(), inserter);
@@ -28,7 +28,7 @@ void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<
 }
 
 
-void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
+void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
     for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
         wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
@@ -82,8 +82,9 @@ static std::array<GBufferBinding, 3> DrawPortalBindings = {
     //24
 };
 
-void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
-
+void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
+//TODO:
+    return;
     std::vector<uint16_t> indiciesArray;
     std::vector<float> verticles;
     int k = 0;
@@ -163,7 +164,7 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
         });
 
 
-        transparentMeshes.push_back(hDevice->createMesh(meshTemplate));
+//        transparentMeshes.push_back(hDevice->createMesh(meshTemplate));
     }
 }
 
