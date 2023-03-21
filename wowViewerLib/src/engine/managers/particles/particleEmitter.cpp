@@ -259,6 +259,7 @@ static const std::array<EGxBlendEnum, 8> ParticleBlendingModeToEGxBlendEnum =
 
 void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer) {
     HGDevice device = m_api->hDevice;
+    m_sceneRenderer = sceneRenderer;
 
     if (m_indexVBO == nullptr) {
         //TODO:
@@ -315,9 +316,10 @@ void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer) {
 
     //Create Buffers
     for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
-        //TODO:
-        frame[i].m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(10 * sizeof(ParticleBuffStructQuad));
 
+        makeVAOForFrame(m_sceneRenderer, frame[i], 10 * sizeof(ParticleBuffStructQuad));
+
+        frame[i].m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(10 * sizeof(ParticleBuffStructQuad));
         frame[i].m_bindings = sceneRenderer->createM2ParticleVAO(frame[i].m_bufferVBO,m_indexVBO);
 
         //Create mesh
@@ -329,6 +331,10 @@ void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer) {
 
         frame[i].m_mesh = sceneRenderer->createSortableMesh(meshTemplate, m_material, m_data->old.textureTileRotation);
     }
+}
+void ParticleEmitter::makeVAOForFrame(const HMapSceneBufferCreate &sceneRenderer, particleFrame &currFrame, int size) {
+    currFrame.m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(size);
+    currFrame.m_bindings = sceneRenderer->createM2ParticleVAO(currFrame.m_bufferVBO,m_indexVBO);
 }
 
 
@@ -630,8 +636,10 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
         maxFutureSize *= 2;
     }
 
-    //TODO:
-    vboBufferDynamic->resize(maxFutureSize);
+    if (maxFutureSize > vboBufferDynamic->getSize()) {
+        makeVAOForFrame(m_sceneRenderer, frame[frameNum], maxFutureSize);
+        vboBufferDynamic = frame[frameNum].m_bufferVBO;
+    }
 
     szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointer();
     szVertexCnt = 0;

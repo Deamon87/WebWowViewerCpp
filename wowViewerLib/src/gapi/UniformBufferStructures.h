@@ -133,7 +133,6 @@ namespace Ribbon {
         float textureTranslate1;
         float textureTranslate2;
         float padding4; // according to std140
-
     };
 }
 

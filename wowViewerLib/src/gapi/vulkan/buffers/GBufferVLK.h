@@ -50,6 +50,7 @@ public:
         return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx, true);
     }
 
+    std::shared_ptr<IBuffer> mutate(int newSize) override;
     void resize(int newLength);
 private:
     HGDeviceVLK m_device;
@@ -85,6 +86,8 @@ private:
         void *getPointer() override;
         void save(int length) override;
         size_t getSize() override;
+
+        std::shared_ptr<IBuffer> mutate(int newSize) override;
 
         VkBuffer getGPUBuffer() override {
             return m_parentBuffer->getGPUBuffer();

@@ -205,7 +205,7 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Particle::meshParticleWideBlockPS>>(uboBuffer); ;
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"})
-        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyM2ParticleVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&l_sceneWideChunk, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())

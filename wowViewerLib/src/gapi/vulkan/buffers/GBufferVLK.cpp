@@ -109,6 +109,10 @@ void GBufferVLK::subUploadData(void *data, int offset, int length) {
     memcpy((uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+offset, data, length);
 }
 
+std::shared_ptr<IBuffer> GBufferVLK::mutate(int newSize) {
+    resize(newSize);
+    return shared_from_this();
+}
 void GBufferVLK::resize(int newLength) {
     m_bufferSize = newLength;
 
@@ -211,7 +215,7 @@ GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
     m_alloc = alloc;
     m_offset = offset;
     m_size = size;
-    m_fakeSize = fakeSize;
+    m_fakeSize = fakeSize > 0 ? fakeSize : m_size;
     m_dataPointer = dataPointer;
 }
 
@@ -254,3 +258,6 @@ void GBufferVLK::GSubBufferVLK::save(int length) {
 size_t GBufferVLK::GSubBufferVLK::getSize() {
     return m_fakeSize;
 }
+std::shared_ptr<IBuffer> GBufferVLK::GSubBufferVLK::mutate(int newSize) {
+    return m_parentBuffer->getSubBuffer(newSize);
+};

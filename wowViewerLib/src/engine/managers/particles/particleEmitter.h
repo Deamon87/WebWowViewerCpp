@@ -79,6 +79,8 @@ public:
     static bool randTableInited;
 private:
     HApiContainer m_api;
+    HMapSceneBufferCreate m_sceneRenderer;
+
 
     M2Particle *m_data;
     M2Object *m2Object;
@@ -201,6 +203,7 @@ private:
     static HGIndexBuffer m_indexVBO;
 
     void GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const;
+    void makeVAOForFrame(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int size);
 };
 
 
