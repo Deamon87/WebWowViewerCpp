@@ -245,6 +245,8 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
 }
 
 inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh) {
+    if (mesh == nullptr) return;
+
     const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
     auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
 
@@ -329,6 +331,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         uploadCmd.submitBufferUploads(l_this->uboBuffer);
 
         uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
+        uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
         uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
         uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
         uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);

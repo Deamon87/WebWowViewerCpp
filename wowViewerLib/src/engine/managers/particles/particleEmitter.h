@@ -198,12 +198,12 @@ private:
     std::shared_ptr<IM2ParticleMaterial> m_material = nullptr;
     std::array<particleFrame, IDevice::MAX_FRAMES_IN_FLIGHT> frame;
 
-    void createMesh(const HMapSceneBufferCreate &sceneRenderer);
+    void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
 
     static HGIndexBuffer m_indexVBO;
 
     void GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const;
-    void makeVAOForFrame(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int size);
+    void createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int size);
 };
 
 

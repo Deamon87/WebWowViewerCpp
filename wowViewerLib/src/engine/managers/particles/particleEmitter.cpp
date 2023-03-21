@@ -209,7 +209,7 @@ ParticleEmitter::ParticleEmitter(const HApiContainer &api, const HMapSceneBuffer
     }
 
     selectShaderId();
-    createMesh(sceneRenderer);
+    createMeshes(sceneRenderer);
 }
 
 void ParticleEmitter::selectShaderId() {
@@ -257,7 +257,7 @@ static const std::array<EGxBlendEnum, 8> ParticleBlendingModeToEGxBlendEnum =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
-void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer) {
+void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     HGDevice device = m_api->hDevice;
     m_sceneRenderer = sceneRenderer;
 
@@ -316,25 +316,21 @@ void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer) {
 
     //Create Buffers
     for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
-
-        makeVAOForFrame(m_sceneRenderer, frame[i], 10 * sizeof(ParticleBuffStructQuad));
-
-        frame[i].m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(10 * sizeof(ParticleBuffStructQuad));
-        frame[i].m_bindings = sceneRenderer->createM2ParticleVAO(frame[i].m_bufferVBO,m_indexVBO);
-
         //Create mesh
-        gMeshTemplate meshTemplate(frame[i].m_bindings);
-
-        meshTemplate.meshType = MeshType::eParticleMesh;
-        meshTemplate.start = 0;
-        meshTemplate.end = 0;
-
-        frame[i].m_mesh = sceneRenderer->createSortableMesh(meshTemplate, m_material, m_data->old.textureTileRotation);
+        createMesh(m_sceneRenderer, frame[i], 10 * sizeof(ParticleBuffStructQuad));
     }
 }
-void ParticleEmitter::makeVAOForFrame(const HMapSceneBufferCreate &sceneRenderer, particleFrame &currFrame, int size) {
+void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &currFrame, int size) {
     currFrame.m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(size);
     currFrame.m_bindings = sceneRenderer->createM2ParticleVAO(currFrame.m_bufferVBO,m_indexVBO);
+
+    gMeshTemplate meshTemplate(currFrame.m_bindings);
+
+    meshTemplate.meshType = MeshType::eParticleMesh;
+    meshTemplate.start = 0;
+    meshTemplate.end = 0;
+
+    currFrame.m_mesh = sceneRenderer->createSortableMesh(meshTemplate, m_material, m_data->old.textureTileRotation);
 }
 
 
@@ -637,7 +633,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     }
 
     if (maxFutureSize > vboBufferDynamic->getSize()) {
-        makeVAOForFrame(m_sceneRenderer, frame[frameNum], maxFutureSize);
+        createMesh(m_sceneRenderer, frame[frameNum], maxFutureSize);
         vboBufferDynamic = frame[frameNum].m_bufferVBO;
     }
 
@@ -901,6 +897,10 @@ int ParticleEmitter::CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRe
     }
 
     if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
+        return 0;
+    }
+
+    if (p.age > getGenerator()->GetMaxLifeSpan()) {
         return 0;
     }
 
