@@ -20,6 +20,7 @@ layout (location = 5) in vec2 aTexCoord4;
 layout (location = 6) in vec4 aColor;
 layout (location = 7) in vec4 aColor2;
 layout (location = 8) in vec4 aColorSecond;
+layout (location = 9) in vec4 wmoAmbient;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
@@ -42,6 +43,7 @@ layout(location=5) out vec4 vColor2;
 layout(location=6) out vec4 vColorSecond;
 layout(location=7) out vec4 vPosition;
 layout(location=8) out vec3 vNormal;
+layout(location=9) out vec4 vWmoAmbient;
 
 
 void main() {
@@ -64,4 +66,6 @@ void main() {
     int uVertexShader = VertexShader_UseLitColor.x;
 
     calcWMOVertMat(uVertexShader, vPosition.xyz, vNormal, aTexCoord, aTexCoord2, aTexCoord3, vTexCoord, vTexCoord2, vTexCoord3);
+
+    vWmoAmbient = wmoAmbient;
 }

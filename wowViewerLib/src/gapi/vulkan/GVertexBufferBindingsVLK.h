@@ -35,7 +35,7 @@ public:
     void save() override;
 
     void setIndexBuffer(HGIndexBuffer indexBuffer) override;
-    void addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings) override;
+    void addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings, bool isInstanceInputRate = false) override;
     std::vector<vkBufferFormatHolder> &getVLKFormat();
 
 

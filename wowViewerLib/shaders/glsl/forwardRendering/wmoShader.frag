@@ -22,15 +22,11 @@ layout(location=5) in vec4 vColor2;
 layout(location=6) in vec4 vColorSecond;
 layout(location=7) in vec4 vPosition;
 layout(location=8) in vec3 vNormal;
+layout(location=9) in vec4 vWmoAmbient;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
-};
-
-layout(std140, set=0, binding=3) uniform modelWideBlockPS {
-    InteriorLightParam intLight;
-
 };
 
 layout(std140, set=0, binding=4) uniform meshWideBlockPS {
@@ -71,6 +67,10 @@ void main() {
 
     if (doDiscard)
         discard;
+
+    InteriorLightParam intLight;
+    intLight.uInteriorAmbientColorAndApplyInteriorLight = vWmoAmbient;
+    intLight.uInteriorDirectColorAndApplyExteriorLight = vec4(0, 0, 0, 1.0f);
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     finalColor = vec4(

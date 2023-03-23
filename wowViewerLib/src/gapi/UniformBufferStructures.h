@@ -149,10 +149,6 @@ namespace WMO {
         int padding[2];
     };
 
-    struct modelWideBlockPS {
-        InteriorLightParam intLight;
-    };
-
     struct meshWideBlockPS {
 //    PACK({struct
         int UseLitColor;

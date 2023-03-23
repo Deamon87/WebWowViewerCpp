@@ -26,7 +26,7 @@ public:
     bool hasWater() const {return m_mliq != nullptr; };
 
 
-    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
+    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, mathfu::vec4 localAmbient);
     HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
 
     int getFileDataId() const {return m_fileDataId;}

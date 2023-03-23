@@ -384,10 +384,10 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     return indexVBO;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, mathfu::vec4 localAmbient) {
     if (vertexBufferBindings == nullptr) {
 
-        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer));
+        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer), localAmbient);
     }
 
     return vertexBufferBindings;

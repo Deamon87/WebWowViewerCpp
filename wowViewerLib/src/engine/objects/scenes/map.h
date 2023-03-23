@@ -42,6 +42,7 @@ protected:
     FrameCounter m2UpdateframeCounter;
     FrameCounter m2calcDistanceCounter;
     FrameCounter adtCleanupCounter;
+    FrameCounter wmoUpdate;
     FrameCounter wmoGroupUpdate;
     FrameCounter adtUpdate;
 

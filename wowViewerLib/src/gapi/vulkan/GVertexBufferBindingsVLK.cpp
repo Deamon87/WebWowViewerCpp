@@ -67,8 +67,8 @@ void GVertexBufferBindingsVLK::setIndexBuffer(HGIndexBuffer indexBuffer) {
     m_indexBuffer = indexBuffer;
 }
 
-void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings) {
-    int bindingIdx = 0;
+void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings, bool isInstanceInputRate) {
+
 //    for (auto &gVertexBinding : m_bindings) {
         uint32_t stride = 0;
         if (bindings[0].stride != 0) {
@@ -77,10 +77,11 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vert
             stride = bindings[0].size * ((bindings[0].type == GBindingType::GFLOAT) ? 4 : 1);
         }
 
+        int bindingIdx = m_BufferBindingsVLK.size();
         vkBufferFormatHolder bufferFormatHolder;
         bufferFormatHolder.bindingDescription.binding = bindingIdx;
         bufferFormatHolder.bindingDescription.stride = stride;
-        bufferFormatHolder.bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        bufferFormatHolder.bindingDescription.inputRate = !isInstanceInputRate ?VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
 
         for (auto &gBinding : bindings) {
             VkVertexInputAttributeDescription attributeDescription = {};
@@ -91,7 +92,6 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vert
 
             bufferFormatHolder.attributeDescription.push_back(attributeDescription);
         }
-        bindingIdx++;
 
         m_BufferBindingsVLK.push_back(bufferFormatHolder);
         m_vertexBuffers.push_back(vertexBuffer);

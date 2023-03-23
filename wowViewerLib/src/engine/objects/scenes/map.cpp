@@ -455,7 +455,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
             m_viewRenderOrder,
             true,
             mapRenderPlan->viewsHolder)) {
-            mapRenderPlan->wmoArray.addCand(mapRenderPlan->m_currentWMO);
+            mapRenderPlan->wmoArray.addToDrawn(mapRenderPlan->m_currentWMO);
         }
 
         cullExterior.beginMeasurement();
@@ -1081,6 +1081,8 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             viewRenderOrder,
             false,
             mapRenderPlan->viewsHolder)) {
+
+            mapRenderPlan->wmoArray.addToDrawn(wmoCandidate);
         }
     }
     cullExterioFrustumWMO.endMeasurement();
@@ -1396,6 +1398,13 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
         m2UpdateframeCounter.endMeasurement();
     }
+
+    wmoUpdate.beginMeasurement();
+    for (const auto &wmoObject : renderPlan->wmoArray.getToDrawn()) {
+        if (wmoObject == nullptr) continue;
+        wmoObject->update();
+    }
+    wmoUpdate.endMeasurement();
 
     wmoGroupUpdate.beginMeasurement();
     for (const auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {

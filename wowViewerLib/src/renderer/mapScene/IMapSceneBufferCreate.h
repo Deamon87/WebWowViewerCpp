@@ -37,7 +37,11 @@ class IMapSceneBufferCreate {
 public:
     virtual ~IMapSceneBufferCreate() = default;
 
-    virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+//-------------------------------------
+//  Buffer creation
+//-------------------------------------
+
+    virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) = 0;
     virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
@@ -60,6 +64,9 @@ public:
     virtual HGVertexBuffer createSkyVertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createSkyIndexBuffer(int sizeInBytes) = 0;
 
+//-------------------------------------
+//  Material creation
+//-------------------------------------
 
     virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount) = 0;
     virtual std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
@@ -70,6 +77,15 @@ public:
                                                                           const M2ParticleMaterialTemplate &m2MaterialTemplate) = 0;
 
     virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
+
+    virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() = 0;
+
+    virtual std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                            const PipelineTemplate &pipelineTemplate,
+                                                            const WMOMaterialTemplate &wmoMaterialTemplate) = 0;
+//-------------------------------------
+//  Mesh creation
+//-------------------------------------
 
     virtual HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) = 0;
     virtual HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;

@@ -145,7 +145,7 @@ struct renderFrameBufferShader {
 
 struct wmoShader {
     enum class Attribute {
-        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aTexCoord4 = 5, aColor = 6, aColor2 = 7, aColorSecond = 8, wmoShaderAttributeEnd
+        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aTexCoord4 = 5, aColor = 6, aColor2 = 7, aColorSecond = 8, wmoAmbient = 9, wmoShaderAttributeEnd
     };
 };
 
@@ -265,6 +265,7 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "aColor", 6},
     { "aColor2", 7},
     { "aColorSecond", 8},
+    { "wmoAmbient", 9},
   }
 },
 { "imguiShader",
@@ -331,11 +332,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {0,4,32},
       {0,0,368},
-      {0,3,32},
     },
     {
       {
-        {3,3,1},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2186,12 +2186,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
   }},
   {"wmoShader",  {
-    {
-      3, {
-        {"_0_3_intLight_uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
-        {"_0_3_intLight_uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
-      }
-    },
     {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},

@@ -22,6 +22,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     vboWMOBuffer    = m_device->createVertexBuffer(1024*1024);
     vboWaterBuffer  = m_device->createVertexBuffer(1024*1024);
     vboSkyBuffer    = m_device->createVertexBuffer(1024*1024);
+    vboWMOGroupAmbient = m_device->createVertexBuffer(16*200);
 
     {
         const float epsilon = 0.f;
@@ -51,6 +52,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
+    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, mathfu::vec4(0,0,0,0));
 
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
@@ -71,10 +73,20 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
 // Buffer creation
 // ------------------
 
-HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto wmoVAO = m_device->createVertexBufferBindings();
+
+    HGVertexBuffer ambientBuffer = nullptr;
+    if (vertexBuffer != nullptr) {
+        ambientBuffer = vboWMOGroupAmbient->getSubBuffer(sizeof(mathfu::vec4_packed));
+        auto packedAmbient = mathfu::vec4_packed(localAmbient);
+        static_assert(sizeof(packedAmbient) == 16); static_assert(sizeof(mathfu::vec4_packed) == 16);
+
+        ambientBuffer->uploadData(&packedAmbient, sizeof(mathfu::vec4_packed));
+    }
     wmoVAO->addVertexBufferBinding(vertexBuffer, std::vector(staticWMOBindings.begin(), staticWMOBindings.end()));
+    wmoVAO->addVertexBufferBinding(ambientBuffer, std::vector(staticWmoGroupAmbient.begin(), staticWmoGroupAmbient.end()), true);
     wmoVAO->setIndexBuffer(indexBuffer);
 
     return wmoVAO;
@@ -219,6 +231,46 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
         })
         .toMaterial<IM2ParticleMaterial>([l_fragmentData](IM2ParticleMaterial *instance) -> void {
             instance->m_fragmentData = l_fragmentData;
+        });
+
+    return material;
+}
+
+std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderForwardVLK::createWMOWideChunk() {
+    return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(uboBuffer);
+}
+
+std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                                          const PipelineTemplate &pipelineTemplate,
+                                                                          const WMOMaterialTemplate &wmoMaterialTemplate) {
+    auto l_vertexData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockVS>>(uboBuffer); ;
+    auto l_fragmentData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockPS>>(uboBuffer); ;
+
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"})
+        .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
+        .createDescriptorSet(0, [l_sceneWideChunk, &modelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(1, BufferChunkHelperVLK::cast(modelWide)->getSubBuffer())
+                .ubo(2, l_vertexData->getSubBuffer())
+                .ubo(4, l_fragmentData->getSubBuffer());
+        })
+        .createDescriptorSet(1, [&wmoMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[0]))
+                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[1]))
+                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[2]))
+                .texture(8, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[3]))
+                .texture(9, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[4]))
+                .texture(10, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[5]))
+                .texture(11, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[6]))
+                .texture(12, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[7]))
+                .texture(13, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[8]));
+        })
+        .toMaterial<IWMOMaterial>([&l_vertexData, &l_fragmentData](IWMOMaterial *instance) -> void {
+            instance->m_materialVS = l_vertexData;
+            instance->m_materialPS = l_fragmentData;
         });
 
     return material;

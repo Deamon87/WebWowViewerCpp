@@ -24,7 +24,7 @@ public:
 //-------------------------------------
 //  Buffer creation
 //-------------------------------------
-    HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) override;
     HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
@@ -33,7 +33,7 @@ public:
     HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
 
-    virtual HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) override;
+    HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createADTVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createADTIndexBuffer(int sizeInBytes) override;
@@ -47,6 +47,10 @@ public:
     HGVertexBuffer createSkyVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createSkyIndexBuffer(int sizeInBytes) override;
 
+//-------------------------------------
+//  Material creation
+//-------------------------------------
+
     std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount) override;
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
@@ -55,8 +59,18 @@ public:
     std::shared_ptr<IM2ParticleMaterial> createM2ParticleMaterial(const PipelineTemplate &pipelineTemplate,
                                                                   const M2ParticleMaterialTemplate &m2MaterialTemplate) override;
 
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() override;
+
+    std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                    const PipelineTemplate &pipelineTemplate,
+                                                    const WMOMaterialTemplate &wmoMaterialTemplate) override;
+
 
     std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) override;
+
+//-------------------------------------
+//  Mesh creation
+//-------------------------------------
 
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
@@ -73,6 +87,7 @@ private:
     HGBufferVLK vboM2ParticleBuffer;
     HGBufferVLK vboAdtBuffer;
     HGBufferVLK vboWMOBuffer;
+    HGBufferVLK vboWMOGroupAmbient;
     HGBufferVLK vboWaterBuffer;
     HGBufferVLK vboSkyBuffer;
 
@@ -94,6 +109,7 @@ private:
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
     HGVertexBufferBindings m_emptyM2ParticleVAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
+    HGVertexBufferBindings m_emptyWMOVAO = nullptr;
 
     void createFrameBuffers();
 };

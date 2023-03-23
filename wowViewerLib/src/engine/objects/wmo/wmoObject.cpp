@@ -308,10 +308,9 @@ void WmoObject::createWorldPortals() {
         //Calc CAAbox
         mathfu::vec3 min(99999,99999,99999), max(-99999,-99999,-99999);
 
-        for (int k = 0; k < portalVecs.size(); k++) {
-
-            min = mathfu::vec3::Min(portalVecs[k], min);
-            max = mathfu::vec3::Max(portalVecs[k], max);
+        for (const auto & portalVec : portalVecs) {
+            min = mathfu::vec3::Min(portalVec, min);
+            max = mathfu::vec3::Max(portalVec, max);
         }
 
         CAaBox &aaBoxCopyTo = geometryPerPortal[j].aaBox;
@@ -323,10 +322,12 @@ void WmoObject::createWorldPortals() {
 bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
+            m_sceneRenderer = sceneRenderer;
             this->createGroupObjects();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
-            this->createM2Array();
+            this->createMaterialCache();
+            m_modelWideChunk = sceneRenderer->createWMOWideChunk();
 
             if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
                 skyBox = std::make_shared<M2Object>(m_api, true);
@@ -357,6 +358,46 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
 void WmoObject::update() {
     if (!m_loaded) return;
 
+    auto &modelWide = m_modelWideChunk->getObject();
+    modelWide.uPlacementMat = m_placementMatrix;
+    m_modelWideChunk->save();
+
+    //Update Materials
+    for (int matIndex = 0; matIndex < m_materialCache.size(); matIndex++) {
+        auto materialInstance = m_materialCache[matIndex].lock();
+        if (materialInstance == nullptr) continue;
+
+        const SMOMaterial &material = getMaterials()[matIndex];
+        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+        auto shaderId = material.shader;
+        if (shaderId >= MAX_WMO_SHADERS) {
+            shaderId = 0;
+        }
+        int pixelShader = wmoMaterialShader[shaderId].pixelShader;
+        int vertexShader = wmoMaterialShader[shaderId].vertexShader;
+        auto blendMode = material.blendMode;
+
+        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+
+
+        //Update VS block
+        auto &blockVS = materialInstance->m_materialVS->getObject();
+        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockVS.VertexShader = vertexShader;
+        materialInstance->m_materialVS->save();
+
+        //Update PS block
+        auto &blockPS = materialInstance->m_materialPS->getObject();
+        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
+        blockPS.PixelShader = pixelShader;
+        blockPS.BlendMode = blendMode;
+        blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
+            mathfu::vec4(0,0,0, alphaTest));
+        materialInstance->m_materialPS->save();
+    }
+
+
     for (int i= 0; i < groupObjects.size(); i++) {
         if(groupObjects[i] != nullptr) {
             groupObjects[i]->update();
@@ -386,20 +427,7 @@ void WmoObject::uploadGeneratorBuffers() {
 
 void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){
     if (!m_loaded) return;
-
-//    for (int i= 0; i < groupObjects.size(); i++) {
-//        if(drawGroupWMO[i]) {
-//           if (groupObjects[i] != nullptr && lodGroupLevelWMO[i] == 0) {
-//               groupObjects[i]->collectMeshes(renderedThisFrame);
-//           } else if (groupObjectsLod1[i] != nullptr && lodGroupLevelWMO[i] == 1) {
-//               groupObjectsLod1[i]->collectMeshes(renderedThisFrame);
-//           } else if (groupObjectsLod2[i] != nullptr && lodGroupLevelWMO[i] == 2) {
-//               groupObjectsLod2[i]->collectMeshes(renderedThisFrame);
-//           } else if (groupObjects[i] != nullptr) {
-//               groupObjects[i]->collectMeshes(renderedThisFrame);
-//           }
-//        }
-//    }
+    //Draw debug portals/Lights here?
 }
 
 void WmoObject::drawDebugLights(){
@@ -735,7 +763,8 @@ CAaBox WmoObject::getAABB() {
     return this->m_bbox;
 }
 
-void WmoObject::createM2Array() {
+void WmoObject::createMaterialCache() {
+    m_materialCache = decltype(m_materialCache)(mainGeom->materialsLen);
 }
 
 void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
@@ -774,7 +803,7 @@ bool WmoObject::startTraversingWMOGroup(
     FrameViewsHolder &viewsHolder
 ) {
     if (!m_loaded)
-        return true;
+        return false;
 
     std::vector<HInteriorView> ivPerWMOGroup = std::vector<HInteriorView>(mainGeom->groupsLen);
 
@@ -810,6 +839,8 @@ bool WmoObject::startTraversingWMOGroup(
     };
 
     if (traversingFromInterior && m_api->getConfig()->usePortalCulling) {
+        traverseTempData.atLeastOneGroupIsDrawn = true;
+
         std::shared_ptr<WmoGroupObject> nextGroupObject = groupObjects[groupId];
         if (nextGroupObject->getIsLoaded() && nextGroupObject->getWmoGroupGeom()->mogp->flags2.isSplitGroupChild) {
             groupId = nextGroupObject->getWmoGroupGeom()->mogp->parentSplitOrFirstChildGroupIndex;
@@ -862,7 +893,7 @@ bool WmoObject::startTraversingWMOGroup(
                     }
                     if (drawGroup) {
                         exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
-
+                        traverseTempData.atLeastOneGroupIsDrawn = true;
                         this->traverseGroupWmo(
                             i,
                             false,
@@ -908,7 +939,7 @@ bool WmoObject::startTraversingWMOGroup(
     }
 
     //M2s will be collected later from separate function call
-    return true;
+    return traverseTempData.atLeastOneGroupIsDrawn;
 }
 void WmoObject::addSplitChildWMOsToView(InteriorView &interiorView, int groupId) {
     if (!groupObjects[groupId]->getIsLoaded())
@@ -1410,6 +1441,66 @@ PointerChecker<SMOLight> &WmoObject::getLightArray() {
 PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
 }
+
+std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) {
+    auto materialInstance = m_materialCache[materialIndex].lock();
+    if (materialInstance != nullptr) return materialInstance;
+
+    //Otherwise create goddamit material
+
+    const SMOMaterial &material = getMaterials()[materialIndex];
+    assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+    auto shaderId = material.shader;
+    if (shaderId >= MAX_WMO_SHADERS) {
+        shaderId = 0;
+    }
+//        if (shaderId == 23) {
+//            std::cout << "Hello" << std::endl;
+//        }
+    int pixelShader = wmoMaterialShader[shaderId].pixelShader;
+    int vertexShader = wmoMaterialShader[shaderId].vertexShader;
+
+    auto blendMode = material.blendMode;
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = blendMode <= 1;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = !(material.flags.F_UNCULLED);
+
+    pipelineTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+
+    bool isSecondTextSpec = material.shader == 8;
+
+    HGTexture texture1 = getTexture(material.diffuseNameIndex, false);
+    HGTexture texture2 = getTexture(material.envNameIndex, isSecondTextSpec);
+    HGTexture texture3 = getTexture(material.texture_2, false);
+
+    WMOMaterialTemplate materialTemplate;
+
+    materialTemplate.textures[0] = texture1;
+    materialTemplate.textures[1] = texture2;
+    materialTemplate.textures[2] = texture3;
+
+    if (pixelShader == (int)WmoPixelShader::MapObjParallax) {
+        materialTemplate.textures[3] = getTexture(material.color_2, false);
+        materialTemplate.textures[4] = getTexture(material.flags_2, false);
+        materialTemplate.textures[5] = getTexture(material.runTimeData[0], false);
+    } else if (pixelShader == (int)WmoPixelShader::MapObjDFShader) {
+        materialTemplate.textures[3] = getTexture(material.color_2, false);
+        materialTemplate.textures[4] = getTexture(material.flags_2, false);
+        materialTemplate.textures[5] = getTexture(material.runTimeData[0], false);
+        materialTemplate.textures[6] = getTexture(material.runTimeData[1], false);
+        materialTemplate.textures[7] = getTexture(material.runTimeData[2], false);
+        materialTemplate.textures[8] = getTexture(material.runTimeData[3], false);
+    }
+
+    auto wmoMaterialInstance = m_sceneRenderer->createWMOMaterial(m_modelWideChunk,
+                                                                  pipelineTemplate, materialTemplate);
+    m_materialCache[materialIndex] = wmoMaterialInstance;
+
+    return wmoMaterialInstance;
+};
 
 std::shared_ptr<M2Object> WmoObject::getSkyBoxForGroup(int groupNum) {
     if (!m_loaded) return nullptr;

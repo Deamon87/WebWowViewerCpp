@@ -78,8 +78,6 @@ private:
     mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
-    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> vertexModelWideUniformBuffer = nullptr;
-    std::shared_ptr<IBufferChunk<WMO::modelWideBlockPS>> fragmentModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGSortableMesh> m_sortableMeshArray = {};
     std::vector<HGSortableMesh> m_waterMeshArray = {};

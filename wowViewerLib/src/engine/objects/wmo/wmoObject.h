@@ -40,11 +40,14 @@ private:
         mathfu::vec4 &cameraLocal;
         mathfu::mat4 &transposeInverseModelMat;
         std::vector<bool> &transverseVisitedPortals;
+
+        bool atLeastOneGroupIsDrawn = false;
     };
 
     HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
+    HMapSceneBufferCreate m_sceneRenderer;
     bool m_loading = false;
     bool m_loaded = false;
     CAaBox m_bbox;
@@ -74,6 +77,9 @@ private:
 
     std::unordered_map<int, HGTexture> diffuseTextures;
     std::unordered_map<int, HGTexture> specularTextures;
+
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWideChunk;
+    std::vector<std::weak_ptr<IWMOMaterial>> m_materialCache;
 
     HGMesh transformedAntiPortals;
 
@@ -110,10 +116,11 @@ public:
     virtual SMOHeader *getWmoHeader() override;
     mathfu::vec3 getAmbientColor() override;
 
-    virtual PointerChecker<SMOMaterial> &getMaterials() override;
+    PointerChecker<SMOMaterial> &getMaterials() override;
+    std::shared_ptr<IWMOMaterial> getMaterialInstance(int index) override;
 
-    virtual PointerChecker<SMOLight> &getLightArray() override;
-    virtual std::vector<PortalInfo_t> &getPortalInfos() override {
+    PointerChecker<SMOLight> &getLightArray() override;
+    std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
 
@@ -130,7 +137,7 @@ public:
     void update();
     void uploadGeneratorBuffers();
 
-    void createM2Array();
+    void createMaterialCache();
     void updateBB() override ;
 
     CAaBox getAABB();
@@ -194,9 +201,11 @@ class WMOListContainer {
 private:
     std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
     std::vector<std::shared_ptr<WmoObject>> wmoToLoad;
+    std::vector<std::shared_ptr<WmoObject>> wmoToDrawn;
 
     bool candCanHaveDuplicates = false;
     bool toLoadCanHaveDuplicates = false;
+    bool toDrawmCanHaveDuplicates = false;
 
     void inline removeDuplicates(std::vector<std::shared_ptr<WmoObject>> &array) {
         if (array.size() < 1000) {
@@ -250,6 +259,23 @@ public:
 
         return wmoToLoad;
     }
+
+    void addToDrawn(const std::shared_ptr<WmoObject> &toDrawn) {
+        if (!toDrawn->isLoaded()) {
+            wmoToDrawn.push_back(toDrawn);
+            toDrawmCanHaveDuplicates = true;
+        }
+    }
+
+    const std::vector<std::shared_ptr<WmoObject>> &getToDrawn() {
+        if (this->toDrawmCanHaveDuplicates) {
+            removeDuplicates(wmoToDrawn);
+            toDrawmCanHaveDuplicates = false;
+        }
+
+        return wmoToDrawn;
+    }
+
 };
 
 

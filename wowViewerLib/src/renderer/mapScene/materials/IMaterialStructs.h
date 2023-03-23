@@ -18,6 +18,14 @@ struct M2ParticleMaterialTemplate {
     std::array<HGTexture, 3> textures = {nullptr, nullptr, nullptr};
 };
 
+struct WMOMaterialTemplate {
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWide;
+
+    std::array<HGTexture, 9> textures = {nullptr, nullptr, nullptr,
+                                         nullptr, nullptr, nullptr,
+                                         nullptr, nullptr, nullptr};
+};
+
 
 class IM2ModelData {
 public:
@@ -42,6 +50,12 @@ public:
 class ISkyMeshMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<DnSky::meshWideBlockVS>> m_skyColors = nullptr;
+};
+
+class IWMOMaterial : public IMaterial {
+public:
+    std::shared_ptr<IBufferChunk<WMO::meshWideBlockVS>> m_materialVS= nullptr;
+    std::shared_ptr<IBufferChunk<WMO::meshWideBlockPS>> m_materialPS = nullptr;
 };
 
 #endif //AWEBWOWVIEWERCPP_IMATERIALSTRUCTS_H
