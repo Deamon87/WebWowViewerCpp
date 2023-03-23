@@ -386,6 +386,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
         uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
         uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
+        uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
         uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
         uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
 

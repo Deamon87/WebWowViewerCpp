@@ -261,7 +261,7 @@ public:
     }
 
     void addToDrawn(const std::shared_ptr<WmoObject> &toDrawn) {
-        if (!toDrawn->isLoaded()) {
+        if (toDrawn->isLoaded()) {
             wmoToDrawn.push_back(toDrawn);
             toDrawmCanHaveDuplicates = true;
         }

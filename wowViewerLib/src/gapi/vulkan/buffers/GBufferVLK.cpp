@@ -137,7 +137,8 @@ void GBufferVLK::resize(int newLength) {
                );
 
             deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
-            
+
+            uploadFromStaging(offset, offset, subBuffer->m_size);
 
             subBuffer->m_offset = offset;
             subBuffer->m_alloc = alloc;

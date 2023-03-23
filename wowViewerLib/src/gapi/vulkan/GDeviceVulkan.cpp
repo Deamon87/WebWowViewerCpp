@@ -171,7 +171,7 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)){
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     m_textureManager->initialize();
 
@@ -1200,27 +1200,20 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
 VkDescriptorSet
 GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) {
     //1. Try to allocate from existing sets
-
-    //Keep only one descriptor set pool for now
-    if (m_descriptorPools.size() == 0) {
-        std::shared_ptr<GDescriptorPoolVLK> newPool = std::make_shared<GDescriptorPoolVLK>(*this);
-        m_descriptorPools.push_back(newPool);
+    for (size_t i = 0; i < m_descriptorPools.size(); i++) {
+        desciptorPool = m_descriptorPools[i];
+        auto result = desciptorPool->allocate(hDescriptorSetLayout);
+        if (result != nullptr) {
+            return result;
+        }
     }
+    //2. Create new descriptor set and allocate from it
+    {
+        auto newPool = std::make_shared<GDescriptorPoolVLK>(*this);
+        m_descriptorPools.push_back(newPool);
 
-    desciptorPool = m_descriptorPools[0];
-    return m_descriptorPools[0]->allocate(hDescriptorSetLayout);
-//
-//    for (size_t i = 0; i < m_descriptorPools.size(); i++) {
-//        descriptorSet = m_descriptorPools[i]->allocate(hDescriptorSetLayout);
-//        if (descriptorSet != nullptr)
-//            return descriptorSet;
-//    }
-//
-//    //2. Create new descriptor set and allocate from it
-//    GDescriptorPoolVLK * newPool = new GDescriptorPoolVLK(*this);
-//    m_descriptorPools.push_back(newPool);
-//
-//    return newPool->allocate(hDescriptorSetLayout);
+        return newPool->allocate(hDescriptorSetLayout);
+    }
 }
 
 std::shared_ptr<GDescriptorSet>

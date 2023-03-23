@@ -7,7 +7,7 @@
 #include "GDescriptorPoolVLK.h"
 
 GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device) {
-    uniformsAvailable = 5*4096;
+    uniformsAvailable = 40*4096;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096 * 4;
 
@@ -51,9 +51,11 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 
-    uniformsAvailable -= hDescriptorSetLayout->getTotalUbos();
-    imageAvailable -= hDescriptorSetLayout->getTotalImages();
-	setsAvailable -= 1;
+    if (descriptorSet != nullptr) {
+        uniformsAvailable -= hDescriptorSetLayout->getTotalUbos();
+        imageAvailable -= hDescriptorSetLayout->getTotalImages();
+        setsAvailable -= 1;
+    }
 
     return descriptorSet;
 }

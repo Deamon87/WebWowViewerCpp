@@ -10,6 +10,7 @@ GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, con
     : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
 
     m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
+    assert(m_descriptorSet != nullptr);
 }
 GDescriptorSet::~GDescriptorSet() {
     m_parentPool->deallocate(m_hDescriptorSetLayout, getDescSet());
@@ -24,6 +25,7 @@ GDescriptorSet::SetUpdateHelper GDescriptorSet::beginUpdate() {
         m_parentPool->deallocate(m_hDescriptorSetLayout, m_descriptorSet);
         
         m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
+        assert(m_descriptorSet != nullptr);
     }
     return SetUpdateHelper(*this, boundDescriptors);
 }

@@ -27,7 +27,7 @@ static const std::vector<GBufferBinding> staticWMOBindings = {{
     {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true,sizeof(WMOVertex), offsetof(WMOVertex, colorSecond)}
 }};
 static const std::vector<GBufferBinding> staticWmoGroupAmbient = {{
-  {+wmoShader::Attribute::wmoAmbient, 3, GBindingType::GFLOAT, false,          sizeof(mathfu::vec4_packed), 0},
+  {+wmoShader::Attribute::wmoAmbient, 4, GBindingType::GFLOAT, false,          sizeof(mathfu::vec4_packed), 0},
 }};
 
 static const std::vector<GBufferBinding> staticWaterBindings = {{
