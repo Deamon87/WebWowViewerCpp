@@ -31,6 +31,9 @@ public:
                          const VkImage &image,
                          const VkImageView &imageView,
                          bool dumbParam);
+    GTextureVLK(const GTextureVLK&) = delete;
+    GTextureVLK(const GTextureVLK&&) = delete;
+
 
     explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 
@@ -114,6 +117,7 @@ protected:
     int m_width = 0;
     int m_height = 0;
 
+    std::string m_debugName;
 
     void createVulkanImageObject(
         bool isDepthTexture,

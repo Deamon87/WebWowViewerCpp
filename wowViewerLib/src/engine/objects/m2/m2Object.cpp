@@ -1022,7 +1022,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
             particleCoordinatesFix; // <- actually is there in the client
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
-        particleEmitters[i]->prepearBuffers(viewMat);
     }
     this->sortMaterials(modelViewMat);
 
@@ -1104,6 +1103,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     for (int i = minParticle; i < maxParticle; i++) {
+        particleEmitters[i]->prepearBuffers(viewMat);
         particleEmitters[i]->updateBuffers();
     }
 

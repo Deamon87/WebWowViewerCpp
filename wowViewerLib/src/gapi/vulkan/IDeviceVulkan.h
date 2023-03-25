@@ -44,6 +44,7 @@ public:
 
     virtual const QueueFamilyIndices &getQueueFamilyIndices() = 0;
 
+    virtual void setObjectName(uint64_t object, VkObjectType objectType, const char *name) = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_IDEVICEVULKAN_H

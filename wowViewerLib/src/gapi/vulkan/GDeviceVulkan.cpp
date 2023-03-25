@@ -237,11 +237,47 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     vkSurface = callback->createSurface(vkInstance);
 }
 
+std::unordered_set<std::string> GDeviceVLK::get_enabled_extensions() {
+    /*
+     * From the link above:
+     * If `pProperties` is NULL, then the number of extensions properties
+     * available is returned in `pPropertyCount`.
+     *
+     * Basically, gets the number of extensions.
+     */
+    uint32_t count = 0;
+    VkResult result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, nullptr);
+    if (result != VK_SUCCESS) {
+        // Throw an exception or log the error
+    }
+
+    std::vector<VkExtensionProperties> extensionProperties(count);
+
+    // Get the extensions
+    result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &count, extensionProperties.data());
+    if (result != VK_SUCCESS) {
+        // Throw an exception or log the error
+    }
+
+     std::unordered_set<std::string> extensions;
+
+    std::cout << "enabled extensions : " << std::endl;
+    for (auto & extension : extensionProperties) {
+        extensions.insert(extension.extensionName);
+        std::cout << "- " << extension.extensionName << std::endl;
+    }
+    std::cout << "enabled extensions end" << std::endl;
+
+    return extensions;
+}
+
 void GDeviceVLK::initialize() {
     setupDebugMessenger();
 
     pickPhysicalDevice();
     createLogicalDevice();
+
+    std::unordered_set<std::string> enabledExtensions = get_enabled_extensions();
 
     findQueueFamilies(physicalDevice);
 //---------------
@@ -296,6 +332,21 @@ void GDeviceVLK::initialize() {
     m_whitePixelTexture = createTexture(false, false);
     unsigned int ff = 0xffffffff;
     m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
+}
+
+void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const char *name)
+{
+    // Check for valid function pointer (may not be present if not running in a debugging application)
+    if (vkSetDebugUtilsObjectNameEXT != nullptr)
+    {
+        VkDebugUtilsObjectNameInfoEXT nameInfo = {};
+        nameInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT;
+        nameInfo.pNext = nullptr;
+        nameInfo.objectType = objectType;
+        nameInfo.objectHandle = object;
+        nameInfo.pObjectName = name;
+        vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
+    }
 }
 
 
@@ -575,8 +626,9 @@ void GDeviceVLK::createLogicalDevice() {
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = deviceExtensions.size();
-    createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+    std::vector<const char*> enabledDeviceExtensions = deviceExtensions;
+    createInfo.enabledExtensionCount = enabledDeviceExtensions.size();
+    createInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());

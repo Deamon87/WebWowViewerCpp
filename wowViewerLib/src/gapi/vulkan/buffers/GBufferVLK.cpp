@@ -3,6 +3,7 @@
 //
 
 #include "GBufferVLK.h"
+#include "../vk_mem_alloc.h"
 
 GBufferVLK::GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize, int alignment) : m_device(device) {
     m_usageFlags = usageFlags;
@@ -159,13 +160,39 @@ void GBufferVLK::resize(int newLength) {
     executeOnChange();
 }
 
+static inline uint8_t BitScanMSB(uint32_t mask)
+{
+#ifdef _MSC_VER
+    unsigned long pos;
+    if (_BitScanReverse(&pos, mask))
+        return static_cast<uint8_t>(pos);
+#elif defined __GNUC__ || defined __clang__
+    if (mask)
+        return 31 - static_cast<uint8_t>(__builtin_clz(mask));
+#else
+    uint8_t pos = 31;
+    uint32_t bit = 1UL << 31;
+    do
+    {
+        if (mask & bit)
+            return pos;
+        bit >>= 1;
+    } while (pos-- > 0);
+#endif
+    return UINT8_MAX;
+}
+
 //fakeSize is used to make sure the subBuffer has enough bytes left till end of main buffer.
 //used for allocating data for UBO, when you don't want to suballocate whole size.
 //For example if only one bone matrix is used out 220, sizeInBytes will be size of one matrix, while fakeSize is 220 matrices
 std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBytes, int fakeSize) {
     VmaVirtualAllocation alloc;
     VkDeviceSize offset;
+
+    std::unique_lock<std::mutex> lock(m_mutex,std::defer_lock);
+    lock.lock();
     VkResult res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc, offset);
+    lock.unlock();
 
     if(res == VK_SUCCESS)
     {
@@ -174,13 +201,18 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
                                                          alloc,
                                                          offset, sizeInBytes, fakeSize,
                                                          (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+offset);
+
+        lock.lock();
         currentSubBuffers.push_back(subBuffer);
         subBuffer->m_iterator = std::prev(currentSubBuffers.end());
+        lock.unlock();
         return subBuffer;
     }
     else
     {
-        resize(std::max<int>(m_bufferSize*2, m_bufferSize + fakeSize));
+        lock.lock();
+        resize(std::max<int>(m_bufferSize*2, BitScanMSB(m_bufferSize + fakeSize) << 1));
+        lock.unlock();
         return getSubBuffer(sizeInBytes, fakeSize);
     }
 }

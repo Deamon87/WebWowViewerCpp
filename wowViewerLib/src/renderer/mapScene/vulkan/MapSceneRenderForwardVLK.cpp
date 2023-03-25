@@ -57,9 +57,9 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
 
-    m_renderPass = hDevice->getRenderPass(dataFormat, ITextureFormat::itDepth32,
-                                          VK_SAMPLE_COUNT_1_BIT,
-//                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
+    m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itDepth32,
+//                                          VK_SAMPLE_COUNT_1_BIT,
+                                          sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
                                           true, false);
 
     glowPass = std::make_unique<FFXGlowPassVLK>(hDevice, uboBuffer, m_drawQuadVao);
@@ -462,7 +462,7 @@ void MapSceneRenderForwardVLK::createFrameBuffers() {
                 *m_device,
                 dataFormat,
                 ITextureFormat::itDepth32,
-                1,
+                m_device->getMaxSamplesCnt(),
                 m_width, m_height
             );
         }

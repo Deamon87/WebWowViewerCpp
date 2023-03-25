@@ -1444,7 +1444,8 @@ PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
 
 std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) {
     auto materialInstance = m_materialCache[materialIndex].lock();
-    if (materialInstance != nullptr) return materialInstance;
+    if (materialInstance != nullptr)
+        return materialInstance;
 
     //Otherwise create goddamit material
 

@@ -16,7 +16,8 @@ namespace wtf {
         }
 
         bool operator ==(const KeyContainer<T> &r_key) const {
-            return std::owner_less<T>()(r_key.w_key, w_key);
+            bool result = !std::owner_less<T>()(r_key.w_key, w_key) && !std::owner_less<T>()(w_key,r_key.w_key);
+            return result;
         }
 
         bool isExpired() {

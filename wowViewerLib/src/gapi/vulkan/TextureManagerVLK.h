@@ -47,6 +47,8 @@ protected:
 private:
     IDevice &mdevice;
 
+    std::mutex m_textureAllocation;
+
     std::function<void(const std::weak_ptr<GTextureVLK>&)> onUpdateCallback = nullptr;
     void createUpdateCallback();
 

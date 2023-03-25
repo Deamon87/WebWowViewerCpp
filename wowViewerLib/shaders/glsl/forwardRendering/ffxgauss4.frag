@@ -19,10 +19,10 @@ const float weight[5] = float[] (0,  0.125, 0.375, 0.375, 0.125);
 void main()
 {
     // receive the soze of one texel
-//    vec2 tex_offset = 1.0 / textureSize(texture0, 0);
+    vec2 tex_offset = 1.0 / textureSize(texture0, 0);
     // the value of one fragmentslerp
-    vec2 tex_offset = vec2(0.001,0.001);
-    vec3 result = texture(texture0, texCoord).rgb * weight[0];
+//    vec2 tex_offset = vec2(0.001,0.001);
+//    vec3 result = texture(texture0, texCoord).rgb * weight[0];
 //    bool horizontal = textureDims.x > 0;
 //    if(horizontal)
 //    {
@@ -42,7 +42,7 @@ void main()
 //    }
 //    out_result = vec4(result, 1.0);
 
-    result = vec3(0.0);
+    vec3 result = vec3(0.0);
     result += texture(texture0, texCoord + vec2(texOffsetX.x*tex_offset.x, texOffsetY.x*tex_offset.y)).rgb * weight[1];
     result += texture(texture0, texCoord + vec2(texOffsetX.y*tex_offset.x, texOffsetY.y*tex_offset.y)).rgb * weight[2];
     result += texture(texture0, texCoord + vec2(texOffsetX.z*tex_offset.x, texOffsetY.z*tex_offset.y)).rgb * weight[3];

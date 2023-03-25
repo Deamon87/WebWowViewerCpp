@@ -24,6 +24,9 @@ enum class TextureStatus {
 class ITexture {
 public:
     virtual ~ITexture() {};
+    ITexture() = default;
+    ITexture(const ITexture&) = delete;
+    ITexture(const ITexture&&) = delete;
 
     virtual void loadData(int width, int height, void *data, ITextureFormat textureFormat) = 0;
     virtual void readData(std::vector<uint8_t> &buff) = 0;

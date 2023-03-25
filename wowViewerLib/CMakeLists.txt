@@ -520,7 +520,9 @@ if (LINK_VULKAN)
             src/gapi/vulkan/utils/MutexLockedVector.h
             src/gapi/vulkan/descriptorSets/DescriptorResourceCallBack.h
             src/gapi/vulkan/bindable/DSBindable.h
-            src/renderer/mapScene/vulkan/materials/IMaterialInstance.h src/gapi/vulkan/meshes/GSortableMeshVLK.cpp src/gapi/vulkan/meshes/GSortableMeshVLK.h)
+            src/renderer/mapScene/vulkan/materials/IMaterialInstance.h
+            src/gapi/vulkan/meshes/GSortableMeshVLK.cpp
+            src/gapi/vulkan/meshes/GSortableMeshVLK.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

@@ -61,6 +61,7 @@ public:
     GDeviceType getDeviceType() override {return GDeviceType::GVulkan; };
 
     void initialize() override;
+    std::unordered_set<std::string> get_enabled_extensions();
 
     unsigned int getFrameNumber() override { return m_frameNumber; };
     unsigned int getUpdateFrameNumber() ;
@@ -132,6 +133,8 @@ public:
                                                   bool isSwapChainPass);
 
     std::shared_ptr<GRenderPassVLK> getSwapChainRenderPass();
+
+    void setObjectName(uint64_t object, VkObjectType objectType, const char *name) override;
 
     void submitDrawCommands() override;
     void submitQueue(
@@ -263,6 +266,8 @@ protected:
     bool enableValidationLayers = true ;
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
+
+    bool m_debugUtilsAvailable = false;
 
     VkQueue graphicsQueue;
     VkQueue uploadQueue;

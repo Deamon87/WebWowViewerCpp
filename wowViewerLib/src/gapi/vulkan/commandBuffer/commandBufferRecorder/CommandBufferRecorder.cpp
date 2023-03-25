@@ -81,7 +81,7 @@ void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr
     // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
     // Also, implement "Pipeline Layout Compatibility" thing from spec
 
-    if (m_currentDescriptorSet[bindIndex] == descriptorSet) return;
+//    if (m_currentDescriptorSet[bindIndex] == descriptorSet) return;
 
     auto vkDescSet = descriptorSet->getDescSet();
     constexpr uint32_t vkDescCnt = 1;
@@ -186,7 +186,10 @@ void CmdBufRecorder::setViewPort(ViewportType viewportType) {
     const constexpr uint32_t firstViewport = 0;
     const constexpr uint32_t viewportCount = 1;
 
-    vkCmdSetViewport(m_gCmdBuffer.m_cmdBuffer, firstViewport, viewportCount, &viewportsForThisStage[(int)viewportType]);
+    if (m_currentViewport != viewportType) {
+        vkCmdSetViewport(m_gCmdBuffer.m_cmdBuffer, firstViewport, viewportCount, &viewportsForThisStage[(int) viewportType]);
+        m_currentViewport = viewportType;
+    }
 }
 
 void CmdBufRecorder::setScissors(const std::array<int32_t, 2> &areaOffset,
@@ -223,6 +226,8 @@ void CmdBufRecorder::setDefaultScissors() {
 void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
                                          const std::array<uint32_t, 2> &areaSize,
                                          bool invertZ) {
+    m_currentViewport = ViewportType::vp_none;
+
     VkViewport &usualViewport = viewportsForThisStage[(int)ViewportType::vp_usual];
     usualViewport.width = areaSize[0];
     usualViewport.height = areaSize[1];

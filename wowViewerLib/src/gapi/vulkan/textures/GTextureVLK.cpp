@@ -235,6 +235,10 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
 
     vmaCreateImage(m_device.getVMAAllocator(), &imageCreateInfo, &allocImageCreateInfo, &texture.image,
                  &imageAllocation, &imageAllocationInfo);
+    if (!m_debugName.empty()) {
+        m_device.setObjectName((uint64_t) texture.image, VK_OBJECT_TYPE_IMAGE, m_debugName.c_str());
+
+    }
 
     // Create a texture sampler
     // In Vulkan textures are accessed by samplers

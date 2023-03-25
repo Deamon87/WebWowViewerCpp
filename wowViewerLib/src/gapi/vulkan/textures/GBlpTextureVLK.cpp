@@ -1,16 +1,31 @@
 //
 // Created by deamon on 05.06.18.
 //
-
+#include <sstream> //for std::stringstream
 #include "GBlpTextureVLK.h"
 #include "../../../engine/persistance/helper/ChunkFileReader.h"
 #include "../../../engine/texture/DxtDecompress.h"
 
+inline static std::string addrToStr(void *addr) {
+    std::stringstream ss;
+    ss << (void *)addr;
+    return ss.str();
+}
+
 GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
-                               HBlpTexture texture,
+                               const HBlpTexture &texture,
                                bool xWrapTex, bool yWrapTex,
                                const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
     : GTextureVLK(device,xWrapTex,yWrapTex, onUpdateCallback), m_texture(texture) {
+
+    std::string blpAddress_str = addrToStr(texture.get());
+    std::string selfAddr_str = addrToStr(this);
+
+    if (texture->getTextureName() == "3071385") {
+        std::cout << "3071385 loaded" << std::endl;
+    }
+
+    m_debugName = "Texture FDID " + texture->getTextureName() + " blp ptr: "+ blpAddress_str + " self ptr :" + selfAddr_str ;
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {

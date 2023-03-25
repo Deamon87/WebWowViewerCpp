@@ -19,6 +19,7 @@ HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
     };
 //    blpCacheRecord.wrapX = xWrapTex;
 //    blpCacheRecord.wrapY = yWrapTex;
+    std::lock_guard<std::mutex> lock(m_textureAllocation);
 
     auto i = loadedTextureCache.find(blpCacheRecord);
     if (i != loadedTextureCache.end()) {
@@ -29,7 +30,7 @@ HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
         }
     }
 
-    auto hgTexture = std::make_shared<GBlpTextureVLK>(static_cast<GDeviceVLK&>(mdevice), texture, false, false, onUpdateCallback);
+    auto hgTexture = std::make_shared<GBlpTextureVLK>(static_cast<GDeviceVLK&>(mdevice), texture, true, true, onUpdateCallback);
 
     std::weak_ptr<GBlpTextureVLK> weakPtr(hgTexture);
     {
@@ -42,7 +43,7 @@ HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
 }
 
 HGTexture TextureManagerVLK::createTexture() {
-    std::shared_ptr<GTextureVLK> h_texture = std::make_shared<GTextureVLK>(static_cast<GDeviceVLK&>(mdevice), false, false, onUpdateCallback);
+    std::shared_ptr<GTextureVLK> h_texture = std::make_shared<GTextureVLK>(static_cast<GDeviceVLK&>(mdevice), true, true, onUpdateCallback);
 
     return h_texture;
 }

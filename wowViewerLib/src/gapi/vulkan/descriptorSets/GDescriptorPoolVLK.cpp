@@ -48,7 +48,8 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
     VkDescriptorSet descriptorSet;
 
     if (vkAllocateDescriptorSets(m_device.getVkDevice(), &allocInfo, &descriptorSet) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate descriptor sets!");
+//        throw std::runtime_error("failed to allocate descriptor sets!");
+        return 0;
     }
 
     if (descriptorSet != nullptr) {

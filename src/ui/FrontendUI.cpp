@@ -714,6 +714,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
+    if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(1120838);
+    }
     if (ImGui::Button("10xt_exterior_glacialspike01.wmo (parallax)", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4419436);
     }
@@ -1544,7 +1547,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             {canvWidth, canvHeight}
         };
 
-        if (m_currentScene) {
+        if (m_sceneRenderer != nullptr) {
             auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
             wowSceneFrameInput->delta = deltaTime * (1000.0f);
             wowSceneFrameInput->viewPortDimensions = dimension;

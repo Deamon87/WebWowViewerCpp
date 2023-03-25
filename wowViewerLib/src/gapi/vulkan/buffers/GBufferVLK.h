@@ -73,6 +73,8 @@ private:
 
     std::mutex dataToBeUploadedMtx;
     std::vector<VkBufferCopy> dataToBeUploaded;
+
+    std::mutex m_mutex;
 private:
     class GSubBufferVLK : public IBufferVLK {
         friend class GBufferVLK;

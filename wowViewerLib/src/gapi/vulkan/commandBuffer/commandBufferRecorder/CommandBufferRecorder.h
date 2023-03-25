@@ -66,11 +66,12 @@ private:
     std::array<std::shared_ptr<IBufferVLK>, 2> m_currentVertexBuffers;
     std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
     bool m_currentScissorsIsDefault = false;
-
+    ViewportType m_currentViewport = ViewportType::vp_none;
 
     //Viewports
     std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
     VkRect2D defaultScissor;
+
 
     void createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
                              const std::array<uint32_t, 2> &areaSize,
