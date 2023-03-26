@@ -161,13 +161,11 @@ public:
             }
         }
         std::shared_ptr<T> sharedPtr = std::make_shared<T>(id);
-        std::weak_ptr<T> weakPtr(sharedPtr);
 
-        m_cache[fileName] = weakPtr;
+        m_cache[fileName] = sharedPtr;
         cacheLck.unlock();
 
-
-        m_fileRequestProcessor->requestFile(fileName, this->holderType, weakPtr);
+        m_fileRequestProcessor->requestFile(fileName, this->holderType, sharedPtr);
 
         return sharedPtr;
     }

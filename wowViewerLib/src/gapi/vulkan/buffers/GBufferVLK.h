@@ -28,6 +28,7 @@ public:
     void uploadData(void *, int length) override;
     void subUploadData(void *, int offset, int length) override;
     void uploadFromStaging(int offset, int destOffset, int length);
+    void addSubBufferForUpload(const std::shared_ptr<IBufferVLK> &buffer);
 
     void *getPointer() override { return currentBuffer.stagingBufferAllocInfo.pMappedData;};
     //Submits data edited with Pointer
@@ -46,9 +47,7 @@ public:
         return 0;
     };
 
-    MutexLockedVector<VkBufferCopy> getSubmitRecords() {
-        return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx, true);
-    }
+    MutexLockedVector<VkBufferCopy> getSubmitRecords();
 
     std::shared_ptr<IBuffer> mutate(int newSize) override;
     void resize(int newLength);
@@ -110,6 +109,7 @@ private:
 
 
     std::list<std::weak_ptr<GBufferVLK::GSubBufferVLK>> currentSubBuffers;
+    std::list<std::shared_ptr<IBufferVLK>> subBuffersForUpload;
 
 //    uploadCache = {};
 public:

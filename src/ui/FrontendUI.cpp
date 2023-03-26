@@ -1522,7 +1522,7 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
         float f = 1.0f / tan(fov / 2.0f);
         result->cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
         if (result->cameraMatricesForDebugCamera != nullptr) {
-            result->cameraMatricesForDebugCamera->perspectiveMat = result->cameraMatricesForDebugCamera->perspectiveMat;
+            result->cameraMatricesForDebugCamera->perspectiveMat = result->cameraMatricesForRendering->perspectiveMat;
         }
     }
 

@@ -758,10 +758,12 @@ void GDeviceVLK::createSyncObjects() {
         renderFinishedSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
 
         uploadSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
+        frameBufSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
     }
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         inFlightFences[i] = std::make_shared<GFenceVLK>(this->shared_from_this(), true);
+        frameBufFences[i] = std::make_shared<GFenceVLK>(this->shared_from_this(), true);
         uploadFences[i] = std::make_shared<GFenceVLK>(this->shared_from_this(), true);
     }
 }
@@ -792,28 +794,24 @@ float GDeviceVLK::getAnisLevel() {
 void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
     int currentDrawFrame = getDrawFrameNumber();
 
-    this->waitInDrawStageAndDeps.beginMeasurement();
-    uploadFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
-    inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
-    uploadFences[currentDrawFrame]->reset();
-    this->waitInDrawStageAndDeps.endMeasurement();
-
-
     auto &uploadCmdBuf = uploadCommandBuffers[currentDrawFrame];
     auto &swapChainCmdBuf = swapChainCommandBuffers[currentDrawFrame];
     auto &frameBufCmdBuf = fbCommandBuffers[currentDrawFrame];
 
     uint32_t imageIndex = -1;
     {
+        {
+            this->waitInDrawStageAndDeps.beginMeasurement();
+            //Wait for frameBuf CMD buffer to become available
+            frameBufFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+            uploadFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+            frameBufFences[currentDrawFrame]->reset();
+            uploadFences[currentDrawFrame]->reset();
+            this->waitInDrawStageAndDeps.endMeasurement();
+        }
+
         auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
         auto frameBufCmd = frameBufCmdBuf->beginRecord(nullptr);
-
-        {
-            //Wait for SwapChain CMD buffer to become available
-            inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
-            inFlightFences[currentDrawFrame]->reset();
-        }
-        auto swapChainCmd = swapChainCmdBuf->beginRecord(nullptr);
 
         //Do Texture update
         {
@@ -827,6 +825,14 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
                 }
             }
         }
+
+        //Wait for swapchain
+        {
+            inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
+            inFlightFences[currentDrawFrame]->reset();
+        }
+
+        auto swapChainCmd = swapChainCmdBuf->beginRecord(nullptr);
 
         {
             //Begin render pass for Swap chain
@@ -851,12 +857,23 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     submitQueue(
         graphicsQueue,
         {
-            uploadSemaphores[currentDrawFrame]->getNativeSemaphore(),
+            uploadSemaphores[currentDrawFrame]->getNativeSemaphore()
+        },
+        {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        {frameBufCmdBuf->getNativeCmdBuffer()},
+        {frameBufSemaphores[currentDrawFrame]->getNativeSemaphore()},
+        frameBufFences[currentDrawFrame]->getNativeFence()
+    );
+
+    submitQueue(
+        graphicsQueue,
+        {
+            frameBufSemaphores[currentDrawFrame]->getNativeSemaphore(),
             imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore()
         },
         {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
 
-        {frameBufCmdBuf->getNativeCmdBuffer(), swapChainCmdBuf->getNativeCmdBuffer()},
+        {swapChainCmdBuf->getNativeCmdBuffer()},
         {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
         inFlightFences[currentDrawFrame]->getNativeFence()
     );
@@ -1262,6 +1279,7 @@ GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetL
     //2. Create new descriptor set and allocate from it
     {
         auto newPool = std::make_shared<GDescriptorPoolVLK>(*this);
+        desciptorPool = newPool;
         m_descriptorPools.push_back(newPool);
 
         return newPool->allocate(hDescriptorSetLayout);

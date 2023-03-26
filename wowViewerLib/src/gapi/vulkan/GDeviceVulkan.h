@@ -291,6 +291,7 @@ protected:
 
 
     std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> inFlightFences;
+    std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> frameBufFences;
     std::array<std::shared_ptr<GFenceVLK>, MAX_FRAMES_IN_FLIGHT> uploadFences;
 
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> imageAvailableSemaphores;
@@ -298,6 +299,7 @@ protected:
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
 
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSemaphores;
+    std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> frameBufSemaphores;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
 

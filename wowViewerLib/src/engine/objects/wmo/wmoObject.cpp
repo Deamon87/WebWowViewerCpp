@@ -323,10 +323,10 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
             m_sceneRenderer = sceneRenderer;
+            this->createMaterialCache();
             this->createGroupObjects();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
-            this->createMaterialCache();
             m_modelWideChunk = sceneRenderer->createWMOWideChunk();
 
             if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
@@ -1443,6 +1443,8 @@ PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
 }
 
 std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) {
+    assert(materialIndex < m_materialCache.size());
+
     auto materialInstance = m_materialCache[materialIndex].lock();
     if (materialInstance != nullptr)
         return materialInstance;

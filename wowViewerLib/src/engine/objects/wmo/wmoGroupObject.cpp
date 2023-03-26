@@ -10,10 +10,6 @@
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include <algorithm>
 
-
-
-
-
 bool WmoGroupObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (this->m_loaded) return false;
 
