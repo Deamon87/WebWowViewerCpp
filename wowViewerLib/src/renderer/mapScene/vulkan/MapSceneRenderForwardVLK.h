@@ -51,7 +51,7 @@ public:
 //  Material creation
 //-------------------------------------
 
-    std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount) override;
+    std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) override;
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
                                                   const M2MaterialTemplate &m2MaterialTemplate) override;

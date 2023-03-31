@@ -94,7 +94,8 @@ void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr
 
 void CmdBufRecorder::bindIndexBuffer(const std::shared_ptr<IBuffer> &buffer) {
     auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffer);
-    if (m_currentIndexBuffer == bufferVlk) return;
+    if (m_currentIndexBuffer!= nullptr && m_currentIndexBuffer->getGPUBuffer() == bufferVlk->getGPUBuffer() &&
+        m_currentIndexBuffer->getOffset() == bufferVlk->getOffset()) return;
 
     VkDeviceSize offset = bufferVlk->getOffset();
     vkCmdBindIndexBuffer(m_gCmdBuffer.m_cmdBuffer, bufferVlk->getGPUBuffer(), offset, VK_INDEX_TYPE_UINT16);
@@ -113,7 +114,9 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
         auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
 
         //firstBinding == i <- means we can only skip the start of the list;
-        if (firstBinding == i && m_currentVertexBuffers[i] == bufferVlk) {
+        if (firstBinding == i && m_currentVertexBuffers[i] != nullptr &&
+                                 m_currentVertexBuffers[i]->getGPUBuffer() == bufferVlk->getGPUBuffer() &&
+                                 m_currentVertexBuffers[i]->getOffset() == bufferVlk->getOffset()) {
             firstBinding++;
             continue;
         }

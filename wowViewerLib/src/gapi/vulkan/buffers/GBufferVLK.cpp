@@ -70,6 +70,11 @@ void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
 VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, VmaVirtualAllocation &alloc, VkDeviceSize &offset) {
     bool minAddressStrategy = sizeInBytes < fakeSize && fakeSize > 0;
 
+    if (sizeInBytes == 0) {
+        offset = 0;
+        return VK_SUCCESS;
+    }
+
     VmaVirtualAllocationCreateInfo allocCreateInfo = {};
     allocCreateInfo.size = sizeInBytes; //Size in bytes
     if (minAddressStrategy) {
@@ -136,10 +141,11 @@ void GBufferVLK::resize(int newLength) {
                    (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData + subBuffer->m_offset,
                    subBuffer->m_size
                );
+            if (subBuffer->m_size > 0) {
+                deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
 
-            deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
-
-            addSubBufferForUpload(subBuffer);
+                addSubBufferForUpload(subBuffer);
+            }
 
             subBuffer->m_offset = offset;
             subBuffer->m_alloc = alloc;
@@ -211,14 +217,16 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     else
     {
         lock.lock();
-        resize(std::max<int>(m_bufferSize*2, BitScanMSB(m_bufferSize + fakeSize) << 1));
+        resize(std::max<int>(m_bufferSize*2, 1 << (BitScanMSB(m_bufferSize + fakeSize)+1)));
         lock.unlock();
         return getSubBuffer(sizeInBytes, fakeSize);
     }
 }
 
-void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &m_alloc) {
-    deallocateSubBuffer(currentBuffer, m_alloc);
+void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation& alloc, int subBuffersize) {
+    if (subBuffersize > 0) {
+        deallocateSubBuffer(currentBuffer, alloc);
+    }
     
     currentSubBuffers.erase(it);
 }
@@ -290,6 +298,7 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
             vbCopyRegion.size = currInterval.size;
         }
         subBuffersForUpload.clear();
+        subBuffersForUpload.reserve(currentSubBuffers.size());
     }
 
 
@@ -313,7 +322,7 @@ GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
 }
 
 GBufferVLK::GSubBufferVLK::~GSubBufferVLK() {
-    m_parentBuffer->deleteSubBuffer(m_iterator, m_alloc);
+    m_parentBuffer->deleteSubBuffer(m_iterator, m_alloc, m_size);
 }
 
 void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {

@@ -24,8 +24,7 @@ layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
 layout(location=2) in vec2 vTexCoord3;
 layout(location=3) in vec3 vNormal;
-layout(location=4) in vec3 vPosition;
-layout(location=5) in vec4 vMeshColorAlpha;
+layout(location=4) in vec4 vPosition_EdgeFade;
 
 layout(location=0) out vec4 outputColor;
 
@@ -38,19 +37,32 @@ layout(std140, set=0, binding=1) uniform placementMat {
     mat4 uPlacementMat;
 };
 
-
 //Whole model
-layout(std140, set=0, binding=3) uniform modelWideBlockPS {
+layout(std140, set=0, binding=2) uniform modelWideBlockPS {
     InteriorLightParam intLight;
     LocalLight pc_lights[4];
     ivec4 lightCountAndBcHack;
     vec4 interiorExteriorBlend;
 };
 
+layout(std140, set=0, binding=4) uniform m2Colors {
+    vec4 colors[256];
+};
+
+layout(std140, set=0, binding=5) uniform textureWeights {
+    vec4 textureWeight[16];
+};
+
+layout(std140, set=0, binding=6) uniform textureMatrices {
+    mat4 textureMatrix[64];
+};
+
 //Individual meshes
-layout(std140, set=0, binding=5) uniform meshWideBlockPS {
-    ivec4 PixelShader_UnFogged_IsAffectedByLight_blendMode;
-    vec4 uTexSampleAlpha;
+layout(std140, set=0, binding=7) uniform meshWideBlockVSPS {
+    ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
+    ivec4 PixelShader_UnFogged_blendMode;
+    ivec4 textureWeightIndexes;
+    ivec4 colorIndex_applyWeight;
 };
 
 layout(set=1,binding=6) uniform sampler2D uTexture;
@@ -65,11 +77,29 @@ void main() {
     vec2 texCoord3 = vTexCoord3.xy;
 
     vec4 finalColor = vec4(0);
+
+    vec3 uTexSampleAlpha = vec3(
+        textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightIndexes.x / 4][textureWeightIndexes.x % 4],
+        textureWeightIndexes.y < 0 ? 1.0 : textureWeight[textureWeightIndexes.y / 4][textureWeightIndexes.y % 4],
+        textureWeightIndexes.z < 0 ? 1.0 : textureWeight[textureWeightIndexes.z / 4][textureWeightIndexes.z % 4]
+    );
+
+    vec4 vMeshColorAlpha = vec4(
+        colorIndex_applyWeight.x < 0 ? vec4(1.0,1.0,1.0,1.0) : colors[colorIndex_applyWeight.x]
+    );
+    if (colorIndex_applyWeight.y > 0)
+        vMeshColorAlpha.a *=
+        textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightIndexes.x / 4][textureWeightIndexes.x % 4];
+
+    vMeshColorAlpha *= vPosition_EdgeFade.w;
+
+    //Accumulate and apply lighting
+
     vec3 meshResColor = vMeshColorAlpha.rgb;
 
     vec3 accumLight = vec3(0.0);
-    if ((PixelShader_UnFogged_IsAffectedByLight_blendMode.z == 1)) {
-        vec3 vPos3 = vPosition.xyz;
+    if ((vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y == 1)) {
+        vec3 vPos3 = vPosition_EdgeFade.xyz;
         vec3 vNormal3 = normalize(vNormal.xyz);
         vec3 lightColor = vec3(0.0);
         int count = int(pc_lights[0].attenuation.w);
@@ -97,12 +127,16 @@ void main() {
         //finalColor.rgb =  finalColor.rgb * lightColor;
     }
 
+//----------------------
+// Calc Diffuse and Specular
+//---------------------
+
     float finalOpacity = 0.0;
     vec3 matDiffuse;
     vec3 specular;
 
-    int uPixelShader = PixelShader_UnFogged_IsAffectedByLight_blendMode.x;
-    int blendMode = PixelShader_UnFogged_IsAffectedByLight_blendMode.w;
+    int uPixelShader = PixelShader_UnFogged_blendMode.x;
+    int blendMode = PixelShader_UnFogged_blendMode.z;
 
     bool doDiscard = false;
 
@@ -118,11 +152,15 @@ void main() {
     if (doDiscard)
         discard;
 
+// ------------------------------
+// Apply lighting
+// ------------------------------
+
     finalColor = vec4(
         calcLight(
             matDiffuse,
             vNormal,
-            PixelShader_UnFogged_IsAffectedByLight_blendMode.z > 0,
+            vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y > 0,
             interiorExteriorBlend.x,
             scene,
             intLight,
@@ -136,7 +174,11 @@ void main() {
 
     outputColor = finalColor;
 
-    int uUnFogged = PixelShader_UnFogged_IsAffectedByLight_blendMode.y;
+// ------------------------------
+// Apply Fog
+// ------------------------------
+
+    int uUnFogged = PixelShader_UnFogged_blendMode.y;
     if (uUnFogged == 0) {
         vec3 sunDir =
             mix(
@@ -146,10 +188,8 @@ void main() {
             )
             .xyz;
 
-        finalColor = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, PixelShader_UnFogged_IsAffectedByLight_blendMode.w);
+        finalColor = makeFog(fogData, finalColor, vPosition_EdgeFade.xyz, sunDir.xyz, PixelShader_UnFogged_blendMode.z);
     }
-//    finalColor.rgb = finalColor.rgb;
-
 
     //Forward rendering without lights
     outputColor = finalColor;

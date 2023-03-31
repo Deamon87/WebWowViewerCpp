@@ -34,7 +34,7 @@ struct M2Batch
     uint16_t shader_id;                  // See below.
     uint16_t skinSectionIndex;           // A duplicate entry of a submesh from the list above.
     uint16_t geosetIndex;                // See below.
-    uint16_t colorIndex;                 // A Color out of the Colors-Block or -1 if none.
+    int16_t colorIndex;                 // A Color out of the Colors-Block or -1 if none.
     uint16_t materialIndex;              // The renderflags used on this texture-unit.
     uint16_t materialLayer;              // Capped at 7 (see CM2Scene::BeginDraw)
     uint16_t textureCount;               // 1 to 4. See below. Also seems to be the number of textures to load, starting at the texture lookup in the next field (0x10).

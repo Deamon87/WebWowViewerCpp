@@ -1,20 +1,20 @@
 #include "commonFunctions.glsl"
 
 void calcM2FragMaterial(const in int uPixelShader,
-                     in sampler2D texSampler1,
-                     in sampler2D texSampler2,
-                     in sampler2D texSampler3,
-                     in sampler2D texSampler4,
-                    const in vec2 inUv1,
-                    const in vec2 inUv2,
-                    const in vec2 inUv3,
-                    const in vec3 meshColor,
-                    const in float meshOpacity,
-                    const in vec3 texSampleAlpha,
-                    const in int blendMode,
+in sampler2D texSampler1,
+in sampler2D texSampler2,
+in sampler2D texSampler3,
+in sampler2D texSampler4,
+const in vec2 inUv1,
+const in vec2 inUv2,
+const in vec2 inUv3,
+const in vec3 meshColor,
+const in float meshOpacity,
+const in vec3 texSampleAlpha,
+const in int blendMode,
 
-                    out vec3 matDiffuse, out vec3 specular,
-                    out float finalOpacity, out bool discardThisFragment)
+out vec3 matDiffuse, out vec3 specular,
+out float finalOpacity, out bool discardThisFragment)
 {
     vec4 genericParams[3];
     genericParams[0] = vec4( 1.0, 1.0, 1.0, 1.0 );
@@ -252,7 +252,7 @@ void calcM2FragMaterial(const in int uPixelShader,
     } else if (blendMode == 1) {
         finalOpacity = meshOpacity;
         if (canDiscard && discardAlpha < 0.501960814)
-            doDiscard = true;
+        doDiscard = true;
     } else if (blendMode == 0) {
         finalOpacity = meshOpacity;
     } else {
@@ -263,24 +263,22 @@ void calcM2FragMaterial(const in int uPixelShader,
 }
 
 void calcM2VertexMat(in int vertexShader,
-                     in vec3 vertexPosInView,
-                     in vec3 normal,
-                     in vec2 texCoord,
-                     in vec2 texCoord2,
-                     in vec4 color_Transparency,
-                     in mat4 textMat[2],
-                     out vec4 vMeshColorAlpha,
-                     out vec2 vTexCoord,
-                     out vec2 vTexCoord2,
-                     out vec2 vTexCoord3) {
+in vec3 vertexPosInView,
+in vec3 normal,
+in vec2 texCoord,
+in vec2 texCoord2,
+in mat4 textMat[2],
+out float edgeFade,
+out vec2 vTexCoord,
+out vec2 vTexCoord2,
+out vec2 vTexCoord3) {
     vTexCoord2 = vec2(0.0);
     vTexCoord3 = vec2(0.0);
 
     vec2 envCoord = posToTexCoord(vertexPosInView, normal);
     float edgeScanVal = edgeScan(vertexPosInView, normal);
 
-    vMeshColorAlpha = color_Transparency;
-
+    edgeFade = 1.0;
     switch(vertexShader) {
         case (0): { //Diffuse_T1
             vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
@@ -328,7 +326,7 @@ void calcM2VertexMat(in int vertexShader,
             break;
         }
         case (9): { //Diffuse_EdgeFade_T1
-            vMeshColorAlpha.a *= edgeScanVal;
+            edgeFade = edgeScanVal;
             vTexCoord = ((textMat[0] * vec4(texCoord, 0.0, 1.0)).xy).xy;
             break;
         }
@@ -343,13 +341,13 @@ void calcM2VertexMat(in int vertexShader,
             break;
         }
         case (12): { //Diffuse_EdgeFade_T1_T2
-            vMeshColorAlpha.a *= edgeScanVal;
+            edgeFade = edgeScanVal;
             vTexCoord = (textMat[0] * vec4(texCoord, 0.0, 1.0)).xy;
             vTexCoord2 = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
             break;
         }
         case (13): { //Diffuse_EdgeFade_Env
-            vMeshColorAlpha.a *= edgeScanVal;
+            edgeFade = edgeScanVal;
             vTexCoord = envCoord;
             break;
         }
@@ -367,7 +365,6 @@ void calcM2VertexMat(in int vertexShader,
         }
         case (16): { //Color_T1_T2_T3
             vec4 in_col0 = vec4(1.0, 1.0, 1.0, 1.0);
-            vMeshColorAlpha = vec4((in_col0.rgb * 0.5).r, (in_col0.rgb * 0.5).g, (in_col0.rgb * 0.5).b, in_col0.a);
             vTexCoord = (textMat[1] * vec4(texCoord2, 0.0, 1.0)).xy;
             vTexCoord2 = vec2(0.0, 0.0);
             vTexCoord3 = vTexCoord3;

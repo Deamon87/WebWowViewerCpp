@@ -566,7 +566,7 @@ if (LINK_VULKAN)
             #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c src/gapi/vulkan/context/vulkan_context.h)
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c src/gapi/vulkan/context/vulkan_context.h src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.cpp src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h)
     endif()
 
 

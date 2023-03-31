@@ -10,6 +10,9 @@
 #include "mathfu/glsl_mappings.h"
 
 #define MAX_MATRIX_NUM 220
+#define MAX_M2COLORS_NUM 256
+#define MAX_TEXTURE_WEIGHT_NUM 64
+#define MAX_TEXTURE_MATRIX_NUM 64
 
 struct PSFog
 {
@@ -61,14 +64,32 @@ namespace M2 {
         mathfu::mat4 uBoneMatrixes[MAX_MATRIX_NUM];
     };
 
-    struct meshWideBlockVS {
+    struct M2Colors {
+        mathfu::vec4_packed colors[MAX_M2COLORS_NUM];
+    };
+
+    struct TextureWeights {
+        float textureWeight[MAX_TEXTURE_WEIGHT_NUM];
+    };
+
+    struct TextureMatrices {
+        mathfu::mat4 textureMatrix[MAX_TEXTURE_MATRIX_NUM];
+    };
+
+    struct meshWideBlockVSPS {
         int VertexShader;
         int IsAffectedByLight;
-        int isSkyBox;
-        int padding;
-        mathfu::vec4_packed Color_Transparency;
-
-        mathfu::mat4 uTextMat[2];
+        int textureMatIndex1;
+        int textureMatIndex2;
+        int PixelShader;
+        int UnFogged;
+        int BlendMode;
+        int unused;
+        int textureWeightIndexes[4];
+        int colorIndex;
+        int applyWeight;
+        int unused2;
+        int unused3;
     };
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
@@ -79,16 +100,6 @@ namespace M2 {
         int notUsed2;
         int notUsed3;
         mathfu::vec4_packed interiorExteriorBlend;
-
-    };
-
-    struct  meshWideBlockPS {
-        int PixelShader;
-        int UnFogged;
-        int IsAffectedByLight;
-        int BlendMode;
-
-        mathfu::vec4_packed uTexSampleAlpha;
     };
 
     namespace WaterfallData {

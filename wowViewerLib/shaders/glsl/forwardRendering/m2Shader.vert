@@ -33,15 +33,29 @@ layout(std140, set=0, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 
-layout(std140, set=0, binding=2) uniform boneMats {
+layout(std140, set=0, binding=3) uniform boneMats {
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 
+
+layout(std140, set=0, binding=4) uniform m2Colors {
+    vec4 colors[256];
+};
+
+layout(std140, set=0, binding=5) uniform textureWeights {
+    vec4 textureWeight[16];
+};
+
+layout(std140, set=0, binding=6) uniform textureMatrices {
+    mat4 textureMatrix[64];
+};
+
 //Individual meshes
-layout(std140, set=0, binding=4) uniform meshWideBlockVS {
-    ivec4 vertexShader_IsAffectedByLight;
-    vec4 color_Transparency;
-    mat4 uTextMat[2];
+layout(std140, set=0, binding=7) uniform meshWideBlockVSPS {
+    ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
+    ivec4 PixelShader_UnFogged_blendMode;
+    ivec4 textureWeightIndexes;
+    ivec4 colorIndex_applyWeight;
 };
 
 //Shader output
@@ -49,8 +63,7 @@ layout(location=0) out vec2 vTexCoord;
 layout(location=1) out vec2 vTexCoord2;
 layout(location=2) out vec2 vTexCoord3;
 layout(location=3) out vec3 vNormal;
-layout(location=4) out vec3 vPosition;
-layout(location=5) out vec4 vMeshColorAlpha;
+layout(location=4) out vec4 vPosition_EdgeFade;
 
 
 void main() {
@@ -65,7 +78,6 @@ void main() {
     boneTransformMat += (boneWeights.z ) * uBoneMatrixes[bones.z];
     boneTransformMat += (boneWeights.w ) * uBoneMatrixes[bones.w];
 
-
     mat4 placementMat;
     placementMat = uPlacementMat;
 
@@ -75,16 +87,27 @@ void main() {
 
     vec3 normal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
 
-    int uVertexShader = vertexShader_IsAffectedByLight.x;
+    int uVertexShader = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.x;
+
+    mat4 textMat[2];
+    int textMatIndex1 = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.z;
+    int textMatIndex2 =vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.w;
+
+    textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textMatIndex1];
+    textMat[1] = textMatIndex2 < 0 ? mat4(1.0) : textureMatrix[textMatIndex2];
+
+    float edgeFade = 1.0;
+
     calcM2VertexMat(uVertexShader,
         vertexPosInView.xyz, normal,
         aTexCoord, aTexCoord2,
-        color_Transparency, uTextMat,
-        vMeshColorAlpha, vTexCoord, vTexCoord2, vTexCoord3);
+        textMat, edgeFade,
+        vTexCoord, vTexCoord2, vTexCoord3);
+
 
     gl_Position = scene.uPMatrix * vertexPosInView;
     vNormal = normal;
-    vPosition = vertexPosInView.xyz;
+    vPosition_EdgeFade = vec4(vertexPosInView.xyz, edgeFade);
 }
 
 

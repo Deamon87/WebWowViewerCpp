@@ -28,7 +28,6 @@
 #include "../persistance/HttpRequestProcessor.h"
 #include "../exporters/gltfExporter/GLTFExporter.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
-#include "../exporters/dataExporter/DataExporterClass.h"
 #include "../database/CSqliteDB.h"
 #include "../database/CEmptySqliteDB.h"
 #include "../../wowViewerLib/src/gapi/UniformBufferStructures.h"
@@ -47,6 +46,11 @@ FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
 }
 
 void FrontendUI::composeUI() {
+    if (m_dataExporter != nullptr) {
+        m_dataExporter->process();
+        if (m_dataExporter->isDone())
+            m_dataExporter = nullptr;
+    }
     if (mapCanBeOpened) {
         if (!adtMinimapFilled && fillAdtSelectionminimap(isWmoMap, mapCanBeOpened )) {
 //            fillAdtSelectionminimap = nullptr;
@@ -161,6 +165,9 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::NewLine();
 
         if (ImGui::CollapsingHeader("Elapsed times")) {
+            ImGui::Text("Elapsed time on deviceDrawFrame : %.3f ms", m_api->getConfig()->deviceDrawFrame);
+            ImGui::Text("Elapsed time on composerDrawTimePerFrame : %.3f ms", m_api->getConfig()->composerDrawTimePerFrame);
+            ImGui::Text("Elapsed time on drawFuncGeneration : %.3f ms", m_api->getConfig()->drawFuncGeneration);
             ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
             ImGui::Text("- Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
             ImGui::Text("- Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
@@ -555,7 +562,7 @@ void FrontendUI::showMainMenu() {
                 }
             }
             if (ImGui::MenuItem("Test data export")) {
-                dataExporter = new DataExporterClass(m_api);
+                m_dataExporter = std::make_shared<DataExporter::DataExporterClass>(m_api);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {

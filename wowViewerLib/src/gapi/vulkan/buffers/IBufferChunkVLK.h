@@ -15,7 +15,7 @@ public:
     CBufferChunkVLK(const std::shared_ptr<GBufferVLK> &mainBuffer, int realSize = -1) {
         m_realSize = realSize;
 
-        if (m_realSize <= 0)
+        if (m_realSize < 0)
             m_realSize = sizeof(T);
 
         subBuffer = mainBuffer->getSubBuffer(m_realSize,sizeof(T));

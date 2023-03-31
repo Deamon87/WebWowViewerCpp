@@ -792,6 +792,7 @@ float GDeviceVLK::getAnisLevel() {
 }
 
 void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
+    this->waitInDrawStageAndDeps.beginMeasurement();
     int currentDrawFrame = getDrawFrameNumber();
 
     auto &uploadCmdBuf = uploadCommandBuffers[currentDrawFrame];
@@ -801,13 +802,13 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     uint32_t imageIndex = -1;
     {
         {
-            this->waitInDrawStageAndDeps.beginMeasurement();
+
             //Wait for frameBuf CMD buffer to become available
             frameBufFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
             uploadFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
             frameBufFences[currentDrawFrame]->reset();
             uploadFences[currentDrawFrame]->reset();
-            this->waitInDrawStageAndDeps.endMeasurement();
+
         }
 
         auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
@@ -844,6 +845,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
             }
         }
     }
+
 
     submitQueue(
         uploadQueue,
@@ -885,6 +887,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     );
 
     executeDeallocators();
+    this->waitInDrawStageAndDeps.endMeasurement();
 }
 
 RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd) {

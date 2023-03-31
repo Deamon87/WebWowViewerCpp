@@ -68,7 +68,7 @@ public:
 //  Material creation
 //-------------------------------------
 
-    virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount) = 0;
+    virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) = 0;
     virtual std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                           const PipelineTemplate &pipelineTemplate,
                                                           const M2MaterialTemplate &m2MaterialTemplate) = 0;

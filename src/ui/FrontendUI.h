@@ -193,7 +193,7 @@ private:
 
 
 //Test export
-    DataExporterClass *dataExporter = nullptr;
+    std::shared_ptr<DataExporter::DataExporterClass> m_dataExporter = nullptr;
 
     std::shared_ptr<DatabaseUpdateWorkflow> m_databaseUpdateWorkflow = nullptr;
 

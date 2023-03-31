@@ -13,48 +13,46 @@
 #include "SceneScenario.h"
 #include "../../engine/algorithms/FrameCounter.h"
 #include "../../engine/ApiContainer.h"
+#include "prodConsumerChain/ProdConsumerIOConnector.h"
 
 class SceneComposer {
 private:
     HApiContainer m_apiContainer = nullptr;
 private:
     std::thread cullingThread;
+    std::thread updateThread;
     std::thread loadingResourcesThread;
 
     bool m_supportThreads = true;
     bool m_isTerminating = false;
+    bool m_firstFrame = true;
 
-    FrameCounter updateTimePerFrame;
+    FrameCounter composerDrawTimePerFrame;
+    FrameCounter deviceDrawFrame;
+    FrameCounter drawFuncGeneration;
 
     void consumeCulling(HFrameScenario &frameScenario);
-    void consumeDrawAndUpdate(HFrameScenario &frameScenario);
+    void consumeUpdate(HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions);
+    void consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs);
     void processCaches(int limit);
 
     //Flip-flop delta promises
     int frameMod = 0;
 
 
-    std::mutex cullingQueueMutex;
-    std::condition_variable cullingCondVar;
-    std::queue<HFrameScenario> m_cullingQueue;
-
-    std::mutex updateRenderQueueMutex;
-    std::condition_variable updateRenderCondVar;
-    std::queue<HFrameScenario> m_updateRenderQueue;
-
-    std::condition_variable startCulling;
-    std::mutex cullingMutex;
-
-    std::condition_variable startUpdate;
-    std::mutex cullingUpdate;
+    ProdConsumerIOConnector<HFrameScenario> cullingInput = {m_isTerminating};
+    ProdConsumerIOConnector<HFrameScenario> updateInput = {m_isTerminating};
+    ProdConsumerIOConnector<std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>>> drawInput = {m_isTerminating};
 public:
     SceneComposer(HApiContainer apiContainer);
     ~SceneComposer() {
         m_isTerminating = true;
 
         {
-            std::lock_guard<std::mutex> l{ cullingQueueMutex };
-            cullingCondVar.notify_one();
+            cullingInput.pushInput(nullptr);
+            updateInput.pushInput(nullptr);
+            decltype(drawInput)::value_type nullParam = nullptr;
+            drawInput.pushInput(nullParam);
         }
         cullingThread.join();
         loadingResourcesThread.join();

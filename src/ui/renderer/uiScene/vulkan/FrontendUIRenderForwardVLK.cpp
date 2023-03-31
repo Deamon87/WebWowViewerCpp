@@ -140,6 +140,4 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
         }
     }));
-
-
 }

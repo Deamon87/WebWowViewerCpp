@@ -109,12 +109,12 @@ private:
 
 
     std::list<std::weak_ptr<GBufferVLK::GSubBufferVLK>> currentSubBuffers;
-    std::list<std::shared_ptr<IBufferVLK>> subBuffersForUpload;
+    std::vector<std::shared_ptr<IBufferVLK>> subBuffersForUpload;
 
 //    uploadCache = {};
 public:
     std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes, int fakeSize = -1);
-    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &m_alloc);
+    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &alloc, int subBuffersize);
 private:
     void createBuffer(BufferInternal &buffer);
     void destroyBuffer(BufferInternal &buffer);

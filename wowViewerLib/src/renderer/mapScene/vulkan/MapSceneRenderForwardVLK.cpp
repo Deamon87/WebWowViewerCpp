@@ -175,19 +175,21 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
                                            const M2MaterialTemplate &m2MaterialTemplate) {
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto vertexData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVS>>(uboBuffer);
-    auto fragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockPS>>(uboBuffer);
+    auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(uboBuffer);
+
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"})
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
-        .createDescriptorSet(0, [&m2ModelData, &vertexData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(0, [&m2ModelData, &vertexFragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
                 .ubo(1, BufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix)->getSubBuffer())
-                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
-                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_modelFragmentData)->getSubBuffer())
-                .ubo(4, vertexData->getSubBuffer())
-                .ubo(5, fragmentData->getSubBuffer());
+                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_modelFragmentData)->getSubBuffer())
+                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
+                .ubo(4, BufferChunkHelperVLK::cast(m2ModelData->m_colors)->getSubBuffer())
+                .ubo(5, BufferChunkHelperVLK::cast(m2ModelData->m_textureWeights)->getSubBuffer())
+                .ubo(6, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices)->getSubBuffer())
+                .ubo(7, vertexFragmentData->getSubBuffer());
         })
         .createDescriptorSet(1, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -196,9 +198,8 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
                 .texture(8, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[2]))
                 .texture(9, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[3]));
         })
-        .toMaterial<IM2Material>([&vertexData, &fragmentData](IM2Material *instance) -> void {
-            instance->m_fragmentData = fragmentData;
-            instance->m_vertexData = vertexData;
+        .toMaterial<IM2Material>([&vertexFragmentData](IM2Material *instance) -> void {
+            instance->m_vertexFragmentData = vertexFragmentData;
         });
 
     material->blendMode = pipelineTemplate.blendMode;
@@ -426,11 +427,14 @@ std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastCreatedPlan() {
     return nullptr;
 }
 
-std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bonesCount) {
+std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) {
     auto result = std::make_shared<IM2ModelData>();
 
     BufferChunkHelperVLK::create(uboBuffer, result->m_placementMatrix);
     BufferChunkHelperVLK::create(uboBuffer, result->m_bonesData, sizeof(mathfu::mat4) * bonesCount);
+    BufferChunkHelperVLK::create(uboBuffer, result->m_colors, sizeof(mathfu::vec4_packed) * m2ColorsCount);
+    BufferChunkHelperVLK::create(uboBuffer, result->m_textureWeights, sizeof(float) * textureWeightsCount);
+    BufferChunkHelperVLK::create(uboBuffer, result->m_textureMatrices, sizeof(mathfu::mat4) * textureMatricesCount);
     BufferChunkHelperVLK::create(uboBuffer, result->m_modelFragmentData);
 
     return result;

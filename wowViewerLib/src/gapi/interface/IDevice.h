@@ -147,7 +147,7 @@ enum class GDeviceType {
 
 class IDevice {
     public:
-        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 4;
+        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 5;
 
         virtual ~IDevice() {};
 

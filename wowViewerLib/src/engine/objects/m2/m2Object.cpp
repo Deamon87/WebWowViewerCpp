@@ -697,44 +697,6 @@ float M2Object::getHeight(){
     return this->aabb.max.z -this->aabb.min.z;
 }
 
-mathfu::vec4 M2Object::getCombinedColor(
-        M2SkinProfile *skinData,
-        int batchIndex,
-        const std::vector<mathfu::vec4> &subMeshColors
-) {
-    int colorIndex = skinData->batches[batchIndex]->colorIndex;
-    mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);
-
-    if ((colorIndex >= 0) && (subMeshColors.size() > colorIndex)) {
-        const mathfu::vec4 &color = subMeshColors[colorIndex];
-        submeshColor = color;
-    }
-
-    return submeshColor;
-}
-
-float M2Object::getTextureWeight(
-        M2SkinProfile *skinData,
-        M2Data * m2Data,
-        int batchIndex,
-        int textureIndex,
-        const std::vector<float> &transparencies) {
-    float transparency = 1.0;
-
-    int transpLookupIndex = skinData->batches[batchIndex]->textureWeightComboIndex + textureIndex;
-    int transpIndex = -1;
-    if ((transpLookupIndex >= 0) && (transpLookupIndex < m2Data->transparency_lookup_table.size)) {
-        transpIndex = *m2Data->transparency_lookup_table[transpLookupIndex];
-    }
-
-    if ((transpIndex >= 0) && (transparencies.size() > transpIndex)) {
-        transparency = transparencies[transpIndex];
-    }
-
-    return transparency;
-}
-
-
 uint8_t miniLogic(const CImVector *a2) {
 
     uint8_t v7 = a2->r;
@@ -1023,7 +985,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
         particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
     }
-    this->sortMaterials(modelViewMat);
+        this->sortMaterials(modelViewMat);
 
     //Ribbon Emitters
     mathfu::vec3 nullPos(0,0,0);
@@ -1058,13 +1020,37 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         placementMatrix.uPlacementMat = m_placementMatrix;
         m_modelWideDataBuff->m_placementMatrix->save();
     }
-    {
+    if (bonesMatrices.size() > 0) {
         auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
         m_modelWideDataBuff->m_bonesData->save();
     }
+    if (subMeshColors.size() > 0) {
+        auto &m2Colors = m_modelWideDataBuff->m_colors->getObject();
+        int m2ColorsCnt = (int) std::min(subMeshColors.size(), (size_t) MAX_M2COLORS_NUM);
+
+        std::copy(subMeshColors.data(), subMeshColors.data() + m2ColorsCnt, m2Colors.colors);
+        m_modelWideDataBuff->m_colors->save();
+    }
+
+    if (transparencies.size() > 0) {
+        auto &textureWeights = m_modelWideDataBuff->m_textureWeights->getObject();
+        int textureWeightsCnt = (int) std::min(transparencies.size(), (size_t) MAX_TEXTURE_WEIGHT_NUM);
+
+        std::copy(transparencies.data(), transparencies.data() + textureWeightsCnt, textureWeights.textureWeight);
+        m_modelWideDataBuff->m_textureWeights->save();
+    }
+
+    if (textAnimMatrices.size() > 0) {
+        auto &textureMatrices = m_modelWideDataBuff->m_textureMatrices->getObject();
+        int textureMatricesCnt = (int) std::min(textAnimMatrices.size(), (size_t) MAX_TEXTURE_MATRIX_NUM);
+
+        std::copy(textAnimMatrices.data(), textAnimMatrices.data() + textureMatricesCnt, textureMatrices.textureMatrix);
+        m_modelWideDataBuff->m_textureMatrices->save();
+    }
+
     {
         auto &modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
@@ -1092,9 +1078,9 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_modelFragmentData->save();
     }
 
-    for (auto [material, batchIndex] : m_materialArray) {
-        M2MeshBufferUpdater::updateMaterialData(material, batchIndex, this, m2File, skinData);
-    }
+//    for (auto [material, batchIndex] : m_materialArray) {
+//        M2MeshBufferUpdater::updateMaterialData(material, batchIndex, this, m2File, skinData);
+//    }
 
     //Manually update vertices for dynamics
 //    updateDynamicMeshes();
@@ -1540,6 +1526,14 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     } else {
         m_meshArray.push_back({createWaterfallMesh(), 0});
     }
+
+    {
+        M2Data *m2File = this->m_m2Geom->getM2Data();
+        M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+        for (auto [material, batchIndex]: m_materialArray) {
+            M2MeshBufferUpdater::updateMaterialData(material, batchIndex, this, m2File, skinData);
+        }
+    }
 }
 
 HGM2Mesh
@@ -1900,7 +1894,12 @@ void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) 
     bufferBindings = m_m2Geom->getVAO(sceneRenderer, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
-    m_modelWideDataBuff = sceneRenderer->createM2ModelMat(m_m2Geom->m_m2Data->bones.size);
+    m_modelWideDataBuff = sceneRenderer->createM2ModelMat(
+        m_m2Geom->m_m2Data->bones.size,
+        m_m2Geom->m_m2Data->colors.size,
+        m_m2Geom->m_m2Data->texture_weights.size,
+        m_m2Geom->m_m2Data->texture_transforms.size
+    );
 }
 
 void M2Object::updateDynamicMeshes() {

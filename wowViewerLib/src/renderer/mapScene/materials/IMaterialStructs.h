@@ -31,6 +31,9 @@ class IM2ModelData {
 public:
     std::shared_ptr<IBufferChunk<M2::PlacementMatrix>> m_placementMatrix = nullptr;
     std::shared_ptr<IBufferChunk<M2::Bones>> m_bonesData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::M2Colors>> m_colors = nullptr;
+    std::shared_ptr<IBufferChunk<M2::TextureWeights>> m_textureWeights = nullptr;
+    std::shared_ptr<IBufferChunk<M2::TextureMatrices>> m_textureMatrices = nullptr;
     std::shared_ptr<IBufferChunk<M2::modelWideBlockPS>> m_modelFragmentData = nullptr;
 };
 
@@ -39,9 +42,8 @@ public:
     int vertexShader;
     int pixelShader;
     EGxBlendEnum blendMode;
-    std::shared_ptr<IBufferChunk<M2::meshWideBlockVS>> m_vertexData = nullptr;
-    std::shared_ptr<IBufferChunk<M2::meshWideBlockPS>> m_fragmentData = nullptr;
-};
+    std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS>> m_vertexFragmentData = nullptr;
+    };
 class IM2ParticleMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<Particle::meshParticleWideBlockPS>> m_fragmentData = nullptr;
