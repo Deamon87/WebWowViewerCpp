@@ -1551,7 +1551,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     {
         ViewPortDimensions dimension = {
             {0,     0},
-            {canvWidth, canvHeight}
+            {static_cast<unsigned int>(canvWidth), static_cast<unsigned int>(canvHeight)}
         };
 
         if (m_sceneRenderer != nullptr) {

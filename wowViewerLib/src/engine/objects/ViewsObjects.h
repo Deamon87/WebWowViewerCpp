@@ -77,6 +77,8 @@ class FrameViewsHolder {
 public:
     HExteriorView getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData);
     HExteriorView getExterior();
+    HExteriorView getSkybox();
+
     HInteriorView createInterior(const  MathHelper::FrustumCullingData &frustumData);
 
     const std::vector<HInteriorView> &getInteriorViews() {
@@ -84,6 +86,7 @@ public:
     }
 private:
     HExteriorView exteriorView = nullptr ;
+    HExteriorView skyBoxView = nullptr ;
     std::vector<HInteriorView> interiorViews = {};
 
 

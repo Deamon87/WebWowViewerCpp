@@ -72,7 +72,9 @@ public:
 
     void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                        const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
-                       const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes);
+                       const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
+                       const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
+                       const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes);
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
                               const HCameraMatrices &renderingMatrices,
                               const HFrameDependantData &fdd,

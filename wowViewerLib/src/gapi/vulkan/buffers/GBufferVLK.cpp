@@ -44,6 +44,7 @@ void GBufferVLK::createBuffer(BufferInternal &buffer) {
     //Create virtual buffer off this native buffer
     VmaVirtualBlockCreateInfo blockCreateInfo = {};
     blockCreateInfo.size = m_bufferSize;
+    blockCreateInfo.flags = VMA_VIRTUAL_BLOCK_CREATE_LINEAR_ALGORITHM_BIT;
 
     VkResult res = vmaCreateVirtualBlock(&blockCreateInfo, &buffer.virtualBlock);
     if(res != VK_SUCCESS)
@@ -95,7 +96,20 @@ VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, 
 }
 
 void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, VmaVirtualAllocation &alloc) {
-    vmaVirtualFree(buffer.virtualBlock, alloc);
+    
+    //Destruction of this virtualBlock happens only in deallocation queue. 
+    //So it's safe to assume that even if the buffer's handle been changed by the time VirtualFree happens, 
+    //the virtualBlock was still not been free'd
+    //So there would be no error
+
+    auto l_virtualBlock = buffer.virtualBlock;
+    auto l_alloc = alloc; 
+
+    m_device->addDeallocationRecord(
+        [l_virtualBlock, l_alloc]() {
+            vmaVirtualFree(l_virtualBlock, l_alloc);
+
+        });
 }
 
 void GBufferVLK::uploadData(void *data, int length) {

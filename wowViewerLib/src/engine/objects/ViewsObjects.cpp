@@ -32,11 +32,6 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
     for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
         wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
-
-//    for (auto& m2 : drawnM2s) {
-//        m2->collectMeshes(renderedThisFrame, renderOrder);
-//        m2->drawParticles(renderedThisFrame , renderOrder);
-//    }
 }
 
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
@@ -181,6 +176,7 @@ void InteriorView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
 HExteriorView FrameViewsHolder::getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData) {
     if (exteriorView == nullptr) {
         exteriorView = std::make_shared<ExteriorView>();
+        skyBoxView = std::make_shared<ExteriorView>();
         exteriorView->frustumData = frustumData;
     }
 
@@ -198,4 +194,8 @@ HInteriorView FrameViewsHolder::createInterior(const MathHelper::FrustumCullingD
 
 HExteriorView FrameViewsHolder::getExterior() {
     return exteriorView;
+}
+
+HExteriorView FrameViewsHolder::getSkybox() {
+    return skyBoxView;
 }

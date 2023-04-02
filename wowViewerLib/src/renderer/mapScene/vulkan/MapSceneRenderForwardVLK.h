@@ -17,7 +17,7 @@ public:
     ~MapSceneRenderForwardVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
-    inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh);
+    inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType);
 
     std::shared_ptr<MapRenderPlan> getLastCreatedPlan() override;
 

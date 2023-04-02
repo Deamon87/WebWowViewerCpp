@@ -19,14 +19,24 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
     return mapPlan;
 }
 
-void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan, const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes, const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes) {
+void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                                     const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
+                                     const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
+                                     const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
+                                     const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
     mapProduceUpdateCounter.beginMeasurement();
 
     auto &opaqueMeshes = *hopaqueMeshes;
     auto &transparentMeshes = *htransparentMeshes;
 
+    auto &skyOpaqueMeshes = *hSkyOpaqueMeshes;
+    auto &skyTransparentMeshes = *hSkyTransparentMeshes;
+
     opaqueMeshes.reserve(30000);
     transparentMeshes.reserve(30000);
+
+    skyOpaqueMeshes.reserve(1000);
+    skyTransparentMeshes.reserve(1000);
 
     const auto& cullStage = renderPlan;
     auto fdd = cullStage->frameDependentData;
@@ -81,6 +91,15 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
             m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
             m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
         }
+
+        auto skyBoxView = cullStage->viewsHolder.getSkybox();
+        if (skyBoxView) {
+            for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
+                if (m2Object == nullptr) continue;
+                m2Object->collectMeshes(skyOpaqueMeshes, skyTransparentMeshes, m_viewRenderOrder);
+                m2Object->drawParticles(skyOpaqueMeshes, skyTransparentMeshes, m_viewRenderOrder);
+            }
+        }
     }
     m2CollectMeshCounter.endMeasurement();
 
@@ -89,6 +108,10 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     if (transparentMeshes.size() > 1) {
         tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
     }
+    if (skyTransparentMeshes.size() > 1) {
+        tbb::parallel_sort(skyTransparentMeshes.begin(), skyTransparentMeshes.end(), SortMeshes);
+    }
+
     sortMeshCounter.endMeasurement();
 
     mapProduceUpdateCounter.endMeasurement();

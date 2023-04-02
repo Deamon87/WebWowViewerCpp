@@ -236,7 +236,7 @@ void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffse
     usualViewport.height = areaSize[1];
     usualViewport.x = areaOffset[0];
     usualViewport.y = areaOffset[1];
-    if (invertZ) {
+    if (!invertZ) {
         usualViewport.minDepth = 0;
         usualViewport.maxDepth = 0.990f;
     } else {
@@ -246,7 +246,7 @@ void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffse
 
     VkViewport &mapAreaViewport = viewportsForThisStage[(int)ViewportType::vp_mapArea];
     mapAreaViewport = usualViewport;
-    if (invertZ) {
+    if (!invertZ) {
         mapAreaViewport.minDepth = 0.991f;
         mapAreaViewport.maxDepth = 0.996f;
     } else {
@@ -256,7 +256,7 @@ void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffse
 
     VkViewport &skyBoxViewport = viewportsForThisStage[(int)ViewportType::vp_skyBox];
     skyBoxViewport = usualViewport;
-    if (invertZ) {
+    if (!invertZ) {
         skyBoxViewport.minDepth = 0.997f;
         skyBoxViewport.maxDepth = 1.0f;
     } else {

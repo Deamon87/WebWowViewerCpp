@@ -32,13 +32,13 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
             ISortableMesh *pB1 = dynamic_cast<ISortableMesh *>(pB);
 
             if (pA1->priorityPlane()!= pB1->priorityPlane()) {
-                return pB1->priorityPlane() > pA1->priorityPlane();
+                return pB1->priorityPlane() < pA1->priorityPlane();
             }
 
-            if (pA1->getSortDistance() < pB1->getSortDistance()) {
+            if (pA1->getSortDistance() > pB1->getSortDistance()) {
                 return true;
             }
-            if (pA1->getSortDistance() > pB1->getSortDistance()) {
+            if (pA1->getSortDistance() < pB1->getSortDistance()) {
                 return false;
             }
 
@@ -48,14 +48,14 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
                 IM2Mesh *pB2 = dynamic_cast<IM2Mesh *>(pB);
 
                 if (pB2->layer() != pA2->layer()) {
-                    return pB2->layer() < pA2->layer();
+                    return pB2->layer() > pA2->layer();
                 }
             }
         } else {
-            if (pA->getSortDistance() < pB->getSortDistance()) {
+            if (pA->getSortDistance() > pB->getSortDistance()) {
                 return true;
             }
-            if (pA->getSortDistance() > pB->getSortDistance()) {
+            if (pA->getSortDistance() < pB->getSortDistance()) {
                 return false;
             }
         }

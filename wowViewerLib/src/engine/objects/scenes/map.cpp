@@ -482,7 +482,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
     if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
-
+        auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
         if (m_wdlObject != nullptr) {
             m_wdlObject->checkSkyScenes(
                 stateForConditions,
@@ -494,7 +494,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         if (config->renderSkyDom) {
             for (auto &model : m_exteriorSkyBoxes) {
                 if (model != nullptr) {
-                    exteriorView->m2List.addToDraw(model);
+                    skyBoxView->m2List.addToDraw(model);
                 }
             }
         }
@@ -1299,9 +1299,11 @@ void Map::createAdtFreeLamdas() {
 
 void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
     int processedThisFrame = 0;
+    int m2ProcessedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
 //    if (m_api->getConfig()->getRenderM2()) {
+
     for (auto &m2Object : renderPlan->m2Array.getToLoadMain()) {
         if (m2Object == nullptr) continue;
         m2Object->doLoadMainFile();
@@ -1309,6 +1311,19 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     for (auto &m2Object : renderPlan->m2Array.getToLoadGeom()) {
         if (m2Object == nullptr) continue;
         m2Object->doLoadGeom(sceneRenderer);
+        m2ProcessedThisFrame++;
+        if (m2ProcessedThisFrame > 100) break;
+    }
+
+    if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
+        for (auto &m2Object : skyboxView->m2List.getToLoadMain()) {
+            if (m2Object == nullptr) continue;
+            m2Object->doLoadMainFile();
+        }
+        for (auto &m2Object: skyboxView->m2List.getToLoadGeom()) {
+            if (m2Object == nullptr) continue;
+            m2Object->doLoadGeom(sceneRenderer);
+        }
     }
 //    }
 
@@ -1395,6 +1410,12 @@ void Map::update(const HMapRenderPlan &renderPlan) {
                     m2Object->update(deltaTime, cameraVec3, lookAtMat);
                 }
             }, tbb::simple_partitioner());
+
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
+                m2Object->update(deltaTime, cameraVec3, lookAtMat);
+            }
+        }
 
         m2UpdateframeCounter.endMeasurement();
     }
@@ -1486,6 +1507,12 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
 
     for (auto &m2Object : renderPlan->m2Array.getDrawn()) {
          if (m2Object != nullptr) {
+            m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                             renderPlan->frameDependentData);
+        }
+    }
+    if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+        for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
             m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
                                              renderPlan->frameDependentData);
         }

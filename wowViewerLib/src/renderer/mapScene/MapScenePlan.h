@@ -35,7 +35,7 @@ struct MapRenderPlan {
     WMOListContainer wmoArray;
     WMOGroupListContainer wmoGroupArray;
 
-    //Settings for the frame
+
 };
 typedef std::shared_ptr<MapRenderPlan> HMapRenderPlan;
 #endif //AWEBWOWVIEWERCPP_MAPSCENEPLAN_H
