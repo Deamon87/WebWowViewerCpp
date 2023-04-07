@@ -26,6 +26,15 @@ PACK(
 );
 
 PACK(
+    struct AdtVertex {
+        mathfu::vec3_packed pos;
+        mathfu::vec3_packed normal;
+        mathfu::vec4_packed mccv;
+        mathfu::vec4_packed mclv;
+    }
+);
+
+PACK(
     struct LiquidVertexFormat {
         mathfu::vec4_packed pos_transp;
         mathfu::vec2_packed uv;
@@ -41,6 +50,7 @@ public:
 //  Buffer creation
 //-------------------------------------
 
+    virtual HGVertexBufferBindings createADTVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) = 0;
     virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
@@ -68,14 +78,17 @@ public:
 //  Material creation
 //-------------------------------------
 
+    virtual std::shared_ptr<IADTMaterial> createAdtMaterial(const PipelineTemplate &pipelineTemplate,
+                                                            const ADTMaterialTemplate &adtMaterialTemplate) = 0;
+
     virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) = 0;
+
     virtual std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                           const PipelineTemplate &pipelineTemplate,
                                                           const M2MaterialTemplate &m2MaterialTemplate) = 0;
 
     virtual std::shared_ptr<IM2ParticleMaterial> createM2ParticleMaterial(const PipelineTemplate &pipelineTemplate,
                                                                           const M2ParticleMaterialTemplate &m2MaterialTemplate) = 0;
-
     virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
 
     virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() = 0;

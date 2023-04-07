@@ -9,8 +9,8 @@
 #include "../../../gapi/UniformBufferStructures.h"
 
 struct M2MaterialTemplate {
-    int vertexShader;
-    int pixelShader;
+    int vertexShader = 0;
+    int pixelShader = 0;
     std::array<HGTexture, 4> textures = {nullptr, nullptr, nullptr, nullptr};
 };
 
@@ -26,6 +26,11 @@ struct WMOMaterialTemplate {
                                          nullptr, nullptr, nullptr};
 };
 
+struct ADTMaterialTemplate {
+    std::array<HGTexture, 9> textures = {nullptr, nullptr, nullptr,
+                                         nullptr, nullptr, nullptr,
+                                         nullptr, nullptr, nullptr};
+};
 
 class IM2ModelData {
 public:
@@ -58,6 +63,12 @@ class IWMOMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockVS>> m_materialVS= nullptr;
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockPS>> m_materialPS = nullptr;
+};
+
+class IADTMaterial : public IMaterial {
+public:
+    std::shared_ptr<IBufferChunk<ADT::meshWideBlockVSPS>> m_materialVSPS = nullptr;
+    std::shared_ptr<IBufferChunk<ADT::meshWideBlockPS>> m_materialPS = nullptr;
 };
 
 #endif //AWEBWOWVIEWERCPP_IMATERIALSTRUCTS_H

@@ -50,8 +50,13 @@ void main() {
   X  0    1    2    3    4    5    6    7    8
         9   10   11   12   13   14   15   16
 */
-    float iX = mod(gl_VertexIndex, 17.0);
-    float iY = floor(gl_VertexIndex/17.0);
+
+    //With current implementation ADT's VBO is combined buffer, which contains all vertexes from all MCNK of ADT
+    //Thus, we first need to get vertexNumber within MCNK
+
+    int indexInMCNK = gl_VertexIndex % (9 * 9 + 8 * 8);
+    float iX = mod(indexInMCNK, 17.0);
+    float iY = floor(indexInMCNK/17.0);
 
     if (iX > 8.01) {
         iY = iY + 0.5;

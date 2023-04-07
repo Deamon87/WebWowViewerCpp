@@ -22,6 +22,16 @@ public:
     HGTexture createTexture();
 
     MutexLockedVector<std::weak_ptr<GTextureVLK>> getReadyToUploadTextures() {
+
+        uint32_t uploadedThisFrame = std::min<uint32_t>(m_texturesReadyToBeUploadedNext.size(), 50);
+
+        decltype(m_texturesReadyToBeUploaded)::const_iterator first = m_texturesReadyToBeUploadedNext.begin();
+        decltype(m_texturesReadyToBeUploaded)::const_iterator last = m_texturesReadyToBeUploadedNext.begin() + uploadedThisFrame;
+
+        m_texturesReadyToBeUploaded = decltype(m_texturesReadyToBeUploaded)(first, last);
+
+        m_texturesReadyToBeUploadedNext.erase(m_texturesReadyToBeUploadedNext.begin(), m_texturesReadyToBeUploadedNext.begin() + uploadedThisFrame);
+
         return MutexLockedVector<std::weak_ptr<GTextureVLK>>(m_texturesReadyToBeUploaded, textUpdateMutex, true);
     }
 
@@ -54,6 +64,7 @@ private:
 
     std::mutex textUpdateMutex;
     std::vector<std::weak_ptr<GTextureVLK>> m_texturesReadyToBeUploaded;
+    std::vector<std::weak_ptr<GTextureVLK>> m_texturesReadyToBeUploadedNext;
 
     std::mutex blpTextureLoadMutex;
     std::list<std::weak_ptr<GBlpTextureVLK>> m_blpTextLoadQueue;

@@ -36,12 +36,12 @@ static const std::vector<GBufferBinding> staticWaterBindings = {{
 }};
 
 static const std::vector<GBufferBinding> staticM2Bindings = {{
-    {+m2Shader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(M2Vertex), 0 },
-    {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(M2Vertex), 12},  // bonesWeight
-    {+m2Shader::Attribute::bones, 4, GBindingType::GUNSIGNED_BYTE, false, sizeof(M2Vertex), 16},  // bones
-    {+m2Shader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, sizeof(M2Vertex), 20}, // normal
-    {+m2Shader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, sizeof(M2Vertex), 32}, // texcoord
-    {+m2Shader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, sizeof(M2Vertex), 40} // texcoord
+    {+m2Shader::Attribute::aPosition,   3, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, pos) },
+    {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true,  sizeof(M2Vertex), offsetof(M2Vertex, bone_weights)},  // bonesWeight
+    {+m2Shader::Attribute::bones,       4, GBindingType::GUNSIGNED_BYTE, false, sizeof(M2Vertex), offsetof(M2Vertex, bone_indices)},  // bones
+    {+m2Shader::Attribute::aNormal,     3, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, normal)}, // normal
+    {+m2Shader::Attribute::aTexCoord,   2, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, tex_coords)}, // texcoord
+    {+m2Shader::Attribute::aTexCoord2,  2, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, tex_coords[1])} // texcoord
 }};
 
 static_assert(sizeof(M2Vertex) == 48);
@@ -55,11 +55,23 @@ static const std::vector<GBufferBinding> fullScreenQuad = {{
 }};
 
 static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
-   {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),  offsetof(ParticleBuffStruct, position) },
-   {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct),     offsetof(ParticleBuffStruct, color)},
+   {+m2ParticleShader::Attribute::aPosition,  3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, position) },
+   {+m2ParticleShader::Attribute::aColor,     4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, color)},
    {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
    {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
    {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
+}};
+
+static std::vector<GBufferBinding> adtVertexBufferBinding = {{
+  {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
+  {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
+  {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
+  {+adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, sizeof(AdtVertex), offsetof(AdtVertex, mclv)},
+}};
+
+static std::vector<GBufferBinding> adtVertexBufferLODBinding = {{
+  {+adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 8, 0 },
+  {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 8, 4}
 }};
 
 

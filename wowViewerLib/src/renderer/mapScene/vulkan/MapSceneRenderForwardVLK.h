@@ -24,6 +24,7 @@ public:
 //-------------------------------------
 //  Buffer creation
 //-------------------------------------
+    HGVertexBufferBindings createADTVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) override;
     HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
@@ -51,6 +52,7 @@ public:
 //  Material creation
 //-------------------------------------
 
+    std::shared_ptr<IADTMaterial> createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) override;
     std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) override;
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
@@ -92,7 +94,9 @@ private:
     HGBufferVLK vboSkyBuffer;
 
     HGBufferVLK iboBuffer;
+    HGBufferVLK uboStaticBuffer;
     HGBufferVLK uboBuffer;
+    HGBufferVLK uboM2BoneMatrixBuffer;
 
     HGBufferVLK m_vboQuad;
     HGBufferVLK m_iboQuad;
@@ -107,6 +111,7 @@ private:
 
 
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
+    HGVertexBufferBindings m_emptyADTVAO = nullptr;
     HGVertexBufferBindings m_emptyM2ParticleVAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;

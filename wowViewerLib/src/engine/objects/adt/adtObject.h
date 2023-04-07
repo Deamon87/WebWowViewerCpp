@@ -48,7 +48,7 @@ public:
 
     void update(animTime_t deltaTime);
     void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
-    void doPostLoad();
+    void doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
 
     int getAreaId(int mcnk_x, int mcnk_y);
 
@@ -89,9 +89,9 @@ private:
         int length;
     };
 
-    void loadingFinished();
-    void createVBO();
-    void createMeshes();
+    void loadingFinished(const HMapSceneBufferCreate &sceneRenderer);
+    void createVBO(const HMapSceneBufferCreate &sceneRenderer);
+    void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
     void loadAlphaTextures();
 
     HApiContainer m_api;
@@ -132,6 +132,7 @@ private:
 
 
     std::array<HGMesh, 16*16> adtMeshes = {};
+    std::array<std::shared_ptr<IADTMaterial>, 16*16> adtMaterials = {};
     //16x16, then layer
     std::array<std::vector<HGSortableMesh>, 16*16> waterMeshes = {};
     std::vector<HGMesh> adtLodMeshes;
@@ -188,6 +189,8 @@ private:
                     const MathHelper::FrustumCullingData &frustumData,
                     M2ObjectListContainer &m2ObjectsCandidates,
                     WMOListContainer &wmoCandidates);
+
+    void fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMaterialTemplate &adtMaterialTemplate);
 };
 
 

@@ -150,8 +150,8 @@ public:
     //Stuff to display in UI
     double cullingTimePerFrame = 0;
     double composerDrawTimePerFrame = 0;
-    double drawFuncGeneration = 0;
-    double deviceDrawFrame = 0;
+    double consumeDraw = 0;
+    double consumeUpdate = 0;
     double updateTimePerFrame = 0;
     double mapUpdateTime = 0;
     double m2UpdateTime = 0;

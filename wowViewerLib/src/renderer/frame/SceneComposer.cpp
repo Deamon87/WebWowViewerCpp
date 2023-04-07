@@ -109,7 +109,7 @@ void SceneComposer::consumeUpdate(HFrameScenario &frameScenario, std::vector<std
         renderFunctions.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
     }
     drawFuncGeneration.endMeasurement();
-    m_apiContainer->getConfig()->drawFuncGeneration = drawFuncGeneration.getTimePerFrame();
+    m_apiContainer->getConfig()->consumeUpdate = drawFuncGeneration.getTimePerFrame();
 }
 
 void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
@@ -117,7 +117,7 @@ void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunctio
     m_apiContainer->hDevice->drawFrame(renderFuncs);
     deviceDrawFrame.endMeasurement();
 
-    m_apiContainer->getConfig()->deviceDrawFrame = deviceDrawFrame.getTimePerFrame();
+    m_apiContainer->getConfig()->consumeDraw = deviceDrawFrame.getTimePerFrame();
 }
 
 

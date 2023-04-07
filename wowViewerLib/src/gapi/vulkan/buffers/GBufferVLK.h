@@ -20,6 +20,7 @@ typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {
     friend class GDeviceVLK;
+    class GSubBufferVLK;
 public:
     GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize, int alignment = -1);
     ~GBufferVLK() override;
@@ -28,7 +29,7 @@ public:
     void uploadData(void *, int length) override;
     void subUploadData(void *, int offset, int length) override;
     void uploadFromStaging(int offset, int destOffset, int length);
-    void addSubBufferForUpload(const std::shared_ptr<IBufferVLK> &buffer);
+    void addSubBufferForUpload(const std::weak_ptr<GSubBufferVLK> &buffer);
 
     void *getPointer() override { return currentBuffer.stagingBufferAllocInfo.pMappedData;};
     //Submits data edited with Pointer
@@ -75,7 +76,7 @@ private:
 
     std::mutex m_mutex;
 private:
-    class GSubBufferVLK : public IBufferVLK {
+    class GSubBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GSubBufferVLK> {
         friend class GBufferVLK;
     public:
         explicit GSubBufferVLK(HGBufferVLK parent, VmaVirtualAllocation alloc, VkDeviceSize offset,
@@ -109,7 +110,7 @@ private:
 
 
     std::list<std::weak_ptr<GBufferVLK::GSubBufferVLK>> currentSubBuffers;
-    std::vector<std::shared_ptr<IBufferVLK>> subBuffersForUpload;
+    std::vector<std::weak_ptr<GBufferVLK::GSubBufferVLK>> subBuffersForUpload;
 
 //    uploadCache = {};
 public:

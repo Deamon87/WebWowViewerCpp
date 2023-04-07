@@ -308,9 +308,6 @@ std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSc
     gMeshTemplate meshTemplate(skyBindings);
 
     meshTemplate.meshType = MeshType::eGeneralMesh;
-    meshTemplate.skybox = true;
-
-    meshTemplate.texture.resize(0);
 
     if (conusFor0x4Sky) {
         meshTemplate.start = 198 * 2;
@@ -1097,7 +1094,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         if (candidates.size() > 0) {
             results = std::vector<uint32_t>(candidates.size(), 0xFFFFFFFF);
 
-            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 1000),
+            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 2000),
                                       [&](tbb::blocked_range<size_t> &r) {
 //            for (size_t i = r.begin(); i != r.end(); ++i) {
 //                auto &m2ObjectCandidate = tmpVector[i];
@@ -1312,7 +1309,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         if (m2Object == nullptr) continue;
         m2Object->doLoadGeom(sceneRenderer);
         m2ProcessedThisFrame++;
-        if (m2ProcessedThisFrame > 100) break;
+//        if (m2ProcessedThisFrame > 100) break;
     }
 
     if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
@@ -1339,7 +1336,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     }
 
     for (auto &adtObject : renderPlan->adtArray) {
-        adtObject->adtObject->doPostLoad();
+        adtObject->adtObject->doPostLoad(sceneRenderer);
     }
 
     if (quadBindings == nullptr)
@@ -1403,7 +1400,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
     {
         m2UpdateframeCounter.beginMeasurement();
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
+        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 1000),
             [&](tbb::blocked_range<size_t> r) {
                 for (size_t i = r.begin(); i != r.end(); ++i) {
                     auto& m2Object = m2ToDraw[i];

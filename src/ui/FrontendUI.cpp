@@ -165,9 +165,9 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::NewLine();
 
         if (ImGui::CollapsingHeader("Elapsed times")) {
-            ImGui::Text("Elapsed time on deviceDrawFrame : %.3f ms", m_api->getConfig()->deviceDrawFrame);
+            ImGui::Text("Elapsed time on consumeUpdate : %.3f ms", m_api->getConfig()->consumeUpdate);
+            ImGui::Text("Elapsed time on consumeDraw : %.3f ms", m_api->getConfig()->consumeDraw);
             ImGui::Text("Elapsed time on composerDrawTimePerFrame : %.3f ms", m_api->getConfig()->composerDrawTimePerFrame);
-            ImGui::Text("Elapsed time on drawFuncGeneration : %.3f ms", m_api->getConfig()->drawFuncGeneration);
             ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
             ImGui::Text("- Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
             ImGui::Text("- Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);

@@ -139,6 +139,7 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
     auto &uboSizes = m_set.m_hDescriptorSetLayout->getRequiredUBOSize();
 
+#if (!defined(NDEBUG))
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
         std::cerr << "descriptor mismatch for UBO" << std::endl;
         throw std::runtime_error("descriptor mismatch for UBO");
@@ -150,6 +151,8 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
                   << ", provided size = " << (buffer->getSize())
                   << std::endl;
     }
+#endif
+
 
     assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::UBO);
     m_updateBindPoints[bindIndex] = true;

@@ -1379,8 +1379,8 @@ HGM2Mesh M2Object::createWaterfallMesh() {
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
     meshTemplate.end = skinSection->indexCount;
-    meshTemplate.skybox = m_boolSkybox;
 
+/*
     HGTexture texture[4] = {nullptr,nullptr,nullptr,nullptr};
     meshTemplate.texture.resize(5);
     meshTemplate.texture[0] = getTexture(0); //mask
@@ -1388,6 +1388,7 @@ HGM2Mesh M2Object::createWaterfallMesh() {
     meshTemplate.texture[2] = getTexture(2); //noise
     meshTemplate.texture[3] = getTexture(3); //bumpTexture
     meshTemplate.texture[4] = getTexture(4); //normalTex
+    */
 
     std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockVS>> waterFallMeshWideBlockVS = nullptr;
     waterFallMeshWideBlockVS->setUpdateHandler([this, skinData, m2Data, wfv3Data](auto &data, const HFrameDependantData &frameDepedantData){
@@ -1573,7 +1574,6 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
-    meshTemplate.skybox = m_boolSkybox;
 
     auto m2Mesh = sceneRenderer->createM2Mesh(meshTemplate, m2Material, m2Batch->materialLayer, m2Batch->priorityPlane);
 

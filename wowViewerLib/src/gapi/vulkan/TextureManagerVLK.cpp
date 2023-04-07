@@ -54,7 +54,7 @@ void TextureManagerVLK::createUpdateCallback() {
         if (auto shared_this = weak_this.lock()) {
             std::lock_guard lock(shared_this->textUpdateMutex);
 
-            shared_this->m_texturesReadyToBeUploaded.push_back(std::weak_ptr(texture));
+            shared_this->m_texturesReadyToBeUploadedNext.push_back(std::weak_ptr(texture));
         }
     };
 }

@@ -269,12 +269,14 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
         }
     }
 
+    /*
     if (basetextureFDID != 0) {
         auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
         meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
     } else {
         meshTemplate.texture[0] = m_api->hDevice->getBlackTexturePixel();
     }
+     */
 
     //TODO:
 //    meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();

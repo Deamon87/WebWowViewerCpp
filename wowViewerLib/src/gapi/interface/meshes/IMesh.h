@@ -57,11 +57,8 @@ public:
     HGVertexBufferBindings bindings;
     MeshType meshType = MeshType::eGeneralMesh;
 
-    bool skybox = false;
-
     int start;
     int end;
-    std::vector<HGTexture> texture = {};
 
     bool scissorEnabled = false;
     std::array<int, 2> scissorOffset = {0,0};

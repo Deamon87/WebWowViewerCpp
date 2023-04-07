@@ -158,7 +158,7 @@ void GBufferVLK::resize(int newLength) {
             if (subBuffer->m_size > 0) {
                 deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
 
-                addSubBufferForUpload(subBuffer);
+                addSubBufferForUpload(*it);
             }
 
             subBuffer->m_offset = offset;
@@ -209,10 +209,13 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     VmaVirtualAllocation alloc;
     VkDeviceSize offset;
 
-    std::unique_lock<std::mutex> lock(m_mutex,std::defer_lock);
-    lock.lock();
-    VkResult res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc, offset);
-    lock.unlock();
+    std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
+    VkResult res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
+    if (sizeInBytes < m_bufferSize) {
+        lock.lock();
+        res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc, offset);
+        lock.unlock();
+    }
 
     if(res == VK_SUCCESS)
     {
@@ -258,7 +261,7 @@ void GBufferVLK::save(int length) {
     uploadFromStaging(0, 0, length);
 }
 
-void GBufferVLK::addSubBufferForUpload(const std::shared_ptr<IBufferVLK> &buffer) {
+void GBufferVLK::addSubBufferForUpload(const std::weak_ptr<GSubBufferVLK> &buffer) {
     std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
 
     subBuffersForUpload.emplace_back(buffer);
@@ -270,7 +273,10 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
 
         struct uploadInterval {size_t start; size_t size;};
         std::vector<uploadInterval> intervals;
-        for (const auto &subBuffer : subBuffersForUpload) {
+        for (const auto &wsubBuffer : subBuffersForUpload) {
+            auto subBuffer = wsubBuffer.lock();
+            if (subBuffer == nullptr) continue;
+
             auto &newInterval = intervals.emplace_back();
             newInterval = {.start = subBuffer->getOffset(), .size = subBuffer->getSize()};
         }
@@ -311,8 +317,9 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
             vbCopyRegion.dstOffset = currInterval.start;
             vbCopyRegion.size = currInterval.size;
         }
+        int prevSize = subBuffersForUpload.size();
         subBuffersForUpload.clear();
-        subBuffersForUpload.reserve(currentSubBuffers.size());
+        subBuffersForUpload.reserve(prevSize);
     }
 
 
@@ -346,7 +353,7 @@ void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {
 
     memcpy(m_dataPointer, data, length);
 
-    m_parentBuffer->addSubBufferForUpload(m_iterator->lock());
+    m_parentBuffer->addSubBufferForUpload(weak_from_this());
 //    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
 }
 
@@ -357,7 +364,7 @@ void GBufferVLK::GSubBufferVLK::subUploadData(void *data, int offset, int length
 
     memcpy(m_dataPointer + offset, data, length);
 
-    m_parentBuffer->addSubBufferForUpload(m_iterator->lock());
+    m_parentBuffer->addSubBufferForUpload(weak_from_this());
 }
 
 void *GBufferVLK::GSubBufferVLK::getPointer() {
@@ -369,7 +376,7 @@ void GBufferVLK::GSubBufferVLK::save(int length) {
         std::cerr << "invalid dataSize" << std::endl;
     }
 
-    m_parentBuffer->addSubBufferForUpload(m_iterator->lock());
+    m_parentBuffer->addSubBufferForUpload(weak_from_this());
 //    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
 }
 
