@@ -290,7 +290,7 @@ void WmoObject::createWorldPortals() {
                 center,
                 upVector
         );
-        mathfu::mat4 projMatInv = viewMat.Inverse();
+        mathfu::mat4 viewMatInv = viewMat.Inverse();
 
         std::vector <mathfu::vec3> portalTransformed(portalVecs.size());
         for (int k = 0; k < portalVecs.size(); k++) {
@@ -301,7 +301,7 @@ void WmoObject::createWorldPortals() {
 
         portalVecs.clear();
         for (int k = 0; k < hulled.size(); k++) {
-            portalVecs.push_back((projMatInv * mathfu::vec4(hulled[k], 1.0)).xyz());
+            portalVecs.push_back((viewMatInv * mathfu::vec4(hulled[k], 1.0)).xyz());
         }
         geometryPerPortal[j].sortedVericles = portalVecs;
 
@@ -329,7 +329,7 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
             this->createBB(mainGeom->header->bounding_box);
             m_modelWideChunk = sceneRenderer->createWMOWideChunk();
 
-            if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
+            if ((mainGeom->skyBoxM2FileName != nullptr && mainGeom->skyBoxM2FileNameLen > 0) || mainGeom->skyboxM2FileId != 0) {
                 skyBox = std::make_shared<M2Object>(m_api, true);
                 skyBox->setLoadParams(0, {},{});
 
@@ -418,11 +418,11 @@ void WmoObject::update() {
 void WmoObject::uploadGeneratorBuffers() {
     if (!m_loaded) return;
 
-    for (int i= 0; i < groupObjects.size(); i++) {
-        if(groupObjects[i] != nullptr) {
-            groupObjects[i]->uploadGeneratorBuffers();
-        }
-    }
+//    for (int i= 0; i < groupObjects.size(); i++) {
+//        if(groupObjects[i] != nullptr) {
+//            groupObjects[i]->uploadGeneratorBuffers();
+//        }
+//    }
 }
 
 void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){
@@ -988,12 +988,18 @@ void WmoObject::traverseGroupWmo(
     }
 
     //2. Loop through portals of current group
+
     int moprIndex = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprIndex;
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
-        if (skyBox != nullptr) {
-            traverseTempData.ivPerWMOGroup[groupId]->m2List.addToDraw(skyBox);
+        if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.INTERIOR > 0) {
+            if (skyBox != nullptr) {
+                traverseTempData.ivPerWMOGroup[groupId]->m2List.addToDraw(skyBox);
+            }
+        } else {
+            //TODO: WHAT ????
+            //Example: main wmo: 850548, group WMO 901743
         }
     }
 

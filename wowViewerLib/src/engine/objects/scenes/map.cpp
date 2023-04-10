@@ -1432,8 +1432,17 @@ void Map::update(const HMapRenderPlan &renderPlan) {
     wmoGroupUpdate.endMeasurement();
 
     adtUpdate.beginMeasurement();
+    {
+        std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
+        for (const auto &adtObjectRes: renderPlan->adtArray) {
+            if (processedADT.count(adtObjectRes->adtObject) == 0) {
+                adtObjectRes->adtObject->update(deltaTime);
+                processedADT.insert(adtObjectRes->adtObject);
+            }
+        }
+    }
     for (const auto &adtObjectRes : renderPlan->adtArray) {
-        adtObjectRes->adtObject->update(deltaTime);
+
     }
     adtUpdate.endMeasurement();
 
@@ -1515,14 +1524,19 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         }
     }
 
-//    for (auto &wmoGroupObject : cullStage->wmoGroupArray.getToDraw()) {
-//        if (wmoGroupObject == nullptr) continue;
-//        wmoGroupObject->uploadGeneratorBuffers();
-//    }
+    for (auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
+        if (wmoGroupObject == nullptr) continue;
+        wmoGroupObject->uploadGeneratorBuffers(renderPlan->frameDependentData);
+    }
 
-    for (auto &adtRes: renderPlan->adtArray) {
-        if (adtRes == nullptr) continue;
-        adtRes->adtObject->uploadGeneratorBuffers(*adtRes.get());
+    {
+        std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
+        for (const auto &adtObjectRes: renderPlan->adtArray) {
+            if (processedADT.count(adtObjectRes->adtObject) == 0) {
+                adtObjectRes->adtObject->uploadGeneratorBuffers(renderPlan->frameDependentData);
+                processedADT.insert(adtObjectRes->adtObject);
+            }
+        }
     }
 }
 

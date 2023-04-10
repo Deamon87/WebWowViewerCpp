@@ -7,6 +7,7 @@
 #include "../shader/ShaderDefinitions.h"
 #include "../../gapi/interface/IDevice.h"
 #include "../algorithms/mathHelper.h"
+#include "../algorithms/animate.h"
 #include <iostream>
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
@@ -394,63 +395,40 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCrea
 }
 
 
-int WmoGroupGeom::getLegacyWaterType(int a) {
+LiquidTypes WmoGroupGeom::getLegacyWaterType(int a) {
     a = a + 1;
 
     if ( (a - 1) <= 0x13 )
     {
         int newwater = (a - 1) & 3;
         if ( newwater == 1 ) {
-            a = 14;
-            return a;
+            return LiquidTypes::LIQUID_WMO_Ocean;
         }
             
         if ( newwater >= 1 )
         {
             if ( newwater == 2 )
             {
-                a = 19;
+                return LiquidTypes::LIQUID_WMO_Magma;
             }
             else if ( newwater == 3 )
             {
-                a = 20;
+                return LiquidTypes::LIQUID_WMO_Slime;
             }
-            return a;
         }
-        a = 13;
+        return LiquidTypes::LIQUID_WMO_Water;
     }
-    return a;
+
+    return static_cast<LiquidTypes>(a);
 }
 
-HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer) {
-
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type) {
     if (vertexWaterBufferBindings == nullptr) {
         if (this->m_mliq == nullptr) return nullptr;
 
-        std::vector<LiquidVertexFormat> lVertices;
-//        lVertices.reserve((m_mliq->xverts)*(m_mliq->yverts)*3);
-
-        mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
-
-        for (int j = 0; j < m_mliq->yverts; j++) {
-            for (int i = 0; i < m_mliq->xverts; i++) {
-                int p = j*m_mliq->xverts + i;
-
-                LiquidVertexFormat lvfVertex;
-                lvfVertex.pos_transp = mathfu::vec4_packed(mathfu::vec4(
-                    pos.x + (MathHelper::UNITSIZE * i),
-                    pos.y + (MathHelper::UNITSIZE * j),
-                    m_liquidVerticles[p].waterVert.height,
-                    1.0
-                ));
-                lvfVertex.uv = mathfu::vec2(0,0);
-
-                lVertices.push_back(lvfVertex);
-            }
-        }
-
-
+        //Make Index Buffer
         std::vector<uint16_t> iboBuffer;
+        iboBuffer.reserve(m_mliq->ytiles*m_mliq->xtiles);
 
         for (int j = 0; j < m_mliq->ytiles; j++) {
             for (int i = 0; i < m_mliq->xtiles; i++) {
@@ -460,8 +438,8 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBuffe
 
                 if (tile.legacyLiquidType == 15) continue;
 
-                if (liquidType == -1) {
-                    liquidType = getLegacyWaterType(tile.legacyLiquidType);
+                if (m_legacyLiquidType == LiquidTypes::LIQUID_NONE) {
+                    m_legacyLiquidType = getLegacyWaterType(tile.legacyLiquidType);
                 }
 
                 int16_t vertindexes[4] = {
@@ -479,6 +457,38 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBuffe
                 iboBuffer.push_back (vertindexes[2]);
                 iboBuffer.push_back (vertindexes[3]);
 
+            }
+        }
+
+        //Make Vertex Buffer
+        std::vector<LiquidVertexFormat> lVertices;
+        lVertices.reserve((m_mliq->xverts)*(m_mliq->yverts));
+
+        mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
+
+        LiquidTypes finalLiquidType = (liquid_type != LiquidTypes::LIQUID_NONE) ? liquid_type : m_legacyLiquidType;
+        for (int j = 0; j < m_mliq->yverts; j++) {
+            for (int i = 0; i < m_mliq->xverts; i++) {
+                int p = j*m_mliq->xverts + i;
+
+                LiquidVertexFormat lvfVertex;
+                lvfVertex.pos_transp = mathfu::vec4_packed(mathfu::vec4(
+                    pos.x + (MathHelper::UNITSIZE * i),
+                    pos.y + (MathHelper::UNITSIZE * j),
+                    m_liquidVerticles[p].waterVert.height,
+                    1.0
+                ));
+                if (finalLiquidType == LiquidTypes::LIQUID_WMO_Magma) {
+                    lvfVertex.uv = mathfu::vec2(
+                        m_liquidVerticles[p].magmaVert.s * 3.0 / 256.0,
+                        m_liquidVerticles[p].magmaVert.t * 3.0 / 256.0
+                    );
+                } else {
+                    lvfVertex.uv = mathfu::vec2(lvfVertex.pos_transp.x / (1600.0 / 3.0 / 16.0),
+                                                lvfVertex.pos_transp.y / (1600.0 / 3.0 / 16.0));
+                }
+
+                lVertices.push_back(lvfVertex);
             }
         }
 

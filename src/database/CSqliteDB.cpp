@@ -115,12 +115,14 @@ const std::string liquidObjectInfoSQL_classic = R"===(
         )===";
 
 const std::string liquidTypeSQL =   R"===(
-        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidType lt
+        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF from LiquidType lt
         left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID
+        left join LiquidMaterial lm on lt.MaterialID = lm.ID
         where lt.ID = ? order by ltxt.OrderIndex
         )===";
 const std::string liquidTypeSQL_classic =   R"===(
-        select lt.Texture_0, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidType lt
+        select lt.Texture_0, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF from LiquidType lt
+        left join LiquidMaterial lm on lt.MaterialID = lm.ID
         where lt.ID = ?
         )===";
 
@@ -696,6 +698,8 @@ void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<LiquidTypeData >
         ltd.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
         ltd.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
         ltd.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
+
+        ltd.LVF = getLiquidTypeInfo.getField("LVF").getInt();
     }
 
 }

@@ -57,6 +57,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
     m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, mathfu::vec4(0,0,0,0));
+    m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
 
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
@@ -321,6 +322,34 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
             instance->m_materialVS = l_vertexData;
             instance->m_materialPS = l_fragmentData;
         });
+
+    return material;
+}
+
+std::shared_ptr<IWaterMaterial> MapSceneRenderForwardVLK::createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                const PipelineTemplate &pipelineTemplate,
+                                                const WaterMaterialTemplate &waterMaterialTemplate) {
+    auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(uboStaticBuffer); ;
+
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"})
+        .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
+        .createDescriptorSet(0, [l_sceneWideChunk, &modelWide, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(1, BufferChunkHelperVLK::cast(modelWide)->getSubBuffer())
+                .ubo(4, l_fragmentData->getSubBuffer());
+        })
+        .createDescriptorSet(1, [&waterMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(waterMaterialTemplate.texture));
+        })
+        .toMaterial<IWaterMaterial>([&l_fragmentData](IWaterMaterial *instance) -> void {
+            instance->m_materialPS = l_fragmentData;
+        });
+
+    material->color = waterMaterialTemplate.color;
+    material->liquidFlags = waterMaterialTemplate.liquidFlags;
 
     return material;
 }

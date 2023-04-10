@@ -33,9 +33,24 @@ void WmoGroupObject::update() {
         this->updateWorldGroupBBWithM2();
         m_recalcBoundries = false;
     }
+
+
 }
 
-void WmoGroupObject::uploadGeneratorBuffers()  {
+void WmoGroupObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData)  {
+    for (auto const &waterMaterial : m_waterMaterialArray) {
+        auto waterChunk = waterMaterial->m_materialPS->getObject();
+
+        if ((waterMaterial->liquidFlags & 1024) > 0) {// Ocean
+            waterChunk.color = frameDependantData->closeOceanColor;
+        } else if (waterMaterial->liquidFlags == 15) { //River/Lake
+            waterChunk.color = frameDependantData->closeRiverColor;
+        } else {
+            waterChunk.color = mathfu::vec4(waterMaterial->color, 0.7);
+        }
+
+        waterMaterial->m_materialPS->save();
+    }
 }
 
 void WmoGroupObject::drawDebugLights() {
@@ -160,53 +175,53 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 }
 
 
-int WmoGroupObject::to_wmo_liquid (int x) {
+LiquidTypes WmoGroupObject::to_wmo_liquid (int x) {
     liquid_basic_types const basic (static_cast<liquid_basic_types>(x & liquid_basic_types_MASK));
     switch (basic)
     {
         case liquid_basic_types_water:
-            return (m_geom->mogp->flags.is_not_water_but_ocean) ? LIQUID_WMO_Ocean : LIQUID_WMO_Water;
+            return (m_geom->mogp->flags.is_not_water_but_ocean) ? LiquidTypes::LIQUID_WMO_Ocean : LiquidTypes::LIQUID_WMO_Water;
         case liquid_basic_types_ocean:
-            return LIQUID_WMO_Ocean;
+            return LiquidTypes::LIQUID_WMO_Ocean;
         case liquid_basic_types_magma:
-            return LIQUID_WMO_Magma;
+            return LiquidTypes::LIQUID_WMO_Magma;
         case liquid_basic_types_slime:
-            return LIQUID_WMO_Slime;
+            return LiquidTypes::LIQUID_WMO_Slime;
     }
 
-    return -1;
+    return LiquidTypes::LIQUID_NONE;
 }
 
 void WmoGroupObject::setLiquidType() {
 
     if ( getWmoApi()->getWmoHeader()->flags.flag_use_liquid_type_dbc_id)
     {
-        if ( m_geom->mogp->liquidType < LIQUID_FIRST_NONBASIC_LIQUID_TYPE )
+        if ( m_geom->mogp->liquidType < (int)LiquidTypes::LIQUID_FIRST_NONBASIC_LIQUID_TYPE )
         {
             this->liquid_type = to_wmo_liquid (m_geom->mogp->liquidType - 1);
         }
         else
         {
-            this->liquid_type = m_geom->mogp->liquidType;
+            this->liquid_type = static_cast<LiquidTypes>(m_geom->mogp->liquidType);
         }
     }
     else
     {
-        if ( m_geom->mogp->liquidType == LIQUID_Green_Lava )
+        if ( m_geom->mogp->liquidType == (int)LiquidTypes::LIQUID_Green_Lava )
         {
-            this->liquid_type = 0;
+            this->liquid_type = static_cast<LiquidTypes>(0);
         }
         else
         {
             int const liquidType (m_geom->mogp->liquidType + 1);
             int const tmp (m_geom->mogp->liquidType);
-            if ( m_geom->mogp->liquidType < LIQUID_END_BASIC_LIQUIDS )
+            if ( m_geom->mogp->liquidType < (int)LiquidTypes::LIQUID_END_BASIC_LIQUIDS )
             {
                 this->liquid_type = to_wmo_liquid (m_geom->mogp->liquidType);
             }
             else
             {
-                this->liquid_type = m_geom->mogp->liquidType + 1;
+                this->liquid_type = static_cast<LiquidTypes>(m_geom->mogp->liquidType + 1);
             }
             assert (!liquidType || !(m_geom->mogp->flags.LIQUIDSURFACE));
         }
@@ -214,28 +229,19 @@ void WmoGroupObject::setLiquidType() {
 }
 
 void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer) {
-    //TODO:
-    return;
-
     HGDevice device = m_api->hDevice;
-    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer);
-    if (binding == nullptr)
-        return;
 
     //Get Liquid with new method
     setLiquidType();
-    //
-    auto &materials = m_wmoApi->getMaterials();
-    const SMOMaterial &material = materials[m_geom->m_mliq->materialId];
-    assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
-    auto shaderId = material.shader;
-    if (shaderId >= MAX_WMO_SHADERS) {
-        shaderId = 0;
-    }
 
-    HGShaderPermutation shaderPermutation = device->getShader("waterShader", "waterShader", nullptr);
+    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer, liquid_type);
+    if (binding == nullptr)
+        return;
 
-    gMeshTemplate meshTemplate(binding);
+
+    WaterMaterialTemplate waterMaterialTemplate;
+
+
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
@@ -243,70 +249,44 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = false;
 
-    auto blendMode = material.blendMode;
-    float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
-    meshTemplate.meshType = MeshType::eWmoMesh;
-
-
-
     std::vector<LiquidTypeData> liquidTypeData;
     int basetextureFDID = 0;
     if (m_api->databaseHandler != nullptr) {
-        m_api->databaseHandler->getLiquidTypeData(this->liquid_type, liquidTypeData);
+        m_api->databaseHandler->getLiquidTypeData(static_cast<int>(this->liquid_type), liquidTypeData);
     }
-    mathfu::vec3 color = mathfu::vec3(0,0,0);
-    int liquidFlags = 0;
+
+    waterMaterialTemplate.color = mathfu::vec3(0,0,0);
+    waterMaterialTemplate.liquidFlags = 0;
 
     for (auto ltd: liquidTypeData) {
         if (ltd.FileDataId != 0) {
             basetextureFDID = ltd.FileDataId;
 
             if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
-                color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
+                waterMaterialTemplate.color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
             }
-            liquidFlags = ltd.flags;
+            waterMaterialTemplate.liquidFlags = ltd.flags;
             break;
         }
     }
 
-    /*
     if (basetextureFDID != 0) {
         auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
-        meshTemplate.texture[0] = m_api->hDevice->createBlpTexture(htext, true, true);
+        waterMaterialTemplate.texture = m_api->hDevice->createBlpTexture(htext, true, true);
     } else {
-        meshTemplate.texture[0] = m_api->hDevice->getBlackTexturePixel();
+        waterMaterialTemplate.texture = m_api->hDevice->getBlackTexturePixel();
     }
-     */
 
-    //TODO:
-//    meshTemplate.ubo[0] = nullptr;//m_api->getSceneWideUniformBuffer();
-//    meshTemplate.ubo[1] = vertexModelWideUniformBuffer;
-//    meshTemplate.ubo[2] = nullptr;
-//
-//    meshTemplate.ubo[3] = nullptr;
-//    meshTemplate.ubo[4] = device->createUniformBufferChunk(16);
+    auto waterMaterial = sceneRenderer->createWaterMaterial(m_wmoApi->getPlacementBuffer(),pipelineTemplate, waterMaterialTemplate);
 
+    gMeshTemplate meshTemplate(binding);
+    meshTemplate.meshType = MeshType::eWmoMesh;
     meshTemplate.start = 0;
     meshTemplate.end = m_geom->waterIndexSize;
 
-    auto l_liquidType = liquid_type;
-
-    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> chunkBlock = nullptr;
-
-    chunkBlock->setUpdateHandler([this, l_liquidType, liquidFlags, color](auto &data, const HFrameDependantData &frameDepedantData) -> void {
-        mathfu::vec4_packed &color_ = data;
-        if ((liquidFlags & 1024) > 0) {// Ocean
-            color_ = frameDepedantData->closeOceanColor;
-        } else if (liquidFlags == 15) { //River/Lake
-            color_ = frameDepedantData->closeRiverColor;
-        } else {
-            color_ = mathfu::vec4(color, 0.7);
-        }
-    });
-
-    //TODO:
-//    HGMesh hmesh = device->createMesh(meshTemplate);
-//    m_waterMeshArray.push_back(hmesh);
+    auto hmesh = sceneRenderer->createSortableMesh(meshTemplate, waterMaterial, 99);
+    m_waterMeshArray.push_back(hmesh);
+    m_waterMaterialArray.push_back(waterMaterial);
 }
 
 void WmoGroupObject::loadDoodads() {

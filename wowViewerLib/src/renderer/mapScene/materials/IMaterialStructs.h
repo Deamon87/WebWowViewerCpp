@@ -7,6 +7,9 @@
 
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include "../../../gapi/UniformBufferStructures.h"
+//----------------------------
+// Material Templates
+//----------------------------
 
 struct M2MaterialTemplate {
     int vertexShader = 0;
@@ -30,6 +33,12 @@ struct ADTMaterialTemplate {
     std::array<HGTexture, 9> textures = {nullptr, nullptr, nullptr,
                                          nullptr, nullptr, nullptr,
                                          nullptr, nullptr, nullptr};
+};
+
+struct WaterMaterialTemplate {
+    HGTexture texture = nullptr;
+    mathfu::vec3 color;
+    int liquidFlags;
 };
 
 class IM2ModelData {
@@ -69,6 +78,13 @@ class IADTMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<ADT::meshWideBlockVSPS>> m_materialVSPS = nullptr;
     std::shared_ptr<IBufferChunk<ADT::meshWideBlockPS>> m_materialPS = nullptr;
+};
+
+class IWaterMaterial : public IMaterial {
+public:
+    mathfu::vec3 color;
+    int liquidFlags;
+    std::shared_ptr<IBufferChunk<Water::meshWideBlockPS>> m_materialPS = nullptr;
 };
 
 #endif //AWEBWOWVIEWERCPP_IMATERIALSTRUCTS_H

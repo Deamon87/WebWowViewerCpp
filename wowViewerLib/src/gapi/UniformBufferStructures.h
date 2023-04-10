@@ -183,6 +183,12 @@ namespace ADT {
     };
 }
 
+namespace Water {
+    struct meshWideBlockPS {
+        mathfu::vec4_packed color;
+    };
+}
+
 namespace ImgUI {
     struct modelWideBlockVS {
         mathfu::mat4 projectionMat;

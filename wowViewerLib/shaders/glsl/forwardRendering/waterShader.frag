@@ -22,7 +22,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 
 //Individual meshes
 layout(std140, binding=4) uniform meshWideBlockPS {
-//ivec4 waterTypeV;
+    //ivec4 waterTypeV;
     vec4 color;
 };
 

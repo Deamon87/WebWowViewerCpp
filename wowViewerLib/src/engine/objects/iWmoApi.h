@@ -321,6 +321,6 @@ public:
     virtual HGTexture getTexture(int textureId, bool isSpec) = 0;
     virtual void updateBB() = 0;
     virtual void postWmoGroupObjectLoad(int groupId, int lod) = 0;
-
+    virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> getPlacementBuffer() = 0;
 };
 #endif //WOWVIEWERLIB_IWMOAPI_H

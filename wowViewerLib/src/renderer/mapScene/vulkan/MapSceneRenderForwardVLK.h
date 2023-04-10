@@ -66,7 +66,9 @@ public:
     std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                     const PipelineTemplate &pipelineTemplate,
                                                     const WMOMaterialTemplate &wmoMaterialTemplate) override;
-
+    std::shared_ptr<IWaterMaterial> createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                        const PipelineTemplate &pipelineTemplate,
+                                                        const WaterMaterialTemplate &waterMaterialTemplate) override;
 
     std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) override;
 
@@ -115,6 +117,7 @@ private:
     HGVertexBufferBindings m_emptyM2ParticleVAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
+    HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
     void createFrameBuffers();
 };

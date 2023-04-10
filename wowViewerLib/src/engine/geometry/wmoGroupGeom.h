@@ -11,6 +11,23 @@
 #include "../persistance/helper/ChunkFileReader.h"
 #include "../../include/sharedFile.h"
 #include "../../renderer/mapScene/IMapSceneBufferCreate.h"
+enum class LiquidTypes : int
+{
+    LIQUID_NONE = -1,
+    // ...
+    LIQUID_WMO_Water = 13,
+    LIQUID_WMO_Ocean = 14,
+    LIQUID_Green_Lava = 15,
+    LIQUID_WMO_Magma = 19,
+    LIQUID_WMO_Slime = 20,
+
+    LIQUID_END_BASIC_LIQUIDS = 20,
+    LIQUID_FIRST_NONBASIC_LIQUID_TYPE = 21,
+
+    LIQUID_NAXX_SLIME = 21,
+    // ...
+
+};
 
 class WmoGroupGeom : public PersistentFile {
 public:
@@ -27,14 +44,14 @@ public:
 
 
     HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, mathfu::vec4 localAmbient);
-    HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
+    HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type);
 
     int getFileDataId() const {return m_fileDataId;}
     const std::string &getFileName() const {return m_fileName;}
 private:
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 
-    int getLegacyWaterType(int a);
+    LiquidTypes getLegacyWaterType(int a);
     HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer);
     HGIndexBuffer getIBO(const HMapSceneBufferCreate &sceneRenderer);
 public:
@@ -122,7 +139,7 @@ public:
     HGVertexBufferBindings vertexWaterBufferBindings;
     int waterIndexSize = 0;
 
-    int liquidType = -1;
+    LiquidTypes m_legacyLiquidType = LiquidTypes::LIQUID_NONE;
 
     HGVertexBuffer waterVBO;
     HGIndexBuffer waterIBO;

@@ -96,6 +96,10 @@ public:
     virtual std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                             const PipelineTemplate &pipelineTemplate,
                                                             const WMOMaterialTemplate &wmoMaterialTemplate) = 0;
+
+    virtual std::shared_ptr<IWaterMaterial> createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                               const PipelineTemplate &pipelineTemplate,
+                                                               const WaterMaterialTemplate &waterMaterialTemplate) = 0;
 //-------------------------------------
 //  Mesh creation
 //-------------------------------------

@@ -76,6 +76,7 @@ struct LiquidTypeData {
     float color1[3];
     float color2[3];
     int flags;
+    int LVF;
     std::array<float, 3> minimapStaticCol;
 };
 

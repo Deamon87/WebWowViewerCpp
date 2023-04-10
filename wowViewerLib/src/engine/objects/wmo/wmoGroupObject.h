@@ -49,7 +49,7 @@ public:
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
-    void uploadGeneratorBuffers();
+    void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData);
     void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                            mathfu::vec4 &cameraVec4,
                            const MathHelper::FrustumCullingData &frustumData);
@@ -81,6 +81,7 @@ private:
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGSortableMesh> m_sortableMeshArray = {};
     std::vector<HGSortableMesh> m_waterMeshArray = {};
+    std::vector<std::shared_ptr<IWaterMaterial>> m_waterMaterialArray = {};
 
     SMOGroupInfo *m_main_groupInfo;
 
@@ -92,7 +93,7 @@ private:
     bool m_loaded = false;
 
     bool m_recalcBoundries = false;
-    int liquid_type = -1;
+    LiquidTypes liquid_type = LiquidTypes::LIQUID_NONE;
 
     void startLoading();
     void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
@@ -104,7 +105,7 @@ private:
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
     void createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer);
 
-    int to_wmo_liquid (int x);
+    LiquidTypes to_wmo_liquid (int x);
     void setLiquidType();
 
     void loadDoodads();
@@ -140,21 +141,6 @@ enum liquid_basic_types
     liquid_basic_types_slime = 3,
 
     liquid_basic_types_MASK = 3,
-};
-enum liquid_types
-{
-    // ...
-        LIQUID_WMO_Water = 13,
-    LIQUID_WMO_Ocean = 14,
-    LIQUID_Green_Lava = 15,
-    LIQUID_WMO_Magma = 19,
-    LIQUID_WMO_Slime = 20,
-
-    LIQUID_END_BASIC_LIQUIDS = 20,
-    LIQUID_FIRST_NONBASIC_LIQUID_TYPE = 21,
-
-    LIQUID_NAXX_SLIME = 21,
-    // ...
 };
 
 

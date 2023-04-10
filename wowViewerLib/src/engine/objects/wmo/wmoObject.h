@@ -123,14 +123,14 @@ public:
     std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> getPlacementBuffer() override {
+        return m_modelWideChunk;
+    }
 
     std::shared_ptr<M2Object> getSkyBoxForGroup (int groupNum);;
-
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
     void createGroupObjects();
-
-
     void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
 
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);

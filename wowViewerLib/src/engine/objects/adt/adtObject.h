@@ -47,7 +47,7 @@ public:
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
     void update(animTime_t deltaTime);
-    void uploadGeneratorBuffers(ADTObjRenderRes &adtRes);
+    void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData);
     void doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
 
     int getAreaId(int mcnk_x, int mcnk_y);
@@ -142,6 +142,9 @@ private:
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;
 
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_waterPlacementChunk = nullptr;
+    std::vector<std::shared_ptr<IWaterMaterial>> m_waterMaterialArray = {};
+
     int adt_x;
     int adt_y;
 
@@ -172,8 +175,8 @@ private:
     void calcBoundingBoxes();
     void loadM2s();
     void loadWmos();
-    void loadWater();
-    HGSortableMesh createWaterMeshFromInstance(int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
+    void loadWater(const HMapSceneBufferCreate &sceneRenderer);
+    HGSortableMesh createWaterMeshFromInstance(const HMapSceneBufferCreate &sceneRenderer, int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
 
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,

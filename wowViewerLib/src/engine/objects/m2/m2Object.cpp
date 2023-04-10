@@ -1355,6 +1355,8 @@ float wfv_convert(float value, int16_t random) {
 }
 
 HGM2Mesh M2Object::createWaterfallMesh() {
+    return nullptr;
+
     HGShaderPermutation shaderPermutation = m_api->hDevice->getShader("waterfallShader", "waterfallShader", nullptr);
 
     gMeshTemplate meshTemplate(bufferBindings);
@@ -1525,7 +1527,8 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             dynamicMeshes.push_back(dynamicMeshData);
         }*/
     } else {
-        m_meshArray.push_back({createWaterfallMesh(), 0});
+        //TODO:
+//        m_meshArray.push_back({createWaterfallMesh(), 0});
     }
 
     {
