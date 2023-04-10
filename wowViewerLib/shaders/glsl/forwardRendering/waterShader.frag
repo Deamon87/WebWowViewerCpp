@@ -10,6 +10,7 @@ precision highp int;
 
 layout(location=0) in vec3 vPosition;
 layout(location=1) in vec2 vTextCoords;
+layout(location=2) in vec3 vNormal;
 
 layout(location=0) out vec4 outputColor;
 
@@ -26,13 +27,35 @@ layout(std140, binding=4) uniform meshWideBlockPS {
     vec4 color;
 };
 
+const InteriorLightParam intLight = {
+    vec4(0,0,0,0),
+    vec4(0,0,0,1)
+};
+
 void main() {
     vec3 matDiffuse = color.rgb+texture(uTexture, vTextCoords).rgb;
 
     vec3 sunDir = scene.extLight.uExteriorDirectColorDir.xyz;
 
-    //BlendMode is always GxBlend_Alpha
-    vec3 finalColor = makeFog(fogData, vec4(matDiffuse, 1.0), vPosition.xyz, sunDir.xyz, 2).rgb;
+    vec4 finalColor = vec4(
+        calcLight(
+            matDiffuse,
+            vNormal,
+            true,
+            0,
+            scene,
+            intLight,
+            vec3(0.0) /*accumLight*/,
+            vec3(0.0),
+            vec3(0.0), /* specular */
+            vec3(0.0)
+        ),
+        1.0
+    );
 
-    outputColor = vec4(finalColor, 0.7);
+
+    //BlendMode is always GxBlend_Alpha
+    finalColor.rgb = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, 2).rgb;
+
+    outputColor = vec4(finalColor.rgb, 0.7);
 }

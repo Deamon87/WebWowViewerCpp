@@ -327,6 +327,9 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
                 pos.z = getLiquidVertexHeight(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
                 uv = getLiquidVertexCoords(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
             }
+            if (liquidVertexFormat != 1 && liquidVertexFormat != 3 && liquidVertexFormat != 5) {
+                uv = mathfu::vec2(pos.x * 0.6, pos.y * 0.6);
+            }
 
             minX = std::min(minX, pos.x);  maxX = std::max(maxX, pos.x);
             minY = std::min(minY, pos.y);  maxY = std::max(maxY, pos.y);

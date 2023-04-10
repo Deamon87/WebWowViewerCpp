@@ -470,8 +470,14 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     auto skyTransparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
 
     collectMeshes(framePlan, opaqueMeshes, transparentMeshes, skyOpaqueMeshes, skyTransparentMeshes);
+    bool renderSky = framePlan->renderSky;
+    auto skyMesh = framePlan->skyMesh;
+    auto skyMesh0x4 = framePlan->skyMesh0x4;
     return createRenderFuncVLK([opaqueMeshes, transparentMeshes,
                                 skyOpaqueMeshes, skyTransparentMeshes,
+                                renderSky,
+                                skyMesh,
+                                skyMesh0x4,
                                 l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
         // ---------------------
         // Upload stuff
@@ -509,11 +515,15 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             for (auto const &mesh: *opaqueMeshes) {
                 MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
             }
-            for (auto const &mesh: *skyOpaqueMeshes) {
-                MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
-            }
-            for (auto const &mesh: *skyTransparentMeshes) {
-                MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
+            if (renderSky) {
+                if (skyMesh) MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh, CmdBufRecorder::ViewportType::vp_skyBox);
+                for (auto const &mesh: *skyOpaqueMeshes) {
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
+                }
+                for (auto const &mesh: *skyTransparentMeshes) {
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
+                }
+                if (skyMesh0x4) MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
             }
             for (auto const &mesh: *transparentMeshes) {
                 MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);

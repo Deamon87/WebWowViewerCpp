@@ -24,12 +24,15 @@ layout(std140, binding=1) uniform modelWideBlockVS {
 //out vec2 vTexCoord;
 layout(location=0) out vec3 vPosition;
 layout(location=1) out vec2 vTextCoords;
+layout(location=2) out vec3 vNormal;
 
 void main() {
     vec4 aPositionVec4 = vec4(aPositionTransp.xyz, 1);
-    mat4 cameraMatrix = scene.uLookAtMat * uPlacementMat;
+    mat4 viewModelMat = scene.uLookAtMat * uPlacementMat;
 
-    vec4 cameraPoint = cameraMatrix * aPositionVec4;
+    vec4 cameraPoint = viewModelMat * aPositionVec4;
+
+    mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
 
     //const float posToTextPos = 1.0 / (1600.0/3.0/16.0);
     vTextCoords = aTexCoord;//aPositionVec4.xy * posToTextPos;
@@ -37,5 +40,6 @@ void main() {
     gl_Position = scene.uPMatrix * cameraPoint;
     //   vTexCoord = aTexCoord;
     vPosition = cameraPoint.xyz;
+    vNormal = normalize(viewModelMatForNormal * vec4(vec3(0,0,1.0), 0.0)).xyz;
 
 }

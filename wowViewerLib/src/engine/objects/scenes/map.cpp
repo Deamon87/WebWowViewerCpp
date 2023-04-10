@@ -270,7 +270,7 @@ HGVertexBufferBindings createSkyBindings(const HMapSceneBufferCreate &sceneRende
 
     auto skyBindings = sceneRenderer->createSkyVAO(skyVBO, skyIBO);
 
-    return nullptr;
+    return skyBindings;
 }
 
 Map::Map(HApiContainer api, int mapId, const std::string &mapName) {
@@ -526,7 +526,15 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
     cullCombineAllObjects.endMeasurement();
 
+    mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom &&
+        (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupIsExtLit));
 
+    if (m_skyConeAlpha > 0) {
+        mapRenderPlan->skyMesh = skyMesh;
+    }
+    if (mapRenderPlan->frameDependentData->overrideValuesWithFinalFog) {
+        mapRenderPlan->skyMesh0x4 = skyMesh0x4Sky;
+    }
 
     m_api->getConfig()->cullCreateVarsCounter           = cullCreateVarsCounter.getTimePerFrame();
     m_api->getConfig()->cullGetCurrentWMOCounter        = cullGetCurrentWMOCounter.getTimePerFrame();
@@ -1678,10 +1686,3 @@ void Map::loadZoneLights() {
     }
 }
 
-IChunkHandlerType<sceneWideBlockVSPS> Map::generateSceneWideChunk(HCameraMatrices &renderMats, Config* config) {
-    return [renderMats, config](auto &data, const HFrameDependantData &fdd) -> void {
-        auto *blockPSVS = &data;
-
-
-    };
-}

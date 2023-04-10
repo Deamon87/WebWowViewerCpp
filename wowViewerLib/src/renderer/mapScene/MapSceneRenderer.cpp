@@ -43,24 +43,6 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
 
     int m_viewRenderOrder = 0;
 
-    //TODO: find a way to forward this data here
-    /*
-    if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
-        (cullStage->viewsHolder.getExterior() || cullStage->currentWmoGroupIsExtLit)) {
-        if (fdd->overrideValuesWithFinalFog) {
-            if (skyMesh0x4Sky != nullptr) {
-                transparentMeshes.push_back(skyMesh0x4Sky);
-                skyMesh0x4Sky->setSortDistance(0);
-
-            }
-        }
-        if ((m_skyConeAlpha > 0) ) {
-            if (skyMesh != nullptr)
-                opaqueMeshes.push_back(skyMesh);
-        }
-    }
-     */
-
     // Put everything into one array and sort
     interiorViewCollectMeshCounter.beginMeasurement();
     bool renderPortals = m_config->renderPortals;

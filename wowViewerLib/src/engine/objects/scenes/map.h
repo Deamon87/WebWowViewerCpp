@@ -228,8 +228,6 @@ private:
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;
 
     void createAdtFreeLamdas();
-
-    IChunkHandlerType<sceneWideBlockVSPS> generateSceneWideChunk(HCameraMatrices &renderMats, Config* config);
 };
 typedef std::shared_ptr<Map> HMapScene;
 

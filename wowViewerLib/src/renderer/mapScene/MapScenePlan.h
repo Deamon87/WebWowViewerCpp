@@ -18,6 +18,10 @@ struct MapRenderPlan {
     animTime_t deltaTime;
     HCameraMatrices renderingMatrices;
 
+    bool renderSky = false;
+    HGMesh skyMesh;
+    HGMesh skyMesh0x4;
+
     //Result of culling test
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     bool currentWmoGroupIsExtLit = false;
