@@ -100,7 +100,7 @@ const std::string lightDataSQL = R"===(
         )===";
 
 const std::string liquidObjectInfoSQL = R"===(
-        select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidObject lo
+        select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lo.FlowSpeed, lt.MaterialID from LiquidObject lo
         left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID
         left join LiquidType lt on lt.ID = lo.LiquidTypeID
         left join LiquidMaterial lm on lt.MaterialID = lm.ID
@@ -108,20 +108,20 @@ const std::string liquidObjectInfoSQL = R"===(
         )===";
 
 const std::string liquidObjectInfoSQL_classic = R"===(
-        select lt.Texture_0, lm.LVF, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol from LiquidObject lo
+        select lt.Texture_0, lm.LVF, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lo.FlowSpeed, lt.MaterialID from LiquidObject lo
         left join LiquidType lt on lt.ID = lo.LiquidTypeID
         left join LiquidMaterial lm on lt.MaterialID = lm.ID
         where lo.ID = ?
         )===";
 
 const std::string liquidTypeSQL =   R"===(
-        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF from LiquidType lt
+        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF, lt.MaterialID from LiquidType lt
         left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID
         left join LiquidMaterial lm on lt.MaterialID = lm.ID
         where lt.ID = ? order by ltxt.OrderIndex
         )===";
 const std::string liquidTypeSQL_classic =   R"===(
-        select lt.Texture_0, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF from LiquidType lt
+        select lt.Texture_0, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF, lt.MaterialID from LiquidType lt
         left join LiquidMaterial lm on lt.MaterialID = lm.ID
         where lt.ID = ?
         )===";
@@ -656,6 +656,8 @@ void CSqliteDB::getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &
         }
 
         lm.LVF = getLiquidObjectInfo.getField("LVF").getInt();
+        lm.flowSpeed = getLiquidObjectInfo.getField("FlowSpeed").getDouble();
+        lm.materialId = getLiquidObjectInfo.getField("MaterialID").getInt();
         int color1 = getLiquidObjectInfo.getField("Color_0").getInt();
         lm.color1[0] = getFloatFromInt<0>(color1);
         lm.color1[1] = getFloatFromInt<1>(color1);
@@ -684,6 +686,7 @@ void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<LiquidTypeData >
         } else {
             ltd.texture0Pattern = getLiquidTypeInfo.getField("Texture_0").getInt();
         }
+        ltd.materialId = getLiquidTypeInfo.getField("MaterialID").getInt();
 
         int color1 = getLiquidTypeInfo.getField("Color_0").getInt();
         ltd.color1[0] = getFloatFromInt<0>(color1);

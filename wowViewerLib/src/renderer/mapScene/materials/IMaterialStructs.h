@@ -84,6 +84,9 @@ class IWaterMaterial : public IMaterial {
 public:
     mathfu::vec3 color;
     int liquidFlags;
+    int materialId;
+    float scrollSpeedX;
+    float scrollSpeedY;
     std::shared_ptr<IBufferChunk<Water::meshWideBlockPS>> m_materialPS = nullptr;
 };
 

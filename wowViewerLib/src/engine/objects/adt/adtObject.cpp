@@ -210,6 +210,50 @@ inline uint8_t getLiquidDepth(int liquidVertexFormat, float *vertexDataPtr, int 
     return depth;
 }
 
+struct LiquidObjectSettings {
+    bool generateTexCoordsFromPos;
+};
+
+const constexpr LiquidObjectSettings useTexCoordLiquidObject = {
+    .generateTexCoordsFromPos = false
+};
+const constexpr LiquidObjectSettings usePlanarMapLiquidObject = {
+    .generateTexCoordsFromPos = true
+};
+
+const constexpr LiquidObjectSettings usePlanarMapLiquidObjectNoSky = {
+    .generateTexCoordsFromPos = true
+};
+
+const constexpr LiquidObjectSettings oceanLiquidObject = {
+    .generateTexCoordsFromPos = true
+};
+
+inline LiquidObjectSettings getLiquidSettings(int liquidObjectId, int liquidType, int materialId, bool db_generateTexCoordsFromPos) {
+    if (liquidObjectId < 41) {
+        if (materialId == 2) {
+            return useTexCoordLiquidObject;
+        } else if ( materialId == 1) {
+            if (liquidType == 2 || liquidType == 14) {
+                return oceanLiquidObject;
+            } else if (liquidType == 17) {
+                return usePlanarMapLiquidObjectNoSky;
+            } else {
+                return usePlanarMapLiquidObject;
+            }
+        } else if ( materialId == 5 && (liquidType == 350 || liquidType == 412) ) {
+            return usePlanarMapLiquidObjectNoSky;
+        } else {
+            return usePlanarMapLiquidObject;
+        }
+    } else if (liquidObjectId == 42 || liquidType == 14) {
+        return oceanLiquidObject;
+    } else {
+        return {.generateTexCoordsFromPos = db_generateTexCoordsFromPos};
+    }
+}
+
+
 HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreate &sceneRenderer, int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos) {
     uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
     if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
@@ -225,9 +269,11 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
 
     int liquidFlags = 0;
     int liquidVertexFormat = 0;
+    bool generateTexCoordsFromPos = false;
 
     if (basetextureFDID == 0 && (m_api->databaseHandler != nullptr)) {
-        if (liquidInstance.liquid_object_or_lvf > 42) {
+        if (liquidInstance.liquid_object_or_lvf > 41) {
+            liquidVertexFormat = 2;
             std::vector<LiquidMat> liqMats;
             m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liqMats);
             for (auto &liqMat : liqMats) {
@@ -240,6 +286,11 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
 
                     liquidFlags = liqMat.flags;
                     liquidVertexFormat = liqMat.LVF;
+                    generateTexCoordsFromPos = getLiquidSettings(liquidInstance.liquid_object_or_lvf,
+                                                                 liquidInstance.liquid_type,
+                                                                 liqMat.materialId,
+                                                                 liqMat.flowSpeed <=0).generateTexCoordsFromPos;
+
                     break;
                 }
             }
@@ -257,21 +308,28 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
                     minimapStaticCol = mathfu::vec3(ltd.minimapStaticCol[2], ltd.minimapStaticCol[1], ltd.minimapStaticCol[0]);
                     liquidFlags = ltd.flags;
                     liquidVertexFormat = ltd.LVF;
+
+                    generateTexCoordsFromPos = getLiquidSettings(liquidInstance.liquid_object_or_lvf,
+                                                                 liquidInstance.liquid_type,
+                                                                 ltd.materialId,
+                                                                 usePlanarMapLiquidObject.generateTexCoordsFromPos).generateTexCoordsFromPos;
                     break;
                 }
             }
         }
     }
 
+
+
     if (!liquidInstance.offset_vertex_data && liquidInstance.liquid_type != 2) {
         liquidVertexFormat = 2;
     }
-
-    //Hack
-    if (liquidInstance.liquid_type == 2) {
-        liquidVertexFormat = 2;
-    }
-
+//
+//    //Hack
+//    if (liquidInstance.liquid_type == 2) {
+//        liquidVertexFormat = 2;
+//    }
+//
     float *vertexDataPtr = nullptr;
     if (liquidInstance.offset_vertex_data != 0) {
         vertexDataPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
@@ -325,10 +383,11 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
             mathfu::vec2 uv = mathfu::vec2(0,0);
             if (vertexDataPtr!= nullptr) {
                 pos.z = getLiquidVertexHeight(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
-                uv = getLiquidVertexCoords(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
             }
-            if (liquidVertexFormat != 1 && liquidVertexFormat != 3 && liquidVertexFormat != 5) {
-                uv = mathfu::vec2(pos.x * 0.6, pos.y * 0.6);
+            if (generateTexCoordsFromPos) {
+                uv = mathfu::vec2(pos.x * 0.6f, pos.y * 0.6f);
+            } else {
+                uv = getLiquidVertexCoords(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
             }
 
             minX = std::min(minX, pos.x);  maxX = std::max(maxX, pos.x);
@@ -975,6 +1034,10 @@ void AdtObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependant
         } else {
             waterChunk.color = mathfu::vec4(waterMaterial->color, 0.7);
         }
+
+        auto time = m_mapApi->getCurrentSceneTime();
+
+        time
 
         waterMaterial->m_materialPS->save();
     }

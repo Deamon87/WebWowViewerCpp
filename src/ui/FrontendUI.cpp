@@ -724,6 +724,11 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1120838);
     }
+    if (ImGui::Button("Vanilla karazhan", ImVec2(-1, 0))) {
+        m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
+        m_currentScene = std::make_shared<WmoScene>(m_api, "world/wmo/dungeon/az_karazahn/karazhan.wmo");
+        m_api->camera->setCameraPos(0, 0, 0);
+    }
     if (ImGui::Button("10xt_exterior_glacialspike01.wmo (parallax)", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4419436);
     }

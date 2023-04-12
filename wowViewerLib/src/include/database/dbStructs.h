@@ -62,7 +62,11 @@ struct LightResult {
 struct LiquidMat {
     int FileDataId;
     std::string texture0Pattern;
+    int materialId;
+    int scrollSpeedX;
+    int scrollSpeedY;
     int LVF;
+    float flowSpeed;
     int OrderIndex;
     float color1[3];
     float color2[3];
@@ -73,6 +77,9 @@ struct LiquidMat {
 struct LiquidTypeData {
     int FileDataId;
     std::string texture0Pattern;
+    int materialId;
+    int scrollSpeedX;
+    int scrollSpeedY;
     float color1[3];
     float color2[3];
     int flags;
