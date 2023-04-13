@@ -997,10 +997,12 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
     }
 
     int fullSize = 0;
+    int fullTargetSize = 0;
     for (int i = 0; i < bufferChunks.size(); i++) {
         auto &bufferVec = bufferChunks[i];
         for (auto &buffer : *bufferVec) {
-            fullSize += buffer->getSize();
+            fullTargetSize = std::max<int>(fullTargetSize, fullSize + buffer->getSize());
+            fullSize += ((buffer->getRealSize() > 0) ? buffer->getRealSize() : buffer->getSize());
             int offsetDiff = fullSize % uniformBufferOffsetAlign;
             if (offsetDiff != 0) {
                 int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
@@ -1012,6 +1014,7 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
 
     //2. Create buffers and update them
     int currentSize = 0;
+    int targetSize = 0;
     int buffersIndex = 0;
 
     HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
@@ -1041,7 +1044,8 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
             for (auto &buffer : *bufferVec) {
                 buffer->setOffset(currentSize);
                 buffer->setPointer(&pointerForUpload[currentSize]);
-                currentSize += buffer->getSize();
+                targetSize = std::max<int>(targetSize, currentSize + buffer->getSize());
+                currentSize += ((buffer->getRealSize() > 0) ? buffer->getRealSize() : buffer->getSize());
 
                 int offsetDiff = currentSize % uniformBufferOffsetAlign;
                 if (offsetDiff != 0) {
@@ -1051,7 +1055,7 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
                 }
             }
         }
-        assert(currentSize == fullSize);
+        assert(targetSize == fullSize);
         for (int i = 0; i < bufferChunks.size(); i++) {
             auto &bufferVec = bufferChunks[i];
             auto frameDepData = frameDepedantData[i];
@@ -1070,9 +1074,11 @@ void GDeviceVLK::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &
 //                buffer->update(frameDepData);
 //            }
         }
-        if (currentSize > 0) {
+        if (targetSize > 0) {
             bufferForUploadVLK->uploadFromStaging(currentSize);
         }
+
+        m_uniformDataForUpload = currentSize;
     }
 }
 

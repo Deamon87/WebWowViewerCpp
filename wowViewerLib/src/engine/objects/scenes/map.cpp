@@ -1983,7 +1983,7 @@ HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &upd
 
     //And the final is ffxglow to screen
     {
-        auto config = m_api->getConfig();;
+        auto config = m_api->getConfig();
 
         auto glow = parentDrawStage->frameDepedantData->currentGlow;
         auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));

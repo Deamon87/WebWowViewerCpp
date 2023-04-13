@@ -129,6 +129,10 @@ public:
     HGIndexBuffer createIndexBuffer() override;
     HGVertexBufferBindings createVertexBufferBindings() override;
 
+    int getUploadSize() override {
+        return m_uniformDataForUpload;
+    }
+
     HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
@@ -449,6 +453,7 @@ protected:
     std::array<FrameUniformBuffers, 4> m_UBOFrames;
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
+    int m_uniformDataForUpload = 0;
 
     std::list<DeallocationRecord> listOfDeallocators;
 

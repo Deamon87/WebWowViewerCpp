@@ -181,9 +181,15 @@ std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &p
         return std::vector<mathfu::vec3>(0);
     }
 
-    mathfu::vec3* end   = &hullPoints.top() + 1;
-    mathfu::vec3* begin = end - hullPoints.size();
-    std::vector<mathfu::vec3> hullPointsArr(begin, end);
+//    mathfu::vec3* end   = &hullPoints.top() + 1;
+//    mathfu::vec3* begin = end - hullPoints.size();
+//    std::vector<mathfu::vec3> hullPointsArr(begin, end);
+    std::vector<mathfu::vec3> hullPointsArr;
+    hullPointsArr.reserve(hullPoints.size());
+    while(!hullPoints.empty()) {
+        hullPointsArr.push_back(hullPoints.top());
+        hullPoints.pop();
+    }
 
     mathfu::vec2 centerPoint = mathfu::vec2(0,0);
     for (int i = 0; i< hullPoints.size(); i++) {
