@@ -718,9 +718,16 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Primal enchant", ImVec2(-1, 0))) {
         openM2SceneByfdid(4636728, replacementTextureFDids);
     }
+    if (ImGui::Button("nightborne model", ImVec2(-1, 0))) {
+        openM2SceneByfdid(1810676, replacementTextureFDids);
+    }
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
         openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
+    if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(1120838);
+    }
+
     if (ImGui::Button("10.0 Raid WMO", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4282557);
     }

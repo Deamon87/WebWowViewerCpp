@@ -975,8 +975,8 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"ffxgauss4",  {
     {
       4, {
-        {"_33_texOffsetX", true, 0, 1, 4, 0},
-        {"_33_texOffsetY", true, 16, 1, 4, 0},
+        {"_36_texOffsetX", true, 0, 1, 4, 0},
+        {"_36_texOffsetY", true, 16, 1, 4, 0},
       }
     },
   }},
