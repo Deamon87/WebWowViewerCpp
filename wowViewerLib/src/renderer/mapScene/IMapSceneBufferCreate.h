@@ -56,8 +56,13 @@ public:
     virtual HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    virtual HGVertexBufferBindings createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+
+    virtual HGVertexBuffer createPortalVertexBuffer(int sizeInBytes) = 0;
+    virtual HGIndexBuffer  createPortalIndexBuffer(int sizeInBytes) = 0;
 
     virtual HGVertexBuffer createM2VertexBuffer(int sizeInBytes) = 0;
+
     virtual HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) = 0;
 
     virtual HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) = 0;
@@ -100,6 +105,8 @@ public:
     virtual std::shared_ptr<IWaterMaterial> createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                                const PipelineTemplate &pipelineTemplate,
                                                                const WaterMaterialTemplate &waterMaterialTemplate) = 0;
+
+    virtual std::shared_ptr<IPortalMaterial> createPortalMaterial(const PipelineTemplate &pipelineTemplate) = 0;
 //-------------------------------------
 //  Mesh creation
 //-------------------------------------

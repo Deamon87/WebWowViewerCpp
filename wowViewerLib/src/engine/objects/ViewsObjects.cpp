@@ -32,6 +32,10 @@ void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<H
     for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
         wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
     }
+
+    for (auto const &mesh : portalPointsFrame.m_meshes) {
+        transparentMeshes.push_back(mesh);
+    }
 }
 
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
@@ -72,14 +76,7 @@ void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
-static std::array<GBufferBinding, 3> DrawPortalBindings = {
-    {+drawPortalShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0 }, // 0
-    //24
-};
-
-void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
-//TODO:
-    return;
+void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer) {
     std::vector<uint16_t> indiciesArray;
     std::vector<float> verticles;
     int k = 0;
@@ -116,29 +113,16 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
 
     if (verticles.empty()) return;
 
-    auto hDevice = apiContainer->hDevice;
-
-    //TODO:
-//    portalPointsFrame.m_indexVBO = hDevice->createIndexBuffer();
-//    portalPointsFrame.m_bufferVBO = hDevice->createVertexBuffer();
-
-    portalPointsFrame.m_bindings = hDevice->createVertexBufferBindings();
-    portalPointsFrame.m_bindings->setIndexBuffer(portalPointsFrame.m_indexVBO);
-
-    auto const drawPortalBindings = std::vector<GBufferBinding>(DrawPortalBindings.begin(), DrawPortalBindings.end());
-
-    portalPointsFrame.m_bindings->addVertexBufferBinding(portalPointsFrame.m_bufferVBO, drawPortalBindings);
-    portalPointsFrame.m_bindings->save();
-
+        //TODO:
+    portalPointsFrame.m_indexVBO = sceneRenderer->createPortalIndexBuffer((indiciesArray.size() * sizeof(uint16_t)));
+    portalPointsFrame.m_bufferVBO = sceneRenderer->createPortalVertexBuffer((verticles.size() * sizeof(float)));
 
     portalPointsFrame.m_indexVBO->uploadData((void *) indiciesArray.data(), (int) (indiciesArray.size() * sizeof(uint16_t)));
     portalPointsFrame.m_bufferVBO->uploadData((void *) verticles.data(), (int) (verticles.size() * sizeof(float)));
 
-    {
-        HGShaderPermutation shaderPermutation = hDevice->getShader("drawPortalShader", "drawPortalShader", nullptr);
+    portalPointsFrame.m_bindings = sceneRenderer->createPortalVAO(portalPointsFrame.m_bufferVBO, portalPointsFrame.m_indexVBO);
 
-        //Create mesh
-        gMeshTemplate meshTemplate(portalPointsFrame.m_bindings);
+    {
         PipelineTemplate pipelineTemplate;
 
         pipelineTemplate.element = DrawElementMode::TRIANGLES;
@@ -148,18 +132,19 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
 
         pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
+        auto material = sceneRenderer->createPortalMaterial(pipelineTemplate);
+        auto &portalColor = material->m_materialPS->getObject();
+        portalColor.uColor = {0.058, 0.058, 0.819607843, 0.3};
+        material->m_materialPS->save();
+
+        //Create mesh
+        gMeshTemplate meshTemplate(portalPointsFrame.m_bindings);
         meshTemplate.start = 0;
         meshTemplate.end = indiciesArray.size();
 
-        std::shared_ptr<IBufferChunk<DrawPortalShader::meshWideBlockPS>> drawPortalShaderMeshWideBlockPS = nullptr;
-        drawPortalShaderMeshWideBlockPS->setUpdateHandler([](auto &data, const HFrameDependantData &frameDepedantData) {
-            auto& blockPS = data;
+        auto mesh = sceneRenderer->createSortableMesh(meshTemplate, material, 0);
 
-            blockPS.uColor = {0.058, 0.058, 0.819607843, 0.3};
-        });
-
-
-//        transparentMeshes.push_back(hDevice->createMesh(meshTemplate));
+        portalPointsFrame.m_meshes.push_back(mesh);
     }
 }
 

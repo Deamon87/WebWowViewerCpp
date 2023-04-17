@@ -45,8 +45,8 @@ public:
         double v;       // a fraction between 0 and 1
     } hsv;
 
-    static hsv rgb2hsv(mathfu::vec3 in);
-    static mathfu::vec3 hsv2rgb(hsv in);
+    static hsv rgb2hsv(const mathfu::vec3 &in);
+    static mathfu::vec3 hsv2rgb(const hsv &in);
 
     static float fp69ToFloat(uint16_t x);
 

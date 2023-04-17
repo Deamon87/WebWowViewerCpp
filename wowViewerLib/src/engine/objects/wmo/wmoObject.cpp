@@ -289,6 +289,7 @@ void WmoObject::createWorldPortals() {
                 lookAt,
                 center,
                 upVector
+//                1.0f
         );
         mathfu::mat4 viewMatInv = viewMat.Inverse();
 
@@ -818,6 +819,8 @@ bool WmoObject::startTraversingWMOGroup(
 
     //For interior cull
     mathfu::mat4 MVPMat = frustumDataGlobal.perspectiveMat*frustumDataGlobal.viewMat*this->m_placementMatrix;
+    mathfu::mat4 MVPMatInv = MVPMat.Inverse();
+
     std::vector<mathfu::vec3> frustumPointsLocal = MathHelper::calculateFrustumPointsFromMat(MVPMat);
     std::vector<mathfu::vec4> frustumPlanesLocal = MathHelper::getFrustumClipsFromMatrix(MVPMat);
 //    mathfu::vec4 headOfPyramidLocal = mathfu::vec4(MathHelper::getIntersection(
@@ -835,6 +838,8 @@ bool WmoObject::startTraversingWMOGroup(
         cameraVec4,
         cameraLocal,
         transposeInverseModelMat,
+        MVPMat,
+        MVPMatInv,
         transverseVisitedPortals
     };
 
@@ -1092,13 +1097,31 @@ void WmoObject::traverseGroupWmo(
         thisPortalPlanes.reserve(lastFrustumPlanesLen);
 
         if (hackCondition) {
+            //Transform portal vertexes into clip space (this code should allow to use this logic with both Perspective and Ortho)
+            std::vector<mathfu::vec4> portalVerticesClip(portalVerticesVec.size());
+            std::vector<mathfu::vec4> portalVerticesClipNearPlane(portalVerticesVec.size());
+
+            for (int i = 0; i < portalVerticesVec.size(); i++) {
+                portalVerticesClip[i] = traverseTempData.MVPMat * mathfu::vec4(portalVerticesVec[i], 1.0f);
+                portalVerticesClip[i] = portalVerticesClip[i]/portalVerticesClip[i].w;
+            }
+
+            for (int i = 0; i < portalVerticesVec.size(); i++) {
+                //Project Portal vertex to near plane in clip space
+                portalVerticesClipNearPlane[i] = portalVerticesClip[i];
+                portalVerticesClipNearPlane[i].z = 0;
+                //Transform back to local space
+                portalVerticesClipNearPlane[i] = traverseTempData.MVPMatInv * portalVerticesClipNearPlane[i];
+                portalVerticesClipNearPlane[i] /= portalVerticesClipNearPlane[i].w;
+            }
+
             bool flip = (relation->side > 0);
 
             int portalCnt = portalVerticesVec.size();
             for (int i = 0; i < portalCnt; ++i) {
                 int i2 = (i + 1) % portalCnt;
 
-                mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(traverseTempData.cameraLocal.xyz(),
+                mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(portalVerticesClipNearPlane[i].xyz(),
                                                                            portalVerticesVec[i],
                                                                            portalVerticesVec[i2]);
 

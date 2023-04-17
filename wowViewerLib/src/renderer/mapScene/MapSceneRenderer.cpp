@@ -48,9 +48,6 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     bool renderPortals = m_config->renderPortals;
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
         view->collectMeshes(opaqueMeshes, transparentMeshes);
-        if (renderPortals) {
-//            view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
-        }
     }
     interiorViewCollectMeshCounter.endMeasurement();
 
@@ -59,9 +56,6 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
             exteriorView->collectMeshes(opaqueMeshes, transparentMeshes);
-            if (renderPortals) {
-//                exteriorView->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
-            }
         }
     }
     exteriorViewCollectMeshCounter.endMeasurement();

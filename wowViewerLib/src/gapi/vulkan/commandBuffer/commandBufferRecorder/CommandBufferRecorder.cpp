@@ -107,28 +107,34 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
 
     int firstBinding = 0;
 
-    std::vector<VkBuffer> vbos = {};
-    std::vector<VkDeviceSize> offsets = {};
+    assert(buffers.size() <= MAX_VERTEX_BUFFERS_PER_DRAWCALL);
+
+    std::array<VkBuffer, MAX_VERTEX_BUFFERS_PER_DRAWCALL> vbos = {};
+    std::array<VkDeviceSize, MAX_VERTEX_BUFFERS_PER_DRAWCALL> offsets = {};
+    int vboCnt = 0;
+    int offsetCnt = 0;
+
 
     for (int i = 0; i < buffers.size(); i++) {
         auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
+        auto pbufferVlk = bufferVlk.get();
 
         //firstBinding == i <- means we can only skip the start of the list;
         if (firstBinding == i && m_currentVertexBuffers[i] != nullptr &&
-                                 m_currentVertexBuffers[i]->getGPUBuffer() == bufferVlk->getGPUBuffer() &&
-                                 m_currentVertexBuffers[i]->getOffset() == bufferVlk->getOffset()) {
+                                 m_currentVertexBuffers[i]->getGPUBuffer() == pbufferVlk->getGPUBuffer() &&
+                                 m_currentVertexBuffers[i]->getOffset() == pbufferVlk->getOffset()) {
             firstBinding++;
             continue;
         }
 
-        vbos.push_back(bufferVlk->getGPUBuffer());
-        offsets.push_back(bufferVlk->getOffset());
+        vbos[vboCnt++] = pbufferVlk->getGPUBuffer();
+        offsets[offsetCnt++] = pbufferVlk->getOffset();
 
         m_currentVertexBuffers[i] = bufferVlk;
     }
 
-    int bindingCount = vbos.size();
-    if (vbos.empty()) return;
+    int bindingCount = vboCnt;
+    if (vboCnt == 0) return;
 
     vkCmdBindVertexBuffers(m_gCmdBuffer.m_cmdBuffer, firstBinding, bindingCount, vbos.data(), offsets.data());
 }

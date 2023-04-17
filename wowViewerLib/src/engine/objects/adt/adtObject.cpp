@@ -1037,8 +1037,6 @@ void AdtObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependant
 
         auto time = m_mapApi->getCurrentSceneTime();
 
-        time
-
         waterMaterial->m_materialPS->save();
     }
 }

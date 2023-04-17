@@ -33,6 +33,7 @@ private:
     float m_moveSpeed = 1.0;
 
     bool staticCamera = false;
+    bool updatedAtLeastOnce = false;
 
     float ah = 0;
     float av = 0;

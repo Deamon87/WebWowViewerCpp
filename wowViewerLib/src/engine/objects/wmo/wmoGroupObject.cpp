@@ -40,6 +40,16 @@ void WmoGroupObject::update() {
 void WmoGroupObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData)  {
     for (auto const &waterMaterial : m_waterMaterialArray) {
         auto waterChunk = waterMaterial->m_materialPS->getObject();
+/*
+        1,3 - Water
+        2,4 - Magma
+        5 - Mercury,
+        10 - Fog
+        12 - LeyLine
+        13 - Fel
+        14 - Swamp
+        18 - Azerithe
+*/
 
         if ((waterMaterial->liquidFlags & 1024) > 0) {// Ocean
             waterChunk.color = frameDependantData->closeOceanColor;
@@ -258,6 +268,7 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     waterMaterialTemplate.color = mathfu::vec3(0,0,0);
     waterMaterialTemplate.liquidFlags = 0;
 
+    int waterMaterialId = 0;
     for (auto ltd: liquidTypeData) {
         if (ltd.FileDataId != 0) {
             basetextureFDID = ltd.FileDataId;
@@ -266,6 +277,7 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
                 waterMaterialTemplate.color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
             }
             waterMaterialTemplate.liquidFlags = ltd.flags;
+            waterMaterialId = ltd.materialId;
             break;
         }
     }
@@ -278,6 +290,7 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     }
 
     auto waterMaterial = sceneRenderer->createWaterMaterial(m_wmoApi->getPlacementBuffer(),pipelineTemplate, waterMaterialTemplate);
+    waterMaterial->materialId = waterMaterialId;
 
     gMeshTemplate meshTemplate(binding);
     meshTemplate.meshType = MeshType::eWmoMesh;
@@ -624,12 +637,12 @@ void WmoGroupObject::getBottomVertexesFromBspResult(
                     if (m_geom->colorArray != nullptr) {
                         auto &colorArr = m_geom->colorArray;
                         colorUnderneath = mathfu::vec4(
-                            bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd1].r +
-                            bary[2] * colorArr[vertexInd1].r,
-                            bary[0] * colorArr[vertexInd1].g + bary[1] * colorArr[vertexInd1].g +
-                            bary[2] * colorArr[vertexInd1].g,
-                            bary[0] * colorArr[vertexInd1].b + bary[1] * colorArr[vertexInd1].b +
-                            bary[2] * colorArr[vertexInd1].b,
+                            bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd2].r +
+                            bary[2] * colorArr[vertexInd3].r,
+                            bary[0] * colorArr[vertexInd1].g + bary[1] * colorArr[vertexInd2].g +
+                            bary[2] * colorArr[vertexInd3].g,
+                            bary[0] * colorArr[vertexInd1].b + bary[1] * colorArr[vertexInd2].b +
+                            bary[2] * colorArr[vertexInd3].b,
                             0
                         ) * (1 / 255.0f);
                     }

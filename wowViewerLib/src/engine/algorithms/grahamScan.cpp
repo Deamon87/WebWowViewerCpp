@@ -1,16 +1,12 @@
 //Adapted from https://github.com/kartikkukreja/blog-codes/blob/master/src/Graham%20Scan%20Convex%20Hull.cpp
 #include "grahamScan.h"
 #include <algorithm>
+#include "mathHelper.h"
 using namespace std;
-
-// Point having the least y coordinate, used for sorting other points
-// according to polar angle about this point
-//Point pivot;
-Point p0;
 
 // returns -1 if a -> b -> c forms a counter-clockwise turn,
 // +1 for a clockwise turn, 0 if they are collinear
-int ccw(Point a, Point b, Point c) {
+int ccw(const Point &a, const Point &b, const Point &c) {
     float area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
     if (area > 0)
         return -1;
@@ -20,7 +16,7 @@ int ccw(Point a, Point b, Point c) {
 }
 
 // returns square of Euclidean distance between two points
-float sqrDist(Point a, Point b)  {
+float sqrDist(Point &a, Point &b)  {
     float dx = a.x - b.x, dy = a.y - b.y;
     return dx * dx + dy * dy;
 }
@@ -43,7 +39,7 @@ void swap(Point &p1, Point &p2)
 
 // A utility function to return square of distance
 // between p1 and p2
-int distSq(Point p1, Point p2)
+float distSq(const Point &p1, const Point &p2)
 {
     return (p1.x - p2.x)*(p1.x - p2.x) +
            (p1.y - p2.y)*(p1.y - p2.y);
@@ -54,28 +50,13 @@ int distSq(Point p1, Point p2)
 // 0 --> p, q and r are colinear
 // 1 --> Clockwise
 // 2 --> Counterclockwise
-int orientation(Point p, Point q, Point r)
+int orientation(const Point &p, const Point &q, const Point &r)
 {
-    int val = (q.y - p.y) * (r.x - q.x) -
+    float val = (q.y - p.y) * (r.x - q.x) -
               (q.x - p.x) * (r.y - q.y);
 
-    if (val == 0) return 0;  // colinear
+    if (feq(val, 0.0f, 0.00001f)) return 0;  // colinear
     return (val > 0)? 1: 2; // clock or counterclock wise
-}
-
-// A function used by library function qsort() to sort an array of
-// points with respect to the first point
-int compare(const void *vp1, const void *vp2)
-{
-    Point *p1 = (Point *)vp1;
-    Point *p2 = (Point *)vp2;
-
-    // Find orientation
-    int o = orientation(p0, *p1, *p2);
-    if (o == 0)
-        return (distSq(p0, *p2) >= distSq(p0, *p1))? -1 : 1;
-
-    return (o == 2)? -1: 1;
 }
 
 Point nextToTop(stack<Point> &S)
@@ -90,29 +71,43 @@ Point nextToTop(stack<Point> &S)
 stack<Point> grahamScan(std::vector<Point> &points)    {
     stack<Point> hull;
     // Find the bottommost point
-    int ymin = points[0].y, min = 0;
+    float ymin = points[0].y;
+    int min = 0;
+
     int n = points.size();
 
     for (int i = 1; i < n; i++)
     {
-        int y = points[i].y;
+        float y = points[i].y;
 
         // Pick the bottom-most or chose the left
         // most point in case of tie
-        if ((y < ymin) || (ymin == y &&
-                           points[i].x < points[min].x))
+        if ((y < ymin) || (feq(ymin,y, 0.0001f) && points[i].x < points[min].x))
             ymin = points[i].y, min = i;
     }
 
     // Place the bottom-most point at first position
     swap(points[0], points[min]);
 
+    // Point having the least y coordinate, used for sorting other points
+    // according to polar angle about this point
+    Point p0 = points[0];
+
     // Sort n-1 points with respect to the first point.
     // A point p1 comes before p2 in sorted ouput if p2
     // has larger polar angle (in counterclockwise
     // direction) than p1
-    p0 = points[0];
-    qsort(&points[1], n-1, sizeof(Point), compare);
+
+    std::sort(points.begin()+1, points.end(), [&p0](auto const &p1, auto const &p2) -> bool {
+        // Find orientation
+        int o = orientation(p0, p1, p2);
+        if (o == 0)
+            return feq(distSq(p0, p2),distSq(p0, p1))
+                ? &p1 > &p2 // this is fallback to stabilize the sorting function
+                : distSq(p0, p2) >= distSq(p0, p1);
+
+        return (o == 2);
+    });
 
     // If two or more points make same angle with p0,
     // Remove all but the one that is farthest from p0

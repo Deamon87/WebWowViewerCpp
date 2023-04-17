@@ -90,4 +90,9 @@ public:
     std::shared_ptr<IBufferChunk<Water::meshWideBlockPS>> m_materialPS = nullptr;
 };
 
+class IPortalMaterial : public IMaterial {
+public:
+    std::shared_ptr<IBufferChunk<DrawPortalShader::meshWideBlockPS>> m_materialPS = nullptr;
+};
+
 #endif //AWEBWOWVIEWERCPP_IMATERIALSTRUCTS_H

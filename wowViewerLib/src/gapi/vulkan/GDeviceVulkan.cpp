@@ -421,7 +421,7 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
     std::vector<VkImage> swapChainImages = {};
     swapChainImages.resize(imageCount);
 
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data());
+    ERR_GUARD_VULKAN(vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data()));
 
     swapChainExtent = extent;
 

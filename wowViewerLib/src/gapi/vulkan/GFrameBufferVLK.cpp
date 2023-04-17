@@ -45,7 +45,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
         std::shared_ptr<GTextureVLK> h_depthTexture;
         h_depthTexture.reset(new GTextureVLK(
             mdevice,
-            width, height,
+            std::max<int>(width, 1), std::max<int>(height, 1),
             false, false,
             true,
             fbDepthFormat,
@@ -84,6 +84,12 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                                           m_multiSampleCnt(multiSampleCnt){
 
     std::vector<VkImageView> attachments;
+
+    height = std::max<int>(height, 1);
+    width = std::max<int>(width, 1);
+
+    m_height = height;
+    m_width = width;
 
     //Encapsulated for loop
     iterateOverAttachments(textureAttachments, [&](int i, VkFormat textureFormat) {

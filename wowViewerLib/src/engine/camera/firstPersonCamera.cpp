@@ -151,6 +151,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
     mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
     this->upVector = (lookAtRotation * upVector.xyz());
+    updatedAtLeastOnce = true;
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
@@ -182,6 +183,9 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
                                                      float canvasAspect,
                                                      float nearPlane,
                                                      float farPlane) {
+    if (!updatedAtLeastOnce)
+        tick(0.0f);
+
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
     cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
         fov,

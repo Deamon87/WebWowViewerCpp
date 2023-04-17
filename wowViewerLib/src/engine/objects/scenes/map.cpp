@@ -1394,6 +1394,14 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         std::tie(skyMesh, skyMeshMat) = createSkyMesh(sceneRenderer, skyMeshBinding, false);
         std::tie(skyMesh0x4Sky, skyMeshMat0x4) = createSkyMesh(sceneRenderer, skyMeshBinding, true);
     }
+    bool renderPortals = m_api->getConfig()->renderPortals;
+
+    for (auto &view : renderPlan->viewsHolder.getInteriorViews()) {
+        if (renderPortals) {
+            view->produceTransformedPortalMeshes(sceneRenderer, m_api);
+        }
+    }
+
 };
 
 void Map::update(const HMapRenderPlan &renderPlan) {

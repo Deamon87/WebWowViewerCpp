@@ -74,6 +74,10 @@ static std::vector<GBufferBinding> adtVertexBufferLODBinding = {{
   {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 8, 4}
 }};
 
+static std::vector<GBufferBinding> drawPortalBindings = {{
+     {+drawPortalShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0}, // 0
+ }};
+
 
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:

@@ -74,7 +74,7 @@ std::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const std::vector<m
 
 std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::mat4 &mat) {
 
-#define el(x, y) (y-1) + 4*(x - 1)
+#define el(x, y) (((y)-1) + 4*((x) - 1))
 
     //The order of planes is changed to make it easier to get intersections in getIntersectionPointsFromPlanes
     //And to be in line of how planes are created for portal verticies in portal culling
@@ -148,7 +148,7 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
         return points;
 }
 
-bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
+bool hullSort(mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec2 &center) {
     if (a.x - center.x >= 0 && b.x - center.x < 0)
         return true;
     if (a.x - center.x < 0 && b.x - center.x >= 0)
@@ -181,19 +181,24 @@ std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &p
         return std::vector<mathfu::vec3>(0);
     }
 
-    mathfu::vec3* end   = &hullPoints.top() + 1;
-    mathfu::vec3* begin = end - hullPoints.size();
-    std::vector<mathfu::vec3> hullPointsArr(begin, end);
+//    mathfu::vec3* end   = &hullPoints.top() + 1;
+//    mathfu::vec3* begin = end - hullPoints.size();
+    std::vector<mathfu::vec3> hullPointsArr;
+    hullPointsArr.reserve(hullPoints.size());
+    while(!hullPoints.empty()) {
+        hullPointsArr.push_back(hullPoints.top());
+        hullPoints.pop();
+    }
 
     mathfu::vec2 centerPoint = mathfu::vec2(0,0);
-    for (int i = 0; i< hullPoints.size(); i++) {
+    for (int i = 0; i< hullPointsArr.size(); i++) {
         centerPoint += hullPointsArr[i].xy();
     }
-    centerPoint = centerPoint * (1.0f / hullPoints.size());
+    centerPoint = centerPoint * (1.0f / hullPointsArr.size());
 
     std::sort(hullPointsArr.begin(),
               hullPointsArr.end(),
-              [&](mathfu::vec3 a, mathfu::vec3 b) -> bool {
+              [&](const mathfu::vec3 &a, const mathfu::vec3 &b) -> bool {
                   if (a.x - centerPoint.x >= 0 && b.x - centerPoint.x < 0)
                       return true;
                   if (a.x - centerPoint.x < 0 && b.x - centerPoint.x >= 0)
@@ -462,7 +467,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
     // check box outside/inside of frustum
     std::vector<mathfu::vec4> vec4Points(points.size());
 
-    const float epsilon = 0;
+    const float epsilon = 0.0001;
 
     for (int j = 0; j < points.size(); j++) {
         vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);
@@ -471,10 +476,9 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
 
     for (int i = 0; i < planes.size(); i++) {
         int out = 0;
-        float epsilon = 0;
 
         for (int j = 0; j < vec4Points.size(); j++) {
-            out += ((mathfu::vec4::DotProduct(planes[i], vec4Points[j]) + epsilon < 0.0 ) ? 1 : 0);
+            out += (((mathfu::vec4::DotProduct(planes[i], vec4Points[j]) + epsilon) < 0.0 ) ? 1 : 0);
         }
 
         if (out == vec4Points.size()) {
@@ -511,16 +515,16 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             float t1 = mathfu::vec4::DotProduct(p1, planes[i]);
             float t2 = mathfu::vec4::DotProduct(p2, planes[i]);
 
-            if (t1 > 0 && t2 > 0) { //p1 InFront and p2 InFront
+            if ((t1 >= 0) && (t2 >= 0)) { //p1 InFront and p2 InFront
                 resultPoints.push_back(p2);
-            } else if (t1 > 0 && t2 < -epsilon) { //p1 InFront and p2 Behind
+            } else if ((t1 > 0) && (t2 < -epsilon)) { //p1 InFront and p2 Behind
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
-            } else if (t1 < -epsilon && t2 > 0) { //p1 Behind and p2 InFront
+            } else if ((t1 < -epsilon) && (t2 > 0)) { //p1 Behind and p2 InFront
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
                 resultPoints.push_back(p2);
-            } else if (t2 < epsilon && t2 > -epsilon) { //P2 Inside
+            } else if ((t2 < epsilon) && (t2 > -epsilon)) { //P2 Inside
                 resultPoints.push_back(p2);
             }
         }
@@ -614,13 +618,13 @@ mathfu::vec3 MathHelper::getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu
     float d20 = mathfu::vec3::DotProduct(v2, v0);
     float d21 = mathfu::vec3::DotProduct(v2, v1);
     float denom = d00 * d11 - d01 * d01;
-    if ((denom < 0.0001) && (denom > -0.0001)) {
+    if ((denom < 0.0001f) && (denom > -0.0001f)) {
         return mathfu::vec3(-1, -1, -1);
     };
 
     float v = (d11 * d20 - d01 * d21) / denom;
     float w = (d00 * d21 - d01 * d20) / denom;
-    float u = 1.0 - v - w;
+    float u = 1.0f - v - w;
     return mathfu::vec3(u, v, w);
 }
 
@@ -678,7 +682,7 @@ int areIntersecting(
     // The fact that vector 2 intersected the infinite line 1 above doesn't
     // mean it also intersects the vector 1. Vector 1 is only a subset of that
     // infinite line 1, so it may have intersected that line before the vector
-    // started or after it ended. To know for sure, we have to repeat the
+    // started or after it ended. To know for sure, we have to repeat
     // the same test the other way round. We start by calculating the
     // infinite line 2 in linear equation standard form.
     a2 = v2y2 - v2y1;
@@ -810,7 +814,7 @@ mathfu::vec3 MathHelper::calcExteriorColorDir(mathfu::mat4 lookAtMat, int time) 
     return (lookAtRotation * sunDirWorld.xyz());
 }
 
-mathfu::vec3 MathHelper::hsv2rgb(MathHelper::hsv in) {
+mathfu::vec3 MathHelper::hsv2rgb(const MathHelper::hsv &in) {
     double      hh, p, q, t, ff;
     long        i;
     mathfu::vec3    out;
@@ -867,7 +871,7 @@ mathfu::vec3 MathHelper::hsv2rgb(MathHelper::hsv in) {
     return out;
 }
 
-MathHelper::hsv MathHelper::rgb2hsv(mathfu::vec3 in) {
+MathHelper::hsv MathHelper::rgb2hsv(const mathfu::vec3 &in) {
     hsv         out;
     double      min, max, delta;
 

@@ -4,7 +4,7 @@ precision highp float;
 precision highp int;
 
 //Individual mesh
-layout(std140, set=0, binding=4) uniform meshWideBlockPS {
+layout(std140, set=0, binding=1) uniform meshWideBlockPS {
     vec4 uColor;
 };
 

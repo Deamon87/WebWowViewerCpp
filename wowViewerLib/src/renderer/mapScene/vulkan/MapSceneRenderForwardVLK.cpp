@@ -16,13 +16,14 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_device(hDevice), MapSceneRenderer(config) {
     iboBuffer   = m_device->createIndexBuffer(1024*1024);
 
-    vboM2Buffer     = m_device->createVertexBuffer(1024*1024);
-    vboM2ParticleBuffer     = m_device->createVertexBuffer(1024*1024);
-    vboAdtBuffer    = m_device->createVertexBuffer(3*1024*1024);
-    vboWMOBuffer    = m_device->createVertexBuffer(1024*1024);
-    vboWaterBuffer  = m_device->createVertexBuffer(1024*1024);
-    vboSkyBuffer    = m_device->createVertexBuffer(1024*1024);
-    vboWMOGroupAmbient = m_device->createVertexBuffer(16*200);
+    vboM2Buffer         = m_device->createVertexBuffer(1024*1024);
+    vboPortalBuffer     = m_device->createVertexBuffer(1024*1024);
+    vboM2ParticleBuffer = m_device->createVertexBuffer(1024*1024);
+    vboAdtBuffer        = m_device->createVertexBuffer(3*1024*1024);
+    vboWMOBuffer        = m_device->createVertexBuffer(1024*1024);
+    vboWaterBuffer      = m_device->createVertexBuffer(1024*1024);
+    vboSkyBuffer        = m_device->createVertexBuffer(1024*1024);
+    vboWMOGroupAmbient  = m_device->createVertexBuffer(16*200);
 
     {
         const float epsilon = 0.f;
@@ -58,6 +59,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
     m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, mathfu::vec4(0,0,0,0));
     m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
+    m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
@@ -139,6 +141,22 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createSkyVAO(HGVertexBuffer ver
 
     return skyVAO;
 }
+
+HGVertexBufferBindings MapSceneRenderForwardVLK::createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
+    auto portalVAO = m_device->createVertexBufferBindings();
+    portalVAO->addVertexBufferBinding(vertexBuffer, std::vector(drawPortalBindings.begin(), drawPortalBindings.end()));
+    portalVAO->setIndexBuffer(indexBuffer);
+
+    return portalVAO;
+};
+
+HGVertexBuffer MapSceneRenderForwardVLK::createPortalVertexBuffer(int sizeInBytes) {
+    return vboPortalBuffer->getSubBuffer(sizeInBytes);
+};
+HGIndexBuffer  MapSceneRenderForwardVLK::createPortalIndexBuffer(int sizeInBytes){
+    return iboBuffer->getSubBuffer(sizeInBytes);
+};
 
 HGVertexBuffer MapSceneRenderForwardVLK::createM2VertexBuffer(int sizeInBytes) {
     return vboM2Buffer->getSubBuffer(sizeInBytes);
@@ -374,6 +392,24 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
     return material;
 }
 
+std::shared_ptr<IPortalMaterial> MapSceneRenderForwardVLK::createPortalMaterial(const PipelineTemplate &pipelineTemplate) {
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto materialPS = std::make_shared<CBufferChunkVLK<DrawPortalShader::meshWideBlockPS>>(uboBuffer);
+
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawPortalShader", "drawPortalShader"})
+        .createPipeline(m_emptyPortalVAO, m_renderPass, pipelineTemplate)
+        .createDescriptorSet(0, [&materialPS, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(1, materialPS->getSubBuffer());
+        })
+        .toMaterial<IPortalMaterial>([&materialPS](IPortalMaterial *instance) -> void {
+            instance->m_materialPS = materialPS;
+        });
+
+    return material;
+}
+
 std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) {
     auto result = std::make_shared<IM2ModelData>();
 
@@ -488,6 +524,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
 
         uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
+        uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
         uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
         uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
         uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);

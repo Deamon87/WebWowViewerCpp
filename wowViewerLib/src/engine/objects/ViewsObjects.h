@@ -46,13 +46,13 @@ public:
         HGVertexBuffer m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
-        std::vector<HGMesh> m_meshes = {};
+        std::vector<HGSortableMesh> m_meshes = {};
     } portalPointsFrame;
 
     virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
-    void produceTransformedPortalMeshes(HApiContainer &apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
+    void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer);
     void addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos);
 };
 

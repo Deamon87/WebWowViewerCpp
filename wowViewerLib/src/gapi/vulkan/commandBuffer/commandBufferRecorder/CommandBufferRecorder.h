@@ -59,11 +59,13 @@ public:
 private:
     const GCommandBuffer &m_gCmdBuffer;
 
+    static constexpr int MAX_VERTEX_BUFFERS_PER_DRAWCALL = 2;
+
     //States
     std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
     std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
     std::shared_ptr<IBufferVLK> m_currentIndexBuffer = nullptr;
-    std::array<std::shared_ptr<IBufferVLK>, 2> m_currentVertexBuffers;
+    std::array<std::shared_ptr<IBufferVLK>, MAX_VERTEX_BUFFERS_PER_DRAWCALL> m_currentVertexBuffers;
     std::array<std::shared_ptr<GDescriptorSet>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
     bool m_currentScissorsIsDefault = false;
     ViewportType m_currentViewport = ViewportType::vp_none;

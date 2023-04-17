@@ -39,6 +39,8 @@ private:
         mathfu::vec4 &cameraVec4;
         mathfu::vec4 &cameraLocal;
         mathfu::mat4 &transposeInverseModelMat;
+        mathfu::mat4 &MVPMat;
+        mathfu::mat4 &MVPMatInv;
         std::vector<bool> &transverseVisitedPortals;
 
         bool atLeastOneGroupIsDrawn = false;

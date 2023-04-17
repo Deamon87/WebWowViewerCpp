@@ -30,6 +30,10 @@ public:
     HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+
+    HGVertexBuffer createPortalVertexBuffer(int sizeInBytes) override;
+    HGIndexBuffer  createPortalIndexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
@@ -72,6 +76,8 @@ public:
 
     std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) override;
 
+    std::shared_ptr<IPortalMaterial> createPortalMaterial(const PipelineTemplate &pipelineTemplate) override;
+
 //-------------------------------------
 //  Mesh creation
 //-------------------------------------
@@ -89,6 +95,8 @@ private:
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
+    HGBufferVLK vboPortalBuffer;
+
     HGBufferVLK vboAdtBuffer;
     HGBufferVLK vboWMOBuffer;
     HGBufferVLK vboWMOGroupAmbient;
@@ -96,6 +104,7 @@ private:
     HGBufferVLK vboSkyBuffer;
 
     HGBufferVLK iboBuffer;
+
     HGBufferVLK uboStaticBuffer;
     HGBufferVLK uboBuffer;
     HGBufferVLK uboM2BoneMatrixBuffer;
@@ -115,6 +124,7 @@ private:
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
     HGVertexBufferBindings m_emptyADTVAO = nullptr;
     HGVertexBufferBindings m_emptyM2ParticleVAO = nullptr;
+    HGVertexBufferBindings m_emptyPortalVAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
