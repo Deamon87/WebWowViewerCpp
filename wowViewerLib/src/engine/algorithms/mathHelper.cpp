@@ -473,7 +473,6 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
         vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);
     }
 
-
     for (int i = 0; i < planes.size(); i++) {
         int out = 0;
 
@@ -490,24 +489,11 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
         //---------------------------------
 
         std::vector<mathfu::vec4> resultPoints;
-
-//        mathfu::vec3 pointO;
-//        if (planes[i][2] != 0) {
-//            pointO = mathfu::vec3(0, 0, -planes[i][3] / planes[i][2]);
-//        } else if (planes[i][1] != 0) {
-//            pointO = mathfu::vec3(0, -planes[i][3] / planes[i][1], 0);
-//        } else if (planes[i][0] != 0) {
-//            pointO = mathfu::vec3(-planes[i][3] / planes[i][0], 0, 0);
-//        } else {
-//            continue;
-//        }
+        resultPoints.reserve(vec4Points.size() + (vec4Points.size() >> 1));
 
         for (int j = 0; j < vec4Points.size(); j++) {
             mathfu::vec4 p1 = vec4Points[j];
             mathfu::vec4 p2 = vec4Points[(j + 1) % vec4Points.size()];
-
-            mathfu::vec3 p1_xyz = p1.xyz();
-            mathfu::vec3 p2_xyz = p2.xyz();
 
             // InFront = plane.Distance( point ) > 0.0f
             // Behind  = plane.Distance( point ) < 0.0f
@@ -515,12 +501,12 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             float t1 = mathfu::vec4::DotProduct(p1, planes[i]);
             float t2 = mathfu::vec4::DotProduct(p2, planes[i]);
 
-            if ((t1 >= 0) && (t2 >= 0)) { //p1 InFront and p2 InFront
+            if ((t1 >= -epsilon) && (t2 >= -epsilon)) { //p1 InFront and p2 InFront
                 resultPoints.push_back(p2);
-            } else if ((t1 > 0) && (t2 < -epsilon)) { //p1 InFront and p2 Behind
+            } else if ((t1 >= -epsilon) && (t2 < -epsilon)) { //p1 InFront and p2 Behind
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
-            } else if ((t1 < -epsilon) && (t2 > 0)) { //p1 Behind and p2 InFront
+            } else if ((t1 < -epsilon) && (t2 >= -epsilon)) { //p1 Behind and p2 InFront
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
                 resultPoints.push_back(p2);
@@ -749,69 +735,170 @@ bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
     return result;
 }
 
-mathfu::vec3 MathHelper::calcExteriorColorDir(mathfu::mat4 lookAtMat, int time) {
-    // Phi Table
-    static const std::array<std::array<float, 2>, 4> phiTable = {
-        {
-            { 0.0f,  2.2165682f },
-            { 0.25f, 1.9198623f },
-            { 0.5f,  2.2165682f },
-            { 0.75f, 1.9198623f }
-        }
-    };
 
-    // Theta Table
+template<int tableSize>
+constexpr float InterpTable(const std::array<std::array<float, 2>, tableSize> &table, float time) {
 
+    if (time >= 0.0f) {
+        time = std::min(time, 1.0f);
+    }
 
-    static const std::array<std::array<float, 2>, 4> thetaTable = {
-        {
-            {0.0f, 3.926991f},
-            {0.25f, 3.926991f},
-            { 0.5f,  3.926991f },
-            { 0.75f, 3.926991f }
-        }
-    };
-
-//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
-//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
-
-    float phi = phiTable[0][1];
-    float theta = thetaTable[0][1];
-
-    //Find Index
-    float timeF = time / 2880.0f;
-    int firstIndex = -1;
-    for (int i = 0; i < 4; i++) {
-        if (timeF < phiTable[i][0]) {
-            firstIndex = i;
+    int i;
+    int firstIndex = 0;
+    int secondIndex = 0;
+    for (i = 0; i < table.size(); i++) {
+        if (time <= table[i][0]) {
             break;
         }
     }
-    if (firstIndex == -1) {
-        firstIndex = 3;
+
+    firstIndex = 0;
+    if (i != table.size()) {
+        firstIndex = i;
     }
+    if (firstIndex) {
+        secondIndex = firstIndex - 1;
+    } else {
+        secondIndex = table.size() - 1;
+    }
+
+    float tableTimeDiff = table[firstIndex][0] - table[secondIndex][0];
+    if (fabs(tableTimeDiff) < 0.001f)
+        return table[secondIndex][1];
+
+    if (tableTimeDiff < 0.0f)
+        tableTimeDiff = tableTimeDiff + 1.0f;
+
+    float timeDiff = time - table[secondIndex][0];
+    if (timeDiff < 0.0f)
+        timeDiff = timeDiff + 1.0f;
+
+    float alpha = timeDiff / tableTimeDiff;
+
+    float firstValue = table[firstIndex][1];
+    float secondValue = table[secondIndex][1];
+    //if (firstValue < secondValue)
+        //return table[secondIndex].y - alpha * (secondValue - firstValue);
+    //else
+    return secondValue + alpha * (firstValue - secondValue);
+
+}
+
+float doSomeConvert(float a) {
+    int a1;
+    if ( a <= 0.0f )
     {
-        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
-        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
+        a1 = ~(int)(float)-a;
+    }
+    else
+    {
+        a1 = (int)a;
     }
 
+    float res = (float)((float)((float)((float)(a - (float)a1) * 4.0f) + -6.0f)
+                 * (float)((float)(a - (float)a1) * (float)(a - (float)a1)))
+         + 1.0f;
+    if ( (a1 & 1) != 0 )
+    {
+        res = -res;
+    }
 
-    // Convert from spherical coordinates to XYZ
-    // x = rho * sin(phi) * cos(theta)
-    // y = rho * sin(phi) * sin(theta)
-    // z = rho * cos(phi)
+    return res;
+}
 
-    float sinPhi = (float) sin(phi);
-    float cosPhi = (float) cos(phi);
+mathfu::vec3 MathHelper::calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int time) {
+    // Phi Table
+    static constexpr std::array<std::array<float, 2>, 5> sunPhiTable = {
+        {
+            { 0.25f,        1.7453293f },
+            { 0.49652779f,  0.08726646f},
+            { 0.5f,         0.08726646f},
+            { 0.50347221f,  0.08726646f},
+            { 0.79166669f,  1.7453293f }
+        }
+    };
 
-    float sinTheta = (float) sin(theta);
-    float cosTheta = (float) cos(theta);
+    static constexpr std::array<std::array<float, 2>, 3> sunThetaTable = {
+        {
+            { 0.25f,       0.78539819f},
+            { 0.5f,        0.78539819f},
+            { 0.79166669f, 0.78539819f}
+        }
+    };
 
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+    static constexpr std::array<std::array<float, 2>, 5> moonPhiTable = {
+        {
+            { 0,            0.61086524f },
+            { 0.0034722222f,0.61086524 },
+            { 0.16666667f,  1.7453293f },
+            { 0.89583331f,  1.7453293f },
+            { 0.99652779f,  0.61086524f }
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 3> moonThetaTable = {
+        {
+            { 0.0f,        0.78539819f},
+            { 0.16666667f, 0.78539819f},
+            { 0.89583331f, 0.78539819f}
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 4> directionalLightPhiTable = {
+        {
+            { 0,            2.2165682f },
+            { 0.25f,        1.9198622f },
+            { 0.5f,         2.2165682f },
+            { 0.75f,        1.9198622f },
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 4> directionalLightThetaTable = {
+        {
+            { 0,            3.9269907f },
+            { 0.25f,        3.9269907f },
+            { 0.5f,         3.9269907f },
+            { 0.75f,        3.9269907f },
+        }
+    };
+
+
+
+    float phi = sunPhiTable[0][1];
+    float theta = sunThetaTable[0][1];
+
+    //Find Index
+    float timeF = time / 2880.0f;
+
+
+    phi = InterpTable<4>(directionalLightPhiTable, timeF);
+    theta = InterpTable<4>(directionalLightThetaTable, timeF);
+
+//    if ( timeF >= 0.22222222f && timeF <= 0.81944448f )
+//    {
+//        phi = InterpTable<5>(sunPhiTable, timeF);
+//        theta = InterpTable<3>(sunThetaTable, timeF);
+//    }
+//    else
+//    {
+//        phi = InterpTable<5>(moonPhiTable, timeF);
+//        theta = InterpTable<3>(moonThetaTable, timeF);
+//    }
+    constexpr float INV_PI = 1.0f / M_PI;
+
+    float sinPhi = doSomeConvert(phi * INV_PI - 0.5f);
+    float cosPhi = doSomeConvert(phi * INV_PI);
+
+    float sinTheta = doSomeConvert(theta * INV_PI + -0.5f);
+    float cosTheta = doSomeConvert(theta * INV_PI);
+
 
     mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
+//    sunDirWorld = mathfu::vec4(sunDirWorld.x, sunDirWorld.x, sunDirWorld.x, 0);
+    sunDirWorld = mathfu::vec4(sunDirWorld.xyz().Normalized(), 0.0f);
+//    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
 //    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    return (lookAtRotation * sunDirWorld.xyz());
+    return (lookAtMat.Inverse().Transpose() * sunDirWorld).xyz().Normalized();
 }
 
 mathfu::vec3 MathHelper::hsv2rgb(const MathHelper::hsv &in) {

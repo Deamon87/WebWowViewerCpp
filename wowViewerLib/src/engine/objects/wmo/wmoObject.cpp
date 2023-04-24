@@ -1103,7 +1103,7 @@ void WmoObject::traverseGroupWmo(
 
             for (int i = 0; i < portalVerticesVec.size(); i++) {
                 portalVerticesClip[i] = traverseTempData.MVPMat * mathfu::vec4(portalVerticesVec[i], 1.0f);
-                portalVerticesClip[i] = portalVerticesClip[i]/portalVerticesClip[i].w;
+                portalVerticesClip[i] /= portalVerticesClip[i].w;
             }
 
             for (int i = 0; i < portalVerticesVec.size(); i++) {
@@ -1115,11 +1115,13 @@ void WmoObject::traverseGroupWmo(
                 portalVerticesClipNearPlane[i] /= portalVerticesClipNearPlane[i].w;
             }
 
+            //This condition works, bcuz earlier it's verified we are inside the portal using the
+            //dot product AND `relation->side`
             bool flip = (relation->side > 0);
 
-            int portalCnt = portalVerticesVec.size();
-            for (int i = 0; i < portalCnt; ++i) {
-                int i2 = (i + 1) % portalCnt;
+            int vertexCnt = portalVerticesVec.size();
+            for (int i = 0; i < vertexCnt; ++i) {
+                int i2 = (i + 1) % vertexCnt;
 
                 mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(portalVerticesClipNearPlane[i].xyz(),
                                                                            portalVerticesVec[i],

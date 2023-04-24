@@ -34,7 +34,7 @@ typedef std::shared_ptr<std::vector<mipmapStruct_t>> HMipmapsVector;
 class BlpTexture : public PersistentFile{
 public:
     explicit BlpTexture(std::string fileName){ m_textureName = fileName;};
-    explicit BlpTexture(int fileDataId){m_textureName = std::to_string(fileDataId);};
+    explicit BlpTexture(int fileDataId){m_textureName = std::to_string(fileDataId); m_fileDataId = fileDataId; };
 
     std::string getTextureName() { return m_textureName; };
     void process(HFileContent blpFile, const std::string &fileName) override;
@@ -47,6 +47,7 @@ public:
     }
 private:
     std::string m_textureName;
+    int m_fileDataId = 0;
 
     HMipmapsVector m_mipmaps;
     TextureFormat m_textureFormat = TextureFormat::Undetected;

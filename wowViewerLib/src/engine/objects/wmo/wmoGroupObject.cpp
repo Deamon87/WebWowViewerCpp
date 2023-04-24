@@ -499,6 +499,7 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     getBottomVertexesFromBspResult(portalInfos, portalRels, bspLeafList, cameraLocal, topZ, bottomZ, tempColor);
 
     //2. Try to get top and bottom from portal planes
+    // (That's for case when the portal plane is horizontal)
     MOGP *groupInfo = this->m_geom->mogp;
     int moprIndex = groupInfo->moprIndex;
     int numItems = groupInfo->moprCount;

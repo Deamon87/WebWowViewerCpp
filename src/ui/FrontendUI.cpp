@@ -756,6 +756,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Stormwind mage portal", ImVec2(-1, 0))) {
         openM2SceneByfdid(2394711, replacementTextureFDids);
     }
+    if (ImGui::Button("kodobeasttame", ImVec2(-1, 0))) {
+        openM2SceneByfdid(124697, replacementTextureFDids);
+    }
 
 //    if (ImGui::Button("Azeroth map: Lion's Rest (Legion)", ImVec2(-1, 0))) {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
