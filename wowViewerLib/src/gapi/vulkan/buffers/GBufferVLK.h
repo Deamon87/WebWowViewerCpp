@@ -18,6 +18,8 @@ typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 #include "../utils/MutexLockedVector.h"
 #include "../bindable/DSBindable.h"
 
+#include "../../../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
+
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {
     friend class GDeviceVLK;
     class GSubBufferVLK;
@@ -68,7 +70,7 @@ private:
         VmaAllocationInfo stagingBufferAllocInfo;
 
         //Virtual block for suballocations
-        VmaVirtualBlock virtualBlock;
+        OffsetAllocator::Allocator offsetAllocator = OffsetAllocator::Allocator(1000);
     } currentBuffer;
 
     std::mutex dataToBeUploadedMtx;

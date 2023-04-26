@@ -42,16 +42,8 @@ void GBufferVLK::createBuffer(BufferInternal &buffer) {
                                      &buffer.g_hBufferAlloc, nullptr));
 
     //Create virtual buffer off this native buffer
-    VmaVirtualBlockCreateInfo blockCreateInfo = {};
-    blockCreateInfo.size = m_bufferSize;
-    blockCreateInfo.flags = VMA_VIRTUAL_BLOCK_CREATE_LINEAR_ALGORITHM_BIT;
-
-    VkResult res = vmaCreateVirtualBlock(&blockCreateInfo, &buffer.virtualBlock);
-    if(res != VK_SUCCESS)
-    {
-        std::cerr << "Failed to create virtual buffer" << std::endl;
-    }
-
+    auto allocator = OffsetAllocator::Allocator(m_bufferSize);
+    buffer.offsetAllocator = allocator;
 }
 
 void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
