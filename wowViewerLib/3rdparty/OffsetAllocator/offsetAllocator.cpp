@@ -136,9 +136,7 @@ namespace OffsetAllocator
     // Allocator...
     Allocator::Allocator(uint32 size, uint32 maxAllocs) :
         m_size(size),
-        m_maxAllocs(maxAllocs),
-        m_nodes(nullptr),
-        m_freeNodes(nullptr)
+        m_maxAllocs(maxAllocs)
     {
         if (sizeof(NodeIndex) == 2)
         {
@@ -159,32 +157,12 @@ namespace OffsetAllocator
         memcpy(m_usedBins, other.m_usedBins, sizeof(uint8) * NUM_TOP_BINS);
         memcpy(m_binIndices, other.m_binIndices, sizeof(NodeIndex) * NUM_LEAF_BINS);
 
-        other.m_nodes = nullptr;
-        other.m_freeNodes = nullptr;
+        other.m_nodes.clear();
+        other.m_freeNodes.clear();
         other.m_freeOffset = 0;
         other.m_maxAllocs = 0;
         other.m_usedBinsTop = 0;
     }
-
-    Allocator::Allocator(Allocator &other) :
-        m_size(other.m_size),
-        m_maxAllocs(other.m_maxAllocs),
-        m_freeStorage(other.m_freeStorage),
-        m_usedBinsTop(other.m_usedBinsTop),
-        m_nodes(other.m_nodes),
-        m_freeNodes(other.m_freeNodes),
-        m_freeOffset(other.m_freeOffset)
-    {
-        memcpy(m_usedBins, other.m_usedBins, sizeof(uint8) * NUM_TOP_BINS);
-        memcpy(m_binIndices, other.m_binIndices, sizeof(NodeIndex) * NUM_LEAF_BINS);
-
-        other.m_nodes = nullptr;
-        other.m_freeNodes = nullptr;
-        other.m_freeOffset = 0;
-        other.m_maxAllocs = 0;
-        other.m_usedBinsTop = 0;
-    }
-
 
     void Allocator::reset()
     {
@@ -198,11 +176,11 @@ namespace OffsetAllocator
         for (uint32 i = 0 ; i < NUM_LEAF_BINS; i++)
             m_binIndices[i] = Node::unused;
         
-        if (m_nodes) delete[] m_nodes;
-        if (m_freeNodes) delete[] m_freeNodes;
+        m_nodes.clear();
+        m_freeNodes.clear();
 
-        m_nodes = new Node[m_maxAllocs];
-        m_freeNodes = new NodeIndex[m_maxAllocs];
+        m_nodes.resize(m_maxAllocs);
+        m_freeNodes.resize(m_maxAllocs);
         
         // Freelist is a stack. Nodes in inverse order so that [0] pops first.
         for (uint32 i = 0; i < m_maxAllocs; i++)
@@ -216,9 +194,7 @@ namespace OffsetAllocator
     }
 
     Allocator::~Allocator()
-    {        
-        delete[] m_nodes;
-        delete[] m_freeNodes;
+    {
     }
     
     Allocation Allocator::allocate(uint32 size)
@@ -314,7 +290,7 @@ namespace OffsetAllocator
     void Allocator::free(Allocation allocation)
     {
         ASSERT(allocation.metadata != Allocation::NO_SPACE);
-        if (!m_nodes) return;
+        if (m_nodes.empty()) return;
         
         uint32 nodeIndex = allocation.metadata;
         Node& node = m_nodes[nodeIndex];
@@ -473,7 +449,6 @@ namespace OffsetAllocator
     void Allocator::growSize(uint32 additionalSize) {
         uint32 newNodeIndex = insertNodeIntoBin(additionalSize, m_size);
 
-
         m_nodes[newNodeIndex].neighborPrev = m_lastNode;
         m_nodes[newNodeIndex].neighborNext = Node::unused;
 
@@ -488,7 +463,7 @@ namespace OffsetAllocator
     uint32 Allocator::allocationSize(Allocation allocation) const
     {
         if (allocation.metadata == Allocation::NO_SPACE) return 0;
-        if (!m_nodes) return 0;
+        if (m_nodes.empty()) return 0;
         
         return m_nodes[allocation.metadata].dataSize;
     }

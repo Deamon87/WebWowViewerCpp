@@ -3,6 +3,9 @@
 
 //#define USE_16_BIT_OFFSETS
 
+#include <utility>
+#include <vector>
+
 namespace OffsetAllocator
 {
     typedef unsigned char uint8;
@@ -51,10 +54,16 @@ namespace OffsetAllocator
     class Allocator
     {
     public:
-        Allocator(uint32 size, uint32 maxAllocs = 128 * 1024);
-        Allocator(Allocator &other);
+        Allocator(uint32 size, uint32 maxAllocs = 128 * 1024*20);
         Allocator(Allocator &&other);
 
+        // user-defined copy assignment (copy-and-swap idiom)
+        Allocator& operator=(Allocator &&other) noexcept
+        {
+            Allocator(std::move(other));
+
+            return *this;
+        }
 
         ~Allocator();
         void reset();
@@ -93,9 +102,9 @@ namespace OffsetAllocator
         uint8 m_usedBins[NUM_TOP_BINS];
         NodeIndex m_binIndices[NUM_LEAF_BINS];
                 
-        Node* m_nodes;
-        NodeIndex* m_freeNodes;
-        uint32 m_freeOffset;
+        std::vector<Node> m_nodes;
+        std::vector<NodeIndex> m_freeNodes;
+
 
         uint32 m_lastNode;
     };

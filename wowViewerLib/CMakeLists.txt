@@ -158,6 +158,9 @@ endif(LINK_GLEW)
 
 
 set(SOURCE_FILES
+        3rdparty/OffsetAllocator/offsetAllocator.cpp
+        3rdparty/OffsetAllocator/offsetAllocator.hpp
+        src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h

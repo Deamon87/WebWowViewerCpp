@@ -70,18 +70,23 @@ private:
         VmaAllocationInfo stagingBufferAllocInfo;
 
         //Virtual block for suballocations
-        OffsetAllocator::Allocator offsetAllocator = OffsetAllocator::Allocator(1000);
     } currentBuffer;
 
     std::mutex dataToBeUploadedMtx;
     std::vector<VkBufferCopy> dataToBeUploaded;
 
+    OffsetAllocator::Allocator offsetAllocator = OffsetAllocator::Allocator(1000);
+
     std::mutex m_mutex;
+
+    //If this variable is not equal current size -> whole buffer needs to be submitted
+    size_t lastSubmittedBufferSize = 0;
+
 private:
     class GSubBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GSubBufferVLK> {
         friend class GBufferVLK;
     public:
-        explicit GSubBufferVLK(HGBufferVLK parent, VmaVirtualAllocation alloc, VkDeviceSize offset,
+        explicit GSubBufferVLK(HGBufferVLK parent, OffsetAllocator::Allocation alloc, VkDeviceSize offset,
                                int size, int fakeSize,
                                uint8_t * dataPointer);
         ~GSubBufferVLK() override;
@@ -102,7 +107,7 @@ private:
     private:
         HGBufferVLK m_parentBuffer;
 
-        VmaVirtualAllocation m_alloc;
+        OffsetAllocator::Allocation m_alloc;
         VkDeviceSize m_offset;
         int m_size;
         int m_fakeSize;
@@ -117,13 +122,13 @@ private:
 //    uploadCache = {};
 public:
     std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes, int fakeSize = -1);
-    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation &alloc, int subBuffersize);
+    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, const OffsetAllocator::Allocation &alloc, int subBuffersize);
 private:
     void createBuffer(BufferInternal &buffer);
     void destroyBuffer(BufferInternal &buffer);
 
-    VkResult allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, VmaVirtualAllocation &alloc, VkDeviceSize &offset);
-    void deallocateSubBuffer(BufferInternal &buffer, VmaVirtualAllocation &alloc);
+    VkResult allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc);
+    void deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc);
 };
 
 

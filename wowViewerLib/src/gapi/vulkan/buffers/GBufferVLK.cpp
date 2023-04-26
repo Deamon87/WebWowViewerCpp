@@ -10,6 +10,10 @@ GBufferVLK::GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags,
     m_bufferSize = maxSize;
     m_alignment = alignment;
 
+    //Create virtual buffer off this native buffer
+    auto allocator = OffsetAllocator::Allocator(m_bufferSize);
+    offsetAllocator = std::move(allocator);
+
     createBuffer(currentBuffer);
 }
 
@@ -40,10 +44,6 @@ void GBufferVLK::createBuffer(BufferInternal &buffer) {
     ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &ibAllocCreateInfo,
                                      &buffer.g_hBuffer,
                                      &buffer.g_hBufferAlloc, nullptr));
-
-    //Create virtual buffer off this native buffer
-    auto allocator = OffsetAllocator::Allocator(m_bufferSize);
-    buffer.offsetAllocator = allocator;
 }
 
 void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
@@ -51,57 +51,70 @@ void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
     auto l_buffer = buffer;
     m_device->addDeallocationRecord(
         [l_buffer, l_device]() {
-            vmaClearVirtualBlock(l_buffer.virtualBlock);
-            vmaDestroyVirtualBlock(l_buffer.virtualBlock);
-
             vmaDestroyBuffer(l_device->getVMAAllocator(), l_buffer.stagingBuffer, l_buffer.stagingBufferAlloc);
             vmaDestroyBuffer(l_device->getVMAAllocator(), l_buffer.g_hBuffer, l_buffer.g_hBufferAlloc);
         }
     );
 }
 
-VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, VmaVirtualAllocation &alloc, VkDeviceSize &offset) {
+VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc) {
+    std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
+
     bool minAddressStrategy = sizeInBytes < fakeSize && fakeSize > 0;
 
     if (sizeInBytes == 0) {
-        offset = 0;
+        alloc = {.offset = 0};
         return VK_SUCCESS;
     }
 
-    VmaVirtualAllocationCreateInfo allocCreateInfo = {};
-    allocCreateInfo.size = sizeInBytes; //Size in bytes
-    if (minAddressStrategy) {
-        allocCreateInfo.flags = VMA_VIRTUAL_ALLOCATION_CREATE_STRATEGY_MIN_OFFSET_BIT;
-    }
+    uint32_t allocatingSize = sizeInBytes; //Size in bytes
     if (m_alignment > 0) {
-        allocCreateInfo.alignment = m_alignment;
+        allocatingSize = allocatingSize + m_alignment;
+    }
+    lock.lock();
+    alloc = this->offsetAllocator.allocate(allocatingSize);
+    VkResult result = VK_SUCCESS;
+    if (alloc.offset == OffsetAllocator::Allocation::NO_SPACE) {
+        result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
     }
 
-    auto result = vmaVirtualAllocate(buffer.virtualBlock, &allocCreateInfo, &alloc, &offset);
     if (minAddressStrategy) {
-        if (result == VK_SUCCESS && (offset+fakeSize) > m_bufferSize) {
-            vmaVirtualFree(buffer.virtualBlock, alloc);
+        if (result == VK_SUCCESS && (alloc.offset+fakeSize) > m_bufferSize) {
+            this->offsetAllocator.free(alloc);
             result = VK_ERROR_OUT_OF_DEVICE_MEMORY;
         }
     }
+    lock.unlock();
+    if (result == VK_SUCCESS && m_alignment > 0) {
+        int alignDifference = alloc.offset % m_alignment;
+        if (alignDifference > 0) {
+            alloc.offset = (alloc.offset + ((m_alignment - alignDifference) % m_alignment));
+        }        
+    }
+
     return result;
 }
 
-void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, VmaVirtualAllocation &alloc) {
-    
-    //Destruction of this virtualBlock happens only in deallocation queue. 
+void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc) {
+    //Destruction of this virtualBlock happens only in deallocation queue.
     //So it's safe to assume that even if the buffer's handle been changed by the time VirtualFree happens, 
     //the virtualBlock was still not been free'd
     //So there would be no error
 
-    auto l_virtualBlock = buffer.virtualBlock;
-    auto l_alloc = alloc; 
+    if (alloc.metadata != OffsetAllocator::Allocation::NO_SPACE) {
+        auto l_alloc = alloc;
+        auto l_weak = weak_from_this();
+        m_device->addDeallocationRecord(
+            [l_alloc, l_weak]() {
+                auto shared = l_weak.lock();
+                if (shared == nullptr) return;
 
-    m_device->addDeallocationRecord(
-        [l_virtualBlock, l_alloc]() {
-            vmaVirtualFree(l_virtualBlock, l_alloc);
-
-        });
+                std::unique_lock<std::mutex> lock(shared->m_mutex, std::defer_lock);
+                lock.lock();
+                shared->offsetAllocator.free(l_alloc);
+                lock.unlock();
+            });
+    }
 }
 
 void GBufferVLK::uploadData(void *data, int length) {
@@ -126,7 +139,13 @@ std::shared_ptr<IBuffer> GBufferVLK::mutate(int newSize) {
     return shared_from_this();
 }
 void GBufferVLK::resize(int newLength) {
+    std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
+    lock.lock();
+    auto oldSize = m_bufferSize;
+    offsetAllocator.growSize(newLength - oldSize);
+
     m_bufferSize = newLength;
+
 
     BufferInternal newBuffer;
     createBuffer(newBuffer);
@@ -135,32 +154,18 @@ void GBufferVLK::resize(int newLength) {
     for (std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator it = currentSubBuffers.begin(); it != currentSubBuffers.end(); ++it){
         auto subBuffer = it->lock();
         if (subBuffer != nullptr) {
-            VmaVirtualAllocation alloc;
-            VkDeviceSize offset;
-            VkResult res = allocateSubBuffer(newBuffer, subBuffer->m_size, subBuffer->m_fakeSize, alloc, offset);
-
-            if (res != VK_SUCCESS)  {
-                std::cerr << "Could not allocate sub-buffer during resize " << std::endl;
-            }
-
-            memcpy((uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData + offset,
-                   (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData + subBuffer->m_offset,
-                   subBuffer->m_size
-               );
-            if (subBuffer->m_size > 0) {
-                deallocateSubBuffer(currentBuffer, subBuffer->m_alloc);
-
-                addSubBufferForUpload(*it);
-            }
-
-            subBuffer->m_offset = offset;
-            subBuffer->m_alloc = alloc;
-            subBuffer->m_dataPointer = (uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData+offset;
+            subBuffer->m_dataPointer = (uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData+subBuffer->m_alloc.offset;
         }
     }
 
+    memcpy((uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData,
+           (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData,
+           oldSize
+    );
+
     destroyBuffer(currentBuffer);
     currentBuffer = newBuffer;
+
 
     for (std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator it = currentSubBuffers.begin(); it != currentSubBuffers.end(); ++it){
         auto subBuffer = it->lock();
@@ -170,6 +175,7 @@ void GBufferVLK::resize(int newLength) {
     }
 
     executeOnChange();
+    lock.unlock();
 }
 
 static inline uint8_t BitScanMSB(uint32_t mask)
@@ -198,25 +204,22 @@ static inline uint8_t BitScanMSB(uint32_t mask)
 //used for allocating data for UBO, when you don't want to suballocate whole size.
 //For example if only one bone matrix is used out 220, sizeInBytes will be size of one matrix, while fakeSize is 220 matrices
 std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBytes, int fakeSize) {
-    VmaVirtualAllocation alloc;
-    VkDeviceSize offset;
+    OffsetAllocator::Allocation alloc;
 
-    std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
     VkResult res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
     if (sizeInBytes < m_bufferSize) {
-        lock.lock();
-        res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc, offset);
-        lock.unlock();
+        res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc);
     }
 
     if(res == VK_SUCCESS)
     {
         auto subBuffer = std::make_shared<GSubBufferVLK>(
                                                           shared_from_this(),
-                                                         alloc,
-                                                         offset, sizeInBytes, fakeSize,
-                                                         (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+offset);
+                                                          alloc,
+                                                          alloc.offset, sizeInBytes, fakeSize,
+                                                         (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+alloc.offset);
 
+        std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
         lock.lock();
         currentSubBuffers.push_back(subBuffer);
         subBuffer->m_iterator = std::prev(currentSubBuffers.end());
@@ -225,14 +228,13 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     }
     else
     {
-        lock.lock();
         resize(std::max<int>(m_bufferSize*2, 1 << (BitScanMSB(m_bufferSize + fakeSize)+1)));
-        lock.unlock();
+
         return getSubBuffer(sizeInBytes, fakeSize);
     }
 }
 
-void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, VmaVirtualAllocation& alloc, int subBuffersize) {
+void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, const OffsetAllocator::Allocation &alloc, int subBuffersize) {
     if (subBuffersize > 0) {
         deallocateSubBuffer(currentBuffer, alloc);
     }
@@ -273,8 +275,20 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
             newInterval = {.start = subBuffer->getOffset(), .size = subBuffer->getSize()};
         }
 
+        if (lastSubmittedBufferSize != m_bufferSize) {
+            if (lastSubmittedBufferSize > 0) {
+                auto& newInterval = intervals.emplace_back();
+                newInterval = { .start = 0, .size = lastSubmittedBufferSize };
+            }
+
+            lastSubmittedBufferSize = m_bufferSize;
+        }
+
         std::sort(intervals.begin(), intervals.end(), [](auto &a, auto &b ) -> bool {
-            return a.start < b.start;
+            return
+                a.start != b.start
+                ? a.start < b.start
+                : a.size < b.size;
         });
 
         if (!intervals.empty()) {
@@ -299,7 +313,7 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
                     currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
                 } else {
                     assert(nextInterval.start - currInterval.start >= 0);
-                    currInterval.size = (nextInterval.start - currInterval.start) + nextInterval.size;
+                    currInterval.size = std::max<size_t>(currInterval.size, (nextInterval.start - currInterval.start) + nextInterval.size);
                     currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
                 }
             }
@@ -323,7 +337,7 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
 //----------------------------------------------------------------
 
 GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
-                                         VmaVirtualAllocation alloc,
+                                         OffsetAllocator::Allocation alloc,
                                          VkDeviceSize offset,
                                          int size, int fakeSize,
                                          uint8_t *dataPointer) : m_parentBuffer(parent) {

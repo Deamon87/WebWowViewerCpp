@@ -42,7 +42,10 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
     meshblockVSPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
     meshblockVSPS.BlendMode = static_cast<int>(m2Material->blendMode);
     meshblockVSPS.applyWeight = batch->textureCount && !(batch->flags & 0x40);
-    meshblockVSPS.colorIndex = batch->colorIndex;
+    meshblockVSPS.colorIndex =
+        ((batch->colorIndex >= 0) && (batch->colorIndex < m2Data->colors.size))
+        ? batch->colorIndex
+        : -1;
     meshblockVSPS.textureWeightIndexes[0] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 0);
     meshblockVSPS.textureWeightIndexes[1] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 1);
     meshblockVSPS.textureWeightIndexes[2] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 2);
@@ -164,7 +167,7 @@ mathfu::vec4 M2MeshBufferUpdater::getCombinedColor(
     int colorIndex = skinData->batches[batchIndex]->colorIndex;
     mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);
 
-    if ((colorIndex >= 0) && (subMeshColors.size() > colorIndex)) {
+    if ((colorIndex >= 0) && (colorIndex < subMeshColors.size())) {
         const mathfu::vec4 &color = subMeshColors[colorIndex];
         submeshColor = color;
     }
