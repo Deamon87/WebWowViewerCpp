@@ -39,6 +39,7 @@ public:
             //So that the resize of these vectors would not lead to pointer invalidation in updates vector
             bufferInfos.reserve(32);
             imageInfos.reserve(32);
+            updates.reserve(64);
         }
         ~SetUpdateHelper();
         // SetUpdateHelper is non-copyable

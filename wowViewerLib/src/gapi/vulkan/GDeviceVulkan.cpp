@@ -1272,7 +1272,7 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
 VkDescriptorSet
 GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) {
     //1. Try to allocate from existing sets
-    for (size_t i = 0; i < m_descriptorPools.size(); i++) {
+    for (int i = m_descriptorPools.size() - 1; i >= 0 ; i--) {
         desciptorPool = m_descriptorPools[i];
         auto result = desciptorPool->allocate(hDescriptorSetLayout);
         if (result != nullptr) {

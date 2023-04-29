@@ -151,15 +151,13 @@ namespace OffsetAllocator
         m_freeStorage(other.m_freeStorage),
         m_usedBinsTop(other.m_usedBinsTop),
         m_nodes(other.m_nodes),
-        m_freeNodes(other.m_freeNodes),
-        m_freeOffset(other.m_freeOffset)
+        m_freeNodes(other.m_freeNodes)
     {
         memcpy(m_usedBins, other.m_usedBins, sizeof(uint8) * NUM_TOP_BINS);
         memcpy(m_binIndices, other.m_binIndices, sizeof(NodeIndex) * NUM_LEAF_BINS);
 
         other.m_nodes.clear();
-        other.m_freeNodes.clear();
-        other.m_freeOffset = 0;
+        other.m_freeNodes = {};
         other.m_maxAllocs = 0;
         other.m_usedBinsTop = 0;
     }
@@ -168,7 +166,6 @@ namespace OffsetAllocator
     {
         m_freeStorage = 0;
         m_usedBinsTop = 0;
-        m_freeOffset = m_maxAllocs - 1;
 
         for (uint32 i = 0 ; i < NUM_TOP_BINS; i++)
             m_usedBins[i] = 0;
@@ -177,20 +174,21 @@ namespace OffsetAllocator
             m_binIndices[i] = Node::unused;
         
         m_nodes.clear();
-        m_freeNodes.clear();
+        m_freeNodes = {};
 
         m_nodes.resize(m_maxAllocs);
-        m_freeNodes.resize(m_maxAllocs);
-        
+
         // Freelist is a stack. Nodes in inverse order so that [0] pops first.
-        for (uint32 i = 0; i < m_maxAllocs; i++)
+        for (int i = m_maxAllocs-1; i >= 0; i--)
         {
-            m_freeNodes[i] = m_maxAllocs - i - 1;
+            m_freeNodes.push(i);
         }
+
         
         // Start state: Whole storage as one big node
         // Algorithm will split remainders and push them back as smaller nodes
         m_lastNode = insertNodeIntoBin(m_size, 0);
+
     }
 
     Allocator::~Allocator()
@@ -200,7 +198,7 @@ namespace OffsetAllocator
     Allocation Allocator::allocate(uint32 size)
     {
         // Out of allocations?
-        if (m_freeOffset == 0)
+        if (m_freeNodes.empty())
         {
             return {.offset = Allocation::NO_SPACE, .metadata = Allocation::NO_SPACE};
         }
@@ -340,7 +338,7 @@ namespace OffsetAllocator
 #ifdef DEBUG_VERBOSE
         printf("Putting node %u into freelist[%u] (free)\n", nodeIndex, m_freeOffset + 1);
 #endif
-        m_freeNodes[++m_freeOffset] = nodeIndex;
+        m_freeNodes.push(nodeIndex);
 
         // Insert the (combined) free node to bin
         uint32 combinedNodeIndex = insertNodeIntoBin(size, offset);
@@ -380,7 +378,8 @@ namespace OffsetAllocator
         
         // Take a freelist node and insert on top of the bin linked list (next = old top)
         uint32 topNodeIndex = m_binIndices[binIndex];
-        uint32 nodeIndex = m_freeNodes[m_freeOffset--];
+        uint32 nodeIndex = m_freeNodes.top();
+        m_freeNodes.pop();
 #ifdef DEBUG_VERBOSE
         printf("Getting node %u from freelist[%u]\n", nodeIndex, m_freeOffset + 1);
 #endif
@@ -438,7 +437,7 @@ namespace OffsetAllocator
 #ifdef DEBUG_VERBOSE
         printf("Putting node %u into freelist[%u] (removeNodeFromBin)\n", nodeIndex, m_freeOffset + 1);
 #endif
-        m_freeNodes[++m_freeOffset] = nodeIndex;
+        m_freeNodes.push(nodeIndex);
 
         m_freeStorage -= node.dataSize;
 #ifdef DEBUG_VERBOSE
@@ -474,7 +473,7 @@ namespace OffsetAllocator
         uint32 freeStorage = 0;
         
         // Out of allocations? -> Zero free space
-        if (m_freeOffset > 0)
+        if (!m_freeNodes.empty())
         {
             freeStorage = m_freeStorage;
             if (m_usedBinsTop)

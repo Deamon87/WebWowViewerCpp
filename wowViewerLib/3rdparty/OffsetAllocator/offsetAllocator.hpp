@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <vector>
+#include <stack>
 
 namespace OffsetAllocator
 {
@@ -103,7 +104,7 @@ namespace OffsetAllocator
         NodeIndex m_binIndices[NUM_LEAF_BINS];
                 
         std::vector<Node> m_nodes;
-        std::vector<NodeIndex> m_freeNodes;
+        std::stack<NodeIndex> m_freeNodes;
 
 
         uint32 m_lastNode;

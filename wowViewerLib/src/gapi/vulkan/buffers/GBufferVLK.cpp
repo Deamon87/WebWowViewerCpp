@@ -22,28 +22,38 @@ GBufferVLK::~GBufferVLK() {
 }
 
 void GBufferVLK::createBuffer(BufferInternal &buffer) {
-//Create new buffer for VBO
-    VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    vbInfo.size = m_bufferSize;
-    vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    //Create new buffer
+    {
+        VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        vbInfo.size = m_bufferSize;
+        vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    VmaAllocationCreateInfo ibAllocCreateInfo = {};
-    ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
-    ibAllocCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+        VmaAllocationCreateInfo stagingAllocInfo = {};
+        stagingAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
+        stagingAllocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
 
-    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &ibAllocCreateInfo,
-                                     &buffer.stagingBuffer,
-                                     &buffer.stagingBufferAlloc,
-                                     &buffer.stagingBufferAllocInfo));
+        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
+                                         &buffer.stagingBuffer,
+                                         &buffer.stagingBufferAlloc,
+                                         &buffer.stagingBufferAllocInfo));
+    }
 
-    // No need to flush stagingBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
-    vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | m_usageFlags;
-    ibAllocCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
-    ibAllocCreateInfo.flags = 0;
-    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &ibAllocCreateInfo,
-                                     &buffer.g_hBuffer,
-                                     &buffer.g_hBufferAlloc, nullptr));
+    {
+        // No need to flush stagingBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
+        VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        vbInfo.size = m_bufferSize;
+        vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | m_usageFlags;
+        vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+        VmaAllocationCreateInfo stagingAllocInfo = {};
+        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
+        stagingAllocInfo.flags = 0;
+        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
+                                         &buffer.g_hBuffer,
+                                         &buffer.g_hBufferAlloc, nullptr));
+    }
 }
 
 void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
@@ -157,7 +167,6 @@ void GBufferVLK::resize(int newLength) {
             subBuffer->m_dataPointer = (uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData+subBuffer->m_alloc.offset;
         }
     }
-
     memcpy((uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData,
            (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData,
            oldSize
