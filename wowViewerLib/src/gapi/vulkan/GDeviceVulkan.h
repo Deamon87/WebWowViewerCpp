@@ -78,6 +78,8 @@ public:
     int getMaxSamplesCnt() override;
     VkSampleCountFlagBits getMaxSamplesBit();
 
+    bool getIsAnisFiltrationSupported() override;
+    bool getIsDTXCompressedTexturesSupported() override;
     float getAnisLevel() override;
 
     void startUpdateForNextFrame() override {};
@@ -106,10 +108,10 @@ public:
     HGBufferVLK createIndexBuffer(size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 
-    HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
-    HGTexture createTexture(bool xWrapTex, bool yWrapTex) override;
-    HGTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
-    HGTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
+    HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
+    HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) override;
+    HGSamplableTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
+    HGSamplableTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
 
     HGPUFence createFence() override;
@@ -306,6 +308,7 @@ protected:
     VmaAllocator vmaAllocator;
 
     VkPhysicalDeviceProperties deviceProperties;
+    VkPhysicalDeviceFeatures supportedFeatures;
 
     unsigned int m_frameNumber = 0;
     bool m_firstFrame = true;
@@ -320,8 +323,8 @@ protected:
     HGVertexBufferBindings m_lineBBBindings;
     HGVertexBufferBindings m_defaultVao;
 
-    HGTexture m_blackPixelTexture = nullptr;
-    HGTexture m_whitePixelTexture = nullptr;
+    HGSamplableTexture m_blackPixelTexture = nullptr;
+    HGSamplableTexture m_whitePixelTexture = nullptr;
 
     std::shared_ptr<TextureManagerVLK> m_textureManager;
 protected:

@@ -44,7 +44,7 @@ HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vert
     return imguiVAO;
 }
 
-HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGTexture &hgtexture) {
+HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture &hgtexture) {
     auto weakTexture = std::weak_ptr(hgtexture);
     auto i = m_materialCache.find(weakTexture);
     if (i != m_materialCache.end()) {
@@ -64,7 +64,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGTexture &hgtextur
         })
         .createDescriptorSet(1, [&hgtexture](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(hgtexture));
+                .texture(5, hgtexture);
         })
         .toMaterial();
 

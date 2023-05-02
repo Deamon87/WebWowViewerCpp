@@ -13,6 +13,6 @@
 #include "../../../../wowViewerLib/src/include/custom_container_key.h"
 
 
-typedef std::unordered_map<wtf::KeyContainer<WGTexture>, std::weak_ptr<IMaterial>> UiMaterialCache;
+typedef std::unordered_map<wtf::KeyContainer<std::weak_ptr<HGSamplableTexture::element_type>>, std::weak_ptr<IMaterial>> UiMaterialCache;
 
 #endif //AWEBWOWVIEWERCPP_IUIMATERIAL_H

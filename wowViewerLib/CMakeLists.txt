@@ -335,7 +335,7 @@ set(SOURCE_FILES
         src/gapi/interface/materials/IMaterial.h
         src/renderer/mapScene/MapSceneParams.h
         src/include/custom_container_key.h
-        src/renderer/mapScene/materials/IMaterialStructs.h)
+        src/renderer/mapScene/materials/IMaterialStructs.h src/gapi/interface/textures/ITextureSampler.h src/gapi/interface/textures/ISamplableTexture.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -525,7 +525,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/bindable/DSBindable.h
             src/renderer/mapScene/vulkan/materials/IMaterialInstance.h
             src/gapi/vulkan/meshes/GSortableMeshVLK.cpp
-            src/gapi/vulkan/meshes/GSortableMeshVLK.h)
+            src/gapi/vulkan/meshes/GSortableMeshVLK.h src/gapi/vulkan/textures/GTextureSamplerVLK.cpp src/gapi/vulkan/textures/GTextureSamplerVLK.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

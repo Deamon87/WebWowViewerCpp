@@ -5,12 +5,48 @@
 #include "GDeviceVulkan.h"
 #include "TextureManagerVLK.h"
 #include "textures/GBlpTextureVLK.h"
+#include "textures/GTextureSamplerVLK.h"
 
-TextureManagerVLK::TextureManagerVLK(IDevice &device) : mdevice(device) {
+TextureManagerVLK::TextureManagerVLK(IDeviceVulkan &device) : mdevice(device) {
 }
 
 void TextureManagerVLK::initialize() {
     createUpdateCallback();
+
+    m_textureSamplers[0] = std::make_shared<GTextureSamplerVLK>(mdevice, false, false);
+    m_textureSamplers[1] = std::make_shared<GTextureSamplerVLK>(mdevice, false, true);
+    m_textureSamplers[2] = std::make_shared<GTextureSamplerVLK>(mdevice, true, false);
+    m_textureSamplers[3] = std::make_shared<GTextureSamplerVLK>(mdevice, true, true);
+}
+
+HGSamplableTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture, bool wrapX, bool wrapY) {
+    auto textureVlk = createBlpTexture(texture);
+
+    SampledTextureCacheRecord sampledTextureCacheRecord = {
+        .texture = std::weak_ptr<HGTexture::element_type>(textureVlk),
+        .wrapX = wrapX,
+        .wrapY = wrapY
+    };
+
+    std::lock_guard<std::mutex> lock(m_textureAllocation);
+
+    auto i = sampledTextureCache.find(sampledTextureCacheRecord);
+    if (i != sampledTextureCache.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            sampledTextureCache.erase(i);
+        }
+    }
+
+    auto sampler = m_textureSamplers[((wrapX ? 1 : 0) * 2) + (wrapY ? 1 : 0)];
+    auto hgSamplableTexture = std::make_shared<ISamplableTexture>(textureVlk, sampler);
+
+    std::weak_ptr<ISamplableTexture> weakPtr(hgSamplableTexture);
+
+    sampledTextureCache[sampledTextureCacheRecord] = hgSamplableTexture;
+
+    return hgSamplableTexture;
 }
 
 HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
@@ -42,10 +78,11 @@ HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
     return hgTexture;
 }
 
-HGTexture TextureManagerVLK::createTexture() {
+HGSamplableTexture TextureManagerVLK::createTexture(bool wrapX, bool wrapY) {
     std::shared_ptr<GTextureVLK> h_texture = std::make_shared<GTextureVLK>(static_cast<GDeviceVLK&>(mdevice), true, true, onUpdateCallback);
 
-    return h_texture;
+    auto sampler = m_textureSamplers[((wrapX ? 1 : 0) * 2) + (wrapY ? 1 : 0)];
+    return std::make_shared<HGSamplableTexture::element_type>(h_texture,sampler);
 }
 
 void TextureManagerVLK::createUpdateCallback() {

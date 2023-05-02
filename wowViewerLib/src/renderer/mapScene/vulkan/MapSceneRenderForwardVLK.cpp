@@ -218,15 +218,15 @@ MapSceneRenderForwardVLK::createAdtMaterial(const PipelineTemplate &pipelineTemp
         })
         .createDescriptorSet(1, [&adtMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[0]))
-                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[1]))
-                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[2]))
-                .texture(8, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[3]))
-                .texture(9, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[4]))
-                .texture(10, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[5]))
-                .texture(11, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[6]))
-                .texture(12, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[7]))
-                .texture(13, std::dynamic_pointer_cast<GTextureVLK>(adtMaterialTemplate.textures[8]));
+                .texture(5, adtMaterialTemplate.textures[0])
+                .texture(6, adtMaterialTemplate.textures[1])
+                .texture(7, adtMaterialTemplate.textures[2])
+                .texture(8, adtMaterialTemplate.textures[3])
+                .texture(9, adtMaterialTemplate.textures[4])
+                .texture(10, adtMaterialTemplate.textures[5])
+                .texture(11, adtMaterialTemplate.textures[6])
+                .texture(12, adtMaterialTemplate.textures[7])
+                .texture(13, adtMaterialTemplate.textures[8]);
         })
         .toMaterial<IADTMaterial>([&vertexFragmentData, &fragmentData](IADTMaterial *instance) -> void {
             instance->m_materialVSPS = vertexFragmentData;
@@ -260,10 +260,10 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
         })
         .createDescriptorSet(1, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[0]))
-                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[1]))
-                .texture(8, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[2]))
-                .texture(9, std::dynamic_pointer_cast<GTextureVLK>(m2MaterialTemplate.textures[3]));
+                .texture(6, m2MaterialTemplate.textures[0])
+                .texture(7, m2MaterialTemplate.textures[1])
+                .texture(8, m2MaterialTemplate.textures[2])
+                .texture(9, m2MaterialTemplate.textures[3]);
         })
         .toMaterial<IM2Material>([&vertexFragmentData](IM2Material *instance) -> void {
             instance->m_vertexFragmentData = vertexFragmentData;
@@ -293,9 +293,9 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
         })
         .createDescriptorSet(1, [&m2ParticleMatTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(m2ParticleMatTemplate.textures[0]))
-                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(m2ParticleMatTemplate.textures[1]))
-                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(m2ParticleMatTemplate.textures[2]));
+                .texture(5, m2ParticleMatTemplate.textures[0])
+                .texture(6, m2ParticleMatTemplate.textures[1])
+                .texture(7, m2ParticleMatTemplate.textures[2]);
         })
         .toMaterial<IM2ParticleMaterial>([l_fragmentData](IM2ParticleMaterial *instance) -> void {
             instance->m_fragmentData = l_fragmentData;
@@ -326,15 +326,15 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
         })
         .createDescriptorSet(1, [&wmoMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[0]))
-                .texture(6, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[1]))
-                .texture(7, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[2]))
-                .texture(8, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[3]))
-                .texture(9, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[4]))
-                .texture(10, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[5]))
-                .texture(11, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[6]))
-                .texture(12, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[7]))
-                .texture(13, std::dynamic_pointer_cast<GTextureVLK>(wmoMaterialTemplate.textures[8]));
+                .texture(5, wmoMaterialTemplate.textures[0])
+                .texture(6, wmoMaterialTemplate.textures[1])
+                .texture(7, wmoMaterialTemplate.textures[2])
+                .texture(8, wmoMaterialTemplate.textures[3])
+                .texture(9, wmoMaterialTemplate.textures[4])
+                .texture(10, wmoMaterialTemplate.textures[5])
+                .texture(11, wmoMaterialTemplate.textures[6])
+                .texture(12, wmoMaterialTemplate.textures[7])
+                .texture(13, wmoMaterialTemplate.textures[8]);
         })
         .toMaterial<IWMOMaterial>([&l_vertexData, &l_fragmentData](IWMOMaterial *instance) -> void {
             instance->m_materialVS = l_vertexData;
@@ -360,7 +360,7 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderForwardVLK::createWaterMaterial(co
         })
         .createDescriptorSet(1, [&waterMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, std::dynamic_pointer_cast<GTextureVLK>(waterMaterialTemplate.texture));
+                .texture(5, waterMaterialTemplate.texture);
         })
         .toMaterial<IWaterMaterial>([&l_fragmentData](IWaterMaterial *instance) -> void {
             instance->m_materialPS = l_fragmentData;
@@ -479,9 +479,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         createFrameBuffers();
 
         {
-            std::vector<std::shared_ptr<GTextureVLK>> inputColorTextures;
+            std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
             for (int i = 0; i < m_colorFrameBuffers.size(); i++) {
-                inputColorTextures.emplace_back(std::dynamic_pointer_cast<GTextureVLK>(m_colorFrameBuffers[i]->getAttachment(0)));
+                inputColorTextures.emplace_back(m_colorFrameBuffers[i]->getAttachment(0));
             }
 
             glowPass->updateDimensions(m_width, m_height,

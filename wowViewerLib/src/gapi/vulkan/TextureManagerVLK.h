@@ -14,12 +14,11 @@
 
 class TextureManagerVLK : public std::enable_shared_from_this<TextureManagerVLK> {
 public:
-    TextureManagerVLK(IDevice &device);
+    TextureManagerVLK(IDeviceVulkan &device);
     void initialize();
 
-
-    HGTexture createBlpTexture(HBlpTexture &texture);
-    HGTexture createTexture();
+    HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool wrapX, bool wrapY);
+    HGSamplableTexture createTexture(bool wrapX, bool wrapY);
 
     MutexLockedVector<std::weak_ptr<GTextureVLK>> getReadyToUploadTextures() {
 
@@ -54,8 +53,33 @@ protected:
     };
     std::unordered_map<BlpCacheRecord, std::weak_ptr<GTextureVLK>, BlpCacheRecordHasher> loadedTextureCache;
 
+
+    struct SampledTextureCacheRecord {
+        wtf::KeyContainer<std::weak_ptr<HGTexture::element_type>> texture;
+        bool wrapX;
+        bool wrapY;
+
+        bool operator==(const SampledTextureCacheRecord &other) const {
+            return
+                (texture == other.texture) &&
+                (wrapX == other.wrapX) &&
+                (wrapY == other.wrapY);
+        };
+    };
+    struct SampledTextureCacheRecordHasher {
+        std::size_t operator()(const SampledTextureCacheRecord& k) const {
+            using std::hash;
+            return hash<decltype(k.texture)>{}(k.texture) ^
+                (hash<bool>{}(k.wrapX) << 8) ^
+                (hash<bool>{}(k.wrapX) << 8);
+        };
+    };
+    std::unordered_map<SampledTextureCacheRecord, std::weak_ptr<HGSamplableTexture::element_type>, SampledTextureCacheRecordHasher> sampledTextureCache;
+
 private:
-    IDevice &mdevice;
+    HGTexture createBlpTexture(HBlpTexture &texture);
+private:
+    IDeviceVulkan &mdevice;
 
     std::mutex m_textureAllocation;
 
@@ -68,6 +92,8 @@ private:
 
     std::mutex blpTextureLoadMutex;
     std::list<std::weak_ptr<GBlpTextureVLK>> m_blpTextLoadQueue;
+
+    std::array<std::shared_ptr<ITextureSampler>, 4> m_textureSamplers;
 };
 
 

@@ -15,6 +15,7 @@ class IVertexBufferBindings;
 class IBuffer;
 class IUniformBuffer;
 class ITexture;
+class ITextureSampler;
 class IShaderPermutation;
 class IMesh;
 class ISortableMesh;
@@ -30,6 +31,7 @@ class gMeshTemplate;
 #include "syncronization/IGPUFence.h"
 
 #include "../vulkan/context/vulkan_context.h"
+#include "textures/ISamplableTexture.h"
 
 typedef std::shared_ptr<IBuffer> HGVertexBufferDynamic;
 typedef std::shared_ptr<IBuffer> HGVertexBuffer;
@@ -43,6 +45,8 @@ typedef std::shared_ptr<ISortableMesh> HGSortableMesh;
 typedef std::shared_ptr<ISortableMesh> HGParticleMesh;
 typedef std::shared_ptr<IMesh> HGOcclusionQuery;
 typedef std::shared_ptr<ITexture> HGTexture;
+typedef std::shared_ptr<ITextureSampler> HGSampler;
+typedef std::shared_ptr<ISamplableTexture> HGSamplableTexture;
 typedef std::weak_ptr<ITexture> WGTexture;
 typedef std::shared_ptr<IGPUFence> HGPUFence;
 typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
@@ -174,7 +178,7 @@ class IDevice {
         virtual void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) = 0;
 //        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
-        virtual bool getIsCompressedTexturesSupported();
+        virtual bool getIsDTXCompressedTexturesSupported();
         virtual bool getIsAnisFiltrationSupported();
         virtual float getAnisLevel() = 0;
         virtual bool getIsVulkanAxisSystem() {return false;}
@@ -191,10 +195,10 @@ class IDevice {
         //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
         virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) = 0;
 
-        virtual HGTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
-        virtual HGTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;
-        virtual HGTexture getWhiteTexturePixel() = 0;
-        virtual HGTexture getBlackTexturePixel() = 0;
+        virtual HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
+        virtual HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;
+        virtual HGSamplableTexture getWhiteTexturePixel() = 0;
+        virtual HGSamplableTexture getBlackTexturePixel() = 0;
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;
 
         virtual void shrinkData() {};

@@ -27,7 +27,7 @@ FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &ubo
 }
 
 void FFXGlowPassVLK::updateDimensions(int width, int height,
-                                      const std::vector<std::shared_ptr<GTextureVLK>> &inputColorTextures,
+                                      const std::vector<HGSamplableTexture> &inputColorTextures,
                                       const std::shared_ptr<GRenderPassVLK> &finalRenderPass) {
 
     createFrameBuffers(width, height);
@@ -41,11 +41,11 @@ void FFXGlowPassVLK::updateDimensions(int width, int height,
     glowPipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
     for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
-        std::array<std::shared_ptr<GTextureVLK>, 4> inputTextures;
+        std::array<HGSamplableTexture, 4> inputTextures;
         //Fill input textures array
         inputTextures[0] = inputColorTextures[i];
         for (int j = 0; j < GAUSS_PASS_COUNT; j++)
-            inputTextures[j + 1] = std::dynamic_pointer_cast<GTextureVLK>(getTargetFrameBuffer(j, i)->getAttachment(0));
+            inputTextures[j + 1] = getTargetFrameBuffer(j, i)->getAttachment(0);
 
 
         // Create materials
@@ -62,7 +62,7 @@ void FFXGlowPassVLK::updateDimensions(int width, int height,
         ffxGlowMat[i] = createFFXGlowMat(m_ffxGlowVs,
                                          m_ffxGlowPS,
                                          inputColorTextures[i],
-                                         std::dynamic_pointer_cast<GTextureVLK>(getTargetFrameBuffer(GAUSS_PASS_COUNT-1, i)->getAttachment(0)),
+                                         getTargetFrameBuffer(GAUSS_PASS_COUNT-1, i)->getAttachment(0),
                                          glowPipelineTemplate,
                                          finalRenderPass
         );
@@ -191,7 +191,7 @@ std::shared_ptr<IMaterial>
 FFXGlowPassVLK::createFFXGaussMat(
     const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ffxGaussVs,
     const std::shared_ptr<IBufferChunk<FXGauss::meshWideBlockPS>> &ffxGaussPS,
-    const std::shared_ptr<GTextureVLK> &texture,
+    const HGSamplableTexture &texture,
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
@@ -215,8 +215,8 @@ std::shared_ptr<IMaterial>
 FFXGlowPassVLK::createFFXGlowMat(
     const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ffxGlowVs,
     const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ffxGlowPS,
-    const std::shared_ptr<GTextureVLK> &screenTex,
-    const std::shared_ptr<GTextureVLK> &blurTex,
+    const HGSamplableTexture &screenTex,
+    const HGSamplableTexture &blurTex,
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 

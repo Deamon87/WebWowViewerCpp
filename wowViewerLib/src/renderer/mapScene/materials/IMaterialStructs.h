@@ -14,29 +14,29 @@
 struct M2MaterialTemplate {
     int vertexShader = 0;
     int pixelShader = 0;
-    std::array<HGTexture, 4> textures = {nullptr, nullptr, nullptr, nullptr};
+    std::array<HGSamplableTexture, 4> textures = {nullptr, nullptr, nullptr, nullptr};
 };
 
 struct M2ParticleMaterialTemplate {
-    std::array<HGTexture, 3> textures = {nullptr, nullptr, nullptr};
+    std::array<HGSamplableTexture, 3> textures = {nullptr, nullptr, nullptr};
 };
 
 struct WMOMaterialTemplate {
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWide;
 
-    std::array<HGTexture, 9> textures = {nullptr, nullptr, nullptr,
-                                         nullptr, nullptr, nullptr,
-                                         nullptr, nullptr, nullptr};
+    std::array<HGSamplableTexture, 9> textures = {nullptr, nullptr, nullptr,
+                                                  nullptr, nullptr, nullptr,
+                                                  nullptr, nullptr, nullptr};
 };
 
 struct ADTMaterialTemplate {
-    std::array<HGTexture, 9> textures = {nullptr, nullptr, nullptr,
-                                         nullptr, nullptr, nullptr,
-                                         nullptr, nullptr, nullptr};
+    std::array<HGSamplableTexture, 9> textures = {nullptr, nullptr, nullptr,
+                                                  nullptr, nullptr, nullptr,
+                                                  nullptr, nullptr, nullptr};
 };
 
 struct WaterMaterialTemplate {
-    HGTexture texture = nullptr;
+    HGSamplableTexture texture = nullptr;
     mathfu::vec3 color;
     int liquidFlags;
 };

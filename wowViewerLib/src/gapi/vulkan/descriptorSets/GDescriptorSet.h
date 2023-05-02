@@ -53,18 +53,18 @@ public:
         SetUpdateHelper& ssbo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer);
 
         //TODO: add version of this array texture case (aka bindless)
-        SetUpdateHelper& texture(int bindIndex, const std::shared_ptr<GTextureVLK> &textureVlk);
+        SetUpdateHelper& texture(int bindIndex, const HGSamplableTexture &textureVlk);
 
         template <typename T>
         void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, DescriptorRecord::DescriptorRecordType descType) {
-            static_assert(std::is_base_of<IDSBindable, T>::value, "T should inherit from B");
+//            static_assert(std::is_base_of<IDSBindable, T>::value, "T should inherit from B");
 
             bool createDescRecord = !m_boundDescriptors[bindPoint];
             if (!createDescRecord) {
                 if constexpr (std::is_base_of<IBufferVLK, T>::value) {
                     createDescRecord = (m_boundDescriptors[bindPoint]->buffer != object);
-                } else if constexpr (std::is_base_of<GTextureVLK, T>::value) {
-                    createDescRecord = (m_boundDescriptors[bindPoint]->textureVlk != object);
+                } else if constexpr (std::is_base_of<HGSamplableTexture::element_type, T>::value) {
+                    createDescRecord = (m_boundDescriptors[bindPoint]->texture != object);
                 }
             }
             if (createDescRecord) {

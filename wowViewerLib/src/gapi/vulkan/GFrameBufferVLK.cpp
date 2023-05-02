@@ -6,6 +6,7 @@
 #include "textures/GTextureVLK.h"
 
 #include "GRenderPassVLK.h"
+#include "textures/GTextureSamplerVLK.h"
 
 void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback) {
     for (int i = 0; i < textureAttachments.size(); i++) {
@@ -29,6 +30,19 @@ void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &
     }
 }
 
+static std::shared_ptr<ITextureSampler> s_sampler = nullptr;
+
+inline void GFrameBufferVLK::initSampler(GDeviceVLK &device) {
+    if (s_sampler == nullptr)
+        s_sampler = std::make_shared<GTextureSamplerVLK>(device, false, false);
+}
+inline void GFrameBufferVLK::initSamplableTextures() {
+    m_attachmentTexturesSampled.resize(m_attachmentTextures.size());
+    for (int i = 0; i < m_attachmentTextures.size(); i++) {
+        m_attachmentTexturesSampled[i] = std::make_shared<ISamplableTexture>(m_attachmentTextures[i], s_sampler);
+    }
+}
+
 //Support for swapchain framebuffer
 GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  const HGTexture &colorImage,
@@ -37,6 +51,8 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  : mdevice(dynamic_cast<GDeviceVLK &>(device)),
                                    m_renderPass(renderPass),
                                    m_attachmentTextures({colorImage}) {
+
+    initSampler(mdevice);
 
     {
         // Find a suitable depth format
@@ -73,6 +89,8 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
     fbufCreateInfo.layers = 1;
 
     ERR_GUARD_VULKAN(vkCreateFramebuffer(mdevice.getVkDevice(), &fbufCreateInfo, nullptr, &m_frameBuffer));
+
+    initSamplableTextures();
 }
 
 GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
@@ -82,6 +100,8 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)),
                                                           m_height(height), m_width(width),
                                                           m_multiSampleCnt(multiSampleCnt){
+
+    initSampler(mdevice);
 
     std::vector<VkImageView> attachments;
 
@@ -160,6 +180,8 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
     fbufCreateInfo.layers = 1;
 
     ERR_GUARD_VULKAN(vkCreateFramebuffer(mdevice.getVkDevice(), &fbufCreateInfo, nullptr, &m_frameBuffer));
+
+    initSamplableTextures();
 }
 
 GFrameBufferVLK::~GFrameBufferVLK() {
@@ -409,13 +431,13 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
     vmaDestroyImage(mdevice.getVMAAllocator(), dstImage, imageAllocation);
 }
 
-HGTexture GFrameBufferVLK::getAttachment(int index) {
+HGSamplableTexture GFrameBufferVLK::getAttachment(int index) {
     //If multisampling is active - return only resolved textures
     if (m_multiSampleCnt > 1) {
         index = 2*index+1;
     }
 
-    return m_attachmentTextures[index];
+    return m_attachmentTexturesSampled[index];
 }
 
 HGTexture GFrameBufferVLK::getDepthTexture() {

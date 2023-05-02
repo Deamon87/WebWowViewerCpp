@@ -97,7 +97,7 @@ private:
     bool setNewCameraCallback(int cameraNum);
     void resetAnimationCallback();
 
-    std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimapTextures;
+    std::array<std::array<HGSamplableTexture, 64>, 64> adtSelectionMinimapTextures;
     std::array<std::array<HMaterial, 64>, 64> adtSelectionMinimapMaterials;
 
     void emptyMinimap() {

@@ -11,6 +11,7 @@
 #include "descriptorSets/GDescriptorPoolVLK.h"
 
 #include "../interface/textures/ITexture.h"
+#include "../interface/textures/ISamplableTexture.h"
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -33,13 +34,13 @@ public:
     virtual VmaAllocator getVMAAllocator() = 0;
     virtual VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) = 0;
 
-    virtual std::shared_ptr<ITexture> getWhiteTexturePixel() = 0;
-    virtual std::shared_ptr<ITexture> getBlackTexturePixel() = 0;
+    virtual HGSamplableTexture getWhiteTexturePixel() = 0;
+    virtual HGSamplableTexture getBlackTexturePixel() = 0;
 
     //TODO:
-    bool getIsAnisFiltrationSupported() {return true;};
+    virtual bool getIsAnisFiltrationSupported() {return true;};
     //TODO:
-    bool getIsCompressedTexturesSupported() {return true;};
+    virtual bool getIsDTXCompressedTexturesSupported() {return true;};
     virtual float getAnisLevel() = 0;
 
     virtual const QueueFamilyIndices &getQueueFamilyIndices() = 0;

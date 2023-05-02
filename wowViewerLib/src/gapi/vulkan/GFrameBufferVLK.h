@@ -20,7 +20,7 @@ public:
     ~GFrameBufferVLK() override;
 
     void readRGBAPixels(int x, int y, int width, int height, void *data) override;
-    HGTexture getAttachment(int index) override;
+    HGSamplableTexture getAttachment(int index) override;
     HGTexture getDepthTexture() override;
     void bindFrameBuffer() override;
     void copyRenderBufferToTexture() override;
@@ -30,6 +30,7 @@ public:
     VkFramebuffer getFrameBuffer() {return m_frameBuffer;};
     int getColorOrDataAttachmentCount() { return m_attachmentFormats.size(); };
 
+
 private:
     GDeviceVLK &mdevice;
 
@@ -37,6 +38,7 @@ private:
     VkFramebuffer m_frameBuffer;
 
     std::vector<HGTexture> m_attachmentTextures;
+    std::vector<HGSamplableTexture> m_attachmentTexturesSampled;
     HGTexture m_depthTexture;
 
     //Used only in readRGBAPixels function
@@ -46,6 +48,9 @@ private:
 
     int m_width = 0;
     int m_height = 0;
+
+    inline void initSampler(GDeviceVLK &device);
+    inline void initSamplableTextures();
 };
 
 

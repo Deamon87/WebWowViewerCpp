@@ -5,6 +5,7 @@
 #include "GDescriptorSet.h"
 
 #include "../textures/GTextureVLK.h"
+#include "../textures/GTextureSamplerVLK.h"
 
 GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
     : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
@@ -57,7 +58,7 @@ void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &de
 // -------------------------------------
 
 GDescriptorSet::SetUpdateHelper &
-GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GTextureVLK> &textureVlk) {
+GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture &samplableTextureVlk) {
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
 
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
@@ -65,7 +66,10 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
         throw std::runtime_error("descriptor mismatch for image");
     }
 
-    assignBoundDescriptors(bindIndex, textureVlk, DescriptorRecord::DescriptorRecordType::Texture);
+    auto textureVlk = samplableTextureVlk!=nullptr ? std::dynamic_pointer_cast<GTextureVLK>(samplableTextureVlk->getTexture()) : nullptr;
+    auto samplerVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureSamplerVLK>(samplableTextureVlk->getSampler()) : nullptr;
+
+    assignBoundDescriptors(bindIndex, samplableTextureVlk, DescriptorRecord::DescriptorRecordType::Texture);
 
     auto texture = textureVlk;
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
@@ -73,12 +77,14 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const std::shared_ptr<GT
     imageInfo = {};
     imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     if (textureVlk == nullptr || !textureVlk->getIsLoaded()) {
-        auto blackTexture = std::dynamic_pointer_cast<GTextureVLK>(m_set.m_device->getBlackTexturePixel());
-        texture = blackTexture;
+        auto blackTextureVlk = m_set.m_device->getBlackTexturePixel();
+
+        texture = std::dynamic_pointer_cast<GTextureVLK>(blackTextureVlk->getTexture());
+        samplerVlk = std::dynamic_pointer_cast<GTextureSamplerVLK>(blackTextureVlk->getSampler());
     }
 
     imageInfo.imageView = texture->texture.view;
-    imageInfo.sampler = texture->texture.sampler;
+    imageInfo.sampler = samplerVlk->getSampler();
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
     writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
@@ -212,7 +218,7 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
         } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
             ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint]->buffer);
         } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
-            texture(bindPoint, m_boundDescriptors[bindPoint]->textureVlk);
+            texture(bindPoint, m_boundDescriptors[bindPoint]->texture);
         }
     }
 

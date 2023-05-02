@@ -1854,7 +1854,7 @@ HBlpTexture M2Object::getBlpTextureData(int textureInd) {
     return blpData;
 }
 
-HGTexture M2Object::getTexture(int textureInd) {
+HGSamplableTexture M2Object::getTexture(int textureInd) {
     M2Texture* textureDefinition = m_m2Geom->getM2Data()->textures.getElement(textureInd);
 
     HBlpTexture blpData = getBlpTextureData(textureInd);
@@ -1862,7 +1862,7 @@ HGTexture M2Object::getTexture(int textureInd) {
     if (blpData == nullptr)
         return nullptr;
 
-    HGTexture hgTexture = m_api->hDevice->createBlpTexture(
+    HGSamplableTexture hgTexture = m_api->hDevice->createBlpTexture(
         blpData,
         textureDefinition!= nullptr ? ( (textureDefinition->flags & 1) > 0 ) : false,
         textureDefinition!= nullptr ? ( (textureDefinition->flags & 2) > 0 ) : false

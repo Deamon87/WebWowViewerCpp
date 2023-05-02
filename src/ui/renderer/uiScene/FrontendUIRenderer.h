@@ -39,10 +39,10 @@ public:
         return nullptr;
     };
     std::shared_ptr<ImGuiFramePlan::EmptyPlan> getLastCreatedPlan() override { return nullptr; }
-    HGTexture uploadFontTexture(unsigned char* pixels, int width, int height);
+    HGSamplableTexture uploadFontTexture(unsigned char* pixels, int width, int height);
 protected:
     HGDevice m_device = nullptr;
-    HGTexture fontTexture;
+    HGSamplableTexture fontTexture;
 
     UiMaterialCache m_materialCache;
     std::shared_ptr<CBufferChunkVLK<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;

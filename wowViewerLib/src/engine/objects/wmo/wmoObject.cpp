@@ -682,7 +682,7 @@ void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
     this->m_nameSet = mapObjDef.nameSet;
 }
 
-HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
+HGSamplableTexture WmoObject::getTexture(int textureId, bool isSpec) {
     if (textureId == 0) return nullptr; //Usual case
 
     //Non-usual case
@@ -691,7 +691,7 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
         return nullptr;
     };
 
-    std::unordered_map<int, HGTexture> &textureCache = diffuseTextures;
+    std::unordered_map<int, HGSamplableTexture> &textureCache = diffuseTextures;
     if (isSpec) {
         textureCache = specularTextures;
     }
@@ -714,7 +714,7 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
         texture = m_api->cacheStorage->getTextureCache()->getFileId(textureId);
     }
 
-    HGTexture hgTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    auto hgTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     textureCache[textureId] = hgTexture;
 
     return hgTexture;
@@ -1506,9 +1506,9 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) 
 
     bool isSecondTextSpec = material.shader == 8;
 
-    HGTexture texture1 = getTexture(material.diffuseNameIndex, false);
-    HGTexture texture2 = getTexture(material.envNameIndex, isSecondTextSpec);
-    HGTexture texture3 = getTexture(material.texture_2, false);
+    HGSamplableTexture texture1 = getTexture(material.diffuseNameIndex, false);
+    HGSamplableTexture texture2 = getTexture(material.envNameIndex, isSecondTextSpec);
+    HGSamplableTexture texture3 = getTexture(material.texture_2, false);
 
     WMOMaterialTemplate materialTemplate;
 

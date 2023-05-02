@@ -26,7 +26,7 @@ public:
 
     HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;;
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
-    HMaterial createUIMaterial(const HGTexture &hgtexture) override;
+    HMaterial createUIMaterial(const HGSamplableTexture &hgtexture) override;
 
 
 private:

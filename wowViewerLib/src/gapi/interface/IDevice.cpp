@@ -18,7 +18,7 @@ int anisFiltrationSupported = -1;
 #include <emscripten/html5.h>
 #endif
 
-bool IDevice::getIsCompressedTexturesSupported() {
+bool IDevice::getIsDTXCompressedTexturesSupported() {
 #ifdef __EMSCRIPTEN__
     if (compressedTexturesSupported == -1){
         auto res = emscripten_webgl_enable_extension(emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc");

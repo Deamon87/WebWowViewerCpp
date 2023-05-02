@@ -765,10 +765,11 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
                 this->m_adtFile->mapTile[i].position.z,
                 0
             );
+
+            matVSPS.useHeightMixFormula[0] = useHeightMixFormula;
             for (int j = 0; j < 4; j++) {
                 matVSPS.uHeightOffset[j] = 0.0f;
                 matVSPS.uHeightScale[j] = 1.0f;
-
             }
             for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                 if ((adtFileTex->mtxp_len > 0) && !noLayers) {
@@ -787,7 +788,7 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
 
-            HGTexture layer_height = device->getWhiteTexturePixel();
+            auto layer_height = device->getWhiteTexturePixel();
             if (textureParams.flags.do_not_load_specular_or_height_texture_but_use_cubemap == 0) {
                 if (!feq(textureParams.heightScale, 0.0)) {
                     layer_height = getAdtHeightTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
@@ -812,7 +813,7 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
 
-            HGTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+            HGSamplableTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
             adtMaterialTemplate.textures[j] = layer_x;
         }
@@ -833,11 +834,11 @@ void AdtObject::loadAlphaTextures() {
 
     int createdThisRun = 0;
     for (int i = 0; i < chunkCount; i++) {
-        HGTexture alphaTexture = m_api->hDevice->createTexture(false, false);
+        HGSamplableTexture alphaTexture = m_api->hDevice->createTexture(false, false);
         std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
-        alphaTexture->loadData(texWidth, texHeight, &alphaTextureData[0], ITextureFormat::itRGBA);
+        alphaTexture->getTexture()->loadData(texWidth, texHeight, &alphaTextureData[0], ITextureFormat::itRGBA);
 
         alphaTextures.push_back(alphaTexture);
     }
@@ -1041,7 +1042,7 @@ void AdtObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependant
     }
 }
 
-HGTexture AdtObject::getAdtTexture(int textureId) {
+HGSamplableTexture AdtObject::getAdtTexture(int textureId) {
     auto item = m_requestedTextures.find(textureId);
     if (item != m_requestedTextures.end()) {
         return item->second;
@@ -1056,7 +1057,7 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
         texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = nullptr;
+    HGSamplableTexture h_gblpTexture = nullptr;
     if (texture != nullptr) {
         h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     } else {
@@ -1068,7 +1069,7 @@ HGTexture AdtObject::getAdtTexture(int textureId) {
     return h_gblpTexture;
 }
 
-HGTexture AdtObject::getAdtHeightTexture(int textureId) {
+HGSamplableTexture AdtObject::getAdtHeightTexture(int textureId) {
     auto item = m_requestedTexturesHeight.find(textureId);
     if (item != m_requestedTexturesHeight.end()) {
         return item->second;
@@ -1085,13 +1086,13 @@ HGTexture AdtObject::getAdtHeightTexture(int textureId) {
         texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    HGSamplableTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTexturesHeight[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
 }
 
-HGTexture AdtObject::getAdtSpecularTexture(int textureId) {
+HGSamplableTexture AdtObject::getAdtSpecularTexture(int textureId) {
     auto item = m_requestedTexturesSpec.find(textureId);
     if (item != m_requestedTexturesSpec.end()) {
         return item->second;
@@ -1102,7 +1103,7 @@ HGTexture AdtObject::getAdtSpecularTexture(int textureId) {
     std::string matHeightText = materialTexture.substr(0, materialTexture.size() - 4) + "_s.blp";
 
     HBlpTexture texture = m_api->cacheStorage->getTextureCache()->get(matHeightText);
-    HGTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    HGSamplableTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     m_requestedTexturesSpec[textureId] = h_gblpTexture;
 
     return h_gblpTexture;

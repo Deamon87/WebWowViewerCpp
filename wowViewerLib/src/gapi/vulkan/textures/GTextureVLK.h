@@ -80,7 +80,6 @@ public:
     TextureStatus postLoad() override;
 
     struct Texture {
-        VkSampler sampler = VK_NULL_HANDLE;
         VkImage image;
         VkImageView view;
     } texture;

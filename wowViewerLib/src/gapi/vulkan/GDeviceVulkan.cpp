@@ -173,8 +173,6 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)){
     enableValidationLayers = false;
 
-    m_textureManager->initialize();
-
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
         exit(1);
@@ -310,8 +308,12 @@ void GDeviceVLK::initialize() {
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 //---------------
     vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
     uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
     maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
+//---------------
+
+    m_textureManager->initialize();
 //---------------
 
     createSwapChainAndFramebuffer();
@@ -327,11 +329,11 @@ void GDeviceVLK::initialize() {
 
     m_blackPixelTexture = createTexture(false, false);
     unsigned int zero = 0;
-    m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
+    m_blackPixelTexture->getTexture()->loadData(1,1,&zero, ITextureFormat::itRGBA);
 
     m_whitePixelTexture = createTexture(false, false);
     unsigned int ff = 0xffffffff;
-    m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
+    m_whitePixelTexture->getTexture()->loadData(1,1,&ff, ITextureFormat::itRGBA);
 }
 
 void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const char *name)
@@ -787,6 +789,13 @@ void GDeviceVLK::increaseFrameNumber() {
     m_frameNumber++;
 }
 
+bool GDeviceVLK::getIsAnisFiltrationSupported() {
+    return supportedFeatures.samplerAnisotropy;
+};
+bool GDeviceVLK::getIsDTXCompressedTexturesSupported() {
+    return supportedFeatures.textureCompressionBC;
+};
+
 float GDeviceVLK::getAnisLevel() {
     return deviceProperties.limits.maxSamplerAnisotropy;
 }
@@ -1072,12 +1081,12 @@ HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
     return h_vertexBindings;
 }
 
-HGTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
-    return m_textureManager->createBlpTexture(texture);
+HGSamplableTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
+    return m_textureManager->createBlpTexture(texture, xWrapTex, yWrapTex);
 }
 
-HGTexture GDeviceVLK::createTexture(bool xWrapTex, bool yWrapTex) {
-    return m_textureManager->createTexture();
+HGSamplableTexture GDeviceVLK::createTexture(bool xWrapTex, bool yWrapTex) {
+    return m_textureManager->createTexture(xWrapTex, yWrapTex);
 }
 
 HGMesh GDeviceVLK::createMesh(gMeshTemplate &meshTemplate) {

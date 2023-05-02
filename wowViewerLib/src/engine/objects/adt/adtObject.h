@@ -110,9 +110,9 @@ private:
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;
 
-    std::unordered_map<int, HGTexture> m_requestedTextures;
-    std::unordered_map<int, HGTexture> m_requestedTexturesHeight;
-    std::unordered_map<int, HGTexture> m_requestedTexturesSpec;
+    std::unordered_map<int, HGSamplableTexture> m_requestedTextures;
+    std::unordered_map<int, HGSamplableTexture> m_requestedTexturesHeight;
+    std::unordered_map<int, HGSamplableTexture> m_requestedTexturesSpec;
 
     std::vector<LodCommand> lodCommands;
 
@@ -126,7 +126,7 @@ private:
     HGVertexBufferBindings lodVertexBindings;
 
 private:
-    std::vector<HGTexture> alphaTextures;
+    std::vector<HGSamplableTexture> alphaTextures;
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
 
@@ -158,9 +158,9 @@ private:
     };
     std::array<lodLevels, 2> objectLods;
 
-    HGTexture getAdtTexture(int textureId);
-    HGTexture getAdtHeightTexture(int textureId);
-    HGTexture getAdtSpecularTexture(int textureId);
+    HGSamplableTexture getAdtTexture(int textureId);
+    HGSamplableTexture getAdtHeightTexture(int textureId);
+    HGSamplableTexture getAdtSpecularTexture(int textureId);
 
     struct AnimTextures {
         std::array<mathfu::mat4, 4> animTexture;

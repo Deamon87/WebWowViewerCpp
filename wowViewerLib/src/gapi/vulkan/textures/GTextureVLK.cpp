@@ -76,7 +76,6 @@ void GTextureVLK::destroyBuffer() {
     m_device.addDeallocationRecord(
         [l_device, l_texture, l_imageAllocation]() {
             vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
-            vkDestroySampler(l_device->getVkDevice(), l_texture.sampler, nullptr);
             if (l_imageAllocation != nullptr) {
                 vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
             } else {
@@ -237,38 +236,7 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
                  &imageAllocation, &imageAllocationInfo);
     if (!m_debugName.empty()) {
         m_device.setObjectName((uint64_t) texture.image, VK_OBJECT_TYPE_IMAGE, m_debugName.c_str());
-
     }
-
-    // Create a texture sampler
-    // In Vulkan textures are accessed by samplers
-    // This separates all the sampling information from the texture data. This means you could have multiple sampler objects for the same texture with different settings
-    // Note: Similar to the samplers available with OpenGL 3.3
-    VkSamplerCreateInfo sampler = {VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO};
-    sampler.magFilter = VK_FILTER_LINEAR;
-    sampler.minFilter = VK_FILTER_LINEAR;
-    sampler.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-    sampler.addressModeU = m_wrapX ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeV = m_wrapY ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    sampler.mipLodBias = 0.0f;
-    sampler.compareOp = VK_COMPARE_OP_NEVER;
-    sampler.minLod = 0.0f;
-    // Set max level-of-detail to mip level count of the texture
-    sampler.maxLod = (float)vulkanMipMapCount;
-    // Enable anisotropic filtering
-    // This feature is optional, so we must check if it's supported on the device
-    if (m_device.getIsAnisFiltrationSupported()) {
-      // Use max. level of anisotropy for this example
-      sampler.maxAnisotropy = std::min<float>(m_device.getAnisLevel(), 16.0);
-      sampler.anisotropyEnable = VK_TRUE;
-    } else {
-      // The device does not support anisotropic filtering
-      sampler.maxAnisotropy = 1.0;
-      sampler.anisotropyEnable = VK_FALSE;
-    }
-    sampler.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
-    ERR_GUARD_VULKAN(vkCreateSampler(m_device.getVkDevice(), &sampler, nullptr, &texture.sampler));
 
     // Create image view
     // Textures are not directly accessed by the shaders and

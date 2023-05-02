@@ -277,7 +277,7 @@ public:
     void setDiffuseColor(CImVector& value);
 
     HBlpTexture getBlpTextureData(int textureInd);
-    HGTexture getTexture(int textureInd);
+    HGSamplableTexture getTexture(int textureInd);
     HBlpTexture getHardCodedTexture(int textureInd);
 
     mathfu::vec4 getM2SceneAmbientLight();

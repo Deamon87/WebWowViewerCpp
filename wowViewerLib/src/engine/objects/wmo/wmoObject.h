@@ -77,8 +77,8 @@ private:
 
     std::shared_ptr<M2Object> skyBox = nullptr;
 
-    std::unordered_map<int, HGTexture> diffuseTextures;
-    std::unordered_map<int, HGTexture> specularTextures;
+    std::unordered_map<int, HGSamplableTexture> diffuseTextures;
+    std::unordered_map<int, HGSamplableTexture> specularTextures;
 
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWideChunk;
     std::vector<std::weak_ptr<IWMOMaterial>> m_materialCache;
@@ -93,7 +93,7 @@ private:
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
     std::shared_ptr<M2Object> getDoodad(int index) override ;
-    HGTexture getTexture(int materialId, bool isSpec) override;
+    HGSamplableTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
 

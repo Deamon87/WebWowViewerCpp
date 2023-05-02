@@ -318,7 +318,7 @@ public:
 
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
 
-    virtual HGTexture getTexture(int textureId, bool isSpec) = 0;
+    virtual HGSamplableTexture getTexture(int textureId, bool isSpec) = 0;
     virtual void updateBB() = 0;
     virtual void postWmoGroupObjectLoad(int groupId, int lod) = 0;
     virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> getPlacementBuffer() = 0;

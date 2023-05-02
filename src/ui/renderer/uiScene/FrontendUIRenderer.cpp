@@ -111,8 +111,8 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
     }
 }
 
-HGTexture FrontendUIRenderer::uploadFontTexture(unsigned char *pixels, int width, int height) {
+HGSamplableTexture FrontendUIRenderer::uploadFontTexture(unsigned char *pixels, int width, int height) {
     this->fontTexture = m_device->createTexture(false, false);
-    this->fontTexture->loadData(width, height, pixels, ITextureFormat::itRGBA);
+    this->fontTexture->getTexture()->loadData(width, height, pixels, ITextureFormat::itRGBA);
     return this->fontTexture;
 }

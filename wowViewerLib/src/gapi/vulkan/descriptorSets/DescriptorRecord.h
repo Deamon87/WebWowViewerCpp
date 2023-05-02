@@ -20,12 +20,15 @@ public:
 
     DescriptorRecord() = delete;
 
-    explicit DescriptorRecord(DescriptorRecord::DescriptorRecordType descType, const std::shared_ptr<GTextureVLK> &texture, const std::function<void()> &OnHandleChange) {
+    explicit DescriptorRecord(DescriptorRecord::DescriptorRecordType descType, const HGSamplableTexture &texture, const std::function<void()> &OnHandleChange) {
         this->descType = DescriptorRecord::DescriptorRecordType::Texture;
-        this->textureVlk = texture;
+        this->texture = texture;
 
         if (texture != nullptr) {
-            iteratorUnique = texture->addOnHandleChange(OnHandleChange);
+            auto textureVlk = texture->getTexture();
+            if (textureVlk != nullptr) {
+                iteratorUnique = std::dynamic_pointer_cast<GTextureVLK>(textureVlk)->addOnHandleChange(OnHandleChange);
+            }
         }
     }
     explicit DescriptorRecord(DescriptorRecord::DescriptorRecordType descType, const std::shared_ptr<IBufferVLK> &buffer, const std::function<void()> &OnHandleChange) {
@@ -39,8 +42,11 @@ public:
         if (iteratorUnique) {
             if (buffer) {
                 buffer->eraseOnHandleChange(iteratorUnique);
-            } else if (textureVlk) {
-                textureVlk->eraseOnHandleChange(iteratorUnique);
+            } else if (texture) {
+                auto textureVlk = texture->getTexture();
+                if (textureVlk != nullptr) {
+                    std::dynamic_pointer_cast<GTextureVLK>(textureVlk)->eraseOnHandleChange(iteratorUnique);
+                }
             }
         }
     }
@@ -51,7 +57,7 @@ public:
     DescriptorRecordType descType = DescriptorRecordType::None;
 
     std::shared_ptr<IBufferVLK> buffer = nullptr;
-    std::shared_ptr<GTextureVLK> textureVlk = nullptr;
+    HGSamplableTexture texture = nullptr;
 
 private:
     //holds record inside buffer/textureVlk. And frees it on destruction

@@ -69,7 +69,7 @@ void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVe
     auto &mipmaps = *hmipmaps;
 
     /* S3TC is not supported on mobile platforms */
-    bool compressedTextSupported = m_device.getIsCompressedTexturesSupported();
+    bool compressedTextSupported = m_device.getIsDTXCompressedTexturesSupported();
     if (!compressedTextSupported && textureFormat != TextureFormat::BGRA) {
         this->decompressAndUpload(textureFormat, hmipmaps);
         return;
