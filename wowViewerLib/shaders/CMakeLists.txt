@@ -65,6 +65,8 @@ else()
     add_custom_target(spirv_reflection)
 endif()
 
+set (SPIRV_OPT_APP "")
+
 macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
     set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spriv_raw)

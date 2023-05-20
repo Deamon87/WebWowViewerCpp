@@ -21,6 +21,7 @@ class M2Object;
 #include "../wmo/wmoObject.h"
 #include "../iMapApi.h"
 #include "../ViewsObjects.h"
+#include "../liquid/LiquidInstance.h"
 
 typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)> FreeStrategy;
 
@@ -134,7 +135,8 @@ private:
     std::array<HGMesh, 16*16> adtMeshes = {};
     std::array<std::shared_ptr<IADTMaterial>, 16*16> adtMaterials = {};
     //16x16, then layer
-    std::array<std::vector<HGSortableMesh>, 16*16> waterMeshes = {};
+    std::array<std::vector<std::shared_ptr<LiquidInstance>>, 16*16> m_liquidInstancesPerChunk = {};
+    std::vector<std::shared_ptr<LiquidInstance>> m_liquidInstances = {};
     std::vector<HGMesh> adtLodMeshes;
 
     std::vector<CAaBox> tileAabb;
@@ -176,8 +178,6 @@ private:
     void loadM2s();
     void loadWmos();
     void loadWater(const HMapSceneBufferCreate &sceneRenderer);
-    HGSortableMesh createWaterMeshFromInstance(const HMapSceneBufferCreate &sceneRenderer, int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos);
-
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,
                                  const mathfu::vec4 &cameraPos,

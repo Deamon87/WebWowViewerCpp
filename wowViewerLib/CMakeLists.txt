@@ -335,7 +335,7 @@ set(SOURCE_FILES
         src/gapi/interface/materials/IMaterial.h
         src/renderer/mapScene/MapSceneParams.h
         src/include/custom_container_key.h
-        src/renderer/mapScene/materials/IMaterialStructs.h src/gapi/interface/textures/ITextureSampler.h src/gapi/interface/textures/ISamplableTexture.h)
+        src/renderer/mapScene/materials/IMaterialStructs.h src/gapi/interface/textures/ITextureSampler.h src/gapi/interface/textures/ISamplableTexture.h src/engine/objects/liquid/LiquidInstance.cpp src/engine/objects/liquid/LiquidInstance.h src/engine/objects/liquid/LiquidDataGetters.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
