@@ -25,6 +25,7 @@ out float finalOpacity, out bool discardThisFragment)
     vec2 uv2 = inUv2;
     vec2 uv3 = inUv3;
 
+// This was added bcuz of how these three shaders use non-standard UV for querying the textures
     if (uPixelShader == 26 || uPixelShader == 27 || uPixelShader == 28) {
         uv2 = uv1;
         uv3 = uv1;
@@ -194,7 +195,8 @@ out float finalOpacity, out bool discardThisFragment)
             break;
         }
         case (28): { //Combiners_Mod_Masked_Dual_Crossfade
-            vec4 tex4 = texture(texSampler4, uv2).rgba;
+            //uv2 has inUv1 inside by this point. So we need to use inUv2 directly
+            vec4 tex4 = texture(texSampler4, inUv2).rgba;
             matDiffuse = meshColor * mix(mix(tex, tex2, vec4(clamp(texSampleAlpha.g, 0.0, 1.0))), tex3, vec4(clamp(texSampleAlpha.b, 0.0, 1.0))).rgb;
             discardAlpha = mix(mix(tex, tex2, vec4(clamp(texSampleAlpha.g, 0.0, 1.0))), tex3, vec4(clamp(texSampleAlpha.b, 0.0, 1.0))).a * tex4.a;
             canDiscard = true;

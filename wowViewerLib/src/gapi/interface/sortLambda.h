@@ -12,10 +12,10 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
             return pB->priorityPlane() > pA->priorityPlane();
         }
 
-        if (pA->getSortDistance() > pB->getSortDistance()) {
+        if (pA->getSortDistance() < pB->getSortDistance()) {
             return true;
         }
-        if (pA->getSortDistance() < pB->getSortDistance()) {
+        if (pA->getSortDistance() > pB->getSortDistance()) {
             return false;
         }
 
@@ -28,10 +28,10 @@ static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
             }
         }
     } else {
-        if (pA->getSortDistance() > pB->getSortDistance()) {
+        if (pA->getSortDistance() < pB->getSortDistance()) {
             return true;
         }
-        if (pA->getSortDistance() < pB->getSortDistance()) {
+        if (pA->getSortDistance() > pB->getSortDistance()) {
             return false;
         }
     }
