@@ -86,7 +86,7 @@ private:
     class GSubBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GSubBufferVLK> {
         friend class GBufferVLK;
     public:
-        explicit GSubBufferVLK(HGBufferVLK parent, OffsetAllocator::Allocation alloc, VkDeviceSize offset,
+        explicit GSubBufferVLK(HGBufferVLK parent, OffsetAllocator::Allocation alloc,
                                int size, int fakeSize,
                                uint8_t * dataPointer);
         ~GSubBufferVLK() override;
@@ -102,13 +102,16 @@ private:
             return m_parentBuffer->getGPUBuffer();
         }
         size_t getOffset() override {
-            return m_offset;
+            return m_alloc.offset;
         };
+    private:
+        void setParentDataPointer(void * ptr) {
+            m_dataPointer = ((uint8_t *) ptr) + m_alloc.offset;
+        }
     private:
         HGBufferVLK m_parentBuffer;
 
         OffsetAllocator::Allocation m_alloc;
-        VkDeviceSize m_offset;
         int m_size;
         int m_fakeSize;
         uint8_t * m_dataPointer = nullptr;

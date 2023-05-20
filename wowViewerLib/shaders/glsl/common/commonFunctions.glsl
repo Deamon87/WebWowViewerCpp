@@ -2,7 +2,6 @@
 #define COMMON_FUNCTION_GLSL
 
 vec2 posToTexCoord(const vec3 vertexPosInView, const vec3 normal){
-
     //Blizz seems to have vertex in view space as vector from "vertex to eye", while in this implementation, it's
     //vector from "eye to vertex". So the minus here is not needed
     //vec3 viewVecNormalized = -normalize(cameraPoint.xyz);

@@ -14,8 +14,14 @@
 struct M2MaterialTemplate {
     int vertexShader = 0;
     int pixelShader = 0;
+    int batchIndex;
     std::array<HGSamplableTexture, 4> textures = {nullptr, nullptr, nullptr, nullptr};
 };
+
+struct M2WaterfallMaterialTemplate {
+    std::array<HGSamplableTexture, 5> textures = {nullptr, nullptr, nullptr, nullptr, nullptr};
+};
+
 
 struct M2ParticleMaterialTemplate {
     std::array<HGSamplableTexture, 3> textures = {nullptr, nullptr, nullptr};
@@ -55,9 +61,22 @@ class IM2Material : public IMaterial {
 public:
     int vertexShader;
     int pixelShader;
+    int batchIndex;
     EGxBlendEnum blendMode;
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS>> m_vertexFragmentData = nullptr;
-    };
+};
+
+class IM2WaterFallMaterial : public IMaterial {
+public:
+    int vertexShader;
+    int pixelShader;
+    EGxBlendEnum blendMode;
+
+    std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockVS>> m_vertexData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockPS>> m_fragmentData = nullptr;
+};
+
+
 class IM2ParticleMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<Particle::meshParticleWideBlockPS>> m_fragmentData = nullptr;

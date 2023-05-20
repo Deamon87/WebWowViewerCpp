@@ -32,13 +32,19 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 // Whole model
 layout(std140, set=0, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
+};
+
+layout(std140, set=0, binding=2) uniform boneMats {
     mat4 uBoneMatrixes[MAX_MATRIX_NUM];
 };
 
+layout(std140, set=0, binding=3) uniform textureMatrices {
+    mat4 textureMatrix[64];
+};
+
 //Individual meshes
-layout(std140, set=0, binding=2) uniform meshWideBlockVS {
-    vec4 bumpScale;
-    mat4 uTextMat[2];
+layout(std140, set=0, binding=4) uniform meshWideBlockVS {
+    vec4 bumpScaleTextIndexes;
 };
 
 //Shader output
@@ -49,11 +55,18 @@ layout(location=3) out vec3 vNormal;
 layout(location=4) out vec3 vPosition;
 
 
-layout(set=1,binding=8) uniform sampler2D uBumpTexture;
+layout(set=1,binding=9) uniform sampler2D uBumpTexture;
 
 void main() {
+    float bumpScale = bumpScaleTextIndexes.x;
+    int textMatIndex1 = floatBitsToInt(bumpScaleTextIndexes.y);
+    int textMatIndex2 = floatBitsToInt(bumpScaleTextIndexes.z);
 
-    vec2 texCoord2 = (uTextMat[0] * vec4(aTexCoord2, 0, 1)).xy;
+    mat4 textMat[2];
+    textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textMatIndex1];
+    textMat[1] = textMatIndex2 < 0 ? mat4(1.0) : textureMatrix[textMatIndex2];
+
+    vec2 texCoord2 = (textMat[0] * vec4(aTexCoord2, 0, 1)).xy;
 
     vec4 bumpValue = texture(uBumpTexture, texCoord2);
     vec3 pos = (aNormal * bumpScale.x) * bumpValue.z + aPosition;

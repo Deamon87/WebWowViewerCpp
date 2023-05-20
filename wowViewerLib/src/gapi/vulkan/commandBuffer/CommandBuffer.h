@@ -15,13 +15,14 @@ class GCommandBuffer {
 public:
     friend class CmdBufRecorder;
     friend class RenderPassHelper;
+    friend class RenderPassHelper;
     friend class IDeviceVulkan;
 
 public:
     GCommandBuffer(IDeviceVulkan &deviceVlk, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
 
     CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass);
-    VkCommandBuffer getNativeCmdBuffer() {
+    VkCommandBuffer getNativeCmdBuffer() const {
         return m_cmdBuffer;
     }
 private:

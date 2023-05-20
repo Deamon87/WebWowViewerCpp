@@ -19,10 +19,10 @@ layout(location=2) in vec2 vTexCoord2_animated;
 layout(location=3) in vec3 vNormal;
 layout(location=4) in vec3 vPosition;
 
-layout(set=1,binding=5) uniform sampler2D uMask;
-layout(set=1,binding=6) uniform sampler2D uWhiteWater;
-layout(set=1,binding=7) uniform sampler2D uNoise;
-layout(set=1,binding=9) uniform sampler2D uNormalTex;
+layout(set=1,binding=6) uniform sampler2D uMask;
+layout(set=1,binding=7) uniform sampler2D uWhiteWater;
+layout(set=1,binding=8) uniform sampler2D uNoise;
+layout(set=1,binding=10) uniform sampler2D uNormalTex;
 
 layout(location=0) out vec4 outputColor;
 
@@ -31,12 +31,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, set=0, binding=1) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
-};
-
-layout(std140, set=0, binding=4) uniform meshWideBlockPS {
+layout(std140, set=0, binding=5) uniform meshWideBlockPS {
     vec4 values0;
     vec4 values1;
     vec4 values2;
@@ -110,8 +105,6 @@ void main() {
         vec3(0.0), /* specular */
         vec3(0.0) /* emissive */
     );
-
-
 
     float w_clamped = clamp((1.0f - mask_val_0.w) * values1.w, 0.0f, 1.0f);
     float w_alpha_combined = clamp(w_clamped + mix_alpha, 0.0f, 1.0f);

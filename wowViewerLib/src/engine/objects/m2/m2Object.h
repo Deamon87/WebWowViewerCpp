@@ -132,14 +132,15 @@ private:
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
-    //Tuple of Material and BatchIndex
-    std::vector<std::tuple<std::shared_ptr<IM2Material>, int>> m_materialArray;
+    std::vector<std::shared_ptr<IM2Material>> m_materialArray;
+    std::vector<std::shared_ptr<IM2Material>> m_forcedTranspMaterialArray;
 
-    std::vector<HGM2Mesh> m_meshForcedTranspArray;
-    std::vector<HGM2Mesh> m_meshArray;
+    //Tuple of Mesh and batch index
+    std::vector<std::tuple<HGM2Mesh, int>> m_meshForcedTranspArray;
+    std::vector<std::tuple<HGM2Mesh, int>> m_meshArray;
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
-    std::vector<std::array<dynamicVaoMeshFrame, 4>> dynamicMeshes;
+    std::vector<std::array<dynamicVaoMeshFrame, IDevice::MAX_FRAMES_IN_FLIGHT>> dynamicMeshes;
     AnimationManager *m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
@@ -167,6 +168,7 @@ private:
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
     void createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer);
 
+    EGxBlendEnum getBlendMode(int batchIndex);
 
 public:
     void setAlwaysDraw(bool value) {
@@ -296,12 +298,15 @@ public:
         return m_m2Geom->m_m2Data->cameras.size;
     }
 
-    HGM2Mesh createSingleMesh(const HMapSceneBufferCreate &sceneRenderer,
-                              const M2Data *m_m2Data, int i, int indexStartCorrection, HGVertexBufferBindings finalBufferBindings,
-                              const M2Batch *m2Batch, const M2SkinSection *skinSection,
-                              EGxBlendEnum &blendMode, bool overrideBlend);
+    std::shared_ptr<IM2Material> createM2Material(const HMapSceneBufferCreate &sceneRenderer, int batchIndex, const EGxBlendEnum blendMode, bool overrideBlend);
 
-    HGM2Mesh createWaterfallMesh();
+    HGM2Mesh createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int indexStartCorrection,
+                              const HGVertexBufferBindings &finalBufferBindings,
+                              const std::shared_ptr<IM2Material> m2Material,
+                              const M2SkinSection *skinSection,
+                              const M2Batch *m2Batch);
+
+    HGM2Mesh createWaterfallMesh(const HMapSceneBufferCreate &sceneRenderer, const HGVertexBufferBindings &finalBufferBindings);
     void updateDynamicMeshes();
 };
 

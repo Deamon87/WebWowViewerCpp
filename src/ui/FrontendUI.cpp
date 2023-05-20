@@ -715,6 +715,16 @@ void FrontendUI::showQuickLinksDialog() {
     std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
+    if (ImGui::Button("model without skin", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        openM2SceneByfdid(5099010, replacementTextureFDids);
+    }
+    if (ImGui::Button("Some model", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 4952373;
+        replacementTextureFDids[12] = 4952379;
+        openM2SceneByfdid(4870631, replacementTextureFDids);
+    }
     if (ImGui::Button("nightborne model", ImVec2(-1, 0))) {
         openM2SceneByfdid(1810676, replacementTextureFDids);
     }

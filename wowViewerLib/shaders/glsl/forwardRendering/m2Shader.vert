@@ -3,7 +3,7 @@
 #extension GL_GOOGLE_include_directive: require
 
 #ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 220
+#define MAX_MATRIX_NUM 256
 #endif
 
 precision highp float;
@@ -87,27 +87,13 @@ void main() {
 
     vec3 normal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
 
-    int uVertexShader = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.x;
-
-    mat4 textMat[2];
-    int textMatIndex1 = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.z;
-    int textMatIndex2 =vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.w;
-
-    textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textMatIndex1];
-    textMat[1] = textMatIndex2 < 0 ? mat4(1.0) : textureMatrix[textMatIndex2];
-
-    float edgeFade = 1.0;
-
-    calcM2VertexMat(uVertexShader,
-        vertexPosInView.xyz, normal,
-        aTexCoord, aTexCoord2,
-        textMat, edgeFade,
-        vTexCoord, vTexCoord2, vTexCoord3);
-
+    vTexCoord = aTexCoord;
+    vTexCoord2 = aTexCoord2;
+    vTexCoord3 = aTexCoord2;
 
     gl_Position = scene.uPMatrix * vertexPosInView;
     vNormal = normal;
-    vPosition_EdgeFade = vec4(vertexPosInView.xyz, edgeFade);
+    vPosition_EdgeFade = vec4(vertexPosInView.xyz, 0.0);
 }
 
 

@@ -91,7 +91,6 @@ void main() {
         vMeshColorAlpha.a *=
         textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightIndexes.x / 4][textureWeightIndexes.x % 4];
 
-    vMeshColorAlpha *= vPosition_EdgeFade.w;
 
     //Accumulate and apply lighting
 
@@ -130,6 +129,23 @@ void main() {
 //----------------------
 // Calc Diffuse and Specular
 //---------------------
+    int uVertexShader = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.x;
+
+    mat4 textMat[2];
+    int textMatIndex1 = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.z;
+    int textMatIndex2 = vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.w;
+
+    textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textMatIndex1];
+    textMat[1] = textMatIndex2 < 0 ? mat4(1.0) : textureMatrix[textMatIndex2];
+    float edgeFade = 1.0;
+
+    calcM2VertexMat(uVertexShader,
+        vPosition_EdgeFade.xyz, vNormal,
+        vTexCoord, vTexCoord2,
+        textMat, edgeFade,
+        texCoord, texCoord2, texCoord3);
+
+    vMeshColorAlpha *= edgeFade;
 
     float finalOpacity = 0.0;
     vec3 matDiffuse;
@@ -156,6 +172,8 @@ void main() {
 // Apply lighting
 // ------------------------------
 
+//    specular *= vMeshColorAlpha.rgb;
+
     finalColor = vec4(
         calcLight(
             matDiffuse,
@@ -171,8 +189,6 @@ void main() {
         ) ,
         finalOpacity
     );
-
-    outputColor = finalColor;
 
 // ------------------------------
 // Apply Fog
@@ -193,12 +209,4 @@ void main() {
 
     //Forward rendering without lights
     outputColor = finalColor;
-
-    //Deferred rendering
-    //gl_FragColor = finalColor;
-//    gl_FragData[0] = vec4(vec3(fs_Depth), 1.0);
-//    gl_FragData[1] = vec4(vPosition.xyz,0);
-//    gl_FragData[2] = vec4(vNormal.xyz,0);
-//    gl_FragData[3] = finalColor;
-
 }

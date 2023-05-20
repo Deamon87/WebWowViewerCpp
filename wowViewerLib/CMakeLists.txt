@@ -525,7 +525,11 @@ if (LINK_VULKAN)
             src/gapi/vulkan/bindable/DSBindable.h
             src/renderer/mapScene/vulkan/materials/IMaterialInstance.h
             src/gapi/vulkan/meshes/GSortableMeshVLK.cpp
-            src/gapi/vulkan/meshes/GSortableMeshVLK.h src/gapi/vulkan/textures/GTextureSamplerVLK.cpp src/gapi/vulkan/textures/GTextureSamplerVLK.h)
+            src/gapi/vulkan/meshes/GSortableMeshVLK.h
+            src/gapi/vulkan/textures/GTextureSamplerVLK.cpp
+            src/gapi/vulkan/textures/GTextureSamplerVLK.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.cpp
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

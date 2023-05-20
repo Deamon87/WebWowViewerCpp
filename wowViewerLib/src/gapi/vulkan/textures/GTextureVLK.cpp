@@ -229,7 +229,8 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     imageCreateInfo.pQueueFamilyIndices = families.data();
 
     VmaAllocationCreateInfo allocImageCreateInfo = {};
-    allocImageCreateInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+    allocImageCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+//    allocImageCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT; //this bit forces to create per one texture per memory
 
 
     vmaCreateImage(m_device.getVMAAllocator(), &imageCreateInfo, &allocImageCreateInfo, &texture.image,

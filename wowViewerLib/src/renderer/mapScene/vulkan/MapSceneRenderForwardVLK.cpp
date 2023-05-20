@@ -244,7 +244,6 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
     auto &l_sceneWideChunk = sceneWideChunk;
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(uboStaticBuffer);
 
-
     auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"})
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&m2ModelData, &vertexFragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
@@ -270,9 +269,44 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
         });
 
     material->blendMode = pipelineTemplate.blendMode;
+    material->batchIndex = m2MaterialTemplate.batchIndex;
     material->vertexShader = m2MaterialTemplate.vertexShader;
     material->pixelShader = m2MaterialTemplate.pixelShader;
 
+
+    return material;
+}
+
+std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                                const PipelineTemplate &pipelineTemplate,
+                                                                const M2WaterfallMaterialTemplate &m2MaterialTemplate) {
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto vertexData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockVS>>(uboStaticBuffer);
+    auto fragmentData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockPS>>(uboStaticBuffer);
+
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"})
+        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .createDescriptorSet(0, [&m2ModelData, &vertexData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo(1, BufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix)->getSubBuffer())
+                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
+                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices)->getSubBuffer())
+                .ubo(4, vertexData->getSubBuffer())
+                .ubo(5, fragmentData->getSubBuffer());
+        })
+        .createDescriptorSet(1, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(6, m2MaterialTemplate.textures[0])
+                .texture(7, m2MaterialTemplate.textures[1])
+                .texture(8, m2MaterialTemplate.textures[2])
+                .texture(9, m2MaterialTemplate.textures[3])
+                .texture(10, m2MaterialTemplate.textures[4]);
+        })
+        .toMaterial<IM2WaterFallMaterial>([&vertexData, fragmentData](IM2WaterFallMaterial *instance) -> void {
+            instance->m_vertexData = vertexData;
+            instance->m_fragmentData = fragmentData;
+        });
 
     return material;
 }
@@ -558,11 +592,29 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
                 for (auto const &mesh: *skyTransparentMeshes) {
+                    std::string debugMess =
+                        "Drawing mesh "
+                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
+                        " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
+                        " sortDistance = " + std::to_string(mesh->getSortDistance()) +
+                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
+
+                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
+                    
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
                 if (skyMesh0x4) MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
             }
             for (auto const &mesh: *transparentMeshes) {
+                std::string debugMess =
+                    "Drawing mesh "
+                    " meshType = " + std::to_string((int)mesh->getMeshType()) +
+                    " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
+                    " sortDistance = " + std::to_string(mesh->getSortDistance()) +
+                    " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
+
+                auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
+
                 MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
             }
         }
@@ -593,7 +645,12 @@ MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::s
     auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     return mesh;
 }
-
+HGM2Mesh MapSceneRenderForwardVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,
+                                                         const std::shared_ptr<IM2WaterFallMaterial> &material,
+                                                         int layer, int priorityPlane) {
+    auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
+    return mesh;
+}
 void MapSceneRenderForwardVLK::createFrameBuffers() {
     {
         auto const dataFormat = {ITextureFormat::itRGBA};

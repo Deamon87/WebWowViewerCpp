@@ -14,15 +14,17 @@
 class CmdBufRecorder;
 class RenderPassHelper;
 class GCommandBuffer;
+class CommandBufferDebugLabel;
 
 #include "../CommandBuffer.h"
 #include "RenderPassHelper.h"
+#include "CommandBufferDebugLabel.h"
 #include "../../descriptorSets/GDescriptorSet.h"
-
 class CmdBufRecorder {
 public:
     enum class ViewportType: int {vp_none = -1, vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
     friend RenderPassHelper;
+    friend CommandBufferDebugLabel;
 
     CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass);
     CmdBufRecorder(const CmdBufRecorder&) = delete;
@@ -38,6 +40,8 @@ public:
         const std::array<int32_t, 2> &areaOffset,
         const std::array<uint32_t, 2> &areaSize,
         const std::array<float,3> &colorClearColor, float depthClear);
+
+    CommandBufferDebugLabel beginDebugLabel(const std::string &labelName, const std::array<float, 4> &colors);
 
     void bindIndexBuffer(const std::shared_ptr<IBuffer> &bufferVlk);
     void bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer>> &bufferVlk);

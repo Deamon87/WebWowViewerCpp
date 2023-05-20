@@ -21,13 +21,11 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
 	return finalTransparency;
 }
 
-void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, int batchIndex, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile){
+void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile){
+    int batchIndex = m2Material->batchIndex;
     auto batch = m2SkinProfile->batches[batchIndex];
     int renderFlagIndex = batch->materialIndex;
     auto renderFlag = m2Data->materials[renderFlagIndex];
-
-    mathfu::vec4 meshColor = getCombinedColor(m2SkinProfile, batchIndex, m2Object->subMeshColors);
-    float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*m2Object, batchIndex, m2SkinProfile);
 
     std::array<int,2> textureMatrixIndexes = {-1, -1};
     getTextureMatrixIndexes(*m2Object, batchIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
@@ -55,14 +53,6 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
     meshblockVSPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
 
     m2Material->m_vertexFragmentData->save();
-
-    //3. Update individual PS buffer
-    float uAlphaTest;
-    if (m2Material->blendMode == EGxBlendEnum::GxBlend_AlphaKey) {
-        uAlphaTest = 128.0f/255.0f * finalTransparency; //Maybe move this to shader logic?
-    } else {
-        uAlphaTest = 1.0f/255.0f;
-    }
 }
 
 void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, int batchIndex,

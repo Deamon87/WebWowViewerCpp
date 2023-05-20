@@ -37,8 +37,10 @@ public:
     void process(HFileContent m2File, const std::string &fileName) override;
     HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer);
     HGVertexBufferBindings getVAO(const HMapSceneBufferCreate &sceneRenderer, SkinGeom *skinGeom);
-    std::array<HGVertexBufferBindings, 4> createDynamicVao(IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
-                                                               SkinGeom *skinGeom, M2SkinSection *skinSection);
+    std::array<HGVertexBufferBindings, IDevice::MAX_FRAMES_IN_FLIGHT>
+        createDynamicVao(const HMapSceneBufferCreate &sceneRenderer,
+                         std::array<HGVertexBufferDynamic, IDevice::MAX_FRAMES_IN_FLIGHT> &dynVBOs,
+                         SkinGeom *skinGeom, M2SkinSection *skinSection);
     void loadLowPriority(const HApiContainer& m_api, uint32_t animationId, uint32_t subAnimationId);
 
     M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
@@ -53,6 +55,9 @@ public:
     std::vector<uint16_t> blackListAnimations;
 
     PGD1_chunk * particleGeosetData = nullptr;
+
+    EDGF * edgf = nullptr;
+    int edgf_count = 0;
 
     EXP2 *exp2 = nullptr;
     std::vector<TXAC> txacMesh = {};

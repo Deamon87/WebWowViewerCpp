@@ -71,7 +71,7 @@ protected:
             using std::hash;
             return hash<decltype(k.texture)>{}(k.texture) ^
                 (hash<bool>{}(k.wrapX) << 8) ^
-                (hash<bool>{}(k.wrapX) << 8);
+                (hash<bool>{}(k.wrapY) << 16);
         };
     };
     std::unordered_map<SampledTextureCacheRecord, std::weak_ptr<HGSamplableTexture::element_type>, SampledTextureCacheRecordHasher> sampledTextureCache;

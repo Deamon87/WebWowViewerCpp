@@ -53,8 +53,6 @@ HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
     BlpCacheRecord blpCacheRecord = {
         .texture = std::weak_ptr<HBlpTexture::element_type>(texture)
     };
-//    blpCacheRecord.wrapX = xWrapTex;
-//    blpCacheRecord.wrapY = yWrapTex;
     std::lock_guard<std::mutex> lock(m_textureAllocation);
 
     auto i = loadedTextureCache.find(blpCacheRecord);

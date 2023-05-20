@@ -166,6 +166,15 @@ struct uv_map_entry {
     int16_t t;
 };
 
+uint8_t * getLiquidExistsTable(const PointerChecker<char> &mH2OBlob, const SMLiquidInstance &liquidInstance) {
+    const static uint64_t fullBitmask = 0xFFFFFFFFFFFFFFFF;
+
+    if (liquidInstance.offset_exists_bitmap) {
+        return (uint8_t *) &mH2OBlob[liquidInstance.offset_exists_bitmap];
+    }
+
+    return (uint8_t *) &fullBitmask;
+}
 inline mathfu::vec2 getLiquidVertexCoords(int liquidVertexFormat, float *vertexDataPtr, int totalElemSize, int index) {
     int16_t s = 0;
     int16_t t = 0;
@@ -185,7 +194,7 @@ inline mathfu::vec2 getLiquidVertexCoords(int liquidVertexFormat, float *vertexD
     }
     //For all other liquidVertexFormat are default zeroes
 
-    return mathfu::vec2(s * 3.0 / 256.0, t * 3.0 / 256.0);
+    return mathfu::vec2(s * 3.0f / 256.0f, t * 3.0f / 256.0f);
 }
 
 inline uint8_t getLiquidDepth(int liquidVertexFormat, float *vertexDataPtr, int totalElemSize, int index) {
@@ -255,13 +264,6 @@ inline LiquidObjectSettings getLiquidSettings(int liquidObjectId, int liquidType
 
 
 HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreate &sceneRenderer, int x_chunk, int y_chunk, SMLiquidInstance &liquidInstance, mathfu::vec3 liquidBasePos) {
-    uint64_t infoMask = 0xFFFFFFFFFFFFFFFF; // default = all water
-    if (liquidInstance.offset_exists_bitmap > 0 && liquidInstance.height > 0)
-    {
-        size_t bitmask_size = static_cast<size_t>(std::ceil(liquidInstance.height * liquidInstance.width / 8.0f));
-        std::memcpy(&infoMask, &m_adtFile->mH2OBlob[liquidInstance.offset_exists_bitmap - m_adtFile->mH2OblobOffset], bitmask_size);
-    }
-
     //Get Data from DB
     int basetextureFDID = 0;
     mathfu::vec3 color = mathfu::vec3(0,0,0);
@@ -332,7 +334,7 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
 //
     float *vertexDataPtr = nullptr;
     if (liquidInstance.offset_vertex_data != 0) {
-        vertexDataPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data - m_adtFile->mH2OblobOffset]));
+        vertexDataPtr = ((float *) (&m_adtFile->mH2OBlob[liquidInstance.offset_vertex_data]));
     }
 
     //Set iteration restrictions for triangles
@@ -353,7 +355,6 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
 //    int baseVertexIndForInst = vertexBuffer.size();
     int baseVertexIndForInst = 0;
 
-    int bitOffset = 0;
     int i = this->m_adtFile->mcnkMap[x_chunk][y_chunk];
     auto &waterAaBB = waterTileAabb[i];
     SMChunk *mcnkChunk = &m_adtFile->mapTile[i];
@@ -384,6 +385,11 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
             if (vertexDataPtr!= nullptr) {
                 pos.z = getLiquidVertexHeight(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
             }
+
+//            if (std::isnan(pos.z) || (pos.z > 10000.0f)) {
+//                pos.z = liquidInstance.min_height_level;
+//            }
+
             if (generateTexCoordsFromPos) {
                 uv = mathfu::vec2(pos.x * 0.6f, pos.y * 0.6f);
             } else {
@@ -406,23 +412,30 @@ HGSortableMesh AdtObject::createWaterMeshFromInstance(const HMapSceneBufferCreat
         C3Vector(mathfu::vec3(maxX, maxY, maxZ))
     );
 
+    uint8_t *existsTable = getLiquidExistsTable(m_adtFile->mH2OBlob, liquidInstance);
+
     for (int y = y_begin; y < y_end; y++) {
         for (int x = x_begin; x < x_end; x++) {
-            if (((infoMask >> (bitOffset++)) & 1) == 0) continue;
-            int16_t vertindexes[4] = {
-                (int16_t) (baseVertexIndForInst + y * (liquidInstance.width +1 ) + x),
-                (int16_t) (baseVertexIndForInst + y * (liquidInstance.width + 1) + x + 1),
-                (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x),
-                (int16_t) (baseVertexIndForInst + (y + 1) * (liquidInstance.width + 1) + x + 1),
+
+            int maskIndex = (y - y_begin) * (x_end - x_begin) + (x - x_begin);
+            bool exists = (existsTable[maskIndex >> 3] >> ((maskIndex & 7))) & 1;
+
+            if (!exists) continue;
+
+            const int16_t vertIndexes[4] = {
+                (int16_t) (y * (liquidInstance.width + 1 ) + x),
+                (int16_t) (y * (liquidInstance.width + 1) + x + 1),
+                (int16_t) ((y + 1) * (liquidInstance.width + 1) + x),
+                (int16_t) ((y + 1) * (liquidInstance.width + 1) + x + 1),
             };
 
-            indexBuffer.push_back (vertindexes[0]);
-            indexBuffer.push_back (vertindexes[1]);
-            indexBuffer.push_back (vertindexes[2]);
+            indexBuffer.push_back (vertIndexes[0]);
+            indexBuffer.push_back (vertIndexes[1]);
+            indexBuffer.push_back (vertIndexes[2]);
 
-            indexBuffer.push_back (vertindexes[1]);
-            indexBuffer.push_back (vertindexes[3]);
-            indexBuffer.push_back (vertindexes[2]);
+            indexBuffer.push_back (vertIndexes[1]);
+            indexBuffer.push_back (vertIndexes[3]);
+            indexBuffer.push_back (vertIndexes[2]);
         }
     }
 
@@ -515,11 +528,13 @@ void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
 
     for (int y_chunk = 0; y_chunk < 16; y_chunk++) {
         for (int x_chunk = 0; x_chunk < 16; x_chunk++) {
-            auto &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
+            M2HOHeader::SMLiquidChunk &liquidChunk = m_adtFile->mH2OHeader->chunks[y_chunk*16 + x_chunk];
             if (liquidChunk.layer_count == 0) continue;
 
+            auto liquidInstOffset = liquidChunk.offset_instances;
+
             auto *liquidInstPtr =
-                ((SMLiquidInstance *)(&m_adtFile->mH2OBlob[liquidChunk.offset_instances - m_adtFile->mH2OblobOffset]));
+                ((SMLiquidInstance *)(&m_adtFile->mH2OBlob[liquidInstOffset]));
 
             mathfu::vec3 liquidBasePos =
                 adtBasePos -

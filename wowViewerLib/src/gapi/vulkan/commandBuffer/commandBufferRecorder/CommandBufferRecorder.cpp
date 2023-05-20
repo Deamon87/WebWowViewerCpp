@@ -92,6 +92,14 @@ void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr
     m_currentDescriptorSet[bindIndex] = descriptorSet;
 }
 
+CommandBufferDebugLabel CmdBufRecorder::beginDebugLabel(const std::string &labelName, const std::array<float, 4> &colors) {
+    return CommandBufferDebugLabel(
+        *this,
+        labelName,
+        colors
+    );
+}
+
 void CmdBufRecorder::bindIndexBuffer(const std::shared_ptr<IBuffer> &buffer) {
     auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffer);
     if (m_currentIndexBuffer!= nullptr && m_currentIndexBuffer->getGPUBuffer() == bufferVlk->getGPUBuffer() &&

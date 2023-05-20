@@ -9,7 +9,7 @@
 #include <mathfu/glsl_mappings.h>
 #include "mathfu/glsl_mappings.h"
 
-#define MAX_MATRIX_NUM 220
+#define MAX_MATRIX_NUM 256
 #define MAX_M2COLORS_NUM 256
 #define MAX_TEXTURE_WEIGHT_NUM 64
 #define MAX_TEXTURE_MATRIX_NUM 64
@@ -104,8 +104,10 @@ namespace M2 {
 
     namespace WaterfallData {
         struct meshWideBlockVS {
-            mathfu::vec4_packed bumpScale;
-            mathfu::mat4 uTextMat[2];
+            float bumpScale;
+            int textureMatIndex1;
+            int textureMatIndex2;
+            int unused;
         };
         struct meshWideBlockPS {
             mathfu::vec4_packed values0;

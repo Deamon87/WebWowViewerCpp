@@ -59,7 +59,7 @@ vec3 calcLight(
 
         if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0) {
             float nDotL = clamp(dot(normalizedN, -(sceneParams.extLight.uExteriorDirectColorDir.xyz)), 0.0, 1.0);
-            float nDotUp = dot(normalizedN, sceneParams.uViewUp.xyz);
+            float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUp.xyz));
 
             vec3 adjAmbient =       (sceneParams.extLight.uExteriorAmbientColor.rgb          + precomputedLight);
             vec3 adjHorizAmbient =  (sceneParams.extLight.uExteriorHorizontAmbientColor.rgb  + precomputedLight);
@@ -98,14 +98,14 @@ vec3 calcLight(
         vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
         vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
 
-        //Specular term
-        vec3 specTerm = specular;
-        //Emission term
+//        //Specular term
+//        vec3 specTerm = specular;
+//        //Emission term
         const vec3 emTerm = emissive;
-        result = sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm) + specTerm + emTerm;
+        result = sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm)  + emTerm;
     }
 
-    return result;
+    return result + specular;
 }
 
 vec3 calcSpec(const in float texAlpha) {

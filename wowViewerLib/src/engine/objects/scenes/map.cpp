@@ -23,9 +23,6 @@
 #include "../../algorithms/mathHelper_culling.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
 
-
-
-
 std::array<mathfu::vec4, 122> skyConusVBO = {
     {
        {0, 0, 0.2928932309150696f, 0},

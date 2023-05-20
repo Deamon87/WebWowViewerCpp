@@ -92,6 +92,10 @@ public:
                                                           const PipelineTemplate &pipelineTemplate,
                                                           const M2MaterialTemplate &m2MaterialTemplate) = 0;
 
+    virtual std::shared_ptr<IM2WaterFallMaterial> createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                          const PipelineTemplate &pipelineTemplate,
+                                                          const M2WaterfallMaterialTemplate &m2MaterialTemplate) = 0;
+
     virtual std::shared_ptr<IM2ParticleMaterial> createM2ParticleMaterial(const PipelineTemplate &pipelineTemplate,
                                                                           const M2ParticleMaterialTemplate &m2MaterialTemplate) = 0;
     virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
@@ -114,6 +118,7 @@ public:
     virtual HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) = 0;
     virtual HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;
     virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
+    virtual HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) = 0;
 };
 typedef std::shared_ptr<IMapSceneBufferCreate> HMapSceneBufferCreate;
 

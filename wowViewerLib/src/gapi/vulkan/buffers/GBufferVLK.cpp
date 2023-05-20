@@ -73,7 +73,7 @@ VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, 
     bool minAddressStrategy = sizeInBytes < fakeSize && fakeSize > 0;
 
     if (sizeInBytes == 0) {
-        alloc = {.offset = 0};
+        alloc = {.offset = 0, .metadata = OffsetAllocator::Allocation::NO_SPACE};
         return VK_SUCCESS;
     }
 
@@ -164,7 +164,7 @@ void GBufferVLK::resize(int newLength) {
     for (std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator it = currentSubBuffers.begin(); it != currentSubBuffers.end(); ++it){
         auto subBuffer = it->lock();
         if (subBuffer != nullptr) {
-            subBuffer->m_dataPointer = (uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData+subBuffer->m_alloc.offset;
+            subBuffer->setParentDataPointer(newBuffer.stagingBufferAllocInfo.pMappedData);
         }
     }
     memcpy((uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData,
@@ -225,7 +225,7 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
         auto subBuffer = std::make_shared<GSubBufferVLK>(
                                                           shared_from_this(),
                                                           alloc,
-                                                          alloc.offset, sizeInBytes, fakeSize,
+                                                          sizeInBytes, fakeSize,
                                                          (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+alloc.offset);
 
         std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
@@ -337,7 +337,6 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
         subBuffersForUpload.reserve(prevSize);
     }
 
-
     return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx, true);
 }
 
@@ -347,11 +346,9 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
 
 GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
                                          OffsetAllocator::Allocation alloc,
-                                         VkDeviceSize offset,
                                          int size, int fakeSize,
                                          uint8_t *dataPointer) : m_parentBuffer(parent) {
     m_alloc = alloc;
-    m_offset = offset;
     m_size = size;
     m_fakeSize = fakeSize > 0 ? fakeSize : m_size;
     m_dataPointer = dataPointer;
@@ -383,6 +380,8 @@ void GBufferVLK::GSubBufferVLK::subUploadData(void *data, int offset, int length
 }
 
 void *GBufferVLK::GSubBufferVLK::getPointer() {
+    if (m_size <= 0) return nullptr;
+
     return m_dataPointer;
 }
 
@@ -390,6 +389,7 @@ void GBufferVLK::GSubBufferVLK::save(int length) {
     if (length > m_size) {
         std::cerr << "invalid dataSize" << std::endl;
     }
+    if (m_size <= 0) return;
 
     m_parentBuffer->addSubBufferForUpload(weak_from_this());
 //    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);

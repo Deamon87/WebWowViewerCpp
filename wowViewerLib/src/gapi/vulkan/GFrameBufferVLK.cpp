@@ -71,6 +71,16 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
         ));
 
         m_depthTexture = h_depthTexture;
+
+//        VkMemoryRequirements memoryRequirements;
+//        vkGetImageMemoryRequirements(mdevice.getVkDevice(), std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.image, &memoryRequirements);
+//        std::cout << "Depth Texture wants "
+//                  << memoryRequirements.size
+//                  << " bytes with "
+//                  << memoryRequirements.alignment
+//                  << " alignment. "
+//                  << " Size allocated by VMA " << std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->imageAllocationInfo.size
+//                  << std::endl;
     }
 
     std::array<VkImageView,2> attachments = {
@@ -163,6 +173,17 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
         ));
 
         m_depthTexture = h_depthTexture;
+
+//        VkMemoryRequirements memoryRequirements;
+//        vkGetImageMemoryRequirements(mdevice.getVkDevice(), std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.image, &memoryRequirements);
+//        std::cout << "Depth Texture wants "
+//                  << memoryRequirements.size
+//                  << " bytes with "
+//                  << memoryRequirements.alignment
+//                  << " alignment. "
+//                  << " Size allocated by VMA " << std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->imageAllocationInfo.size
+//                  << std::endl;
+
         attachments.push_back(h_depthTexture->texture.view);
     }
 

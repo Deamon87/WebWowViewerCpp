@@ -287,6 +287,8 @@ namespace OffsetAllocator
     
     void Allocator::free(Allocation allocation)
     {
+        if (allocation.metadata == Allocation::NO_SPACE) return;
+
         ASSERT(allocation.metadata != Allocation::NO_SPACE);
         if (m_nodes.empty()) return;
         

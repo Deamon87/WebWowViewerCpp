@@ -11,6 +11,10 @@
 #include <iostream>
 #include "../header/commonFileStructs.h"
 
+#if _MSC_VER && !__INTEL_COMPILER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 //#define debuglog(x) std::cout<< x <<std::endl;
 #define debuglog(x)
 
