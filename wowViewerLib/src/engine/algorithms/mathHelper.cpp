@@ -192,10 +192,10 @@ std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &p
     }
 
     mathfu::vec2 centerPoint = mathfu::vec2(0,0);
-    for (int i = 0; i< hullPoints.size(); i++) {
+    for (int i = 0; i< hullPointsArr.size(); i++) {
         centerPoint += hullPointsArr[i].xy();
     }
-    centerPoint = centerPoint * (1.0f / hullPoints.size());
+    centerPoint = centerPoint * (1.0f / hullPointsArr.size());
 
     std::sort(hullPointsArr.begin(),
               hullPointsArr.end(),

@@ -96,13 +96,13 @@ stack<Point> grahamScan(std::vector<Point> &points)    {
     // has larger polar angle (in counterclockwise
     // direction) than p1
 
-    std::sort(points.begin()+1, points.end(), [&p0](auto const &p1, auto const &p2) -> int {
+    std::sort(points.begin()+1, points.end(), [p0](auto const &p1, auto const &p2) -> bool {
         // Find orientation
         int o = orientation(p0, p1, p2);
         if (o == 0)
             return (distSq(p0, p2) >= distSq(p0, p1))? -1 : 1;
 
-        return (o == 2)? -1: 1;
+        return (o == 2);
     });
 
     // If two or more points make same angle with p0,

@@ -1632,7 +1632,12 @@ void M2Object::initParticleEmitters() {
             txacVal = m_m2Geom->txacMParticle[i].value;
         }
 
-        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
+        Exp2Record *exp2 = nullptr;
+        if (m_m2Geom->exp2 != nullptr) {
+            exp2 = m_m2Geom->exp2->content.getElement(i);
+        }
+
+        ParticleEmitter *emitter = new ParticleEmitter(m_api, m_m2Geom->getM2Data()->particle_emitters.getElement(i), exp2, this, m_m2Geom, txacVal);
         particleEmitters.push_back(emitter);
         if (m_m2Geom->exp2 != nullptr && emitter->getGenerator() != nullptr) {
             emitter->getGenerator()->getAniProp()->zSource = m_m2Geom->exp2->content.getElement(i)->zSource;

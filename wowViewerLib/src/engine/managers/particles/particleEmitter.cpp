@@ -20,14 +20,14 @@ HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
 
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
-static GBufferBinding staticM2ParticleBindings[5] = {
-    {+m2ParticleShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 13*4, 0 },
-    {+m2ParticleShader::Attribute::aColor, 4, GBindingType::GFLOAT, false, 13*4, 12},
-    {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 13*4, 28},
-    {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, 13*4, 36},
-    {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, 13*4, 44},
-};
-
+static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
+     {+m2ParticleShader::Attribute::aPosition,  3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, position) },
+     {+m2ParticleShader::Attribute::aColor,     4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, color)},
+     {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
+     {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
+     {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
+     {+m2ParticleShader::Attribute::aAlphaCutoff, 1, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, alphaCutoff)},
+ }};
 
 enum class ParticleVertexShader : int {
     None = -1,
@@ -89,7 +89,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, Exp2Record *exp2, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -98,6 +98,7 @@ ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, M2Obje
         randTableInited = true;
     }
 
+    m_exp2Data = exp2;
     m_data = particle;
 
     txac_particles_value.value = txac_val_raw;
@@ -857,6 +858,7 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
         particlePreRenderData.m_particleCenter,
             particlePreRenderData.m_ageDependentValues.m_timedColor,
             particlePreRenderData.m_ageDependentValues.m_alpha,
+            particlePreRenderData.m_ageDependentValues.exp2_unk3,
             texScaleVec.x, texScaleVec.y,  p.texPos);
 
 
@@ -913,6 +915,7 @@ int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particle
                       particlePreRenderData.m_particleCenter,
                       particlePreRenderData.m_ageDependentValues.m_timedColor,
                       particlePreRenderData.m_ageDependentValues.m_alpha,
+                      particlePreRenderData.m_ageDependentValues.exp2_unk3,
                       texScaleVec.x, texScaleVec.y,  p.texPos);
 
 
@@ -1066,6 +1069,12 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 
     defaultCell = 0;
     ageDependentValues.timedTailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
+    ageDependentValues.exp2_unk3 = 0.0f;
+    if (m_exp2Data != nullptr) {
+        ageDependentValues.exp2_unk3 = animatePartTrack<fixed16, float>(percentTime, &m_exp2Data->unk3, ageDependentValues.exp2_unk3);
+    }
+
+
     ageDependentValues.timedTailCell = (ageDependentValues.timedTailCell + m_randomizedTextureIndexMask) & textureIndexMask;
 
     float scaleMultiplier = 1.0f;
@@ -1090,6 +1099,7 @@ void
 ParticleEmitter::BuildQuadT3(
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+    float alphaCutoff,
     float texStartX, float texStartY, mathfu::vec2 *texPos) {
 
     static const float vxs[4] = {-1, -1, 1, 1};
@@ -1125,6 +1135,7 @@ ParticleEmitter::BuildQuadT3(
                 txs[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].x,
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].y);
 
+        record.particle[i].alphaCutoff = alphaCutoff;
     }
 
 }
