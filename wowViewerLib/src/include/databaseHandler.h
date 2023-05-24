@@ -17,8 +17,8 @@ public:
     virtual AreaRecord getWmoArea(int wmoId, int nameId, int groupId) = 0;
     virtual void getLightById(int lightId, int time, LightResult &lightResult) = 0;
     virtual void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) = 0;
-    virtual void getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) = 0;
-    virtual void getLiquidTypeData(int liquidTypeId,  std::vector<LiquidTypeData > &liquidTypeData) =0;
+    virtual void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) = 0;
+    virtual void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) = 0;
     virtual void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) = 0;
 };
 

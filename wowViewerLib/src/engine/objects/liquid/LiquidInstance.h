@@ -28,7 +28,8 @@ private:
     std::vector<HGSortableMesh> m_liquidMeshes;
     CAaBox &m_waterBBox;
 
-    uint16_t liquid_object_or_lvf;
+    uint16_t liquid_object;
+    uint32_t liquidType;
 
     void createAdtVertexData(const SMLiquidInstance &liquidInstance, const mathfu::vec3 &liquidBasePos,
                              const PointerChecker<char> &mH2OBlob, CAaBox &waterAaBB, int liquidVertexFormat,

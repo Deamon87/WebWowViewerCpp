@@ -100,31 +100,36 @@ const std::string lightDataSQL = R"===(
         )===";
 
 const std::string liquidObjectInfoSQL = R"===(
-        select ltxt.FileDataID, lm.LVF, ltxt.OrderIndex, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lo.FlowSpeed, lt.MaterialID from LiquidObject lo
-        left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lo.LiquidTypeID
-        left join LiquidType lt on lt.ID = lo.LiquidTypeID
-        left join LiquidMaterial lm on lt.MaterialID = lm.ID
-        where lo.ID = ?
-        )===";
-
-const std::string liquidObjectInfoSQL_classic = R"===(
-        select lt.Texture_0, lm.LVF, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lo.FlowSpeed, lt.MaterialID from LiquidObject lo
-        left join LiquidType lt on lt.ID = lo.LiquidTypeID
-        left join LiquidMaterial lm on lt.MaterialID = lm.ID
-        where lo.ID = ?
+    select lo.LiquidTypeID, lo.FlowDirection, lo.FlowSpeed, lo.Reflection from LiquidObject lo
+    where lo.ID = ?;
         )===";
 
 const std::string liquidTypeSQL =   R"===(
-        select ltxt.FileDataID, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF, lt.MaterialID from LiquidType lt
-        left join LiquidTypeXTexture ltxt on ltxt.LiquidTypeID = lt.ID
-        left join LiquidMaterial lm on lt.MaterialID = lm.ID
-        where lt.ID = ? order by ltxt.OrderIndex
-        )===";
-const std::string liquidTypeSQL_classic =   R"===(
-        select lt.Texture_0, lt.Color_0, lt.Color_1, lt.Flags, lt.MinimapStaticCol, lm.LVF, lt.MaterialID from LiquidType lt
-        left join LiquidMaterial lm on lt.MaterialID = lm.ID
-        where lt.ID = ?
-        )===";
+        select
+            lt.Texture_0, lt.Texture_1, lt.Texture_2, lt.Texture_3, lt.Texture_4, lt.Texture_5,
+            lt.Flags, lt.SpellID, lt.LightID,
+            lt.MaterialID,
+            lt.MinimapStaticCol,
+            lt.FrameCountTexture_0, lt.FrameCountTexture_1, lt.FrameCountTexture_2, lt.FrameCountTexture_3,
+            lt.FrameCountTexture_4, lt.FrameCountTexture_5, lt.Color_0, lt.Color_1,
+            lt.Float_0, lt.Float_1, lt.Float_2, lt.Float_3, lt.Float_4, lt.Float_5, lt.Float_6, lt.Float_7,
+            lt.Float_8, lt.Float_9, lt.Float_10, lt.Float_11, lt.Float_12, lt.Float_13, lt.Float_14,
+            lt.Float_15, lt.Float_16, lt.Float_17,
+            lt.Int_0, lt.Int_1, lt.Int_2, lt.Int_3, lt.Int_3,
+            lt.Coefficient_0, lt.Coefficient_1, lt.Coefficient_2, lt.Coefficient_3,
+            lm.Flags as MatFlag,
+            lm.LVF as MatLVF
+        from LiquidType lt
+        left join LiquidMaterial lm on lm.ID = lt.MaterialID
+        where lt.ID = ?;
+    )===";
+
+const std::string liquidTextureFileDataIdsSQL = R"===(
+    select ltxt.FileDataID, ltxt.Type
+    from LiquidTypeXTexture ltxt
+    where ltxt.LiquidTypeID = ?
+    order by ltxt.OrderIndex;
+)===";
 
 CSqliteDB::CSqliteDB(std::string dbFileName) :
     m_sqliteDatabase(dbFileName, SQLite::OPEN_READWRITE|SQLite::OPEN_CREATE),
@@ -136,12 +141,9 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
     getLightByIdStatement(m_sqliteDatabase, getLightByIdSQL),
 
     getLightData(m_sqliteDatabase, lightDataSQL),
-    getLiquidObjectInfo(m_sqliteDatabase,
-        getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidObjectInfoSQL : liquidObjectInfoSQL_classic
-    ),
-    getLiquidTypeInfo(m_sqliteDatabase,
-        getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidTypeSQL : liquidTypeSQL_classic
-    ),
+    getLiquidObjectInfo(m_sqliteDatabase,liquidObjectInfoSQL),
+    getLiquidTypeInfo(m_sqliteDatabase, liquidTypeSQL),
+    getLiquidTextureFileDataIds(m_sqliteDatabase, getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidTextureFileDataIdsSQL : "select 1 from Map;"),
     getZoneLightInfo(m_sqliteDatabase,
         "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
     ),
@@ -640,71 +642,89 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
     }
 }
 
-void CSqliteDB::getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) {
+void CSqliteDB::getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) {
     getLiquidObjectInfo.setInputs( liquidObjectId );
 
-    bool hasFileDataId = getLiquidObjectInfo.getFieldIndex("FileDataID") >= 0;
+    if (getLiquidObjectInfo.execute()) {
 
-    while (getLiquidObjectInfo.execute()) {
-        LiquidMat &lm = loData.emplace_back();
+        loData.liquidTypeId = getLiquidObjectInfo.getField("LiquidTypeID").getInt();
+        loData.flowDirection = getLiquidObjectInfo.getField("FlowDirection").getDouble();
+        loData.flowSpeed = getLiquidObjectInfo.getField("FlowSpeed").getDouble();
+        loData.reflection = getLiquidObjectInfo.getField("Reflection").getInt() > 0;
 
-        if (hasFileDataId) {
-            lm.FileDataId = getLiquidObjectInfo.getField("FileDataID").getInt();
-            lm.OrderIndex = getLiquidObjectInfo.getField("OrderIndex").getInt();
-        } else {
-            lm.texture0Pattern = getLiquidObjectInfo.getField("Texture_0").getInt();
-        }
+        getLiquidTypeData(loData.liquidTypeId, loData, textures);
 
-        lm.LVF = getLiquidObjectInfo.getField("LVF").getInt();
-        lm.flowSpeed = getLiquidObjectInfo.getField("FlowSpeed").getDouble();
-        lm.materialId = getLiquidObjectInfo.getField("MaterialID").getInt();
-        int color1 = getLiquidObjectInfo.getField("Color_0").getInt();
-        lm.color1[0] = getFloatFromInt<0>(color1);
-        lm.color1[1] = getFloatFromInt<1>(color1);
-        lm.color1[2] = getFloatFromInt<2>(color1);
-        int color2 = getLiquidObjectInfo.getField("Color_1").getInt();
-        lm.color2[0] = getFloatFromInt<0>(color2);
-        lm.color2[1] = getFloatFromInt<1>(color2);
-        lm.color2[2] = getFloatFromInt<2>(color2);
-        lm.flags = getLiquidObjectInfo.getField("Flags").getInt();
-        int minimapStaticCol = getLiquidObjectInfo.getField("MinimapStaticCol").getInt();
-        lm.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
-        lm.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
-        lm.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
+        return;
+    } else {
+        loData.liquidTypeId = fallbackliquidTypeId;
+        getLiquidTypeData(fallbackliquidTypeId, loData, textures);
+
     }
-}
-void CSqliteDB::getLiquidTypeData(int liquidTypeId, std::vector<LiquidTypeData > &liquidTypeData) {
-    getLiquidTypeInfo.setInputs( liquidTypeId );
-
-    bool hasFileDataId = getLiquidObjectInfo.getFieldIndex("FileDataID") >= 0;
-
+};
+void CSqliteDB::getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) {
+    getLiquidTypeInfo.setInputs(liquidTypeId);
     while (getLiquidTypeInfo.execute()) {
-        LiquidTypeData &ltd = liquidTypeData.emplace_back();
 
-        if (hasFileDataId) {
-            ltd.FileDataId = getLiquidTypeInfo.getField("FileDataID").getInt();
-        } else {
-            ltd.texture0Pattern = getLiquidTypeInfo.getField("Texture_0").getInt();
+        for (int i = 0; i < loData.texture.size(); i++) {
+            HashedString fieldHash = HashedString(("Texture_" + std::to_string(i)).c_str());
+            loData.texture[i] = getLiquidTypeInfo.getField(fieldHash).getString();
         }
-        ltd.materialId = getLiquidTypeInfo.getField("MaterialID").getInt();
+        loData.flags = getLiquidTypeInfo.getField("Flags").getUInt();
+        loData.spellID = getLiquidTypeInfo.getField("SpellID").getUInt();
+        loData.lightID = getLiquidTypeInfo.getField("SpellID").getUInt();
+        loData.materialID = getLiquidTypeInfo.getField("MaterialID").getUInt();
+
+        int minimapStaticCol = getLiquidTypeInfo.getField("MinimapStaticCol").getInt();
+        loData.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
+        loData.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
+        loData.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
+
+        for (int i = 0; i < loData.frameCountTexture.size(); i++) {
+            HashedString fieldHash = HashedString(("FrameCountTexture_" + std::to_string(i)).c_str());
+            loData.frameCountTexture[i] = getLiquidTypeInfo.getField(fieldHash).getInt();
+        }
 
         int color1 = getLiquidTypeInfo.getField("Color_0").getInt();
-        ltd.color1[0] = getFloatFromInt<0>(color1);
-        ltd.color1[1] = getFloatFromInt<1>(color1);
-        ltd.color1[2] = getFloatFromInt<2>(color1);
+        loData.color1[0] = getFloatFromInt<0>(color1);
+        loData.color1[1] = getFloatFromInt<1>(color1);
+        loData.color1[2] = getFloatFromInt<2>(color1);
         int color2 = getLiquidTypeInfo.getField("Color_1").getInt();
-        ltd.color2[0] = getFloatFromInt<0>(color2);
-        ltd.color2[1] = getFloatFromInt<1>(color2);
-        ltd.color2[2] = getFloatFromInt<2>(color2);
-        ltd.flags = getLiquidTypeInfo.getField("Flags").getInt();
-        int minimapStaticCol = getLiquidTypeInfo.getField("MinimapStaticCol").getInt();
-        ltd.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
-        ltd.minimapStaticCol[1] = getFloatFromInt<1>(minimapStaticCol);
-        ltd.minimapStaticCol[2] = getFloatFromInt<2>(minimapStaticCol);
+        loData.color2[0] = getFloatFromInt<0>(color2);
+        loData.color2[1] = getFloatFromInt<1>(color2);
+        loData.color2[2] = getFloatFromInt<2>(color2);
 
-        ltd.LVF = getLiquidTypeInfo.getField("LVF").getInt();
+        for (int i = 0; i < loData.m_floats.size(); i++) {
+            HashedString fieldHash = HashedString(("Float_" + std::to_string(i)).c_str());
+            loData.m_floats[i] = getLiquidTypeInfo.getField(fieldHash).getDouble();
+        }
+        for (int i = 0; i < loData.m_int.size(); i++) {
+            HashedString fieldHash = HashedString(("Int_" + std::to_string(i)).c_str());
+            loData.m_int[i] = getLiquidTypeInfo.getField(fieldHash).getInt();
+        }
+
+        for (int i = 0; i < loData.coefficient.size(); i++) {
+            HashedString fieldHash = HashedString(("Coefficient_" + std::to_string(i)).c_str());
+            loData.coefficient[i] = getLiquidTypeInfo.getField(fieldHash).getDouble();
+        }
+
+        loData.matFlag = getLiquidTypeInfo.getField("MatFlag").getUInt();
+        loData.matLVF = getLiquidTypeInfo.getField("MatLVF").getUInt();
+
+        getLiquidTexture(liquidTypeId, textures);
+        return;
     }
+};
 
+void CSqliteDB::getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData> &textures) {
+    if (!getHasLiquidTypeXTexture(m_sqliteDatabase)) return;
+
+    getLiquidTextureFileDataIds.setInputs(liquidTypeId);
+
+    while (getLiquidTextureFileDataIds.execute()) {
+        auto &ltd = textures.emplace_back();
+        ltd.fileDataId = getLiquidTextureFileDataIds.getField("FileDataID").getInt();
+        ltd.type = getLiquidTextureFileDataIds.getField("Type").getInt();
+    }
 }
 
 void CSqliteDB::getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) {

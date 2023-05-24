@@ -59,32 +59,43 @@ struct LightResult {
     bool isDefault = false;
 };
 
-struct LiquidMat {
-    int FileDataId;
-    std::string texture0Pattern;
-    int materialId;
-    int scrollSpeedX;
-    int scrollSpeedY;
-    int LVF;
-    float flowSpeed;
-    int OrderIndex;
-    float color1[3];
-    float color2[3];
-    int flags;
-    std::array<float,3> minimapStaticCol;
+struct LiquidTextureData {
+    int fileDataId;
+    int type;
 };
 
-struct LiquidTypeData {
-    int FileDataId;
-    std::string texture0Pattern;
-    int materialId;
-    int scrollSpeedX;
-    int scrollSpeedY;
-    float color1[3];
-    float color2[3];
-    int flags;
-    int LVF;
-    std::array<float, 3> minimapStaticCol;
+struct LiquidTypeAndMat {
+    int liquidTypeId;
+    std::string name;
+    std::array<std::string, 6> texture;
+    uint16_t flags;
+//    uint8_t soundBank;
+//    uint32_t SoundID;
+    uint32_t spellID;
+//    float maxDarkenDepth;
+//    float fogDarkenIntensity;
+//    float ambDarkenIntensity;
+//    float dirDarkenIntensity;
+    uint16_t lightID;
+//    float particleScale;
+//    uint8_t particleMovement;
+//    uint8_t particleTexSlots;
+    uint8_t materialID;
+    std::array<float,3> minimapStaticCol;
+    std::array<uint8_t, 6> frameCountTexture;
+    std::array<float,3> color1;
+    std::array<float,3> color2;
+    std::array<float, 18> m_floats;
+    std::array<uint32_t, 4> m_int;
+    std::array<float, 4> coefficient;
+
+    uint8_t matFlag;
+    uint8_t matLVF;
+
+    float flowSpeed = 0.0f;
+    float flowDirection = 0.0f;
+    bool fishable = false;
+    bool reflection = false;
 };
 
 struct vec2 {

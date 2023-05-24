@@ -259,28 +259,28 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = false;
 
-    std::vector<LiquidTypeData> liquidTypeData;
+
+    int waterMaterialId = 0;
+
     int basetextureFDID = 0;
     if (m_api->databaseHandler != nullptr) {
-        m_api->databaseHandler->getLiquidTypeData(static_cast<int>(this->liquid_type), liquidTypeData);
+//        m_api->databaseHandler->getLiquidTypeData(static_cast<int>(this->liquid_type), liquidTypeData);
+//        for (auto ltd: liquidTypeData) {
+//            if (ltd.FileDataId != 0) {
+//                basetextureFDID = ltd.FileDataId;
+//
+//                if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
+//                    waterMaterialTemplate.color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
+//                }
+//                waterMaterialTemplate.liquidFlags = ltd.flags;
+//                waterMaterialId = ltd.materialId;
+//                break;
+//            }
+//        }
     }
 
     waterMaterialTemplate.color = mathfu::vec3(0,0,0);
     waterMaterialTemplate.liquidFlags = 0;
-
-    int waterMaterialId = 0;
-    for (auto ltd: liquidTypeData) {
-        if (ltd.FileDataId != 0) {
-            basetextureFDID = ltd.FileDataId;
-
-            if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
-                waterMaterialTemplate.color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
-            }
-            waterMaterialTemplate.liquidFlags = ltd.flags;
-            waterMaterialId = ltd.materialId;
-            break;
-        }
-    }
 
     if (basetextureFDID != 0) {
         auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);

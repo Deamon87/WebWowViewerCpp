@@ -92,8 +92,6 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     float depthDiff      = (float) (dTime * moveSpeed * (this->MDDepthPlus - this->MDDepthMinus) + this->depthDiff);
     float verticalDiff   = (float) (dTime * moveSpeed * (this->MDVerticalPlus - this->MDVerticalMinus));
 
-
-
     this->depthDiff = 0;
 
     /* Calc look at position */

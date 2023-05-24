@@ -13,6 +13,7 @@
 
 struct RiverColorOverride {
     int liquidObjectId;
+    int liquidType;
     mathfu::vec4 color = {0,0,0,0};
 };
 

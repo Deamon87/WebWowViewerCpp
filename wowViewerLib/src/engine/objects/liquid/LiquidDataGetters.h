@@ -108,7 +108,7 @@ struct LiquidObjectSettings {
 };
 
 const constexpr LiquidObjectSettings useTexCoordLiquidObject = {
-    .generateTexCoordsFromPos = false
+    .generateTexCoordsFromPos = false,
 };
 const constexpr LiquidObjectSettings usePlanarMapLiquidObject = {
     .generateTexCoordsFromPos = true

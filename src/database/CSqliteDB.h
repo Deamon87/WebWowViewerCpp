@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_CSQLITEDB_H
 
 #include <vector>
+#include <functional>
 #include <unordered_map>
 #include <SQLiteCpp/Database.h>
 #include "../../wowViewerLib/src/include/databaseHandler.h"
@@ -22,9 +23,11 @@ public:
 
     void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) override;
     void getLightById(int lightId, int time, LightResult &lightResult) override;
-    void getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) override;
-    void getLiquidTypeData(int liquidTypeId,  std::vector<LiquidTypeData > &liquidTypeData) override;
+    void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
+    void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
+    void getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData> &textures);
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override;
+
 private:
     class StatementFieldHolder {
     public:
@@ -44,10 +47,34 @@ private:
                 return -1;
             }
         }
+        template<int N, typename T, char const* chars>
+        inline void readArray(std::array<T, N> &data, const std::function<T (SQLite::Column &)> &fieldToValue) {
+            constexpr std::string_view fieldName = std::string(chars) + std::to_string(N);
+            constexpr const char *c_fieldName = fieldName.data();
+            constexpr auto hashedString = HashedString(c_fieldName);
+
+            data[N - 1] = fieldToValue(this->getField(hashedString));
+            if constexpr (N > 0) {
+                this->readArray<N - 1>(data, fieldToValue);
+            } else {
+                this->readArrayZero<chars>(data, fieldToValue);
+            }
+        }
     private:
         SQLite::Statement m_query;
         std::unordered_map<size_t, int> fieldToIndex;
-    };
+
+
+        template<typename T, char... chars>
+        inline void readArrayZero(std::vector<T> &data, const std::function<T (SQLite::Column &)> &fieldToValue) {
+            constexpr std::string_view fieldName = std::string(chars...) + std::to_string(0);
+            constexpr const char *c_fieldName = fieldName.data();
+            constexpr auto hashedString = HashedString(c_fieldName);
+
+            data[0] = fieldToValue(this->getField(hashedString));
+        }
+
+   };
 
     SQLite::Database m_sqliteDatabase;
 
@@ -58,6 +85,7 @@ private:
     StatementFieldHolder getLightData;
     StatementFieldHolder getLiquidObjectInfo;
     StatementFieldHolder getLiquidTypeInfo;
+    StatementFieldHolder getLiquidTextureFileDataIds;
 
     StatementFieldHolder getZoneLightInfo;
     StatementFieldHolder getZoneLightPointsInfo;
@@ -140,9 +168,7 @@ private:
     blendTwoAndAdd(LightResult &lightResult, const InnerLightDataRes &lastLdRes,
                    const InnerLightDataRes &currLdRes,
                    float timeAlphaBlend, float innerAlpha) const;
+
 };
-
-
-
 
 #endif //AWEBWOWVIEWERCPP_CSQLITEDB_H
