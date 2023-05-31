@@ -37,29 +37,9 @@ void WmoGroupObject::update() {
 
 }
 
-void WmoGroupObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData)  {
-    for (auto const &waterMaterial : m_waterMaterialArray) {
-        auto waterChunk = waterMaterial->m_materialPS->getObject();
-/*
-        1,3 - Water
-        2,4 - Magma
-        5 - Mercury,
-        10 - Fog
-        12 - LeyLine
-        13 - Fel
-        14 - Swamp
-        18 - Azerithe
-*/
-
-        if ((waterMaterial->liquidFlags & 1024) > 0) {// Ocean
-            waterChunk.color = frameDependantData->closeOceanColor;
-        } else if (waterMaterial->liquidFlags == 15) { //River/Lake
-            waterChunk.color = frameDependantData->closeRiverColor;
-        } else {
-            waterChunk.color = mathfu::vec4(waterMaterial->color, 0.7);
-        }
-
-        waterMaterial->m_materialPS->save();
+void WmoGroupObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime)  {
+    for(auto &liquidInstance : m_liquidInstances) {
+        liquidInstance->updateLiquidMaterials(frameDependantData, mapCurrentTime);
     }
 }
 
@@ -244,62 +224,13 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     //Get Liquid with new method
     setLiquidType();
 
-    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer, liquid_type);
+    HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer, liquid_type, m_waterAaBB);
     if (binding == nullptr)
         return;
 
+    auto l_liquidInstance = std::make_shared<LiquidInstance>(m_api, sceneRenderer, binding, (int)liquid_type, m_geom->waterIndexSize, m_wmoApi->getPlacementBuffer(), m_waterAaBB);
 
-    WaterMaterialTemplate waterMaterialTemplate;
-
-
-    PipelineTemplate pipelineTemplate;
-    pipelineTemplate.element = DrawElementMode::TRIANGLES;
-    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-    pipelineTemplate.depthWrite = false;
-    pipelineTemplate.depthCulling = true;
-    pipelineTemplate.backFaceCulling = false;
-
-
-    int waterMaterialId = 0;
-
-    int basetextureFDID = 0;
-    if (m_api->databaseHandler != nullptr) {
-//        m_api->databaseHandler->getLiquidTypeData(static_cast<int>(this->liquid_type), liquidTypeData);
-//        for (auto ltd: liquidTypeData) {
-//            if (ltd.FileDataId != 0) {
-//                basetextureFDID = ltd.FileDataId;
-//
-//                if (ltd.color1[0] > 0 || ltd.color1[1] > 0 || ltd.color1[2] > 0) {
-//                    waterMaterialTemplate.color = mathfu::vec3(ltd.color1[0], ltd.color1[1], ltd.color1[2]);
-//                }
-//                waterMaterialTemplate.liquidFlags = ltd.flags;
-//                waterMaterialId = ltd.materialId;
-//                break;
-//            }
-//        }
-    }
-
-    waterMaterialTemplate.color = mathfu::vec3(0,0,0);
-    waterMaterialTemplate.liquidFlags = 0;
-
-    if (basetextureFDID != 0) {
-        auto htext = m_api->cacheStorage->getTextureCache()->getFileId(basetextureFDID);
-        waterMaterialTemplate.texture = m_api->hDevice->createBlpTexture(htext, true, true);
-    } else {
-        waterMaterialTemplate.texture = m_api->hDevice->getBlackTexturePixel();
-    }
-
-    auto waterMaterial = sceneRenderer->createWaterMaterial(m_wmoApi->getPlacementBuffer(),pipelineTemplate, waterMaterialTemplate);
-    waterMaterial->materialId = waterMaterialId;
-
-    gMeshTemplate meshTemplate(binding);
-    meshTemplate.meshType = MeshType::eWmoMesh;
-    meshTemplate.start = 0;
-    meshTemplate.end = m_geom->waterIndexSize;
-
-    auto hmesh = sceneRenderer->createSortableMesh(meshTemplate, waterMaterial, 99);
-    m_waterMeshArray.push_back(hmesh);
-    m_waterMaterialArray.push_back(waterMaterial);
+    m_liquidInstances.push_back(l_liquidInstance);
 }
 
 void WmoGroupObject::loadDoodads() {
@@ -821,8 +752,8 @@ void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vecto
         }
     }
 
-    for (auto &i : this->m_waterMeshArray) {
-        transparentMeshes.push_back(i);
+    for (auto const &liquidInstance : m_liquidInstances) {
+        liquidInstance->collectMeshes(transparentMeshes);
     }
 }
 

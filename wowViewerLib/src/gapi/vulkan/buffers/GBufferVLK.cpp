@@ -39,6 +39,7 @@ void GBufferVLK::createBuffer(BufferInternal &buffer) {
                                          &buffer.stagingBufferAlloc,
                                          &buffer.stagingBufferAllocInfo));
     }
+    m_cpuStagingBuffer.resize(m_bufferSize);
 
     {
         // No need to flush stagingBuffer memory because CPU_ONLY memory is always HOST_COHERENT.

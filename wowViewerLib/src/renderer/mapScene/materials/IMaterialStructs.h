@@ -45,6 +45,7 @@ struct WaterMaterialTemplate {
     HGSamplableTexture texture = nullptr;
     mathfu::vec3 color;
     int liquidFlags;
+    int liquidMaterialId;
 };
 
 class IM2ModelData {
@@ -104,8 +105,6 @@ public:
     mathfu::vec3 color;
     int liquidFlags;
     int materialId;
-    float scrollSpeedX;
-    float scrollSpeedY;
     std::shared_ptr<IBufferChunk<Water::meshWideBlockPS>> m_materialPS = nullptr;
 };
 

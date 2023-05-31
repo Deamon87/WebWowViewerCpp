@@ -71,6 +71,7 @@ private:
 
         //Virtual block for suballocations
     } currentBuffer;
+    std::vector<uint8_t> m_cpuStagingBuffer;
 
     std::mutex dataToBeUploadedMtx;
     std::vector<VkBufferCopy> dataToBeUploaded;

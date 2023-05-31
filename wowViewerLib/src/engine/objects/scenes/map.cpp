@@ -1539,7 +1539,7 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
 
     for (auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
         if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->uploadGeneratorBuffers(renderPlan->frameDependentData);
+        wmoGroupObject->uploadGeneratorBuffers(renderPlan->frameDependentData, getCurrentSceneTime());
     }
 
     {

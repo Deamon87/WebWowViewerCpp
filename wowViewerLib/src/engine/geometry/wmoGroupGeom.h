@@ -44,7 +44,7 @@ public:
 
 
     HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, mathfu::vec4 localAmbient);
-    HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type);
+    HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type, CAaBox &waterAaBB);
 
     int getFileDataId() const {return m_fileDataId;}
     const std::string &getFileName() const {return m_fileName;}

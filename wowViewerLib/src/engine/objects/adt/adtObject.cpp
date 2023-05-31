@@ -657,7 +657,7 @@ void AdtObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependant
     }
 
     for(auto &liquidInstance : m_liquidInstances) {
-        liquidInstance->updateLiquidMaterials(frameDependantData, m_mapApi);
+        liquidInstance->updateLiquidMaterials(frameDependantData, m_mapApi->getCurrentSceneTime());
     }
 }
 

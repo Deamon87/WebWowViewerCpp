@@ -124,7 +124,7 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
 
 
     for (int i = 0; i < buffers.size(); i++) {
-        auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
+        auto const &bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
         auto pbufferVlk = bufferVlk.get();
 
         //firstBinding == i <- means we can only skip the start of the list;

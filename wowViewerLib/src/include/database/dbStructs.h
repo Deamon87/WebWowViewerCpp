@@ -85,8 +85,8 @@ struct LiquidTypeAndMat {
     std::array<uint8_t, 6> frameCountTexture;
     std::array<float,3> color1;
     std::array<float,3> color2;
-    std::array<float, 18> m_floats;
-    std::array<uint32_t, 4> m_int;
+    std::array<float, 18> m_floats = {0};
+    std::array<uint32_t, 4> m_int = {0};
     std::array<float, 4> coefficient;
 
     uint8_t matFlag;

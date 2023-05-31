@@ -11,7 +11,9 @@ class WMOGroupListContainer;
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../iWmoApi.h"
 #include "../m2/m2Object.h"
+#include "../liquid/LiquidInstance.h"
 #include "../../../gapi/interface/meshes/IMesh.h"
+
 
 class WmoGroupObject {
 public:
@@ -49,7 +51,7 @@ public:
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
-    void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData);
+    void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime);
     void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                            mathfu::vec4 &cameraVec4,
                            const MathHelper::FrustumCullingData &frustumData);
@@ -75,13 +77,13 @@ private:
     CAaBox m_worldGroupBorder;
     CAaBox m_localGroupBorder;
     CAaBox m_volumeWorldGroupBorder;
+    CAaBox m_waterAaBB;
     mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGSortableMesh> m_sortableMeshArray = {};
-    std::vector<HGSortableMesh> m_waterMeshArray = {};
-    std::vector<std::shared_ptr<IWaterMaterial>> m_waterMaterialArray = {};
+    std::vector<std::shared_ptr<LiquidInstance>> m_liquidInstances = {};
 
     SMOGroupInfo *m_main_groupInfo;
 

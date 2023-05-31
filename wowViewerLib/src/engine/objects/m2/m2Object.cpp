@@ -1081,7 +1081,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_modelFragmentData->save();
     }
 
-    for (auto material: m_materialArray) {
+    for (const auto &material: m_materialArray) {
         M2MeshBufferUpdater::updateMaterialData(material,  this, m2File, skinData);
     }
 

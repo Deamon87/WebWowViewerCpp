@@ -5,42 +5,70 @@
 #include "LiquidInstance.h"
 #include "LiquidDataGetters.h"
 #include "../../algorithms/mathHelper.h"
+#include "../iMapApi.h"
 
 LiquidInstance::LiquidInstance(const HApiContainer &api,
                                const HMapSceneBufferCreate &sceneRenderer,
                                const SMLiquidInstance &liquidInstance,
-                               std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &waterPlacementChunk,
+                               const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &waterPlacementChunk,
                                const mathfu::vec3 &liquidBasePos,
                                const PointerChecker<char> &mH2OBlob, CAaBox &waterAaBB) :
-                               m_api(api), m_sceneRenderer(sceneRenderer), m_waterPlacementChunk(waterPlacementChunk),
-                               m_waterBBox(waterAaBB){
+    m_api(api), m_sceneRenderer(sceneRenderer), m_waterPlacementChunk(waterPlacementChunk),
+    m_waterBBox(waterAaBB){
 
     //Creating liquid instance from ADT data
     liquid_object = liquidInstance.liquid_object_or_lvf >= 42 ? liquidInstance.liquid_object_or_lvf : 0;
     liquidType = liquidInstance.liquid_type;
 
     //1. Get Data from DB
-    int basetextureFDID;
-    mathfu::vec3 color;
-    int liquidFlags;
-    int liquidVertexFormat;
     bool generateTexCoordsFromPos;
-    getInfoFromDatabase(liquidInstance, basetextureFDID, color, liquidFlags,
-                        liquidVertexFormat,
-                        generateTexCoordsFromPos);
+
+    getInfoFromDatabase(liquidInstance.liquid_object_or_lvf, liquidInstance.liquid_type, generateTexCoordsFromPos);
 
     //2. Parse Vertex Data from ADT
     std::vector<LiquidVertexFormat> vertexBuffer;
     std::vector<uint16_t> indexBuffer;
 
-    createAdtVertexData(liquidInstance, liquidBasePos, mH2OBlob, m_waterBBox, liquidVertexFormat,
+    createAdtVertexData(liquidInstance, liquidBasePos, mH2OBlob, m_waterBBox, m_liqMatAndType.matLVF,
                         generateTexCoordsFromPos, vertexBuffer,
                         indexBuffer);
 
     HGVertexBufferBindings vertexWaterBufferBindings = createLiquidVao(sceneRenderer, vertexBuffer, indexBuffer);
 
+    createMaterialAndMesh(sceneRenderer, indexBuffer.size(), vertexWaterBufferBindings);
+}
 
+LiquidInstance::LiquidInstance(const HApiContainer &api,
+                               const HMapSceneBufferCreate &sceneRenderer,
+                               const HGVertexBufferBindings &binding,
+                               int liquidType,
+                               int indexBufferSize,
+                               const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &waterPlacementChunk,
+                               CAaBox &waterAaBB): m_api(api),
+                                                   m_sceneRenderer(sceneRenderer), m_waterPlacementChunk(waterPlacementChunk), m_waterBBox(waterAaBB){
+    bool generateTexCoordsFromPos;
+    getInfoFromDatabase(0,
+                        liquidType,
+                        generateTexCoordsFromPos);
+
+    createMaterialAndMesh(sceneRenderer, indexBufferSize, binding);
+}
+
+void LiquidInstance::createMaterialAndMesh(const HMapSceneBufferCreate &sceneRenderer,
+                                           int indexBufferSize,
+                                           const HGVertexBufferBindings &vertexWaterBufferBindings) {
     //Create material(s)
+    int basetextureFDID = m_liquidTextureData.size() > 0 ? m_liquidTextureData[0].fileDataId : 0;
+
+    mathfu::vec3 color = mathfu::vec3(0,0,0);
+    if (m_liqMatAndType.color1[0] > 0 || m_liqMatAndType.color1[1] > 0 || m_liqMatAndType.color1[2] > 0) {
+        color = mathfu::vec3(m_liqMatAndType.color1[2], m_liqMatAndType.color1[1], m_liqMatAndType.color1[0]);
+    }
+//    minimapStaticCol = mathfu::vec3(liqMatAndType.minimapStaticCol[2], liqMatAndType.minimapStaticCol[1], liqMatAndType.minimapStaticCol[0]);
+
+    int liquidFlags = m_liqMatAndType.flags;
+    int liquidMaterialId = m_liqMatAndType.materialID;
+
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = false;
@@ -51,6 +79,9 @@ LiquidInstance::LiquidInstance(const HApiContainer &api,
     WaterMaterialTemplate waterMaterialTemplate;
     waterMaterialTemplate.color = color;
     waterMaterialTemplate.liquidFlags = liquidFlags;
+    waterMaterialTemplate.liquidMaterialId = liquidMaterialId;
+
+
 
     assert(liquidFlags >= 0 && liquidFlags <= 2063);
 
@@ -70,7 +101,7 @@ LiquidInstance::LiquidInstance(const HApiContainer &api,
         meshTemplate.meshType = MeshType::eWmoMesh;
 
         meshTemplate.start = 0;
-        meshTemplate.end = indexBuffer.size();
+        meshTemplate.end = indexBufferSize;
 
         auto mesh = sceneRenderer->createSortableMesh(meshTemplate, waterMaterial, 99);
         m_liquidMeshes.push_back(mesh);
@@ -80,47 +111,37 @@ LiquidInstance::LiquidInstance(const HApiContainer &api,
 }
 
 void
-LiquidInstance::getInfoFromDatabase(const SMLiquidInstance &liquidInstance, int &basetextureFDID, mathfu::vec3 &color,
-                                    int &liquidFlags, int &liquidVertexFormat, bool &generateTexCoordsFromPos) {
-    basetextureFDID= 0;
-    color= mathfu::vec3(0, 0, 0);
-    liquidFlags = 0;
-    liquidVertexFormat = 0;
+LiquidInstance::getInfoFromDatabase(int liquid_object_or_lvf, int liquid_type, bool &generateTexCoordsFromPos) {
+    m_liqMatAndType.color1 = {0, 0, 0};
+    m_liqMatAndType.flags = 0;
+    m_liqMatAndType.matLVF = 0;
+
     generateTexCoordsFromPos= false;
     mathfu::vec3 minimapStaticCol = {0, 0, 0};
     if (m_api->databaseHandler != nullptr) {
-        LiquidTypeAndMat liqMatAndType;
-        std::vector<LiquidTextureData> liquidTextureData;
+        if (liquid_object_or_lvf > 41) {
 
-        if (liquidInstance.liquid_object_or_lvf > 41) {
-
-            m_api->databaseHandler->getLiquidObjectData(liquidInstance.liquid_object_or_lvf, liquidInstance.liquid_type, liqMatAndType, liquidTextureData);
+            m_api->databaseHandler->getLiquidObjectData(liquid_object_or_lvf, liquid_type, m_liqMatAndType, m_liquidTextureData);
             //From Liquid::GetVertexFormat
-            if (liquidInstance.liquid_type == 2) {
-                liquidVertexFormat = 2;
+            if (liquid_type == 2) {
+                m_liqMatAndType.matLVF = 2;
             }
         } else {
-            liquidVertexFormat = liquidInstance.liquid_object_or_lvf;
-            m_api->databaseHandler->getLiquidTypeData(liquidInstance.liquid_type, liqMatAndType, liquidTextureData);
 
-            assert(liquidInstance.liquid_object_or_lvf == liqMatAndType.matLVF);
-        }
-        basetextureFDID = liquidTextureData.size() > 0 ? liquidTextureData[0].fileDataId : 0;
-        if (liqMatAndType.color1[0] > 0 || liqMatAndType.color1[1] > 0 || liqMatAndType.color1[2] > 0) {
-            color = mathfu::vec3(liqMatAndType.color1[2], liqMatAndType.color1[1], liqMatAndType.color1[0]);
-        }
-        minimapStaticCol = mathfu::vec3(liqMatAndType.minimapStaticCol[2], liqMatAndType.minimapStaticCol[1], liqMatAndType.minimapStaticCol[0]);
+            m_api->databaseHandler->getLiquidTypeData(liquid_type, m_liqMatAndType, m_liquidTextureData);
 
-        liquidFlags = liqMatAndType.flags;
+            m_liqMatAndType.matLVF = liquid_object_or_lvf;
+            //assert(liquid_object_or_lvf == liqMatAndType.matLVF);
+        }
 //        assert(liquidVertexFormat == liqMatAndType.matLVF);
 //        liquidVertexFormat = liqMatAndType.matLVF;
-        generateTexCoordsFromPos = getLiquidSettings(liquidInstance.liquid_object_or_lvf,
-                                                     liquidInstance.liquid_type,
-                                                     liqMatAndType.materialID,
-                                                     liqMatAndType.flowSpeed <=0).generateTexCoordsFromPos;
+        generateTexCoordsFromPos = getLiquidSettings(liquid_object_or_lvf,
+                                                     liquid_type,
+                                                     m_liqMatAndType.materialID,
+                                                     m_liqMatAndType.flowSpeed <=0).generateTexCoordsFromPos;
     }
 
-    assert(liquidFlags >= 0 && liquidFlags <= 2063);
+    assert(m_liqMatAndType.flags >= 0 && m_liqMatAndType.flags <= 2063);
 }
 
 HGVertexBufferBindings LiquidInstance::createLiquidVao(const HMapSceneBufferCreate &sceneRenderer,
@@ -200,7 +221,7 @@ void LiquidInstance::createAdtVertexData(const SMLiquidInstance &liquidInstance,
             }
 
             if (generateTexCoordsFromPos) {
-                uv = mathfu::vec2(pos.x * 0.6f, pos.y * 0.6f);
+                uv = mathfu::vec2(pos.x * 0.06f, pos.y * 0.06f);
             } else {
                 uv = getLiquidVertexCoords(liquidVertexFormat, vertexDataPtr, totalCount, y * (liquidInstance.width + 1) + x);
             }
@@ -249,14 +270,16 @@ void LiquidInstance::createAdtVertexData(const SMLiquidInstance &liquidInstance,
     }
 }
 
-void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDependantData, IMapApi *mapApi) {
+void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime) {
     for (auto &waterMaterial : m_liquidMaterials) {
         auto &waterChunk = waterMaterial->m_materialPS->getObject();
+        waterChunk.materialId = waterMaterial->materialId;
+
         if ((waterMaterial->liquidFlags & 1024) > 0) {// Ocean
             waterChunk.color = frameDependantData->closeOceanColor;
         } else if (waterMaterial->liquidFlags == 15) { //River/Lake
             //Query river color
-            mathfu::vec3 closeRiverColor = {0, 0, 0};
+            mathfu::vec3 closeRiverColor = frameDependantData->closeRiverColor.xyz();
             if (m_api->getConfig()->useCloseRiverColorForDB) {
 
                 mathfu::vec3 waterPos = (mathfu::vec3(m_waterBBox.max) + mathfu::vec3(m_waterBBox.min)) / 2.0f;
@@ -272,22 +295,34 @@ void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDepen
                         }
                     }
                 }
-                if (!waterColorFound) {
-                    std::vector<LightResult> lightResults = {};
-                    mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults, nullptr);
-                    for (auto &_light : lightResults) {
-                        closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
-                    }
-                    closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
-                }
             }
 
-            waterChunk.color = frameDependantData->closeRiverColor;
+            waterChunk.color = mathfu::vec4(closeRiverColor, 0.7);;
         } else {
             waterChunk.color = mathfu::vec4(waterMaterial->color, 0.7);
         }
 
-        auto time = mapApi->getCurrentSceneTime();
+        if (m_liqMatAndType.materialID == 1 || m_liqMatAndType.materialID == 3) {
+            waterChunk.textureMatrix = mathfu::mat4::Identity();
+            MathHelper::RotationZ(m_liqMatAndType.m_floats[1] * (M_PI / 180.0f)) *
+            mathfu::mat4::FromScaleVector(
+                mathfu::vec3(m_liqMatAndType.m_floats[0],m_liqMatAndType.m_floats[0],m_liqMatAndType.m_floats[0])
+            );
+        } else if (m_liqMatAndType.materialID == 2 || m_liqMatAndType.materialID == 4) {
+            waterChunk.textureMatrix =
+//                MathHelper::RotationZ(m_liqMatAndType.m_floats[7] * (M_PI / 180.0f)) *
+//                mathfu::mat4::FromScaleVector(
+//                    mathfu::vec3(m_liqMatAndType.m_floats[4],m_liqMatAndType.m_floats[4],m_liqMatAndType.m_floats[4])
+//                ) *
+                GetTexScrollMtx(mapCurrentTime, mathfu::vec2(
+                    m_liqMatAndType.m_floats[0],
+                    m_liqMatAndType.m_floats[1]
+                ))
+            ;
+
+        } else {
+            waterChunk.textureMatrix = mathfu::mat4::Identity();
+        }
 
         waterMaterial->m_materialPS->save();
     }
@@ -296,4 +331,18 @@ void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDepen
 void LiquidInstance::collectMeshes(std::vector<HGSortableMesh> &transparentMeshes) {
     //TODO: Get time and right mesh instance for animation
     transparentMeshes.push_back(m_liquidMeshes[0]);
+}
+
+mathfu::mat4 LiquidInstance::GetTexScrollMtx(int time, mathfu::vec2 scrollVec) {
+    float scrollX = 0.0f;
+    float scrollY = 0.0f;
+
+    if (!feq(scrollVec.x, 0.0)) {
+        scrollX = (time % (int)(1000.0f / scrollVec.x)) / (float)(int)(1000.0f / scrollVec.x);
+    }
+    if (!feq(scrollVec.y, 0.0)) {
+        scrollY = (time % (int)(1000.0f / scrollVec.y)) / (float) (int)(1000.0f / scrollVec.y);
+    }
+
+    return mathfu::mat4::FromTranslationVector(mathfu::vec3(scrollX, scrollY, 0.0f));
 }

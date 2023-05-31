@@ -422,9 +422,19 @@ LiquidTypes WmoGroupGeom::getLegacyWaterType(int a) {
     return static_cast<LiquidTypes>(a);
 }
 
-HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type) {
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type, CAaBox &waterAaBB) {
     if (vertexWaterBufferBindings == nullptr) {
+        waterAaBB.min = mathfu::vec3(99999,99999,99999);
+        waterAaBB.max = mathfu::vec3(-99999,-99999,-99999);
+
         if (this->m_mliq == nullptr) return nullptr;
+
+        float minX = 999999;
+        float maxX = -999999;
+        float minY = 999999;
+        float maxY = -999999;
+        float minZ = 999999;
+        float maxZ = -999999;
 
         //Make Index Buffer
         std::vector<uint16_t> iboBuffer;
@@ -471,7 +481,7 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBuffe
             for (int i = 0; i < m_mliq->xverts; i++) {
                 int p = j*m_mliq->xverts + i;
 
-                LiquidVertexFormat lvfVertex;
+                LiquidVertexFormat &lvfVertex = lVertices.emplace_back();
                 lvfVertex.pos_transp = mathfu::vec4_packed(mathfu::vec4(
                     pos.x + (MathHelper::UNITSIZE * i),
                     pos.y + (MathHelper::UNITSIZE * j),
@@ -488,9 +498,17 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBuffe
                                                 lvfVertex.pos_transp.y / (1600.0 / 3.0 / 16.0));
                 }
 
-                lVertices.push_back(lvfVertex);
+                minX = std::min(minX, lvfVertex.pos_transp.x);  maxX = std::max(maxX, lvfVertex.pos_transp.x);
+                minY = std::min(minY, lvfVertex.pos_transp.y);  maxY = std::max(maxY, lvfVertex.pos_transp.y);
+                minZ = std::min(minZ, lvfVertex.pos_transp.z);  maxZ = std::max(maxZ, lvfVertex.pos_transp.z);
             }
         }
+
+        waterAaBB = CAaBox(
+            C3Vector(mathfu::vec3(minX, minY, minZ)),
+            C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+        );
+
 
         waterIBO = sceneRenderer->createWaterIndexBuffer(iboBuffer.size() * sizeof(uint16_t));
         waterIBO->uploadData(

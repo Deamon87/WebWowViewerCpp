@@ -402,6 +402,7 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderForwardVLK::createWaterMaterial(co
 
     material->color = waterMaterialTemplate.color;
     material->liquidFlags = waterMaterialTemplate.liquidFlags;
+    material->materialId = waterMaterialTemplate.liquidMaterialId;
 
     return material;
 }
@@ -592,28 +593,29 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
                 for (auto const &mesh: *skyTransparentMeshes) {
-                    std::string debugMess =
-                        "Drawing mesh "
-                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
-                        " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
-                        " sortDistance = " + std::to_string(mesh->getSortDistance()) +
-                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
-
-                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
+//                    std::string debugMess =
+//                        "Drawing mesh "
+//                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
+//                        " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
+//                        " sortDistance = " + std::to_string(mesh->getSortDistance()) +
+//                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
+//
+//                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
                     
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
-                if (skyMesh0x4) MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
+                if (skyMesh0x4)
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
             }
             for (auto const &mesh: *transparentMeshes) {
-                std::string debugMess =
-                    "Drawing mesh "
-                    " meshType = " + std::to_string((int)mesh->getMeshType()) +
-                    " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
-                    " sortDistance = " + std::to_string(mesh->getSortDistance()) +
-                    " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
-
-                auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
+//                std::string debugMess =
+//                    "Drawing mesh "
+//                    " meshType = " + std::to_string((int)mesh->getMeshType()) +
+//                    " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
+//                    " sortDistance = " + std::to_string(mesh->getSortDistance()) +
+//                    " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
+//
+//                auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
                 MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
             }

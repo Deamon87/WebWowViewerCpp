@@ -72,11 +72,15 @@ void main() {
     vec4 aPositionVec4 = vec4(aPosition, 1);
     mat4 boneTransformMat =  mat4(0.0);
 
-//
-    boneTransformMat += (boneWeights.x ) * uBoneMatrixes[bones.x];
-    boneTransformMat += (boneWeights.y ) * uBoneMatrixes[bones.y];
-    boneTransformMat += (boneWeights.z ) * uBoneMatrixes[bones.z];
-    boneTransformMat += (boneWeights.w ) * uBoneMatrixes[bones.w];
+    if (dot(boneWeights, boneWeights) > 0) {
+        //
+        boneTransformMat += (boneWeights.x) * uBoneMatrixes[bones.x];
+        boneTransformMat += (boneWeights.y) * uBoneMatrixes[bones.y];
+        boneTransformMat += (boneWeights.z) * uBoneMatrixes[bones.z];
+        boneTransformMat += (boneWeights.w) * uBoneMatrixes[bones.w];
+    } else {
+        boneTransformMat = mat4(1.0);
+    }
 
     mat4 placementMat;
     placementMat = uPlacementMat;

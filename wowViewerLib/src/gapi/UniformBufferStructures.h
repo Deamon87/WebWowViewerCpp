@@ -187,7 +187,12 @@ namespace ADT {
 
 namespace Water {
     struct meshWideBlockPS {
+        int32_t materialId;
+        int32_t unused1;
+        int32_t unused2;
+        int32_t unused3;
         mathfu::vec4_packed color;
+        mathfu::mat4 textureMatrix;
     };
 }
 
