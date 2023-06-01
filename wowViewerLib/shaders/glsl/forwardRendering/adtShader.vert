@@ -77,7 +77,7 @@ void main() {
     vColor = aColor;
     vVertexLighting = aVertexLighting.rgb;
     mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
-    vec3 normal = normalize(viewMatForNormal * vec4(aNormal, 0.0)).xyz;
+    vec3 normal = normalize((viewMatForNormal * vec4(aNormal, 0.0)).xyz);
 
     vNormal = normal;
 

@@ -122,7 +122,7 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             auto const &descSets = material->getDescriptorSets();
             for (int i = 0; i < descSets.size(); i++) {
                 if (descSets[i] != nullptr) {
-                    swapChainCmd.bindDescriptorSet(i, descSets[i]);
+                    swapChainCmd.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
                 }
             }
 

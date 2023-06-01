@@ -118,6 +118,8 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<s
     blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
     if (isVulkan) {
         blockPSVS.uPMatrix = vulkanMatrixFix*renderingMatrices->perspectiveMat;
+    } else {
+        blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
     }
     blockPSVS.uInteriorSunDir = renderingMatrices->interiorDirectLightDir;
     blockPSVS.uViewUp = renderingMatrices->viewUp;

@@ -39,7 +39,6 @@ void GBufferVLK::createBuffer(BufferInternal &buffer) {
                                          &buffer.stagingBufferAlloc,
                                          &buffer.stagingBufferAllocInfo));
     }
-    m_cpuStagingBuffer.resize(m_bufferSize);
 
     {
         // No need to flush stagingBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
@@ -106,7 +105,7 @@ VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, 
     return result;
 }
 
-void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc) {
+void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc) {
     //Destruction of this virtualBlock happens only in deallocation queue.
     //So it's safe to assume that even if the buffer's handle been changed by the time VirtualFree happens, 
     //the virtualBlock was still not been free'd
@@ -114,15 +113,17 @@ void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocat
 
     if (alloc.metadata != OffsetAllocator::Allocation::NO_SPACE) {
         auto l_alloc = alloc;
+        auto l_uiaAlloc = uiaAlloc;
         auto l_weak = weak_from_this();
         m_device->addDeallocationRecord(
-            [l_alloc, l_weak]() {
+            [l_alloc, l_uiaAlloc, l_weak]() {
                 auto shared = l_weak.lock();
                 if (shared == nullptr) return;
 
                 std::unique_lock<std::mutex> lock(shared->m_mutex, std::defer_lock);
                 lock.lock();
                 shared->offsetAllocator.free(l_alloc);
+                shared->uiaAllocator.free(l_uiaAlloc);
                 lock.unlock();
             });
     }
@@ -145,10 +146,6 @@ void GBufferVLK::subUploadData(void *data, int offset, int length) {
     memcpy((uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+offset, data, length);
 }
 
-std::shared_ptr<IBuffer> GBufferVLK::mutate(int newSize) {
-    resize(newSize);
-    return shared_from_this();
-}
 void GBufferVLK::resize(int newLength) {
     std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
     lock.lock();
@@ -223,10 +220,23 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
 
     if(res == VK_SUCCESS)
     {
+        OffsetAllocator::Allocation uiaAlloc;
+        {
+            std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
+            uiaAlloc = uiaAllocator.allocate(1);
+            if (uiaAlloc.offset == OffsetAllocator::Allocation::NO_SPACE) {
+                this->uiaAllocator.growSize(1000);
+                uploadIntervalActivatable.resize(uploadIntervalActivatable.size() + 1000);
+                uiaAlloc = this->uiaAllocator.allocate(1);
+            }
+        }
+        uploadIntervalActivatable[uiaAlloc.offset] = {alloc.offset, static_cast<size_t>(sizeInBytes), false};
+
         auto subBuffer = std::make_shared<GSubBufferVLK>(
                                                           shared_from_this(),
                                                           alloc,
                                                           sizeInBytes, fakeSize,
+                                                          uiaAlloc,
                                                          (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+alloc.offset);
 
         std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
@@ -244,9 +254,12 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     }
 }
 
-void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, const OffsetAllocator::Allocation &alloc, int subBuffersize) {
+void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it,
+                                 const OffsetAllocator::Allocation &alloc,
+                                 const OffsetAllocator::Allocation &uiaAlloc,
+                                 int subBuffersize) {
     if (subBuffersize > 0) {
-        deallocateSubBuffer(currentBuffer, alloc);
+        deallocateSubBuffer(currentBuffer, alloc, uiaAlloc);
     }
     
     currentSubBuffers.erase(it);
@@ -265,24 +278,21 @@ void GBufferVLK::save(int length) {
     uploadFromStaging(0, 0, length);
 }
 
-void GBufferVLK::addSubBufferForUpload(const std::weak_ptr<GSubBufferVLK> &buffer) {
-    std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
-
-    subBuffersForUpload.emplace_back(buffer);
+void GBufferVLK::addIntervalIndexForUpload(int index) {
+    this->uploadIntervalActivatable[index].requiresUpdate = true;
 }
 
 MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
     {
         std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
 
-        struct uploadInterval {size_t start; size_t size;};
         std::vector<uploadInterval> intervals;
-        for (const auto &wsubBuffer : subBuffersForUpload) {
-            auto subBuffer = wsubBuffer.lock();
-            if (subBuffer == nullptr) continue;
+        for (auto &interval : uploadIntervalActivatable) {
+            if (!interval.requiresUpdate) continue;
+            interval.requiresUpdate = false;
 
             auto &newInterval = intervals.emplace_back();
-            newInterval = {.start = subBuffer->getOffset(), .size = subBuffer->getSize()};
+            newInterval = interval;
         }
 
         if (lastSubmittedBufferSize != m_bufferSize) {
@@ -333,9 +343,6 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
             vbCopyRegion.dstOffset = currInterval.start;
             vbCopyRegion.size = currInterval.size;
         }
-        int prevSize = subBuffersForUpload.size();
-        subBuffersForUpload.clear();
-        subBuffersForUpload.reserve(prevSize);
     }
 
     return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx, true);
@@ -348,15 +355,17 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
 GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
                                          OffsetAllocator::Allocation alloc,
                                          int size, int fakeSize,
+                                         OffsetAllocator::Allocation uiaAlloc,
                                          uint8_t *dataPointer) : m_parentBuffer(parent) {
     m_alloc = alloc;
+    m_uiaAlloc = uiaAlloc;
     m_size = size;
     m_fakeSize = fakeSize > 0 ? fakeSize : m_size;
     m_dataPointer = dataPointer;
 }
 
 GBufferVLK::GSubBufferVLK::~GSubBufferVLK() {
-    m_parentBuffer->deleteSubBuffer(m_iterator, m_alloc, m_size);
+    m_parentBuffer->deleteSubBuffer(m_iterator, m_alloc, m_uiaAlloc,  m_size);
 }
 
 void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {
@@ -366,7 +375,7 @@ void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {
 
     memcpy(m_dataPointer, data, length);
 
-    m_parentBuffer->addSubBufferForUpload(weak_from_this());
+    m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
 //    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
 }
 
@@ -377,7 +386,7 @@ void GBufferVLK::GSubBufferVLK::subUploadData(void *data, int offset, int length
 
     memcpy(m_dataPointer + offset, data, length);
 
-    m_parentBuffer->addSubBufferForUpload(weak_from_this());
+    m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
 }
 
 void *GBufferVLK::GSubBufferVLK::getPointer() {
@@ -392,13 +401,10 @@ void GBufferVLK::GSubBufferVLK::save(int length) {
     }
     if (m_size <= 0) return;
 
-    m_parentBuffer->addSubBufferForUpload(weak_from_this());
+    m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
 //    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
 }
 
 size_t GBufferVLK::GSubBufferVLK::getSize() {
     return m_fakeSize;
 }
-std::shared_ptr<IBuffer> GBufferVLK::GSubBufferVLK::mutate(int newSize) {
-    return m_parentBuffer->getSubBuffer(newSize);
-};

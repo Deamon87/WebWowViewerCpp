@@ -82,7 +82,7 @@ void main() {
     vec4 cameraPoint = viewModelMat * vec4(pos, 1.0);
 
     mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
-    vec3 normal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
+    vec3 normal = normalize((viewModelMatForNormal * vec4(aNormal, 0.0)).xyz);
 
     vNormal = (scene.uLookAtMat * uPlacementMat * vec4(aNormal, 0)).xyz;
     vPosition = pos;

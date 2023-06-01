@@ -19,13 +19,15 @@ public:
             m_realSize = sizeof(T);
 
         subBuffer = mainBuffer->getSubBuffer(m_realSize,sizeof(T));
+        pSubBuffer = subBuffer.get();
+
     }
 
     T &getObject() override {
-        return *(T*)subBuffer->getPointer();
+        return *(T*)pSubBuffer->getPointer();
     };
     void save() override {
-        subBuffer->save(m_realSize);
+        pSubBuffer->save(m_realSize);
     };
 
     const std::shared_ptr<IBufferVLK> getSubBuffer() {
@@ -33,7 +35,9 @@ public:
     }
 private:
     int m_realSize = 0;
+    void *ptr = nullptr;
     std::shared_ptr<IBufferVLK> subBuffer = nullptr;
+    IBufferVLK *pSubBuffer  = nullptr;
 };
 
 namespace BufferChunkHelperVLK {

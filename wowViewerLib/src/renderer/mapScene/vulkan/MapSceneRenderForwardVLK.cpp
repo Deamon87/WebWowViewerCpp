@@ -478,7 +478,7 @@ inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGM
     auto const &descSets = material->getDescriptorSets();
     for (int i = 0; i < descSets.size(); i++) {
         if (descSets[i] != nullptr) {
-            cmdBuf.bindDescriptorSet(i, descSets[i]);
+            cmdBuf.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
         }
     }
 

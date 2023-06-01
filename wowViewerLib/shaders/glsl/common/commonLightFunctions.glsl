@@ -58,7 +58,7 @@ vec3 calcLight(
         vec3 normalizedN = normalize(vNormal);
 
         if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0) {
-            float nDotL = clamp(dot(normalizedN, -(sceneParams.extLight.uExteriorDirectColorDir.xyz)), 0.0, 1.0);
+            float nDotL = clamp(dot(normalizedN, normalize(-(sceneParams.extLight.uExteriorDirectColorDir.xyz))), 0.0, 1.0);
             float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUp.xyz));
 
             vec3 adjAmbient =       (sceneParams.extLight.uExteriorAmbientColor.rgb          + precomputedLight);

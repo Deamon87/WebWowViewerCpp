@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_GBUFFERVLK_H
 
 #include <memory>
+#include <atomic>
 
 class GDeviceVLK;
 typedef std::shared_ptr<GDeviceVLK> HGDeviceVLK;
@@ -31,7 +32,7 @@ public:
     void uploadData(void *, int length) override;
     void subUploadData(void *, int offset, int length) override;
     void uploadFromStaging(int offset, int destOffset, int length);
-    void addSubBufferForUpload(const std::weak_ptr<GSubBufferVLK> &buffer);
+    void addIntervalIndexForUpload(int index);
 
     void *getPointer() override { return currentBuffer.stagingBufferAllocInfo.pMappedData;};
     //Submits data edited with Pointer
@@ -52,8 +53,12 @@ public:
 
     MutexLockedVector<VkBufferCopy> getSubmitRecords();
 
-    std::shared_ptr<IBuffer> mutate(int newSize) override;
     void resize(int newLength);
+
+    struct uploadInterval {size_t start; size_t size;};
+    struct uploadIntervalActivatable : uploadInterval {
+        bool requiresUpdate = false;
+    };
 private:
     HGDeviceVLK m_device;
 
@@ -71,7 +76,6 @@ private:
 
         //Virtual block for suballocations
     } currentBuffer;
-    std::vector<uint8_t> m_cpuStagingBuffer;
 
     std::mutex dataToBeUploadedMtx;
     std::vector<VkBufferCopy> dataToBeUploaded;
@@ -89,6 +93,7 @@ private:
     public:
         explicit GSubBufferVLK(HGBufferVLK parent, OffsetAllocator::Allocation alloc,
                                int size, int fakeSize,
+                               OffsetAllocator::Allocation uiaAlloc,
                                uint8_t * dataPointer);
         ~GSubBufferVLK() override;
         void uploadData(void *data, int length) override;
@@ -96,8 +101,6 @@ private:
         void *getPointer() override;
         void save(int length) override;
         size_t getSize() override;
-
-        std::shared_ptr<IBuffer> mutate(int newSize) override;
 
         VkBuffer getGPUBuffer() override {
             return m_parentBuffer->getGPUBuffer();
@@ -113,6 +116,7 @@ private:
         HGBufferVLK m_parentBuffer;
 
         OffsetAllocator::Allocation m_alloc;
+        OffsetAllocator::Allocation m_uiaAlloc;
         int m_size;
         int m_fakeSize;
         uint8_t * m_dataPointer = nullptr;
@@ -120,19 +124,26 @@ private:
     };
 
 
+
     std::list<std::weak_ptr<GBufferVLK::GSubBufferVLK>> currentSubBuffers;
-    std::vector<std::weak_ptr<GBufferVLK::GSubBufferVLK>> subBuffersForUpload;
+    std::vector<uploadInterval> uploadIntervals;
+
+    OffsetAllocator::Allocator uiaAllocator = OffsetAllocator::Allocator(0);
+    std::vector<uploadIntervalActivatable> uploadIntervalActivatable;
 
 //    uploadCache = {};
 public:
     std::shared_ptr<GSubBufferVLK> getSubBuffer(int sizeInBytes, int fakeSize = -1);
-    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it, const OffsetAllocator::Allocation &alloc, int subBuffersize);
+    void deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator &it,
+                         const OffsetAllocator::Allocation &alloc,
+                         const OffsetAllocator::Allocation &uiaAlloc,
+                         int subBuffersize);
 private:
     void createBuffer(BufferInternal &buffer);
     void destroyBuffer(BufferInternal &buffer);
 
     VkResult allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc);
-    void deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc);
+    void deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc);
 };
 
 

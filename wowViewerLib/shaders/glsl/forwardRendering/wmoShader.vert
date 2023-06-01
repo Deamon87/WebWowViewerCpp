@@ -56,7 +56,7 @@ void main() {
 
     gl_Position = scene.uPMatrix * cameraPoint;
     vPosition = vec4(cameraPoint.xyz, 0);
-    vNormal = normalize(viewModelMatForNormal * vec4(aNormal, 0.0)).xyz;
+    vNormal = normalize((viewModelMatForNormal * vec4(aNormal, 0.0)).xyz);
 
     vColor = aColor.bgra;
     vColor2 = aColor2;

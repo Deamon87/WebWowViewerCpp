@@ -1081,10 +1081,6 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_modelFragmentData->save();
     }
 
-    for (const auto &material: m_materialArray) {
-        M2MeshBufferUpdater::updateMaterialData(material,  this, m2File, skinData);
-    }
-
     //Manually update vertices for dynamics
     updateDynamicMeshes();
 
@@ -1471,7 +1467,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         //Create materials
         for (int batchIndex = 0; batchIndex < batches.size; batchIndex++) {
             auto m2Batch = batches[batchIndex];
-            EGxBlendEnum mainBlendMode;
+            EGxBlendEnum mainBlendMode = EGxBlendEnum::GxBlend_Opaque;
             const EGxBlendEnum forcedTranspBlend = EGxBlendEnum::GxBlend_Alpha;
 
             this->m_materialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, mainBlendMode, false);

@@ -75,7 +75,7 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     );
 }
 
-void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet) {
+void CmdBufRecorder::bindDescriptorSet(VkPipelineBindPoint bindPoint, uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet) {
     //TODO: bindpoints: VK_PIPELINE_BIND_POINT_GRAPHICS and others
     //Which leads to three separate states for:
     // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
@@ -83,13 +83,17 @@ void CmdBufRecorder::bindDescriptorSet(uint32_t bindIndex, const std::shared_ptr
 
 //    if (m_currentDescriptorSet[bindIndex] == descriptorSet) return;
 
-    auto vkDescSet = descriptorSet->getDescSet();
-    constexpr uint32_t vkDescCnt = 1;
+    auto pDescriptorSet = descriptorSet.get();
 
-    vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                            m_currentPipeline->getLayout(), bindIndex, vkDescCnt, &vkDescSet, 0, nullptr);
+    if (m_currentDescriptorSet[bindIndex] != pDescriptorSet) {
+        auto vkDescSet = pDescriptorSet->getDescSet();
+        constexpr uint32_t vkDescCnt = 1;
 
-    m_currentDescriptorSet[bindIndex] = descriptorSet;
+        vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, bindPoint,
+                                m_currentPipeline->getLayout(), bindIndex, vkDescCnt, &vkDescSet, 0, nullptr);
+
+        m_currentDescriptorSet[bindIndex] = pDescriptorSet;
+    }
 }
 
 CommandBufferDebugLabel CmdBufRecorder::beginDebugLabel(const std::string &labelName, const std::array<float, 4> &colors) {

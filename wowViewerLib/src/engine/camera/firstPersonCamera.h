@@ -19,6 +19,7 @@ private:
     mathfu::vec3 lookAt = {0, 0, 0};
     mathfu::vec3 upVector = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
+    mathfu::mat4 invTranspViewMat = {};
 
 
     float MDDepthPlus = 0;
