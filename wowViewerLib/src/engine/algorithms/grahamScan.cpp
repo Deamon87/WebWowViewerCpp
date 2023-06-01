@@ -101,10 +101,11 @@ stack<Point> grahamScan(std::vector<Point> &points)    {
     std::sort(points.begin()+1, points.end(), [&p0](auto const &p1, auto const &p2) -> bool {
         // Find orientation
         int o = orientation(p0, p1, p2);
-        if (o == 0)
-            return feq(distSq(p0, p2),distSq(p0, p1))
+        if (o == 0) {
+            return feq(distSq(p0, p2), distSq(p0, p1))
                 ? &p1 > &p2 // this is fallback to stabilize the sorting function
                 : distSq(p0, p2) >= distSq(p0, p1);
+        }
 
         return (o == 2);
     });

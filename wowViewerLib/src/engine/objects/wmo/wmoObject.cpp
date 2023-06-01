@@ -4,6 +4,7 @@
 
 #include "wmoObject.h"
 #include "../../algorithms/mathHelper.h"
+#include "../../algorithms/grahamScan.h"
 #include "../../persistance/header/commonFileStructs.h"
 #include "./../../../gapi/interface/IDevice.h"
 #include <algorithm>
@@ -998,7 +999,7 @@ void WmoObject::traverseGroupWmo(
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
-        if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.INTERIOR > 0) {
+        if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.INTERIOR > 0 || !m_api->getConfig()->usePortalCulling) {
             if (skyBox != nullptr) {
                 traverseTempData.ivPerWMOGroup[groupId]->m2List.addToDraw(skyBox);
             }
@@ -1106,10 +1107,12 @@ void WmoObject::traverseGroupWmo(
                 portalVerticesClip[i] /= portalVerticesClip[i].w;
             }
 
+
+
             for (int i = 0; i < portalVerticesVec.size(); i++) {
                 //Project Portal vertex to near plane in clip space
                 portalVerticesClipNearPlane[i] = portalVerticesClip[i];
-                portalVerticesClipNearPlane[i].z = 0;
+                portalVerticesClipNearPlane[i].z = -1;
                 //Transform back to local space
                 portalVerticesClipNearPlane[i] = traverseTempData.MVPMatInv * portalVerticesClipNearPlane[i];
                 portalVerticesClipNearPlane[i] /= portalVerticesClipNearPlane[i].w;
@@ -1118,7 +1121,7 @@ void WmoObject::traverseGroupWmo(
             //This condition works, bcuz earlier it's verified we are inside the portal using the
             //dot product AND `relation->side`
             bool flip = (relation->side > 0);
-
+            
             int vertexCnt = portalVerticesVec.size();
             for (int i = 0; i < vertexCnt; ++i) {
                 int i2 = (i + 1) % vertexCnt;
@@ -1159,7 +1162,7 @@ void WmoObject::traverseGroupWmo(
 
         {
             worldSpaceFrustum.points = MathHelper::getIntersectionPointsFromPlanes(worldSpaceFrustum.planes);
-            worldSpaceFrustum.hullLines = MathHelper::getHullLines(worldSpaceFrustum.points);
+            //worldSpaceFrustum.hullLines = MathHelper::getHullLines(worldSpaceFrustum.points);
         }
 
         std::vector<mathfu::vec3> worldSpacePortalVertices;
