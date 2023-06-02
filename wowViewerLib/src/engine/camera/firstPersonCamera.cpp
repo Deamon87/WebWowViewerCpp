@@ -57,6 +57,16 @@ void FirstPersonCamera::startMovingDown(){
 void FirstPersonCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
+void FirstPersonCamera::stopAllMovement() {
+    MDDepthPlus = 0;
+    MDDepthMinus = 0;
+    MDHorizontalPlus = 0;
+    MDHorizontalMinus = 0;
+
+    MDVerticalPlus = 0;
+    MDVerticalMinus = 0;
+}
+
 
 void FirstPersonCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
@@ -150,7 +160,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     this->interiorDirectLightDir = interiorSunDir;
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    this->upVector = (invTranspViewMat * upVector).Normalized().xyz();
+    this->upVector = ((invTranspViewMat * upVector).xyz()).Normalized();
     updatedAtLeastOnce = true;
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {

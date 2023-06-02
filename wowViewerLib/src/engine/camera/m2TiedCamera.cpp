@@ -27,8 +27,6 @@ HCameraMatrices m2TiedCamera::getCameraMatrices(float fov, float canvasAspect, f
     lookAtMat4 = rotateMat * lookAtMat4;
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat4);
-    mathfu::vec3 upVectorTranformed = (lookAtRotation * upVector.xyz());
 
     farPlane = m_lastCameraResult.far_clip;
     nearPlane = m_lastCameraResult.near_clip;
@@ -44,8 +42,13 @@ HCameraMatrices m2TiedCamera::getCameraMatrices(float fov, float canvasAspect, f
         farPlane);
     cameraMatrices->lookAtMat = lookAtMat4;
 
-    lastCameraPos = lookAtMat4.Inverse() * mathfu::vec4(0,0,0,1);
+    auto invViewMat = lookAtMat4.Inverse();
+    auto invTraspViewMat = invViewMat.Transpose();
+    lastCameraPos = invViewMat * mathfu::vec4(0,0,0,1);
     cameraMatrices->cameraPos = lastCameraPos;
+
+    mathfu::vec3 upVectorTranformed = (invTraspViewMat * upVector).xyz().Normalized();
+
     cameraMatrices->viewUp = mathfu::vec4(upVectorTranformed, 0);
     cameraMatrices->interiorDirectLightDir = mathfu::vec4(0,0,0,0);
 

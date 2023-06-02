@@ -107,7 +107,6 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (stopKeyboard) return;
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto controllable = apiContainer->camera;
     if (apiContainer->getConfig()->doubleCameraDebug &&
@@ -117,6 +116,7 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
     }
 
     if ( action == GLFW_PRESS) {
+        if (stopKeyboard) return;
         switch (key) {
             case 'W' :
                 controllable->startMovingForward();
@@ -159,18 +159,6 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
                 break;
             case 'E':
                 controllable->stopMovingDown();
-                break;
-            case 'H':
-//                scene->switchCameras();
-//                scene->setScene(0, "trash", 0);
-//                scene->setAnimationId(159);
-                break;
-            case 'J':
-//                scene->setAnimationId(0);
-//                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
-                break;
-            case 'K':
-//                testConf->setRenderPortals(!testConf->getRenderPortals());
                 break;
             default:
                 break;
@@ -480,6 +468,10 @@ int main(){
         frontendUI->newFrame();
         stopMouse = frontendUI->getStopMouse();
         stopKeyboard = frontendUI->getStopKeyboard();
+//        if (stopMouse || stopKeyboard) {
+//            apiContainer->camera->stopAllMovement();
+//        }
+
         glfwPollEvents();
 
         // Render scene

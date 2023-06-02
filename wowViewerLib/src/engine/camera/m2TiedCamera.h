@@ -35,6 +35,7 @@ public:
     void stopMovingUp() override {};
     void startMovingDown() override {};
     void stopMovingDown() override {};
+    void stopAllMovement() override {};
 
     void addForwardDiff(float val) override {};
 

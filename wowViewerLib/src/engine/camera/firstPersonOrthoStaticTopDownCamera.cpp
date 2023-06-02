@@ -21,6 +21,7 @@ void FirstPersonOrthoStaticTopDownCamera::startMovingUp(){}
 void FirstPersonOrthoStaticTopDownCamera::stopMovingUp(){}
 void FirstPersonOrthoStaticTopDownCamera::startMovingDown(){}
 void FirstPersonOrthoStaticTopDownCamera::stopMovingDown(){}
+void FirstPersonOrthoStaticTopDownCamera::stopAllMovement(){}
 
 void FirstPersonOrthoStaticTopDownCamera::tick (animTime_t timeDelta) {
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -41,7 +42,7 @@ void FirstPersonOrthoStaticTopDownCamera::tick (animTime_t timeDelta) {
     this->interiorDirectLightDir = interiorSunDir;
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    this->upVector = (invTranspViewMat * upVector.xyz()).Normalized();
+    this->upVector = (invTranspViewMat * upVector).xyz().Normalized();
 }
 void FirstPersonOrthoStaticTopDownCamera::setCameraPos (float x, float y, float z) {
     //Reset camera

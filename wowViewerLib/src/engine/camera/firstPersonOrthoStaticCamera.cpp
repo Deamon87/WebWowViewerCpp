@@ -20,6 +20,7 @@ void FirstPersonOrthoStaticCamera::startMovingUp(){}
 void FirstPersonOrthoStaticCamera::stopMovingUp(){}
 void FirstPersonOrthoStaticCamera::startMovingDown(){}
 void FirstPersonOrthoStaticCamera::stopMovingDown(){}
+void FirstPersonOrthoStaticCamera::stopAllMovement(){}
 
 void FirstPersonOrthoStaticCamera::tick (animTime_t timeDelta) {
 //    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
@@ -39,7 +40,7 @@ void FirstPersonOrthoStaticCamera::tick (animTime_t timeDelta) {
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
 
-    this->upVector = (invTranspViewMat * upVector.xyz()).Normalized();
+    this->upVector = (invTranspViewMat * upVector).xyz().Normalized();
 }
 void FirstPersonOrthoStaticCamera::setCameraPos (float x, float y, float z) {
     //Reset camera

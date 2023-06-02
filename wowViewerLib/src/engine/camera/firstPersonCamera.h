@@ -58,6 +58,7 @@ public:
     void stopMovingUp() override;
     void startMovingDown() override;
     void stopMovingDown() override;
+    void stopAllMovement() override;
 
     void zoomInFromMouseScroll(float val) override;
     void zoomInFromTouch(float val) override;
