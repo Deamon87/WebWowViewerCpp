@@ -18,6 +18,7 @@ public:
     virtual void stopMovingUp() = 0;
     virtual void startMovingDown() = 0;
     virtual void stopMovingDown() = 0;
+    virtual void stopAllMovement() = 0;
 
     virtual void addForwardDiff(float val) = 0;
 
