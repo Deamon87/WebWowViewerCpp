@@ -3,9 +3,6 @@
 //
 
 #include "imageButton2.h"
-#ifndef IMGUI_DEFINE_MATH_OPERATORS
-#define IMGUI_DEFINE_MATH_OPERATORS
-#endif
 #include <imgui_internal.h>
 
 bool ImGui::ImageButton2(ImTextureID user_texture_id, char *idText, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)

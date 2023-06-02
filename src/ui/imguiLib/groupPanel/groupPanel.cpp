@@ -3,8 +3,8 @@
 //
 
 #include "groupPanel.h"
-#define IMGUI_DEFINE_MATH_OPERATORS
-#include "imgui_internal.h"
+
+#include <imgui_internal.h>
 
 static ImVector<ImRect> s_GroupPanelLabelStack;
 
@@ -21,8 +21,9 @@ void ImGui::BeginGroupPanel(const char* name, const ImVec2& size)
     ImGui::BeginGroup();
 
     ImVec2 effectiveSize = size;
+    auto contentRegionAvailable = ImGui::GetContentRegionAvail();
     if (size.x < 0.0f)
-        effectiveSize.x = ImGui::GetContentRegionAvailWidth();
+        effectiveSize.x = contentRegionAvailable.x;
     else
         effectiveSize.x = size.x;
     ImGui::Dummy(ImVec2(effectiveSize.x, 0.0f));

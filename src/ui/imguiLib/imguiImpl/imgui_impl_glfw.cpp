@@ -678,6 +678,10 @@ static void ImGui_ImplGlfw_UpdateMouseData()
             {
                 double mouse_x, mouse_y;
                 glfwGetCursorPos(window, &mouse_x, &mouse_y);
+                auto uiScale = ImGui::GetIO().uiScale;
+                mouse_x /= uiScale;
+                mouse_y /= uiScale;
+
                 bd->LastValidMousePos = ImVec2((float)mouse_x, (float)mouse_y);
                 io.AddMousePosEvent((float)mouse_x, (float)mouse_y);
             }

@@ -183,6 +183,7 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imgui_demo.cpp
 		src/ui/imguiLib/imgui_draw.cpp
 		src/ui/imguiLib/imgui_widgets.cpp
+		src/ui/imguiLib/imgui_tables.cpp
 		src/ui/imguiLib/imguiImpl/imgui_impl_glfw.cpp
 		src/ui/FrontendUI.cpp src/ui/FrontendUI.h
 		src/database/CSqliteDB.cpp src/database/CSqliteDB.h

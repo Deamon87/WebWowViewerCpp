@@ -348,7 +348,7 @@ void FrontendUI::showMapSelectionDialog() {
             //Left panel
             {
                 //Filter
-                if (ImGui::InputText("Filter: ", filterText.data(), filterText.size(), ImGuiInputTextFlags_AlwaysInsertMode)) {
+                if (ImGui::InputText("Filter: ", filterText.data(), filterText.size(), ImGuiInputTextFlags_AlwaysOverwrite)) {
                     refilterIsNeeded = true;
                 }
                 //The table

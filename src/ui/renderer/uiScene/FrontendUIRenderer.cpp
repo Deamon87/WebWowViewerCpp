@@ -79,13 +79,13 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
             else
             {
                 // Project scissor/clipping rectangles into framebuffer space
-                ImVec4 clip_rect;
-                clip_rect.x = (pcmd->ClipRect.x - clip_off.x) * clip_scale.x;
-                clip_rect.y = (pcmd->ClipRect.y - clip_off.y) * clip_scale.y;
-                clip_rect.z = (pcmd->ClipRect.z - clip_off.x) * clip_scale.x;
-                clip_rect.w = (pcmd->ClipRect.w - clip_off.y) * clip_scale.y;
+                ImVec2 clip_min((pcmd->ClipRect.x - clip_off.x) * clip_scale.x, (pcmd->ClipRect.y - clip_off.y) * clip_scale.y);
+                ImVec2 clip_max((pcmd->ClipRect.z - clip_off.x) * clip_scale.x, (pcmd->ClipRect.w - clip_off.y) * clip_scale.y);
 
-                if (clip_rect.x < fb_width && clip_rect.y < fb_height && clip_rect.z >= 0.0f && clip_rect.w >= 0.0f)
+                if (clip_max.x <= clip_min.x || clip_max.y <= clip_min.y)
+                    continue;
+
+                if (clip_min.x < fb_width && clip_min.y < fb_height && clip_max.x >= 0.0f && clip_max.y >= 0.0f)
                 {
                     // Apply scissor/clipping rectangle
                     // Create mesh and add it to collected meshes
@@ -93,14 +93,14 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                     meshTemplate.scissorEnabled = true;
                     //Vulkan has different clip offset compared to OGL
                     if (!m_device->getIsVulkanAxisSystem()) {
-                        meshTemplate.scissorOffset = {static_cast<int>(clip_rect.x * uiScale), static_cast<int>((fb_height - clip_rect.w)* uiScale)};
-                        meshTemplate.scissorSize = {static_cast<uint32_t>((clip_rect.z - clip_rect.x) * uiScale), static_cast<uint32_t>((clip_rect.w - clip_rect.y)* uiScale)};
+                        meshTemplate.scissorOffset = {static_cast<int>(clip_min.x * uiScale), static_cast<int>((fb_height - clip_max.y)* uiScale)};
+                        meshTemplate.scissorSize = {static_cast<uint32_t>((clip_max.x - clip_min.x) * uiScale), static_cast<uint32_t>((clip_max.y - clip_min.y)* uiScale)};
                     } else {
-                        meshTemplate.scissorOffset = {static_cast<int>(clip_rect.x * uiScale), static_cast<int>((clip_rect.y) * uiScale)};
-                        meshTemplate.scissorSize = {static_cast<uint32_t>((clip_rect.z - clip_rect.x)* uiScale), static_cast<uint32_t>((clip_rect.w - clip_rect.y)* uiScale)};
+                        meshTemplate.scissorOffset = {static_cast<int>(clip_min.x * uiScale), static_cast<int>((clip_min.y) * uiScale)};
+                        meshTemplate.scissorSize = {static_cast<uint32_t>((clip_max.x - clip_min.x)* uiScale), static_cast<uint32_t>((clip_max.y - clip_min.y)* uiScale)};
                     }
 
-                    meshTemplate.start = pcmd->IdxOffset * 2;
+                    meshTemplate.start = pcmd->IdxOffset * sizeof(ImDrawIdx);
                     meshTemplate.end = pcmd->ElemCount;
 
                     auto material = pcmd->TextureId;

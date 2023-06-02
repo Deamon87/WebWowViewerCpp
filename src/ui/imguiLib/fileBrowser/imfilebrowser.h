@@ -434,10 +434,10 @@ inline void ImGui::FileBrowser::Display()
 
     // browse files in a child window
 
-    float reserveHeight = GetItemsLineHeightWithSpacing();
+    float reserveHeight = GetFrameHeightWithSpacing();
     ghc::filesystem::path newPwd; bool setNewPwd = false;
     if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory) && (flags_ & ImGuiFileBrowserFlags_EnterNewFilename))
-        reserveHeight += GetItemsLineHeightWithSpacing();
+        reserveHeight += GetFrameHeightWithSpacing();
     {
         BeginChild("ch", ImVec2(0, -reserveHeight), true,
             (flags_ & ImGuiFileBrowserFlags_NoModal) ? ImGuiWindowFlags_AlwaysHorizontalScrollbar : 0);
@@ -520,9 +520,8 @@ inline void ImGui::FileBrowser::Display()
 
     SameLine();
 
-    int escIdx = GetIO().KeyMap[ImGuiKey_Escape];
     if(Button("cancel") || closeFlag_ ||
-        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) && IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && escIdx >= 0 && IsKeyPressed(escIdx)))
+        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) && IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && IsKeyPressed(ImGuiKey::ImGuiKey_Escape)))
         CloseCurrentPopup();
 
     if (m_cascOpenMode) {
