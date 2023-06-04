@@ -113,7 +113,9 @@ private:
 
     std::array<char, 128> filterText = {0};
     bool refilterIsNeeded = false;
-    void filterMapList(std::string text);
+    bool resortIsNeeded = false;
+    void filterMapList(const std::string &text);
+    void fillMapListStrings();
 
     ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory, true);
     ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);

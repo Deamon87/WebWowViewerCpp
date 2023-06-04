@@ -587,8 +587,10 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             for (auto const &mesh: *opaqueMeshes) {
                 MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
             }
-            if (renderSky) {
-                if (skyMesh) MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh, CmdBufRecorder::ViewportType::vp_skyBox);
+            if (true) {
+                if (renderSky && skyMesh)
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh, CmdBufRecorder::ViewportType::vp_skyBox);
+
                 for (auto const &mesh: *skyOpaqueMeshes) {
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
@@ -604,7 +606,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                     
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
-                if (skyMesh0x4)
+                if (renderSky && skyMesh0x4)
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
             }
             for (auto const &mesh: *transparentMeshes) {

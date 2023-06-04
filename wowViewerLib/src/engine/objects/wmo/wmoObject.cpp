@@ -1000,8 +1000,8 @@ void WmoObject::traverseGroupWmo(
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
         if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.INTERIOR > 0 || !m_api->getConfig()->usePortalCulling) {
-            if (skyBox != nullptr) {
-                traverseTempData.ivPerWMOGroup[groupId]->m2List.addToDraw(skyBox);
+            if (traversingStartedFromInterior && skyBox != nullptr) {
+                traverseTempData.viewsHolder.getSkybox()->m2List.addToDraw(skyBox);
             }
         } else {
             //TODO: WHAT ????

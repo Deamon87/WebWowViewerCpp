@@ -161,7 +161,6 @@ void InteriorView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
 HExteriorView FrameViewsHolder::getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData) {
     if (exteriorView == nullptr) {
         exteriorView = std::make_shared<ExteriorView>();
-        skyBoxView = std::make_shared<ExteriorView>();
         exteriorView->frustumData = frustumData;
     }
 
@@ -182,5 +181,8 @@ HExteriorView FrameViewsHolder::getExterior() {
 }
 
 HExteriorView FrameViewsHolder::getSkybox() {
+    if (!skyBoxView) {
+        skyBoxView = std::make_shared<ExteriorView>();
+    }
     return skyBoxView;
 }
