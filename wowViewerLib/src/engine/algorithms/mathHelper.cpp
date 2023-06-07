@@ -604,12 +604,15 @@ mathfu::vec3 MathHelper::getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu
     float d20 = mathfu::vec3::DotProduct(v2, v0);
     float d21 = mathfu::vec3::DotProduct(v2, v1);
     float denom = d00 * d11 - d01 * d01;
+//    float denom = v0.x * v1.y - v1.x * v0.y;
     if ((denom < 0.0001f) && (denom > -0.0001f)) {
         return mathfu::vec3(-1, -1, -1);
     };
 
     float v = (d11 * d20 - d01 * d21) / denom;
     float w = (d00 * d21 - d01 * d20) / denom;
+//    float v = (v2.x * v1.y - v1.x * v2.y) / denom;
+//    float w = (v0.x * v2.y - v2.x * v0.y) / denom;
     float u = 1.0f - v - w;
     return mathfu::vec3(u, v, w);
 }

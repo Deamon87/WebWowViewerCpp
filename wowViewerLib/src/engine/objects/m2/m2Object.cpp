@@ -457,8 +457,6 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
 }
 
 M2Object::~M2Object() {
-    delete m_animationManager;
-
     for (auto obj: ribbonEmitters) {
         delete obj;
     }
@@ -1289,29 +1287,30 @@ void M2Object::createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer)
     std::shared_ptr<IBufferChunk<bbModelWideBlockVS>> bbBlockVS = nullptr;
 
     auto l_m2Geom = m_m2Geom;
-    bbBlockVS->setUpdateHandler([this, l_m2Geom](auto &data, const HFrameDependantData &frameDepedantData){
-        M2Data *m2Data = l_m2Geom->getM2Data();
-        CAaBox &aaBox = m2Data->bounding_box;
 
-        mathfu::vec3 center = mathfu::vec3(
-            (aaBox.min.x + aaBox.max.x) / 2,
-            (aaBox.min.y + aaBox.max.y) / 2,
-            (aaBox.min.z + aaBox.max.z) / 2
-        );
+    //Bunding box material */
+    /*
+    M2Data *m2Data = l_m2Geom->getM2Data();
+    CAaBox &aaBox = m2Data->bounding_box;
 
-        mathfu::vec3 scale = mathfu::vec3(
-            aaBox.max.x - center[0],
-            aaBox.max.y - center[1],
-            aaBox.max.z - center[2]
-        );
+    mathfu::vec3 center = mathfu::vec3(
+        (aaBox.min.x + aaBox.max.x) / 2,
+        (aaBox.min.y + aaBox.max.y) / 2,
+        (aaBox.min.z + aaBox.max.z) / 2
+    );
 
-        bbModelWideBlockVS &blockVS = data;
-        blockVS.uPlacementMat = m_placementMatrix;
-        blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
-        blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
-        blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
-    });
+    mathfu::vec3 scale = mathfu::vec3(
+        aaBox.max.x - center[0],
+        aaBox.max.y - center[1],
+        aaBox.max.z - center[2]
+    );
 
+    bbModelWideBlockVS &blockVS = data;
+    blockVS.uPlacementMat = m_placementMatrix;
+    blockVS.uBBScale = mathfu::vec4_packed(mathfu::vec4(scale, 0.0));
+    blockVS.uBBCenter = mathfu::vec4_packed(mathfu::vec4(center, 0.0));
+    blockVS.uColor = mathfu::vec4_packed(mathfu::vec4(0.1f, 0.7f, 0.1f, 0.1f));
+    */
     //TODO:
 //    boundingBoxMesh = sceneRenderer->createSortableMesh(meshTemplate);
 }
@@ -1531,20 +1530,23 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
             dynamicMeshes.push_back(dynamicMeshData);
         }
+
+        {
+            M2Data* m2File = this->m_m2Geom->getM2Data();
+            M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+            for (auto& material : m_materialArray) {
+                M2MeshBufferUpdater::updateMaterialData(material, this, m2File, skinData);
+            }
+            for (auto& material : m_forcedTranspMaterialArray) {
+                M2MeshBufferUpdater::updateMaterialData(material, this, m2File, skinData);
+            }
+        }
+
     } else {
         m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
-    {
-        M2Data *m2File = this->m_m2Geom->getM2Data();
-        M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
-        for (auto &material: m_materialArray) {
-            M2MeshBufferUpdater::updateMaterialData(material,  this, m2File, skinData);
-        }
-        for (auto &material: m_forcedTranspMaterialArray) {
-            M2MeshBufferUpdater::updateMaterialData(material,  this, m2File, skinData);
-        }
-    }
+    
 }
 
 EGxBlendEnum M2Object::getBlendMode(int batchIndex) {
@@ -1661,7 +1663,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
 
 void M2Object::initAnimationManager() {
 
-    this->m_animationManager = new AnimationManager(m_api, m_boneMasterData, m_m2Geom->exp2 != nullptr);
+    this->m_animationManager = std::make_unique<AnimationManager>(m_api, m_boneMasterData, m_m2Geom->exp2 != nullptr);
 }
 
 void M2Object::initBoneAnimMatrices() {

@@ -23,10 +23,10 @@ void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer) {
     texturesPerMCNK = std::vector<AnimTextures>(m_adtFile->mcnkRead+1);
     animationTranslationPerMCNK = std::vector<AnimTrans>(m_adtFile->mcnkRead+1);
 
-    createVBO(sceneRenderer);
     loadAlphaTextures();
+
+    createVBO(sceneRenderer);
     createMeshes(sceneRenderer);
-//    createIndexVBO();
 
     calcBoundingBoxes();
 
@@ -268,15 +268,7 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
 
     /* 2. Strips */
 
-    if (m_adtFile->strips.size() > 0) {
-        stripIBO = sceneRenderer->createADTIndexBuffer(m_adtFile->strips.size() * sizeof(int16_t));
-        stripIBO->uploadData(m_adtFile->strips.data(), m_adtFile->strips.size() * sizeof(int16_t));
-
-        adtVertexBindings = sceneRenderer->createADTVAO(combinedVbo, stripIBO);
-    } else {
-        stripIBO = nullptr;
-        adtVertexBindings = nullptr;
-    }
+    createIBOAndBinding(sceneRenderer);
 
     //Sometimes mvli can be zero, while there is still data in floatDataBlob
     if (m_adtFileLod!= nullptr && m_adtFileLod->getStatus()==FileStatus::FSLoaded && m_adtFileLod->floatDataBlob_len > 0 && m_adtFileLod->mvli_len > 0) {
@@ -305,13 +297,6 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
         GVertexBufferBinding vertexBinding;
         vertexBinding.vertexBuffer = combinedVbo;
 
-        //TODO:
-//		GBufferBinding adtLodBufferBinding = { +adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 4, 0 };
-//		vertexBinding.bindings.push_back(adtLodBufferBinding);
-//        GBufferBinding adtLodBufferBinding2 = {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 4, static_cast<uint32_t>(indexVBOLodOffset * sizeof(float))};
-//        vertexBinding.bindings.push_back(adtLodBufferBinding2);
-
-//        lodVertexBindings->addVertexBufferBinding(vertexBinding, );
         lodVertexBindings->save();
     }
 }
@@ -366,6 +351,13 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     pipelineTemplate.backFaceCulling = true;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
+    auto const &stripOffsets = !m_api->getConfig()->ignoreADTHoles ?
+                         m_adtFile->stripOffsets :
+                         m_adtFile->stripOffsetsNoHoles;
+
+    adtMeshes = {};
+    adtMaterials = {};
+
     if (adtVertexBindings != nullptr) {
         for (int i = 0; i < 256; i++) {
             //Cant be used only in Wotlk
@@ -381,8 +373,8 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             gMeshTemplate aTemplate(adtVertexBindings);
             aTemplate.meshType = MeshType::eAdtMesh;
 
-            aTemplate.start = m_adtFile->stripOffsets[i] * 2;
-            aTemplate.end = m_adtFile->stripOffsets[i + 1] - m_adtFile->stripOffsets[i];
+            aTemplate.start = stripOffsets[i] * 2;
+            aTemplate.end = stripOffsets[i + 1] - stripOffsets[i];
 
             HGMesh hgMesh = sceneRenderer->createMesh(aTemplate, adtMaterial);
             adtMeshes[i] = hgMesh;
@@ -570,6 +562,11 @@ void AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
             this->loadingFinished(sceneRenderer);
             m_loaded = true;
         }
+    }
+
+    if (m_loaded && m_holesIgnored != m_api->getConfig()->ignoreADTHoles) {
+        createIBOAndBinding(sceneRenderer);
+        createMeshes(sceneRenderer);
     }
 }
 void AdtObject::update(animTime_t deltaTime ) {
@@ -1175,4 +1172,23 @@ int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {
     }
 
     return 0;
+}
+
+void AdtObject::createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer) {
+    auto const &strips = !m_api->getConfig()->ignoreADTHoles ?
+         m_adtFile->strips :
+         m_adtFile->stripsNoHoles;
+
+
+    if (strips.size() > 0) {
+        stripIBO = sceneRenderer->createADTIndexBuffer(strips.size() * sizeof(int16_t));
+        stripIBO->uploadData(strips.data(), strips.size() * sizeof(int16_t));
+
+        adtVertexBindings = sceneRenderer->createADTVAO(combinedVbo, stripIBO);
+    } else {
+        stripIBO = nullptr;
+        adtVertexBindings = nullptr;
+    }
+
+    m_holesIgnored = m_api->getConfig()->ignoreADTHoles;
 }

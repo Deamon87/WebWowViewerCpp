@@ -57,7 +57,7 @@ void GVertexBufferDynamicVLK::destroyBuffer() {
 
 static int vbo_uploaded = 0;
 
-void GVertexBufferDynamicVLK::uploadData(void *data, int length) {
+void GVertexBufferDynamicVLK::uploadData(const void *data, int length) {
 }
 
 void *GVertexBufferDynamicVLK::getPointer() {

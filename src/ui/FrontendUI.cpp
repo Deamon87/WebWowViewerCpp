@@ -513,6 +513,17 @@ void FrontendUI::showAdtSelectionMinimap() {
     if (minimapZoom < 0.001)
         minimapZoom = 0.001;
 
+//    TODO: create a custom component with internal dependency to not pollute this file
+//    ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
+//    if (ImGui::IsItemHovered())
+//    {
+//        float wheel = ImGui::GetIO().MouseWheel;
+//        if (!feq(wheel, 0.0f))
+//        {
+//            wheel;
+//        }
+//    }
+
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
@@ -1177,6 +1188,11 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->disableFog = disableFog;
         }
 
+        bool renderADT = m_api->getConfig()->renderAdt;
+        if (ImGui::Checkbox("Render ADT", &renderADT)) {
+            m_api->getConfig()->renderAdt = renderADT;
+        }
+
         bool renderM2 = m_api->getConfig()->renderM2;
         if (ImGui::Checkbox("Render M2", &renderM2)) {
             m_api->getConfig()->renderM2 = renderM2;
@@ -1191,6 +1207,12 @@ void FrontendUI::showSettingsDialog() {
         if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
             m_api->getConfig()->drawM2BB = drawM2BB;
         }
+
+        bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
+        if (ImGui::Checkbox("Ignore ADT holes for rendering", &ignoreADTHoles)) {
+            m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
+        }
+
 
         bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
         if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {

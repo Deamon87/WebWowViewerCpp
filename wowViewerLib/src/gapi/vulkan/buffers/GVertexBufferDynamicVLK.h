@@ -22,7 +22,7 @@ private:
     void createBuffer();
     void destroyBuffer();
 public:
-    void uploadData(void *, int length) override;
+    void uploadData(const void *, int length) override;
 
 private:
     GDeviceVLK &m_device;

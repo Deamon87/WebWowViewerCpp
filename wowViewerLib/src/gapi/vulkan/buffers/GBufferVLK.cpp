@@ -129,7 +129,7 @@ void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocat
     }
 }
 
-void GBufferVLK::uploadData(void *data, int length) {
+void GBufferVLK::uploadData(const void *data, int length) {
     if (length > m_bufferSize) {
         resize(length);
     }
@@ -137,13 +137,6 @@ void GBufferVLK::uploadData(void *data, int length) {
     memcpy(currentBuffer.stagingBufferAllocInfo.pMappedData, data, length);
 
     uploadFromStaging(0, 0, length);
-}
-
-void GBufferVLK::subUploadData(void *data, int offset, int length) {
-    if (offset+length > m_bufferSize) {
-        resize(offset+length);
-    }
-    memcpy((uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+offset, data, length);
 }
 
 void GBufferVLK::resize(int newLength) {
@@ -368,7 +361,7 @@ GBufferVLK::GSubBufferVLK::~GSubBufferVLK() {
     m_parentBuffer->deleteSubBuffer(m_iterator, m_alloc, m_uiaAlloc,  m_size);
 }
 
-void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {
+void GBufferVLK::GSubBufferVLK::uploadData(const void *data, int length) {
     if (length > m_size) {
         std::cerr << "invalid dataSize" << std::endl;
     }
@@ -377,16 +370,6 @@ void GBufferVLK::GSubBufferVLK::uploadData(void *data, int length) {
 
     m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
 //    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
-}
-
-void GBufferVLK::GSubBufferVLK::subUploadData(void *data, int offset, int length) {
-    if (offset + length > m_size) {
-        std::cerr << "invalid dataSize" << std::endl;
-    }
-
-    memcpy(m_dataPointer + offset, data, length);
-
-    m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
 }
 
 void *GBufferVLK::GSubBufferVLK::getPointer() {

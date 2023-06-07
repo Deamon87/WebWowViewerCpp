@@ -13,24 +13,26 @@
 #include "../algorithms/mathHelper_culling.h"
 #include "../../gapi/interface/materials/IMaterial.h"
 
-void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
-    {
+void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
+    if (renderADT) {
         auto inserter = std::back_inserter(opaqueMeshes);
-        std::copy(this->m_opaqueMeshes.begin(), this->m_opaqueMeshes.end(), inserter);
+        std::copy(this->m_adtOpaqueMeshes.begin(), this->m_adtOpaqueMeshes.end(), inserter);
     }
 
-    {
+    if (renderAdtLiquid) {
         auto inserter = std::back_inserter(transparentMeshes);
-        std::copy(this->m_transparentMeshes.begin(), this->m_transparentMeshes.end(), inserter);
+        std::copy(this->m_adtLiquidTransparentMeshes.begin(), this->m_adtLiquidTransparentMeshes.end(), inserter);
     }
 
-    GeneralView::collectMeshes(opaqueMeshes, transparentMeshes);
+    GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshes, transparentMeshes);
 }
 
 
-void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
-    for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
-        wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
+void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) {
+    if (renderWMO) {
+        for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
+            wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
+        }
     }
 
     for (auto const &mesh : portalPointsFrame.m_meshes) {

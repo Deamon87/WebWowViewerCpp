@@ -46,8 +46,11 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     // Put everything into one array and sort
     interiorViewCollectMeshCounter.beginMeasurement();
     bool renderPortals = m_config->renderPortals;
+    bool renderADT = m_config->renderAdt;
+    bool renderWMO = m_config->renderWMO;
+
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
-        view->collectMeshes(opaqueMeshes, transparentMeshes);
+        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes);
     }
     interiorViewCollectMeshCounter.endMeasurement();
 
@@ -55,7 +58,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
-            exteriorView->collectMeshes(opaqueMeshes, transparentMeshes);
+            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes);
         }
     }
     exteriorViewCollectMeshCounter.endMeasurement();

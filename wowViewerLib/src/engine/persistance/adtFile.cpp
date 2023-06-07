@@ -598,15 +598,17 @@ void AdtFile::createTriangleStrip() {
     strips = std::vector<int16_t>();
     stripOffsets = std::vector<int>();
 
+    stripsNoHoles = std::vector<int16_t>();
+    stripOffsetsNoHoles = std::vector<int>();
+
     for (int i = 0; i <= mcnkRead; i++) {
         SMChunk &mcnkObj = mapTile[i];
         int holeLow = mcnkObj.holes_low_res;
         uint64_t holeHigh = mcnkObj.postMop.holes_high_res;
 
         stripOffsets.push_back(strips.size());
+        stripOffsetsNoHoles.push_back(stripsNoHoles.size());
 
-        int j = 0;
-        bool first = true;
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
                 bool isHole = (!mcnkObj.flags.high_res_holes) ?
@@ -615,21 +617,14 @@ void AdtFile::createTriangleStrip() {
                 if (!isHole) {
                     //There are 8 squares in width and 8 square in height.
                     //Each square is 4 triangles
-//
-//
-//                    if (!first) {
-//                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
-//                    }
-//                    first = false;
-//                    for (int k = 0; k < stripLenght; k++) {
-//                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
-//                    }
                     addSquare(i * vertCountPerMCNK, x, y, strips);
                 }
+                addSquare(i * vertCountPerMCNK, x, y, stripsNoHoles);
             }
         }
     }
     stripOffsets.push_back(strips.size());
+    stripOffsetsNoHoles.push_back(stripsNoHoles.size());
 }
 
 void AdtFile::process(HFileContent adtFile, const std::string &fileName) {

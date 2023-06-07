@@ -120,9 +120,6 @@ public:
     PointerChecker<char> mH2OBlob = mH2OBlob_len;
     int mH2OBlob_len = 0;
 
-
-
-
     int mcnkRead = -1;
     std::array<SMChunk, 16*16> mapTile;
     std::array<mcnkStruct_t, 16*16> mcnkStructs;
@@ -130,6 +127,9 @@ public:
 
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;
+
+    std::vector<int16_t> stripsNoHoles;
+    std::vector<int> stripOffsetsNoHoles;
 private:
     bool m_mainAdt = false;
 

@@ -49,7 +49,7 @@ public:
         std::vector<HGSortableMesh> m_meshes = {};
     } portalPointsFrame;
 
-    virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
+    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
     void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer);
@@ -66,11 +66,11 @@ public:
 class ExteriorView : public GeneralView {
 public:
 	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
-    std::vector<HGMesh> m_opaqueMeshes = {};
-    std::vector<HGSortableMesh> m_transparentMeshes = {};
+    std::vector<HGMesh> m_adtOpaqueMeshes = {};
+    std::vector<HGSortableMesh> m_adtLiquidTransparentMeshes = {};
 
 public:
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) override;
+    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes) override;
 };
 
 class FrameViewsHolder {

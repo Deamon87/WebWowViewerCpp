@@ -46,7 +46,9 @@ public:
     bool renderPortals = false;
     bool renderPortalsIgnoreDepth = false;
     bool usePortalCulling = true;
-    bool useInstancing = false;
+
+    bool ignoreADTHoles = false;
+
 
     bool disableFog = false;
     bool renderSkyDom = true;

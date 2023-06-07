@@ -124,7 +124,7 @@ void main() {
     //Spec part
     float specBlend = final.a;
     vec3 halfVec = -(normalize((scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition))));
-    vec3 lSpecular = ((scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, vNormal)), 20.0)));
+    vec3 lSpecular = ((scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, normalize(vNormal))), 20.0)));
     vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult.x;
     finalColor.rgb += specTerm;
 

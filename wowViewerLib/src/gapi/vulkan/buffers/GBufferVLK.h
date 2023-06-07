@@ -29,8 +29,7 @@ public:
     ~GBufferVLK() override;
 
     //Doesn't make actual upload, only queues it.
-    void uploadData(void *, int length) override;
-    void subUploadData(void *, int offset, int length) override;
+    void uploadData(const void *, int length) override;
     void uploadFromStaging(int offset, int destOffset, int length);
     void addIntervalIndexForUpload(int index);
 
@@ -96,8 +95,7 @@ private:
                                OffsetAllocator::Allocation uiaAlloc,
                                uint8_t * dataPointer);
         ~GSubBufferVLK() override;
-        void uploadData(void *data, int length) override;
-        void subUploadData(void *data, int offset, int length) override;
+        void uploadData(const void *data, int length) override;
         void *getPointer() override;
         void save(int length) override;
         size_t getSize() override;

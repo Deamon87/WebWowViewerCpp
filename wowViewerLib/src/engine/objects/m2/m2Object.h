@@ -141,7 +141,7 @@ private:
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, IDevice::MAX_FRAMES_IN_FLIGHT>> dynamicMeshes;
-    AnimationManager *m_animationManager;
+    std::unique_ptr<AnimationManager> m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
     bool m_boolSkybox = false;

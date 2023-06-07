@@ -414,7 +414,7 @@ void WmoGroupObject::queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vecto
         if (rightSide) {
             WmoGroupObject::queryBspTree(bbox, nodes[nodeId].children[1], nodes, bspLeafIdList);
         }
-    }
+    } 
 }
 
 bool WmoGroupObject::getTopAndBottomTriangleFromBsp(

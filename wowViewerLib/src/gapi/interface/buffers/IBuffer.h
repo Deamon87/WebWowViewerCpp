@@ -10,8 +10,7 @@
 class IBuffer {
 public:
     virtual ~IBuffer() = default;
-    virtual void uploadData(void *, int length) = 0;
-    virtual void subUploadData(void *, int offset, int length) = 0;
+    virtual void uploadData(const void *, int length) = 0;
     virtual void *getPointer() = 0;
     virtual void save(int length) = 0;
 

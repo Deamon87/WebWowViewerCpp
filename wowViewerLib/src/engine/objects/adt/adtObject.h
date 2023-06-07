@@ -91,7 +91,10 @@ private:
     };
 
     void loadingFinished(const HMapSceneBufferCreate &sceneRenderer);
+
     void createVBO(const HMapSceneBufferCreate &sceneRenderer);
+    void createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer);
+
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
     void loadAlphaTextures();
 
@@ -120,6 +123,7 @@ private:
     HGVertexBuffer combinedVbo ;
     HGIndexBuffer stripIBO ;
     HGVertexBufferBindings adtVertexBindings;
+    bool m_holesIgnored = false;
 
     HGVertexBuffer heightVboLod;
     HGIndexBuffer stripVBOLod;
@@ -194,6 +198,8 @@ private:
                     WMOListContainer &wmoCandidates);
 
     void fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMaterialTemplate &adtMaterialTemplate);
+
+
 };
 
 
