@@ -14,6 +14,7 @@ set(LINK_EGL 1)
 option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
+set(LINK_TRACY 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 
@@ -124,6 +125,20 @@ set(mathfu_build_tests OFF CACHE BOOL "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu EXCLUDE_FROM_ALL)
+
+# ---------------------
+# Tracy integration
+# ---------------------
+
+if (LINK_TRACY)
+    option( TRACY_ENABLE "" ON)
+    option( TRACY_ON_DEMAND "" ON)
+    add_subdirectory (${PROJECT_SOURCE_DIR}/3rdparty/tracy)
+
+    add_definitions(-DTRACY_ENABLE)
+    set(TRACY_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/tracy/public/tracy")
+endif()
+
 
 message(CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME})
 string(TOUPPER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWERCASE)
@@ -628,6 +643,11 @@ endif()
 
 if (LINK_VULKAN)
     target_compile_definitions(WoWViewerLib PUBLIC ${VOLK_STATIC_DEFINES})
+endif()
+
+if (LINK_TRACY)
+    target_include_directories(WoWViewerLib PUBLIC ${TRACY_INCLUDE_DIR})
+    target_link_libraries (WoWViewerLib Tracy::TracyClient )
 endif()
 
 foreach(X IN LISTS My_Vectorize_Compile_Options)

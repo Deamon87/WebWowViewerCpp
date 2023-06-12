@@ -7,6 +7,7 @@
 #include "../../algorithms/grahamScan.h"
 #include "../../persistance/header/commonFileStructs.h"
 #include "./../../../gapi/interface/IDevice.h"
+#include "Tracy.hpp"
 #include <algorithm>
 
 std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)
@@ -804,6 +805,7 @@ bool WmoObject::startTraversingWMOGroup(
     bool traversingFromInterior,
     FrameViewsHolder &viewsHolder
 ) {
+    ZoneScoped;
     if (!m_loaded)
         return false;
 

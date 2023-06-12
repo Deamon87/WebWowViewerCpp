@@ -209,6 +209,8 @@ private:
     bool toLoadCanHaveDuplicates = false;
     bool toDrawmCanHaveDuplicates = false;
 
+    bool m_locked = false;
+
     void inline removeDuplicates(std::vector<std::shared_ptr<WmoObject>> &array) {
         if (array.size() < 1000) {
             std::sort(array.begin(), array.end());
@@ -228,6 +230,10 @@ public:
     }
 
     void addCand(const std::shared_ptr<WmoObject> &toDraw) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toDraw->isLoaded()) {
             wmoCandidates.push_back(toDraw);
             candCanHaveDuplicates = true;
@@ -238,9 +244,24 @@ public:
     }
 
     void addToLoad(const std::shared_ptr<WmoObject> &toLoad) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (!toLoad->isLoaded()) {
             wmoToLoad.push_back(toLoad);
             toLoadCanHaveDuplicates = true;
+        }
+    }
+
+    void addToDrawn(const std::shared_ptr<WmoObject> &toDrawn) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        if (toDrawn->isLoaded()) {
+            wmoToDrawn.push_back(toDrawn);
+            toDrawmCanHaveDuplicates = true;
         }
     }
 
@@ -262,12 +283,6 @@ public:
         return wmoToLoad;
     }
 
-    void addToDrawn(const std::shared_ptr<WmoObject> &toDrawn) {
-        if (toDrawn->isLoaded()) {
-            wmoToDrawn.push_back(toDrawn);
-            toDrawmCanHaveDuplicates = true;
-        }
-    }
 
     const std::vector<std::shared_ptr<WmoObject>> &getToDrawn() {
         if (this->toDrawmCanHaveDuplicates) {
@@ -276,6 +291,14 @@ public:
         }
 
         return wmoToDrawn;
+    }
+
+    void lock() {
+        getToDrawn();
+        getToLoad();
+        getCandidates();
+
+        m_locked = true;
     }
 
 };

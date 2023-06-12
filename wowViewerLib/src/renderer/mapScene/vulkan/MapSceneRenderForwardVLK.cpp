@@ -11,6 +11,8 @@
 #include "../../../gapi/vulkan/meshes/GM2MeshVLK.h"
 #include "materials/IMaterialInstance.h"
 #include "../../../gapi/vulkan/meshes/GSortableMeshVLK.h"
+#include "Tracy.hpp"
+#include <future>
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
@@ -503,6 +505,8 @@ static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
 std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                              const std::shared_ptr<MapRenderPlan> &framePlan) {
 
+    ZoneScoped;
+
     auto l_this = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
     auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
 
@@ -526,12 +530,6 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 
     }
 
-    mapScene->doPostLoad(l_this, framePlan);
-    mapScene->update(framePlan);
-    mapScene->updateBuffers(framePlan);
-    glowPass->assignFFXGlowUBOConsts(framePlan->frameDependentData->currentGlow);
-
-    updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
 
     //Create meshes
     auto opaqueMeshes = std::make_shared<std::vector<HGMesh>>();
@@ -539,8 +537,31 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 
     auto skyOpaqueMeshes = std::make_shared<std::vector<HGMesh>>();
     auto skyTransparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
+    framePlan->m2Array.lock();
+    framePlan->wmoArray.lock();
+    framePlan->wmoGroupArray.lock();
 
-    collectMeshes(framePlan, opaqueMeshes, transparentMeshes, skyOpaqueMeshes, skyTransparentMeshes);
+    TracyMessageL("collect meshes created");
+    std::future<void> collectMeshAsync = std::async(std::launch::async,
+                                                    [&]() {
+                                                        collectMeshes(framePlan, opaqueMeshes, transparentMeshes,
+                                                                      skyOpaqueMeshes, skyTransparentMeshes);
+                                                    }
+    );
+
+    mapScene->doPostLoad(l_this, framePlan);
+    mapScene->update(framePlan);
+    mapScene->updateBuffers(framePlan);
+    glowPass->assignFFXGlowUBOConsts(framePlan->frameDependentData->currentGlow);
+
+    updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
+
+
+    {
+        ZoneScopedN("collect meshes wait");
+        collectMeshAsync.wait();
+    }
+
     bool renderSky = framePlan->renderSky;
     auto skyMesh = framePlan->skyMesh;
     auto skyMesh0x4 = framePlan->skyMesh0x4;
@@ -553,23 +574,26 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         // ---------------------
         // Upload stuff
         // ---------------------
-        uploadCmd.submitBufferUploads(l_this->uboBuffer);
-        uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
+        {
+            ZoneScopedN("submit buffers");
+            uploadCmd.submitBufferUploads(l_this->uboBuffer);
+            uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
 
-        uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
+            uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
 
-        uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
-        uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
-        uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
-        uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
-        uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
-        uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
-        uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
-        uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
+            uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
+            uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
 
-        uploadCmd.submitBufferUploads(l_this->iboBuffer);
-        uploadCmd.submitBufferUploads(l_this->m_vboQuad);
-        uploadCmd.submitBufferUploads(l_this->m_iboQuad);
+            uploadCmd.submitBufferUploads(l_this->iboBuffer);
+            uploadCmd.submitBufferUploads(l_this->m_vboQuad);
+            uploadCmd.submitBufferUploads(l_this->m_iboQuad);
+        }
 
         // ----------------------
         // Draw meshes
@@ -584,8 +608,11 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                                                           true
             );
 
-            for (auto const &mesh: *opaqueMeshes) {
-                MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
+            {
+                ZoneScopedN("submit opaque");
+                for (auto const &mesh: *opaqueMeshes) {
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
+                }
             }
             if (true) {
                 if (renderSky && skyMesh)
@@ -609,7 +636,10 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                 if (renderSky && skyMesh0x4)
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
             }
-            for (auto const &mesh: *transparentMeshes) {
+            {
+                ZoneScopedN("submit transparent");
+                for (auto const &mesh: *transparentMeshes) {
+
 //                std::string debugMess =
 //                    "Drawing mesh "
 //                    " meshType = " + std::to_string((int)mesh->getMeshType()) +
@@ -619,7 +649,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //
 //                auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
-                MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
+                }
             }
         }
 

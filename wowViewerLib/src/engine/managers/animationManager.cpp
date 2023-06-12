@@ -784,10 +784,9 @@ void AnimationManager::update(
     ) {
         M2Array<M2Sequence> * sequences = boneMasterData->getSkelData()->m_sequences;
         if (this->animationInfo.currentAnimation.animationFoundInParent) {
-            sequences = boneMasterData->getParentSkelData()->m_sequences;;
+            sequences = boneMasterData->getParentSkelData()->m_sequences;
         }
 
-        //if (currentAnimationPlayedTimes)
         int probability = ((float)rand() / (float)RAND_MAX) * 0x7FFF;
         int calcProb = 0;
 
@@ -828,7 +827,7 @@ void AnimationManager::update(
     ) {
         M2Array<M2Sequence> * sequences = boneMasterData->getSkelData()->m_sequences;
         if (this->animationInfo.nextSubAnimation.animationFoundInParent) {
-            sequences = boneMasterData->getParentSkelData()->m_sequences;;
+            sequences = boneMasterData->getParentSkelData()->m_sequences;
         }
 
         subAnimRecord = (*sequences)[this->animationInfo.nextSubAnimation.animationIndex];

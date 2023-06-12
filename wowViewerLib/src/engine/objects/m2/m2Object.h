@@ -324,6 +324,8 @@ private:
     std::vector<std::shared_ptr<M2Object>> toLoadMain;
     std::vector<std::shared_ptr<M2Object>> toLoadGeom;
 
+    bool m_locked = false;
+
     bool candCanHaveDuplicates = false;
     bool drawnCanHaveDuplicates = false;
     bool toLoadMainCanHaveDuplicates = false;
@@ -349,6 +351,10 @@ public:
         drawn.reserve(10000);
     }
     void addCandidate(const std::shared_ptr<M2Object> &cand) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (cand == nullptr) return;
         if (cand->getHasBoundingBox()) {
             candidates.push_back(cand);
@@ -360,6 +366,10 @@ public:
     }
 
     void addToDraw(const std::shared_ptr<M2Object> &toDraw) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toDraw->getGetIsLoaded()) {
             drawn.push_back(toDraw);
             drawnCanHaveDuplicates = true;
@@ -371,6 +381,25 @@ public:
             toLoadGeomCanHaveDuplicates = true;
         }
     }
+    void addDrawnAndToLoad(M2ObjectListContainer &anotherList) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        auto &anotherDrawn = anotherList.getDrawn();
+        this->drawn.insert(this->drawn.end(), anotherDrawn.begin(), anotherDrawn.end());
+
+        auto &anotherToLoadMain = anotherList.getToLoadMain();
+        this->toLoadMain.insert(this->toLoadMain.end(), anotherToLoadMain.begin(), anotherToLoadMain.end());
+
+        auto &anotherToLoadGeom = anotherList.getToLoadGeom();
+        this->toLoadGeom.insert(this->toLoadGeom.end(), anotherToLoadGeom.begin(), anotherToLoadGeom.end());
+
+        toLoadMainCanHaveDuplicates = true;
+        toLoadGeomCanHaveDuplicates = true;
+        drawnCanHaveDuplicates = true;
+    }
+
 
     const std::vector<std::shared_ptr<M2Object>> &getCandidates() {
         if (this->candCanHaveDuplicates) {
@@ -408,19 +437,14 @@ public:
         return toLoadGeom;
     }
 
-    void addDrawnAndToLoad(M2ObjectListContainer &anotherList) {
-        auto &anotherDrawn = anotherList.getDrawn();
-        this->drawn.insert(this->drawn.end(), anotherDrawn.begin(), anotherDrawn.end());
 
-        auto &anotherToLoadMain = anotherList.getToLoadMain();
-        this->toLoadMain.insert(this->toLoadMain.end(), anotherToLoadMain.begin(), anotherToLoadMain.end());
+    void lock() {
+        getCandidates();
+        getToLoadGeom();
+        getToLoadMain();
+        getDrawn();
 
-        auto &anotherToLoadGeom = anotherList.getToLoadGeom();
-        this->toLoadGeom.insert(this->toLoadGeom.end(), anotherToLoadGeom.begin(), anotherToLoadGeom.end());
-
-        toLoadMainCanHaveDuplicates = true;
-        toLoadGeomCanHaveDuplicates = true;
-        drawnCanHaveDuplicates = true;
+        m_locked = true;
     }
 };
 

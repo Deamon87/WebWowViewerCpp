@@ -36,9 +36,11 @@ class Config {
 public:
     Config() {
         threadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
+        m_hardwareThreadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
     }
 
 public:
+    auto hardwareThreadCount() const -> int { return m_hardwareThreadCount;}
     bool renderAdt = true;
     bool renderWMO = true;
     bool renderM2 = true;
@@ -196,6 +198,8 @@ public:
     double cullCombineAllObjects = 0;
 
     HRiverColorOverrideHolder colorOverrideHolder = nullptr;
+private:
+    int m_hardwareThreadCount;
 };
 
 //ADT STUFF FOR MAP GENERATION

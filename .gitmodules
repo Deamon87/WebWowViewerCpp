@@ -47,3 +47,6 @@
 [submodule "3rdparty/hiberlite"]
 	path = 3rdparty/hiberlite
 	url = https://github.com/paulftw/hiberlite.git
+[submodule "wowViewerLib/3rdparty/tracy"]
+	path = wowViewerLib/3rdparty/tracy
+	url = https://github.com/wolfpld/tracy.git

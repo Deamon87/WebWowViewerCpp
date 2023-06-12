@@ -41,6 +41,7 @@
 #include "screenshots/screenshotMaker.h"
 #include "database/CEmptySqliteDB.h"
 #include <exception>
+#include "Tracy.hpp"
 
 int mleft_pressed = 0;
 int mright_pressed = 0;
@@ -510,6 +511,8 @@ int main(){
         if (rendererName == "ogl3" || rendererName == "ogl2") {
             glfwSwapBuffers(window);
         }
+
+        FrameMark;
     }
 //} catch(const std::exception &e){
 //    std::cerr << e.what() << std::endl;

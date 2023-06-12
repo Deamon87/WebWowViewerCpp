@@ -9,6 +9,8 @@
 #include <emscripten.h>
 #endif
 
+#include "Tracy.hpp"
+
 void SceneComposer::processCaches(int limit) {
     if (m_apiContainer->cacheStorage) {
         m_apiContainer->cacheStorage->processCaches(limit);
@@ -23,6 +25,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
     if (m_supportThreads) {
         loadingResourcesThread = std::thread([&]() {
+            tracy::SetThreadName("ResourceLoader");
             using namespace std::chrono_literals;
             while (!this->m_isTerminating) {
                 std::this_thread::sleep_for(1ms);
@@ -34,6 +37,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         cullingThread = std::thread(([&]() {
             using namespace std::chrono_literals;
             FrameCounter frameCounter;
+            tracy::SetThreadName("Culling");
 
             while (!this->m_isTerminating) {
                 auto frameScenario = cullingInput.waitForNewInput();
@@ -90,6 +94,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 }
 
 void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
+    ZoneScoped ;
     if (frameScenario == nullptr)
         return;
 
@@ -100,6 +105,8 @@ void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
 
 
 void SceneComposer::consumeUpdate(HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions) {
+    ZoneScoped ;
+
     if (frameScenario == nullptr)
         return;
 
@@ -113,6 +120,7 @@ void SceneComposer::consumeUpdate(HFrameScenario &frameScenario, std::vector<std
 }
 
 void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
+    ZoneScoped ;
     deviceDrawFrame.beginMeasurement();
     m_apiContainer->hDevice->drawFrame(renderFuncs);
     deviceDrawFrame.endMeasurement();
@@ -128,6 +136,7 @@ void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunctio
 
 
 void SceneComposer::draw(HFrameScenario frameScenario) {
+    ZoneScoped ;
     composerDrawTimePerFrame.beginMeasurement();
 
     if (!m_supportThreads) {

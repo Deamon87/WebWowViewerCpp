@@ -22,6 +22,7 @@
 #endif
 #include "../../algorithms/mathHelper_culling.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
+#include "Tracy.hpp"
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
     {
@@ -320,6 +321,8 @@ std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSc
 }
 
 void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
+    ZoneScoped ;
+
     cullCreateVarsCounter.beginMeasurement();
     Config* config = this->m_api->getConfig();
 
@@ -372,30 +375,34 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
     cullCreateVarsCounter.endMeasurement();
 
+    {
+        ZoneScopedN("cullGetCurrentWMOCounter");
+        cullGetCurrentWMOCounter.beginMeasurement();
+        //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
+        getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
 
-    cullGetCurrentWMOCounter.beginMeasurement();
-    //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
-    getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
+        for (auto &checkingWmoObj: potentialWmo.getCandidates()) {
+            WmoGroupResult groupResult;
+            bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
 
-    for (auto &checkingWmoObj : potentialWmo.getCandidates()) {
-        WmoGroupResult groupResult;
-        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
-
-        if (result) {
-            mapRenderPlan->m_currentWMO = checkingWmoObj;
-            mapRenderPlan->m_currentWmoGroup = groupResult.groupIndex;
-            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                mapRenderPlan->m_currentInteriorGroups.push_back(groupResult);
-                interiorGroupNum = groupResult.groupIndex;
-                mapRenderPlan->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(groupResult.groupIndex);
-                mapRenderPlan->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(groupResult.groupIndex);
-            } else {
+            if (result) {
+                mapRenderPlan->m_currentWMO = checkingWmoObj;
+                mapRenderPlan->m_currentWmoGroup = groupResult.groupIndex;
+                if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
+                    mapRenderPlan->m_currentInteriorGroups.push_back(groupResult);
+                    interiorGroupNum = groupResult.groupIndex;
+                    mapRenderPlan->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(
+                        groupResult.groupIndex);
+                    mapRenderPlan->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(
+                        groupResult.groupIndex);
+                } else {
+                }
+                bspNodeId = groupResult.nodeId;
+                break;
             }
-            bspNodeId = groupResult.nodeId;
-            break;
         }
+        cullGetCurrentWMOCounter.endMeasurement();
     }
-    cullGetCurrentWMOCounter.endMeasurement();
 
     cullGetCurrentZoneCounter.beginMeasurement();
 
@@ -561,7 +568,9 @@ mathfu::vec3 blendV3(mathfu::vec3 a, mathfu::vec3 b, float alpha) {
 }
 
 void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
-                                   StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
+                                   StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
+    ZoneScoped ;
+
     Config* config = this->m_api->getConfig();
 
     bool fogRecordWasFound = false;
@@ -1050,6 +1059,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                         int viewRenderOrder,
                         HMapRenderPlan &mapRenderPlan
 ) {
+    ZoneScoped ;
 //    std::cout << "Map::checkExterior finished called" << std::endl;
     if (m_wdlObject == nullptr && m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -1300,6 +1310,7 @@ void Map::createAdtFreeLamdas() {
 
 
 void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
+    ZoneScoped;
     int processedThisFrame = 0;
     int m2ProcessedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
@@ -1402,6 +1413,8 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
 };
 
 void Map::update(const HMapRenderPlan &renderPlan) {
+    ZoneScoped;
+
     mathfu::vec3 cameraVec3   = renderPlan->renderingMatrices->cameraPos.xyz();
     mathfu::mat4 &frustumMat  = renderPlan->renderingMatrices->perspectiveMat;
     mathfu::mat4 &lookAtMat   = renderPlan->renderingMatrices->lookAtMat;
@@ -1411,15 +1424,23 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
     auto &m2ToDraw = renderPlan->m2Array.getDrawn();
     {
+        ZoneScopedN("m2UpdateframeCounter");
         m2UpdateframeCounter.beginMeasurement();
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 1000),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i != r.end(); ++i) {
-                    auto& m2Object = m2ToDraw[i];
-                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
-                }
-            }, tbb::simple_partitioner());
+        auto threadsAvailable = m_api->getConfig()->hardwareThreadCount();
+
+        int granSize = m2ToDraw.size() / (2 * threadsAvailable);
+        if (granSize == 0) granSize = m2ToDraw.size();
+
+        if (granSize > 0) {
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                              [&](tbb::blocked_range<size_t> r) {
+                                  for (size_t i = r.begin(); i != r.end(); ++i) {
+                                      auto &m2Object = m2ToDraw[i];
+                                      m2Object->update(deltaTime, cameraVec3, lookAtMat);
+                                  }
+                              }, tbb::simple_partitioner());
+        }
 
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
@@ -1430,34 +1451,41 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         m2UpdateframeCounter.endMeasurement();
     }
 
-    wmoUpdate.beginMeasurement();
-    for (const auto &wmoObject : renderPlan->wmoArray.getToDrawn()) {
-        if (wmoObject == nullptr) continue;
-        wmoObject->update();
-    }
-    wmoUpdate.endMeasurement();
-
-    wmoGroupUpdate.beginMeasurement();
-    for (const auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
-        if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->update();
-    }
-    wmoGroupUpdate.endMeasurement();
-
-    adtUpdate.beginMeasurement();
     {
-        std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
-        for (const auto &adtObjectRes: renderPlan->adtArray) {
-            if (processedADT.count(adtObjectRes->adtObject) == 0) {
-                adtObjectRes->adtObject->update(deltaTime);
-                processedADT.insert(adtObjectRes->adtObject);
+        ZoneScopedN("wmoUpdate");
+        wmoUpdate.beginMeasurement();
+        for (const auto &wmoObject: renderPlan->wmoArray.getToDrawn()) {
+            if (wmoObject == nullptr) continue;
+            wmoObject->update();
+        }
+        wmoUpdate.endMeasurement();
+    }
+
+    {
+        ZoneScopedN("wmoGroupUpdate");
+        wmoGroupUpdate.beginMeasurement();
+        for (const auto &wmoGroupObject: renderPlan->wmoGroupArray.getToDraw()) {
+            if (wmoGroupObject == nullptr) continue;
+            wmoGroupObject->update();
+        }
+        wmoGroupUpdate.endMeasurement();
+    }
+
+    {
+        ZoneScopedN("adtUpdate");
+        adtUpdate.beginMeasurement();
+        {
+            std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
+            for (const auto &adtObjectRes: renderPlan->adtArray) {
+                if (processedADT.count(adtObjectRes->adtObject) == 0) {
+                    adtObjectRes->adtObject->update(deltaTime);
+                    processedADT.insert(adtObjectRes->adtObject);
+                }
             }
         }
+        adtUpdate.endMeasurement();
     }
-    for (const auto &adtObjectRes : renderPlan->adtArray) {
 
-    }
-    adtUpdate.endMeasurement();
 
     //2. Calc distance every 100 ms
     m2calcDistanceCounter.beginMeasurement();
@@ -1501,6 +1529,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 }
 
 void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
+    ZoneScoped;
     {
         auto &meshblockVS = skyMeshMat0x4->m_skyColors->getObject();
         auto EndFogColorV4_1 = mathfu::vec4(renderPlan->frameDependentData->EndFogColor, 0.0);
@@ -1524,25 +1553,53 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         skyMeshMat->m_skyColors->save();
     }
 
-    for (auto &m2Object : renderPlan->m2Array.getDrawn()) {
-         if (m2Object != nullptr) {
-            m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                             renderPlan->frameDependentData);
-        }
-    }
-    if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
-        for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
-            m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                             renderPlan->frameDependentData);
-        }
-    }
+    {
+        ZoneScopedN("m2BuffersUpdate");
+        auto threadsAvailable = m_api->getConfig()->hardwareThreadCount();
+        auto &m2ToDraw = renderPlan->m2Array.getDrawn();
+        int granSize = m2ToDraw.size() / (2 * threadsAvailable);
+        if (granSize == 0) granSize = m2ToDraw.size();
 
-    for (auto &wmoGroupObject : renderPlan->wmoGroupArray.getToDraw()) {
-        if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->uploadGeneratorBuffers(renderPlan->frameDependentData, getCurrentSceneTime());
+        if (granSize > 0) {
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto &m2Object = m2ToDraw[i];
+                    if (m2Object != nullptr) {
+                        m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                       renderPlan->frameDependentData);
+                    }
+                }
+            }, tbb::simple_partitioner());
+        }
+
+//        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+//            if (m2Object != nullptr) {
+//                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+//                                                 renderPlan->frameDependentData);
+//            }
+//        }
+    }
+    {
+        ZoneScopedN("m2SkyboxBuffersUpdate");
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2Object: skyBoxView->m2List.getDrawn()) {
+                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
+        }
     }
 
     {
+        ZoneScopedN("wmoBuffersUpdate");
+        for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToDraw()) {
+            if (wmoGroupObject == nullptr) continue;
+            wmoGroupObject->uploadGeneratorBuffers(renderPlan->frameDependentData, getCurrentSceneTime());
+        }
+    }
+
+    {
+        ZoneScopedN("adtBuffersUpdate");
         std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
         for (const auto &adtObjectRes: renderPlan->adtArray) {
             if (processedADT.count(adtObjectRes->adtObject) == 0) {

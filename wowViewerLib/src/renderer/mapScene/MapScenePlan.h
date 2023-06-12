@@ -35,6 +35,7 @@ struct MapRenderPlan {
 
     //Objects for update and rendering
     std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
+
     M2ObjectListContainer m2Array;
     WMOListContainer wmoArray;
     WMOGroupListContainer wmoGroupArray;

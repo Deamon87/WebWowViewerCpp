@@ -215,7 +215,7 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
     {
         OffsetAllocator::Allocation uiaAlloc;
         {
-            std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
+            std::unique_lock<std::mutex> lock(m_mutex);
             uiaAlloc = uiaAllocator.allocate(1);
             if (uiaAlloc.offset == OffsetAllocator::Allocation::NO_SPACE) {
                 this->uiaAllocator.growSize(1000);
@@ -232,11 +232,12 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
                                                           uiaAlloc,
                                                          (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+alloc.offset);
 
-        std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
-        lock.lock();
-        currentSubBuffers.push_back(subBuffer);
-        subBuffer->m_iterator = std::prev(currentSubBuffers.end());
-        lock.unlock();
+
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            currentSubBuffers.push_back(subBuffer);
+            subBuffer->m_iterator = std::prev(currentSubBuffers.end());
+        }
         return subBuffer;
     }
     else
@@ -251,6 +252,8 @@ void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_
                                  const OffsetAllocator::Allocation &alloc,
                                  const OffsetAllocator::Allocation &uiaAlloc,
                                  int subBuffersize) {
+
+    std::unique_lock<std::mutex> lock(m_mutex);
     if (subBuffersize > 0) {
         deallocateSubBuffer(currentBuffer, alloc, uiaAlloc);
     }

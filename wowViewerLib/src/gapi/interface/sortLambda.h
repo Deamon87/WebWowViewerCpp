@@ -1,8 +1,8 @@
 #include "IDevice.h"
 
-static const bool SortMeshes(const HGMesh &indexA, const HGMesh &indexB) {
-    ISortableMesh * pA = dynamic_cast<ISortableMesh *>(indexA.get());
-    ISortableMesh * pB = dynamic_cast<ISortableMesh *>(indexB.get());
+static const bool SortMeshes(const HGSortableMesh &indexA, const HGSortableMesh &indexB) {
+    ISortableMesh * pA = indexA.get();
+    ISortableMesh * pB = indexB.get();
 
     if (pA == nullptr) return false;
     if (pB == nullptr) return true;

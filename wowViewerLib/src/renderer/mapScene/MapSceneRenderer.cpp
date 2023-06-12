@@ -5,6 +5,7 @@
 #include "MapSceneRenderer.h"
 #include "../../engine/objects/scenes/map.h"
 #include "../../gapi/interface/sortLambda.h"
+#include "Tracy.hpp"
 
 std::shared_ptr<MapRenderPlan>
 MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {
@@ -19,7 +20,7 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
     return mapPlan;
 }
 
-void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+void MapSceneRenderer:: collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                                      const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
                                      const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
@@ -85,12 +86,11 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     //No need to sort array which has only one element
     sortMeshCounter.beginMeasurement();
     if (transparentMeshes.size() > 1) {
-        tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
+        std::sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
     }
     if (skyTransparentMeshes.size() > 1) {
-        tbb::parallel_sort(skyTransparentMeshes.begin(), skyTransparentMeshes.end(), SortMeshes);
+        std::sort(skyTransparentMeshes.begin(), skyTransparentMeshes.end(), SortMeshes);
     }
-
     sortMeshCounter.endMeasurement();
 
     mapProduceUpdateCounter.endMeasurement();

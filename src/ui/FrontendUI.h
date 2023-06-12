@@ -145,6 +145,7 @@ private:
     int  threadCount = 4;
     int  quickSortCutoff = 100;
     float prevMinimapZoom = 1;
+    float prevZoomedSize = 0;
     int prevMapId = -1;
     bool isWmoMap = false;
 

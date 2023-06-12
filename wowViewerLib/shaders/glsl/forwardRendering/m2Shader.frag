@@ -92,6 +92,8 @@ void main() {
         textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightIndexes.x / 4][textureWeightIndexes.x % 4];
 
 
+    vec3 l_Normal = vNormal;
+
     //Accumulate and apply lighting
 
     vec3 meshResColor = vMeshColorAlpha.rgb;
@@ -99,7 +101,7 @@ void main() {
     vec3 accumLight = vec3(0.0);
     if ((vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y == 1)) {
         vec3 vPos3 = vPosition_EdgeFade.xyz;
-        vec3 vNormal3 = normalize(vNormal.xyz);
+        vec3 vNormal3 = normalize(l_Normal.xyz);
         vec3 lightColor = vec3(0.0);
         int count = int(pc_lights[0].attenuation.w);
 
@@ -140,7 +142,7 @@ void main() {
     float edgeFade = 1.0;
 
     calcM2VertexMat(uVertexShader,
-        vPosition_EdgeFade.xyz, vNormal,
+        vPosition_EdgeFade.xyz, l_Normal,
         vTexCoord, vTexCoord2,
         textMat, edgeFade,
         texCoord, texCoord2, texCoord3);
@@ -177,7 +179,7 @@ void main() {
     finalColor = vec4(
         calcLight(
             matDiffuse,
-            vNormal,
+            l_Normal,
             vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y > 0,
             interiorExteriorBlend.x,
             scene,

@@ -513,6 +513,8 @@ void FrontendUI::showAdtSelectionMinimap() {
     if (minimapZoom < 0.001)
         minimapZoom = 0.001;
 
+
+
 //    TODO: create a custom component with internal dependency to not pollute this file
 //    ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
 //    if (ImGui::IsItemHovered())
@@ -530,19 +532,23 @@ void FrontendUI::showAdtSelectionMinimap() {
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
 
     const float defaultImageDimension = 100;
+    int newZoomedSize = (defaultImageDimension * minimapZoom);
+    if (prevZoomedSize == 0)
+        prevZoomedSize = defaultImageDimension * prevMinimapZoom;
+
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
             if (adtSelectionMinimapMaterials[i][j] != nullptr) {
                 if (ImGui::ImageButton(adtSelectionMinimapMaterials[i][j],
-                                       ImVec2(defaultImageDimension * minimapZoom, defaultImageDimension * minimapZoom))) {
+                                       ImVec2(prevZoomedSize, prevZoomedSize))) {
                     auto mousePos = ImGui::GetMousePos();
                     ImGuiStyle &style = ImGui::GetStyle();
 
                     mousePos.x += ImGui::GetScrollX() - ImGui::GetWindowPos().x - style.WindowPadding.x;
                     mousePos.y += ImGui::GetScrollY() - ImGui::GetWindowPos().y - style.WindowPadding.y;
 
-                    mousePos.x = ((mousePos.x / minimapZoom) / defaultImageDimension);
-                    mousePos.y = ((mousePos.y / minimapZoom) / defaultImageDimension);
+                    mousePos.x = ((mousePos.x / prevMinimapZoom) / defaultImageDimension);
+                    mousePos.y = ((mousePos.y / prevMinimapZoom) / defaultImageDimension);
 
                     worldPosX = AdtIndexToWorldCoordinate(mousePos.y);
                     worldPosY = AdtIndexToWorldCoordinate(mousePos.x);
@@ -554,7 +560,7 @@ void FrontendUI::showAdtSelectionMinimap() {
 
                 }
             } else {
-                ImGui::Dummy(ImVec2(defaultImageDimension * minimapZoom, defaultImageDimension * minimapZoom));
+                ImGui::Dummy(ImVec2(prevZoomedSize, prevZoomedSize));
             }
 
             ImGui::SameLine(0, 0);
@@ -582,7 +588,7 @@ void FrontendUI::showAdtSelectionMinimap() {
         ImGui::EndPopup();
     }
 
-    if (prevMinimapZoom != minimapZoom) {
+    if (prevZoomedSize != newZoomedSize && prevMinimapZoom != minimapZoom) {
         auto windowSize = ImGui::GetWindowSize();
         auto scrollX = ImGui::GetScrollX();
         auto scrollY = ImGui::GetScrollY();
@@ -592,10 +598,15 @@ void FrontendUI::showAdtSelectionMinimap() {
 
         float newScrollX = (scrollX + windowSize.x / 2.0f) * minimapZoom / prevMinimapZoom - windowSize.x / 2.0f;
         float newScrollY = (scrollY + windowSize.y / 2.0f) * minimapZoom / prevMinimapZoom - windowSize.y / 2.0f;
+
+        newScrollX = trunc(newScrollX);
+        newScrollY = trunc(newScrollY);
+
         ImGui::SetScrollX(newScrollX);
         ImGui::SetScrollY(newScrollY);
+        prevZoomedSize = newZoomedSize;
+        prevMinimapZoom = minimapZoom;
     }
-    prevMinimapZoom = minimapZoom;
 
     ImGui::EndChild();
 }

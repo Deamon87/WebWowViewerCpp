@@ -156,6 +156,8 @@ private:
     bool toCheckM2CanHaveDuplicates = false;
     bool toLoadCanHaveDuplicates = false;
 
+    bool m_locked = false;
+
     void inline removeDuplicates(std::vector<std::shared_ptr<WmoGroupObject>> &array) {
         if (array.size() < 1000) {
             std::sort(array.begin(), array.end());
@@ -176,6 +178,10 @@ public:
     }
 
     void addToDraw(const std::shared_ptr<WmoGroupObject> &toDraw) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toDraw->getIsLoaded()) {
             wmoGroupToDraw.push_back(toDraw);
             toDrawCanHaveDuplicates = true;
@@ -186,6 +192,10 @@ public:
     }
 
     void addToCheckM2(const std::shared_ptr<WmoGroupObject> &toCheckM2) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toCheckM2->getIsLoaded()) {
             wmoGroupToCheckM2.push_back(toCheckM2);
             toCheckM2CanHaveDuplicates = true;
@@ -195,10 +205,26 @@ public:
         }
     }
     void addToLoad(const std::shared_ptr<WmoGroupObject> &toLoad) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (!toLoad->getIsLoaded()) {
             wmoGroupToLoad.push_back(toLoad);
             toLoadCanHaveDuplicates = true;
         }
+    }
+
+    void addToLoadAndDraw(WMOGroupListContainer &otherList) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        this->wmoGroupToDraw.insert(this->wmoGroupToDraw.end(), otherList.wmoGroupToDraw.begin(), otherList.wmoGroupToDraw.end());
+        this->wmoGroupToLoad.insert(this->wmoGroupToLoad.end(), otherList.wmoGroupToLoad.begin(), otherList.wmoGroupToLoad.end());
+
+        toDrawCanHaveDuplicates = true;
+        toLoadCanHaveDuplicates = true;
     }
 
     const std::vector<std::shared_ptr<WmoGroupObject>> &getToDraw() {
@@ -228,12 +254,13 @@ public:
         return wmoGroupToLoad;
     }
 
-    void addToLoadAndDraw(WMOGroupListContainer &otherList) {
-        this->wmoGroupToDraw.insert(this->wmoGroupToDraw.end(), otherList.wmoGroupToDraw.begin(), otherList.wmoGroupToDraw.end());
-        this->wmoGroupToLoad.insert(this->wmoGroupToLoad.end(), otherList.wmoGroupToLoad.begin(), otherList.wmoGroupToLoad.end());
 
-        toDrawCanHaveDuplicates = true;
-        toLoadCanHaveDuplicates = true;
+    void lock() {
+        getToDraw();
+        getToCheckM2();
+        getToLoad();
+
+        m_locked = true;
     }
 };
 
