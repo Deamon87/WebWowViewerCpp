@@ -34,6 +34,7 @@
 #include "renderer/uiScene/IFrontendUIBufferCreate.h"
 #include "renderer/uiScene/FrontendUIRendererFactory.h"
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRendererFactory.h"
+#include "wheelCapture/wheelCapture.h"
 
 FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
     m_api = api;
@@ -510,21 +511,35 @@ void FrontendUI::showAdtSelectionMinimap() {
     ImGui::BeginChild("Adt selection minimap", ImVec2(0, 0), true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
                                                        ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
-    if (minimapZoom < 0.001)
-        minimapZoom = 0.001;
+    float wheel = 0.0f;
+
+    float pivotForZoomX;
+    float pivotForZoomY;
+    {
+        auto windowSize = ImGui::GetWindowSize();
+        const ImGuiStyle &style = ImGui::GetStyle();
+
+        if (ImGui::CaptureMouseWheel(wheel)) {
+            minimapZoom += wheel * 0.1;
+            auto windowPos = ImGui::GetWindowPos();
+            auto mousePos = ImGui::GetMousePos();
+
+            float windowRelativeMouseX = mousePos.x - windowPos.x - style.WindowPadding.x / 2.0f;
+            float windowRelativeMouseY = mousePos.y - windowPos.y - style.WindowPadding.y / 2.0f;
+
+            pivotForZoomX = windowRelativeMouseX;
+            pivotForZoomY = windowRelativeMouseY;
+        } else {
+            pivotForZoomX = ((windowSize.x - style.WindowPadding.x) / 2.0f);
+            pivotForZoomY = ((windowSize.x - style.WindowPadding.y) / 2.0f);
+        }
+    }
+
+    if (minimapZoom < 0.1)
+        minimapZoom = 0.1;
 
 
 
-//    TODO: create a custom component with internal dependency to not pollute this file
-//    ImGui::SetItemKeyOwner(ImGuiKey_MouseWheelY);
-//    if (ImGui::IsItemHovered())
-//    {
-//        float wheel = ImGui::GetIO().MouseWheel;
-//        if (!feq(wheel, 0.0f))
-//        {
-//            wheel;
-//        }
-//    }
 
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
@@ -542,18 +557,23 @@ void FrontendUI::showAdtSelectionMinimap() {
                 if (ImGui::ImageButton(adtSelectionMinimapMaterials[i][j],
                                        ImVec2(prevZoomedSize, prevZoomedSize))) {
                     auto mousePos = ImGui::GetMousePos();
-                    ImGuiStyle &style = ImGui::GetStyle();
+                    const ImGuiStyle &style = ImGui::GetStyle();
+                    auto content = ImGui::GetWindowContentRegionMin();
+                    auto windowPos = ImGui::GetWindowPos();
+                    auto windowSize = ImGui::GetWindowSize();
 
-                    mousePos.x += ImGui::GetScrollX() - ImGui::GetWindowPos().x - style.WindowPadding.x;
-                    mousePos.y += ImGui::GetScrollY() - ImGui::GetWindowPos().y - style.WindowPadding.y;
+                    float windowRelativeMouseX = mousePos.x - windowPos.x - style.WindowPadding.x / 2.0f;
+                    float windowRelativeMouseY = mousePos.y - windowPos.y - style.WindowPadding.y / 2.0f;
 
-                    mousePos.x = ((mousePos.x / prevMinimapZoom) / defaultImageDimension);
-                    mousePos.y = ((mousePos.y / prevMinimapZoom) / defaultImageDimension);
+                    float screenSpaceCoordX = ImGui::GetScrollX() + windowRelativeMouseX - style.WindowPadding.x / 2.0f;
+                    float screenSpaceCoordY = ImGui::GetScrollY() + windowRelativeMouseY - style.WindowPadding.y / 2.0f;
 
-                    worldPosX = AdtIndexToWorldCoordinate(mousePos.y);
-                    worldPosY = AdtIndexToWorldCoordinate(mousePos.x);
+                    float adtIndexX = (screenSpaceCoordX) / (prevMinimapZoom * defaultImageDimension);
+                    float adtIndexY = (screenSpaceCoordY) / (prevMinimapZoom * defaultImageDimension);
 
-//                                if ()
+                    worldPosX = AdtIndexToWorldCoordinate(adtIndexY); //?
+                    worldPosY = AdtIndexToWorldCoordinate(adtIndexX);
+
                     ImGui::OpenPopup("AdtWorldCoordsTest");
                     std::cout << "world coords : x = " << worldPosX << " y = " << worldPosY
                               << std::endl;
@@ -592,15 +612,13 @@ void FrontendUI::showAdtSelectionMinimap() {
         auto windowSize = ImGui::GetWindowSize();
         auto scrollX = ImGui::GetScrollX();
         auto scrollY = ImGui::GetScrollY();
-        
-        auto maxScrollX = ImGui::GetScrollMaxX();
-        auto maxScrollY = ImGui::GetScrollMaxY();
+        const ImGuiStyle &style = ImGui::GetStyle();
 
-        float newScrollX = (scrollX + windowSize.x / 2.0f) * minimapZoom / prevMinimapZoom - windowSize.x / 2.0f;
-        float newScrollY = (scrollY + windowSize.y / 2.0f) * minimapZoom / prevMinimapZoom - windowSize.y / 2.0f;
+        float pivotX = ImGui::GetScrollX() + pivotForZoomX - style.WindowPadding.x / 2.0f;
+        float pivotY = ImGui::GetScrollY() + pivotForZoomY - style.WindowPadding.y / 2.0f;
 
-        newScrollX = trunc(newScrollX);
-        newScrollY = trunc(newScrollY);
+        float newScrollX = (pivotX) * minimapZoom / prevMinimapZoom - pivotForZoomX + style.WindowPadding.x / 2.0f;
+        float newScrollY = (pivotY) * minimapZoom / prevMinimapZoom - pivotForZoomY + style.WindowPadding.y / 2.0f;
 
         ImGui::SetScrollX(newScrollX);
         ImGui::SetScrollY(newScrollY);
