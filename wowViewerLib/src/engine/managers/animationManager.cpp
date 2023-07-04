@@ -32,7 +32,6 @@ AnimationManager::AnimationManager(HApiContainer api, std::shared_ptr<CBoneMaste
     this->firstCalc = true;
 
     this->initBonesIsCalc();
-    this->initBlendMatrices();
     this->initGlobalSequenceTimes();
     this->calculateBoneTree();
 
@@ -48,13 +47,6 @@ void AnimationManager::initBonesIsCalc() {
     for (int i = 0; i < bones->size; i++) {
         bonesIsCalculated[i] = false;
     }
-}
-
-void AnimationManager::initBlendMatrices() {
-    auto &bones = *boneMasterData->getSkelData()->m_m2CompBones;
-
-    unsigned long matCount = (unsigned long) std::max(bones.size, boneMasterData->getM2Geom()->getM2Data()->texture_transforms.size);
-    blendMatrixArray = std::vector<mathfu::mat4>(matCount, mathfu::mat4::Identity());
 }
 
 void AnimationManager::initGlobalSequenceTimes() {
@@ -116,7 +108,7 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
         bool animationIsBanned = false;
         //Test against PABC
         auto &bannedAnims = boneMasterData->getM2Geom()->blackListAnimations;
-        for (auto const a : bannedAnims) {
+        for (auto const &a : bannedAnims) {
             if (a == animationId) {
                 animationIsBanned = true;
                 break;
@@ -168,15 +160,6 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
         deferredLoadingStarted = false;
     }
     return (animationIndex > -1);
-}
-
-void blendMatrices(std::vector<mathfu::mat4> &origMat, std::vector<mathfu::mat4> &blendMat, int count, float blendAlpha) {
-//Actual blend
-    for (int i = 0; i < count; i++) {
-//        mathfu::mat4 &blendTransformMatrix = blendMat[i];
-//        mathfu::mat4 &tranformMat = origMat[i];
-        origMat[i] = ((blendMat[i] - origMat[i]) * (const float &) (1.0 - blendAlpha)) + origMat[i];
-    }
 }
 
 template <typename T>
@@ -862,6 +845,8 @@ void AnimationManager::update(
             }
 
             this->animationInfo.currentAnimation = this->animationInfo.nextSubAnimation;
+            //Update bounding box
+
 
             this->firstCalc = true;
 

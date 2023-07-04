@@ -7,11 +7,12 @@
 #include "../../../engine/objects/scenes/map.h"
 #include "../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
 #include "../../../gapi/vulkan/meshes/GMeshVLK.h"
-#include "../../../gapi/vulkan/buffers/IBufferChunkVLK.h"
+#include "../../../gapi/vulkan/buffers/CBufferChunkVLK.h"
 #include "../../../gapi/vulkan/meshes/GM2MeshVLK.h"
 #include "materials/IMaterialInstance.h"
 #include "../../../gapi/vulkan/meshes/GSortableMeshVLK.h"
 #include "Tracy.hpp"
+#include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVLK.h"
 #include <future>
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
@@ -75,7 +76,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
 
     createFrameBuffers();
 
-    sceneWideChunk = std::make_shared<CBufferChunkVLK<sceneWideBlockVSPS>>(uboBuffer);
+    sceneWideChunk = std::make_shared<GBufferChunkDynamicVLK<sceneWideBlockVSPS>>(hDevice, uboBuffer);
 }
 
 // ------------------
@@ -203,6 +204,7 @@ HGIndexBuffer  MapSceneRenderForwardVLK::createSkyIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
+static const ShaderConfig forwardShaderConfig = {{{0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}};
 
 std::shared_ptr<IADTMaterial>
 MapSceneRenderForwardVLK::createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) {
@@ -210,11 +212,11 @@ MapSceneRenderForwardVLK::createAdtMaterial(const PipelineTemplate &pipelineTemp
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(uboStaticBuffer);
     auto fragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockPS>>(uboBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig)
         .createPipeline(m_emptyADTVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&vertexFragmentData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, vertexFragmentData->getSubBuffer())
                 .ubo(2, fragmentData->getSubBuffer());
         })
@@ -246,11 +248,11 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
     auto &l_sceneWideChunk = sceneWideChunk;
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(uboStaticBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, forwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&m2ModelData, &vertexFragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, BufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix)->getSubBuffer())
                 .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_modelFragmentData)->getSubBuffer())
                 .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
@@ -286,11 +288,11 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2Waterfal
     auto vertexData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockVS>>(uboStaticBuffer);
     auto fragmentData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockPS>>(uboStaticBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, forwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&m2ModelData, &vertexData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, BufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix)->getSubBuffer())
                 .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
                 .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices)->getSubBuffer())
@@ -320,11 +322,11 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
     auto &l_sceneWideChunk = sceneWideChunk;
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Particle::meshParticleWideBlockPS>>(uboBuffer); ;
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"}, forwardShaderConfig)
         .createPipeline(m_emptyM2ParticleVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&l_sceneWideChunk, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(4, l_fragmentData->getSubBuffer());
         })
         .createDescriptorSet(1, [&m2ParticleMatTemplate](std::shared_ptr<GDescriptorSet> &ds) {
@@ -351,11 +353,11 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockPS>>(uboStaticBuffer); ;
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, forwardShaderConfig)
         .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [l_sceneWideChunk, &modelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, BufferChunkHelperVLK::cast(modelWide)->getSubBuffer())
                 .ubo(2, l_vertexData->getSubBuffer())
                 .ubo(4, l_fragmentData->getSubBuffer());
@@ -386,11 +388,11 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderForwardVLK::createWaterMaterial(co
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(uboStaticBuffer); ;
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, forwardShaderConfig)
         .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [l_sceneWideChunk, &modelWide, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, BufferChunkHelperVLK::cast(modelWide)->getSubBuffer())
                 .ubo(4, l_fragmentData->getSubBuffer());
         })
@@ -415,11 +417,11 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
     auto &l_sceneWideChunk = sceneWideChunk;
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"}, forwardShaderConfig)
         .createPipeline(m_emptySkyVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, skyColors->getSubBuffer());
         })
         .toMaterial<ISkyMeshMaterial>([&skyColors](ISkyMeshMaterial *instance) -> void {
@@ -433,11 +435,11 @@ std::shared_ptr<IPortalMaterial> MapSceneRenderForwardVLK::createPortalMaterial(
     auto &l_sceneWideChunk = sceneWideChunk;
     auto materialPS = std::make_shared<CBufferChunkVLK<DrawPortalShader::meshWideBlockPS>>(uboBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawPortalShader", "drawPortalShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawPortalShader", "drawPortalShader"}, forwardShaderConfig)
         .createPipeline(m_emptyPortalVAO, m_renderPass, pipelineTemplate)
         .createDescriptorSet(0, [&materialPS, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(l_sceneWideChunk)->getSubBuffer())
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo(1, materialPS->getSubBuffer());
         })
         .toMaterial<IPortalMaterial>([&materialPS](IPortalMaterial *instance) -> void {
@@ -541,13 +543,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
 
-    TracyMessageL("collect meshes created");
-    std::future<void> collectMeshAsync = std::async(std::launch::async,
-                                                    [&]() {
+//    TracyMessageL("collect meshes created");
+//    std::future<void> collectMeshAsync = std::async(std::launch::async,
+//                                                    [&]() {
                                                         collectMeshes(framePlan, opaqueMeshes, transparentMeshes,
                                                                       skyOpaqueMeshes, skyTransparentMeshes);
-                                                    }
-    );
+//                                                    }
+//    );
 
     mapScene->doPostLoad(l_this, framePlan);
     mapScene->update(framePlan);
@@ -557,10 +559,10 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
 
 
-    {
-        ZoneScopedN("collect meshes wait");
-        collectMeshAsync.wait();
-    }
+//    {
+//        ZoneScopedN("collect meshes wait");
+//        collectMeshAsync.wait();
+//    }
 
     bool renderSky = framePlan->renderSky;
     auto skyMesh = framePlan->skyMesh;
@@ -575,6 +577,11 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         // Upload stuff
         // ---------------------
         {
+            {
+                std::string debugMess = "sceneWideChunk = " + std::to_string(
+                    DynamicBufferChunkHelperVLK::cast(l_this->sceneWideChunk)->getOffset());
+                auto debugLabel = uploadCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
+            }
             ZoneScopedN("submit buffers");
             uploadCmd.submitBufferUploads(l_this->uboBuffer);
             uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
@@ -639,15 +646,15 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             {
                 ZoneScopedN("submit transparent");
                 for (auto const &mesh: *transparentMeshes) {
-
+//
 //                std::string debugMess =
 //                    "Drawing mesh "
 //                    " meshType = " + std::to_string((int)mesh->getMeshType()) +
 //                    " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
 //                    " sortDistance = " + std::to_string(mesh->getSortDistance()) +
 //                    " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
-//
-//                auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
+
+//                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
                 }

@@ -445,6 +445,10 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathf
         }
         this->InternalUpdate(delta);
     }
+
+    const HGParticleMesh &mesh = frame[m_api->hDevice->getDrawFrameNumber()].m_mesh;
+    mesh->setSortDistance(m_currentBonePos);
+
 }
 //void ParticleEmitter::Sync() {
 //

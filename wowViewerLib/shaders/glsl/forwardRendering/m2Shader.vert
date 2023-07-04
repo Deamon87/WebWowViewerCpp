@@ -90,6 +90,7 @@ void main() {
     mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
 
     vec3 normal = normalize((viewModelMatForNormal * vec4(aNormal, 0.0)).xyz);
+    vec3 minusNormal = normalize((viewModelMatForNormal * vec4(-aNormal, 0.0)).xyz);
 
     vTexCoord = aTexCoord;
     vTexCoord2 = aTexCoord2;

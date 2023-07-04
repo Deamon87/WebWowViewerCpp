@@ -13,6 +13,7 @@
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../../../engine/shader/ShaderDefinitions.h"
 
+
 struct ShaderSetLayout {
     std::unordered_map<unsigned int, unsigned int> uboSizesPerBinding;
     bindingAmountData uboBindings;
@@ -29,17 +30,14 @@ public:
     static const constexpr int UBO_SET_INDEX = 0;
     static const constexpr int IMAGE_SET_INDEX = 1;
 
-    explicit GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device);
+    explicit GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device, const ShaderConfig &shaderConf);
     ~GShaderPermutationVLK() override {};
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
     VkShaderModule getFragmentModule() {return fragShaderModule;}
 
 
-    const std::shared_ptr<GDescriptorSetLayout> getDescriptorLayout(int bindPoint) {return descriptorSetLayouts[bindPoint];}
-
-    virtual int getTextureBindingStart();
-    virtual int getTextureCount();
+    const std::shared_ptr<GDescriptorSetLayout> getDescriptorLayout(int bindPoint);
 
     const shaderMetaData *fragShaderMeta;
     const shaderMetaData *vertShaderMeta;
@@ -79,9 +77,11 @@ private:
     std::string m_shaderNameFrag;
 
     CombinedShaderLayout combinedShaderLayout;
+    ShaderConfig m_shaderConf;
+
 
     void createSetDescriptorLayouts();
-
+    std::vector<const shaderMetaData *> createMetaArray();
     void createShaderLayout();
     void createPipelineLayout();
 };

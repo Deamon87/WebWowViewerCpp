@@ -44,19 +44,25 @@ VkShaderModule GShaderPermutationVLK::createShaderModule(const std::vector<char>
 }
 
 GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName,
-                                             const std::shared_ptr<GDeviceVLK> &device) :
-    m_device(device), m_combinedName(shaderVertName + " "+ shaderFragName), m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName){
+                                             const std::shared_ptr<GDeviceVLK> &device,
+                                             const ShaderConfig &shaderConf) :
+    m_device(device), m_combinedName(shaderVertName + " "+ shaderFragName), m_shaderConf(shaderConf),
+    m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName){
                                              
 
 }
 
+std::vector<const shaderMetaData *> GShaderPermutationVLK::createMetaArray() {
+    return {fragShaderMeta, vertShaderMeta};
+}
+
 void GShaderPermutationVLK::createSetDescriptorLayouts() {
-    std::vector<const shaderMetaData *> metas = {fragShaderMeta, vertShaderMeta};
+    std::vector<const shaderMetaData *> metas = createMetaArray();
     for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
         auto &setLayout = combinedShaderLayout.setLayouts[i];
         if (setLayout.imageBindings.length == 0 && setLayout.uboBindings.length == 0) continue;
 
-        descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i);
+        descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i, m_shaderConf.typeOverrides);
     }
 }
 
@@ -77,14 +83,6 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     this->createPipelineLayout();
 }
 
-int GShaderPermutationVLK::getTextureBindingStart() {
-    return combinedShaderLayout.setLayouts[1].imageBindings.start;
-}
-
-int GShaderPermutationVLK::getTextureCount() {
-    return combinedShaderLayout.setLayouts[1].imageBindings.length;
-}
-
 inline void makeMin(unsigned int &a, const unsigned int b) {
     a = std::min<unsigned int>(a, b);
 }
@@ -93,8 +91,6 @@ inline void makeMax(unsigned int &a, const unsigned int b) {
 }
 
 void GShaderPermutationVLK::createShaderLayout() {
-    //Check the buffer sizes
-
     //UBO stuff
     for (int i = 0; i < this->vertShaderMeta->uboBindings.size(); i++) {
         auto &uboVertBinding = this->vertShaderMeta->uboBindings[i];
@@ -198,5 +194,10 @@ void GShaderPermutationVLK::createPipelineLayout() {
     if (vkCreatePipelineLayout(m_device->getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
+}
+
+const std::shared_ptr<GDescriptorSetLayout>
+GShaderPermutationVLK::getDescriptorLayout(int bindPoint) {
+    return descriptorSetLayouts[bindPoint];
 }
 

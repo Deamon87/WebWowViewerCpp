@@ -25,10 +25,11 @@ public:
     ~GDescriptorSet();
 
     void update();
-    void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo);
+    void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo, std::vector<int> &dynamicBufferIndexes);
     const std::shared_ptr<GDescriptorSetLayout> &getDescSetLayout() const { return m_hDescriptorSetLayout;};
 
     VkDescriptorSet getDescSet() const {return m_descriptorSet;}
+    void getDynamicOffsets(std::vector<uint32_t> &dynamicOffsets);
 
 
 
@@ -54,6 +55,7 @@ public:
 
         //TODO: add version of this array texture case (aka bindless)
         SetUpdateHelper& texture(int bindIndex, const HGSamplableTexture &textureVlk);
+        void cancelUpdate();
 
         template <typename T>
         void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, DescriptorRecord::DescriptorRecordType descType) {
@@ -79,12 +81,19 @@ public:
                 m_boundDescriptors[bindPoint] = std::make_unique<DescriptorRecord>(descType, object, callback);
             }
         }
+        std::unordered_map<int, VkDescriptorType> &getAccumulatedTypeOverrides() {
+            return typeOverrides;
+        }
     private:
+        bool updateCancelled = false;
         GDescriptorSet &m_set;
         std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
 
         std::vector<VkDescriptorImageInfo> imageInfos;
         std::vector<VkDescriptorBufferInfo> bufferInfos;
+        std::vector<int> dynamicBufferIndexes;
+        std::unordered_map<int, VkDescriptorType> typeOverrides;
+
 
         std::vector<VkWriteDescriptorSet> updates;
         std::bitset<GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_updateBindPoints = 0;
@@ -98,6 +107,7 @@ private:
     std::shared_ptr<GDescriptorPoolVLK> m_parentPool;
 
     const std::shared_ptr<GDescriptorSetLayout> m_hDescriptorSetLayout;
+    std::vector<int> m_dynamicBufferIndexes;
 
     bool m_firstUpdate = true;
 

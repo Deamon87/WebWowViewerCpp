@@ -8,7 +8,7 @@
 #include <vector>
 #include <string>
 #include "../../interface/IDevice.h"
-#include "ISimpleMaterialVLK.h"
+    #include "ISimpleMaterialVLK.h"
 #include "../../../renderer/mapScene/vulkan/materials/IMaterialInstance.h"
 #include "../descriptorSets/GDescriptorSet.h"
 
@@ -18,8 +18,8 @@ public:
     MaterialBuilderVLK& operator=(MaterialBuilderVLK const& ) = delete;
 
     static MaterialBuilderVLK fromShader(const std::shared_ptr<IDeviceVulkan> &device,
-                                         const std::vector<std::string> &shaderFiles) {
-        return {device, shaderFiles};
+                                         const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig) {
+        return {device, shaderFiles, shaderConfig};
     }
 
     MaterialBuilderVLK& bindDescriptorSet(int bindPoint, std::shared_ptr<GDescriptorSet> &ds);
@@ -41,7 +41,7 @@ public:
     ~MaterialBuilderVLK() = default;
 private:
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
-                       const std::vector<std::string> &shaderFiles);
+                       const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig);
 
 
 private:

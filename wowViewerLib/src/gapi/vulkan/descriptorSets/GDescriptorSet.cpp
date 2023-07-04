@@ -39,17 +39,28 @@ void GDescriptorSet::update() {
 // The operations described by pDescriptorWrites are performed first, followed by the operations described by pDescriptorCopies.
 //
 // So, writes first, copies second. T_T
-void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo) {
+void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo, std::vector<int> &dynamicBufferIndexes) {
     vkUpdateDescriptorSets(m_device->getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
     m_firstUpdate = false;
 
+    m_dynamicBufferIndexes = dynamicBufferIndexes;
 
 //    m_updateBitSet |= updatedBindsBitSet;
 //
 //    for (int i = 0; updatedBindsBitSet.size(); i++) {
 //        m_updatesLeft[i] = GDeviceVLK::MAX_FRAMES_IN_FLIGHT;
 //    }
+}
+
+void GDescriptorSet::getDynamicOffsets(std::vector<uint32_t> &dynamicOffsets) {
+    for (int i = 0; i < m_dynamicBufferIndexes.size(); i++) {
+
+        auto &descriptor = boundDescriptors[m_dynamicBufferIndexes[i]];
+        assert(descriptor->descType == DescriptorRecord::DescriptorRecordType::UBODynamic);
+
+        dynamicOffsets.push_back(descriptor->buffer->getOffset());
+    }
 }
 
 
@@ -61,10 +72,12 @@ GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture &samplableTextureVlk) {
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
 
+#if (!defined(NDEBUG))
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         std::cerr << "descriptor mismatch for image" << std::endl;
         throw std::runtime_error("descriptor mismatch for image");
     }
+#endif
 
     auto textureVlk = samplableTextureVlk!=nullptr ? std::dynamic_pointer_cast<GTextureVLK>(samplableTextureVlk->getTexture()) : nullptr;
     auto samplerVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureSamplerVLK>(samplableTextureVlk->getSampler()) : nullptr;
@@ -110,11 +123,14 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
+    typeOverrides[bindIndex] = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
 
+#if (!defined(NDEBUG))
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
         std::cerr << "descriptor mismatch for UBO dynamic" << std::endl;
         throw std::runtime_error("descriptor mismatch for UBO dynamic");
     }
+#endif
 
     assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::UBODynamic);
     m_updateBindPoints[bindIndex] = true;
@@ -122,7 +138,7 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
     bufferInfo = {};
     bufferInfo.buffer = buffer->getGPUBuffer();
-    bufferInfo.offset = buffer->getOffset();
+    bufferInfo.offset = 0; //Mandatory for VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC to work
     bufferInfo.range = buffer->getSize();
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
@@ -136,6 +152,8 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
     writeDescriptor.pBufferInfo = &bufferInfo;
     writeDescriptor.pImageInfo = nullptr;
     writeDescriptor.pTexelBufferView = nullptr;
+
+    dynamicBufferIndexes.push_back(bindIndex);
 
     return *this;
 }
@@ -192,6 +210,8 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
 }
 
 GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
+    if (updateCancelled) return;
+
     {
         int bufferIndex = 0;
 
@@ -237,8 +257,10 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
         throw std::runtime_error("required descriptors were not set");
     }
 
+    std::sort(dynamicBufferIndexes.begin(), dynamicBufferIndexes.end());
+    dynamicBufferIndexes.erase(std::unique(dynamicBufferIndexes.begin(), dynamicBufferIndexes.end()), dynamicBufferIndexes.end());
 
-    m_set.writeToDescriptorSets(updates, imageInfos);
+    m_set.writeToDescriptorSets(updates, imageInfos, dynamicBufferIndexes);
 
     {
         int bufferIndex = 0;
@@ -252,5 +274,9 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
             }
         }
     }
+}
+
+void GDescriptorSet::SetUpdateHelper::cancelUpdate() {
+    updateCancelled = true;
 }
 

@@ -9,7 +9,7 @@
 #include "ImGUIPlan.h"
 #include "../../../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "IFrontendUIBufferCreate.h"
-#include "../../../../wowViewerLib/src/gapi/vulkan/buffers/IBufferChunkVLK.h"
+#include "../../../../wowViewerLib/src/gapi/vulkan/buffers/CBufferChunkVLK.h"
 
 static const std::array<GBufferBinding, 3> imguiBindings = {{
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},

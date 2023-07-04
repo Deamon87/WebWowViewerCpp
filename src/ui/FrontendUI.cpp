@@ -108,8 +108,8 @@ void FrontendUI::composeUI() {
 
 
     static bool show_demo_window = true;
-    if (show_demo_window)
-        ImGui::ShowDemoWindow(&show_demo_window);
+//    if (show_demo_window)
+//        ImGui::ShowDemoWindow(&show_demo_window);
 
     if (m_databaseUpdateWorkflow != nullptr) {
         if (m_databaseUpdateWorkflow->isDatabaseUpdated()) {
@@ -520,7 +520,7 @@ void FrontendUI::showAdtSelectionMinimap() {
         const ImGuiStyle &style = ImGui::GetStyle();
 
         if (ImGui::CaptureMouseWheel(wheel)) {
-            minimapZoom += wheel * 0.1;
+            minimapZoom = pow(2.0f, (std::log(minimapZoom)/std::log(2.0f)) + wheel * 0.1f);
             auto windowPos = ImGui::GetWindowPos();
             auto mousePos = ImGui::GetMousePos();
 
@@ -546,10 +546,10 @@ void FrontendUI::showAdtSelectionMinimap() {
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
 
-    const float defaultImageDimension = 100;
-    int newZoomedSize = (defaultImageDimension * minimapZoom);
+    const float defaultImageDimension = 100.0f;
+    float newZoomedSize = defaultImageDimension * minimapZoom;
     if (prevZoomedSize == 0)
-        prevZoomedSize = defaultImageDimension * prevMinimapZoom;
+        prevZoomedSize = defaultImageDimension *  prevMinimapZoom;
 
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
@@ -568,8 +568,8 @@ void FrontendUI::showAdtSelectionMinimap() {
                     float screenSpaceCoordX = ImGui::GetScrollX() + windowRelativeMouseX - style.WindowPadding.x / 2.0f;
                     float screenSpaceCoordY = ImGui::GetScrollY() + windowRelativeMouseY - style.WindowPadding.y / 2.0f;
 
-                    float adtIndexX = (screenSpaceCoordX) / (prevMinimapZoom * defaultImageDimension);
-                    float adtIndexY = (screenSpaceCoordY) / (prevMinimapZoom * defaultImageDimension);
+                    float adtIndexX = (screenSpaceCoordX) / (prevZoomedSize);
+                    float adtIndexY = (screenSpaceCoordY) / (prevZoomedSize);
 
                     worldPosX = AdtIndexToWorldCoordinate(adtIndexY); //?
                     worldPosY = AdtIndexToWorldCoordinate(adtIndexX);
@@ -617,8 +617,8 @@ void FrontendUI::showAdtSelectionMinimap() {
         float pivotX = ImGui::GetScrollX() + pivotForZoomX - style.WindowPadding.x / 2.0f;
         float pivotY = ImGui::GetScrollY() + pivotForZoomY - style.WindowPadding.y / 2.0f;
 
-        float newScrollX = (pivotX) * minimapZoom / prevMinimapZoom - pivotForZoomX + style.WindowPadding.x / 2.0f;
-        float newScrollY = (pivotY) * minimapZoom / prevMinimapZoom - pivotForZoomY + style.WindowPadding.y / 2.0f;
+        float newScrollX = (pivotX) *  minimapZoom / prevMinimapZoom - pivotForZoomX + style.WindowPadding.x / 2.0f;
+        float newScrollY = (pivotY) *  minimapZoom / prevMinimapZoom - pivotForZoomY + style.WindowPadding.y / 2.0f;
 
         ImGui::SetScrollX(newScrollX);
         ImGui::SetScrollY(newScrollY);

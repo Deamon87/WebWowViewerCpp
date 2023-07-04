@@ -2,8 +2,8 @@
 // Created by Deamon on 30.01.23.
 //
 
-#ifndef AWEBWOWVIEWERCPP_IBUFFERCHUNKVLK_H
-#define AWEBWOWVIEWERCPP_IBUFFERCHUNKVLK_H
+#ifndef AWEBWOWVIEWERCPP_CBUFFERCHUNKVLK_H
+#define AWEBWOWVIEWERCPP_CBUFFERCHUNKVLK_H
 
 
 #include "../../interface/buffers/IBufferChunk.h"
@@ -52,4 +52,4 @@ namespace BufferChunkHelperVLK {
     }
 };
 
-#endif //AWEBWOWVIEWERCPP_IBUFFERCHUNKVLK_H
+#endif //AWEBWOWVIEWERCPP_CBUFFERCHUNKVLK_H

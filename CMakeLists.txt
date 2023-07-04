@@ -234,7 +234,10 @@ set(SOURCE_FILES
 		src/ui/renderer/uiScene/ImGUIPlan.h
         src/ui/renderer/uiScene/IFrontendUIBufferCreate.h
 		src/ui/renderer/uiScene/materials/UIMaterial.h
-        src/ui/childWindow/mapSelectionWindow/MapSelectDialog.cpp src/ui/childWindow/mapSelectionWindow/MapSelectDialog.h)
+        src/ui/childWindow/mapSelectionWindow/MapSelectDialog.cpp
+		src/ui/childWindow/mapSelectionWindow/MapSelectDialog.h
+		src/ui/imguiLib/wheelCapture/wheelCapture.cpp
+		src/ui/imguiLib/wheelCapture/wheelCapture.h)
 
 
 set(SOURCE_FILES_VULKAN

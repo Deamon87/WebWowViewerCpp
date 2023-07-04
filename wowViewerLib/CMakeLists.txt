@@ -350,7 +350,14 @@ set(SOURCE_FILES
         src/gapi/interface/materials/IMaterial.h
         src/renderer/mapScene/MapSceneParams.h
         src/include/custom_container_key.h
-        src/renderer/mapScene/materials/IMaterialStructs.h src/gapi/interface/textures/ITextureSampler.h src/gapi/interface/textures/ISamplableTexture.h src/engine/objects/liquid/LiquidInstance.cpp src/engine/objects/liquid/LiquidInstance.h src/engine/objects/liquid/LiquidDataGetters.h)
+        src/renderer/mapScene/materials/IMaterialStructs.h
+        src/gapi/interface/textures/ITextureSampler.h
+        src/gapi/interface/textures/ISamplableTexture.h
+        src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.cpp
+        src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h
+        src/engine/objects/liquid/LiquidInstance.cpp
+        src/engine/objects/liquid/LiquidInstance.h
+        src/engine/objects/liquid/LiquidDataGetters.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -512,8 +519,8 @@ if (LINK_VULKAN)
             src/gapi/vulkan/buffers/IBufferVLK.h
             src/gapi/vulkan/materials/ISimpleMaterialVLK.cpp
             src/gapi/vulkan/materials/ISimpleMaterialVLK.h
-            src/gapi/vulkan/buffers/IBufferChunkVLK.cpp
-            src/gapi/vulkan/buffers/IBufferChunkVLK.h
+            src/gapi/vulkan/buffers/CBufferChunkVLK.cpp
+            src/gapi/vulkan/buffers/CBufferChunkVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h
             src/gapi/vulkan/commandBuffer/CommandBuffer.cpp
@@ -544,7 +551,11 @@ if (LINK_VULKAN)
             src/gapi/vulkan/textures/GTextureSamplerVLK.cpp
             src/gapi/vulkan/textures/GTextureSamplerVLK.h
             src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.cpp
-            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.h)
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.h
+            src/gapi/vulkan/context/vulkan_context.h
+            src/gapi/vulkan/shaders/ShaderConfig.h
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.cpp
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
@@ -588,7 +599,7 @@ if (LINK_VULKAN)
             #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c src/gapi/vulkan/context/vulkan_context.h src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.cpp src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h)
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c )
     endif()
 
 

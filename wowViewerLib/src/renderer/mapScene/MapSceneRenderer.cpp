@@ -110,6 +110,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<s
                                             const HFrameDependantData &fdd,
                                             bool isVulkan
                                             ) {
+    ZoneScoped;
 
     static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
                                                               0, -1, 0, 0,

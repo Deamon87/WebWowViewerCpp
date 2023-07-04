@@ -3,6 +3,7 @@
 //
 
 #include "TextureUploadHelper.h"
+#include "Tracy.hpp"
 
 void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
                                        const std::vector<std::weak_ptr<GTextureVLK>> &textures,
@@ -51,6 +52,7 @@ void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
 }
 
 void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textures, CmdBufRecorder &renderCmdBufRecorder, CmdBufRecorder &uploadCmdBufRecorder) {
+    ZoneScoped;
     if (textures.empty()) return;
 
     // ------------------------------------

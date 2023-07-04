@@ -37,7 +37,6 @@ private:
     std::vector<std::vector<int>> childBonesLookup;
 
     void initBonesIsCalc();
-    void initBlendMatrices();
     void initGlobalSequenceTimes();
 
     void calculateBoneTree();

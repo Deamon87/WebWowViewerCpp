@@ -25,6 +25,7 @@
 #include "synchronization/GFenceVLK.h"
 #include "../../renderer/vulkan/IRenderFunctionVLK.h"
 #include "commandBuffer/commandBufferRecorder/TextureUploadHelper.h"
+#include "Tracy.hpp"
 #include <tbb/tbb.h>
 
 const int WIDTH = 1900;
@@ -801,6 +802,7 @@ float GDeviceVLK::getAnisLevel() {
 }
 
 void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
+    ZoneScoped;
     this->waitInDrawStageAndDeps.beginMeasurement();
     int currentDrawFrame = getDrawFrameNumber();
 
@@ -811,7 +813,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     uint32_t imageIndex = -1;
     {
         {
-
+            ZoneScopedN("frameBuf CMD wait");
             //Wait for frameBuf CMD buffer to become available
             frameBufFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
             uploadFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
@@ -825,6 +827,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 
         //Do Texture update
         {
+            ZoneScopedN("Texture update");
             m_textureManager->processBLPTextures();
             auto textureVector = m_textureManager->getReadyToUploadTextures();
             textureUploadStrategy(textureVector.get(), frameBufCmd, uploadCmd);
@@ -838,6 +841,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 
         //Wait for swapchain
         {
+            ZoneScopedN("Swapchain wait");
             inFlightFences[currentDrawFrame]->wait(std::numeric_limits<uint64_t>::max());
             inFlightFences[currentDrawFrame]->reset();
         }
@@ -1040,20 +1044,21 @@ void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantDa
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {}
 
-std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) {
-    std::string combinedName = vertexName + " " + fragmentName;
-    const char * cstr = combinedName.c_str();
-    size_t hash = CalculateFNV(cstr);
-    if (m_shaderPermuteCache.count(hash) > 0) {
-        HGShaderPermutation ptr = m_shaderPermuteCache.at(hash);
+std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConfig) {
+
+    ShaderPermutationCacheRecord cacheRecord;
+    cacheRecord.name = vertexName + " " + fragmentName;
+    cacheRecord.shaderConfig = shaderConfig;
+
+    if (m_shaderPermuteCache.find(cacheRecord) != m_shaderPermuteCache.end()) {
+        HGShaderPermutation ptr = m_shaderPermuteCache.at(cacheRecord);
         return ptr;
     }
 
-    std::shared_ptr<GShaderPermutationVLK> sharedPtr = std::make_shared<GShaderPermutationVLK>(vertexName, fragmentName, this->shared_from_this());
+    std::shared_ptr<GShaderPermutationVLK> sharedPtr = std::make_shared<GShaderPermutationVLK>(vertexName, fragmentName, this->shared_from_this(), shaderConfig);
     sharedPtr->compileShader("", "");
 
-    m_shaderPermuteCache[hash] = sharedPtr;
-
+    m_shaderPermuteCache[cacheRecord] = sharedPtr;
 
     return sharedPtr;
 }

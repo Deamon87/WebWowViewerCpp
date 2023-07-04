@@ -19,7 +19,10 @@ class GDescriptorSetLayout {
 public:
     static const constexpr int MAX_BINDPOINT_NUMBER = 16;
 
-    GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device, const std::vector<const shaderMetaData*> &metaData, int setIndex);
+    GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
+                         const std::vector<const shaderMetaData*> &metaData,
+                         int setIndex,
+                         const std::unordered_map<int, VkDescriptorType> &typeOverrides);
 
     ~GDescriptorSetLayout();
 
@@ -29,6 +32,7 @@ public:
     const std::unordered_map<int, int>& getRequiredUBOSize() const {return m_requiredUBOSize;} ;
 
     int getTotalUbos() { return m_totalUbos; };
+    int getTotalDynUbos() { return m_totalDynUbos; };
     int getTotalImages() { return m_totalImages; };
     std::bitset<MAX_BINDPOINT_NUMBER> getRequiredBindPoints() {return m_requiredBindPoints;};
 private:
@@ -39,6 +43,7 @@ private:
     VkDescriptorSetLayout m_descriptorSetLayout;
     int m_totalImages = 0;
     int m_totalUbos = 0;
+    int m_totalDynUbos = 0;
 
     std::shared_ptr<IDeviceVulkan> m_device;
 };

@@ -236,9 +236,9 @@ struct M2Sequence {
     uint32_t flags;                // See below.
     int16_t frequency;             // This is used to determine how often the animation is played. For all animations of the same type, this adds up to 0x7FFF (32767).
     uint16_t _padding;
-    M2RangeInt replay;                // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
+    M2RangeInt replay;             // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
     uint32_t blendtime;            // The client blends (lerp) animation states between animations where the end and start values differ. This specifies how long that blending takes. Values: 0, 50, 100, 150, 200, 250, 300, 350, 500.
-    M2Bounds bounds;
+    M2Bounds bounds;               // Bounding box
     int16_t variationNext;         // id of the following animation of this AnimationID, points to an Index or is -1 if none.
     uint16_t aliasNext;            // id in the list of animations. Used to find actual animation if this sequence is an alias (flags & 0x40)
 };

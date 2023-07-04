@@ -7,15 +7,18 @@
 #include "GDescriptorPoolVLK.h"
 
 GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device) {
-    uniformsAvailable = 40*4096;
+    uniformsAvailable = 4*4096;
+    dynUniformsAvailable = 4*4096;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096 * 4;
 
-    std::array<VkDescriptorPoolSize, 2> poolSizes = {};
+    std::array<VkDescriptorPoolSize, 3> poolSizes = {};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     poolSizes[0].descriptorCount = static_cast<uint32_t>(uniformsAvailable);
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = static_cast<uint32_t>(imageAvailable);
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    poolSizes[2].descriptorCount = static_cast<uint32_t>(dynUniformsAvailable);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -31,7 +34,10 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device)
 }
 
 VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout) {
-    if (uniformsAvailable < hDescriptorSetLayout->getTotalUbos() || imageAvailable <  hDescriptorSetLayout->getTotalImages() || setsAvailable < 1) return nullptr;
+    if (uniformsAvailable < hDescriptorSetLayout->getTotalUbos() ||
+        dynUniformsAvailable <  hDescriptorSetLayout->getTotalDynUbos() ||
+        imageAvailable <  hDescriptorSetLayout->getTotalImages() ||
+        setsAvailable < 1) return nullptr;
 
     constexpr int descSetCount = 1;
     std::array<VkDescriptorSetLayout, descSetCount> descLayouts = {hDescriptorSetLayout->getSetLayout()};
@@ -54,6 +60,7 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
 
     if (descriptorSet != nullptr) {
         uniformsAvailable -= hDescriptorSetLayout->getTotalUbos();
+        dynUniformsAvailable -= hDescriptorSetLayout->getTotalDynUbos();
         imageAvailable -= hDescriptorSetLayout->getTotalImages();
         setsAvailable -= 1;
     }
@@ -69,6 +76,7 @@ void GDescriptorPoolVLK::deallocate(const std::shared_ptr<GDescriptorSetLayout> 
 
         h_this->imageAvailable+= hDescriptorLayout->getTotalImages();
         h_this->uniformsAvailable+= hDescriptorLayout->getTotalUbos();
+        h_this->dynUniformsAvailable+= hDescriptorLayout->getTotalDynUbos();
         h_this->setsAvailable+=1;
     });
 }

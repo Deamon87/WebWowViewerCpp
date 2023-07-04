@@ -42,6 +42,7 @@ class gMeshTemplate;
 #include "synchronization/GSemaphoreVLK.h"
 #include "commandBuffer/commandBufferRecorder/RenderPassHelper.h"
 #include "TextureManagerVLK.h"
+#include "shaders/ShaderConfig.h"
 
 #include <optional>
 
@@ -101,7 +102,7 @@ public:
         return this->waitInDrawStageAndDeps.getTimePerFrame();
     }
 
-    std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, void *permutationDescriptor) override;
+    std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConf);
 
     HGBufferVLK createUniformBuffer(size_t size);
     HGBufferVLK createVertexBuffer(size_t size);
@@ -329,10 +330,30 @@ protected:
     std::shared_ptr<TextureManagerVLK> m_textureManager;
 protected:
     //Caches
-    std::unordered_map<size_t, HGShaderPermutation> m_shaderPermuteCache;
-    struct FrameUniformBuffers {
-        HGUniformBuffer m_uniformBufferForUpload;
+
+    struct ShaderPermutationCacheRecord {
+        std::string name;
+        ShaderConfig shaderConfig;
+
+        bool operator==(const ShaderPermutationCacheRecord &other) const {
+            return
+                (name == other.name) &&
+                (shaderConfig.typeOverrides == other.shaderConfig.typeOverrides);
+        };
     };
+    struct ShaderPermutationRecordHasher {
+        std::size_t operator()(const ShaderPermutationCacheRecord& k) const {
+            using std::hash;
+
+            size_t mapHash = 0;
+            for (auto &rec : k.shaderConfig.typeOverrides)
+                mapHash ^= hash<int>{}(rec.second) ^ hash<int>{}(rec.first);
+
+            return hash<std::string>{}(k.name) ^ mapHash;
+
+        };
+    };
+    std::unordered_map<ShaderPermutationCacheRecord, HGShaderPermutation, ShaderPermutationRecordHasher> m_shaderPermuteCache;
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 

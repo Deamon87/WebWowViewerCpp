@@ -23,6 +23,7 @@ private:
     VkDescriptorPool m_descriptorPool;
 
     int uniformsAvailable = 0;
+    int dynUniformsAvailable = 0;
     int imageAvailable = 0;
     int setsAvailable = 0;
 };

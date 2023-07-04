@@ -68,6 +68,7 @@ private:
 
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
+    bool m_placementMatrixChanged = false;
     mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
     mathfu::vec3 m_localPosition;

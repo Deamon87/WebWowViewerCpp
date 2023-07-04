@@ -91,7 +91,6 @@ void main() {
         vMeshColorAlpha.a *=
         textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightIndexes.x / 4][textureWeightIndexes.x % 4];
 
-
     vec3 l_Normal = vNormal;
 
     //Accumulate and apply lighting

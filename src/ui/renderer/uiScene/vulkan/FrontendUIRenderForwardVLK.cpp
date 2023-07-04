@@ -5,7 +5,7 @@
 #include "FrontendUIRenderForwardVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/ISimpleMaterialVLK.h"
-#include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/IBufferChunkVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/CBufferChunkVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/MaterialBuilderVLK.h"
@@ -56,7 +56,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture 
     }
 
     auto &l_imguiUbo = m_imguiUbo;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"}, {})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

@@ -18,6 +18,7 @@ GMeshVLK::GMeshVLK(const gMeshTemplate &meshTemplate,
     m_isScissorsEnabled = meshTemplate.scissorEnabled;
     if (m_isScissorsEnabled) {
         m_scissorSize = meshTemplate.scissorSize;
+        assert(m_scissorOffset[0] >= 0 && m_scissorOffset[1] >= 0);
         m_scissorOffset = meshTemplate.scissorOffset;
     }
 

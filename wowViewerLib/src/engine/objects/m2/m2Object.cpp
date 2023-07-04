@@ -600,6 +600,7 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
     m_localPosition = mathfu::vec3(def.position);
     m_placementMatrix = placementMatrix;
     m_placementInvertMatrix = invertPlacementMatrix;
+    m_placementMatrixChanged = true;
 
     m_localUpVector = (invertPlacementMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
 
@@ -630,6 +631,7 @@ void M2Object::createPlacementMatrix(SMDoodadDef &def) {
     m_localPosition = mathfu::vec3(def.position);
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatrixChanged = true;
 
     m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
     m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
@@ -649,6 +651,7 @@ void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 sc
     mathfu::mat4 placementInvertMatrix = placementMatrix.Inverse();
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatrixChanged = true;
 
     m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
     m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
@@ -678,6 +681,7 @@ void M2Object::updatePlacementMatrixFromParentAttachment(M2Object *parent, int a
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatrixChanged = true;
 
     m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
     m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
@@ -935,6 +939,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
     if (m_boolSkybox && m_overrideSkyModelMat) {
         m_placementMatrix.GetColumn(3) = mathfu::vec4(cameraPos, 1.0);
+        m_placementMatrixChanged = true;
         m_placementInvertMatrix = m_placementMatrix.Inverse();
     }
 
@@ -1010,16 +1015,17 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
     if (!this->m_loaded)  return;
 
-    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
+//    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
     //Update materials
-    {
+    if (m_placementMatrixChanged) {
         auto &placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
         placementMatrix.uPlacementMat = m_placementMatrix;
         m_modelWideDataBuff->m_placementMatrix->save();
+        m_placementMatrixChanged = false;
     }
     if (bonesMatrices.size() > 0) {
         auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
@@ -1267,7 +1273,7 @@ void M2Object::createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer)
 
     return;
     //Create bounding box mesh
-    HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", "drawBBShader", nullptr);
+//    HGShaderPermutation boundingBoxshaderPermutation = m_api->hDevice->getShader("drawBBShader", "drawBBShader", );
 
     //TODO:
     PipelineTemplate pipelineTemplate;
@@ -1960,22 +1966,22 @@ void M2Object::updateDynamicMeshes() {
         for (int vertIndex = skinSection->vertexStart;
              vertIndex < (skinSection->vertexStart + skinSection->vertexCount); ++vertIndex) {
             auto &overrideVert = overrideVertexes[vertIndex - skinSection->vertexStart];
-            overrideVert = *m2Data->vertices[vertIndex];
+            auto const &originalVert = *m2Data->vertices[vertIndex];
 
             mathfu::mat4 matrix = mathfu::mat4::Identity();
-            if (overrideVert.bone_indices[0] > 0) {
-                matrix = bonesMatrices[overrideVert.bone_indices[0]] * overrideVert.bone_weights[0];
+            if (originalVert.bone_indices[0] > 0) {
+                matrix = bonesMatrices[originalVert.bone_indices[0]] * originalVert.bone_weights[0];
             }
 
             for (int i = 1; i < MAX_BONES_PER_VERTEX; i++) {
                 if (overrideVert.bone_indices[i] > 0) {
-                    matrix += (bonesMatrices[overrideVert.bone_indices[i]] * overrideVert.bone_weights[i]);
+                    matrix += (bonesMatrices[originalVert.bone_indices[i]] * originalVert.bone_weights[i]);
                 }
             }
+
+            overrideVert = originalVert;
             overrideVert.pos =
-                mathfu::vec3_packed(rootMatInverse * matrix * mathfu::vec4(mathfu::vec3(overrideVert.pos), 1.0).xyz());
-
-
+                mathfu::vec3_packed(rootMatInverse * matrix * mathfu::vec4(mathfu::vec3(originalVert.pos), 1.0).xyz());
             overrideVert.bone_indices[0] = 0;
             overrideVert.bone_indices[1] = 0;
             overrideVert.bone_indices[2] = 0;

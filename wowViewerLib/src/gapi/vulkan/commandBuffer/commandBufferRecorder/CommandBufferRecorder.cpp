@@ -89,8 +89,15 @@ void CmdBufRecorder::bindDescriptorSet(VkPipelineBindPoint bindPoint, uint32_t b
         auto vkDescSet = pDescriptorSet->getDescSet();
         constexpr uint32_t vkDescCnt = 1;
 
+
+        std::vector<uint32_t> dynamicOffsets;
+        pDescriptorSet->getDynamicOffsets(dynamicOffsets);
+
         vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, bindPoint,
-                                m_currentPipeline->getLayout(), bindIndex, vkDescCnt, &vkDescSet, 0, nullptr);
+                                m_currentPipeline->getLayout(),
+                                bindIndex,
+                                vkDescCnt, &vkDescSet,
+                                dynamicOffsets.size(), dynamicOffsets.size() > 0 ? dynamicOffsets.data() : nullptr);
 
         m_currentDescriptorSet[bindIndex] = pDescriptorSet;
     }

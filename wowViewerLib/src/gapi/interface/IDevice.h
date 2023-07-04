@@ -188,8 +188,6 @@ class IDevice {
         virtual double getWaitForUpdate() {return 0;}
 
     public:
-        virtual HGShaderPermutation getShader(std::string shaderName, std::string fragmentName, void *permutationDescriptor) = 0;
-
         virtual HGPUFence createFence() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
         //Creates or receives framebuffer and tells it would be occupied for frameNumber frames

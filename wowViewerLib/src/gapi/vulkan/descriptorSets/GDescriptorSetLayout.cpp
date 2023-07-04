@@ -7,7 +7,10 @@
 #include "../GDeviceVulkan.h"
 
 
-GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device, const std::vector<const shaderMetaData*> &metaDatas, int setIndex) : m_device(device) {
+GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
+                                           const std::vector<const shaderMetaData*> &metaDatas,
+                                           int setIndex,
+                                           const std::unordered_map<int, VkDescriptorType> &typeOverrides) : m_device(device) {
     //Create Layout
     auto &shaderLayoutBindings = m_shaderLayoutBindings;
 
@@ -32,10 +35,17 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
 
             if (uboBinding.set != setIndex) continue;
 
+            auto uniformType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            if (typeOverrides.find(uboBinding.binding) != typeOverrides.end()) {
+                auto overrideType = typeOverrides.at(uboBinding.binding);
+                assert(overrideType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+                uniformType = overrideType;
+            }
+
             auto it = shaderLayoutBindings.find(uboBinding.binding);
             if (it != std::end( shaderLayoutBindings )) {
                 it->second.stageFlags |= vkStageFlag;
-                if (it->second.descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+                if (it->second.descriptorType != uniformType) {
                     std::cerr << "Type mismatch for ubo in GDescriptorSetLayout" << std::endl;
                     throw std::runtime_error("types mismatch");
                 }
@@ -43,7 +53,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                 VkDescriptorSetLayoutBinding uboLayoutBinding = {};
                 uboLayoutBinding.binding = uboBinding.binding;
                 uboLayoutBinding.descriptorCount = 1;
-                uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                uboLayoutBinding.descriptorType = uniformType;
                 uboLayoutBinding.pImmutableSamplers = nullptr;
                 uboLayoutBinding.stageFlags = vkStageFlag;
 
@@ -58,7 +68,11 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                         }
                     }
                 }
-                m_totalUbos++;
+                if (uniformType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+                    m_totalUbos++;
+                } else if (uniformType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
+                    m_totalDynUbos++;
+                }
 
                 m_requiredBindPoints[uboBinding.binding] = true;
             }

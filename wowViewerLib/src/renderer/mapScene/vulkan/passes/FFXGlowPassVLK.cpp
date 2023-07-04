@@ -3,9 +3,10 @@
 //
 
 #include "FFXGlowPassVLK.h"
-#include "../../../../gapi/vulkan/buffers/IBufferChunkVLK.h"
+#include "../../../../gapi/vulkan/buffers/CBufferChunkVLK.h"
 #include "../../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
 #include "../../../../gapi/vulkan/GVertexBufferBindingsVLK.h"
+#include "Tracy.hpp"
 
 FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device), m_drawQuadVao(quadVAO) {
     m_ffxGlowVs = std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(uboBuffer);
@@ -124,6 +125,8 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapCha
 }
 
 void FFXGlowPassVLK::assignFFXGlowUBOConsts(float glow) {
+    ZoneScoped;
+
     auto &ffxGlowVs = m_ffxGlowVs->getObject();
     ffxGlowVs = {1,1,0,0};
     m_ffxGlowVs->save();
@@ -195,7 +198,7 @@ FFXGlowPassVLK::createFFXGaussMat(
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxgauss4"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxgauss4"}, {})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGaussVs, &ffxGaussPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -220,7 +223,7 @@ FFXGlowPassVLK::createFFXGlowMat(
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxglow"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxglow"}, {})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGlowVs, &ffxGlowPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
