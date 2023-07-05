@@ -197,12 +197,6 @@ namespace OffsetAllocator
     
     Allocation Allocator::allocate(uint32 size)
     {
-        // Out of allocations?
-        if (m_freeNodes.empty())
-        {
-            return {.offset = Allocation::NO_SPACE, .metadata = Allocation::NO_SPACE};
-        }
-        
         // Round up to bin index to ensure that alloc >= bin
         // Gives us min bin index that fits the size
         uint32 minBinIndex = SmallFloat::uintToFloatRoundUp(size);
@@ -269,10 +263,13 @@ namespace OffsetAllocator
         if (reminderSize > 0)
         {
             uint32 newNodeIndex = insertNodeIntoBin(reminderSize, node.dataOffset + size);
-            
+            //After insert node ptr may change due to m_nodes resize
+            Node& node = m_nodes[nodeIndex];
+
             // Link nodes next to each other so that we can merge them later if both are free
             // And update the old next neighbor to point to the new node (in middle)
-            if (node.neighborNext != Node::unused) m_nodes[node.neighborNext].neighborPrev = newNodeIndex;
+            if (node.neighborNext != Node::unused)
+                m_nodes[node.neighborNext].neighborPrev = newNodeIndex;
             m_nodes[newNodeIndex].neighborPrev = nodeIndex;
             m_nodes[newNodeIndex].neighborNext = node.neighborNext;
             node.neighborNext = newNodeIndex;
@@ -281,8 +278,11 @@ namespace OffsetAllocator
                 m_lastNode = newNodeIndex;
             }
         }
-        
-        return {.offset = node.dataOffset, .metadata = nodeIndex};
+
+        {
+            Node &node = m_nodes[nodeIndex];
+            return {.offset = node.dataOffset, .metadata = nodeIndex};
+        }
     }
     
     void Allocator::free(Allocation allocation)
@@ -380,8 +380,14 @@ namespace OffsetAllocator
         
         // Take a freelist node and insert on top of the bin linked list (next = old top)
         uint32 topNodeIndex = m_binIndices[binIndex];
-        uint32 nodeIndex = m_freeNodes.top();
-        m_freeNodes.pop();
+        uint32 nodeIndex = 0;
+        if (!m_freeNodes.empty()) {
+            nodeIndex = m_freeNodes.top();
+            m_freeNodes.pop();
+        } else {
+            nodeIndex = m_nodes.size();
+            m_nodes.emplace_back();
+        }
 #ifdef DEBUG_VERBOSE
         printf("Getting node %u from freelist[%u]\n", nodeIndex, m_freeOffset + 1);
 #endif

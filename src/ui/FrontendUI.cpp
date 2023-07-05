@@ -335,178 +335,6 @@ void FrontendUI::fillMapListStrings() {
         mapListStringMap.push_back(mapStrRec);
     }
 }
-void FrontendUI::showMapSelectionDialog() {
-    if (showSelectMap) {
-        enum MyMapTableColumnID
-        {
-            MyItemColumnID_ID,
-            MyItemColumnID_Name,
-            MyItemColumnID_Directory,
-            MyItemColumnID_WDTId,
-            MyItemColumnID_MapType
-        };
-
-        if (mapList.size() == 0) {
-            getMapList(mapList);
-            refilterIsNeeded = true;
-        }
-        if (refilterIsNeeded) {
-            filterMapList(std::string(&filterText[0]));
-            fillMapListStrings();
-
-            refilterIsNeeded = false;
-            resortIsNeeded = true;
-        }
-
-        ImGui::Begin("Map Select Dialog", &showSelectMap);
-        {
-            ImGui::Columns(2, NULL, true);
-            //Left panel
-            {
-                //Filter
-                if (ImGui::InputText("Filter: ", filterText.data(), filterText.size(),
-                                     ImGuiInputTextFlags_AlwaysOverwrite)) {
-                    refilterIsNeeded = true;
-                }
-                //The table
-
-                ImGui::BeginChild("Map Select Dialog Left panel");
-                if (ImGui::BeginTable("MapListSelector", 5, ImGuiTableFlags_Resizable |
-                                                                              ImGuiTableFlags_Reorderable |
-                                                                              ImGuiTableFlags_Sortable |
-                                                                              ImGuiTableFlags_NoHostExtendX |
-                                                                              ImGuiTableFlags_NoHostExtendY |
-                                                                              ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY,
-                                                                              ImVec2(-1, -1)
-                                                                              )){
-                    ImGui::TableSetupColumn("ID",      ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_ID );
-                    ImGui::TableSetupColumn("MapName", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_Name );
-                    ImGui::TableSetupColumn("MapDirectory", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_Directory );
-                    ImGui::TableSetupColumn("WdtFileID", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_WDTId );
-                    ImGui::TableSetupColumn("MapType", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_MapType );
-                    ImGui::TableSetupScrollFreeze(0, 1);
-                    ImGui::TableHeadersRow();
-
-                    ImGuiTableSortSpecs* sorts_specs = ImGui::TableGetSortSpecs();
-                    if (sorts_specs && sorts_specs->SpecsDirty)
-                        resortIsNeeded = true;
-
-                    if (sorts_specs && resortIsNeeded) {
-                        std::sort(filteredMapList.begin(), filteredMapList.end(),
-                        [sorts_specs](const auto &a, const auto &b) -> bool {
-
-                           for (int n = 0; n < sorts_specs->SpecsCount; n++)
-                           {
-                              const ImGuiTableColumnSortSpecs* sort_spec = &sorts_specs->Specs[n];
-                              int delta = 0;
-
-                              switch (sort_spec->ColumnUserID)
-                              {
-
-                                  case MyItemColumnID_ID:         delta = a.ID - b.ID;   break;
-                                  case MyItemColumnID_Name:       delta = a.MapName.compare(b.MapName);     break;
-                                  case MyItemColumnID_Directory:  delta = a.MapDirectory.compare(b.MapDirectory);     break;
-                                  case MyItemColumnID_WDTId:      delta = a.WdtFileID - b.WdtFileID;   break;
-                                  case MyItemColumnID_MapType:    delta = a.MapType - b.MapType;   break;
-
-                                  default: IM_ASSERT(0); break;
-                              }
-                              if (delta > 0)
-                                  return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true : false;
-                              if (delta < 0)
-                                  return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false : true;
-                           }
-
-                           return (a.ID - b.ID) > 0;
-                        });
-
-                        sorts_specs->SpecsDirty = false;
-                        resortIsNeeded = false;
-                        fillMapListStrings();
-                    }
-
-                    static int selected = -1;
-                    for (int i = 0; i < filteredMapList.size(); i++) {
-                        ImGui::TableNextRow();
-                        auto mapRec = filteredMapList[i];
-
-                        ImGui::TableSetColumnIndex(0);
-
-                        if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i,
-                                              ImGuiSelectableFlags_SpanAllColumns | ImGuiSelectableFlags_AllowItemOverlap)) {
-                            if (mapRec.ID != prevMapId) {
-                                mapCanBeOpened = true;
-                                adtMinimapFilled = false;
-                                prevMapRec = mapRec;
-
-                                isWmoMap = false;
-                                adtSelectionMinimapTextures = {};
-                                adtSelectionMinimapMaterials = {};
-                                if (mapRec.WdtFileID > 0) {
-                                    getAdtSelectionMinimap(mapRec.WdtFileID);
-                                } else {
-                                    getAdtSelectionMinimap(
-                                        "world/maps/" + mapRec.MapDirectory + "/" + mapRec.MapDirectory + ".wdt");
-                                }
-
-                            }
-                            prevMapId = mapRec.ID;
-                            selected = i;
-                        }
-                        bool hovered = ImGui::IsItemHovered();
-
-                        ImGui::TableSetColumnIndex(1);
-                        ImGui::Text("%s", mapListStringMap[i][1].c_str());
-                        ImGui::TableSetColumnIndex(2);
-                        ImGui::Text("%s", mapListStringMap[i][2].c_str());
-                        ImGui::TableSetColumnIndex(3);
-                        ImGui::Text("%s", mapListStringMap[i][3].c_str());
-                        ImGui::TableSetColumnIndex(4);
-                        ImGui::Text("%s", mapListStringMap[i][4].c_str());
-                    }
-                    ImGui::EndTable();
-                }
-                ImGui::Separator();
-                ImGui::EndChild();
-            }
-            ImGui::NextColumn();
-
-            {
-                ImGui::BeginChild("Map Select Dialog Right panel", ImVec2(0, 0));
-                {
-                    if (!mapCanBeOpened) {
-                        ImGui::Text("Cannot open this map.");
-                        ImGui::Text("WDT file either does not exist in CASC repository or is encrypted");
-                    } else if (!isWmoMap) {
-                        ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
-//                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-                        showAdtSelectionMinimap();
-                    } else {
-                        worldPosX = 0;
-                        worldPosY = 0;
-                        if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
-                            if (prevMapRec.WdtFileID > 0) {
-                                openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
-                            } else {
-                                //Try to open map by fileName
-                                openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f, 0);
-                            }
-                            showSelectMap = false;
-                        }
-                    }
-
-                }
-                ImGui::EndChild();
-
-
-            }
-            ImGui::Columns(1);
-
-            ImGui::End();
-        }
-    }
-}
-
 void FrontendUI::showAdtSelectionMinimap() {
     ImGui::BeginChild("Adt selection minimap", ImVec2(0, 0), true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
                                                        ImGuiWindowFlags_AlwaysVerticalScrollbar);
@@ -627,6 +455,197 @@ void FrontendUI::showAdtSelectionMinimap() {
     }
 
     ImGui::EndChild();
+}
+
+
+void FrontendUI::showMapSelectionDialog() {
+    if (!showSelectMap) {
+        for (int i = 0; i < 64; i++)
+        for (int j = 0; j < 64; j++)
+            adtSelectionMinimapMaterials[i][j] = nullptr;
+        return;
+    }
+
+    enum MyMapTableColumnID {
+        MyItemColumnID_ID,
+        MyItemColumnID_Name,
+        MyItemColumnID_Directory,
+        MyItemColumnID_WDTId,
+        MyItemColumnID_MapType
+    };
+
+    if (mapList.size() == 0) {
+        getMapList(mapList);
+        refilterIsNeeded = true;
+    }
+    if (refilterIsNeeded) {
+        filterMapList(std::string(&filterText[0]));
+        fillMapListStrings();
+
+        refilterIsNeeded = false;
+        resortIsNeeded = true;
+    }
+
+    ImGui::Begin("Map Select Dialog", &showSelectMap);
+    {
+        ImGui::Columns(2, NULL, true);
+        //Left panel
+        {
+            //Filter
+            if (ImGui::InputText("Filter: ", filterText.data(), filterText.size(),
+                                 ImGuiInputTextFlags_AlwaysOverwrite)) {
+                refilterIsNeeded = true;
+            }
+            //The table
+
+            ImGui::BeginChild("Map Select Dialog Left panel");
+            if (ImGui::BeginTable("MapListSelector", 5, ImGuiTableFlags_Resizable |
+                                                        ImGuiTableFlags_Reorderable |
+                                                        ImGuiTableFlags_Sortable |
+                                                        ImGuiTableFlags_NoHostExtendX |
+                                                        ImGuiTableFlags_NoHostExtendY |
+                                                        ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY,
+                                  ImVec2(-1, -1)
+            )) {
+                ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_ID);
+                ImGui::TableSetupColumn("MapName", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_Name);
+                ImGui::TableSetupColumn("MapDirectory", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_Directory);
+                ImGui::TableSetupColumn("WdtFileID", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_WDTId);
+                ImGui::TableSetupColumn("MapType", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_MapType);
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableHeadersRow();
+
+                ImGuiTableSortSpecs *sorts_specs = ImGui::TableGetSortSpecs();
+                if (sorts_specs && sorts_specs->SpecsDirty)
+                    resortIsNeeded = true;
+
+                if (sorts_specs && resortIsNeeded) {
+                    std::sort(filteredMapList.begin(), filteredMapList.end(),
+                              [sorts_specs](const auto &a, const auto &b) -> bool {
+
+                                  for (int n = 0; n < sorts_specs->SpecsCount; n++) {
+                                      const ImGuiTableColumnSortSpecs *sort_spec = &sorts_specs->Specs[n];
+                                      int delta = 0;
+
+                                      switch (sort_spec->ColumnUserID) {
+
+                                          case MyItemColumnID_ID:
+                                              delta = a.ID - b.ID;
+                                              break;
+                                          case MyItemColumnID_Name:
+                                              delta = a.MapName.compare(b.MapName);
+                                              break;
+                                          case MyItemColumnID_Directory:
+                                              delta = a.MapDirectory.compare(b.MapDirectory);
+                                              break;
+                                          case MyItemColumnID_WDTId:
+                                              delta = a.WdtFileID - b.WdtFileID;
+                                              break;
+                                          case MyItemColumnID_MapType:
+                                              delta = a.MapType - b.MapType;
+                                              break;
+
+                                          default:
+                                              IM_ASSERT(0);
+                                              break;
+                                      }
+                                      if (delta > 0)
+                                          return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true
+                                                                                                            : false;
+                                      if (delta < 0)
+                                          return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false
+                                                                                                            : true;
+                                  }
+
+                                  return (a.ID - b.ID) > 0;
+                              });
+
+                    sorts_specs->SpecsDirty = false;
+                    resortIsNeeded = false;
+                    fillMapListStrings();
+                }
+
+                static int selected = -1;
+                for (int i = 0; i < filteredMapList.size(); i++) {
+                    ImGui::TableNextRow();
+                    auto mapRec = filteredMapList[i];
+
+                    ImGui::TableSetColumnIndex(0);
+
+                    if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i,
+                                          ImGuiSelectableFlags_SpanAllColumns |
+                                          ImGuiSelectableFlags_AllowItemOverlap)) {
+                        if (mapRec.ID != prevMapId) {
+                            mapCanBeOpened = true;
+                            adtMinimapFilled = false;
+                            prevMapRec = mapRec;
+
+                            isWmoMap = false;
+                            adtSelectionMinimapTextures = {};
+                            adtSelectionMinimapMaterials = {};
+                            if (mapRec.WdtFileID > 0) {
+                                getAdtSelectionMinimap(mapRec.WdtFileID);
+                            } else {
+                                getAdtSelectionMinimap(
+                                    "world/maps/" + mapRec.MapDirectory + "/" + mapRec.MapDirectory + ".wdt");
+                            }
+
+                        }
+                        prevMapId = mapRec.ID;
+                        selected = i;
+                    }
+                    bool hovered = ImGui::IsItemHovered();
+
+                    ImGui::TableSetColumnIndex(1);
+                    ImGui::Text("%s", mapListStringMap[i][1].c_str());
+                    ImGui::TableSetColumnIndex(2);
+                    ImGui::Text("%s", mapListStringMap[i][2].c_str());
+                    ImGui::TableSetColumnIndex(3);
+                    ImGui::Text("%s", mapListStringMap[i][3].c_str());
+                    ImGui::TableSetColumnIndex(4);
+                    ImGui::Text("%s", mapListStringMap[i][4].c_str());
+                }
+                ImGui::EndTable();
+            }
+            ImGui::Separator();
+            ImGui::EndChild();
+        }
+        ImGui::NextColumn();
+
+        {
+            ImGui::BeginChild("Map Select Dialog Right panel", ImVec2(0, 0));
+            {
+                if (!mapCanBeOpened) {
+                    ImGui::Text("Cannot open this map.");
+                    ImGui::Text("WDT file either does not exist in CASC repository or is encrypted");
+                } else if (!isWmoMap) {
+                    ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
+//                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
+                    showAdtSelectionMinimap();
+                } else {
+                    worldPosX = 0;
+                    worldPosY = 0;
+                    if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
+                        if (prevMapRec.WdtFileID > 0) {
+                            openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                        } else {
+                            //Try to open map by fileName
+                            openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f,
+                                                   0);
+                        }
+                        showSelectMap = false;
+                    }
+                }
+
+            }
+            ImGui::EndChild();
+
+
+        }
+        ImGui::Columns(1);
+
+        ImGui::End();
+    }
 }
 
 void FrontendUI::showMainMenu() {

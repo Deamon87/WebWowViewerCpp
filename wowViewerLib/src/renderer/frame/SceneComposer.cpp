@@ -5,11 +5,13 @@
 #include <iostream>
 #include <future>
 #include "SceneComposer.h"
+#include "FrameProfile.h"
+
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
 
-#include "Tracy.hpp"
+
 
 void SceneComposer::processCaches(int limit) {
     if (m_apiContainer->cacheStorage) {
@@ -25,7 +27,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
     if (m_supportThreads) {
         loadingResourcesThread = std::thread([&]() {
-            tracy::SetThreadName("ResourceLoader");
+            setThreadName("ResourceLoader");
             using namespace std::chrono_literals;
             while (!this->m_isTerminating) {
                 std::this_thread::sleep_for(1ms);
@@ -37,7 +39,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         cullingThread = std::thread(([&]() {
             using namespace std::chrono_literals;
             FrameCounter frameCounter;
-            tracy::SetThreadName("Culling");
+            setThreadName("Culling");
 
             while (!this->m_isTerminating) {
                 auto frameScenario = cullingInput.waitForNewInput();

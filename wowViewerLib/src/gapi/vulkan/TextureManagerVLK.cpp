@@ -44,7 +44,7 @@ HGSamplableTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture, boo
 
     std::weak_ptr<ISamplableTexture> weakPtr(hgSamplableTexture);
 
-    sampledTextureCache[sampledTextureCacheRecord] = hgSamplableTexture;
+    sampledTextureCache[sampledTextureCacheRecord] = weakPtr;
 
     return hgSamplableTexture;
 }

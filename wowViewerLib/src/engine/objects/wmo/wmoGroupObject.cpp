@@ -245,7 +245,7 @@ void WmoGroupObject::loadDoodads() {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
         m_doodads.push_back(newDoodad);
         if (newDoodad != nullptr) {
-            std::function<void()> event = [&, newDoodad]() -> void {
+            std::function<void()> event = [&]() -> void {
                 this->m_recalcBoundries = true;
             };
 

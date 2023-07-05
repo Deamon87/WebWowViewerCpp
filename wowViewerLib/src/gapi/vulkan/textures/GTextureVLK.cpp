@@ -118,7 +118,7 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
         std::cout << "oops!" << std::endl << std::flush;
     }
 
-    m_tempUpdateData = new std::remove_pointer<decltype(m_tempUpdateData)>::type();
+    m_tempUpdateData = std::make_unique<updateData>();
 
     auto &mipmaps = *hmipmaps;
 

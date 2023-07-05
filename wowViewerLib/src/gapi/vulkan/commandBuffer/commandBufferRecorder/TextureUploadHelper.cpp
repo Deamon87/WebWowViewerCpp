@@ -3,7 +3,7 @@
 //
 
 #include "TextureUploadHelper.h"
-#include "Tracy.hpp"
+#include "../../../../renderer/frame/FrameProfile.h"
 
 void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
                                        const std::vector<std::weak_ptr<GTextureVLK>> &textures,
@@ -80,10 +80,10 @@ void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textur
     // ------------------------------------
 
     for ( auto &wtextureVlk : textures) {
-        if (wtextureVlk.expired()) continue;
         auto textureVlk = wtextureVlk.lock();
+        if (!textureVlk) continue;
 
-        auto updateRecord = textureVlk->getAndPlanDestroy();
+        const auto &updateRecord = textureVlk->getAndPlanDestroy();
 
         uploadCmdBufRecorder.copyBufferToImage(
             updateRecord->stagingBuffer,

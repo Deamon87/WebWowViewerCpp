@@ -43,6 +43,7 @@ class gMeshTemplate;
 #include "commandBuffer/commandBufferRecorder/RenderPassHelper.h"
 #include "TextureManagerVLK.h"
 #include "shaders/ShaderConfig.h"
+#include "GDescriptorSetUpdater.h"
 
 #include <optional>
 
@@ -113,6 +114,8 @@ public:
     HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGSamplableTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGSamplableTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
+    std::shared_ptr<GDescriptorSetUpdater> getDescriptorSetUpdater() override { return m_descriptorSetUpdater;};
+
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
 
     HGPUFence createFence() override;
@@ -222,7 +225,7 @@ private:
 protected:
     struct PipelineCacheRecord {
         HGShaderPermutation shader;
-        std::shared_ptr<GRenderPassVLK> renderPass;
+        wtf::KeyContainer<std::weak_ptr<GRenderPassVLK>> renderPass;
         DrawElementMode element;
         bool backFaceCulling;
         bool triCCW;
@@ -247,7 +250,7 @@ protected:
         std::size_t operator()(const PipelineCacheRecord& k) const {
             using std::hash;
             return hash<void*>{}(k.shader.get()) ^
-            hash<void*>{}(k.renderPass.get()) ^
+            hash<decltype(k.renderPass)>{}(k.renderPass) ^
             (hash<bool >{}(k.backFaceCulling) << 2) ^
             (hash<bool >{}(k.triCCW) << 4) ^
             (hash<bool >{}(k.depthCulling) << 8) ^
@@ -328,6 +331,7 @@ protected:
     HGSamplableTexture m_whitePixelTexture = nullptr;
 
     std::shared_ptr<TextureManagerVLK> m_textureManager;
+    std::shared_ptr<GDescriptorSetUpdater> m_descriptorSetUpdater;
 protected:
     //Caches
 

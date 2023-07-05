@@ -5,7 +5,7 @@
 #include "MapSceneRenderer.h"
 #include "../../engine/objects/scenes/map.h"
 #include "../../gapi/interface/sortLambda.h"
-#include "Tracy.hpp"
+#include "../frame/FrameProfile.h"
 
 std::shared_ptr<MapRenderPlan>
 MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {

@@ -38,6 +38,15 @@ public:
     explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 
     void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer);
+private:
+    struct updateData {
+        VkBuffer stagingBuffer;
+        VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
+        VmaAllocationInfo stagingBufferAllocInfo = {};
+
+        std::vector<VkBufferImageCopy> bufferCopyRegions = {};
+    };
+
 public:
     ~GTextureVLK() override;
 
@@ -48,12 +57,11 @@ public:
         throw "Not Implemented in this class";
     }
 
-    auto * getAndPlanDestroy() {
+    const std::unique_ptr<updateData> & getAndPlanDestroy() {
         if (!stagingBufferCreated || m_tempUpdateData == nullptr) {
-            return (decltype(m_tempUpdateData)) nullptr;
+            throw "Something went wrong";
         }
         auto *l_device = &m_device;
-        auto *l_tempUpdateData = m_tempUpdateData;
 
         auto &l_stagingBuffer = m_tempUpdateData->stagingBuffer;
         auto &l_stagingBufferAlloc = m_tempUpdateData->stagingBufferAlloc;
@@ -64,18 +72,14 @@ public:
             vmaDestroyBuffer(l_device->getVMAAllocator(), l_stagingBuffer, l_stagingBufferAlloc);
 
             if (auto texture = w_this.lock()) {
-                delete texture->m_tempUpdateData;
                 texture->m_tempUpdateData = nullptr;
-
             }
-
         });
 
-        m_tempUpdateData = nullptr;
         m_uploaded = true;
         m_loaded = true;
 
-        return l_tempUpdateData;
+        return m_tempUpdateData;
     }
     TextureStatus postLoad() override;
 
@@ -89,13 +93,8 @@ private:
     virtual void bind(); //Should be called only by GDevice
     void unbind();
 
-    struct updateData {
-        VkBuffer stagingBuffer;
-        VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
-        VmaAllocationInfo stagingBufferAllocInfo = {};
 
-        std::vector<VkBufferImageCopy> bufferCopyRegions = {};
-    } * m_tempUpdateData = nullptr;
+    std::unique_ptr<updateData> m_tempUpdateData = nullptr;
 
 
     VmaAllocation imageAllocation = VK_NULL_HANDLE;

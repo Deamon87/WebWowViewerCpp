@@ -12,6 +12,9 @@
 
 #include "../interface/textures/ITexture.h"
 #include "../interface/textures/ISamplableTexture.h"
+
+class GDescriptorSetUpdater;
+
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
     std::optional<uint32_t> presentFamily;
@@ -36,6 +39,8 @@ public:
 
     virtual HGSamplableTexture getWhiteTexturePixel() = 0;
     virtual HGSamplableTexture getBlackTexturePixel() = 0;
+
+    virtual std::shared_ptr<GDescriptorSetUpdater> getDescriptorSetUpdater() = 0;
 
     //TODO:
     virtual bool getIsAnisFiltrationSupported() {return true;};

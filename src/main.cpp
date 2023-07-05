@@ -41,7 +41,9 @@
 #include "screenshots/screenshotMaker.h"
 #include "database/CEmptySqliteDB.h"
 #include <exception>
+#ifdef LINK_TRACY
 #include "Tracy.hpp"
+#endif
 
 int mleft_pressed = 0;
 int mright_pressed = 0;
@@ -512,7 +514,9 @@ int main(){
             glfwSwapBuffers(window);
         }
 
+#ifdef LINK_TRACY
         FrameMark;
+#endif
     }
 //} catch(const std::exception &e){
 //    std::cerr << e.what() << std::endl;

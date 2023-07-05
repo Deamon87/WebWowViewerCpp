@@ -11,8 +11,8 @@
 #include "../../../gapi/vulkan/meshes/GM2MeshVLK.h"
 #include "materials/IMaterialInstance.h"
 #include "../../../gapi/vulkan/meshes/GSortableMeshVLK.h"
-#include "Tracy.hpp"
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVLK.h"
+#include "../../frame/FrameProfile.h"
 #include <future>
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :

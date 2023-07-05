@@ -22,7 +22,8 @@
 #endif
 #include "../../algorithms/mathHelper_culling.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
-#include "Tracy.hpp"
+#include "../../../renderer/frame/FrameProfile.h"
+
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
     {

@@ -161,11 +161,15 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
 
     /* Load texture by mipmaps */
     assert(this->m_textureFormat != TextureFormat::Undetected);
-    m_mipmaps = parseMipmaps(pBlpFile, m_textureFormat);
+    m_blpFile = blpFile;
 
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->fsStatus = FileStatus ::FSLoaded;
     this->m_textureName = fileName;
+}
+
+const HMipmapsVector BlpTexture::getMipmapsVector() {
+    return parseMipmaps( (BlpFile *)m_blpFile->data(), m_textureFormat);
 }
 

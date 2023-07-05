@@ -20,8 +20,8 @@ public:
 
         subBuffer = mainBuffer->getSubBuffer(m_realSize,sizeof(T));
         pSubBuffer = subBuffer.get();
-
     }
+    ~CBufferChunkVLK() final = default;
 
     T &getObject() override {
         return *(T*)pSubBuffer->getPointer();

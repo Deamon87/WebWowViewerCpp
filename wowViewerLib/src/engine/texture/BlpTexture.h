@@ -38,9 +38,7 @@ public:
 
     std::string getTextureName() { return m_textureName; };
     void process(HFileContent blpFile, const std::string &fileName) override;
-    const HMipmapsVector& getMipmapsVector() {
-        return m_mipmaps;
-    }
+    const HMipmapsVector getMipmapsVector();
 
     TextureFormat getTextureFormat() {
         return m_textureFormat;
@@ -49,7 +47,7 @@ private:
     std::string m_textureName;
     int m_fileDataId = 0;
 
-    HMipmapsVector m_mipmaps;
+    HFileContent m_blpFile = nullptr;
     TextureFormat m_textureFormat = TextureFormat::Undetected;
 };
 

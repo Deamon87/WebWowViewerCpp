@@ -35,8 +35,9 @@ public:
 
     class SetUpdateHelper {
     public:
-        explicit SetUpdateHelper(GDescriptorSet &set, std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &boundDescriptors) :
-            m_set(set), m_boundDescriptors(boundDescriptors) {
+        explicit SetUpdateHelper(GDescriptorSet &set, std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &boundDescriptors,
+                                 std::shared_ptr<GDescriptorSetUpdater> descriptorSetUpdater) :
+            m_set(set), m_boundDescriptors(boundDescriptors), m_descriptorSetUpdater(descriptorSetUpdater) {
             //So that the resize of these vectors would not lead to pointer invalidation in updates vector
             bufferInfos.reserve(32);
             imageInfos.reserve(32);
@@ -70,14 +71,7 @@ public:
                 }
             }
             if (createDescRecord) {
-                auto ds_weak = m_set.weak_from_this();
-
-                auto callback = ([ds_weak]() -> void {
-                    if (auto ds = ds_weak.lock()) {
-                        ds->update();
-                    }
-                    });
-
+                std::function<void()> callback = createCallback();
                 m_boundDescriptors[bindPoint] = std::make_unique<DescriptorRecord>(descType, object, callback);
             }
         }
@@ -94,9 +88,12 @@ public:
         std::vector<int> dynamicBufferIndexes;
         std::unordered_map<int, VkDescriptorType> typeOverrides;
 
+        std::shared_ptr<GDescriptorSetUpdater> m_descriptorSetUpdater;
 
         std::vector<VkWriteDescriptorSet> updates;
         std::bitset<GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_updateBindPoints = 0;
+
+        std::function<void()> createCallback();
     };
 
     SetUpdateHelper beginUpdate();

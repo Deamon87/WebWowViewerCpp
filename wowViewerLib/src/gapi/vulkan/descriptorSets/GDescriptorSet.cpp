@@ -6,6 +6,7 @@
 
 #include "../textures/GTextureVLK.h"
 #include "../textures/GTextureSamplerVLK.h"
+#include "../GDescriptorSetUpdater.h"
 
 GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
     : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
@@ -28,7 +29,7 @@ GDescriptorSet::SetUpdateHelper GDescriptorSet::beginUpdate() {
         m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
         assert(m_descriptorSet != nullptr);
     }
-    return SetUpdateHelper(*this, boundDescriptors);
+    return SetUpdateHelper(*this, boundDescriptors, m_device->getDescriptorSetUpdater());
 }
 
 void GDescriptorSet::update() {
@@ -278,5 +279,17 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
 
 void GDescriptorSet::SetUpdateHelper::cancelUpdate() {
     updateCancelled = true;
+}
+
+std::function<void()> GDescriptorSet::SetUpdateHelper::createCallback() {
+    auto ds_weak = m_set.weak_from_this();
+    auto l_descriptorSetUpdater = m_descriptorSetUpdater;
+    const std::function<void()> callback = ([ds_weak, l_descriptorSetUpdater]() -> void {
+        if (auto ds = ds_weak.lock()) {
+            l_descriptorSetUpdater->addToUpdate(ds);
+        }
+    });
+
+    return callback;
 }
 

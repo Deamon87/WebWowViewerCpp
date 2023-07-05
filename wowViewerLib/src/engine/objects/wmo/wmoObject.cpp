@@ -7,7 +7,7 @@
 #include "../../algorithms/grahamScan.h"
 #include "../../persistance/header/commonFileStructs.h"
 #include "./../../../gapi/interface/IDevice.h"
-#include "Tracy.hpp"
+#include "../../../renderer/frame/FrameProfile.h"
 #include <algorithm>
 
 std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)

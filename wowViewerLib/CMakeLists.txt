@@ -14,7 +14,7 @@ set(LINK_EGL 1)
 option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
-set(LINK_TRACY 1)
+set(LINK_TRACY 0)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 
@@ -357,7 +357,7 @@ set(SOURCE_FILES
         src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h
         src/engine/objects/liquid/LiquidInstance.cpp
         src/engine/objects/liquid/LiquidInstance.h
-        src/engine/objects/liquid/LiquidDataGetters.h)
+        src/engine/objects/liquid/LiquidDataGetters.h src/renderer/frame/FrameProfile.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -555,7 +555,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/context/vulkan_context.h
             src/gapi/vulkan/shaders/ShaderConfig.h
             src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.cpp
-            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h)
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h src/gapi/vulkan/GDescriptorSetUpdater.cpp src/gapi/vulkan/GDescriptorSetUpdater.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
@@ -657,6 +657,7 @@ if (LINK_VULKAN)
 endif()
 
 if (LINK_TRACY)
+    target_compile_definitions(WoWViewerLib PUBLIC -DLINK_TRACY)
     target_include_directories(WoWViewerLib PUBLIC ${TRACY_INCLUDE_DIR})
     target_link_libraries (WoWViewerLib Tracy::TracyClient )
 endif()

@@ -55,7 +55,7 @@ namespace OffsetAllocator
     class Allocator
     {
     public:
-        Allocator(uint32 size, uint32 maxAllocs = 128 * 1024*20);
+        Allocator(uint32 size, uint32 maxAllocs = 1024);
         Allocator(Allocator &&other);
 
         // user-defined copy assignment (copy-and-swap idiom)

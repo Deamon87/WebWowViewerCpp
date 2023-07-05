@@ -927,7 +927,9 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
 
 //deltaTime = miliseconds
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
-    if (!this->m_loaded)  return;
+    if (!this->m_loaded) return;
+
+    m_postLoadEvents.clear();
 
     static const mathfu::mat4 particleCoordinatesFix =
         mathfu::mat4(

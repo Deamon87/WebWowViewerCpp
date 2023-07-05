@@ -29,7 +29,7 @@ public:
         });
     }
 
-    ~GBufferChunkDynamicVLK() {
+    ~GBufferChunkDynamicVLK() final {
         pSubBuffers[0]->eraseOnHandleChange(iteratorUnique);
     }
     void uploadData(const void *, int length) override {

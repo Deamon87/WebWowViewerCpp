@@ -6,7 +6,8 @@
 #include "../../../../gapi/vulkan/buffers/CBufferChunkVLK.h"
 #include "../../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
 #include "../../../../gapi/vulkan/GVertexBufferBindingsVLK.h"
-#include "Tracy.hpp"
+#include "../../../frame/FrameProfile.h"
+
 
 FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device), m_drawQuadVao(quadVAO) {
     m_ffxGlowVs = std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(uboBuffer);
