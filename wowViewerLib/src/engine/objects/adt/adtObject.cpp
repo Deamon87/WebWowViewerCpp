@@ -402,6 +402,28 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
                 }
             }
             adtMaterial->m_materialVSPS->save();
+
+            {
+                auto &matPS = adtMaterial->m_materialPS->getObject();
+                for (int j = 0; j < 4; j++) {
+                    matPS.scaleFactorPerLayer[j] = 1;
+                    matPS.animation_rotationPerLayer[j] = -1;
+                    matPS.animation_speedPerLayer[j] = 0;
+                }
+                for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
+                    if ((adtFileTex->mtxp_len > 0) && !noLayers) {
+                        auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
+                        float scaleFactor = (1.0f / (float)(1u << (textureParams.flags.texture_scale )));
+
+                        matPS.scaleFactorPerLayer[j] = scaleFactor;
+                    }
+                    if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_enabled != 0) {
+                        matPS.animation_rotationPerLayer[j] = m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_rotation;
+                        matPS.animation_speedPerLayer[j] = m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_speed;
+                    }
+                }
+                adtMaterial->m_materialPS->save();
+            }
         }
     }
 }
@@ -577,7 +599,9 @@ void AdtObject::update(animTime_t deltaTime ) {
     if (!m_loaded) {
         return;
     }
-//    if (adtWideBlockPS == nullptr) return;
+
+    return;
+
 
     for (int i = 0; i < 256; i++) {
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
@@ -638,7 +662,7 @@ void AdtObject::update(animTime_t deltaTime ) {
             auto &psBlock = adtMaterials[i]->m_materialPS->getObject();
 
             for (int j = 0; j < 4; j++) {
-                psBlock.animationMat[j] = this->texturesPerMCNK[i].animTexture[j];
+                //psBlock.animationMat[j] = this->texturesPerMCNK[i].animTexture[j];
             }
             adtMaterials[i]->m_materialPS->save();
         }

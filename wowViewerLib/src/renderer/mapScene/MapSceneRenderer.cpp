@@ -25,6 +25,7 @@ void MapSceneRenderer:: collectMeshes(const std::shared_ptr<MapRenderPlan> &rend
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
                                      const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
+    ZoneScoped;
     mapProduceUpdateCounter.beginMeasurement();
 
     auto &opaqueMeshes = *hopaqueMeshes;
@@ -108,7 +109,8 @@ void MapSceneRenderer:: collectMeshes(const std::shared_ptr<MapRenderPlan> &rend
 void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
                                             const HCameraMatrices &renderingMatrices,
                                             const HFrameDependantData &fdd,
-                                            bool isVulkan
+                                            bool isVulkan,
+                                            animTime_t sceneTime
                                             ) {
     ZoneScoped;
 
@@ -126,7 +128,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<s
         blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
     }
     blockPSVS.uInteriorSunDir = renderingMatrices->interiorDirectLightDir;
-    blockPSVS.uViewUp = renderingMatrices->viewUp;
+    blockPSVS.uViewUpSceneTime = mathfu::vec4(renderingMatrices->viewUp.xyz(), sceneTime);
 
     blockPSVS.extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
     blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;

@@ -94,7 +94,8 @@ public:
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
                               const HCameraMatrices &renderingMatrices,
                               const HFrameDependantData &fdd,
-                              bool isVulkan);
+                              bool isVulkan,
+                              animTime_t sceneTime);
 
 private:
     FrameCounter mapProduceUpdateCounter;

@@ -37,7 +37,7 @@ struct SceneExteriorLight {
 struct sceneWideBlockVSPS {
     mathfu::mat4 uLookAtMat;
     mathfu::mat4 uPMatrix;
-    mathfu::vec4_packed uViewUp;
+    mathfu::vec4_packed uViewUpSceneTime;
     mathfu::vec4_packed uInteriorSunDir;
 
     SceneExteriorLight extLight;
@@ -181,7 +181,9 @@ namespace ADT {
     };
     //This one needs to be updated every frame. The one above - doesn't
     struct meshWideBlockPS {
-        mathfu::mat4 animationMat[4];
+        float scaleFactorPerLayer[4];
+        int animation_rotationPerLayer[4];
+        int animation_speedPerLayer[4];
     };
 }
 

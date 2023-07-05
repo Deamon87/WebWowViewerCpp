@@ -14,7 +14,7 @@ set(LINK_EGL 1)
 option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
-set(LINK_TRACY 0)
+set(LINK_TRACY 1)
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 

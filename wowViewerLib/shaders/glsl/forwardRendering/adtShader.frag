@@ -37,7 +37,9 @@ layout(std140, binding=1) uniform meshWideBlockVSPS {
 };
 
 layout(std140, binding=2) uniform meshWideBlockPS {
-    mat4 animationMat[4];
+    vec4 scaleFactorPerLayer;
+    ivec4 animation_rotationPerLayer;
+    ivec4 animation_speedPerLayer;
 };
 
 
@@ -52,6 +54,38 @@ vec4 mixTextures(vec4 tex0, vec4 tex1, float alpha) {
     return  (alpha*(tex1-tex0)+tex0);
 }
 
+const vec2 s_texDir[8] = {
+    {-1.0, 0.0},
+    {-1.0, 1.0},
+    {0.0, 1.0},
+    {1.0, 1.0},
+    {1.0, 0.0},
+    {1.0, -1.0},
+    {0.0, -1.0},
+    {-1.0, -1.0}
+};
+const float s_tempTexSpeed[8] = {64.0, 48.0, 32.0, 16.0, 8.0, 4.0, 2.0, 1.0};
+
+float fmod1(float x, float y) {
+    return x - (y * trunc(x/y));
+}
+
+vec2 transformUV(in vec2 uv, in int layer) {
+    vec2 translate = vec2(0.0);
+    int animation_rotation = animation_rotationPerLayer[layer];
+    if (animation_rotation >= 0 && animation_rotation < 8) {
+        vec2 transVector = s_texDir[animation_rotation] * (scene.uViewUpSceneTime.w *  0.001);
+        transVector.xy = transVector.yx; //why?
+        transVector.x = fmod1(transVector.x, 64);
+        transVector.y = fmod1(transVector.y, 64);
+
+        translate =
+            transVector *
+            (1.0f / ((1.0f / -4.1666665f) * s_tempTexSpeed[animation_speedPerLayer[layer]]));
+    }
+    return (uv * scaleFactorPerLayer[layer]) + translate;
+}
+
 void main() {
     vec2 vTexCoord = vChunkCoords;
     const float threshold = 1.5;
@@ -59,10 +93,10 @@ void main() {
     vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
     vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
-    vec2 tcLayer0 = (animationMat[0]*vec4(vTexCoord, 0, 1)).xy;
-    vec2 tcLayer1 = (animationMat[1]*vec4(vTexCoord, 0, 1)).xy;
-    vec2 tcLayer2 = (animationMat[2]*vec4(vTexCoord, 0, 1)).xy;
-    vec2 tcLayer3 = (animationMat[3]*vec4(vTexCoord, 0, 1)).xy;
+    vec2 tcLayer0 = transformUV(vTexCoord, 0);
+    vec2 tcLayer1 = transformUV(vTexCoord, 1);
+    vec2 tcLayer2 = transformUV(vTexCoord, 2);
+    vec2 tcLayer3 = transformUV(vTexCoord, 3);
 
     vec4 final;
     if (uUseHeightMixFormula.r > 0) {

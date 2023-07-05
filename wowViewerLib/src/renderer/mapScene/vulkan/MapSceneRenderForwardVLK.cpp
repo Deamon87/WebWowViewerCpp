@@ -556,7 +556,11 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     mapScene->updateBuffers(framePlan);
     glowPass->assignFFXGlowUBOConsts(framePlan->frameDependentData->currentGlow);
 
-    updateSceneWideChunk(sceneWideChunk, framePlan->renderingMatrices, framePlan->frameDependentData, true);
+    updateSceneWideChunk(sceneWideChunk,
+                         framePlan->renderingMatrices,
+                         framePlan->frameDependentData,
+                         true,
+                         mapScene->getCurrentSceneTime());
 
 
 //    {

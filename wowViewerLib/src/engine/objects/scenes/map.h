@@ -114,7 +114,6 @@ protected:
     std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
     std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
 
-    animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(
         const MathHelper::FrustumCullingData &frustumData,
@@ -200,6 +199,7 @@ public:
     ~Map() override {
 //        std::cout << "Map destroyed " << std::endl;
 	};
+    animTime_t getCurrentSceneTime() override;
 
     void makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan);
 

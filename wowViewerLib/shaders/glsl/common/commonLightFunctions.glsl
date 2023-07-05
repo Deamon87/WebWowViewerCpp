@@ -14,7 +14,7 @@ struct SceneExteriorLight {
 struct SceneWideParams {
     mat4 uLookAtMat;
     mat4 uPMatrix;
-    vec4 uViewUp;
+    vec4 uViewUpSceneTime;
     vec4 uInteriorSunDir;
     SceneExteriorLight extLight;
 };
@@ -59,7 +59,7 @@ vec3 calcLight(
 
         if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0) {
             float nDotL = clamp(dot(normalizedN, normalize(-(sceneParams.extLight.uExteriorDirectColorDir.xyz))), 0.0, 1.0);
-            float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUp.xyz));
+            float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUpSceneTime.xyz));
 
             vec3 adjAmbient =       (sceneParams.extLight.uExteriorAmbientColor.rgb          + precomputedLight);
             vec3 adjHorizAmbient =  (sceneParams.extLight.uExteriorHorizontAmbientColor.rgb  + precomputedLight);
