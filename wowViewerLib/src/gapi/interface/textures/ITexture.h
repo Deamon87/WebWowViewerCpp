@@ -36,4 +36,7 @@ public:
 
     virtual void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) = 0;
 };
+
+extern std::atomic<int> blpTexturesVulkanLoaded;
+extern std::atomic<int> blpTexturesVulkanSizeLoaded;
 #endif //AWEBWOWVIEWERCPP_ITEXTURE_H

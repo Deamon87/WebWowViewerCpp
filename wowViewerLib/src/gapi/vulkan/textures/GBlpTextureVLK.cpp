@@ -12,6 +12,9 @@ inline static std::string addrToStr(void *addr) {
     return ss.str();
 }
 
+std::atomic<int> blpTexturesVulkanLoaded = 0;
+std::atomic<int> blpTexturesVulkanSizeLoaded = 0;
+
 GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
                                const HBlpTexture &texture,
                                bool xWrapTex, bool yWrapTex,
@@ -30,6 +33,10 @@ GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
 
 GBlpTextureVLK::~GBlpTextureVLK() {
 //    std::cout << "destroyed blp text!" << std::endl;
+    if (m_loaded && m_uploaded && m_texture && m_texture->getStatus() == FileStatus::FSLoaded) {
+        blpTexturesVulkanLoaded.fetch_add(-1);
+        blpTexturesVulkanSizeLoaded.fetch_add(-m_texture->getFileSize());
+    }
 }
 
 
@@ -93,6 +100,8 @@ TextureStatus GBlpTextureVLK::postLoad() {
     if (!m_uploaded) {
         if (m_texture == nullptr) return TextureStatus::TSNotLoaded;
         if (m_texture->getStatus() != FileStatus::FSLoaded) return TextureStatus::TSNotLoaded;
+        blpTexturesVulkanLoaded.fetch_add(1);
+        blpTexturesVulkanSizeLoaded.fetch_add(m_texture->getFileSize());
 
         this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
 //        m_texture = nullptr;

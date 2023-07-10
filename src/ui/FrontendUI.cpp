@@ -162,7 +162,18 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
 
         ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
-        ImGui::Text("Current textures in use %d", m_api->hDevice->getCurrentTextureAllocated());
+
+        float m2s = m2SizeLoaded / 1024.0f / 1024.f;
+        ImGui::Text("Total size of m2 files loaded %f MB", m2s);
+        int l_blpTexturesLoaded = blpTexturesLoaded;
+        float l_blpTexturesSizeLoaded = blpTexturesSizeLoaded / 1024.0f / 1024.f;
+        ImGui::Text("Current blp files loaded %d", l_blpTexturesLoaded);
+        ImGui::Text("Current blp files size %f MB", l_blpTexturesSizeLoaded);
+
+        int l_blpTexturesVulkanLoaded = blpTexturesVulkanLoaded;
+        float l_blpTexturesVulkanSizeLoaded = blpTexturesVulkanSizeLoaded / 1024.0f / 1024.f;
+        ImGui::Text("Current blp vulkan textures loaded %d", l_blpTexturesVulkanLoaded);
+        ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
 
         ImGui::NewLine();
 

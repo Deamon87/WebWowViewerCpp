@@ -555,7 +555,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/context/vulkan_context.h
             src/gapi/vulkan/shaders/ShaderConfig.h
             src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.cpp
-            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h src/gapi/vulkan/GDescriptorSetUpdater.cpp src/gapi/vulkan/GDescriptorSetUpdater.h)
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h src/gapi/vulkan/GDescriptorSetUpdater.cpp src/gapi/vulkan/GDescriptorSetUpdater.h src/gapi/vulkan/commandBuffer/CommandBufferThread.cpp src/gapi/vulkan/commandBuffer/CommandBufferThread.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

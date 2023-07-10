@@ -11,6 +11,9 @@
 #include "DxtDecompress.h"
 #include "../persistance/helper/ChunkFileReader.h"
 
+std::atomic<int> blpTexturesLoaded = 0;
+std::atomic<int> blpTexturesSizeLoaded = 0;
+
 TextureFormat getTextureType(BlpFile *blpFile) {
     TextureFormat textureFormat = TextureFormat::Undetected;
     switch (blpFile->preferredFormat) {
@@ -167,9 +170,19 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->fsStatus = FileStatus ::FSLoaded;
     this->m_textureName = fileName;
+
+    blpTexturesLoaded.fetch_add(1);
+    blpTexturesSizeLoaded.fetch_add(blpFile->size());
 }
 
 const HMipmapsVector BlpTexture::getMipmapsVector() {
     return parseMipmaps( (BlpFile *)m_blpFile->data(), m_textureFormat);
+}
+
+BlpTexture::~BlpTexture() {
+    if (m_blpFile) {
+        blpTexturesLoaded.fetch_add(-1);
+        blpTexturesSizeLoaded.fetch_add(-m_blpFile->size());
+    }
 }
 

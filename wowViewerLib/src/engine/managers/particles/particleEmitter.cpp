@@ -311,6 +311,28 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         }
 
         m_material = sceneRenderer->createM2ParticleMaterial(pipelineTemplate, particleTemplate);
+
+        //Update material
+        {
+            Particle::meshParticleWideBlockPS &blockPS = m_material->m_fragmentData->getObject();
+            uint8_t blendMode = m_data->old.blendingType;
+            if (blendMode == 0) {
+                blockPS.uAlphaTest = -1.0f;
+            } else if (blendMode == 1) {
+                blockPS.uAlphaTest = 0.501960814f;
+            } else {
+                blockPS.uAlphaTest = 0.0039215689f;
+            }
+
+            int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
+
+            blockPS.uPixelShader =  uPixelShader;
+            blockPS.uBlendMode = static_cast<int>(blendMode < ParticleBlendingModeToEGxBlendEnum.size() ?
+                                                  ParticleBlendingModeToEGxBlendEnum[blendMode] :
+                                                  EGxBlendEnum::GxBlend_Opaque);
+
+            m_material->m_fragmentData->save();
+        }
     }
 
 
@@ -631,15 +653,6 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
 
     int frameNum = m_api->hDevice->getDrawFrameNumber();
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
-    size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
-    if ((m_data->old.flags & 0x60000) == 0x60000) {
-        maxFutureSize *= 2;
-    }
-
-    if (maxFutureSize > vboBufferDynamic->getSize()) {
-        createMesh(m_sceneRenderer, frame[frameNum], maxFutureSize);
-        vboBufferDynamic = frame[frameNum].m_bufferVBO;
-    }
 
     szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointer();
     szVertexCnt = 0;
@@ -654,6 +667,23 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
                 this->buildVertex2(p, particlePreRenderData);
             }
         }
+    }
+}
+
+void ParticleEmitter::fitBuffersToSize() {
+    if (particles.size() == 0) {
+        return;
+    }
+
+    size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
+    if ((m_data->old.flags & 0x60000) == 0x60000) {
+        maxFutureSize *= 2;
+    }
+    int frameNum = m_api->hDevice->getDrawFrameNumber();
+    auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
+
+    if (maxFutureSize > vboBufferDynamic->getSize()) {
+        createMesh(m_sceneRenderer, frame[frameNum], maxFutureSize);
     }
 }
 
@@ -800,8 +830,6 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
             particlePreRenderData.m_ageDependentValues.m_timedColor,
             particlePreRenderData.m_ageDependentValues.m_alpha,
             texScaleVec.x, texScaleVec.y,  p.texPos);
-
-
 
     return 0;
 }
@@ -1104,28 +1132,5 @@ void ParticleEmitter::updateBuffers() {
 
     currentFrame.m_mesh->setEnd(szVertexCnt * 6);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);
-
-    //Update material
-    {
-        Particle::meshParticleWideBlockPS &blockPS = m_material->m_fragmentData->getObject();
-        uint8_t blendMode = m_data->old.blendingType;
-        if (blendMode == 0) {
-            blockPS.uAlphaTest = -1.0f;
-        } else if (blendMode == 1) {
-            blockPS.uAlphaTest = 0.501960814f;
-        } else {
-            blockPS.uAlphaTest = 0.0039215689f;
-        }
-
-        int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
-
-        blockPS.uPixelShader =  uPixelShader;
-        blockPS.uBlendMode = static_cast<int>(blendMode < ParticleBlendingModeToEGxBlendEnum.size() ?
-                                              ParticleBlendingModeToEGxBlendEnum[blendMode] :
-                                              EGxBlendEnum::GxBlend_Opaque);
-
-        m_material->m_fragmentData->save();
-    }
-
 }
 

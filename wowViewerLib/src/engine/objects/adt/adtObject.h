@@ -168,15 +168,15 @@ private:
     HGSamplableTexture getAdtHeightTexture(int textureId);
     HGSamplableTexture getAdtSpecularTexture(int textureId);
 
-    struct AnimTextures {
-        std::array<mathfu::mat4, 4> animTexture;
-    };
-    struct AnimTrans {
-        std::array<mathfu::vec2, 4> transVectors;
-    };
-    std::vector<AnimTextures> texturesPerMCNK;
-
-    std::vector<AnimTrans> animationTranslationPerMCNK;
+//    struct AnimTextures {
+//        std::array<mathfu::mat4, 4> animTexture;
+//    };
+//    struct AnimTrans {
+//        std::array<mathfu::vec2, 4> transVectors;
+//    };
+//    std::vector<AnimTextures> texturesPerMCNK;
+//
+//    std::vector<AnimTrans> animationTranslationPerMCNK;
 
     void calcBoundingBoxes();
     void loadM2s();

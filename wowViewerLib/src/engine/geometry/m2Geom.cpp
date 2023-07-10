@@ -5,7 +5,9 @@
 #include "m2Geom.h"
 #include "skinGeom.h"
 #include "../shader/ShaderDefinitions.h"
-#include "../../gapi/interface/IDevice.h"
+#include <atomic>
+
+std::atomic<int> m2SizeLoaded = 0;
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},
@@ -214,6 +216,8 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
 
 void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     this->m2File = m2File;
+
+    m2SizeLoaded.fetch_add(m2File->size());
 
     auto &m2FileData = *m2File.get();
     if (
@@ -456,4 +460,8 @@ void M2Geom::loadLowPriority(const HApiContainer& m_api, uint32_t animationId, u
         m_m2Data->sequences[animationIndex]->flags |= 0x20;
     });
     loadedAnimationMap[animCacheRecord] = animFile;
+}
+
+M2Geom::~M2Geom() {
+    m2SizeLoaded.fetch_add(-m2File->size());
 }

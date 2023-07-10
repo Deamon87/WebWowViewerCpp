@@ -107,7 +107,7 @@ VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, 
 
 void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc) {
     //Destruction of this virtualBlock happens only in deallocation queue.
-    //So it's safe to assume that even if the buffer's handle been changed by the time VirtualFree happens, 
+    //So it's safe to assume that even if the buffer's handle been changed by the time VirtualFree happens,
     //the virtualBlock was still not been free'd
     //So there would be no error
 

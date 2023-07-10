@@ -9,6 +9,7 @@
 #include "../../include/sharedFile.h"
 #include "../persistance/PersistentFile.h"
 #include <vector>
+#include <atomic>
 
 enum class TextureFormat {
     Undetected,
@@ -36,12 +37,18 @@ public:
     explicit BlpTexture(std::string fileName){ m_textureName = fileName;};
     explicit BlpTexture(int fileDataId){m_textureName = std::to_string(fileDataId); m_fileDataId = fileDataId; };
 
+    ~BlpTexture();
+
     std::string getTextureName() { return m_textureName; };
     void process(HFileContent blpFile, const std::string &fileName) override;
     const HMipmapsVector getMipmapsVector();
 
     TextureFormat getTextureFormat() {
         return m_textureFormat;
+    }
+    int getFileSize() {
+        if (m_blpFile == nullptr) return 0;
+        return m_blpFile->size();
     }
 private:
     std::string m_textureName;
@@ -50,6 +57,9 @@ private:
     HFileContent m_blpFile = nullptr;
     TextureFormat m_textureFormat = TextureFormat::Undetected;
 };
+
+extern std::atomic<int> blpTexturesLoaded;
+extern std::atomic<int> blpTexturesSizeLoaded;
 
 
 #endif //WOWVIEWERLIB_BLPTEXTURE_H

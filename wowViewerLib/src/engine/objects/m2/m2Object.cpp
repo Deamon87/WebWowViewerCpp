@@ -1014,6 +1014,15 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     }
 }
 
+void M2Object::fitParticleBuffersToSize() {
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
+
+    for (int i = minParticle; i < maxParticle; i++) {
+        particleEmitters[i]->fitBuffersToSize();
+    }
+}
+
 void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
     if (!this->m_loaded)  return;
 

@@ -29,6 +29,7 @@ public:
         useFileId = true;
         m_modelFileId = fileDataId;
     };
+    ~M2Geom();
 
     std::string getName() {
         return m_modelName;
@@ -105,4 +106,5 @@ private:
 };
 typedef std::shared_ptr<M2Geom> HM2Geom;
 
+extern std::atomic<int> m2SizeLoaded;
 #endif //WOWVIEWERLIB_M2GEOM_H

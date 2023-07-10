@@ -246,9 +246,6 @@ public:
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
-//        if (hasModf0x2Flag) {
-//            m_useLocalDiffuseColor = 0;
-//        }
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
         }
@@ -268,6 +265,7 @@ public:
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
+    void fitParticleBuffersToSize();
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();

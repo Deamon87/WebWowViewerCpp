@@ -1561,25 +1561,32 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         int granSize = m2ToDraw.size() / (2 * threadsAvailable);
         if (granSize == 0) granSize = m2ToDraw.size();
 
-//        if (granSize > 0) {
-//            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-//            [&](tbb::blocked_range<size_t> r) {
-//                for (size_t i = r.begin(); i != r.end(); ++i) {
-//                    auto &m2Object = m2ToDraw[i];
-//                    if (m2Object != nullptr) {
-//                        m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-//                                                       renderPlan->frameDependentData);
-//                    }
-//                }
-//            }, tbb::simple_partitioner());
-//        }
-
+        //Can't be paralleled?
         for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
             if (m2Object != nullptr) {
-                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                                 renderPlan->frameDependentData);
+                m2Object->fitParticleBuffersToSize();
             }
         }
+
+        if (granSize > 0) {
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+            [&](tbb::blocked_range<size_t> r) {
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto &m2Object = m2ToDraw[i];
+                    if (m2Object != nullptr) {
+                        m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                       renderPlan->frameDependentData);
+                    }
+                }
+            }, tbb::simple_partitioner());
+        }
+
+//        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+//            if (m2Object != nullptr) {
+//                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+//                                                 renderPlan->frameDependentData);
+//            }
+//        }
     }
     {
         ZoneScopedN("m2SkyboxBuffersUpdate");

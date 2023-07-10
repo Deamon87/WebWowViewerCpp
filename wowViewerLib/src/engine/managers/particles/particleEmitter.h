@@ -70,6 +70,8 @@ public:
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
     void updateBuffers();
 
+    void fitBuffersToSize();
+
     int flags = 6;
     CParticleMaterialFlags materialFlags;
     bool emittingLastFrame = false;
@@ -204,6 +206,7 @@ private:
 
     void GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const;
     void createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int size);
+
 };
 
 

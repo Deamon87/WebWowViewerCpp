@@ -20,8 +20,8 @@
 void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer) {
 //    std::cout << "AdtObject::loadingFinished finished called";
 
-    texturesPerMCNK = std::vector<AnimTextures>(m_adtFile->mcnkRead+1);
-    animationTranslationPerMCNK = std::vector<AnimTrans>(m_adtFile->mcnkRead+1);
+//    texturesPerMCNK = std::vector<AnimTextures>(m_adtFile->mcnkRead+1);
+//    animationTranslationPerMCNK = std::vector<AnimTrans>(m_adtFile->mcnkRead+1);
 
     loadAlphaTextures();
 
@@ -602,7 +602,7 @@ void AdtObject::update(animTime_t deltaTime ) {
 
     return;
 
-
+/*
     for (int i = 0; i < 256; i++) {
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             texturesPerMCNK[i].animTexture[j] = mathfu::mat4::Identity();
@@ -667,6 +667,7 @@ void AdtObject::update(animTime_t deltaTime ) {
             adtMaterials[i]->m_materialPS->save();
         }
     }
+*/
 }
 
 void AdtObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData) {
