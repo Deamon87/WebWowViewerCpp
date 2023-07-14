@@ -313,7 +313,7 @@ void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
     drawGroup = false;
     if (!m_loaded) {
         //Force load of group if it's exterior
-        if (m_main_groupInfo->flags.EXTERIOR > 0) {
+        if (m_main_groupInfo->flags.EXTERIOR > 0 || !m_api->getConfig()->usePortalCulling) {
             drawGroup = true;
             drawDoodads = true;
         }

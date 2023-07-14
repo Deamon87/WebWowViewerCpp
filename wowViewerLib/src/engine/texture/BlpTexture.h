@@ -21,7 +21,8 @@ enum class TextureFormat {
     RGBA,
     PalARGB1555DitherFloydSteinberg,
     PalARGB4444DitherFloydSteinberg,
-    PalARGB2565DitherFloydSteinberg
+    PalARGB2565DitherFloydSteinberg,
+    BC5_UNORM
 };
 
 class mipmapStruct_t {

@@ -25,6 +25,7 @@
 #include "renderer/uiScene/IFrontendUIBufferCreate.h"
 #include "renderer/uiScene/FrontendUIRenderer.h"
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
+#include "childWindow/BLPViewer.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -193,6 +194,7 @@ private:
     int exporterFramesReady = 0;
 
     std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
+    std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
 
 
 //Test export
@@ -235,6 +237,7 @@ public:
     void showQuickLinksDialog();
 
     void showCurrentStatsDialog();
+    void showBlpViewer();
 
     void restartMinimapGenPreview();
     void showMinimapGenerationSettingsDialog();

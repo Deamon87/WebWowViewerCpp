@@ -18,6 +18,7 @@ int anisFiltrationSupported = -1;
 #include <emscripten/html5.h>
 #endif
 
+/*
 bool IDevice::getIsDTXCompressedTexturesSupported() {
 #ifdef __EMSCRIPTEN__
     if (compressedTexturesSupported == -1){
@@ -37,6 +38,8 @@ bool IDevice::getIsDTXCompressedTexturesSupported() {
     return true;
 #endif
 }
+*/
+
 bool IDevice::getIsAnisFiltrationSupported() {
 #ifdef __EMSCRIPTEN__
     if (anisFiltrationSupported == -1){

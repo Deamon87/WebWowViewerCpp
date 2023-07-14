@@ -206,8 +206,8 @@ inline ImGui::FileBrowser &ImGui::FileBrowser::operator=(const FileBrowser &copy
 inline void ImGui::FileBrowser::SetTitle(std::string title)
 {
     title_ = std::move(title);
-    openLabel_ = title_ + "##filebrowser_" + std::to_string(reinterpret_cast<size_t>(this));
-    openNewDirLabel_ = "new dir##new_dir_" + std::to_string(reinterpret_cast<size_t>(this));
+    openLabel_ = title_ + "##filebrowser_";
+    openNewDirLabel_ = "new dir##new_dir_";
 }
 
 inline void ImGui::FileBrowser::Open()

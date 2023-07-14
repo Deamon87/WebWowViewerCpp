@@ -1316,7 +1316,6 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     int m2ProcessedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
-//    if (m_api->getConfig()->getRenderM2()) {
 
     for (auto &m2Object : renderPlan->m2Array.getToLoadMain()) {
         if (m2Object == nullptr) continue;
@@ -1404,10 +1403,19 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         std::tie(skyMesh0x4Sky, skyMeshMat0x4) = createSkyMesh(sceneRenderer, skyMeshBinding, true);
     }
     bool renderPortals = m_api->getConfig()->renderPortals;
+    bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
 
-    for (auto &view : renderPlan->viewsHolder.getInteriorViews()) {
-        if (renderPortals) {
-            view->produceTransformedPortalMeshes(sceneRenderer, m_api);
+    if (renderPortals) {
+        for (auto &view : renderPlan->viewsHolder.getInteriorViews()) {
+                view->produceTransformedPortalMeshes(sceneRenderer, m_api, view->worldPortalVertices);
+        }
+    }
+
+
+    if (renderAntiPortals) {
+        if(auto const &exterior = renderPlan->viewsHolder.getExterior()) {
+            exterior->produceTransformedPortalMeshes(sceneRenderer, m_api,
+                                                     exterior->worldAntiPortalVertices, true);
         }
     }
 

@@ -81,7 +81,7 @@ public:
     VkSampleCountFlagBits getMaxSamplesBit();
 
     bool getIsAnisFiltrationSupported() override;
-    bool getIsDTXCompressedTexturesSupported() override;
+    bool getIsBCCompressedTexturesSupported() override;
     float getAnisLevel() override;
 
     void startUpdateForNextFrame() override {};

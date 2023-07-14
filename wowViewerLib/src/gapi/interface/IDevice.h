@@ -178,7 +178,6 @@ class IDevice {
         virtual void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) = 0;
 //        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
-        virtual bool getIsDTXCompressedTexturesSupported();
         virtual bool getIsAnisFiltrationSupported();
         virtual float getAnisLevel() = 0;
         virtual bool getIsVulkanAxisSystem() {return false;}

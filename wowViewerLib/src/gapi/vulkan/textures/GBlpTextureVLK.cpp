@@ -24,10 +24,6 @@ GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
     std::string blpAddress_str = addrToStr(texture.get());
     std::string selfAddr_str = addrToStr(this);
 
-    if (texture->getTextureName() == "3071385") {
-        std::cout << "3071385 loaded" << std::endl;
-    }
-
     m_debugName = "Texture FDID " + texture->getTextureName() + " blp ptr: "+ blpAddress_str + " self ptr :" + selfAddr_str ;
 }
 
@@ -66,6 +62,9 @@ void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVe
         case TextureFormat::RGBA:
             textureFormatGPU = VK_FORMAT_R8G8B8A8_UNORM;
             break;
+        case TextureFormat::BC5_UNORM:
+            textureFormatGPU = VK_FORMAT_BC5_UNORM_BLOCK;
+            break;
 
         default:
             debuglog("Unknown texture format found in file: ")
@@ -76,7 +75,7 @@ void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVe
     auto &mipmaps = *hmipmaps;
 
     /* S3TC is not supported on mobile platforms */
-    bool compressedTextSupported = m_device.getIsDTXCompressedTexturesSupported();
+    bool compressedTextSupported = m_device.getIsBCCompressedTexturesSupported();
     if (!compressedTextSupported && textureFormat != TextureFormat::BGRA) {
         this->decompressAndUpload(textureFormat, hmipmaps);
         return;

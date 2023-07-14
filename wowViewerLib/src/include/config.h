@@ -46,6 +46,7 @@ public:
     bool renderM2 = true;
     bool renderBSP = false;
     bool renderPortals = false;
+    bool renderAntiPortals = false;
     bool renderPortalsIgnoreDepth = false;
     bool usePortalCulling = true;
 

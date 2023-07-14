@@ -10,7 +10,7 @@
 #include "../../../renderer/frame/FrameProfile.h"
 #include <algorithm>
 
-std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)
+std::vector<mathfu::vec3> createAntiPortal(const HWmoGroupGeom& groupGeom, const mathfu::mat4 &placementMat)
 {
     std::vector<mathfu::vec3> points(0);
 
@@ -20,37 +20,9 @@ std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)
             ; ++mopy_index, ++movi_index
             )
     {
-        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]));
-        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]));
-        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]));
-//        C3Vector points[3] =
-//                {  groupGeom->verticles[groupGeom->indicies[movi_index]]
-//                   groupGeom->verticles[groupGeom->indicies[movi_index]]
-//                   groupGeom->verticles[groupGeom->indicies[movi_index]]
-//                };
-//
-//        float avg ((points[0]->z + points[1]->z + points[2]->z) / 3.0);
-//
-//        unsigned int two_points[2];
-//        unsigned int two_points_index (0);
-//
-//        for (unsigned int i (0); i < 3; ++i)
-//        {
-//            if (points[i]->z > avg)
-//            {
-//                two_points[two_points_index++] = i;
-//            }
-//        }
-//
-//        if (two_points_index > 1)
-//        {
-//            CMapObjOccluder* occluder (CMapObj::AllocOccluder());
-//            occluder->p1 = points[two_points[0]];
-//            occluder->p2 = points[two_points[1]];
-//
-//            append (this->occluders, occluder);
-//        }
-
+        points.push_back((placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]), 1.0f)).xyz());
+        points.push_back((placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]), 1.0f)).xyz());
+        points.push_back((placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]), 1.0f)).xyz());
     }
     return points;
 }
@@ -920,6 +892,20 @@ bool WmoObject::startTraversingWMOGroup(
         if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
             auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
             exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
+        }
+
+        if (m_api->getConfig()->renderAntiPortals) {
+            auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
+            if (!this->groupObjects[i]->getIsLoaded()) {
+                exteriorView->wmoGroupArray.addToLoad(this->groupObjects[i]);
+            } else {
+                if ((mainGeom->groups[i].flags.ANTIPORTAL) > 0) { //ANTIPORTAL
+                    if (this->groupObjects[i]->getIsLoaded()) {
+                        exteriorView->worldAntiPortalVertices.push_back(
+                            createAntiPortal(this->groupObjects[i]->getWmoGroupGeom(), m_placementMatrix));
+                    }
+                }
+            }
         }
     }
 

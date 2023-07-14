@@ -11,6 +11,7 @@ class CommandBufferThread {
 public:
     
 private:
+    bool m_isTerminating;
     std::thread m_commandBufferThread;
 };
 

@@ -51,7 +51,7 @@
 #endif
 #endif
 
-#define DEBUGPOINTER 0
+//#define DEBUGPOINTER 1
 
 template<class T>
 struct PointerChecker {

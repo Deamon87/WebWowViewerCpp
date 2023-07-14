@@ -127,6 +127,7 @@ void FrontendUI::composeUI() {
     showMakeScreenshotDialog();
     showCurrentStatsDialog();
     showMinimapGenerationSettingsDialog();
+    showBlpViewer();
 
     // Rendering
     ImGui::Render();
@@ -293,6 +294,14 @@ void FrontendUI::showCurrentStatsDialog() {
 //        }
 
         ImGui::End();
+    }
+}
+
+void FrontendUI::showBlpViewer() {
+    if (!m_blpViewerWindow) return;
+
+    if (!m_blpViewerWindow->draw()) {
+        m_blpViewerWindow = nullptr;
     }
 }
 
@@ -692,6 +701,10 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open minimap generator", "", false, cascOpened)) {
                 showMinimapGeneratorSettings = true;
             }
+            if (ImGui::MenuItem("Open BLP viewer", "", false, cascOpened)) {
+                if (!m_blpViewerWindow)
+                    m_blpViewerWindow = std::make_shared<BLPViewer>(m_api, m_uiRenderer);
+            }
             if (ImGui::MenuItem("Test export")) {
                 if (m_currentScene != nullptr) {
                     exporter = std::make_shared<GLTFExporter>("./gltf/");
@@ -871,6 +884,9 @@ void FrontendUI::showQuickLinksDialog() {
     }
     if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
         openWMOSceneByfdid(1120838);
+    }
+    if (ImGui::Button("8du_zuldazarraid_antiportal01.wmo", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(2574165);
     }
     if (ImGui::Button("Vanilla karazhan", ImVec2(-1, 0))) {
         m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
@@ -1282,8 +1298,12 @@ void FrontendUI::showSettingsDialog() {
         if (ImGui::Checkbox("Render portals", &renderPortals)) {
             m_api->getConfig()->renderPortals = renderPortals;
         }
+        bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
+        if (ImGui::Checkbox("Render anti portals", &renderAntiPortals)) {
+            m_api->getConfig()->renderAntiPortals = renderAntiPortals;
+        }
 
-        if (renderPortals) {
+        if (renderPortals || renderAntiPortals) {
             bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
             if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
                 m_api->getConfig()->renderPortalsIgnoreDepth = renderPortalsIgnoreDepth;

@@ -35,7 +35,7 @@ void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool rende
         }
     }
 
-    for (auto const &mesh : portalPointsFrame.m_meshes) {
+    for (auto const &mesh : m_portalMeshes) {
         transparentMeshes.push_back(mesh);
     }
 }
@@ -78,7 +78,8 @@ void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
-void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer) {
+void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
+                                                 const std::vector<std::vector<mathfu::vec3>> &portalsVerts, bool isAntiportal) {
     std::vector<uint16_t> indiciesArray;
     std::vector<float> verticles;
     int k = 0;
@@ -87,26 +88,32 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
     stripOffsets.push_back(0);
     int verticleOffset = 0;
     int stripOffset = 0;
-    for (int i = 0; i < this->worldPortalVertices.size(); i++) {
+    for (int i = 0; i < portalsVerts.size(); i++) {
         //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
 
-        int verticlesCount = this->worldPortalVertices[i].size();
+        int verticlesCount = portalsVerts[i].size();
         if ((verticlesCount - 2) <= 0) {
             stripOffsets.push_back(stripOffsets[i]);
             continue;
         };
 
-        for (int j =0; j < (((int)verticlesCount)-2); j++) {
-            indiciesArray.push_back(verticleOffset+0);
-            indiciesArray.push_back(verticleOffset+j+1);
-            indiciesArray.push_back(verticleOffset+j+2);
+        if (!isAntiportal) {
+            for (int j = 0; j < (((int) verticlesCount) - 2); j++) {
+                indiciesArray.push_back(verticleOffset + 0);
+                indiciesArray.push_back(verticleOffset + j + 1);
+                indiciesArray.push_back(verticleOffset + j + 2);
+            }
+        } else {
+            for (int j = 0; j < (verticlesCount); j++) {
+                indiciesArray.push_back(verticleOffset + j);
+            }
         }
         stripOffset += ((verticlesCount-2) * 3);
 
         for (int j =0; j < verticlesCount; j++) {
-            verticles.push_back(this->worldPortalVertices[i][j].x);
-            verticles.push_back(this->worldPortalVertices[i][j].y);
-            verticles.push_back(this->worldPortalVertices[i][j].z);
+            verticles.push_back(portalsVerts[i][j].x);
+            verticles.push_back(portalsVerts[i][j].y);
+            verticles.push_back(portalsVerts[i][j].z);
         }
 
         verticleOffset += verticlesCount;
@@ -115,7 +122,7 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
 
     if (verticles.empty()) return;
 
-        //TODO:
+    auto &portalPointsFrame = portals.emplace_back();
     portalPointsFrame.m_indexVBO = sceneRenderer->createPortalIndexBuffer((indiciesArray.size() * sizeof(uint16_t)));
     portalPointsFrame.m_bufferVBO = sceneRenderer->createPortalVertexBuffer((verticles.size() * sizeof(float)));
 
@@ -136,7 +143,11 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
 
         auto material = sceneRenderer->createPortalMaterial(pipelineTemplate);
         auto &portalColor = material->m_materialPS->getObject();
-        portalColor.uColor = {0.058, 0.058, 0.819607843, 0.3};
+        if (!isAntiportal) {
+            portalColor.uColor = {0.058, 0.058, 0.819607843, 0.3};
+        } else {
+            portalColor.uColor = {0.819607843, 0.058, 0.058, 0.3};
+        }
         material->m_materialPS->save();
 
         //Create mesh
@@ -146,7 +157,7 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
 
         auto mesh = sceneRenderer->createSortableMesh(meshTemplate, material, 0);
 
-        portalPointsFrame.m_meshes.push_back(mesh);
+        m_portalMeshes.push_back(mesh);
     }
 }
 

@@ -37,6 +37,7 @@ public:
 
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> worldPortalVertices = {};
+    std::vector<std::vector<mathfu::vec3>> worldAntiPortalVertices = {};
     MathHelper::FrustumCullingData frustumData;
 
     int level = -1;
@@ -46,13 +47,16 @@ public:
         HGVertexBuffer m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
-        std::vector<HGSortableMesh> m_meshes = {};
-    } portalPointsFrame;
+    };
+    std::vector<HGSortableMesh> m_portalMeshes = {};
+
+    std::vector<PortalPointsFrame> portals;
 
     virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
-    void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer);
+    void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
+                                        const std::vector<std::vector<mathfu::vec3>> &portalsVerts, bool isAntiportal = false);
     void addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos);
 };
 

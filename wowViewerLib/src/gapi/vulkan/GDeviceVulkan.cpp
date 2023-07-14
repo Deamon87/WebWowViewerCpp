@@ -794,7 +794,7 @@ void GDeviceVLK::increaseFrameNumber() {
 bool GDeviceVLK::getIsAnisFiltrationSupported() {
     return supportedFeatures.samplerAnisotropy;
 };
-bool GDeviceVLK::getIsDTXCompressedTexturesSupported() {
+bool GDeviceVLK::getIsBCCompressedTexturesSupported() {
     return supportedFeatures.textureCompressionBC;
 };
 

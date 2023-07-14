@@ -463,5 +463,7 @@ void M2Geom::loadLowPriority(const HApiContainer& m_api, uint32_t animationId, u
 }
 
 M2Geom::~M2Geom() {
-    m2SizeLoaded.fetch_add(-m2File->size());
+    if (m2File != nullptr) {
+        m2SizeLoaded.fetch_add(-m2File->size());
+    }
 }

@@ -45,7 +45,7 @@ public:
     //TODO:
     virtual bool getIsAnisFiltrationSupported() {return true;};
     //TODO:
-    virtual bool getIsDTXCompressedTexturesSupported() {return true;};
+    virtual bool getIsBCCompressedTexturesSupported() = 0;
     virtual float getAnisLevel() = 0;
 
     virtual const QueueFamilyIndices &getQueueFamilyIndices() = 0;

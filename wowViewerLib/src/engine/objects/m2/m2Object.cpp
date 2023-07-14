@@ -1031,8 +1031,8 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
-    //Update materials
-    if (m_placementMatrixChanged) {
+    //Update materials`
+    if (true) {
         auto &placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
         placementMatrix.uPlacementMat = m_placementMatrix;
         m_modelWideDataBuff->m_placementMatrix->save();

@@ -49,13 +49,16 @@ TextureFormat getTextureType(BlpFile *blpFile) {
         case BLPPixelFormat::PIXEL_ARGB2565:
             textureFormat = TextureFormat::PalARGB2565DitherFloydSteinberg;
             break;
+        case BLPPixelFormat::PIXEL_BC5:
+            textureFormat = TextureFormat::BC5_UNORM;
+            break;
 
         default:
             break;
     }
     return textureFormat;
 }
-HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
+HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, size_t blpFileSize) {
     int32_t width = blpFile->width;
     int32_t height = blpFile->height;
 
@@ -73,11 +76,17 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
         mipmapsCnt++;
     }
     auto mipmaps = std::make_shared<std::vector<mipmapStruct_t>>();
-
-    mipmaps->resize(mipmapsCnt);
+    auto &pmipmaps = (*mipmaps);
+    pmipmaps.resize(mipmapsCnt);
 
     for (int i = 0; i < mipmapsCnt; i++) {
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
+        if ( (blpFile->offsets[i] >= blpFileSize) ||
+             ((blpFile->offsets[i] + blpFile->lengths[i]) >= blpFileSize)
+        ) {
+            std::cout << "wrong offset in blp file" << std::endl;
+            continue;
+        }
 
         uint8_t *data = ((uint8_t *) blpFile)+blpFile->offsets[i]; //blpFile->lengths[i]);
 
@@ -92,7 +101,7 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
 
 //        if (minSize == validSize) break;
 
-        mipmapStruct_t &mipmapStruct = (*mipmaps)[i];
+        mipmapStruct_t &mipmapStruct = pmipmaps[i];
         mipmapStruct.height = height;
         mipmapStruct.width = width;
         mipmapStruct.texture.resize(validSize, 0);
@@ -139,7 +148,9 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat) {
                 mipmapStruct.texture[j * 4 + 3] = a;
             }
         } else {
-            std::copy(data, data + blpFile->lengths[i], &mipmapStruct.texture[0]);
+            size_t sizeToCopy = std::min<size_t>(blpFile->lengths[i], mipmapStruct.texture.size());
+            assert(sizeToCopy <= mipmapStruct.texture.size());
+            std::copy(data, data + sizeToCopy, mipmapStruct.texture.data());
         }
 
         height = height / 2;
@@ -158,7 +169,8 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
     BlpFile *pBlpFile = (BlpFile *) blpFile->data();
     if (pBlpFile->fileIdent != '2PLB') {
         std::cerr << "Wrong ident for BLP2 file " << pBlpFile->fileIdent << " " << fileName << std::endl;
-        throw std::runtime_error("Wrong ident for BLP2 file");
+        this->fsStatus = FileStatus ::FSRejected;
+        return;
     }
     this->m_textureFormat = getTextureType(pBlpFile);
 
@@ -176,7 +188,7 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
 }
 
 const HMipmapsVector BlpTexture::getMipmapsVector() {
-    return parseMipmaps( (BlpFile *)m_blpFile->data(), m_textureFormat);
+    return parseMipmaps( (BlpFile *)m_blpFile->data(), m_textureFormat, m_blpFile->size());
 }
 
 BlpTexture::~BlpTexture() {

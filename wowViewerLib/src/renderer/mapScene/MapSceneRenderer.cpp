@@ -20,7 +20,7 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
     return mapPlan;
 }
 
-void MapSceneRenderer:: collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                                      const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
                                      const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
