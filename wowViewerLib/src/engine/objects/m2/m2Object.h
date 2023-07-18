@@ -160,7 +160,7 @@ private:
     void initTransparencies();
     void initLights();
     void initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer);
-    void initRibbonEmitters();
+    void initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer);
 
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
     bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
@@ -239,6 +239,7 @@ public:
     void getAvailableAnimation(std::vector<int> &allAnimationList);
     void getMeshIds(std::vector<int> &meshIdList);
     mathfu::mat4 getTextureTransformByLookup(int textureTrasformlookup);
+    int32_t getTextureTransformIndexByLookup(int textureTrasformlookup);
     bool getGetIsLoaded() { return m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
@@ -265,7 +266,7 @@ public:
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
-    void fitParticleBuffersToSize();
+    void fitParticleAndRibbonBuffersToSize();
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();

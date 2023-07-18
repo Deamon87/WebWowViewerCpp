@@ -95,17 +95,18 @@ enum class M2VertexShader : int {
 inline constexpr const int operator+ (M2PixelShader const val) { return static_cast<const int>(val); };
 inline constexpr const int operator+ (M2VertexShader const val) { return static_cast<const int>(val); };
 
-const static EGxBlendEnum M2BlendingModeToEGxBlendEnum [8] =
-    {
-        EGxBlendEnum::GxBlend_Opaque,
-        EGxBlendEnum::GxBlend_AlphaKey,
-        EGxBlendEnum::GxBlend_Alpha,
-        EGxBlendEnum::GxBlend_NoAlphaAdd,
-        EGxBlendEnum::GxBlend_Add,
-        EGxBlendEnum::GxBlend_Mod,
-        EGxBlendEnum::GxBlend_Mod2x,
-        EGxBlendEnum::GxBlend_BlendAdd
-    };
+extern const std::array<EGxBlendEnum,8> M2BlendingModeToEGxBlendEnum;
+const std::array<EGxBlendEnum,8> M2BlendingModeToEGxBlendEnum =
+{
+    EGxBlendEnum::GxBlend_Opaque,
+    EGxBlendEnum::GxBlend_AlphaKey,
+    EGxBlendEnum::GxBlend_Alpha,
+    EGxBlendEnum::GxBlend_NoAlphaAdd,
+    EGxBlendEnum::GxBlend_Add,
+    EGxBlendEnum::GxBlend_Mod,
+    EGxBlendEnum::GxBlend_Mod2x,
+    EGxBlendEnum::GxBlend_BlendAdd
+};
 
 struct M2Shaders{
     unsigned int pixel;
@@ -897,11 +898,10 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
 
     //3. Do post load procedures
     m_skinGeom->fixData(m_m2Geom->getM2Data());
+    m_boneMasterData = std::make_shared<CBoneMasterData>(m_m2Geom, m_skelGeom, m_parentSkelGeom);
 
     this->createVertexBindings(sceneRenderer);
     this->createMeshes(sceneRenderer);
-
-    m_boneMasterData = std::make_shared<CBoneMasterData>(m_m2Geom, m_skelGeom, m_parentSkelGeom);
 
     this->initAnimationManager();
     this->initBoneAnimMatrices();
@@ -910,7 +910,7 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     this->initTransparencies();
     this->initLights();
     this->initParticleEmitters(sceneRenderer);
-    this->initRibbonEmitters();
+    this->initRibbonEmitters(sceneRenderer);
 
 
     this->m_loaded = true;
@@ -1014,12 +1014,15 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     }
 }
 
-void M2Object::fitParticleBuffersToSize() {
+void M2Object::fitParticleAndRibbonBuffersToSize() {
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     for (int i = minParticle; i < maxParticle; i++) {
         particleEmitters[i]->fitBuffersToSize();
+    }
+    for (int i = 0; i < ribbonEmitters.size(); i++) {
+        ribbonEmitters[i]->fitBuffersToSize();
     }
 }
 
@@ -1721,7 +1724,7 @@ void M2Object::initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer) 
     }
 }
 
-void M2Object::initRibbonEmitters() {
+void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
     ribbonEmitters = std::vector<CRibbonEmitter *>();
 //    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
     auto m2Data = m_m2Geom->getM2Data();
@@ -1740,7 +1743,8 @@ void M2Object::initRibbonEmitters() {
 
         int textureTransformLookup = (m2Data->global_flags.flag_unk_0x20000 != 0) ? m2Ribbon->textureTransformLookupIndex : -1;
 
-        auto emitter = new CRibbonEmitter(m_api, this, materials, textureIndicies, textureTransformLookup);
+        auto emitter = new CRibbonEmitter(m_api, sceneRenderer, m_modelWideDataBuff,
+                                          this, materials, textureIndicies, textureTransformLookup);
         ribbonEmitters.push_back(emitter);
 
         CImVector color;
@@ -1863,7 +1867,16 @@ mathfu::mat4 M2Object::getTextureTransformByLookup(int textureTrasformlookup) {
 
     return mathfu::mat4::Identity();
 }
+int32_t M2Object::getTextureTransformIndexByLookup(int textureTrasformlookup) {
+    if (textureTrasformlookup < this->m_m2Geom->getM2Data()->texture_transforms_lookup_table.size) {
+        auto textureTransformIndex = *this->m_m2Geom->getM2Data()->texture_transforms_lookup_table.getElement(textureTrasformlookup);
+        if (textureTransformIndex >= 0 && textureTransformIndex < this->textAnimMatrices.size()) {
+            return textureTransformIndex;
+        }
+    }
 
+    return -1;
+}
 
 void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
 //    return;
@@ -1951,7 +1964,7 @@ void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) 
 
     //3. Create model wide uniform buffer
     m_modelWideDataBuff = sceneRenderer->createM2ModelMat(
-        m_m2Geom->m_m2Data->bones.size,
+        m_boneMasterData->getSkelData()->m_m2CompBones->size,
         m_m2Geom->m_m2Data->colors.size,
         m_m2Geom->m_m2Data->texture_weights.size,
         m_m2Geom->m_m2Data->texture_transforms.size

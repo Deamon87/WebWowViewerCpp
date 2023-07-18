@@ -1572,7 +1572,7 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         //Can't be paralleled?
         for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
             if (m2Object != nullptr) {
-                m2Object->fitParticleBuffersToSize();
+                m2Object->fitParticleAndRibbonBuffersToSize();
             }
         }
 

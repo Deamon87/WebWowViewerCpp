@@ -74,6 +74,7 @@ class CRibbonEmitter {
 
 private:
     HApiContainer m_api;
+    HMapSceneBufferCreate m_sceneRenderer;
 
     struct RibbonFrame {
         HGIndexBuffer m_indexVBO;
@@ -84,12 +85,19 @@ private:
         bool isDead = true;
     };
 
-    std::array<RibbonFrame, 4> frame;
+    std::array<RibbonFrame, IDevice::MAX_FRAMES_IN_FLIGHT> frame;
+    std::vector<std::shared_ptr<IM2RibbonMaterial>> m_ribbonMaterials;
 
-    void createMesh(M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies);
+    void createMaterials(const HMapSceneBufferCreate &sceneRenderer,
+                         const std::shared_ptr<IM2ModelData> &m2ModelData,
+                         M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndices);
+    void createMesh(const HMapSceneBufferCreate &sceneRenderer, RibbonFrame &ribbonFrame);
 
 public:
-    CRibbonEmitter(HApiContainer m_api, M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies, int textureTransformLookup);
+    CRibbonEmitter(const HApiContainer &m_api,
+                   const HMapSceneBufferCreate &sceneRenderer,
+                   const std::shared_ptr<IM2ModelData> &m2ModelData,
+                   M2Object *object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies, int textureTransformLookup);
     void SetDataEnabled(char a2);
     void SetUserEnabled(char a2);
     CRibbonEmitter *SetGravity(float a2);
@@ -118,6 +126,9 @@ public:
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
 
     void updateBuffers();
+    void fitBuffersToSize();
+
+
 };
 
 

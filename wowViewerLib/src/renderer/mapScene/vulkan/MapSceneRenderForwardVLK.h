@@ -28,6 +28,7 @@ public:
     HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) override;
     HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
@@ -39,6 +40,7 @@ public:
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) override;
+    HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createADTVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createADTIndexBuffer(int sizeInBytes) override;
@@ -67,6 +69,10 @@ public:
 
     std::shared_ptr<IM2ParticleMaterial> createM2ParticleMaterial(const PipelineTemplate &pipelineTemplate,
                                                                   const M2ParticleMaterialTemplate &m2MaterialTemplate) override;
+
+    std::shared_ptr<IM2RibbonMaterial> createM2RibbonMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                              const PipelineTemplate &pipelineTemplate,
+                                                              const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) override;
 
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() override;
 
@@ -99,6 +105,7 @@ private:
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
+    HGBufferVLK vboM2RibbonBuffer;
     HGBufferVLK vboPortalBuffer;
 
     HGBufferVLK vboAdtBuffer;
@@ -128,6 +135,7 @@ private:
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
     HGVertexBufferBindings m_emptyADTVAO = nullptr;
     HGVertexBufferBindings m_emptyM2ParticleVAO = nullptr;
+    HGVertexBufferBindings m_emptyM2RibbonVAO = nullptr;
     HGVertexBufferBindings m_emptyPortalVAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;

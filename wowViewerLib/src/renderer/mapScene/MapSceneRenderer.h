@@ -27,7 +27,7 @@ static const std::vector<GBufferBinding> staticWMOBindings = {{
     {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true,sizeof(WMOVertex), offsetof(WMOVertex, colorSecond)}
 }};
 static const std::vector<GBufferBinding> staticWmoGroupAmbient = {{
-  {+wmoShader::Attribute::wmoAmbient, 4, GBindingType::GFLOAT, false,          sizeof(mathfu::vec4_packed), 0},
+    {+wmoShader::Attribute::wmoAmbient, 4, GBindingType::GFLOAT, false,          sizeof(mathfu::vec4_packed), 0},
 }};
 
 static const std::vector<GBufferBinding> staticWaterBindings = {{
@@ -51,27 +51,34 @@ static const std::vector<GBufferBinding> skyConusBinding = {{
 }};
 
 static const std::vector<GBufferBinding> fullScreenQuad = {{
-   {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
+    {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
 }};
 
 static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
-   {+m2ParticleShader::Attribute::aPosition,  3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, position) },
-   {+m2ParticleShader::Attribute::aColor,     4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, color)},
-   {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
-   {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
-   {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
+    {+m2ParticleShader::Attribute::aPosition,  3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, position) },
+    {+m2ParticleShader::Attribute::aColor,     4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, color)},
+    {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
+    {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
+    {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
+}};
+
+static std::vector<GBufferBinding> staticM2RibbonBindings = {{
+    {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, sizeof(CRibbonVertex), offsetof(CRibbonVertex, pos) }, // 0
+    {+ribbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(CRibbonVertex), offsetof(CRibbonVertex, diffuseColor)}, // 12
+    {+ribbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(CRibbonVertex), offsetof(CRibbonVertex, texCoord)}, // 16
+ //24
 }};
 
 static std::vector<GBufferBinding> adtVertexBufferBinding = {{
-  {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
-  {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
-  {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
-  {+adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, sizeof(AdtVertex), offsetof(AdtVertex, mclv)},
+    {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
+    {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
+    {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
+    {+adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, sizeof(AdtVertex), offsetof(AdtVertex, mclv)},
 }};
 
 static std::vector<GBufferBinding> adtVertexBufferLODBinding = {{
-  {+adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 8, 0 },
-  {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 8, 4}
+    {+adtLodShader::Attribute::aHeight, 1, GBindingType::GFLOAT, false, 8, 0 },
+    {+adtLodShader::Attribute::aIndex, 1, GBindingType::GFLOAT, false, 8, 4}
 }};
 
 static std::vector<GBufferBinding> drawPortalBindings = {{

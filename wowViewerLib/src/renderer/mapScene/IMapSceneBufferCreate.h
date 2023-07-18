@@ -54,6 +54,7 @@ public:
     virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) = 0;
     virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    virtual HGVertexBufferBindings createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
@@ -66,6 +67,7 @@ public:
     virtual HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) = 0;
 
     virtual HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) = 0;
+    virtual HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) = 0;
 
     virtual HGVertexBuffer createADTVertexBuffer(int sizeInBytes) = 0;
     virtual HGIndexBuffer  createADTIndexBuffer(int sizeInBytes) = 0;
@@ -98,6 +100,11 @@ public:
 
     virtual std::shared_ptr<IM2ParticleMaterial> createM2ParticleMaterial(const PipelineTemplate &pipelineTemplate,
                                                                           const M2ParticleMaterialTemplate &m2MaterialTemplate) = 0;
+
+    virtual std::shared_ptr<IM2RibbonMaterial> createM2RibbonMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                                      const PipelineTemplate &pipelineTemplate,
+                                                                      const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) = 0;
+
     virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
 
     virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() = 0;

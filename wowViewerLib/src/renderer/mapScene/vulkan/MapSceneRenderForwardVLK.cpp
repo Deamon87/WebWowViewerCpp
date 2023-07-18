@@ -22,6 +22,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     vboM2Buffer         = m_device->createVertexBuffer(1024*1024);
     vboPortalBuffer     = m_device->createVertexBuffer(1024*1024);
     vboM2ParticleBuffer = m_device->createVertexBuffer(1024*1024);
+    vboM2RibbonBuffer   = m_device->createVertexBuffer(1024*1024);
     vboAdtBuffer        = m_device->createVertexBuffer(3*1024*1024);
     vboWMOBuffer        = m_device->createVertexBuffer(1024*1024);
     vboWaterBuffer      = m_device->createVertexBuffer(1024*1024);
@@ -59,6 +60,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_emptyADTVAO = createADTVAO(nullptr, nullptr);
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
+    m_emptyM2RibbonVAO = createM2RibbonVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
     m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, mathfu::vec4(0,0,0,0));
     m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
@@ -127,6 +129,15 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createM2ParticleVAO(HGVertexBuf
     return m2ParticleVAO;
 }
 
+HGVertexBufferBindings MapSceneRenderForwardVLK::createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+    //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
+    auto m2RibbonVAO = m_device->createVertexBufferBindings();
+    m2RibbonVAO->addVertexBufferBinding(vertexBuffer, staticM2RibbonBindings);
+    m2RibbonVAO->setIndexBuffer(indexBuffer);
+
+    return m2RibbonVAO;
+};
+
 HGVertexBufferBindings MapSceneRenderForwardVLK::createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto waterVAO = m_device->createVertexBufferBindings();
@@ -167,6 +178,9 @@ HGVertexBuffer MapSceneRenderForwardVLK::createM2VertexBuffer(int sizeInBytes) {
 
 HGVertexBuffer MapSceneRenderForwardVLK::createM2ParticleVertexBuffer(int sizeInBytes) {
     return vboM2ParticleBuffer->getSubBuffer(sizeInBytes);
+}
+HGVertexBuffer MapSceneRenderForwardVLK::createM2RibbonVertexBuffer(int sizeInBytes) {
+    return vboM2RibbonBuffer->getSubBuffer(sizeInBytes);
 }
 
 HGIndexBuffer MapSceneRenderForwardVLK::createM2IndexBuffer(int sizeInBytes) {
@@ -345,6 +359,30 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
 
     return material;
 }
+
+std::shared_ptr<IM2RibbonMaterial> MapSceneRenderForwardVLK::createM2RibbonMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                                                    const PipelineTemplate &pipelineTemplate,
+                                                                                    const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) {
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto l_fragmentData = std::make_shared<CBufferChunkVLK<Ribbon::meshRibbonWideBlockPS>>(uboBuffer); ;
+
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyM2RibbonVAO, m_renderPass, pipelineTemplate)
+        .createDescriptorSet(0, [&l_sceneWideChunk, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
+                .ubo(4, l_fragmentData->getSubBuffer());
+        })
+        .createDescriptorSet(1, [&m2RibbonMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(5, m2RibbonMaterialTemplate.textures[0]);
+        })
+        .toMaterial<IM2RibbonMaterial>([l_fragmentData](IM2RibbonMaterial *instance) -> void {
+            instance->m_fragmentData = l_fragmentData;
+        });
+
+    return material;
+};
 
 std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderForwardVLK::createWMOWideChunk() {
     return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(uboBuffer);
@@ -601,6 +639,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
             uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
             uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
             uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
             uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
             uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);

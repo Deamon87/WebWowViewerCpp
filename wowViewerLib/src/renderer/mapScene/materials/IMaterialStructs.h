@@ -26,6 +26,9 @@ struct M2WaterfallMaterialTemplate {
 struct M2ParticleMaterialTemplate {
     std::array<HGSamplableTexture, 3> textures = {nullptr, nullptr, nullptr};
 };
+struct M2RibbonMaterialTemplate {
+    std::array<HGSamplableTexture, 1> textures = {nullptr};
+};
 
 struct WMOMaterialTemplate {
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWide;
@@ -81,6 +84,11 @@ public:
 class IM2ParticleMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<Particle::meshParticleWideBlockPS>> m_fragmentData = nullptr;
+};
+
+class IM2RibbonMaterial : public IMaterial {
+public:
+    std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> m_fragmentData = nullptr;
 };
 
 class ISkyMeshMaterial : public IMaterial {

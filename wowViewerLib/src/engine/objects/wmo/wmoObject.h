@@ -180,14 +180,9 @@ public:
     bool isGroupWmoExteriorLit(int groupId);
     bool isGroupWmoExtSkybox(int groupId);
 
-    void drawTransformedPortalPoints();
-
     void drawDebugLights();
 
     void createWorldPortals();
-
-    void createTransformedAntiPortalMesh();
-    void updateTransformedAntiPortalPoints();
 };
 
 struct WMOObjectHasher
