@@ -61,6 +61,7 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
     openResult = CascOpenStorage(path.c_str(), localMask, &this->m_storage);
     if (openResult) {
         std::cout << "Opened local Casc Storage at "<< path << std::endl;
+        updateKeys();
     } else {
         std::cout << "Could not open local Casc Storage at "<< path << std::endl;
     }
@@ -206,4 +207,9 @@ CascRequestProcessor::~CascRequestProcessor() {
         CascCloseStorage(m_storage);
     if (m_storageOnline != nullptr)
         CascCloseStorage(m_storageOnline);
+}
+
+void CascRequestProcessor::updateKeys() {
+    if (m_storage != nullptr)
+        CascImportKeysFromFile(m_storage, CASC_KEYS_FILE.c_str());
 }

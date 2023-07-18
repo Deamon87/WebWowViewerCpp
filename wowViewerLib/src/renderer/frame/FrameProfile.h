@@ -7,12 +7,13 @@
 
 #ifdef LINK_TRACY
 #include "Tracy.hpp"
-
+//#include "tracy/TracyVulkan.hpp"
 #define setThreadName(a)  tracy::SetThreadName(a);
 #else
 #define setThreadName(a)
 #define ZoneScoped
 #define ZoneScopedN(a)
+#define TracyVkContext(x,y,z,w)
 
 #endif
 

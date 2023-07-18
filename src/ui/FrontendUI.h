@@ -26,6 +26,7 @@
 #include "renderer/uiScene/FrontendUIRenderer.h"
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
 #include "childWindow/BLPViewer.h"
+#include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -201,6 +202,7 @@ private:
     std::shared_ptr<DataExporter::DataExporterClass> m_dataExporter = nullptr;
 
     std::shared_ptr<DatabaseUpdateWorkflow> m_databaseUpdateWorkflow = nullptr;
+    std::shared_ptr<KeysUpdateWorkflow> m_keyUpdateWorkFlow = nullptr;
 
 public:
     void overrideCascOpened(bool value) {

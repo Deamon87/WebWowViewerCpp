@@ -2,9 +2,6 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-#ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 256
-#endif
 
 precision highp float;
 precision highp int;

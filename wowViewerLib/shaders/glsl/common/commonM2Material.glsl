@@ -1,5 +1,9 @@
 #include "commonFunctions.glsl"
 
+#ifndef MAX_MATRIX_NUM
+#define MAX_MATRIX_NUM 256
+#endif
+
 void calcM2FragMaterial(const in int uPixelShader,
 in sampler2D texSampler1,
 in sampler2D texSampler2,

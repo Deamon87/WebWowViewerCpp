@@ -121,7 +121,26 @@ namespace DataExporter {
                    make_column("textureTransformComboIndex", &DBM2Batch::textureTransformComboIndex),
                    foreign_key(&DBM2Batch::m2Id).references(&DBM2::m2Id),
                    unique(&DBM2Batch::m2Id, &DBM2Batch::batchIndex)
-            )
+                ),
+                make_table("M2Ribbon",
+                   make_column("m2Id", &DBM2Batch::m2Id),
+                   make_column("ribbonIndex", &DBM2Batch::batchIndex),
+                   make_column("_flags", &DBM2Batch::flags),
+                   make_column("priorityPlane", &DBM2Batch::priorityPlane),
+                   make_column("shader_id", &DBM2Batch::shader_id),
+                   make_column("skinSectionIndex", &DBM2Batch::skinSectionIndex),
+                   make_column("geosetIndex", &DBM2Batch::geosetIndex),
+                   make_column("colorIndex", &DBM2Batch::colorIndex),
+                   make_column("materialIndex", &DBM2Batch::materialIndex),
+                   make_column("materialLayer", &DBM2Batch::materialLayer),
+                   make_column("textureCount", &DBM2Batch::textureCount),
+                   make_column("textureComboIndex", &DBM2Batch::textureComboIndex),
+                   make_column("textureCoordComboIndex", &DBM2Batch::textureCoordComboIndex),
+                   make_column("textureWeightComboIndex", &DBM2Batch::textureWeightComboIndex),
+                   make_column("textureTransformComboIndex", &DBM2Batch::textureTransformComboIndex),
+                   foreign_key(&DBM2Batch::m2Id).references(&DBM2::m2Id),
+                   unique(&DBM2Batch::m2Id, &DBM2Batch::batchIndex)
+                )
         );
     };
 

@@ -104,7 +104,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         m2Object->setDiffuseColor(light.color);
 
 
-        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
+//        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
     } else {
         m2Object->setDiffuseColor(doodadDef->color);
     }

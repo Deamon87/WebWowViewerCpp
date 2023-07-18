@@ -35,6 +35,7 @@
 #include "renderer/uiScene/FrontendUIRendererFactory.h"
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRendererFactory.h"
 #include "wheelCapture/wheelCapture.h"
+#include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 
 FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
     m_api = api;
@@ -118,6 +119,10 @@ void FrontendUI::composeUI() {
         } else {
             m_databaseUpdateWorkflow->render();
         }
+    }
+    if (m_keyUpdateWorkFlow != nullptr) {
+        if (!m_keyUpdateWorkFlow->render())
+            m_keyUpdateWorkFlow = nullptr;
     }
 
     showSettingsDialog();
@@ -687,6 +692,11 @@ void FrontendUI::showMainMenu() {
                 m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(
                         m_api,
                         contains(fileDialog.getProductBuild().productName, "classic")
+                    );
+            }
+            if (ImGui::MenuItem("Update keys", "", false)) {
+                m_keyUpdateWorkFlow = std::make_shared<KeysUpdateWorkflow>(
+                        std::dynamic_pointer_cast<CascRequestProcessor>(m_processor)
                     );
             }
             ImGui::EndMenu();

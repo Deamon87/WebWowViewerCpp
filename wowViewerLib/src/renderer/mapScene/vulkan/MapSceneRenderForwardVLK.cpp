@@ -365,12 +365,14 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderForwardVLK::createM2RibbonMater
                                                                                     const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Ribbon::meshRibbonWideBlockPS>>(uboBuffer); ;
+    auto &l_m2ModelData = m2ModelData;
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, forwardShaderConfig)
         .createPipeline(m_emptyM2RibbonVAO, m_renderPass, pipelineTemplate)
-        .createDescriptorSet(0, [&l_sceneWideChunk, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(0, [&l_sceneWideChunk, &l_fragmentData, &l_m2ModelData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
+                .ubo(3, BufferChunkHelperVLK::cast(l_m2ModelData->m_textureMatrices)->getSubBuffer())
                 .ubo(4, l_fragmentData->getSubBuffer());
         })
         .createDescriptorSet(1, [&m2RibbonMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
@@ -677,7 +679,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                 for (auto const &mesh: *skyOpaqueMeshes) {
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
-                for (auto const &mesh: *skyTransparentMeshes) {
+                for (int i = 0; i < skyTransparentMeshes->size(); i++) {
+                    auto const &mesh = skyTransparentMeshes->at(i);
+
 //                    std::string debugMess =
 //                        "Drawing mesh "
 //                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
@@ -694,15 +698,16 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             }
             {
                 ZoneScopedN("submit transparent");
-                for (auto const &mesh: *transparentMeshes) {
+                for (int i = 0; i < transparentMeshes->size(); i++) {
+                    auto const &mesh = transparentMeshes->at(i);
 //
-//                std::string debugMess =
-//                    "Drawing mesh "
-//                    " meshType = " + std::to_string((int)mesh->getMeshType()) +
-//                    " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
-//                    " sortDistance = " + std::to_string(mesh->getSortDistance()) +
-//                    " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
-
+//                    std::string debugMess =
+//                        "Drawing mesh "
+//                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
+//                        " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
+//                        " sortDistance = " + std::to_string(mesh->getSortDistance()) +
+//                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
+//
 //                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);

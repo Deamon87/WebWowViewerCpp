@@ -237,7 +237,7 @@ set(SOURCE_FILES
         src/ui/childWindow/mapSelectionWindow/MapSelectDialog.cpp
 		src/ui/childWindow/mapSelectionWindow/MapSelectDialog.h
 		src/ui/imguiLib/wheelCapture/wheelCapture.cpp
-		src/ui/imguiLib/wheelCapture/wheelCapture.h src/ui/childWindow/BLPViewer.cpp src/ui/childWindow/BLPViewer.h)
+		src/ui/imguiLib/wheelCapture/wheelCapture.h src/ui/childWindow/BLPViewer.cpp src/ui/childWindow/BLPViewer.h src/ui/childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.cpp src/ui/childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h)
 
 
 set(SOURCE_FILES_VULKAN

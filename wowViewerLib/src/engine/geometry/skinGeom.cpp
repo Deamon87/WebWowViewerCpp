@@ -10,6 +10,12 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     this->m2Skin = skinFile;
 
     M2SkinProfile *skinHeader = (M2SkinProfile *) &(*this->m2Skin.get())[0];
+    if (skinHeader->magic != 'NIKS') {
+        std::cout << "wrong file header for SKIN file" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
+
     this->m_skinData = skinHeader;
 
     //Step 1: Init all m2Arrays

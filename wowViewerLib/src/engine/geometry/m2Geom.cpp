@@ -216,16 +216,23 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
 
 void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     this->m2File = m2File;
+    auto &m2FileData = *m2File.get();
+    if (m2FileData.empty()) {
+        std::cout << "M2 file is empty" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
+
+    uint32_t ident = *(uint32_t *)m2FileData.data();
+    if (ident != '12DM' && ident != '02DM') {
+        std::cout << "wrong file header for M2 file" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
 
     m2SizeLoaded.fetch_add(m2File->size());
 
-    auto &m2FileData = *m2File.get();
-    if (
-        m2FileData[0] == 'M' &&
-        m2FileData[1] == 'D' &&
-        m2FileData[2] == '2' &&
-        m2FileData[3] == '1'
-            ) {
+    if (ident == '12DM') {
         CChunkFileReader reader(*this->m2File.get());
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {

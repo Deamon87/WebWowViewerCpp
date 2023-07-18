@@ -520,7 +520,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {0,4,16},
       {0,3,4096},
-      {0,2,14080},
+      {0,2,16384},
       {0,0,368},
       {0,1,64},
     },
@@ -1550,12 +1550,13 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
-      {0,0,368},
       {0,4,16},
+      {0,3,4096},
+      {0,0,368},
     },
     {
       {
-        {4,4,1},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1614,7 +1615,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       2, {
-        {"_0_2_uBoneMatrixes[0]", true, 0, 4, 4, 220},
+        {"_0_2_uBoneMatrixes[0]", true, 0, 4, 4, 256},
       }
     },
     {
@@ -2072,11 +2073,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"ribbonShader",  {
     {
-      4, {
-        {"_0_4_uPixelShader_BlendMode_TextureTransformIndex", false, 0, 1, 4, 0},
-      }
-    },
-    {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
         {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
@@ -2095,6 +2091,16 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_0_0_fogData_sunAngle_and_sunColor", true, 320, 1, 4, 0},
         {"_0_0_fogData_heightColor_and_endFogDistance", true, 336, 1, 4, 0},
         {"_0_0_fogData_sunPercentage", true, 352, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+        {"_0_3_textureMatrix[0]", true, 0, 4, 4, 64},
+      }
+    },
+    {
+      4, {
+        {"_0_4_uPixelShader_BlendMode_TextureTransformIndex", false, 0, 1, 4, 0},
       }
     },
   }},

@@ -27,6 +27,9 @@ static const bool SortMeshes(const HGSortableMesh &indexA, const HGSortableMesh 
                 return pB2->layer() > pA2->layer();
             }
         }
+        if (pA->getGxBlendMode() != pB->getGxBlendMode()) {
+            return pB->getGxBlendMode() > pA->getGxBlendMode();
+        }
     } else {
         if (pA->getSortDistance() < pB->getSortDistance()) {
             return true;

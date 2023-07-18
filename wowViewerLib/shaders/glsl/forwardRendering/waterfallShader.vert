@@ -2,14 +2,11 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-#ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 220
-#endif
-
 precision highp float;
 precision highp int;
 
 #include "../common/commonFunctions.glsl"
+#include "../common/commonM2Material.glsl"
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 
