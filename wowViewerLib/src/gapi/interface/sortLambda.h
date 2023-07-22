@@ -12,10 +12,10 @@ static const bool SortMeshes(const HGSortableMesh &indexA, const HGSortableMesh 
             return pB->priorityPlane() > pA->priorityPlane();
         }
 
-        if (pA->getSortDistance() < pB->getSortDistance()) {
+        if (pA->getSortDistance() > pB->getSortDistance()) {
             return true;
         }
-        if (pA->getSortDistance() > pB->getSortDistance()) {
+        if (pA->getSortDistance() < pB->getSortDistance()) {
             return false;
         }
 

@@ -132,7 +132,7 @@ public:
                                 bool depthCulling,
                                 bool depthWrite);
 
-    std::shared_ptr<GRenderPassVLK> getRenderPass(std::vector<ITextureFormat> textureAttachments,
+    std::shared_ptr<GRenderPassVLK> getRenderPass(const std::vector<ITextureFormat> &textureAttachments,
                                                   ITextureFormat depthAttachment,
                                                   VkSampleCountFlagBits sampleCountFlagBits,
                                                   bool invertZ,

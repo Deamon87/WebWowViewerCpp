@@ -138,6 +138,7 @@ int DataExporter::DataExporterClass::exportDBM2() {
     DBM2 dbm2;
     dbm2.fileDataId = currentFileDataId;
     dbm2.fileName = currentFileName;
+    dbm2.version = m2Data->version;
     dbm2.global_flags = *(uint32_t *)&m2Data->global_flags;
     dbm2.global_loops_count = m2Data->global_loops.size;
     dbm2.sequences_count = m2Data->sequences.size;
@@ -169,7 +170,49 @@ int DataExporter::DataExporterClass::exportDBM2() {
     dbm2.particle_emitters_count = m2Data->particle_emitters.size;
     dbm2.blend_map_overrides_count = m2Data->blend_map_overrides.size;
 
-    return m_storage.insert<DataExporter::DBM2>(dbm2);
+    int m2Id = m_storage.insert<DataExporter::DBM2>(dbm2);
+
+    for (int i = 0; i < m2Data->materials.size; i++){
+        auto material = m2Data->materials.getElement(i);
+
+        DBM2Material dbm2Material;
+        dbm2Material.m2Id = m2Id;
+        dbm2Material.materialIndex = i;
+        dbm2Material.flags = material->flags;
+        dbm2Material.blending_mode = material->blending_mode;
+        m_storage.insert<DataExporter::DBM2Material>(dbm2Material);
+    }
+
+    for (int i = 0; i < m2Data->ribbon_emitters.size; i++){
+        auto const &ribbonEmitter = m2Data->ribbon_emitters.getElement(i);
+
+        DBM2RibbonData dbm2RibbonData;
+        dbm2RibbonData.m2Id = m2Id;
+        dbm2RibbonData.ribbonIndex = i;
+        dbm2RibbonData.ribbonId = ribbonEmitter->ribbonId;
+        dbm2RibbonData.boneIndex = ribbonEmitter->boneIndex;
+        dbm2RibbonData.textureRows = ribbonEmitter->textureRows;
+        dbm2RibbonData.textureCols = ribbonEmitter->textureCols;
+        dbm2RibbonData.priorityPlane = ribbonEmitter->priorityPlane;
+        dbm2RibbonData.ribbonColorIndex = ribbonEmitter->ribbonColorIndex;
+        dbm2RibbonData.textureTransformLookupIndex = ribbonEmitter->textureTransformLookupIndex;
+
+        m_storage.insert<DataExporter::DBM2RibbonData>(dbm2RibbonData);
+
+        for (int j = 0; j < ribbonEmitter->materialIndices.size; j++) {
+            int materialIndex = *ribbonEmitter->materialIndices.getElement(j);
+
+            DBM2RibbonMaterial dbm2RibbonMaterial;
+            dbm2RibbonMaterial.ribbonIndex = i;
+            dbm2RibbonMaterial.materialIndex = j;
+            dbm2RibbonMaterial.m2MaterialIndex = materialIndex;
+            dbm2RibbonMaterial.m2Id = m2Id;
+
+            m_storage.insert<DataExporter::DBM2RibbonMaterial>(dbm2RibbonMaterial);
+        }
+    }
+
+    return m2Id;
 }
 
 void DataExporter::DataExporterClass::exportDBSkin(int id) {

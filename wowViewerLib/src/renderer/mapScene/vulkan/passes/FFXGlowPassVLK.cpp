@@ -18,7 +18,7 @@ FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &ubo
 
     {
         auto const dataFormat = {ITextureFormat::itRGBA};
-        m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itDepth32,
+        m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itNone,
                                               VK_SAMPLE_COUNT_1_BIT,
 //                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
                                               true, false);
@@ -99,6 +99,7 @@ void FFXGlowPassVLK::drawMaterial (CmdBufRecorder& cmdBuf, const std::shared_ptr
 void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd,
                             const std::shared_ptr<GRenderPassVLK> &finalRenderPass,
                             ViewPortDimensions &viewPortDimensions) {
+    ZoneScoped;
     auto currentFrame = m_device->getDrawFrameNumber();
     {
 
@@ -168,7 +169,7 @@ void FFXGlowPassVLK::createFrameBuffers(int m_width, int m_height) {
             colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
                 dataFormat,
-                ITextureFormat::itDepth32,
+                ITextureFormat::itNone,
                 1,
                 targetWidth, targetHeight
             );
@@ -177,7 +178,7 @@ void FFXGlowPassVLK::createFrameBuffers(int m_width, int m_height) {
             colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
                 dataFormat,
-                ITextureFormat::itDepth32,
+                ITextureFormat::itNone,
                 1,
                 targetWidth, targetHeight
             );
@@ -203,8 +204,8 @@ FFXGlowPassVLK::createFFXGaussMat(
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGaussVs, &ffxGaussPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(2, BufferChunkHelperVLK::cast(ffxGaussVs)->getSubBuffer())
-                .ubo(4, BufferChunkHelperVLK::cast(ffxGaussPS)->getSubBuffer());
+                .ubo(2, BufferChunkHelperVLK::cast(ffxGaussVs))
+                .ubo(4, BufferChunkHelperVLK::cast(ffxGaussPS));
         })
         .createDescriptorSet(1, [texture](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -228,8 +229,8 @@ FFXGlowPassVLK::createFFXGlowMat(
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGlowVs, &ffxGlowPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(2, BufferChunkHelperVLK::cast(ffxGlowVs)->getSubBuffer())
-                .ubo(4, BufferChunkHelperVLK::cast(ffxGlowPS)->getSubBuffer());
+                .ubo(2, BufferChunkHelperVLK::cast(ffxGlowVs))
+                .ubo(4, BufferChunkHelperVLK::cast(ffxGlowPS));
         })
         .createDescriptorSet(1, [screenTex, blurTex](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

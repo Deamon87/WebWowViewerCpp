@@ -67,7 +67,7 @@ enum class M2PixelShader : int {
     Combiners_Mod_Depth = 33,
     Illum = 34,
     Combiners_Mod_Mod_Mod_Const = 35,
-    NewUnkCombiner = 36
+    Combiners_Mod_Mod_Depth = 36
 };
 
 enum class M2VertexShader : int {
@@ -149,12 +149,41 @@ static std::array<M2Shaders, 36> M2ShaderTable = {{
         { +M2PixelShader::Combiners_Opaque,                            +M2VertexShader::Diffuse_T1, 0, 0 },
         { +M2PixelShader::Combiners_Mod_Mod2x,                         +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
         { +M2PixelShader::Combiners_Mod,                               +M2VertexShader::Diffuse_EdgeFade_T1, 1, 1 },
-        { +M2PixelShader::NewUnkCombiner,                              +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
+        { +M2PixelShader::Combiners_Mod_Mod_Depth,                     +M2VertexShader::Diffuse_EdgeFade_T1_T2, 1, 1 },
 }};
 
 int getVertexShaderId(int textureCount, int16_t shaderId) {
     int result;
-    if ( shaderId < 0 )
+    if ( shaderId >= 0 ) {
+        if ( textureCount == 1 ) {
+            if ( (shaderId & 0x80u) == 0 ) {
+                return (shaderId & 0x4000) != 0 ? 10 : 0;
+            } else {
+                result = 1;
+            }
+        }
+        else if ( (shaderId & 0x80u) == 0 )
+        {
+            if ( (shaderId & 8) != 0 )
+            {
+                return 3;
+            }
+            else
+            {
+                result = 7;
+                if ( (shaderId & 0x4000) != 0 )
+                    return 2;
+            }
+        }
+        else if ( (shaderId & 8) != 0 )
+        {
+            return 5;
+        }
+        else
+        {
+            return 4;
+        }
+    } else if ( shaderId < 0 )
     {
         int vertexShaderId = shaderId & 0x7FFF;
         if ( (unsigned int)vertexShaderId >= M2ShaderTable.size()) {
@@ -162,29 +191,6 @@ int getVertexShaderId(int textureCount, int16_t shaderId) {
             assert(false);
         }
         result = (unsigned int)M2ShaderTable[(shaderId & 0x7FFF)].vertex;
-    }
-    else if ( textureCount == 1 )
-    {
-        if ( (shaderId & 0x80u) != 0 )
-        {
-            result = 1LL;
-        }
-        else
-        {
-            result = 10LL;
-            if ( !(shaderId & 0x4000) )
-                result = 0LL;
-        }
-    }
-    else if ( (shaderId & 0x80u) != 0 )
-    {
-        result = ((shaderId & 8u) >> 3) | 4;
-    }
-    else
-    {
-        result = 3LL;
-        if ( !(shaderId & 8) )
-            result = 5 * (unsigned int)((shaderId & 0x4000) == 0) + 2;
     }
     return result;
 }
@@ -227,29 +233,28 @@ int getPixelShaderId(int textureCount, uint16_t shaderId) {
     }
     else
     {
-
-        //For future reference. The arrays are these cases, with inbetween filled with default value
-//        result = array2[(shaderId) & 7];
-//        if ( shaderId & 0x70 ) {
-//            result = array1[(shaderId) & 7];
-//        }
-
-        if ( shaderId & 0x70 ) {
+        if ( (shaderId & 0x70) != 0 ) {
             switch (shaderId & 7) {
+                case 0 :
+                    result = +M2PixelShader::Combiners_Mod_Opaque;
+                    break;
+                case 1 :
+                case 2 :
+                case 5 :
+                    result = +M2PixelShader::Combiners_Mod_Mod;
+                    break;
                 case 3 :
                     result = +M2PixelShader::Combiners_Mod_Add;
                     break;
                 case 4 :
                     result = +M2PixelShader::Combiners_Mod_Mod2x;
                     break;
-
                 case 6 :
                     result = +M2PixelShader::Combiners_Mod_Mod2xNA;
                     break;
                 case 7 :
                     result = +M2PixelShader::Combiners_Mod_AddNA;
                     break;
-
                 default:
                     result = +M2PixelShader::Combiners_Mod_Mod;
                     break;
@@ -258,6 +263,11 @@ int getPixelShaderId(int textureCount, uint16_t shaderId) {
             switch (shaderId & 7) {
                 case 0 :
                     result = +M2PixelShader::Combiners_Opaque_Opaque;
+                    break;
+                case 1:
+                case 2:
+                case 5:
+                    result = +M2PixelShader::Combiners_Opaque_Mod;
                     break;
                 case 3:
                 case 7:
@@ -1507,7 +1517,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
             this->m_meshArray.emplace_back(hMesh, batchIndex);
 
-            if (getBlendMode(batchIndex) == EGxBlendEnum::GxBlend_Opaque) {
+            if (getBlendMode(batchIndex) == EGxBlendEnum::GxBlend_Opaque || getBlendMode(batchIndex) == EGxBlendEnum::GxBlend_AlphaKey) {
                 EGxBlendEnum blendMode = EGxBlendEnum::GxBlend_Alpha;
                 HGM2Mesh hMeshTrans = createSingleMesh(sceneRenderer,  0, bufferBindings, m_forcedTranspMaterialArray[batchIndex], skinSection, m2Batch);
 
@@ -1602,6 +1612,8 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     pipelineTemplate.triCCW = true;
     if (overrideBlend) {
         pipelineTemplate.blendMode = blendMode;
+        if (blendMode > EGxBlendEnum::GxBlend_AlphaKey)
+            pipelineTemplate.depthWrite = false;
     } else {
         pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
     }
@@ -1642,7 +1654,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
                 continue;
 
             HGM2Mesh mesh = std::get<0>(this->m_meshArray[i]);
-            if (finalTransparency < 0.999 && i < this->m_meshForcedTranspArray.size() &&
+            if (finalTransparency < 0.999f && i < this->m_meshForcedTranspArray.size() &&
                 std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
                 mesh = std::get<0>(this->m_meshForcedTranspArray[i]);
             }

@@ -39,7 +39,7 @@ private:
 
     std::vector<HGTexture> m_attachmentTextures;
     std::vector<HGSamplableTexture> m_attachmentTexturesSampled;
-    HGTexture m_depthTexture;
+    HGTexture m_depthTexture = nullptr;
 
     //Used only in readRGBAPixels function
     std::vector<VkFormat> m_attachmentFormats;

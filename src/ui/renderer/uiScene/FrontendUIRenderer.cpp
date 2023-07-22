@@ -99,6 +99,10 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
                         meshTemplate.scissorOffset = {static_cast<int>(clip_min.x * uiScale), static_cast<int>((clip_min.y) * uiScale)};
                         meshTemplate.scissorSize = {static_cast<uint32_t>((clip_max.x - clip_min.x)* uiScale), static_cast<uint32_t>((clip_max.y - clip_min.y)* uiScale)};
                     }
+                    if (meshTemplate.scissorOffset[0] < 0) meshTemplate.scissorOffset[0] = 0;
+                    if (meshTemplate.scissorOffset[1] < 0) meshTemplate.scissorOffset[1] = 0;
+                    if (meshTemplate.scissorSize[0] < 0) meshTemplate.scissorSize[0] = 0;
+                    if (meshTemplate.scissorSize[1] < 0) meshTemplate.scissorSize[1] = 0;
 
                     meshTemplate.start = pcmd->IdxOffset * sizeof(ImDrawIdx);
                     meshTemplate.end = pcmd->ElemCount;

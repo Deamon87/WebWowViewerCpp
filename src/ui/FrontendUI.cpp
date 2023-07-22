@@ -880,6 +880,14 @@ void FrontendUI::showQuickLinksDialog() {
         replacementTextureFDids = std::vector<int>(17);
         openM2SceneByfdid(5099010, replacementTextureFDids);
     }
+    if (ImGui::Button("crystal song bush", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        openM2SceneByfdid(194418, replacementTextureFDids);
+    }
+    if (ImGui::Button("bugged decal", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        openM2SceneByfdid(946969, replacementTextureFDids);
+    }
     if (ImGui::Button("Some model", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
         replacementTextureFDids[11] = 4952373;
@@ -1755,8 +1763,6 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
             wowSceneFrameInput->delta = deltaTime * (1000.0f);
             wowSceneFrameInput->viewPortDimensions = dimension;
-            wowSceneFrameInput->invertedZ = true;
-            wowSceneFrameInput->clearScreen = true;
             wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
                                                                        canvWidth, canvHeight,
                                                                        m_api->getConfig()->doubleCameraDebug,
@@ -1769,7 +1775,6 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         auto uiFrameInput = std::make_shared<FrameInputParams<ImGuiFramePlan::ImGUIParam>>();
         uiFrameInput->delta = deltaTime * (1000.0f);
         uiFrameInput->viewPortDimensions = dimension;
-        uiFrameInput->invertedZ = false;
         uiFrameInput->frameParameters = std::make_shared<ImGuiFramePlan::ImGUIParam>( ImGui::GetDrawData());
 
         auto clearColor = m_api->getConfig()->clearColor;

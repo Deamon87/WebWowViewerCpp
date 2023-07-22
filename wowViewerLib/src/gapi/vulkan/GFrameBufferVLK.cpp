@@ -83,10 +83,11 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
 //                  << std::endl;
     }
 
-    std::array<VkImageView,2> attachments = {
+    std::vector<VkImageView> attachments = {
         std::dynamic_pointer_cast<GTextureVLK>(colorImage)->texture.view,
-        std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.view
     };
+    if (m_depthTexture != nullptr)
+        attachments.push_back(std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.view);
 
     VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     fbufCreateInfo.pNext = nullptr;
@@ -156,7 +157,9 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
     });
 
     //Depth attachment
-    {
+    if (depthAttachment != ITextureFormat::itNone) {
+        assert(depthAttachment == ITextureFormat::itDepth32);
+
         // Find a suitable depth format
         VkFormat fbDepthFormat = mdevice.findDepthFormat();
 

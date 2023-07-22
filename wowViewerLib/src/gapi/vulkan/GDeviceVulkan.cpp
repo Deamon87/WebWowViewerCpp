@@ -1152,7 +1152,7 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
                               const std::vector<uint32_t> &imageIndexes) {
     VkPresentInfoKHR presentInfo = {};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-    presentInfo.pNext = NULL;
+    presentInfo.pNext = nullptr;
 
     presentInfo.waitSemaphoreCount = waitSemaphores.size();
     presentInfo.pWaitSemaphores = waitSemaphores.data();
@@ -1185,7 +1185,7 @@ void GDeviceVLK::executeDeallocators() {
 }
 
 std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
-    std::vector<ITextureFormat> textureAttachments,
+    const std::vector<ITextureFormat> &textureAttachments,
     ITextureFormat depthAttachment,
     VkSampleCountFlagBits sampleCountFlagBits,
     bool invertZ,
@@ -1213,16 +1213,11 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
         }
     }
 
-    std::vector<VkFormat> attachmentFormats = {};
 
-    GFrameBufferVLK::iterateOverAttachments(textureAttachments, [&](int i, VkFormat textureFormat) {
-        attachmentFormats.push_back(textureFormat);
-    });
-    VkFormat fbDepthFormat = findDepthFormat();
 
-    auto renderPass = std::make_shared<GRenderPassVLK>(this->device,
-        attachmentFormats,
-        findDepthFormat(),
+    auto renderPass = std::make_shared<GRenderPassVLK>(*this,
+        textureAttachments,
+        depthAttachment,
         sampleCountFlagBits,
         invertZ,
         false
@@ -1382,8 +1377,8 @@ void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callb
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-    beginInfo.pNext = NULL;
-    beginInfo.pInheritanceInfo = NULL;
+    beginInfo.pNext = nullptr;
+    beginInfo.pInheritanceInfo = nullptr;
 
     ERR_GUARD_VULKAN(vkBeginCommandBuffer(copyCmd, &beginInfo));
 

@@ -22,8 +22,6 @@ struct FrameInputParams {
 
     //Parameters for framebuffer
     ViewPortDimensions viewPortDimensions = {{0,0}, {64, 64}};
-    bool invertedZ = false;
-    bool clearScreen = false;
 };
 
 #endif //AWEBWOWVIEWERCPP_FRAMEINPUTPARAMS_H

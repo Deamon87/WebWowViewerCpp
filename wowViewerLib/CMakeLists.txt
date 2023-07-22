@@ -500,7 +500,6 @@ if (LINK_VULKAN)
             src/gapi/vulkan/meshes/GMeshVLK.cpp
             src/gapi/vulkan/textures/GTextureVLK.cpp
             src/gapi/vulkan/textures/GBlpTextureVLK.cpp
-            src/gapi/vulkan/buffers/GVertexBufferDynamicVLK.cpp
             src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h

@@ -243,7 +243,7 @@ out float finalOpacity, out bool discardThisFragment)
             canDiscard = true;
             break;
         }
-        case (36): { //unk shader combiner
+        case (36): { //Combiners_Mod_Mod_Depth
             matDiffuse = meshColor * tex.rgb * tex2.rgb;
             discardAlpha = tex.a * tex2.a;
             canDiscard = true;
@@ -258,7 +258,7 @@ out float finalOpacity, out bool discardThisFragment)
     } else if (blendMode == 1) {
         finalOpacity = meshOpacity;
         if (canDiscard && discardAlpha < 0.501960814)
-        doDiscard = true;
+            doDiscard = true;
     } else if (blendMode == 0) {
         finalOpacity = meshOpacity;
     } else {

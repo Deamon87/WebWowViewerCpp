@@ -27,10 +27,35 @@ namespace DataExporter {
         M2SkinSection skinSection;
     };
 
+    struct DBM2Material : M2Material{
+        int m2Id = -1;
+        int materialIndex;
+    };
+
+    struct DBM2RibbonData {
+        int m2Id = -1;
+        int ribbonIndex;
+        uint32_t ribbonId;
+        uint32_t boneIndex;
+        int textureRows;
+        int textureCols;
+        int priorityPlane;
+        int ribbonColorIndex;
+        int textureTransformLookupIndex;
+    };
+
+    struct DBM2RibbonMaterial {
+        int m2Id = -1;
+        int ribbonIndex;
+        int materialIndex;
+        int m2MaterialIndex;
+    };
+
     struct DBM2 {
         int m2Id = -1;
         int fileDataId;
         std::string fileName;
+        int version;
         int global_flags;
         int global_loops_count;
         int sequences_count;
@@ -70,6 +95,7 @@ namespace DataExporter {
                    make_column("id", &DBM2::m2Id, autoincrement(), primary_key()),
                    make_column("fileDataId", &DBM2::fileDataId),
                    make_column("fileName", &DBM2::fileName),
+                   make_column("version", &DBM2::version),
                    make_column("global_flags", &DBM2::global_flags),
                    make_column("global_loops_count", &DBM2::global_loops_count),
                    make_column("sequences_count", &DBM2::sequences_count),
@@ -122,24 +148,36 @@ namespace DataExporter {
                    foreign_key(&DBM2Batch::m2Id).references(&DBM2::m2Id),
                    unique(&DBM2Batch::m2Id, &DBM2Batch::batchIndex)
                 ),
-                make_table("M2Ribbon",
-                   make_column("m2Id", &DBM2Batch::m2Id),
-                   make_column("ribbonIndex", &DBM2Batch::batchIndex),
-                   make_column("_flags", &DBM2Batch::flags),
-                   make_column("priorityPlane", &DBM2Batch::priorityPlane),
-                   make_column("shader_id", &DBM2Batch::shader_id),
-                   make_column("skinSectionIndex", &DBM2Batch::skinSectionIndex),
-                   make_column("geosetIndex", &DBM2Batch::geosetIndex),
-                   make_column("colorIndex", &DBM2Batch::colorIndex),
-                   make_column("materialIndex", &DBM2Batch::materialIndex),
-                   make_column("materialLayer", &DBM2Batch::materialLayer),
-                   make_column("textureCount", &DBM2Batch::textureCount),
-                   make_column("textureComboIndex", &DBM2Batch::textureComboIndex),
-                   make_column("textureCoordComboIndex", &DBM2Batch::textureCoordComboIndex),
-                   make_column("textureWeightComboIndex", &DBM2Batch::textureWeightComboIndex),
-                   make_column("textureTransformComboIndex", &DBM2Batch::textureTransformComboIndex),
-                   foreign_key(&DBM2Batch::m2Id).references(&DBM2::m2Id),
-                   unique(&DBM2Batch::m2Id, &DBM2Batch::batchIndex)
+                make_table("M2Material",
+                   make_column("m2Id", &DBM2Material::m2Id),
+                   make_column("materialIndex", &DBM2Material::materialIndex),
+                   make_column("flags", &DBM2Material::flags),
+                   make_column("blending_mode", &DBM2Material::blending_mode),
+                   foreign_key(&DBM2Material::m2Id).references(&DBM2::m2Id),
+                   unique(&DBM2Material::m2Id, &DBM2Material::materialIndex)
+                ),
+                make_table("M2RibbonData",
+                   make_column("m2Id", &DBM2RibbonData::m2Id),
+                   make_column("ribbonIndex", &DBM2RibbonData::ribbonIndex),
+                   make_column("ribbonId", &DBM2RibbonData::ribbonId),
+                   make_column("boneIndex", &DBM2RibbonData::boneIndex),
+                   make_column("textureRows", &DBM2RibbonData::textureRows),
+                   make_column("textureCols", &DBM2RibbonData::textureCols),
+                   make_column("priorityPlane", &DBM2RibbonData::priorityPlane),
+                   make_column("ribbonColorIndex", &DBM2RibbonData::ribbonColorIndex),
+                   make_column("textureTransformLookupIndex", &DBM2RibbonData::textureTransformLookupIndex),
+
+                   foreign_key(&DBM2RibbonData::m2Id).references(&DBM2::m2Id),
+                   unique(&DBM2RibbonData::m2Id, &DBM2RibbonData::ribbonIndex)
+                ),
+                make_table("M2RibbonMaterial",
+                   make_column("m2Id", &DBM2RibbonMaterial::m2Id),
+                   make_column("ribbonIndex", &DBM2RibbonMaterial::ribbonIndex),
+                   make_column("materialIndex", &DBM2RibbonMaterial::materialIndex),
+                   make_column("m2MaterialIndex", &DBM2RibbonMaterial::m2MaterialIndex),
+
+                   foreign_key(&DBM2RibbonMaterial::m2Id).references(&DBM2::m2Id),
+                   unique(&DBM2RibbonMaterial::m2Id, &DBM2RibbonMaterial::ribbonIndex, &DBM2RibbonMaterial::materialIndex)
                 )
         );
     };

@@ -235,8 +235,8 @@ MapSceneRenderForwardVLK::createAdtMaterial(const PipelineTemplate &pipelineTemp
         .createDescriptorSet(0, [&vertexFragmentData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(1, vertexFragmentData->getSubBuffer())
-                .ubo(2, fragmentData->getSubBuffer());
+                .ubo(1, *vertexFragmentData)
+                .ubo(2, *fragmentData);
         })
         .createDescriptorSet(1, [&adtMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -272,12 +272,12 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo_dynamic(1, DynamicBufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix))
-                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_modelFragmentData)->getSubBuffer())
-                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
-                .ubo(4, BufferChunkHelperVLK::cast(m2ModelData->m_colors)->getSubBuffer())
-                .ubo(5, BufferChunkHelperVLK::cast(m2ModelData->m_textureWeights)->getSubBuffer())
-                .ubo(6, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices)->getSubBuffer())
-                .ubo(7, vertexFragmentData->getSubBuffer());
+                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_modelFragmentData))
+                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData))
+                .ubo(4, BufferChunkHelperVLK::cast(m2ModelData->m_colors))
+                .ubo(5, BufferChunkHelperVLK::cast(m2ModelData->m_textureWeights))
+                .ubo(6, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices))
+                .ubo(7, *vertexFragmentData);
         })
         .createDescriptorSet(1, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -312,10 +312,10 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2Waterfal
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
                 .ubo_dynamic(1, DynamicBufferChunkHelperVLK::cast(m2ModelData->m_placementMatrix))
-                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData)->getSubBuffer())
-                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices)->getSubBuffer())
-                .ubo(4, vertexData->getSubBuffer())
-                .ubo(5, fragmentData->getSubBuffer());
+                .ubo(2, BufferChunkHelperVLK::cast(m2ModelData->m_bonesData))
+                .ubo(3, BufferChunkHelperVLK::cast(m2ModelData->m_textureMatrices))
+                .ubo(4, *vertexData)
+                .ubo(5, *fragmentData);
         })
         .createDescriptorSet(1, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -345,7 +345,7 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
         .createDescriptorSet(0, [&l_sceneWideChunk, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(4, l_fragmentData->getSubBuffer());
+                .ubo(4, *l_fragmentData);
         })
         .createDescriptorSet(1, [&m2ParticleMatTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -372,8 +372,8 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderForwardVLK::createM2RibbonMater
         .createDescriptorSet(0, [&l_sceneWideChunk, &l_fragmentData, &l_m2ModelData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(3, BufferChunkHelperVLK::cast(l_m2ModelData->m_textureMatrices)->getSubBuffer())
-                .ubo(4, l_fragmentData->getSubBuffer());
+                .ubo(3, BufferChunkHelperVLK::cast(l_m2ModelData->m_textureMatrices))
+                .ubo(4, *l_fragmentData);
         })
         .createDescriptorSet(1, [&m2RibbonMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -402,9 +402,9 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
         .createDescriptorSet(0, [l_sceneWideChunk, &modelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(1, BufferChunkHelperVLK::cast(modelWide)->getSubBuffer())
-                .ubo(2, l_vertexData->getSubBuffer())
-                .ubo(4, l_fragmentData->getSubBuffer());
+                .ubo(1, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(2, *l_vertexData)
+                .ubo(4, *l_fragmentData);
         })
         .createDescriptorSet(1, [&wmoMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -437,8 +437,8 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderForwardVLK::createWaterMaterial(co
         .createDescriptorSet(0, [l_sceneWideChunk, &modelWide, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(1, BufferChunkHelperVLK::cast(modelWide)->getSubBuffer())
-                .ubo(4, l_fragmentData->getSubBuffer());
+                .ubo(1, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(4, *l_fragmentData);
         })
         .createDescriptorSet(1, [&waterMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -466,7 +466,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
         .createDescriptorSet(0, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(1, skyColors->getSubBuffer());
+                .ubo(1, *skyColors);
         })
         .toMaterial<ISkyMeshMaterial>([&skyColors](ISkyMeshMaterial *instance) -> void {
             instance->m_skyColors = skyColors;
@@ -484,7 +484,7 @@ std::shared_ptr<IPortalMaterial> MapSceneRenderForwardVLK::createPortalMaterial(
         .createDescriptorSet(0, [&materialPS, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, DynamicBufferChunkHelperVLK::cast(l_sceneWideChunk))
-                .ubo(1, materialPS->getSubBuffer());
+                .ubo(1, *materialPS);
         })
         .toMaterial<IPortalMaterial>([&materialPS](IPortalMaterial *instance) -> void {
             instance->m_materialPS = materialPS;

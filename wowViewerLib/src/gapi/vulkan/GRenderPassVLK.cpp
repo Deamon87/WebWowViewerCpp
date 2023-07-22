@@ -4,14 +4,53 @@
 
 #include <stdexcept>
 #include "GRenderPassVLK.h"
+#include "../interface/textures/ITexture.h"
+#include "GFrameBufferVLK.h"
 
 
-GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
-                               std::vector<VkFormat> textureAttachments,
-                               VkFormat depthAttachmentFormat,
+GRenderPassVLK::GRenderPassVLK(IDevice &device,
+                               const std::vector<ITextureFormat> &textureAttachments,
+                               ITextureFormat depthAttachmentFormat,
                                VkSampleCountFlagBits sampleCountBit,
                                bool invertZ,
                                bool isSwapChainPass) : m_invertZ(invertZ) {
+
+    auto &deviceVlk = dynamic_cast<GDeviceVLK &>(device);
+
+    std::vector<VkFormat> attachmentFormats = {};
+
+    GFrameBufferVLK::iterateOverAttachments(textureAttachments, [&](int i, VkFormat textureFormat) {
+        attachmentFormats.push_back(textureFormat);
+    });
+
+    VkFormat availableDepth = deviceVlk.findDepthFormat();
+
+    createRenderPass(depthAttachmentFormat,
+                     sampleCountBit, isSwapChainPass,
+                     deviceVlk.getVkDevice(),
+                     attachmentFormats,
+                     availableDepth);
+}
+GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
+                               const std::vector<VkFormat> &textureAttachments,
+                               VkFormat depthAttachment,
+                               VkSampleCountFlagBits sampleCountBit,
+                               bool invertZ,
+                               bool isSwapChainPass) : m_invertZ(invertZ) {
+    createRenderPass(ITextureFormat::itDepth32,
+                     sampleCountBit, isSwapChainPass,
+                     vkDevice,
+                     textureAttachments,
+                     depthAttachment);
+}
+
+
+void GRenderPassVLK::createRenderPass(const ITextureFormat &depthAttachmentFormat,
+                                      const VkSampleCountFlagBits &sampleCountBit, bool isSwapChainPass,
+                                      VkDevice vkDevice,
+                                      const std::vector<VkFormat> &attachmentFormats,
+                                      const VkFormat &availableDepth) {
+
     m_sampleCountBit = sampleCountBit;
 
     std::vector<VkAttachmentDescription> attachments;
@@ -21,9 +60,9 @@ GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
     std::vector<VkAttachmentReference> colorResolveReferences;
 
     int attachmentIndex = 0;
-    for (int i = 0; i < textureAttachments.size(); i++) {
+    for (int i = 0; i < attachmentFormats.size(); i++) {
         VkAttachmentDescription colorAttachment = {};
-        colorAttachment.format = textureAttachments[i];
+        colorAttachment.format = attachmentFormats[i];
         colorAttachment.samples = sampleCountBit;
         colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -48,7 +87,7 @@ GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
         //Add resolves if multisampling is on
         if (sampleCountBit != VK_SAMPLE_COUNT_1_BIT) {
             VkAttachmentDescription colorAttachmentResolve{};
-            colorAttachmentResolve.format = textureAttachments[i];
+            colorAttachmentResolve.format = attachmentFormats[i];
             colorAttachmentResolve.samples = VK_SAMPLE_COUNT_1_BIT;
             colorAttachmentResolve.loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
             colorAttachmentResolve.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
@@ -67,29 +106,37 @@ GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
         }
     }
 
-    VkAttachmentDescription depthAttachment = {};
-    depthAttachment.format = depthAttachmentFormat;
-    depthAttachment.samples = sampleCountBit;
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-    depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-    attachments.push_back(depthAttachment);
-    attachmentTypes.push_back(AttachmentType::atDepth);
-
+    bool hasDepth = false;
     VkAttachmentReference depthAttachmentRef = {};
-    depthAttachmentRef.attachment = attachmentIndex++;
-    depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    if (depthAttachmentFormat != ITextureFormat::itNone) {
+        assert(depthAttachmentFormat == ITextureFormat::itDepth32);
+
+        hasDepth = true;
+
+        VkAttachmentDescription depthAttachment = {};
+        depthAttachment.format = availableDepth;
+        depthAttachment.samples = sampleCountBit;
+        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+        depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+        attachments.push_back(depthAttachment);
+        attachmentTypes.push_back(AttachmentType::atDepth);
+
+        //Fill DepthAttachmentRef
+        depthAttachmentRef.attachment = attachmentIndex++;
+        depthAttachmentRef.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    }
 
     VkSubpassDescription subpass = {};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = colorReferences.size();
     subpass.pColorAttachments = colorReferences.data();
     subpass.pResolveAttachments = colorResolveReferences.data();
-    subpass.pDepthStencilAttachment = &depthAttachmentRef;
+    subpass.pDepthStencilAttachment = (hasDepth ? &depthAttachmentRef : nullptr);
 
     std::vector<VkSubpassDependency> dependencies;
     if (isSwapChainPass) {
