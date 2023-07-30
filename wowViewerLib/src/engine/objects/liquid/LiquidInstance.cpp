@@ -330,7 +330,9 @@ void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDepen
 
 void LiquidInstance::collectMeshes(std::vector<HGSortableMesh> &transparentMeshes) {
     //TODO: Get time and right mesh instance for animation
-    transparentMeshes.push_back(m_liquidMeshes[0]);
+    if (m_api->getConfig()->renderLiquid) {
+        transparentMeshes.push_back(m_liquidMeshes[0]);
+    }
 }
 
 mathfu::mat4 LiquidInstance::GetTexScrollMtx(int time, mathfu::vec2 scrollVec) {

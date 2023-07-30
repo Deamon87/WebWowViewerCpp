@@ -27,22 +27,14 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 };
 
 // Whole model
-layout(std140, set=0, binding=1) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-};
-
-layout(std140, set=0, binding=2) uniform boneMats {
-    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
-};
-
-layout(std140, set=0, binding=3) uniform textureMatrices {
-    mat4 textureMatrix[64];
-};
+#include "../common/commonM2DescriptorSet.glsl"
 
 //Individual meshes
-layout(std140, set=0, binding=4) uniform meshWideBlockVS {
+layout(std140, set=2, binding=4) uniform meshWideBlockVS {
     vec4 bumpScaleTextIndexes;
 };
+
+layout(set=3,binding=9) uniform sampler2D uBumpTexture;
 
 //Shader output
 layout(location=0) out vec2 vTexCoord;
@@ -50,9 +42,6 @@ layout(location=1) out vec2 vTexCoord2;
 layout(location=2) out vec2 vTexCoord2_animated;
 layout(location=3) out vec3 vNormal;
 layout(location=4) out vec3 vPosition;
-
-
-layout(set=1,binding=9) uniform sampler2D uBumpTexture;
 
 void main() {
     float bumpScale = bumpScaleTextIndexes.x;

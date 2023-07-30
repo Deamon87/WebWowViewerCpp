@@ -8,8 +8,8 @@ void initEXP2(EXP2 *exp2) {
     exp2->content.initM2Array(exp2);
     for (int i = 0; i < exp2->content.size; i++) {
         Exp2Record *exp2Record = exp2->content.getElement(i);
-        exp2Record->unk3.timestamps.initM2Array(exp2);
-        exp2Record->unk3.values.initM2Array(exp2);
+        exp2Record->alphaCutoff.timestamps.initM2Array(exp2);
+        exp2Record->alphaCutoff.values.initM2Array(exp2);
     }
 }
 

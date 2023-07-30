@@ -25,30 +25,11 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-// Whole model
-layout(std140, set=0, binding=1) uniform modelWideBlockVS {
-    mat4 uPlacementMat;
-};
-
-layout(std140, set=0, binding=3) uniform boneMats {
-    mat4 uBoneMatrixes[MAX_MATRIX_NUM];
-};
-
-
-layout(std140, set=0, binding=4) uniform m2Colors {
-    vec4 colors[256];
-};
-
-layout(std140, set=0, binding=5) uniform textureWeights {
-    vec4 textureWeight[16];
-};
-
-layout(std140, set=0, binding=6) uniform textureMatrices {
-    mat4 textureMatrix[64];
-};
+//Whole model
+#include "../common/commonM2DescriptorSet.glsl"
 
 //Individual meshes
-layout(std140, set=0, binding=7) uniform meshWideBlockVSPS {
+layout(std140, set=2, binding=7) uniform meshWideBlockVSPS {
     ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
     ivec4 PixelShader_UnFogged_blendMode;
     ivec4 textureWeightIndexes;

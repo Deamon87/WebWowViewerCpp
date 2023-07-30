@@ -176,9 +176,10 @@ void GShaderPermutationVLK::createShaderLayout() {
 }
 
 void GShaderPermutationVLK::createPipelineLayout() {
-    std::array<VkDescriptorSetLayout, 2> descLayouts = {
-        this->getDescriptorLayout(0)->getSetLayout(),
-        this->getDescriptorLayout(1)->getSetLayout()
+    std::vector<VkDescriptorSetLayout> descLayouts;
+    descLayouts.reserve(combinedShaderLayout.setLayouts.size());
+    for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
+        descLayouts.push_back(this->getDescriptorLayout(i)->getSetLayout());
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};

@@ -46,12 +46,6 @@ void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &de
     m_firstUpdate = false;
 
     m_dynamicBufferIndexes = dynamicBufferIndexes;
-
-//    m_updateBitSet |= updatedBindsBitSet;
-//
-//    for (int i = 0; updatedBindsBitSet.size(); i++) {
-//        m_updatesLeft[i] = GDeviceVLK::MAX_FRAMES_IN_FLIGHT;
-//    }
 }
 
 void GDescriptorSet::getDynamicOffsets(std::vector<uint32_t> &dynamicOffsets) {

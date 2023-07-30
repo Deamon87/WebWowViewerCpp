@@ -32,6 +32,7 @@ struct ParticleBuffStruct {
     C2Vector textCoord0; //28
     C2Vector textCoord1; //36
     C2Vector textCoord2; //44
+    float alphaCutoff;
 };
 
 struct ParticleBuffStructQuad {
@@ -56,7 +57,7 @@ struct CParticleMaterialFlags {
 
 class ParticleEmitter {
 public:
-    ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
+    ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, Exp2Record *exp2, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
     ~ParticleEmitter() {
         delete generator;
     }
@@ -85,6 +86,7 @@ private:
 
 
     M2Particle *m_data;
+    Exp2Record *m_exp2Data = nullptr;
     M2Object *m2Object;
 
     CRndSeed m_seed;
@@ -150,7 +152,7 @@ private:
             mathfu::vec2 m_particleScale;
             uint32_t timedHeadCell;
             uint32_t timedTailCell;
-            float exp2_unk3;
+            float alphaCutoff;
         } m_ageDependentValues;
         int field_24;
         int field_28;
@@ -187,8 +189,10 @@ private:
 
     void
     BuildQuadT3(
-            mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha, float texStartX,
-                float texStartY, mathfu::vec2 *texPos);
+            mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+            float alphaCutoff,
+            float texStartX,
+            float texStartY, mathfu::vec2 *texPos);
 
 	struct particleFrame {
 		HGVertexBufferDynamic m_bufferVBO = nullptr;

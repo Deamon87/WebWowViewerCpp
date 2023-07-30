@@ -1,5 +1,11 @@
 #ifndef COMMON_LIGHT_FUNCTIONS
 #define COMMON_LIGHT_FUNCTIONS
+struct LocalLight
+{
+    vec4 color;
+    vec4 position;
+    vec4 attenuation;
+};
 
 struct SceneExteriorLight {
      vec4 uExteriorAmbientColor;
@@ -9,7 +15,6 @@ struct SceneExteriorLight {
      vec4 uExteriorDirectColorDir;
      vec4 adtSpecMult;
  };
-
 
 struct SceneWideParams {
     mat4 uLookAtMat;

@@ -122,8 +122,8 @@ namespace M2 {
 namespace Particle {
     struct meshParticleWideBlockPS {
         float uAlphaTest;
-        float textureScale0;
-        float textureScale1;
+        float alphaMult;
+        float colorMult;
         float textureScale2;
         int uPixelShader;
         int uBlendMode;

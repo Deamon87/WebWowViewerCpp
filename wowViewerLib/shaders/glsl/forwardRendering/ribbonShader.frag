@@ -13,19 +13,19 @@ layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec2 vTexcoord0;
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
 
-layout(std140, binding=3) uniform textureMatrices {
+layout(std140, set=1, binding=3) uniform textureMatrices {
     mat4 textureMatrix[64];
 };
-layout(std140, binding=4) uniform meshWideBlockPS {
+layout(std140, set=1, binding=4) uniform meshWideBlockPS {
     ivec4 uPixelShader_BlendMode_TextureTransformIndex;
 };
 
-layout(set=1, binding=5) uniform sampler2D uTexture;
+layout(set=2, binding=5) uniform sampler2D uTexture;
 
 layout(location = 0) out vec4 outputColor;
 

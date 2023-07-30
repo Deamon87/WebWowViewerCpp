@@ -357,7 +357,7 @@ set(SOURCE_FILES
         src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h
         src/engine/objects/liquid/LiquidInstance.cpp
         src/engine/objects/liquid/LiquidInstance.h
-        src/engine/objects/liquid/LiquidDataGetters.h src/renderer/frame/FrameProfile.h)
+        src/engine/objects/liquid/LiquidDataGetters.h src/renderer/frame/FrameProfile.h src/gapi/interface/buffers/IBufferVersioned.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -520,6 +520,7 @@ if (LINK_VULKAN)
             src/gapi/vulkan/materials/ISimpleMaterialVLK.h
             src/gapi/vulkan/buffers/CBufferChunkVLK.cpp
             src/gapi/vulkan/buffers/CBufferChunkVLK.h
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h
             src/gapi/vulkan/commandBuffer/CommandBuffer.cpp

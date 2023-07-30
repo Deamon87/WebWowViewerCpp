@@ -44,11 +44,13 @@ public:
     bool renderAdt = true;
     bool renderWMO = true;
     bool renderM2 = true;
+    bool renderLiquid = true;
     bool renderBSP = false;
     bool renderPortals = false;
     bool renderAntiPortals = false;
     bool renderPortalsIgnoreDepth = false;
     bool usePortalCulling = true;
+    bool discardInvisibleMeshes = true;
 
     bool ignoreADTHoles = false;
 

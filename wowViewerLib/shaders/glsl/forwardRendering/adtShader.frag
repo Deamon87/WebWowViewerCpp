@@ -14,29 +14,29 @@ layout(location = 2) in vec4 vColor;
 layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vVertexLighting;
 
-layout(set=1, binding=5) uniform sampler2D uLayer0;
-layout(set=1, binding=6) uniform sampler2D uLayer1;
-layout(set=1, binding=7) uniform sampler2D uLayer2;
-layout(set=1, binding=8) uniform sampler2D uLayer3;
-layout(set=1, binding=9) uniform sampler2D uAlphaTexture;
-layout(set=1, binding=10) uniform sampler2D uLayerHeight0;
-layout(set=1, binding=11) uniform sampler2D uLayerHeight1;
-layout(set=1, binding=12) uniform sampler2D uLayerHeight2;
-layout(set=1, binding=13) uniform sampler2D uLayerHeight3;
+layout(set=2, binding=5) uniform sampler2D uLayer0;
+layout(set=2, binding=6) uniform sampler2D uLayer1;
+layout(set=2, binding=7) uniform sampler2D uLayer2;
+layout(set=2, binding=8) uniform sampler2D uLayer3;
+layout(set=2, binding=9) uniform sampler2D uAlphaTexture;
+layout(set=2, binding=10) uniform sampler2D uLayerHeight0;
+layout(set=2, binding=11) uniform sampler2D uLayerHeight1;
+layout(set=2, binding=12) uniform sampler2D uLayerHeight2;
+layout(set=2, binding=13) uniform sampler2D uLayerHeight3;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
 
-layout(std140, binding=1) uniform meshWideBlockVSPS {
+layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
     vec4 uPos;
     ivec4 uUseHeightMixFormula;
     vec4 uHeightScale;
     vec4 uHeightOffset;
 };
 
-layout(std140, binding=2) uniform meshWideBlockPS {
+layout(std140, set=1, binding=2) uniform meshWideBlockPS {
     vec4 scaleFactorPerLayer;
     ivec4 animation_rotationPerLayer;
     ivec4 animation_speedPerLayer;

@@ -1650,11 +1650,12 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
             if (currentM2BatchIndex < minBatch || currentM2BatchIndex > maxBatch ) continue;
 
             float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
-            if ((finalTransparency < 0.0001))
+            bool meshIsInvisible = finalTransparency < 0.0001;
+            if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
                 continue;
 
             HGM2Mesh mesh = std::get<0>(this->m_meshArray[i]);
-            if (finalTransparency < 0.999f && i < this->m_meshForcedTranspArray.size() &&
+            if (!meshIsInvisible && finalTransparency < 0.999f && i < this->m_meshForcedTranspArray.size() &&
                 std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
                 mesh = std::get<0>(this->m_meshForcedTranspArray[i]);
             }
@@ -1726,7 +1727,11 @@ void M2Object::initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer) 
             txacVal = m_m2Geom->txacMParticle[i].value;
         }
 
-        auto emitter = std::make_unique<ParticleEmitter>(m_api, sceneRenderer,m_m2Geom->getM2Data()->particle_emitters.getElement(i), this, m_m2Geom, txacVal);
+        Exp2Record *exp2 = nullptr;
+        if (m_m2Geom->exp2 != nullptr) {
+            exp2 = m_m2Geom->exp2->content.getElement(i);
+        }
+        auto emitter = std::make_unique<ParticleEmitter>(m_api, sceneRenderer,m_m2Geom->getM2Data()->particle_emitters.getElement(i), exp2, this, m_m2Geom, txacVal);
         if (m_m2Geom->exp2 != nullptr && emitter->getGenerator() != nullptr) {
             auto exp2Rec = m_m2Geom->exp2->content.getElement(i);
             emitter->getGenerator()->getAniProp()->zSource = exp2Rec->zSource;

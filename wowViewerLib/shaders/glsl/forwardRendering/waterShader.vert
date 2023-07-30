@@ -17,7 +17,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, binding=1) uniform modelWideBlockVS {
+layout(std140, set=1, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 

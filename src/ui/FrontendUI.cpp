@@ -181,6 +181,24 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Text("Current blp vulkan textures loaded %d", l_blpTexturesVulkanLoaded);
         ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
 
+        if (m_sceneRenderer && false) {
+            auto mapPlan = m_sceneRenderer->getLastCreatedPlan();
+            if (mapPlan) {
+                auto &adtArray = mapPlan->adtArray;
+                auto &wmoArray = mapPlan->wmoArray;
+                auto &wmoGroupArray = mapPlan->wmoGroupArray;
+                auto &m2Array = mapPlan->m2Array;
+
+                ImGui::Text("Candidates WMO %d", wmoArray.getCandidates().size());
+                ImGui::Text("Candidates M2 objects %d", m2Array.getCandidates().size());
+
+                ImGui::Text("Rendered ADT files %d", adtArray.size());
+                ImGui::Text("Rendered WMO %d", wmoArray.getToDrawn().size());
+                ImGui::Text("Rendered WMO groups %d", wmoGroupArray.getToDraw().size());
+                ImGui::Text("Rendered M2 objects %d", m2Array.getDrawn().size());
+            }
+        }
+
         ImGui::NewLine();
 
         if (ImGui::CollapsingHeader("Elapsed times")) {
@@ -485,9 +503,9 @@ void FrontendUI::showAdtSelectionMinimap() {
 
 void FrontendUI::showMapSelectionDialog() {
     if (!showSelectMap) {
-        for (int i = 0; i < 64; i++)
-        for (int j = 0; j < 64; j++)
-            adtSelectionMinimapMaterials[i][j] = nullptr;
+//        for (int i = 0; i < 64; i++)
+//        for (int j = 0; j < 64; j++)
+//            adtSelectionMinimapMaterials[i][j] = nullptr;
         return;
     }
 
@@ -601,6 +619,7 @@ void FrontendUI::showMapSelectionDialog() {
                                           ImGuiSelectableFlags_SpanAllColumns |
                                           ImGuiSelectableFlags_AllowItemOverlap)) {
                         if (mapRec.ID != prevMapId) {
+                            minimapZoom = 0.1;
                             mapCanBeOpened = true;
                             adtMinimapFilled = false;
                             prevMapRec = mapRec;
@@ -1296,9 +1315,19 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->renderWMO = renderWMO;
         }
 
+        bool renderLiquid = m_api->getConfig()->renderLiquid;
+        if (ImGui::Checkbox("Render Liquid", &renderLiquid)) {
+            m_api->getConfig()->renderLiquid = renderLiquid;
+        }
+
         bool drawM2BB = m_api->getConfig()->drawM2BB;
         if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
             m_api->getConfig()->drawM2BB = drawM2BB;
+        }
+
+        bool discardInvisibleMeshes = m_api->getConfig()->discardInvisibleMeshes;
+        if (ImGui::Checkbox("Discard invisible M2 meshes", &discardInvisibleMeshes)) {
+            m_api->getConfig()->discardInvisibleMeshes = discardInvisibleMeshes;
         }
 
         bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
@@ -1769,6 +1798,26 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
                                                                        m_api->getConfig()->swapMainAndDebug,
                                                                        m_currentScene);
 
+            if (needToMakeScreenshot) {
+                wowSceneFrameInput->screenShotParameters = createMapSceneParams(*m_api,
+                                                                                screenShotWidth, screenShotHeight,
+                                                                           false,
+                                                                           false,
+                                                                           m_currentScene);
+            }
+//    {
+//        HCullStage tempCullStage = nullptr;
+//        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true,
+//                                              false, false, *m_api,
+//                                              currentScene,tempCullStage);
+//        if (drawStage != nullptr) {
+//            uiDependecies.push_back(drawStage);
+//            screenshotDS = drawStage;
+//            screenshotFrame = m_api->hDevice->getFrameNumber();
+//        }
+//        needToMakeScreenshot = false;
+//    }
+
             scenario->cullFunctions.push_back(m_sceneRenderer->createCullUpdateRenderChain(wowSceneFrameInput));
         }
 
@@ -1780,12 +1829,6 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         auto clearColor = m_api->getConfig()->clearColor;
 
         scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput));
-
-//        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
-//        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-//        std::vector<HUpdateStage> updateStages = {uiUpdateStage};
-//        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(updateStages, getShared(), nullptr, uiDependecies,
-//                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
     }
 
 

@@ -19,7 +19,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, binding=1) uniform meshWideBlockVSPS {
+layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
     vec4 uPos;
     ivec4 uUseHeightMixFormula;
     vec4 uHeightScale;

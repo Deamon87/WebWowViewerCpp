@@ -12,6 +12,7 @@
 #include "MapSceneParams.h"
 #include "MapScenePlan.h"
 
+#include "../../gapi/interface/buffers/IBufferVersioned.h"
 #include "../../engine/shader/ShaderDefinitions.h"
 #include "../../engine/algorithms/FrameCounter.h"
 
@@ -60,6 +61,7 @@ static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
     {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
     {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
     {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
+    {+m2ParticleShader::Attribute::aAlphaCutoff, 1, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, alphaCutoff)},
 }};
 
 static std::vector<GBufferBinding> staticM2RibbonBindings = {{
@@ -98,7 +100,7 @@ public:
                        const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
                        const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                        const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes);
-    void updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
+    void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
                               const HCameraMatrices &renderingMatrices,
                               const HFrameDependantData &fdd,
                               bool isVulkan,

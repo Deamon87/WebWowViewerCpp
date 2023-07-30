@@ -425,9 +425,9 @@ struct TXAC {
 struct Exp2Record
 {
     float zSource;
-    float unk1;
-    float unk2;
-    M2PartTrack<fixed16> unk3;
+    float colorMult;
+    float alphaMult;
+    M2PartTrack<fixed16> alphaCutoff;
 };
 
 struct EXP2

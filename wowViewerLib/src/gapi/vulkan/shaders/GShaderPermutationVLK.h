@@ -65,7 +65,7 @@ protected:
 
     VkPipelineLayout pipelineLayout;
 
-    std::array<std::shared_ptr<GDescriptorSetLayout>, MAX_SHADER_DESC_SETS> descriptorSetLayouts;
+    std::array<std::shared_ptr<GDescriptorSetLayout>, MAX_SHADER_DESC_SETS> descriptorSetLayouts = {};
 
     std::shared_ptr<GDeviceVLK> m_device;
 private:

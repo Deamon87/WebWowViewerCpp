@@ -2,10 +2,6 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-#ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 220
-#endif
-
 precision highp float;
 precision highp int;
 
@@ -19,10 +15,10 @@ layout(location=2) in vec2 vTexCoord2_animated;
 layout(location=3) in vec3 vNormal;
 layout(location=4) in vec3 vPosition;
 
-layout(set=1,binding=6) uniform sampler2D uMask;
-layout(set=1,binding=7) uniform sampler2D uWhiteWater;
-layout(set=1,binding=8) uniform sampler2D uNoise;
-layout(set=1,binding=10) uniform sampler2D uNormalTex;
+layout(set=3,binding=6) uniform sampler2D uMask;
+layout(set=3,binding=7) uniform sampler2D uWhiteWater;
+layout(set=3,binding=8) uniform sampler2D uNoise;
+layout(set=3,binding=10) uniform sampler2D uNormalTex;
 
 layout(location=0) out vec4 outputColor;
 
@@ -31,7 +27,10 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, set=0, binding=5) uniform meshWideBlockPS {
+//Whole model
+#include "../common/commonM2DescriptorSet.glsl"
+
+layout(std140, set=2, binding=5) uniform meshWideBlockPS {
     vec4 values0;
     vec4 values1;
     vec4 values2;
@@ -40,7 +39,7 @@ layout(std140, set=0, binding=5) uniform meshWideBlockPS {
     vec4 baseColor;
 };
 
-const InteriorLightParam intLight = {
+const InteriorLightParam intLightWaterfall = {
     vec4(0,0,0,0),
     vec4(0,0,0,1)
 };
@@ -99,7 +98,7 @@ void main() {
         true,
         0.0,
         scene,
-        intLight,
+        intLightWaterfall,
         vec3(0.0), /* accumLight */
         vec3(0.0), /*precomputedLight*/
         vec3(0.0), /* specular */

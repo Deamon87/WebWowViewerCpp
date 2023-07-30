@@ -2,23 +2,12 @@
 
 #extension GL_GOOGLE_include_directive: require
 
-#ifndef MAX_MATRIX_NUM
-#define MAX_MATRIX_NUM 220
-#endif
-
 precision highp float;
 precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 #include "../common/commonM2Material.glsl"
-
-struct LocalLight
-{
-    vec4 color;
-    vec4 position;
-    vec4 attenuation;
-};
 
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
@@ -33,42 +22,21 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     PSFog fogData;
 };
 
-layout(std140, set=0, binding=1) uniform placementMat {
-    mat4 uPlacementMat;
-};
-
 //Whole model
-layout(std140, set=0, binding=2) uniform modelWideBlockPS {
-    InteriorLightParam intLight;
-    LocalLight pc_lights[4];
-    ivec4 lightCountAndBcHack;
-    vec4 interiorExteriorBlend;
-};
-
-layout(std140, set=0, binding=4) uniform m2Colors {
-    vec4 colors[256];
-};
-
-layout(std140, set=0, binding=5) uniform textureWeights {
-    vec4 textureWeight[16];
-};
-
-layout(std140, set=0, binding=6) uniform textureMatrices {
-    mat4 textureMatrix[64];
-};
+#include "../common/commonM2DescriptorSet.glsl"
 
 //Individual meshes
-layout(std140, set=0, binding=7) uniform meshWideBlockVSPS {
+layout(std140, set=2, binding=7) uniform meshWideBlockVSPS {
     ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
     ivec4 PixelShader_UnFogged_blendMode;
     ivec4 textureWeightIndexes;
     ivec4 colorIndex_applyWeight;
 };
 
-layout(set=1,binding=6) uniform sampler2D uTexture;
-layout(set=1,binding=7) uniform sampler2D uTexture2;
-layout(set=1,binding=8) uniform sampler2D uTexture3;
-layout(set=1,binding=9) uniform sampler2D uTexture4;
+layout(set=3,binding=6) uniform sampler2D uTexture;
+layout(set=3,binding=7) uniform sampler2D uTexture2;
+layout(set=3,binding=8) uniform sampler2D uTexture3;
+layout(set=3,binding=9) uniform sampler2D uTexture4;
 
 void main() {
     /* Animation support */

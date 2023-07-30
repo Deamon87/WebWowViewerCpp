@@ -81,7 +81,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, Exp2Record *exp2, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -90,6 +90,7 @@ ParticleEmitter::ParticleEmitter(const HApiContainer &api, const HMapSceneBuffer
         randTableInited = true;
     }
 
+    m_exp2Data = exp2;
     m_data = particle;
 
     txac_particles_value.value = txac_val_raw;
@@ -323,6 +324,8 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             } else {
                 blockPS.uAlphaTest = 0.0039215689f;
             }
+            blockPS.alphaMult = (m_exp2Data == nullptr) ? 1.0 : m_exp2Data->alphaMult;
+            blockPS.colorMult = (m_exp2Data == nullptr) ? 1.0 : m_exp2Data->colorMult;
 
             int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
 
@@ -829,6 +832,7 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
         particlePreRenderData.m_particleCenter,
             particlePreRenderData.m_ageDependentValues.m_timedColor,
             particlePreRenderData.m_ageDependentValues.m_alpha,
+            particlePreRenderData.m_ageDependentValues.alphaCutoff,
             texScaleVec.x, texScaleVec.y,  p.texPos);
 
     return 0;
@@ -883,6 +887,7 @@ int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particle
                       particlePreRenderData.m_particleCenter,
                       particlePreRenderData.m_ageDependentValues.m_timedColor,
                       particlePreRenderData.m_ageDependentValues.m_alpha,
+                      particlePreRenderData.m_ageDependentValues.alphaCutoff,
                       texScaleVec.x, texScaleVec.y,  p.texPos);
 
 
@@ -1040,6 +1045,12 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 
     defaultCell = 0;
     ageDependentValues.timedTailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
+    ageDependentValues.alphaCutoff = 0.0f;
+    if (m_exp2Data != nullptr) {
+        ageDependentValues.alphaCutoff = animatePartTrack<fixed16, float>(percentTime, &m_exp2Data->alphaCutoff, ageDependentValues.alphaCutoff);
+    }
+
+
     ageDependentValues.timedTailCell = (ageDependentValues.timedTailCell + m_randomizedTextureIndexMask) & textureIndexMask;
 
     float scaleMultiplier = 1.0f;
@@ -1064,6 +1075,7 @@ void
 ParticleEmitter::BuildQuadT3(
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
+    float alphaCutoff,
     float texStartX, float texStartY, mathfu::vec2 *texPos) {
 
     static const float vxs[4] = {-1, -1, 1, 1};
@@ -1099,6 +1111,7 @@ ParticleEmitter::BuildQuadT3(
                 txs[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].x,
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].y);
 
+        record.particle[i].alphaCutoff = alphaCutoff;
     }
 
 }

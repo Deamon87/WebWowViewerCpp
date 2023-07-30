@@ -8,6 +8,7 @@
 
 #include "../MapSceneRenderer.h"
 #include "../../../gapi/vulkan/GDeviceVulkan.h"
+#include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h"
 #include "../materials/IMaterialStructs.h"
 #include "passes/FFXGlowPassVLK.h"
 
@@ -125,12 +126,14 @@ private:
 
     HGVertexBufferBindings m_drawQuadVao = nullptr;
 
-    std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> sceneWideChunk;
+    std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
+    std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
 
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
 
+    std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
 
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
     HGVertexBufferBindings m_emptyADTVAO = nullptr;
@@ -142,6 +145,12 @@ private:
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
     void createFrameBuffers();
+};
+
+class IM2ModelDataVLK : public IM2ModelData {
+public:
+    ~IM2ModelDataVLK() override = default;
+    std::shared_ptr<GDescriptorSet> placementMatrixDS;
 };
 
 

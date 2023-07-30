@@ -106,7 +106,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     m_config->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
 }
 
-void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> &sceneWideChunk,
+void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
                                             const HCameraMatrices &renderingMatrices,
                                             const HFrameDependantData &fdd,
                                             bool isVulkan,
@@ -120,7 +120,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<s
                                                               0, 0, 0, 1).Transpose();
 
 
-    auto &blockPSVS = sceneWideChunk->getObject();
+    auto &blockPSVS = sceneWideChunk->getObject(0);
     blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
     if (isVulkan) {
         blockPSVS.uPMatrix = vulkanMatrixFix*renderingMatrices->perspectiveMat;
@@ -177,5 +177,5 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunk<s
     blockPSVS.fogData.sunPercentage = mathfu::vec4(
         (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f, 0, 0, 0);
 
-    sceneWideChunk->save();
+    sceneWideChunk->saveVersion(0);
 }

@@ -12,7 +12,7 @@ precision highp int;
 layout(location = 0) in vec3 aPosition;
 
 //Whole scene
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };

@@ -14,7 +14,7 @@ layout(location=2) in vec3 vNormal;
 
 layout(location=0) out vec4 outputColor;
 
-layout(set=1,binding=5) uniform sampler2D uTexture;
+layout(set=2,binding=5) uniform sampler2D uTexture;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
@@ -22,7 +22,7 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
 };
 
 //Individual meshes
-layout(std140, binding=4) uniform meshWideBlockPS {
+layout(std140, set=1, binding=4) uniform meshWideBlockPS {
     ivec4 materialId;
     vec4 color;
     mat4 textureMatrix;

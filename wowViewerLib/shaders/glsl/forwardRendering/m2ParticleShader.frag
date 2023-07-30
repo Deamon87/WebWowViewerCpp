@@ -10,24 +10,25 @@ layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec2 vTexcoord0;
 layout(location = 3) in vec2 vTexcoord1;
 layout(location = 4) in vec2 vTexcoord2;
+layout(location = 5) in float alphaCutoff;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
+layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
 
 //Individual meshes
-layout(std140, binding=4) uniform meshWideBlockPS {
-    vec4 uAlphaTestv;
+layout(std140, set=1, binding=4) uniform meshWideBlockPS {
+    vec4 uAlphaTest_alphaMult_colorMult;
     ivec4 uPixelShaderBlendModev;
 };
 
-layout(set=1,binding=5) uniform sampler2D uTexture;
-layout(set=1,binding=6) uniform sampler2D uTexture2;
-layout(set=1,binding=7) uniform sampler2D uTexture3;
+layout(set=2,binding=5) uniform sampler2D uTexture;
+layout(set=2,binding=6) uniform sampler2D uTexture2;
+layout(set=2,binding=7) uniform sampler2D uTexture3;
 
 layout(location = 0) out vec4 outputColor;
 
@@ -36,7 +37,9 @@ void main() {
     vec4 tex2 = texture(uTexture2, vTexcoord1).rgba;
     vec4 tex3 = texture(uTexture3, vTexcoord2).rgba;
 
-    float uAlphaTest = uAlphaTestv.x;
+    float uAlphaTest = uAlphaTest_alphaMult_colorMult.x;
+    float alphaMult = uAlphaTest_alphaMult_colorMult.y;
+    float colorMult = uAlphaTest_alphaMult_colorMult.z;
 
     if(tex.a < uAlphaTest)
         discard;
@@ -84,10 +87,15 @@ void main() {
         finalColor = vec4(height_995, 0.0, 0.0, alpha_997);
     }
 
+    finalColor = vec4(finalColor.rgb * colorMult, finalColor.a * alphaMult);
+
     if(finalColor.a < uAlphaTest)
         discard;
 
-//    vec3 sunDir =
+    if(finalColor.a < alphaCutoff)
+        discard;
+
+    //    vec3 sunDir =
 //        mix(
 //            scene.uInteriorSunDir,
 //            scene.extLight.uExteriorDirectColorDir,

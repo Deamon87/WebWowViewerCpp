@@ -26,11 +26,11 @@ layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
     PSFog fogData;
 };
-layout(std140, set=0, binding=1) uniform modelWideBlockVS {
+layout(std140, set=1, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 
-layout(std140, set=0, binding=2) uniform meshWideBlockVS {
+layout(std140, set=1, binding=2) uniform meshWideBlockVS {
     ivec4 VertexShader_UseLitColor;
 };
 
