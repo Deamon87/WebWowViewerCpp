@@ -29,7 +29,7 @@ public:
     const std::shared_ptr<GDescriptorSetLayout> &getDescSetLayout() const { return m_hDescriptorSetLayout;};
 
     VkDescriptorSet getDescSet() const {return m_descriptorSet;}
-    void getDynamicOffsets(std::vector<uint32_t> &dynamicOffsets);
+    void getDynamicOffsets(std::array<uint32_t,16> &dynamicOffsets, uint32_t &dynamicOffsetsSize);
 
 
 

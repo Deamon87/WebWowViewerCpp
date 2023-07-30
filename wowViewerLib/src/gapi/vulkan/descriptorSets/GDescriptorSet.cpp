@@ -48,13 +48,16 @@ void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &de
     m_dynamicBufferIndexes = dynamicBufferIndexes;
 }
 
-void GDescriptorSet::getDynamicOffsets(std::vector<uint32_t> &dynamicOffsets) {
-    for (int i = 0; i < m_dynamicBufferIndexes.size(); i++) {
+void GDescriptorSet::getDynamicOffsets(std::array<uint32_t,16> &dynamicOffsets, uint32_t &dynamicOffsetsSize) {
+    dynamicOffsetsSize = m_dynamicBufferIndexes.size();
+
+    assert(dynamicOffsetsSize <= 16);
+    for (int i = 0; i < dynamicOffsetsSize; i++) {
 
         auto &descriptor = boundDescriptors[m_dynamicBufferIndexes[i]];
         assert(descriptor->descType == DescriptorRecord::DescriptorRecordType::UBODynamic);
 
-        dynamicOffsets.push_back(descriptor->buffer->getOffset());
+        dynamicOffsets[i] = (descriptor->buffer->getOffset());
     }
 }
 
