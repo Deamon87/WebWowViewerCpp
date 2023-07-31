@@ -36,23 +36,23 @@ public:
 
     };
     void *getPointer() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return pSubBuffers[index]->getPointer();
     };
     void save(int length) override{
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         pSubBuffers[index]->save(m_realSize);
     };
     VkBuffer getGPUBuffer() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return pSubBuffers[index]->getGPUBuffer();
     }
     size_t getOffset() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return pSubBuffers[index]->getOffset();
     }
     size_t getIndex() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return pSubBuffers[index]->getIndex();
     }
 
@@ -60,11 +60,11 @@ public:
         return m_realSize;
     }
     T &getObject() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return *(T*)pSubBuffers[index]->getPointer();
     };
     void save() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         pSubBuffers[index]->save(m_realSize);
     };
 

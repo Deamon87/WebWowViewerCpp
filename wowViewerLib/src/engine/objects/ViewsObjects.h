@@ -53,6 +53,7 @@ public:
     std::vector<PortalPointsFrame> portals;
 
     virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes);
+    void collectPortalMeshes(std::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
     void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,

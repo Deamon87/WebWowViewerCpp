@@ -11,8 +11,8 @@
 class IRenderFunctionVLK : public IRenderFunction {
 public:
     ~IRenderFunctionVLK() override = default;
-
-    virtual void execute(CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) = 0;
+public:
+    virtual void execute(IDevice &device, CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) = 0;
 };
 
 template<typename T>
@@ -21,7 +21,9 @@ public:
     TemplateIRenderFunctionVLK(T a) : m_a(std::move(a)){
 
     };
-    void execute(CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) override {
+    void execute(IDevice &device, CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) override {
+        //Hack through currently processing frame
+        device.setCurrentProcessingFrameNumber(getProcessingFrame());
         m_a(uploadCmd, frameBufCmd, swapChainCmd);
     };
 private:

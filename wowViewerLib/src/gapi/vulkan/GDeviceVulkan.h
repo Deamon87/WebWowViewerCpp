@@ -66,10 +66,7 @@ public:
     std::unordered_set<std::string> get_enabled_extensions();
 
     unsigned int getFrameNumber() override { return m_frameNumber; };
-    unsigned int getUpdateFrameNumber() ;
-    unsigned int getCullingFrameNumber() ;
-    unsigned int getOcclusionFrameNumber() ;
-    unsigned int getDrawFrameNumber() override;
+    unsigned int getProcessingFrameNumber() override;
 
     bool getIsRenderbufferSupported() override {return true;}
 

@@ -1666,7 +1666,7 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
         }
 
         for (auto &dynMesh: dynamicMeshes) {
-            int frame = m_api->hDevice->getDrawFrameNumber();
+            int frame = m_api->hDevice->getCurrentProcessingFrameNumber();
 
             auto const &dynMeshFrame = dynMesh[frame];
 
@@ -1988,7 +1988,7 @@ void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) 
 
 void M2Object::updateDynamicMeshes() {
     auto rootMatInverse = bonesMatrices[0].Inverse();
-    auto frameNum = m_api->hDevice->getDrawFrameNumber();
+    auto frameNum = m_api->hDevice->getCurrentProcessingFrameNumber();
 
 
     for (auto &dynamicMesh: dynamicMeshes) {

@@ -1685,6 +1685,10 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     if (m_minimapGenerationWindow != nullptr) {
         m_minimapGenerationWindow->process();
     }
+    auto l_device = m_api->hDevice;
+    auto processingFrame = l_device->getProcessingFrameNumber();
+    auto updateFrameNumberLambda = [l_device](unsigned int frame) -> void {l_device->setCurrentProcessingFrameNumber(frame);};
+
 
     HFrameScenario scenario = std::make_shared<HFrameScenario::element_type>();
     {
@@ -1725,7 +1729,8 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 //        needToMakeScreenshot = false;
 //    }
 
-            scenario->cullFunctions.push_back(m_sceneRenderer->createCullUpdateRenderChain(wowSceneFrameInput));
+            scenario->cullFunctions.push_back(
+                m_sceneRenderer->createCullUpdateRenderChain(wowSceneFrameInput, processingFrame, updateFrameNumberLambda));
         }
 
         auto uiFrameInput = std::make_shared<FrameInputParams<ImGuiFramePlan::ImGUIParam>>();
@@ -1735,7 +1740,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
         auto clearColor = m_api->getConfig()->clearColor;
 
-        scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput));
+        scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput, processingFrame, updateFrameNumberLambda));
     }
 
 

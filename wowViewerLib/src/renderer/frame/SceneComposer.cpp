@@ -58,36 +58,31 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
             }
         }));
 
-//        updateThread = std::thread(([&]() {
-//            using namespace std::chrono_literals;
-//            FrameCounter frameCounter;
-//
-//            while (!this->m_isTerminating) {
-//                auto frameScenario = updateInput.waitForNewInput();
-//                if (m_isTerminating)
-//                    continue;
-//
-//                frameCounter.beginMeasurement();
-//
-//                //Do the culling and make function for further pipeline
-//                std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>> renderFuncs = std::make_shared<decltype(renderFuncs)::element_type>();
-//                if (frameScenario != nullptr) {
-//                    consumeUpdate(frameScenario, *renderFuncs);
-//                }
-//
-//                //Pass the culling result down the pipeline
-//                drawInput.pushInput(renderFuncs);
-//
-//                frameCounter.endMeasurement();
-////            m_apiContainer->getConfig()->cullingTimePerFrame = frameCounter.getTimePerFrame();
-//            }
-//        }));
+        updateThread = std::thread(([&]() {
+            using namespace std::chrono_literals;
+            setThreadName("Update");
+
+            while (!this->m_isTerminating) {
+                auto frameScenario = updateInput.waitForNewInput();
+                if (m_isTerminating)
+                    continue;
+
+                //Do the culling and make function for further pipeline
+                std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>> renderFuncs = std::make_shared<decltype(renderFuncs)::element_type>();
+                if (frameScenario != nullptr) {
+                    consumeUpdate(frameScenario, *renderFuncs);
+                }
+
+                //Pass the culling result down the pipeline
+                drawInput.pushInput(renderFuncs);
+            }
+        }));
     }
 
 
     //Insert one temp element for balancing
     updateInput.pushInput(nullptr);
-    drawInput.pushInput(nullptr);
+//    drawInput.pushInput(nullptr);
     drawInput.pushInput(nullptr);
 }
 
@@ -134,17 +129,16 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
         m_apiContainer->requestProcessor->processRequests(10);
         consumeUpdate(frameScenario,renderFuncs);
         consumeDraw(renderFuncs);
-
     } else {
         cullingInput.pushInput(frameScenario);
         {
 //            if (!m_firstFrame) {
-                auto frameScenario = updateInput.waitForNewInput();
-//                auto renderFuncs = drawInput.waitForNewInput();
-                std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>> renderFuncs = std::make_shared<decltype(renderFuncs)::element_type>();
-                if (frameScenario != nullptr) {
-                    consumeUpdate(frameScenario, *renderFuncs);
-                }
+//                auto frameScenario = updateInput.waitForNewInput();
+                auto renderFuncs = drawInput.waitForNewInput();
+//                std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>> renderFuncs = std::make_shared<decltype(renderFuncs)::element_type>();
+//                if (frameScenario != nullptr) {
+//                    consumeUpdate(frameScenario, *renderFuncs);
+//                }
                 if (renderFuncs != nullptr) {
                     consumeDraw(*renderFuncs);
                 }

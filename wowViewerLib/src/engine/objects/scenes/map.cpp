@@ -1522,6 +1522,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
 void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
     ZoneScoped;
+    if (skyMeshMat0x4)
     {
         auto &meshblockVS = skyMeshMat0x4->m_skyColors->getObject();
         auto EndFogColor = !renderPlan->frameDependentData->fogResults.empty() ?
@@ -1543,6 +1544,7 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         meshblockVS.skyColor[5] = EndFogColorV4_2;
         skyMeshMat0x4->m_skyColors->save();
     }
+    if (skyMeshMat)
     {
         auto &meshblockVS = skyMeshMat->m_skyColors->getObject();
         meshblockVS.skyColor[0] = renderPlan->frameDependentData->skyColors.SkyTopColor;
@@ -1568,25 +1570,29 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
             }
         }
 
-//        if (granSize > 0) {
-//            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-//            [&](tbb::blocked_range<size_t> r) {
-//                for (size_t i = r.begin(); i != r.end(); ++i) {
-//                    auto &m2Object = m2ToDraw[i];
-//                    if (m2Object != nullptr) {
-//                        m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-//                                                       renderPlan->frameDependentData);
-//                    }
-//                }
-//            }, tbb::simple_partitioner());
-//        }
 
-        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
-            if (m2Object != nullptr) {
-                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                                 renderPlan->frameDependentData);
-            }
+        if (granSize > 0) {
+            auto l_device = m_api->hDevice;
+            auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+            [&](tbb::blocked_range<size_t> r) {
+                l_device->setCurrentProcessingFrameNumber(processingFrame);
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto &m2Object = m2ToDraw[i];
+                    if (m2Object != nullptr) {
+                        m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                       renderPlan->frameDependentData);
+                    }
+                }
+            }, tbb::simple_partitioner());
         }
+
+//        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+//            if (m2Object != nullptr) {
+//                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+//                                                 renderPlan->frameDependentData);
+//            }
+//        }
     }
     {
         ZoneScopedN("m2SkyboxBuffersUpdate");

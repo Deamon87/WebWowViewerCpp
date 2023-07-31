@@ -38,24 +38,24 @@ public:
     void uploadData(const void *, int length) override {
     };
     void *getPointer() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return subBufferVersions[m_currentVersion][index]->getPointer();
     };
     void save(int length) override{
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         subBufferVersions[m_currentVersion][index]->save(m_realSize);
     };
     VkBuffer getGPUBuffer() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return subBufferVersions[m_currentVersion][index]->getGPUBuffer();
     }
     size_t getOffset() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return subBufferVersions[m_currentVersion][index]->getOffset();
     }
 
     size_t getIndex() override {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return subBufferVersions[m_currentVersion][index]->getIndex();
     }
 
@@ -69,11 +69,11 @@ public:
 
     T &getObject(int version) override {
         if (version > subBufferVersions.size()) throw "wrong version";
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         return *(T*)subBufferVersions[version][index]->getPointer();
     };
     void saveVersion(int version) {
-        auto index = m_device->getUpdateFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber();
         subBufferVersions[version][index]->save(m_realSize);
     }
 

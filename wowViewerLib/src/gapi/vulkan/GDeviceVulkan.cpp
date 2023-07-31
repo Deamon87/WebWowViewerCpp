@@ -855,18 +855,8 @@ void GDeviceVLK::createSyncObjects() {
 }
 
 
-unsigned int GDeviceVLK::getDrawFrameNumber() {
+unsigned int GDeviceVLK::getProcessingFrameNumber() {
     return m_frameNumber % MAX_FRAMES_IN_FLIGHT;
-}
-
-unsigned int GDeviceVLK::getUpdateFrameNumber() {
-    return (m_frameNumber + 1) % MAX_FRAMES_IN_FLIGHT;
-}
-unsigned int GDeviceVLK::getOcclusionFrameNumber() {
-    return (m_frameNumber + 2) % MAX_FRAMES_IN_FLIGHT;
-}
-unsigned int GDeviceVLK::getCullingFrameNumber() {
-    return (m_frameNumber + 3) % MAX_FRAMES_IN_FLIGHT;
 }
 
 void GDeviceVLK::increaseFrameNumber() {
@@ -889,7 +879,12 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     stagingRingBuffer->flushBuffers();
 
     this->waitInDrawStageAndDeps.beginMeasurement();
-    int currentDrawFrame = getDrawFrameNumber();
+
+    int currentDrawFrame = getCurrentProcessingFrameNumber();
+    if (renderFuncs.size() > 0) {
+        currentDrawFrame = renderFuncs[0]->getProcessingFrame();
+        setCurrentProcessingFrameNumber(currentDrawFrame);
+    }
 
     auto &uploadCmdBuf = uploadCommandBuffers[currentDrawFrame];
     auto &swapChainCmdBuf = swapChainCommandBuffers[currentDrawFrame];
@@ -943,7 +938,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
             auto swapChainRenderPass = this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
 
             for (int i = 0; i < renderFuncs.size(); i++) {
-                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(uploadCmd, frameBufCmd, swapChainCmd);
+                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->execute(*this, uploadCmd, frameBufCmd, swapChainCmd);
             }
         }
     }
@@ -993,7 +988,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 }
 
 RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd) {
-    int currentDrawFrame = getDrawFrameNumber();
+    int currentDrawFrame = getCurrentProcessingFrameNumber();
 
     //Begin render pass for swap CMD buffer.
     //It used to execute secondary command buffer, but now this is altered
@@ -1009,7 +1004,7 @@ RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBu
 }
 
 void GDeviceVLK::getNextSwapImageIndex(uint32_t &imageIndex) {
-    int currentDrawFrame = getDrawFrameNumber();
+    int currentDrawFrame = getCurrentProcessingFrameNumber();
 
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore(), VK_NULL_HANDLE, &imageIndex);
 

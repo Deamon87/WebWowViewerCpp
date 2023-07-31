@@ -7,11 +7,17 @@
 
 #include <memory>
 #include <functional>
+#include <utility>
 #include "frame/FrameInputParams.h"
 
 class IRenderFunction {
 public:
     virtual ~IRenderFunction() = default;
+
+    void setProcessingFrame(unsigned int frame) { currentProcessingFrame = frame; };
+    unsigned int getProcessingFrame() const { return currentProcessingFrame; }
+private:
+    unsigned int currentProcessingFrame = 0;
 };
 typedef std::function<std::unique_ptr<IRenderFunction>()> SceneUpdateLambda;
 typedef std::function<SceneUpdateLambda()> CullLambda;
@@ -27,14 +33,22 @@ public:
     //This function is to be used to display data in UI
     virtual std::shared_ptr<FramePlan> getLastCreatedPlan() = 0;
 
-    CullLambda createCullUpdateRenderChain(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams) {
+    CullLambda createCullUpdateRenderChain(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams,
+                                           int currentFrame, std::function<void(unsigned int frame)> updateProcessingFrame) {
         auto this_s = this->shared_from_this();
+        auto l_currentFrame = currentFrame;
+        auto l_updateProcessingFrame = std::move(updateProcessingFrame);
 
-        return [frameInputParams, this_s]() -> SceneUpdateLambda {
+        return [frameInputParams, this_s, l_currentFrame, l_updateProcessingFrame]() -> SceneUpdateLambda {
+            l_updateProcessingFrame(l_currentFrame);
             std::shared_ptr<FramePlan> framePlan = this_s->processCulling(frameInputParams);
 
-            return [framePlan, frameInputParams, this_s]() -> std::unique_ptr<IRenderFunction> {
-                return this_s->update(frameInputParams, framePlan);
+            return [framePlan, frameInputParams, this_s, l_currentFrame, l_updateProcessingFrame]() -> std::unique_ptr<IRenderFunction> {
+                l_updateProcessingFrame(l_currentFrame);
+
+                auto renderFunc = this_s->update(frameInputParams, framePlan);
+                renderFunc->setProcessingFrame(l_currentFrame);
+                return renderFunc;
             };
         };
     }

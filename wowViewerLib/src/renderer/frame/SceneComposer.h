@@ -50,6 +50,7 @@ public:
             drawInput.pushInput(nullParam);
         }
         cullingThread.join();
+        updateThread.join();
         loadingResourcesThread.join();
     }
 

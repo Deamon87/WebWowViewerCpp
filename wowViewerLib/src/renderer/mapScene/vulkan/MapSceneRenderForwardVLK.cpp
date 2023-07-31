@@ -654,6 +654,19 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                                 skyMesh0x4,
                                 mapScene, framePlan,
                                 l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+//        //Do postLoad here. So creation of stuff is done from main thread
+//        mapScene->doPostLoad(l_this, framePlan);
+//        //And add portal meshes
+//        for (auto &view : framePlan->viewsHolder.getInteriorViews()) {
+//            view->collectPortalMeshes(*transparentMeshes);
+//        }
+//        {
+//            auto exteriorView = framePlan->viewsHolder.getExterior();
+//            if (exteriorView != nullptr) {
+//                exteriorView->collectPortalMeshes(*transparentMeshes);
+//            }
+//        }
+
 
         // ---------------------
         // Upload stuff
@@ -688,7 +701,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         {
             auto passHelper = frameBufCmd.beginRenderPass(false,
                                                           l_this->m_renderPass,
-                                                          l_this->m_colorFrameBuffers[l_this->m_device->getDrawFrameNumber()],
+                                                          l_this->m_colorFrameBuffers[l_this->m_device->getCurrentProcessingFrameNumber()],
                                                           frameInputParams->viewPortDimensions.mins,
                                                           frameInputParams->viewPortDimensions.maxs,
                                                           vec4ToArr3(frameInputParams->frameParameters->clearColor),

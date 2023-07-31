@@ -164,8 +164,11 @@ class IDevice {
         virtual int getUploadSize() {return 0;};
 
         virtual unsigned int getFrameNumber() = 0;
-        virtual unsigned int getDrawFrameNumber() = 0;
+        virtual unsigned int getProcessingFrameNumber() = 0;
         virtual void increaseFrameNumber() = 0;
+
+        unsigned int getCurrentProcessingFrameNumber();
+        void setCurrentProcessingFrameNumber(unsigned int frameNumber);
 
         virtual void submitDrawCommands() {};
 

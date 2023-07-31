@@ -34,10 +34,6 @@ void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool rende
             wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
         }
     }
-
-    for (auto const &mesh : m_portalMeshes) {
-        transparentMeshes.push_back(mesh);
-    }
 }
 
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
@@ -158,6 +154,12 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
         auto mesh = sceneRenderer->createSortableMesh(meshTemplate, material, 0);
 
         m_portalMeshes.push_back(mesh);
+    }
+}
+
+void GeneralView::collectPortalMeshes(std::vector<HGSortableMesh> &transparentMeshes) {
+    for (auto const &mesh : m_portalMeshes) {
+        transparentMeshes.push_back(mesh);
     }
 }
 
