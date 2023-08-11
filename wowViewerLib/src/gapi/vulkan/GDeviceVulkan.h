@@ -181,8 +181,6 @@ public:
         std::function<void()> callback;
     };
 
-    std::mutex m_listOfDeallocatorsAccessMtx;
-
     void addDeallocationRecord(std::function<void()> callback) override {
         std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
         DeallocationRecord dr;
@@ -190,6 +188,14 @@ public:
         dr.callback = callback;
         listOfDeallocators.push_back(dr);
     };
+    void addBufferDeallocationRecord(std::function<void()> callback) override {
+        std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
+        DeallocationRecord dr;
+        dr.frameNumberToDoAt = m_frameNumber+MAX_FRAMES_IN_FLIGHT;
+        dr.callback = callback;
+        listOfDeallocators.push_back(dr);
+    };
+    void executeBufferDeallocators();
 
     VkFormat findDepthFormat();
 
@@ -374,7 +380,11 @@ protected:
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 
+    std::mutex m_listOfDeallocatorsAccessMtx;
     std::list<DeallocationRecord> listOfDeallocators;
+
+    std::mutex m_listOfBufferDeallocatorsAccessMtx;
+    std::list<DeallocationRecord> listOfBufferDeallocators;
 
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 

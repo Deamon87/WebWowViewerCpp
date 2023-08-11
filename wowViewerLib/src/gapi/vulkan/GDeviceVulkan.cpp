@@ -880,11 +880,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 
     this->waitInDrawStageAndDeps.beginMeasurement();
 
-    int currentDrawFrame = getCurrentProcessingFrameNumber();
-    if (renderFuncs.size() > 0) {
-        currentDrawFrame = renderFuncs[0]->getProcessingFrame();
-        setCurrentProcessingFrameNumber(currentDrawFrame);
-    }
+    int currentDrawFrame = getProcessingFrameNumber();
 
     auto &uploadCmdBuf = uploadCommandBuffers[currentDrawFrame];
     auto &swapChainCmdBuf = swapChainCommandBuffers[currentDrawFrame];
@@ -988,7 +984,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 }
 
 RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd) {
-    int currentDrawFrame = getCurrentProcessingFrameNumber();
+    int currentDrawFrame = getProcessingFrameNumber();
 
     //Begin render pass for swap CMD buffer.
     //It used to execute secondary command buffer, but now this is altered
@@ -1004,7 +1000,7 @@ RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBu
 }
 
 void GDeviceVLK::getNextSwapImageIndex(uint32_t &imageIndex) {
-    int currentDrawFrame = getCurrentProcessingFrameNumber();
+    int currentDrawFrame = getProcessingFrameNumber();
 
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore(), VK_NULL_HANDLE, &imageIndex);
 
@@ -1265,6 +1261,17 @@ void GDeviceVLK::executeDeallocators() {
         }
 
         listOfDeallocators.pop_front();
+    }
+}
+void GDeviceVLK::executeBufferDeallocators() {
+    std::lock_guard<std::mutex> lock(m_listOfBufferDeallocatorsAccessMtx);
+    while ((!listOfBufferDeallocators.empty()) && (listOfBufferDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+        auto stuff = listOfBufferDeallocators.front();
+        if (stuff.callback != nullptr) {
+            stuff.callback();
+        }
+
+        listOfBufferDeallocators.pop_front();
     }
 }
 

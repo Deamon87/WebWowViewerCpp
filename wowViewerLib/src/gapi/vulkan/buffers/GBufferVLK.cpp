@@ -213,7 +213,7 @@ void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_
     if (subBuffersize > 0) {
         deallocateSubBuffer(alloc, uiaAlloc);
     }
-    
+
     currentSubBuffers.erase(it);
 }
 

@@ -151,7 +151,7 @@ enum class GDeviceType {
 
 class IDevice {
     public:
-        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 2;
+        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 3;
 
         virtual ~IDevice() {};
 
@@ -205,6 +205,7 @@ class IDevice {
 
         static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
         virtual void addDeallocationRecord(std::function<void()> callback) {};
+        virtual void addBufferDeallocationRecord(std::function<void()> callback) {};
 
         virtual int getCurrentTextureAllocated() {return 0;}
 };
