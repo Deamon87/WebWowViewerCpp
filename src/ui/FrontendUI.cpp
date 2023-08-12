@@ -1682,11 +1682,12 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
 }
 
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
+    ZoneScoped ;
     if (m_minimapGenerationWindow != nullptr) {
         m_minimapGenerationWindow->process();
     }
     auto l_device = m_api->hDevice;
-    auto processingFrame = l_device->getProcessingFrameNumber();
+    auto processingFrame = l_device->getFrameNumber();
     auto updateFrameNumberLambda = [l_device](unsigned int frame) -> void {l_device->setCurrentProcessingFrameNumber(frame);};
 
 

@@ -123,6 +123,8 @@ private:
 
     HGBufferVLK m_vboQuad;
     HGBufferVLK m_iboQuad;
+    
+    std::vector<HGBufferVLK> allBuffers;
 
     HGVertexBufferBindings m_drawQuadVao = nullptr;
 

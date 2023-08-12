@@ -36,19 +36,19 @@ public:
 
     };
     void *getPointer() override {
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return pSubBuffers[index]->getPointer();
     };
     void save(int length) override{
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         pSubBuffers[index]->save(m_realSize);
     };
     VkBuffer getGPUBuffer() override {
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return pSubBuffers[index]->getGPUBuffer();
     }
     size_t getOffset() override {
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return pSubBuffers[index]->getOffset();
     }
     size_t getIndex() override {
@@ -60,11 +60,11 @@ public:
         return m_realSize;
     }
     T &getObject() override {
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return *(T*)pSubBuffers[index]->getPointer();
     };
     void save() override {
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         pSubBuffers[index]->save(m_realSize);
     };
 

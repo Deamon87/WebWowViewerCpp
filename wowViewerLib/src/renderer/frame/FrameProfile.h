@@ -14,11 +14,14 @@
 #endif
 
 #define setThreadName(a)  tracy::SetThreadName(a);
+#define TracyMessageStr(a) TracyMessage(a.c_str(), a.size());
 #else
+#define setThreadName(a)
 #define setThreadName(a)
 #define ZoneScoped
 #define ZoneScopedN(a)
 #define TracyVkContext(x,y,z,w)
+#define TracyMessageStr(a)
 
 #endif
 

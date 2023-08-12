@@ -1573,7 +1573,7 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
 
         if (granSize > 0) {
             auto l_device = m_api->hDevice;
-            auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
+            auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
             tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
             [&](tbb::blocked_range<size_t> r) {
                 l_device->setCurrentProcessingFrameNumber(processingFrame);

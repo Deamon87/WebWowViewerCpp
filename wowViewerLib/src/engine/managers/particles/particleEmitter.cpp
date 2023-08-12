@@ -471,7 +471,7 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathf
         this->InternalUpdate(delta);
     }
 
-    const HGParticleMesh &mesh = frame[m_api->hDevice->getCurrentProcessingFrameNumber()].m_mesh;
+    const HGParticleMesh &mesh = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT].m_mesh;
     mesh->setSortDistance(m_currentBonePos);
 
 }
@@ -653,7 +653,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber();
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
     szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointer();
@@ -681,7 +681,7 @@ void ParticleEmitter::fitBuffersToSize() {
     if ((m_data->old.flags & 0x60000) == 0x60000) {
         maxFutureSize *= 2;
     }
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber();
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
     if (maxFutureSize > vboBufferDynamic->getSize()) {
@@ -1118,11 +1118,11 @@ ParticleEmitter::BuildQuadT3(
 void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber()];
+    auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
     if (!currentFrame.active)
         return;
 
-    HGParticleMesh mesh = frame[m_api->hDevice->getCurrentProcessingFrameNumber()].m_mesh;
+    HGParticleMesh mesh = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT].m_mesh;
     if (mesh->getIsTransparent()) {
         transparentMeshes.push_back(mesh);
     } else {
@@ -1133,7 +1133,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vect
 void ParticleEmitter::updateBuffers() {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber()];
+    auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
     currentFrame.active = szVertexCnt > 0;
 
     if (!currentFrame.active)

@@ -840,7 +840,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
 }
 
 void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
-    auto &currFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber()];
+    auto &currFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
     if (currFrame.isDead) return;
 
     for (int i = 0; i < currFrame.m_meshes.size(); i++) {
@@ -861,7 +861,7 @@ void CRibbonEmitter::fitBuffersToSize() {
     size_t sizeInd = m_gxIndices.size() * sizeof(uint16_t);
     size_t sizeVert = m_gxVertices.size() * sizeof(CRibbonVertex);
 
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber();
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
     auto iboBufferDynamic = frame[frameNum].m_indexVBO;
 
@@ -875,7 +875,7 @@ void CRibbonEmitter::fitBuffersToSize() {
 }
 
 void CRibbonEmitter::updateBuffers() {
-  auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber()];
+  auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
   currentFrame.isDead = this->IsDead();
   if (currentFrame.isDead) return;
 

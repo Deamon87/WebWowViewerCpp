@@ -100,7 +100,7 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapCha
                             const std::shared_ptr<GRenderPassVLK> &finalRenderPass,
                             ViewPortDimensions &viewPortDimensions) {
     ZoneScoped;
-    auto currentFrame = m_device->getCurrentProcessingFrameNumber();
+    auto currentFrame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     {
 
         for (int i = 0; i < GAUSS_PASS_COUNT; i++) {
