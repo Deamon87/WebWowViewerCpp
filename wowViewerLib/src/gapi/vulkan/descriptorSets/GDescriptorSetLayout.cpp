@@ -10,7 +10,7 @@
 GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
                                            const std::vector<const shaderMetaData*> &metaDatas,
                                            int setIndex,
-                                           const std::unordered_map<int, VkDescriptorType> &typeOverrides) : m_device(device) {
+                                           const DescTypeOverride &typeOverrides) : m_device(device) {
     //Create Layout
     auto &shaderLayoutBindings = m_shaderLayoutBindings;
 
@@ -36,10 +36,15 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
             if (uboBinding.set != setIndex) continue;
 
             auto uniformType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            if (typeOverrides.find(uboBinding.binding) != typeOverrides.end()) {
-                auto overrideType = typeOverrides.at(uboBinding.binding);
-                assert(overrideType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-                uniformType = overrideType;
+            {
+                if (typeOverrides.find(uboBinding.set) != typeOverrides.end()) {
+                    auto &setTypeOverrides = typeOverrides.at(uboBinding.set);
+                    if (setTypeOverrides.find(uboBinding.binding) != setTypeOverrides.end()) {
+                        auto overrideType = setTypeOverrides.at(uboBinding.binding);
+                        assert(overrideType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+                        uniformType = overrideType;
+                    }
+                }
             }
 
             auto it = shaderLayoutBindings.find(uboBinding.binding);

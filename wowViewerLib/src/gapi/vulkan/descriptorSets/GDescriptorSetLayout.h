@@ -14,6 +14,7 @@ class IDeviceVulkan;
 #include "../context/vulkan_context.h"
 #include "../IDeviceVulkan.h"
 #include "../../../engine/shader/ShaderDefinitions.h"
+#include "../shaders/ShaderConfig.h"
 
 class GDescriptorSetLayout {
 public:
@@ -22,7 +23,7 @@ public:
     GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
                          const std::vector<const shaderMetaData*> &metaData,
                          int setIndex,
-                         const std::unordered_map<int, VkDescriptorType> &typeOverrides);
+                         const DescTypeOverride &typeOverrides);
 
     ~GDescriptorSetLayout();
 

@@ -8,13 +8,14 @@
 
 #include "../MapSceneRenderer.h"
 #include "../../../gapi/vulkan/GDeviceVulkan.h"
+#include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h"
 #include "../materials/IMaterialStructs.h"
 #include "passes/FFXGlowPassVLK.h"
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
 public:
-    explicit MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevice, Config *config);
-    ~MapSceneRenderVisBufferVLK() override = default;
+    explicit MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config);
+    ~MapSceneRenderForwardVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
     inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType);
@@ -28,6 +29,7 @@ public:
     HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) override;
     HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
+    HGVertexBufferBindings createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
@@ -39,6 +41,7 @@ public:
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) override;
+    HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createADTVertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createADTIndexBuffer(int sizeInBytes) override;
@@ -62,11 +65,15 @@ public:
                                                   const PipelineTemplate &pipelineTemplate,
                                                   const M2MaterialTemplate &m2MaterialTemplate) override;
     std::shared_ptr<IM2WaterFallMaterial> createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
-                                                           const PipelineTemplate &pipelineTemplate,
-                                                           const M2WaterfallMaterialTemplate &m2MaterialTemplate) override;
+                                                                    const PipelineTemplate &pipelineTemplate,
+                                                                    const M2WaterfallMaterialTemplate &m2MaterialTemplate) override;
 
     std::shared_ptr<IM2ParticleMaterial> createM2ParticleMaterial(const PipelineTemplate &pipelineTemplate,
                                                                   const M2ParticleMaterialTemplate &m2MaterialTemplate) override;
+
+    std::shared_ptr<IM2RibbonMaterial> createM2RibbonMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                              const PipelineTemplate &pipelineTemplate,
+                                                              const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) override;
 
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() override;
 
@@ -99,6 +106,7 @@ private:
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
+    HGBufferVLK vboM2RibbonBuffer;
     HGBufferVLK vboPortalBuffer;
 
     HGBufferVLK vboAdtBuffer;
@@ -118,21 +126,31 @@ private:
 
     HGVertexBufferBindings m_drawQuadVao = nullptr;
 
-    std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> sceneWideChunk;
+    std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
+    std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
 
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
 
+    std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
+
     HGVertexBufferBindings m_emptyM2VAO = nullptr;
     HGVertexBufferBindings m_emptyADTVAO = nullptr;
     HGVertexBufferBindings m_emptyM2ParticleVAO = nullptr;
+    HGVertexBufferBindings m_emptyM2RibbonVAO = nullptr;
     HGVertexBufferBindings m_emptyPortalVAO = nullptr;
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
     void createFrameBuffers();
+};
+
+class IM2ModelDataVisVLK : public IM2ModelData {
+public:
+    ~IM2ModelDataVisVLK() override = default;
+    std::shared_ptr<GDescriptorSet> placementMatrixDS;
 };
 
 

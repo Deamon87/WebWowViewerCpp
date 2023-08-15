@@ -131,10 +131,8 @@ LiquidInstance::getInfoFromDatabase(int liquid_object_or_lvf, int liquid_type, b
             m_api->databaseHandler->getLiquidTypeData(liquid_type, m_liqMatAndType, m_liquidTextureData);
 
             m_liqMatAndType.matLVF = liquid_object_or_lvf;
-            //assert(liquid_object_or_lvf == liqMatAndType.matLVF);
         }
-//        assert(liquidVertexFormat == liqMatAndType.matLVF);
-//        liquidVertexFormat = liqMatAndType.matLVF;
+
         generateTexCoordsFromPos = getLiquidSettings(liquid_object_or_lvf,
                                                      liquid_type,
                                                      m_liqMatAndType.materialID,

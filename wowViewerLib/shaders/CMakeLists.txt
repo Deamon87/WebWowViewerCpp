@@ -4,6 +4,13 @@ else()
     set(GLSL_TARGET_FOLDER ${CMAKE_BINARY_DIR})
 endif()
 
+
+if (COMPILE_SHADER_WITH_DEBUG)
+    set(SHADER_DEBUG_FLAG "-g")
+else()
+    set(SHADER_DEBUG_FLAG "")
+endif()
+
 set(APP_RUN_PREFIX "")
 if (EMSCRIPTEN)
     set(APP_RUN_PREFIX node --experimental-wasm-simd)
@@ -99,7 +106,7 @@ macro(configure_filesVLK srcDir srcCommonDir destDir destDirGL20 destDirGL33 )
             add_custom_command(
                     OUTPUT ${SPIRV_NonOpt}
                     COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                    COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${SHADER_DEBUG_FLAG} ${srcTemplatePath} -o ${SPIRV_NonOpt}
                     DEPENDS ${srcTemplatePath} glslangValidator ${commonFiles})
 
             if(SPIRV_OPT_APP)

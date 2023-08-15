@@ -16,11 +16,21 @@
 #include "../../frame/FrameProfile.h"
 #include <future>
 
-static const ShaderConfig forwardShaderConfig = {{{0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}};
+static const ShaderConfig forwardShaderConfig = {
+    {
+        {0, {
+            {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+        }}
+    }
+};
 static const ShaderConfig m2ForwardShaderConfig = {
     {
-        {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC},
-        {1, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+        {0, {
+            {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+        }},
+        {1, {
+            {1, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+        }}
 }};
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
@@ -639,7 +649,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                                 renderSky,
                                 skyMesh,
                                 skyMesh0x4,
+                                mapScene, framePlan,
                                 l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+
         // ---------------------
         // Upload stuff
         // ---------------------

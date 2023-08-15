@@ -1302,9 +1302,7 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) 
     if (shaderId >= MAX_WMO_SHADERS) {
         shaderId = 0;
     }
-//        if (shaderId == 23) {
-//            std::cout << "Hello" << std::endl;
-//        }
+
     int pixelShader = wmoMaterialShader[shaderId].pixelShader;
     int vertexShader = wmoMaterialShader[shaderId].vertexShader;
 

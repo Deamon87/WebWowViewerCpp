@@ -350,8 +350,10 @@ protected:
             using std::hash;
 
             size_t mapHash = 0;
-            for (auto &rec : k.shaderConfig.typeOverrides)
-                mapHash ^= hash<int>{}(rec.second) ^ hash<int>{}(rec.first);
+            for (const auto &rec : k.shaderConfig.typeOverrides)
+                for (const auto &rec2 : rec.second)
+                    mapHash ^= hash<int>{}(rec2.second) << 4 ^ hash<int>{}(rec2.first) << 4 ^ hash<int>{}(rec.first) << 4;
+
 
             return hash<std::string>{}(k.name) ^ mapHash;
 

@@ -8,8 +8,11 @@
 #include <unordered_map>
 #include "../context/vulkan_context.h"
 
+//Per DescSet -> per binding point
+typedef std::unordered_map<int,std::unordered_map<int, VkDescriptorType>> DescTypeOverride;
+
 struct ShaderConfig {
-    std::unordered_map<int, VkDescriptorType> typeOverrides;
+    DescTypeOverride typeOverrides;
 };
 
 #endif //AWEBWOWVIEWERCPP_SHADERCONFIG_H

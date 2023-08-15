@@ -450,6 +450,7 @@ int main(){
         std::cout << "corrected uiScale for monitor dimensions = " << uiScale << std::endl;
     }
 
+    uiScale = 1.0;
     frontendUI->setUIScale(uiScale);
 
 
