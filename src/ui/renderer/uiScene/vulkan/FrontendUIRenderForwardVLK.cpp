@@ -56,7 +56,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture 
     }
 
     auto &l_imguiUbo = m_imguiUbo;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"}, {"forwardRendering"})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

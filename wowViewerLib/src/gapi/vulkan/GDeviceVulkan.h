@@ -106,6 +106,7 @@ public:
     std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConf);
 
     HGBufferVLK createUniformBuffer(size_t size);
+    HGBufferVLK createSSBOBuffer(size_t size, int recordSize);
     HGBufferVLK createVertexBuffer(size_t size);
     HGBufferVLK createIndexBuffer(size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
@@ -320,6 +321,7 @@ protected:
 
     int maxUniformBufferSize = -1;
     int uniformBufferOffsetAlign = -1;
+    int ssboBufferOffsetAlign = -1;
     int maxMultiSample = -1;
     float m_anisotropicLevel = 0.0;
 
@@ -342,6 +344,7 @@ protected:
         bool operator==(const ShaderPermutationCacheRecord &other) const {
             return
                 (name == other.name) &&
+                (shaderConfig.shaderFolder == other.shaderConfig.shaderFolder) &&
                 (shaderConfig.typeOverrides == other.shaderConfig.typeOverrides);
         };
     };
@@ -349,7 +352,7 @@ protected:
         std::size_t operator()(const ShaderPermutationCacheRecord& k) const {
             using std::hash;
 
-            size_t mapHash = 0;
+            size_t mapHash = hash<std::string>{}(k.shaderConfig.shaderFolder);
             for (const auto &rec : k.shaderConfig.typeOverrides)
                 for (const auto &rec2 : rec.second)
                     mapHash ^= hash<int>{}(rec2.second) << 4 ^ hash<int>{}(rec2.first) << 4 ^ hash<int>{}(rec.first) << 4;

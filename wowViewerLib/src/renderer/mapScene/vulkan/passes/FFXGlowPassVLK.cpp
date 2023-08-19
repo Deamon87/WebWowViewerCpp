@@ -200,7 +200,7 @@ FFXGlowPassVLK::createFFXGaussMat(
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxgauss4"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxgauss4"}, {"forwardRendering"})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGaussVs, &ffxGaussPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -225,7 +225,7 @@ FFXGlowPassVLK::createFFXGlowMat(
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxglow"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxglow"}, {"forwardRendering"})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGlowVs, &ffxGlowPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

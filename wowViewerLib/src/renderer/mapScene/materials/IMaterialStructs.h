@@ -60,6 +60,7 @@ public:
     std::shared_ptr<IBufferChunk<M2::TextureWeights>> m_textureWeights = nullptr;
     std::shared_ptr<IBufferChunk<M2::TextureMatrices>> m_textureMatrices = nullptr;
     std::shared_ptr<IBufferChunk<M2::modelWideBlockPS>> m_modelFragmentData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::M2InstanceRecordBindless>> m_instanceBindless = nullptr;
 };
 
 class IM2Material : public IMaterial {
@@ -68,7 +69,15 @@ public:
     int pixelShader;
     int batchIndex;
     EGxBlendEnum blendMode;
+    bool depthWrite;
+    bool depthCulling;
+    bool backFaceCulling;
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS>> m_vertexFragmentData = nullptr;
+};
+
+class IM2MaterialVis : public IM2Material {
+public:
+    size_t instanceIndex;
 };
 
 class IM2WaterFallMaterial : public IMaterial {

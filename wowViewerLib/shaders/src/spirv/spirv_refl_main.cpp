@@ -71,7 +71,7 @@ int main(int argc, char **argv)
 
 
     if (mode == "-sf") {
-        dumpShaderUniformOffsets(filePaths);
+        dumpShaderUniformOffsets(filePaths[0], decltype(filePaths)(filePaths.begin()+1, filePaths.end()));
     }  else if (mode == "-glsl100") {
         dumpGLSLText(filePaths, 100, false);
     } else if (mode == "-glsl120Es") {

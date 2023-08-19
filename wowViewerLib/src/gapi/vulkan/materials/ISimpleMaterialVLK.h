@@ -21,15 +21,18 @@ public:
                                 const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets);
     ~ISimpleMaterialVLK() override = default;
 
-    HGShaderPermutation getShader() {
+    const HGShaderPermutation &getShader() const {
         return m_shader;
     }
 
     const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &getDescriptorSets() {
         return descriptors;
     }
-    HPipelineVLK getPipeline() {
+    const HPipelineVLK &getPipeline() const {
         return m_pipeline;
+    }
+    const PipelineTemplate &getPipelineTemplate() const {
+        return m_pipelineTemplate;
     }
     std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass);
     EGxBlendEnum getBlendMode();

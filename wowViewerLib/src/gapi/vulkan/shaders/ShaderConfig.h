@@ -12,6 +12,7 @@
 typedef std::unordered_map<int,std::unordered_map<int, VkDescriptorType>> DescTypeOverride;
 
 struct ShaderConfig {
+    std::string shaderFolder;
     DescTypeOverride typeOverrides;
 };
 

@@ -91,6 +91,33 @@ namespace M2 {
         int unused2;
         int unused3;
     };
+
+    struct M2InstanceRecordBindless {
+        int placementMatrixInd;
+        int boneMatrixInd;
+        int m2ColorsInd;
+        int textureWeightsInd;
+        int textureMatricesInd;
+        int modelFragmentDatasInd;
+    };
+
+    struct meshWideBlockVSPS_Bindless {
+        int VertexShader;
+        int IsAffectedByLight;
+        int textureMatIndex1;
+        int textureMatIndex2;
+        int PixelShader;
+        int UnFogged;
+        int BlendMode;
+        int unused;
+        int textureWeightIndexes[4];
+        int colorIndex;
+        int applyWeight;
+        int instanceIndex;
+        int unused3;
+        int textureIndicies[4];
+    };
+
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
         InteriorLightParam intLight;

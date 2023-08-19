@@ -22,6 +22,16 @@ public:
         return {device, shaderFiles, shaderConfig};
     }
 
+    template<typename T>
+    static MaterialBuilderVLK fromMaterial(const std::shared_ptr<IDeviceVulkan> &device,
+                                           const std::shared_ptr<ISimpleMaterialVLK> &materialVlk) {
+        return {device, materialVlk->getShader(),
+                        materialVlk->getPipeline(),
+                        materialVlk->getPipelineTemplate(),
+                        materialVlk->getDescriptorSets()
+                };
+    }
+
     MaterialBuilderVLK& bindDescriptorSet(int bindPoint, std::shared_ptr<GDescriptorSet> &ds);
     MaterialBuilderVLK& createDescriptorSet(int bindPoint, const std::function<void(std::shared_ptr<GDescriptorSet> &ds)> &callback);
     MaterialBuilderVLK& createPipeline(const HGVertexBufferBindings &bindings,
@@ -35,13 +45,19 @@ public:
                                    m_shader,
                                    m_pipelineTemplate,
                                    m_pipeline,
-                                   descriptorSets);
+                                   m_descriptorSets);
     }
 
     ~MaterialBuilderVLK() = default;
 private:
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
                        const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig);
+
+    MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
+                       const HGShaderPermutation &shader,
+                       const HPipelineVLK &pipeline,
+                       const PipelineTemplate &pipelineTemplate,
+                       const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets);
 
 
 private:
@@ -51,7 +67,7 @@ private:
     HGShaderPermutation m_shader;
     HPipelineVLK m_pipeline;
     PipelineTemplate m_pipelineTemplate;
-    std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptorSets;
+    std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> m_descriptorSets;
 };
 
 

@@ -49,6 +49,9 @@ public:
     size_t getOffset() override {
         return 0;
     };
+    size_t getIndex() override {
+        return 0;
+    };
 
     MutexLockedVector<VkBufferCopy> getSubmitRecords();
 
@@ -105,6 +108,11 @@ private:
         }
         size_t getOffset() override {
             return m_alloc.offset;
+        };
+        size_t getIndex() override {
+            return (m_parentBuffer->m_alignment > 0) ?
+                    m_alloc.offset / m_parentBuffer->m_alignment :
+                    m_alloc.offset;
         };
     private:
         void setParentDataPointer(void * ptr) {

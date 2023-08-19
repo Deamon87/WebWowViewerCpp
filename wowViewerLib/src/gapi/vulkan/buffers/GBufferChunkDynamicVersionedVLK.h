@@ -54,6 +54,11 @@ public:
         return subBufferVersions[m_currentVersion][index]->getOffset();
     }
 
+    size_t getIndex() override {
+        auto index = m_device->getUpdateFrameNumber();
+        return subBufferVersions[m_currentVersion][index]->getIndex();
+    }
+
     size_t getSize() override {
         return m_realSize;
     }

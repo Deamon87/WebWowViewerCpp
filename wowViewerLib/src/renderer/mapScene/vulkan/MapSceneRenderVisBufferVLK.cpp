@@ -17,13 +17,15 @@
 #include <future>
 
 static const ShaderConfig forwardShaderConfig = {
+    "forwardRendering",
     {
         {0, {
             {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
         }}
     }
 };
-static const ShaderConfig m2ForwardShaderConfig = {
+static const ShaderConfig m2VisShaderConfig = {
+    "visBuffer",
     {
         {0, {
             {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
@@ -70,6 +72,20 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
         m_drawQuadVao->save();
     }
 
+    //Create m2 shaders
+    {
+        m2Buffers.placementMatrix = m_device->createSSBOBuffer(1024*1024, sizeof(M2::PlacementMatrix));
+        m2Buffers.boneMatrix = m_device->createSSBOBuffer(1024*1024, sizeof(mathfu::mat4));
+        m2Buffers.m2Colors = m_device->createSSBOBuffer(1024*1024, sizeof(mathfu::vec4_packed));
+        m2Buffers.textureWeights = m_device->createSSBOBuffer(1024*1024, sizeof(mathfu::vec4_packed));
+        m2Buffers.textureMatrices = m_device->createSSBOBuffer(1024*1024, sizeof(mathfu::mat4));
+        m2Buffers.modelVertexDatas = m_device->createSSBOBuffer(1024*1024, sizeof(M2::meshWideBlockVSPS));
+        m2Buffers.modelFragmentDatas = m_device->createSSBOBuffer(1024*1024, sizeof(M2::modelWideBlockPS));
+
+        m2Buffers.m2InstanceData = m_device->createSSBOBuffer(1024*1024, sizeof(M2::M2InstanceRecordBindless));
+        m2Buffers.meshWideBlocks = m_device->createSSBOBuffer(1024*1024, sizeof(M2::meshWideBlockVSPS_Bindless));
+    }
+
     uboBuffer = m_device->createUniformBuffer(1024*1024);
     uboStaticBuffer = m_device->createUniformBuffer(1024*1024);
 
@@ -102,6 +118,25 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
             ds->beginUpdate()
                 .ubo_dynamic(0, sceneWideChunk);
             sceneWideDS = ds;
+        });
+
+    //Create global m2Material
+    MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ssbo(1, m2Buffers.placementMatrix)
+                .ssbo(2, m2Buffers.modelFragmentDatas)
+                .ssbo(3, m2Buffers.boneMatrix)
+                .ssbo(4, m2Buffers.m2Colors)
+                .ssbo(5, m2Buffers.textureWeights)
+                .ssbo(6, m2Buffers.textureMatrices)
+                .ssbo(7, m2Buffers.m2InstanceData)
+                .ssbo(8, m2Buffers.meshWideBlocks);
+        })
+        .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(7, m2Buffers.modelVertexDatas);
         });
 }
 
@@ -284,16 +319,11 @@ MapSceneRenderVisBufferVLK::createM2Material(const std::shared_ptr<IM2ModelData>
                                            const M2MaterialTemplate &m2MaterialTemplate) {
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(uboStaticBuffer);
+    auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(m2Buffers.modelVertexDatas);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig)
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
-        .bindDescriptorSet(0, sceneWideDS)
-        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->placementMatrixDS)
-        .createDescriptorSet(2, [&m2ModelData, &vertexFragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .ubo(7, *vertexFragmentData);
-        })
+
         .createDescriptorSet(3, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .texture(6, m2MaterialTemplate.textures[0])
@@ -301,14 +331,19 @@ MapSceneRenderVisBufferVLK::createM2Material(const std::shared_ptr<IM2ModelData>
                 .texture(8, m2MaterialTemplate.textures[2])
                 .texture(9, m2MaterialTemplate.textures[3]);
         })
-        .toMaterial<IM2Material>([&vertexFragmentData](IM2Material *instance) -> void {
+        .toMaterial<IM2MaterialVis>([&vertexFragmentData](IM2MaterialVis *instance) -> void {
             instance->m_vertexFragmentData = vertexFragmentData;
         });
 
     material->blendMode = pipelineTemplate.blendMode;
+    material->depthWrite = pipelineTemplate.depthWrite;
+    material->depthCulling = pipelineTemplate.depthCulling;
+    material->backFaceCulling = pipelineTemplate.backFaceCulling;
+
     material->batchIndex = m2MaterialTemplate.batchIndex;
     material->vertexShader = m2MaterialTemplate.vertexShader;
     material->pixelShader = m2MaterialTemplate.pixelShader;
+    material->instanceIndex = vertexFragmentData->getIndex();
 
 
     return material;
@@ -321,10 +356,10 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderVisBufferVLK::createM2Waterf
     auto vertexData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockVS>>(uboStaticBuffer);
     auto fragmentData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockPS>>(uboStaticBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2ForwardShaderConfig)
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2VisShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->placementMatrixDS)
+        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVisVLK>(m2ModelData)->placementMatrixDS)
         .createDescriptorSet(2, [&m2ModelData, &vertexData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(4, *vertexData)
@@ -509,24 +544,23 @@ std::shared_ptr<IPortalMaterial> MapSceneRenderVisBufferVLK::createPortalMateria
 std::shared_ptr<IM2ModelData> MapSceneRenderVisBufferVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) {
     auto result = std::make_shared<IM2ModelDataVisVLK>();
 
-    DynamicBufferChunkHelperVLK::create(m_device, uboBuffer, result->m_placementMatrix);
-    BufferChunkHelperVLK::create(uboM2BoneMatrixBuffer, result->m_bonesData, sizeof(mathfu::mat4) * bonesCount);
-    BufferChunkHelperVLK::create(uboBuffer, result->m_colors, sizeof(mathfu::vec4_packed) * m2ColorsCount);
-    BufferChunkHelperVLK::create(uboBuffer, result->m_textureWeights, sizeof(float) * textureWeightsCount);
-    BufferChunkHelperVLK::create(uboBuffer, result->m_textureMatrices, sizeof(mathfu::mat4) * textureMatricesCount);
-    BufferChunkHelperVLK::create(uboBuffer, result->m_modelFragmentData);
+    BufferChunkHelperVLK::create(m2Buffers.placementMatrix, result->m_placementMatrix);
+    BufferChunkHelperVLK::create(m2Buffers.boneMatrix, result->m_bonesData, sizeof(mathfu::mat4) * bonesCount);
+    BufferChunkHelperVLK::create(m2Buffers.m2Colors, result->m_colors, sizeof(mathfu::vec4_packed) * m2ColorsCount);
+    BufferChunkHelperVLK::create(m2Buffers.textureWeights, result->m_textureWeights, sizeof(float) * textureWeightsCount);
+    BufferChunkHelperVLK::create(m2Buffers.textureMatrices, result->m_textureMatrices, sizeof(mathfu::mat4) * textureMatricesCount);
+    BufferChunkHelperVLK::create(m2Buffers.modelFragmentDatas, result->m_modelFragmentData);
 
-    MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig)
-        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .ubo_dynamic(1, DynamicBufferChunkHelperVLK::cast(result->m_placementMatrix))
-                .ubo(2, BufferChunkHelperVLK::cast(result->m_modelFragmentData))
-                .ubo(3, BufferChunkHelperVLK::cast(result->m_bonesData))
-                .ubo(4, BufferChunkHelperVLK::cast(result->m_colors))
-                .ubo(5, BufferChunkHelperVLK::cast(result->m_textureWeights))
-                .ubo(6, BufferChunkHelperVLK::cast(result->m_textureMatrices));
-            result->placementMatrixDS = ds;
-        });
+    BufferChunkHelperVLK::create(m2Buffers.m2InstanceData, result->m_instanceBindless);
+
+    auto &instanceData = result->m_instanceBindless->getObject();
+    instanceData.placementMatrixInd = BufferChunkHelperVLK::castToChunk(result->m_placementMatrix)->getSubBuffer()->getIndex();
+    instanceData.boneMatrixInd      = BufferChunkHelperVLK::castToChunk(result->m_bonesData)->getSubBuffer()->getIndex();
+    instanceData.m2ColorsInd        = BufferChunkHelperVLK::castToChunk(result->m_colors)->getSubBuffer()->getIndex();
+    instanceData.textureWeightsInd  = BufferChunkHelperVLK::castToChunk(result->m_textureWeights)->getSubBuffer()->getIndex();
+    instanceData.textureMatricesInd = BufferChunkHelperVLK::castToChunk(result->m_textureMatrices)->getSubBuffer()->getIndex();
+    instanceData.modelFragmentDatasInd = BufferChunkHelperVLK::castToChunk(result->m_modelFragmentData)->getSubBuffer()->getIndex();
+    result->m_instanceBindless->save();
 
     return result;
 }

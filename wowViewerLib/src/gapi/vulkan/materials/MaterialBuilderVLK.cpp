@@ -15,6 +15,17 @@ MaterialBuilderVLK::MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &dev
         shaderFiles[1], shaderConfig);
 }
 
+MaterialBuilderVLK::MaterialBuilderVLK(
+        const std::shared_ptr<IDeviceVulkan> &device,
+        const HGShaderPermutation &shader,
+        const HPipelineVLK &pipeline,
+        const PipelineTemplate &pipelineTemplate,
+        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets) :
+        m_device(device), m_shader(shader), m_pipeline(pipeline), m_pipelineTemplate(pipelineTemplate),
+        m_descriptorSets(descriptorSets) {
+
+}
+
 MaterialBuilderVLK &MaterialBuilderVLK::createDescriptorSet(int bindPoint,
                                                             const std::function<void(std::shared_ptr<GDescriptorSet> &ds)> &callback) {
 
@@ -23,35 +34,15 @@ MaterialBuilderVLK &MaterialBuilderVLK::createDescriptorSet(int bindPoint,
     auto ds = std::make_shared<GDescriptorSet>(m_device, shaderVLK->getDescriptorLayout(bindPoint));
     callback(ds);
 
-    descriptorSets[bindPoint] = ds;
+    m_descriptorSets[bindPoint] = ds;
 
     return *this;
 }
 
-//MaterialBuilderVLK &MaterialBuilderVLK::createDescriptorSet(int bindPoint,
-//                                                            const std::function<void (std::shared_ptr<GDescriptorSet> &, GDescriptorSet::SetUpdateHelper &)> &callback) {
-//    auto shaderVLK = std::dynamic_pointer_cast<GShaderPermutationVLK>(m_shader);
-//
-//    auto ds = std::make_shared<GDescriptorSet>(m_device, shaderVLK->getDescriptorLayout(bindPoint, {}));
-//    auto updater = ds->beginUpdate();
-//    callback(ds, updater);
-//    auto &overrides = updater.getAccumulatedTypeOverrides();
-//    if (!overrides.empty()) {
-//        updater.cancelUpdate();
-//        ds = std::make_shared<GDescriptorSet>(m_device, shaderVLK->getDescriptorLayout(bindPoint, overrides));
-//        auto updater2 = ds->beginUpdate();
-//        callback(ds, updater2);
-//    }
-//
-//    descriptorSets[bindPoint] = ds;
-//
-//    return *this;
-//}
-
 MaterialBuilderVLK &MaterialBuilderVLK::bindDescriptorSet(int bindPoint, std::shared_ptr<GDescriptorSet> &ds) {
     //TODO: check DS layout compatibility
 
-    descriptorSets[bindPoint] = ds;
+    m_descriptorSets[bindPoint] = ds;
 
     return *this;
 }
@@ -81,6 +72,6 @@ std::shared_ptr<ISimpleMaterialVLK> MaterialBuilderVLK::toMaterial() {
         m_shader,
         m_pipelineTemplate,
         m_pipeline,
-        descriptorSets
+        m_descriptorSets
       );
 }

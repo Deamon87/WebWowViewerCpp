@@ -35,6 +35,11 @@ struct attributeDefine {
         unsigned int binding;
         unsigned long long size;
     };
+    struct ssboBindingData {
+        unsigned int set;
+        unsigned int binding;
+        unsigned long long size;
+    };
     struct imageBindingData {
         unsigned int set;
         unsigned int binding;
@@ -52,6 +57,8 @@ struct attributeDefine {
 
         std::vector<uboBindingData> uboBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
+
+        std::vector<ssboBindingData> ssboBindingData;
 
         std::vector<imageBindingData> imageBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
@@ -291,7 +298,50 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 };
 
 const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = { 
-{ "wmoShader.vert.spv", 
+{ "visBuffer/m2Shader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {1,3,16384},
+      {1,1,64},
+      {0,0,368},
+      {1,2,256},
+      {1,4,4096},
+      {1,5,256},
+      {1,6,4096},
+      {2,7,64},
+    },
+    {
+      {
+        {0,0,1},
+        {1,6,6},
+        {7,7,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/wmoShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
@@ -302,7 +352,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,1},
-        {2,2,1},
+        {1,2,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -310,6 +360,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
       }
+    },
+    {
     },
     {
     },
@@ -327,17 +379,61 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "wmoShader.frag.spv", 
+{ "forwardRendering/waterfallShader.vert.spv", 
   {
-    ShaderStage::Fragment,
+    ShaderStage::Vertex,
     {
-      {1,4,32},
+      {2,4,16},
+      {1,6,4096},
+      {1,3,16384},
       {0,0,368},
+      {1,1,64},
+      {1,2,256},
+      {1,4,4096},
+      {1,5,256},
     },
     {
       {
         {0,0,1},
+        {1,6,6},
         {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {3,9, "uBumpTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {9,9,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,368},
+      {1,1,64},
+    },
+    {
+      {
+        {0,0,1},
+        {1,1,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -347,21 +443,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {2,5, "uTexture"},
-      {2,6, "uTexture2"},
-      {2,7, "uTexture3"},
-      {2,8, "uTexture4"},
-      {2,9, "uTexture5"},
-      {2,10, "uTexture6"},
-      {2,11, "uTexture7"},
-      {2,12, "uTexture8"},
-      {2,13, "uTexture9"},
+    },
+    {
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {5,13,9},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -371,17 +460,17 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "waterShader.frag.spv", 
+{ "forwardRendering/skyConus.vert.spv", 
   {
-    ShaderStage::Fragment,
+    ShaderStage::Vertex,
     {
-      {1,4,96},
       {0,0,368},
+      {1,1,96},
     },
     {
       {
         {0,0,1},
-        {4,4,1},
+        {1,1,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -391,11 +480,155 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {2,5, "uTexture"},
+    },
+    {
     },
     {
       {
         {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawPoints.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,1,12},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawPortalShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawLinesShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,128},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/imguiShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {1,5, "Texture"},
+    },
+    {
+      {
         {0,0,0},
         {5,5,1},
         {0,0,0},
@@ -403,11 +636,50 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
         {0,0,0},
+        {0,0,0},
       }
     }
   }
 },
-{ "waterfallShader.frag.spv", 
+{ "forwardRendering/renderFrameBufferShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,2,168},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {0,3, "u_sampler"},
+      {0,4, "u_depth"},
+    },
+    {
+      {
+        {3,4,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterfallShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -423,7 +695,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,1},
-        {6,6,1},
+        {1,6,6},
         {5,5,1},
         {0,0,0},
         {0,0,0},
@@ -431,6 +703,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
       }
+    },
+    {
     },
     {
       {3,10, "uNormalTex"},
@@ -452,16 +726,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "adtShader.vert.spv", 
+{ "forwardRendering/drawLinesShader.frag.spv", 
   {
-    ShaderStage::Vertex,
+    ShaderStage::Fragment,
     {
-      {0,0,368},
-      {1,1,64},
+      {0,1,12},
     },
     {
       {
-        {0,0,1},
         {1,1,1},
         {0,0,0},
         {0,0,0},
@@ -469,7 +741,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
         {0,0,0},
+        {0,0,0},
       }
+    },
+    {
     },
     {
     },
@@ -487,7 +762,152 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "adtLodShader.vert.spv", 
+{ "forwardRendering/drawBBShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,1,112},
+      {0,0,368},
+    },
+    {
+      {
+        {0,1,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawPortalShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,1,16},
+    },
+    {
+      {
+        {0,0,0},
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawFrustumShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,2,12},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/imguiShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,1,80},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/adtLodShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
@@ -508,81 +928,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "waterfallShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {2,4,16},
-      {1,6,4096},
-      {1,3,16384},
-      {0,0,368},
-      {1,1,64},
-      {1,2,256},
-      {1,4,4096},
-      {1,5,256},
-    },
-    {
-      {
-        {0,0,1},
-        {5,5,1},
-        {4,4,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {3,9, "uBumpTexture"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {9,9,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawPoints.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,128},
-      {0,1,64},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
     },
     {
       {
@@ -598,77 +943,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawFrustumShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,128},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "ffxglow.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,4,16},
-    },
-    {
-      {
-        {4,4,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,5, "screenTex"},
-      {1,6, "blurTex"},
-    },
-    {
-      {
-        {0,0,0},
-        {5,6,2},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "adtShader.frag.spv", 
+{ "forwardRendering/adtShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -679,7 +954,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,1},
-        {1,1,1},
+        {1,2,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -687,6 +962,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
       }
+    },
+    {
     },
     {
       {2,9, "uAlphaTexture"},
@@ -713,249 +990,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "drawBBShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,1,112},
-      {0,0,368},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawFrustumShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,2,12},
-    },
-    {
-      {
-        {2,2,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawDepthShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,2,12},
-    },
-    {
-      {
-        {2,2,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {0,3, "diffuse"},
-    },
-    {
-      {
-        {3,3,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "adtLodShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,84},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {0,4, "uDiffuseTexture"},
-      {0,5, "uNormalTexture"},
-    },
-    {
-      {
-        {4,5,2},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawPoints.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,1,12},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawBBShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,1,112},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawLinesShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,1,12},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "skyConus.frag.spv", 
+{ "visBuffer/m2Shader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -974,284 +1009,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawPortalShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {1,1,16},
-    },
-    {
-      {
-        {0,0,0},
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawLinesShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,128},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "ffxgauss4.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,4,32},
-    },
-    {
-      {
-        {4,4,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,5, "texture0"},
-    },
-    {
-      {
-        {0,0,0},
-        {5,5,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "imguiShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,5, "Texture"},
-    },
-    {
-      {
-        {0,0,0},
-        {5,5,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "m2ParticleShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,368},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawQuad.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,2,16},
-    },
-    {
-      {
-        {2,2,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "imguiShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,1,80},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "m2Shader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {2,7,64},
-      {1,5,256},
-      {1,4,4096},
-      {1,2,256},
-      {0,0,368},
-      {1,1,64},
-      {1,6,4096},
-      {1,3,16384},
-    },
-    {
-      {
-        {0,0,1},
-        {3,3,1},
-        {7,7,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
+      {2,8,0},
+      {1,5,0},
+      {1,4,0},
+      {1,2,0},
+      {1,1,0},
+      {1,7,0},
+      {1,6,0},
+      {1,3,0},
     },
     {
       {3,6, "uTexture"},
@@ -1273,7 +1038,43 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "waterShader.vert.spv", 
+{ "forwardRendering/drawFrustumShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,128},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/adtShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
@@ -1295,38 +1096,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "drawPortalShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,368},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
     },
     {
       {
@@ -1342,119 +1111,15 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "ribbonShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,368},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "skyConus.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,368},
-      {1,1,96},
-    },
-    {
-      {
-        {0,0,1},
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "renderFrameBufferShader.frag.spv", 
+{ "forwardRendering/adtLodShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
-      {0,2,168},
+      {0,0,84},
     },
     {
       {
-        {2,2,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {0,3, "u_sampler"},
-      {0,4, "u_depth"},
-    },
-    {
-      {
-        {3,4,2},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "renderFrameBufferShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-    },
-    {
-      {
-        {0,0,0},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1467,8 +1132,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
+      {0,4, "uDiffuseTexture"},
+      {0,5, "uNormalTexture"},
+    },
+    {
       {
-        {0,0,0},
+        {4,5,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1480,7 +1149,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "m2ParticleShader.frag.spv", 
+{ "forwardRendering/wmoShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -1498,6 +1167,323 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
       }
+    },
+    {
+    },
+    {
+      {2,5, "uTexture"},
+      {2,6, "uTexture2"},
+      {2,7, "uTexture3"},
+      {2,8, "uTexture4"},
+      {2,9, "uTexture5"},
+      {2,10, "uTexture6"},
+      {2,11, "uTexture7"},
+      {2,12, "uTexture8"},
+      {2,13, "uTexture9"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {5,13,9},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/ffxgauss4.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,4,32},
+    },
+    {
+      {
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {1,5, "texture0"},
+    },
+    {
+      {
+        {0,0,0},
+        {5,5,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawQuad.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,2,16},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/ffxglow.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,4,16},
+    },
+    {
+      {
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {1,5, "screenTex"},
+      {1,6, "blurTex"},
+    },
+    {
+      {
+        {0,0,0},
+        {5,6,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,4,96},
+      {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {2,5, "uTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {5,5,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/m2Shader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {2,7,64},
+      {1,5,256},
+      {1,4,4096},
+      {1,2,256},
+      {0,0,368},
+      {1,1,64},
+      {1,6,4096},
+      {1,3,16384},
+    },
+    {
+      {
+        {0,0,1},
+        {1,6,6},
+        {7,7,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {3,6, "uTexture"},
+      {3,7, "uTexture2"},
+      {3,8, "uTexture3"},
+      {3,9, "uTexture4"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {6,9,4},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawPoints.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,128},
+      {0,1,64},
+    },
+    {
+      {
+        {0,1,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawBBShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,1,112},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/m2ParticleShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,4,32},
+      {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {4,4,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
     },
     {
       {2,5, "uTexture"},
@@ -1518,30 +1504,25 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "m2Shader.vert.spv", 
+{ "forwardRendering/m2ParticleShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
-      {1,3,16384},
-      {1,1,64},
       {0,0,368},
-      {1,2,256},
-      {1,4,4096},
-      {1,5,256},
-      {1,6,4096},
-      {2,7,64},
     },
     {
       {
         {0,0,1},
-        {6,6,1},
-        {7,7,1},
+        {0,0,0},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
       }
+    },
+    {
     },
     {
     },
@@ -1559,7 +1540,158 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "ribbonShader.frag.spv", 
+{ "forwardRendering/skyConus.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/renderFrameBufferShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawDepthShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,2,12},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {0,3, "diffuse"},
+    },
+    {
+      {
+        {3,3,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/m2Shader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {1,3,16384},
+      {1,1,64},
+      {0,0,368},
+      {1,2,256},
+      {1,4,4096},
+      {1,5,256},
+      {1,6,4096},
+      {2,7,64},
+    },
+    {
+      {
+        {0,0,1},
+        {1,6,6},
+        {7,7,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/ribbonShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -1570,7 +1702,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,1},
-        {3,3,1},
+        {3,4,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1580,6 +1712,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
+    },
+    {
       {2,5, "uTexture"},
     },
     {
@@ -1587,6 +1721,42 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
         {5,5,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/ribbonShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,368},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2319,18 +2489,22 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"m2Shader",  {
     {
+      8, {
+      }
+    },
+    {
       3, {
-        {"_1_3_uBoneMatrixes[0]", true, 0, 4, 4, 256},
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
       }
     },
     {
       6, {
-        {"_1_6_textureMatrix[0]", true, 0, 4, 4, 64},
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
       }
     },
     {
       1, {
-        {"_1_1_uPlacementMat", true, 0, 4, 4, 0},
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
       }
     },
     {
@@ -2356,40 +2530,20 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       2, {
-        {"_1_2_intLight_uInteriorAmbientColorAndApplyInteriorLight", true, 0, 1, 4, 0},
-        {"_1_2_intLight_uInteriorDirectColorAndApplyExteriorLight", true, 16, 1, 4, 0},
-        {"_1_2_pc_lights[0].color", true, 32, 1, 4, 0},
-        {"_1_2_pc_lights[0].position", true, 48, 1, 4, 0},
-        {"_1_2_pc_lights[0].attenuation", true, 64, 1, 4, 0},
-        {"_1_2_pc_lights[1].color", true, 80, 1, 4, 0},
-        {"_1_2_pc_lights[1].position", true, 96, 1, 4, 0},
-        {"_1_2_pc_lights[1].attenuation", true, 112, 1, 4, 0},
-        {"_1_2_pc_lights[2].color", true, 128, 1, 4, 0},
-        {"_1_2_pc_lights[2].position", true, 144, 1, 4, 0},
-        {"_1_2_pc_lights[2].attenuation", true, 160, 1, 4, 0},
-        {"_1_2_pc_lights[3].color", true, 176, 1, 4, 0},
-        {"_1_2_pc_lights[3].position", true, 192, 1, 4, 0},
-        {"_1_2_pc_lights[3].attenuation", true, 208, 1, 4, 0},
-        {"_1_2_lightCountAndBcHack", false, 224, 1, 4, 0},
-        {"_1_2_interiorExteriorBlend", true, 240, 1, 4, 0},
       }
     },
     {
       4, {
-        {"_1_4_colors[0]", true, 0, 1, 4, 256},
+        {"_1_4_colors", true, 0, 1, 4, 0},
       }
     },
     {
       5, {
-        {"_1_5_textureWeight[0]", true, 0, 1, 4, 16},
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
       }
     },
     {
       7, {
-        {"_2_7_vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2", false, 0, 1, 4, 0},
-        {"_2_7_PixelShader_UnFogged_blendMode", false, 16, 1, 4, 0},
-        {"_2_7_textureWeightIndexes", false, 32, 1, 4, 0},
-        {"_2_7_colorIndex_applyWeight", false, 48, 1, 4, 0},
       }
     },
   }},

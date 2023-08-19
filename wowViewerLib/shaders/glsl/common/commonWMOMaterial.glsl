@@ -195,31 +195,35 @@ void caclWMOFragMat(in int pixelShader, bool enableAlpha,
             mat3 TBN = contangent_frame(normalInView, -vertexPosInView, vTexCoord2);
 
             float cosAlpha = dot(normalize(vertexPosInView.xyz), normalInView);
-            vec2 dotResult = (TBN * (normalize(-vertexPosInView.xyz) / cosAlpha)).xy;
+            vec3 viewTS = TBN * normalize(-vertexPosInView.xyz);
+            vec2 viewTSNorm = (viewTS.xy / viewTS.z);
 
-            vec4 tex_4 = texture(s_texture4, vTexCoord2 - (dotResult * tex_6.r * 0.25)).rgba;
-            vec4 tex_5 = texture(s_texture5, vTexCoord3 - (dotResult * tex_6.r * 0.25)).rgba;
+            float bumpOffset_backLayer = tex_6.r;
+            float bumpOffset_middleLayer = 0.5f * bumpOffset_backLayer;
+            vec4 tex_4 = texture(s_texture4, vTexCoord2 - (viewTSNorm * bumpOffset_middleLayer * 0.5)).rgba;
+            vec4 tex_5 = texture(s_texture5, vTexCoord3 - (viewTSNorm * bumpOffset_middleLayer * 0.5)).rgba;
             vec4 tex_3 = texture(s_texture3, vTexCoord2).rgba;
 
-            vec3 mix1 = tex_5.rgb + tex_4.rgb * tex_4.a;
-            vec3 mix2 = (tex_3.rgb - mix1) * tex_6.g + mix1;
+            vec3 diffuseResult = tex_5.rgb + tex_4.rgb * tex_4.a;
+            vec3 diffuseResult2 = (tex_3.rgb - diffuseResult) * tex_6.g + diffuseResult;
             vec3 mix3 = tex_3.rgb * tex_6.b + (tex_5.rgb * tex_5.a * (1.0 - tex3.b));
 
             vec4 tex_2 = texture(s_texture3, vColorSecond.bg).rgba;
             vec3 tex_2_mult = tex_2.rgb * tex_2.a;
 
-            vec3 emissive_component;
+            vec3 fakeSpecularResult;
             if (vColor2.a> 0.0)
             {
                 vec4 tex = texture(s_texture, vTexCoord).rgba;
-                matDiffuse = (tex.rgb - mix2 ) * vColor2.a + mix2;
-                emissive_component = ((tex.rgb * tex.a) - tex_2_mult.rgb) * vColor2.a + tex_2_mult.rgb;
+                matDiffuse = mix(diffuseResult2, tex.rgb, vColor2.a);
+                fakeSpecularResult = ((tex.rgb * tex.a) - tex_2_mult.rgb) * vColor2.a + tex_2_mult.rgb;
             } else {
-                emissive_component = tex_2_mult;
-                matDiffuse = mix2;
+                fakeSpecularResult = tex_2_mult;
+                matDiffuse = diffuseResult2;
             }
 
-            emissive = (mix3 - (mix3 * vColor2.a)) + (emissive_component * tex_2.rgb);
+            vec3 envResult = fakeSpecularResult * tex_2.rgb;
+            emissive = (mix3 - (mix3 * vColor2.a)) + (envResult);
             break;
         }
         case (20): { //MapObjUnkShader
@@ -235,9 +239,11 @@ void caclWMOFragMat(in int pixelShader, bool enableAlpha,
             vec4 tex_9 = texture(s_texture9, vTexCoord4).rgba;
 
             float secondColorSum = dot(vColorSecond.bgr, vec3(1.0));
-            vec4 alphaVec = max(vec4(tex_6.a, tex_7.a, tex_8.a, tex_9.a), 0.004) * vec4(vColorSecond.bgr, 1.0 - clamp(secondColorSum, 0.0, 1.0));
-            float maxAlpha = max(alphaVec.r, max(alphaVec.g, max(alphaVec.r, alphaVec.a)));
-            vec4 alphaVec2 = (1.0 - clamp(vec4(maxAlpha) - alphaVec, 0.0, 1.0));
+            vec4 weights = vec4(vColorSecond.bgr, 1.0 - clamp(secondColorSum, 0.0, 1.0));
+            vec4 heights = max(vec4(tex_6.a, tex_7.a, tex_8.a, tex_9.a), 0.004);
+            vec4 alphaVec =  weights * heights;
+            float weightsMax = max(alphaVec.r, max(alphaVec.g, max(alphaVec.r, alphaVec.a)));
+            vec4 alphaVec2 = (1.0 - clamp(vec4(weightsMax) - alphaVec, 0.0, 1.0));
             alphaVec2 = alphaVec2 * alphaVec;
 
             vec4 alphaVec2Normalized = alphaVec2 * (1.0 / dot(alphaVec2, vec4(1.0)));
@@ -248,8 +254,8 @@ void caclWMOFragMat(in int pixelShader, bool enableAlpha,
                             tex_5 * alphaVec2Normalized.a;
 
             emissive = (texMixed.w * tex_1.rgb) * texMixed.rgb;
-            vec3 diffuseColor = vec3(0,0,0); //<= it's unknown where this color comes from. But it's not MOMT chunk
-            matDiffuse = (diffuseColor - texMixed.rgb) * vColorSecond.a + texMixed.rgb;
+            vec3 ambientOcclusionColor = vec3(0,0,0); // TODO: when ambient occlusion is ready, add it here
+            matDiffuse = mix(texMixed.rgb, ambientOcclusionColor,  vColorSecond.a);
             break;
         }
     }

@@ -15,7 +15,7 @@
 class DescriptorRecord {
 public:
     enum class DescriptorRecordType {
-        None, UBO, UBODynamic, Texture
+        None, UBO, UBODynamic, SSBO, Texture
     };
 
     DescriptorRecord() = delete;

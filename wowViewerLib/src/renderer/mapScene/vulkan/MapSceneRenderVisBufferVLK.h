@@ -14,8 +14,8 @@
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
 public:
-    explicit MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config);
-    ~MapSceneRenderForwardVLK() override = default;
+    explicit MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevice, Config *config);
+    ~MapSceneRenderVisBufferVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
     inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType);
@@ -118,6 +118,19 @@ private:
     HGBufferVLK iboBuffer;
 
     HGBufferVLK uboStaticBuffer;
+    struct {
+        HGBufferVLK placementMatrix;
+        HGBufferVLK boneMatrix;
+        HGBufferVLK m2Colors;
+        HGBufferVLK textureWeights;
+        HGBufferVLK textureMatrices;
+        HGBufferVLK modelVertexDatas;
+        HGBufferVLK modelFragmentDatas;
+
+        HGBufferVLK m2InstanceData;
+        HGBufferVLK meshWideBlocks;
+    } m2Buffers;
+
     HGBufferVLK uboBuffer;
     HGBufferVLK uboM2BoneMatrixBuffer;
 
@@ -152,6 +165,7 @@ public:
     ~IM2ModelDataVisVLK() override = default;
     std::shared_ptr<GDescriptorSet> placementMatrixDS;
 };
+
 
 
 #endif //AWEBWOWVIEWERCPP_MAPSCENERENDERFORWARDVLK_H

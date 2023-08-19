@@ -30,6 +30,11 @@ public:
         pSubBuffer->save(m_realSize);
     };
 
+    size_t getIndex() {
+        return subBuffer->getIndex();
+    }
+
+    inline std::shared_ptr<IBufferVLK> getSubBuffer() {return subBuffer;}
     operator const std::shared_ptr<IBufferVLK>() const { return subBuffer; }
 private:
     int m_realSize = 0;
@@ -42,6 +47,11 @@ namespace BufferChunkHelperVLK {
     template<typename T>
     static const inline std::shared_ptr<IBufferVLK> cast(const std::shared_ptr<IBufferChunk<T>> &chunk) {
         return *std::dynamic_pointer_cast<CBufferChunkVLK<T>>(chunk);
+    }
+
+    template<typename T>
+    static inline std::shared_ptr<CBufferChunkVLK<T>> castToChunk(const std::shared_ptr<IBufferChunk<T>> &chunk) {
+        return std::dynamic_pointer_cast<CBufferChunkVLK<T>>(chunk);
     }
 
     template<typename T>

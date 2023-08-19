@@ -44,8 +44,6 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
 
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl << std::flush;
 
-    
-
     return VK_FALSE;
 }
 
@@ -1070,6 +1068,11 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName
 
 HGBufferVLK GDeviceVLK::createUniformBuffer(size_t initialSize) {
     auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize, uniformBufferOffsetAlign);
+    return h_uniformBuffer;
+}
+
+HGBufferVLK GDeviceVLK::createSSBOBuffer(size_t initialSize, int recordSize) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, initialSize, recordSize);
     return h_uniformBuffer;
 }
 

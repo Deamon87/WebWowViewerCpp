@@ -9,8 +9,10 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <sstream>
 #include "fileHelpers.h"
 #include "webGLSLCompiler.h"
+#include "../../../src/include/string_utils.h"
 
 constexpr const int MAX_SHADER_DESC_SETS = 8;
 
@@ -50,6 +52,11 @@ struct uboBindingData {
     unsigned int binding;
     unsigned long long size;
 };
+struct ssboBindingData {
+    unsigned int set;
+    unsigned int binding;
+    unsigned long long size;
+};
 
 struct imageBindingData {
     unsigned int set;
@@ -66,6 +73,7 @@ struct bindingAmountData {
 struct shaderMetaData {
     ShaderStage stage;
     std::vector<uboBindingData> uboBindings;
+    std::vector<ssboBindingData> ssboBindingData;
     std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
     std::vector<imageBindingData> imageBindings;
@@ -133,7 +141,7 @@ void dumpMembers(spirv_cross::WebGLSLCompiler &glsl, std::vector<fieldDefine> &f
     }
 }
 
-void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
+void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std::string> &shaderFilePaths) {
     std::cout << "#ifndef WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H\n"
                  "#define WOWMAPVIEWERREVIVED_SHADERDEFINITIONS_H\n"
                  "\n"
@@ -177,6 +185,11 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         unsigned int binding;
         unsigned long long size;
     };
+    struct ssboBindingData {
+        unsigned int set;
+        unsigned int binding;
+        unsigned long long size;
+    };
     struct imageBindingData {
         unsigned int set;
         unsigned int binding;
@@ -194,6 +207,8 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         std::vector<uboBindingData> uboBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
+
+        std::vector<ssboBindingData> ssboBindingData;
 
         std::vector<imageBindingData> imageBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
@@ -220,8 +235,16 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         std::vector<uint32_t> spirv_binary = readFile(filePath);
 
-        std::string fileName = basename(filePath);
-        auto tokens = split(fileName, '.');
+
+        std::string fileName = startsWith(filePath, basePath) ?
+                               filePath.substr(basePath.size()+1, filePath.size()-basePath.size()) :
+                               basename(filePath);
+
+        std::string shaderName = basename(filePath);
+        auto tokens = split(shaderName, '.');
+        shaderName = tokens[0];
+
+
 
         spirv_cross::WebGLSLCompiler glsl(std::move(spirv_binary));
 
@@ -234,9 +257,9 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
         //Find or create new record for shader
         {
-            auto it = fieldDefMapPerShaderName.find(tokens[0]);
+            auto it = fieldDefMapPerShaderName.find(shaderName);
             if (it == fieldDefMapPerShaderName.end()) {
-                fieldDefMapPerShaderName[tokens[0]] = {};
+                fieldDefMapPerShaderName[shaderName] = {};
             }
         }
 
@@ -246,7 +269,7 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                 shaderMetaInfo[fileName] = {};
             }
         }
-        auto &perSetMap = fieldDefMapPerShaderName.at(tokens[0]);
+        auto &perSetMap = fieldDefMapPerShaderName.at(shaderName);
         auto &metaInfo = shaderMetaInfo.at(fileName);
 
 
@@ -277,11 +300,11 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         }();
 
         if (glsl.get_entry_points_and_stages()[0].execution_model == spv::ExecutionModel::ExecutionModelVertex) {
-            auto it = attributesPerShaderName.find(tokens[0]);
+            auto it = attributesPerShaderName.find(shaderName);
             if (it == attributesPerShaderName.end()) {
-                attributesPerShaderName[tokens[0]] = {};
+                attributesPerShaderName[shaderName] = {};
             }
-            auto &shaderAttributeVector = attributesPerShaderName.at(tokens[0]);
+            auto &shaderAttributeVector = attributesPerShaderName.at(shaderName);
 
 
             auto inputAttributes = glsl.get_shader_resources();
@@ -297,6 +320,9 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                       [](const attributeDefine &a, const attributeDefine &b) -> bool {
                           return a.location < b.location;
                       });
+            shaderAttributeVector.erase(std::unique(shaderAttributeVector.begin(), shaderAttributeVector.end(), [](attributeDefine &a, attributeDefine &b) -> bool {
+                return a.name == b.name && a.location == b.location;
+            }), shaderAttributeVector.end());
         }
 
         // The SPIR-V is now parsed, and we can perform reflection on it.
@@ -315,9 +341,9 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
 
             if (set >= 0) {
                 metaInfo.uboBindingAmountsPerSet[set].start =
-                    std::min<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].start, binding);
+                    std::min<unsigned int>(metaInfo.uboBindingAmountsPerSet[set].start, binding);
                 metaInfo.uboBindingAmountsPerSet[set].end =
-                    std::max<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].end, binding);
+                    std::max<unsigned int>(metaInfo.uboBindingAmountsPerSet[set].end, binding);
             }
 
             if (perSetMap.find(binding) != perSetMap.end()) {
@@ -344,6 +370,44 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                 data.length = data.end - data.start + 1;
             } else {
                 data.start = 0;
+            }
+        }
+
+        //Record data for SSBO
+        for (auto &resource : resources.storage_buffers) {
+            auto ssboType = glsl.get_type(resource.type_id);
+
+            auto typeId_size = glsl.get_declared_struct_size(ssboType);
+
+            unsigned set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
+            unsigned binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
+
+            metaInfo.ssboBindingData.push_back({set, binding, typeId_size});
+
+//            if (set >= 0) {
+//                metaInfo.uboBindingAmountsPerSet[set].start =
+//                    std::min<unsigned int>(metaInfo.uboBindingAmountsPerSet[set].start, binding);
+//                metaInfo.uboBindingAmountsPerSet[set].end =
+//                    std::max<unsigned int>(metaInfo.uboBindingAmountsPerSet[set].end, binding);
+//            }
+
+            if (perSetMap.find(binding) != perSetMap.end()) {
+                perSetMap[binding] = {};
+            }
+
+            auto &fieldVectorDef = perSetMap[binding];
+
+            for (int j = 0; j < ssboType.member_types.size(); j++) {
+
+                auto uboParentType = glsl.get_type(ssboType.parent_type);
+                auto memberSize = glsl.get_declared_struct_member_size(uboParentType, j);
+                auto offset = glsl.type_struct_member_offset(uboParentType, j);
+                auto memberName = glsl.get_member_name(ssboType.parent_type, j);
+
+
+                dumpMembers(glsl, fieldVectorDef, ssboType.member_types[j],
+//                            "_" + std::to_string(resource.id) + "_" + memberName, offset, memberSize);
+                            glsl.to_name(resource.id) + "_" + memberName, offset, memberSize);
             }
         }
 
@@ -387,7 +451,14 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
                                                "    enum class Attribute {" << std::endl;
 
         std::cout << "        ";
-        for (auto &attributeInfo : it->second) {
+        auto array = it->second;
+        std::sort(array.begin(), array.end(), [](const attributeDefine &a, const attributeDefine &b) -> bool {
+            return a.location < b.location;
+        });
+        array.erase(std::unique(array.begin(), array.end(), [](attributeDefine &a, attributeDefine &b) -> bool {
+            return a.name == b.name && a.location == b.location;
+        }), array.end());
+        for (auto &attributeInfo : array) {
             std::cout << "" << attributeInfo.name << " = " << attributeInfo.location << ", ";
         }
 
@@ -446,6 +517,13 @@ void dumpShaderUniformOffsets(std::vector<std::string> &shaderFilePaths) {
         std::cout << "      }\n";
         std::cout << "    },\n";
 
+        //Dump SSBO Bindings per shader
+        std::cout << "    {\n";
+        for (auto subIt = it->second.ssboBindingData.begin(); subIt != it->second.ssboBindingData.end(); subIt++) {
+            std::cout << "      {" << subIt->set << "," << subIt->binding << "," << subIt->size << "}," << std::endl;
+        }
+        std::cout << "    },\n";
+        //SSBO Bindings dump end
 
         std::cout << "    {\n";
         for (auto &binding : it->second.imageBindings) {

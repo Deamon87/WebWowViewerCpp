@@ -181,7 +181,7 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Text("Current blp vulkan textures loaded %d", l_blpTexturesVulkanLoaded);
         ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
 
-        if (m_sceneRenderer && false) {
+        if (m_sceneRenderer) {
             auto mapPlan = m_sceneRenderer->getLastCreatedPlan();
             if (mapPlan) {
                 auto &adtArray = mapPlan->adtArray;
@@ -196,6 +196,71 @@ void FrontendUI::showCurrentStatsDialog() {
                 ImGui::Text("Rendered WMO %d", wmoArray.getToDrawn().size());
                 ImGui::Text("Rendered WMO groups %d", wmoGroupArray.getToDraw().size());
                 ImGui::Text("Rendered M2 objects %d", m2Array.getDrawn().size());
+
+
+                auto &cullStageData = mapPlan;
+
+                if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
+                    int m2ObjectsBeforeCullingExterior = 0;
+                    if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                        m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
+                    }
+
+                    int wmoGroupsInExterior = 0;
+                    if (cullStageData->viewsHolder.getExterior() != nullptr) {
+                        wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
+                    }
+
+                    int m2ObjectsDrawn = cullStageData != nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
+                    int wmoObjectsBeforeCull =
+                        cullStageData != nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
+
+                    ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
+                    ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
+                    ImGui::Text("Interiors (aka group WMOs): %s",
+                                std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
+                    ImGui::Text("M2 Objects Before Culling in Exterior: %s",
+                                std::to_string(m2ObjectsBeforeCullingExterior).c_str());
+                    ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
+
+                    ImGui::Separator();
+                }
+
+                if (ImGui::CollapsingHeader("Current fog params")) {
+                    if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr) {
+                        ImGui::Text("Fog end: %.3f", cullStageData->frameDependentData->FogEnd);
+                        ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDependentData->FogScaler);
+                        ImGui::Text("Fog Density: %.3f", cullStageData->frameDependentData->FogDensity);
+                        ImGui::Text("Fog Height: %.3f", cullStageData->frameDependentData->FogHeight);
+                        ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDependentData->FogHeightScaler);
+                        ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDependentData->FogHeightDensity);
+                        ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDependentData->SunFogAngle);
+                        ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
+                                    cullStageData->frameDependentData->FogColor.x,
+                                    cullStageData->frameDependentData->FogColor.y,
+                                    cullStageData->frameDependentData->FogColor.z);
+                        ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
+                                    cullStageData->frameDependentData->EndFogColor.x,
+                                    cullStageData->frameDependentData->EndFogColor.y,
+                                    cullStageData->frameDependentData->EndFogColor.z);
+                        ImGui::Text("End Fog Color Distance: %.3f",
+                                    cullStageData->frameDependentData->EndFogColorDistance);
+                        ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
+                                    cullStageData->frameDependentData->SunFogColor.x,
+                                    cullStageData->frameDependentData->SunFogColor.y,
+                                    cullStageData->frameDependentData->SunFogColor.z);
+                        ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDependentData->SunFogStrength);
+                        ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
+                                    cullStageData->frameDependentData->FogHeightColor.x,
+                                    cullStageData->frameDependentData->FogHeightColor.y,
+                                    cullStageData->frameDependentData->FogHeightColor.z);
+                        ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
+                                    cullStageData->frameDependentData->FogHeightCoefficients.x,
+                                    cullStageData->frameDependentData->FogHeightCoefficients.y,
+                                    cullStageData->frameDependentData->FogHeightCoefficients.z);
+                        ImGui::Separator();
+                    }
+                }
             }
         }
 
@@ -251,65 +316,7 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Separator();
         }
 
-//        auto &cullStageData = m_cullstages[currentFrame];
-//
-//        if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
-//            int m2ObjectsBeforeCullingExterior = 0;
-//            if (cullStageData->viewsHolder.getExterior() != nullptr) {
-//                m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
-//            }
-//
-//            int wmoGroupsInExterior = 0;
-//            if (cullStageData->viewsHolder.getExterior() != nullptr) {
-//                wmoGroupsInExterior = cullStageData->viewsHolder.getExterior()->wmoGroupArray.getToDraw().size();
-//            }
-//
-//            int m2ObjectsDrawn = cullStageData!= nullptr ? cullStageData->m2Array.getDrawn().size() : 0;
-//            int wmoObjectsBeforeCull = cullStageData!= nullptr ? cullStageData->wmoArray.getCandidates().size() : 0;
-//
-//            ImGui::Text("M2 objects drawn: %s", std::to_string(m2ObjectsDrawn).c_str());
-//            ImGui::Text("WMO Groups in Exterior: %s", std::to_string(wmoGroupsInExterior).c_str());
-//            ImGui::Text("Interiors (aka group WMOs): %s", std::to_string(cullStageData->viewsHolder.getInteriorViews().size()).c_str());
-//            ImGui::Text("M2 Objects Before Culling in Exterior: %s", std::to_string(m2ObjectsBeforeCullingExterior).c_str());
-//            ImGui::Text("WMO objects before culling: %s", std::to_string(wmoObjectsBeforeCull).c_str());
-//
-//            ImGui::Separator();
-//        }
-//
-//        if (ImGui::CollapsingHeader("Current fog params")) {
-//            if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr) {
-//                ImGui::Text("Fog end: %.3f", cullStageData->frameDependentData->FogEnd);
-//                ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDependentData->FogScaler);
-//                ImGui::Text("Fog Density: %.3f", cullStageData->frameDependentData->FogDensity);
-//                ImGui::Text("Fog Height: %.3f", cullStageData->frameDependentData->FogHeight);
-//                ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDependentData->FogHeightScaler);
-//                ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDependentData->FogHeightDensity);
-//                ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDependentData->SunFogAngle);
-//                ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
-//                            cullStageData->frameDependentData->FogColor.x,
-//                            cullStageData->frameDependentData->FogColor.y,
-//                            cullStageData->frameDependentData->FogColor.z);
-//                ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
-//                            cullStageData->frameDependentData->EndFogColor.x,
-//                            cullStageData->frameDependentData->EndFogColor.y,
-//                            cullStageData->frameDependentData->EndFogColor.z);
-//                ImGui::Text("End Fog Color Distance: %.3f", cullStageData->frameDependentData->EndFogColorDistance);
-//                ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
-//                            cullStageData->frameDependentData->SunFogColor.x,
-//                            cullStageData->frameDependentData->SunFogColor.y,
-//                            cullStageData->frameDependentData->SunFogColor.z);
-//                ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDependentData->SunFogStrength);
-//                ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
-//                            cullStageData->frameDependentData->FogHeightColor.x,
-//                            cullStageData->frameDependentData->FogHeightColor.y,
-//                            cullStageData->frameDependentData->FogHeightColor.z);
-//                ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
-//                            cullStageData->frameDependentData->FogHeightCoefficients.x,
-//                            cullStageData->frameDependentData->FogHeightCoefficients.y,
-//                            cullStageData->frameDependentData->FogHeightCoefficients.z);
-//                ImGui::Separator();
-//            }
-//        }
+
 //        if (ImGui::CollapsingHeader("Current light params")) {
 //            if (cullStageData->frameDependentData != nullptr) {
 //                ImGui::Text("Glow: %.3f", cullStageData->frameDependentData->currentGlow);

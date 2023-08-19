@@ -55,7 +55,6 @@ vec3 calcLight(
     const in vec3 accumLight, const in vec3 precomputedLight, const in vec3 specular,
     const in vec3 emissive) {
 
-    vec3 localDiffuse = accumLight;
     vec3 result = matDiffuse;
     if (applyLight) {
         vec3 currColor = vec3(0.0, 0.0, 0.0);
@@ -84,7 +83,7 @@ vec3 calcLight(
 
 
             lDiffuse = (sceneParams.extLight.uExteriorDirectColor.xyz * nDotL);
-            currColor = mix(groundColor, skyColor, vec3(nDotL));
+            currColor = mix(groundColor, skyColor, (0.5f + vec3(0.5f * nDotL)));
         }
         if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0) {
             float nDotL = clamp(dot(normalizedN, -(sceneParams.uInteriorSunDir.xyz)), 0.0, 1.0);
@@ -101,7 +100,7 @@ vec3 calcLight(
         }
 
         vec3 gammaDiffTerm = matDiffuse * (currColor + lDiffuse);
-        vec3 linearDiffTerm = (matDiffuse * matDiffuse) * localDiffuse;
+        vec3 linearDiffTerm = (matDiffuse * matDiffuse) * accumLight;
 
 //        //Specular term
 //        vec3 specTerm = specular;

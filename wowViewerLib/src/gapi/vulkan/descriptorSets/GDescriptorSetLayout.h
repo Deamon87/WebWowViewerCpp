@@ -31,6 +31,7 @@ public:
 
     const std::unordered_map<int,VkDescriptorSetLayoutBinding>& getShaderLayoutBindings() const {return m_shaderLayoutBindings;} ;
     const std::unordered_map<int, int>& getRequiredUBOSize() const {return m_requiredUBOSize;} ;
+    const std::unordered_map<int, int>& getRequiredSSBOSize() const {return m_requiredUBOSize;} ;
 
     int getTotalUbos() { return m_totalUbos; };
     int getTotalDynUbos() { return m_totalDynUbos; };

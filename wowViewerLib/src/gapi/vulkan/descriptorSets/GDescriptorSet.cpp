@@ -202,7 +202,44 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
 
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
-    throw "unimplemented";
+    auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
+    auto &uboSizes = m_set.m_hDescriptorSetLayout->getRequiredUBOSize();
+
+#if (!defined(NDEBUG))
+    if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+        std::cerr << "descriptor mismatch for UBO" << std::endl;
+        throw std::runtime_error("descriptor mismatch for UBO");
+    }
+    if (uboSizes.find(bindIndex) != uboSizes.end() && buffer->getSize() != uboSizes.at(bindIndex)) {
+        std::cout << "buffers missmatch! for"
+                  << " binding = " << bindIndex
+                  << " expected size " << uboSizes.at(bindIndex)
+                  << ", provided size = " << (buffer->getSize())
+                  << std::endl;
+    }
+#endif
+
+
+    assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::SSBO);
+    m_updateBindPoints[bindIndex] = true;
+
+    VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
+    bufferInfo = {};
+    bufferInfo.buffer = buffer->getGPUBuffer();
+    bufferInfo.offset = buffer->getOffset();
+    bufferInfo.range = buffer->getSize();
+
+    VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
+    writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptor.dstSet = m_set.getDescSet();
+    writeDescriptor.pNext = nullptr;
+    writeDescriptor.dstBinding = bindIndex;
+    writeDescriptor.dstArrayElement = 0;
+    writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    writeDescriptor.descriptorCount = 1;
+    writeDescriptor.pBufferInfo = &bufferInfo;
+    writeDescriptor.pImageInfo = nullptr;
+    writeDescriptor.pTexelBufferView = nullptr;
 
     return *this;
 }

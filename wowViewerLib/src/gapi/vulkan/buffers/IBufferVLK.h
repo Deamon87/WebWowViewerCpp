@@ -15,6 +15,7 @@ public:
 
     virtual VkBuffer getGPUBuffer() = 0;
     virtual size_t getOffset() = 0;
+    virtual size_t getIndex() = 0;
 };
 
 

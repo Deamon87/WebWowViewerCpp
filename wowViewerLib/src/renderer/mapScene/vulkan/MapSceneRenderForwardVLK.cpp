@@ -17,6 +17,7 @@
 #include <future>
 
 static const ShaderConfig forwardShaderConfig = {
+    "forwardRendering",
     {
         {0, {
             {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
@@ -24,6 +25,7 @@ static const ShaderConfig forwardShaderConfig = {
     }
 };
 static const ShaderConfig m2ForwardShaderConfig = {
+    "forwardRendering",
     {
         {0, {
             {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
@@ -612,6 +614,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
 
+    //Needs to be executed only after lock
     m_lastCreatedPlan = framePlan;
 
     //The portal meshes are created here. Need to call doPostLoad before CollectMeshes
