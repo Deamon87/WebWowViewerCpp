@@ -1019,17 +1019,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,3,0},
     },
     {
-      {3,6, "uTexture"},
-      {3,7, "uTexture2"},
-      {3,8, "uTexture3"},
-      {3,9, "uTexture4"},
+      {3,0, "s_Textures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
         {0,0,0},
-        {6,9,4},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},

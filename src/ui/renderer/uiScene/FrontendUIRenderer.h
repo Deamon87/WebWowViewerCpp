@@ -19,11 +19,11 @@ static const std::array<GBufferBinding, 3> imguiBindings = {{
 
 static const PipelineTemplate s_imguiPipelineTemplate = {
     DrawElementMode::TRIANGLES,
-    true,
-    true,
     false,
-    false,
+    true,
     EGxBlendEnum::GxBlend_Alpha,
+    false,
+    true,
     0xFF
 };
 

@@ -9,7 +9,20 @@
 #include "../context/vulkan_context.h"
 
 //Per DescSet -> per binding point
-typedef std::unordered_map<int,std::unordered_map<int, VkDescriptorType>> DescTypeOverride;
+struct DescTypeConfig {
+    VkDescriptorType type;
+    bool isBindless = false;
+    int descriptorCount = 1;
+
+    bool operator==(const DescTypeConfig &other) const {
+        return
+            (type == other.type) &&
+            (isBindless == other.isBindless) &&
+            (descriptorCount == other.descriptorCount);
+    };
+};
+
+typedef std::unordered_map<int,std::unordered_map<int, DescTypeConfig>> DescTypeOverride;
 
 struct ShaderConfig {
     std::string shaderFolder;

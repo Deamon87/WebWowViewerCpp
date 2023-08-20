@@ -11,13 +11,24 @@
 struct PipelineTemplate {
     DrawElementMode element;
 
-    bool triCCW = true; //counter-clockwise
-    bool depthWrite = true;
-    bool depthCulling = true;
     bool backFaceCulling = true;
+    bool triCCW = true; //counter-clockwise
     EGxBlendEnum blendMode;
+    bool depthCulling = true;
+    bool depthWrite = true;
 
     uint8_t colorMask = 0xFF;
+
+    bool operator==(const PipelineTemplate &other) const {
+        return
+            (element == other.element) &&
+            (backFaceCulling == other.backFaceCulling) &&
+            (triCCW == other.triCCW) &&
+            (blendMode == other.blendMode) &&
+            (depthCulling == other.depthCulling) &&
+            (depthWrite == other.depthWrite) &&
+            (colorMask == other.colorMask);
+    };
 };
 
 

@@ -6,9 +6,10 @@
 #include <array>
 #include "GDescriptorPoolVLK.h"
 
-GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device) {
+GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless) : m_device(device) {
     uniformsAvailable = 4*4096;
-    dynUniformsAvailable = 4*4096;
+    dynUniformsAvailable = 4*1024;
+    ssboAvailable = 4*1024;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096 * 4;
 
@@ -19,6 +20,8 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device)
     poolSizes[1].descriptorCount = static_cast<uint32_t>(imageAvailable);
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     poolSizes[2].descriptorCount = static_cast<uint32_t>(dynUniformsAvailable);
+    poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    poolSizes[3].descriptorCount = static_cast<uint32_t>(ssboAvailable);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -27,6 +30,8 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device) : m_device(device)
     poolInfo.maxSets = setsAvailable;
     poolInfo.pNext = nullptr;
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT ;
+    if (isBindless)
+        poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT_EXT;
 
     if (vkCreateDescriptorPool(m_device.getVkDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
@@ -41,6 +46,7 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
 
     constexpr int descSetCount = 1;
     std::array<VkDescriptorSetLayout, descSetCount> descLayouts = {hDescriptorSetLayout->getSetLayout()};
+
     VkDescriptorSetAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
     allocInfo.pNext = NULL;
@@ -50,6 +56,14 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
     //pSetLayouts must be a valid pointer to an array of __descriptorSetCount__ valid VkDescriptorSetLayout handles
     allocInfo.pSetLayouts = descLayouts.data();
 
+    VkDescriptorSetVariableDescriptorCountAllocateInfoEXT count_info{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO_EXT};
+    auto const &descSizes = hDescriptorSetLayout->getBindlessDescSizes();
+    bool isBindless = !descSizes.empty();
+    if (isBindless) {
+        count_info.descriptorSetCount = descSizes.size();
+        count_info.pDescriptorCounts  = descSizes.data();
+        allocInfo.pNext = &count_info;
+    }
 
     VkDescriptorSet descriptorSet;
 

@@ -184,13 +184,21 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
+    uint32_t apiVersion = VK_API_VERSION_1_0;
+    if (vkEnumerateInstanceVersion != nullptr) {
+
+        vkEnumerateInstanceVersion(&apiVersion);
+    }
+
+    if (apiVersion > VK_API_VERSION_1_2) apiVersion = VK_API_VERSION_1_2;
+
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.pApplicationName = "WoW Map Viewer";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.pEngineName = "No Engine";
+    appInfo.pEngineName = "CustomMadeEngine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-    appInfo.apiVersion = VK_API_VERSION_1_0;
+    appInfo.apiVersion = apiVersion;
 
     VkInstanceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -616,6 +624,21 @@ void GDeviceVLK::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
+    VkPhysicalDeviceDescriptorIndexingFeatures indexing_features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT, nullptr };
+    bool bindless_supported = false;
+    bool hasDeviceFeatures2 = vkGetPhysicalDeviceFeatures2 != nullptr;
+    if (hasDeviceFeatures2) {
+        VkPhysicalDeviceFeatures2 device_features{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexing_features};
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &device_features);
+
+        bindless_supported = indexing_features.shaderSampledImageArrayNonUniformIndexing  &&
+            indexing_features.runtimeDescriptorArray &&
+            indexing_features.descriptorBindingVariableDescriptorCount &&
+            indexing_features.descriptorBindingPartiallyBound ;
+    }
+
+
+
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = true;
 
@@ -637,6 +660,19 @@ void GDeviceVLK::createLogicalDevice() {
         createInfo.ppEnabledLayerNames = validationLayers.data();
     } else {
         createInfo.enabledLayerCount = 0;
+    }
+
+    VkPhysicalDeviceFeatures2 physical_features2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+    if ( bindless_supported ) {
+        // This should be already set to VK_TRUE, as we queried before.
+        indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
+        indexing_features.runtimeDescriptorArray = VK_TRUE;
+
+        vkGetPhysicalDeviceFeatures2( physicalDevice, &physical_features2 );
+        physical_features2.pNext = &indexing_features;
+
+
+        createInfo.pNext = &physical_features2;
     }
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
@@ -1289,9 +1325,12 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
 
 VkDescriptorSet
 GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) {
+    bool isBindlessDS = hDescriptorSetLayout->getIsBindless();
+    auto &dsPools = isBindlessDS ? m_bindlessDescriptorPools : m_descriptorPools;
+
     //1. Try to allocate from existing sets
-    for (int i = m_descriptorPools.size() - 1; i >= 0 ; i--) {
-        desciptorPool = m_descriptorPools[i];
+    for (int i = dsPools.size() - 1; i >= 0 ; i--) {
+        desciptorPool = dsPools[i];
         auto result = desciptorPool->allocate(hDescriptorSetLayout);
         if (result != nullptr) {
             return result;
@@ -1299,9 +1338,9 @@ GDeviceVLK::allocateDescriptorSetPrimitive(const std::shared_ptr<GDescriptorSetL
     }
     //2. Create new descriptor set and allocate from it
     {
-        auto newPool = std::make_shared<GDescriptorPoolVLK>(*this);
+        auto newPool = std::make_shared<GDescriptorPoolVLK>(*this, isBindlessDS);
         desciptorPool = newPool;
-        m_descriptorPools.push_back(newPool);
+        dsPools.push_back(newPool);
 
         return newPool->allocate(hDescriptorSetLayout);
     }

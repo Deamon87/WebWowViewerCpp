@@ -13,7 +13,7 @@ class GDescriptorPoolVLK;
 
 class GDescriptorPoolVLK : public std::enable_shared_from_this<GDescriptorPoolVLK>{
 public:
-    explicit GDescriptorPoolVLK(IDeviceVulkan &device);
+    explicit GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless);
 
     VkDescriptorSet allocate(const std::shared_ptr<GDescriptorSetLayout> &gDescriptorSetLayout);
     void deallocate(const std::shared_ptr<GDescriptorSetLayout> &hDescriptorLayout, VkDescriptorSet descSet);
@@ -24,6 +24,7 @@ private:
 
     int uniformsAvailable = 0;
     int dynUniformsAvailable = 0;
+    int ssboAvailable = 0;
     int imageAvailable = 0;
     int setsAvailable = 0;
 };

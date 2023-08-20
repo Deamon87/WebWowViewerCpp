@@ -11,6 +11,7 @@
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h"
 #include "../materials/IMaterialStructs.h"
 #include "passes/FFXGlowPassVLK.h"
+#include "../../../gapi/vulkan/materials/ISimpleMaterialVLK.h"
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
 public:
@@ -97,6 +98,22 @@ public:
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
 private:
+    std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
+
+    struct PipelineTemplateHasher {
+        std::size_t operator()(const PipelineTemplate& k) const {
+            using std::hash;
+            return (hash<bool >{}(k.backFaceCulling) << 2) ^
+                   (hash<bool >{}(k.triCCW) << 4) ^
+                   (hash<bool >{}(k.depthCulling) << 8) ^
+                   (hash<bool >{}(k.depthWrite) << 10) ^
+                   (hash<EGxBlendEnum>{}(k.blendMode) << 14) ^
+                   (hash<DrawElementMode>{}(k.element) << 16) ^
+                   (hash<uint8_t>{}(k.colorMask) << 18);
+        };
+    };
+    std::unordered_map<PipelineTemplate, std::weak_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
+private:
     HGDeviceVLK m_device;
 
     int m_width = 640;
@@ -142,6 +159,9 @@ private:
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
 
+    std::shared_ptr<GDescriptorSet> m2TextureDS = nullptr;
+    std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
+    std::shared_ptr<GDescriptorSet> m2BufferTwoDS = nullptr;
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;

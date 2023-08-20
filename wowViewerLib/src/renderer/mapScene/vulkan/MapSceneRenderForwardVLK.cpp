@@ -20,7 +20,7 @@ static const ShaderConfig forwardShaderConfig = {
     "forwardRendering",
     {
         {0, {
-            {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
         }}
     }
 };
@@ -28,10 +28,10 @@ static const ShaderConfig m2ForwardShaderConfig = {
     "forwardRendering",
     {
         {0, {
-            {0, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
         }},
         {1, {
-            {1, VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}
+            {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
         }}
 }};
 

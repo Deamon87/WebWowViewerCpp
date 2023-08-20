@@ -32,7 +32,7 @@ public:
     virtual VkDevice getVkDevice() = 0;
     virtual void addDeallocationRecord(std::function<void()> callback) = 0;
     virtual VkDescriptorSet allocateDescriptorSetPrimitive(
-        const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) = 0;
+        const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &out_desciptorPool) = 0;
 
     virtual VmaAllocator getVMAAllocator() = 0;
     virtual VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) = 0;

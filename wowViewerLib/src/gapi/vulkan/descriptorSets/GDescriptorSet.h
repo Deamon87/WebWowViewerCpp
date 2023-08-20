@@ -55,7 +55,7 @@ public:
         SetUpdateHelper& ssbo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer);
 
         //TODO: add version of this array texture case (aka bindless)
-        SetUpdateHelper& texture(int bindIndex, const HGSamplableTexture &textureVlk);
+        SetUpdateHelper& texture(int bindIndex, const HGSamplableTexture &textureVlk, int index = 0);
         void cancelUpdate();
 
         template <typename T>

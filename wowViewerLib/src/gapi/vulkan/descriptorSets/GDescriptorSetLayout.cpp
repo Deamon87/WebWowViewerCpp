@@ -13,6 +13,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                                            const DescTypeOverride &typeOverrides) : m_device(device) {
     //Create Layout
     auto &shaderLayoutBindings = m_shaderLayoutBindings;
+    std::unordered_set<int> bindlessBindPoints;
 
     for (const auto p_metaData : metaDatas) {
         auto const &metaData = *p_metaData;
@@ -40,9 +41,9 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                 if (typeOverrides.find(uboBinding.set) != typeOverrides.end()) {
                     auto &setTypeOverrides = typeOverrides.at(uboBinding.set);
                     if (setTypeOverrides.find(uboBinding.binding) != setTypeOverrides.end()) {
-                        auto overrideType = setTypeOverrides.at(uboBinding.binding);
-                        assert(overrideType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
-                        uniformType = overrideType;
+                        auto const &overrideStruct = setTypeOverrides.at(uboBinding.binding);
+                        assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
+                        uniformType = overrideStruct.type;
                     }
                 }
             }
@@ -103,8 +104,23 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                 imageLayoutBinding.pImmutableSamplers = nullptr;
                 imageLayoutBinding.stageFlags = vkStageFlag;
 
+                {
+                    if (typeOverrides.find(imageBinding.set) != typeOverrides.end()) {
+                        auto &setTypeOverrides = typeOverrides.at(imageBinding.set);
+                        if (setTypeOverrides.find(imageBinding.binding) != setTypeOverrides.end()) {
+                            auto const &overrideStruct = setTypeOverrides.at(imageBinding.binding);
+                            assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                            if (overrideStruct.isBindless) {
+                                m_isBindless = true;
+                                imageLayoutBinding.descriptorCount = overrideStruct.descriptorCount;
+                                bindlessBindPoints.insert(imageBinding.binding);
+                            }
+                        }
+                    }
+                }
+
                 shaderLayoutBindings.insert({imageBinding.binding, imageLayoutBinding});
-                m_totalImages++;
+                m_totalImages += imageLayoutBinding.descriptorCount;
 
                 m_requiredBindPoints[imageBinding.binding] = true;
             }
@@ -113,13 +129,42 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
 
     std::vector<VkDescriptorSetLayoutBinding> layouts(shaderLayoutBindings.size());
     std::transform(shaderLayoutBindings.begin(), shaderLayoutBindings.end(), layouts.begin(), [](auto &pair){return pair.second;});
+    std::sort(layouts.begin(), layouts.end(), [](VkDescriptorSetLayoutBinding &a, VkDescriptorSetLayoutBinding &b) -> bool {
+        return a.binding < b.binding;
+    });
 
+    VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flags{};
+    binding_flags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
+    std::vector<VkDescriptorBindingFlags> flags;
+
+    if (m_isBindless) {
+        m_bindlessDescSizes.resize(layouts.size());
+        flags.resize(layouts.size());
+        binding_flags.bindingCount = layouts.size();
+        binding_flags.pBindingFlags = flags.data();
+
+        for (int i = 0; i < layouts.size(); i++) {
+            auto const &layout = layouts[i];
+            if (bindlessBindPoints.find(layout.binding) != bindlessBindPoints.end()) {
+                m_bindlessDescSizes[i] = layout.descriptorCount;
+                flags[i] = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+            } else {
+                m_bindlessDescSizes[i] = 0;
+                flags[i] = 0;
+            }
+        }
+    }
 
     //Create VK descriptor layout
     VkDescriptorSetLayoutCreateInfo layoutInfo = {};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     layoutInfo.bindingCount = layouts.size();
     layoutInfo.pBindings = (!layouts.empty()) ? layouts.data() : nullptr;
+    layoutInfo.pNext = nullptr;
+    if (m_isBindless) {
+        layoutInfo.flags = VK_DESCRIPTOR_SET_LAYOUT_CREATE_UPDATE_AFTER_BIND_POOL_BIT_EXT;
+        layoutInfo.pNext = &binding_flags;
+    }
 
     if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");

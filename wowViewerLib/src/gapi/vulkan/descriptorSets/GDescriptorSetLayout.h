@@ -31,21 +31,28 @@ public:
 
     const std::unordered_map<int,VkDescriptorSetLayoutBinding>& getShaderLayoutBindings() const {return m_shaderLayoutBindings;} ;
     const std::unordered_map<int, int>& getRequiredUBOSize() const {return m_requiredUBOSize;} ;
-    const std::unordered_map<int, int>& getRequiredSSBOSize() const {return m_requiredUBOSize;} ;
+    const std::unordered_map<int, int>& getRequiredSSBOSize() const {return m_requiredSSBOSize;} ;
+    const std::vector<uint32_t >& getBindlessDescSizes() const {return m_bindlessDescSizes;} ;
 
     int getTotalUbos() { return m_totalUbos; };
     int getTotalDynUbos() { return m_totalDynUbos; };
     int getTotalImages() { return m_totalImages; };
+    bool getIsBindless() { return m_isBindless; };
     std::bitset<MAX_BINDPOINT_NUMBER> getRequiredBindPoints() {return m_requiredBindPoints;};
 private:
     std::unordered_map<int,VkDescriptorSetLayoutBinding> m_shaderLayoutBindings;
     std::unordered_map<int, int> m_requiredUBOSize;
+    std::unordered_map<int, int> m_requiredSSBOSize;
+
+    std::vector<uint32_t> m_bindlessDescSizes;
 
     std::bitset<MAX_BINDPOINT_NUMBER> m_requiredBindPoints = 0;
     VkDescriptorSetLayout m_descriptorSetLayout;
     int m_totalImages = 0;
     int m_totalUbos = 0;
     int m_totalDynUbos = 0;
+
+    bool m_isBindless = false;
 
     std::shared_ptr<IDeviceVulkan> m_device;
 };

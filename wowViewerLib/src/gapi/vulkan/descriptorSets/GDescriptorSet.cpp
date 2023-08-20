@@ -11,6 +11,7 @@
 GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout)
     : m_device(device), m_hDescriptorSetLayout(hDescriptorSetLayout) {
 
+    //Gets DS and gets pool it was allocated from into m_parentPool
     m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
     assert(m_descriptorSet != nullptr);
 }
@@ -67,7 +68,7 @@ void GDescriptorSet::getDynamicOffsets(std::array<uint32_t,16> &dynamicOffsets, 
 // -------------------------------------
 
 GDescriptorSet::SetUpdateHelper &
-GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture &samplableTextureVlk) {
+GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture &samplableTextureVlk, int index) {
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
 
 #if (!defined(NDEBUG))
@@ -77,7 +78,7 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
     }
 #endif
 
-    auto textureVlk = samplableTextureVlk!=nullptr ? std::dynamic_pointer_cast<GTextureVLK>(samplableTextureVlk->getTexture()) : nullptr;
+    auto textureVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureVLK>(samplableTextureVlk->getTexture()) : nullptr;
     auto samplerVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureSamplerVLK>(samplableTextureVlk->getSampler()) : nullptr;
 
     assignBoundDescriptors(bindIndex, samplableTextureVlk, DescriptorRecord::DescriptorRecordType::Texture);
@@ -102,7 +103,7 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
     writeDescriptor.dstSet = m_set.getDescSet();
     writeDescriptor.pNext = nullptr;
     writeDescriptor.dstBinding = bindIndex;
-    writeDescriptor.dstArrayElement = 0;
+    writeDescriptor.dstArrayElement = index;
     writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     writeDescriptor.descriptorCount = 1;
     writeDescriptor.pBufferInfo = nullptr;

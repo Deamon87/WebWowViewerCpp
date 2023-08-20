@@ -158,7 +158,7 @@ public:
 
     VkDescriptorSet allocateDescriptorSetPrimitive(
         const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout,
-        std::shared_ptr<GDescriptorPoolVLK> &desciptorPool) override;
+        std::shared_ptr<GDescriptorPoolVLK> &out_desciptorPool) override;
 
     std::shared_ptr<GDescriptorSet> createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
 
@@ -233,6 +233,7 @@ protected:
         EGxBlendEnum blendMode;
         bool depthCulling;
         bool depthWrite;
+        uint8_t colorMask;
 
 
         bool operator==(const PipelineCacheRecord &other) const {
@@ -244,7 +245,8 @@ protected:
                 (triCCW == other.triCCW) &&
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite);
+                (depthWrite == other.depthWrite) &&
+                (colorMask == other.colorMask);
         };
     };
     struct PipelineCacheRecordHasher {
@@ -257,7 +259,8 @@ protected:
             (hash<bool >{}(k.depthCulling) << 8) ^
             (hash<bool >{}(k.depthWrite) << 10) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 14) ^
-            (hash<DrawElementMode>{}(k.element) << 16);
+            (hash<DrawElementMode>{}(k.element) << 16) ^
+            (hash<uint8_t>{}(k.colorMask) << 18);
         };
     };
     std::unordered_map<PipelineCacheRecord, std::weak_ptr<GPipelineVLK>, PipelineCacheRecordHasher> loadedPipeLines;
@@ -309,6 +312,7 @@ protected:
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> frameBufSemaphores;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
+    std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_bindlessDescriptorPools;
 
     VmaAllocator vmaAllocator;
 
@@ -355,7 +359,12 @@ protected:
             size_t mapHash = hash<std::string>{}(k.shaderConfig.shaderFolder);
             for (const auto &rec : k.shaderConfig.typeOverrides)
                 for (const auto &rec2 : rec.second)
-                    mapHash ^= hash<int>{}(rec2.second) << 4 ^ hash<int>{}(rec2.first) << 4 ^ hash<int>{}(rec.first) << 4;
+                    mapHash ^=
+                        hash<int>{}(rec2.second.type) << 4 ^
+                        hash<bool>{}(rec2.second.isBindless) << 8 ^
+                        hash<int>{}(rec2.second.descriptorCount) << 10 ^
+                        hash<int>{}(rec2.first) << 12 ^
+                        hash<int>{}(rec.first) << 16;
 
 
             return hash<std::string>{}(k.name) ^ mapHash;

@@ -22,7 +22,6 @@ public:
         return {device, shaderFiles, shaderConfig};
     }
 
-    template<typename T>
     static MaterialBuilderVLK fromMaterial(const std::shared_ptr<IDeviceVulkan> &device,
                                            const std::shared_ptr<ISimpleMaterialVLK> &materialVlk) {
         return {device, materialVlk->getShader(),

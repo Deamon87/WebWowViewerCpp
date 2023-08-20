@@ -1,6 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_nonuniform_qualifier : require
 
 precision highp float;
 precision highp int;
@@ -39,10 +40,8 @@ layout(std430, set=2, binding=8) buffer meshWideBlockVSPS {
     meshWideBlockVSPSBindless meshWides[];
 };
 
-layout(set=3,binding=6) uniform sampler2D uTexture;
-layout(set=3,binding=7) uniform sampler2D uTexture2;
-layout(set=3,binding=8) uniform sampler2D uTexture3;
-layout(set=3,binding=9) uniform sampler2D uTexture4;
+
+layout (set = 3, binding = 0) uniform sampler2D s_Textures[];
 
 void main() {
     /* Animation support */
@@ -142,8 +141,10 @@ void main() {
 
     bool doDiscard = false;
 
+
     calcM2FragMaterial(uPixelShader,
-        uTexture, uTexture2, uTexture3, uTexture4,
+        s_Textures[meshWide.textureIndicies.x], s_Textures[meshWide.textureIndicies.y],
+        s_Textures[meshWide.textureIndicies.z], s_Textures[meshWide.textureIndicies.w],
         texCoord, texCoord2, texCoord3,
         vMeshColorAlpha.rgb, vMeshColorAlpha.a,
         uTexSampleAlpha.rgb,
