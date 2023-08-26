@@ -137,24 +137,23 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
     blockPSVS.extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
     blockPSVS.extLight.uAdtSpecMult = mathfu::vec4(m_config->adtSpecMult, 0, 0, 1.0);
 
-//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
-    float fogEnd = m_config->farPlane;
+    float fogEnd = std::min<float>(std::max<float>(m_config->farPlane, 277.5), m_config->farPlane);
     if (m_config->disableFog || !fdd->FogDataFound) {
         fogEnd = 100000000.0f;
         fdd->FogScaler = 0;
         fdd->FogDensity = 0;
     }
 
-    float fogStart = std::max<float>(m_config->farPlane - 250, 0);
-    fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
-
+    float fogScaler = fdd->FogScaler;
+    if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
+    float fogStart = 300;//std::min<float>(m_config->farPlane, 3000) * fogScaler;
 
     blockPSVS.fogData.densityParams = mathfu::vec4(
         fogStart,
         fogEnd,
-        fdd->FogDensity / 1000,
+        fdd->FogDensity ,
         0);
-    blockPSVS.fogData.heightPlane = mathfu::vec4(0, 0, 0, 0);
+    blockPSVS.fogData.heightPlane = mathfu::vec4(0, 0, 0, 10000);
     blockPSVS.fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor, fdd->FogHeightScaler);
     blockPSVS.fogData.heightDensity_and_endColor = mathfu::vec4(
         fdd->FogHeightDensity,
@@ -164,18 +163,18 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
     );
     blockPSVS.fogData.sunAngle_and_sunColor = mathfu::vec4(
         fdd->SunFogAngle,
-        fdd->SunFogColor.x * fdd->SunFogStrength,
-        fdd->SunFogColor.y * fdd->SunFogStrength,
-        fdd->SunFogColor.z * fdd->SunFogStrength
+        fdd->SunFogColor.x,
+        fdd->SunFogColor.y,
+        fdd->SunFogColor.z
     );
     blockPSVS.fogData.heightColor_and_endFogDistance = mathfu::vec4(
         fdd->FogHeightColor,
         (fdd->EndFogColorDistance > 0) ?
-        fdd->EndFogColorDistance :
-        1000.0f
+            fdd->EndFogColorDistance :
+            1000.0f
     );
     blockPSVS.fogData.sunPercentage = mathfu::vec4(
-        (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f, 0, 0, 0);
+        fdd->SunFogAngle * fdd->SunFogStrength, 0, 0, 0);
 
     sceneWideChunk->saveVersion(0);
 }

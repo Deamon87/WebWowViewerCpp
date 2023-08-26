@@ -934,7 +934,7 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
     }
 
     if (zoneLightFound) {
-        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
+        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult, config->farPlane);
         if (stateForConditions != nullptr) {
             stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId);
         }
@@ -945,7 +945,8 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
                                        cameraVec3.y,
                                        cameraVec3.z,
                                        config->currentTime,
-                                       lightResults
+                                       lightResults,
+                                       config->farPlane
     );
 
 

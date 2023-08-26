@@ -62,12 +62,12 @@ vec4 makeFog(const in PSFog fogData, in vec4 final, in vec3 vertexInViewSpace, i
     float vLength = length(vertexInViewSpace);
     float z = (vLength - bias);
     float expMax = max(0.0, (z - start));
-    float expFog = 1 / (exp((expMax * density)));
-    float expFogHeight = 1 / (exp((expMax * l_heightDensity_and_endColor.x)));
+    float expFog = 1.0 / (exp((expMax * density)));
+    float expFogHeight = 1.0 / (exp((expMax * l_heightDensity_and_endColor.x)));
     float height = (dot(l_heightPlane.xyz, vertexInViewSpace) + l_heightPlane.w);
-    float heightFog = clamp((height * l_color_and_heightRate.w), 0, 1);
+    float heightFog = clamp((height * l_color_and_heightRate.w), 0.0, 1.0);
     float finalFog = mix(expFog, expFogHeight, heightFog);
-    float endFadeFog = clamp((1.42857146 * (1.0 - (vLength / end))), 0, 1);
+    float endFadeFog = clamp((1.42857146 * (1.0 - (vLength / end))), 0.0, 1.0);
 
     float alpha = 1.0;
     if (blendMode == 13) {
@@ -79,13 +79,13 @@ vec4 makeFog(const in PSFog fogData, in vec4 final, in vec3 vertexInViewSpace, i
 
     float end2 = (vLength / l_heightColor_and_endFogDistance.w);
     float end2_cube = (end2 * (end2 * end2));
-    vec3 heightColor = mix(validateFogColor(l_heightColor_and_endFogDistance.xyz, blendMode), endColor, vec3(clamp(end2, 0, 1)));
-    vec3 fogFinal = mix(validateFogColor(l_color_and_heightRate.xyz, blendMode), endColor, vec3(clamp(end2_cube, 0, 1)));
+    vec3 heightColor = mix(validateFogColor(l_heightColor_and_endFogDistance.xyz, blendMode), endColor, vec3(clamp(end2, 0.0, 1.0)));
+    vec3 fogFinal = mix(validateFogColor(l_color_and_heightRate.xyz, blendMode), endColor, vec3(clamp(end2_cube, 0.0, 1.0)));
     fogFinal = mix(fogFinal, heightColor, vec3(heightFog));
 
     float nDotSun = dot(normalize(vertexInViewSpace), sunDirInViewSpace.xyz);
     vec3 sunColor = mix(fogFinal, validateFogColor(fogData.sunAngle_and_sunColor.yzw, blendMode), vec3(fogData.sunPercentage.x));
-    nDotSun = clamp((nDotSun - fogData.sunAngle_and_sunColor.x), 0, 1);
+    nDotSun = clamp((nDotSun - fogData.sunAngle_and_sunColor.x), 0.0, 1.0);
     if ((nDotSun > 0.0))
     {
         nDotSun = ((nDotSun * nDotSun) * nDotSun);

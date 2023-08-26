@@ -185,12 +185,11 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     }
 
     uint32_t apiVersion = VK_API_VERSION_1_0;
-    if (vkEnumerateInstanceVersion != nullptr) {
-
+    if (vkEnumerateInstanceVersion != nullptr)
         vkEnumerateInstanceVersion(&apiVersion);
-    }
 
-    if (apiVersion > VK_API_VERSION_1_2) apiVersion = VK_API_VERSION_1_2;
+    if (apiVersion > VK_API_VERSION_1_2)
+        apiVersion = VK_API_VERSION_1_2;
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;

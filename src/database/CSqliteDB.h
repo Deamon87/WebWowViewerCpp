@@ -21,14 +21,18 @@ public:
     AreaRecord getArea(int areaId) override;
     AreaRecord getWmoArea(int wmoId, int nameId, int groupId) override;
 
-    void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) override;
-    void getLightById(int lightId, int time, LightResult &lightResult) override;
+    void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults, float farClip) override;
+    void getLightById(int lightId, int time, LightResult &lightResult, float farClip) override;
     void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
     void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
     void getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData> &textures);
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override;
 
 private:
+    std::string generateSimpleSelectSQL(const std::string &tableName,
+                                        const std::vector<std::string> &skipColumnNames,
+                                        const std::string &whereClause);
+
     class StatementFieldHolder {
     public:
         StatementFieldHolder(SQLite::Database &database, const std::string &query);
@@ -110,6 +114,20 @@ private:
         return m_hasWdtId;
     }
 
+    std::vector<std::string> getTableFields(SQLite::Database &sqliteDatabase, const std::string &tableName) {
+        std::vector<std::string> result;
+        SQLite::Statement statement(sqliteDatabase, "PRAGMA table_info('"+tableName+"') ");
+        try {
+            while (statement.executeStep()) {
+                result.push_back(statement.getColumn("name").getString());
+            }
+        } catch (...) {
+
+        }
+
+        return result;
+    }
+
     struct InnerLightResult {
         float pos[3];
         float fallbackStart;
@@ -125,8 +143,8 @@ private:
 
     struct InnerLightDataRes {
         int ambientLight;
-        int horizontAmbientColor;
-        int groundAmbientColor;
+        int horizontAmbientColor = 0;
+        int groundAmbientColor = 0;
 
         int directLight;
         int closeRiverColor;
@@ -147,18 +165,26 @@ private:
         float FogHeight;
         float FogHeightScaler;
         float FogHeightDensity;
+        float FogZScalar;
+        float MainFogStartDist;
+        float MainFogEndDist;
         float SunFogAngle;
         int EndFogColor;
         float EndFogColorDistance;
+        float FogStartOffset;
         int SunFogColor;
         float SunFogStrength;
         int FogHeightColor;
+        int EndFogHeightColor;
         float FogHeightCoefficients[4];
+        float MainFogCoefficients[4];
+        float HeightDensityFogCoeff[4];
 
         int time;
     };
 
-    void convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults, std::vector<InnerLightResult> &innerResults);
+    void convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults,
+                                     std::vector<InnerLightResult> &innerResults, float farClip);
 
     void
     addOnlyOne(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &currLdRes,

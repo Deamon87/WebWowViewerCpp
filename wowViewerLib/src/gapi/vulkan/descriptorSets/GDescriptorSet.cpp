@@ -20,15 +20,17 @@ GDescriptorSet::~GDescriptorSet() {
 };
 
 GDescriptorSet::SetUpdateHelper GDescriptorSet::beginUpdate() {
-    if (!m_firstUpdate) {
-        //In this implementation of descriptor set, the descriptor set is getting free'd on update
-        //and new one is created
-        
-        //This deallocate already have deallocate queue queue submission inside
-        m_parentPool->deallocate(m_hDescriptorSetLayout, m_descriptorSet);
-        
-        m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
-        assert(m_descriptorSet != nullptr);
+    if (!m_hDescriptorSetLayout->getIsBindless()) {
+        if (!m_firstUpdate) {
+            //For normal (non-bindless) implementation of descriptor set, the descriptor set is getting free'd on update
+            //and new one is created
+
+            //This deallocate already have deallocate queue queue submission inside
+            m_parentPool->deallocate(m_hDescriptorSetLayout, m_descriptorSet);
+
+            m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
+            assert(m_descriptorSet != nullptr);
+        }
     }
     return SetUpdateHelper(*this, boundDescriptors, m_device->getDescriptorSetUpdater());
 }
@@ -262,35 +264,36 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     }
 
     //FOR DEBUG AND STABILITY
+    if (!m_set.m_hDescriptorSetLayout->getIsBindless()) {
+        //Fill the rest of Descriptor with already bound values
+        //This is needed, cause In this implementation of descriptor set, the descriptor set is getting free'd on update
+        //and new one is created
+        for (int bindPoint = 0; bindPoint < m_updateBindPoints.size(); bindPoint++) {
+            if (m_updateBindPoints[bindPoint] || m_boundDescriptors[bindPoint] == nullptr) continue;
 
-    //Fill the rest of Descriptor with already bound values
-    //This is needed, cause In this implementation of descriptor set, the descriptor set is getting free'd on update
-    //and new one is created
-    for (int bindPoint = 0; bindPoint < m_updateBindPoints.size(); bindPoint++) {
-        if(m_updateBindPoints[bindPoint] || m_boundDescriptors[bindPoint] == nullptr) continue;
-
-        if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
-            ubo(bindPoint, m_boundDescriptors[bindPoint]->buffer);
-        } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
-            ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint]->buffer);
-        } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
-            texture(bindPoint, m_boundDescriptors[bindPoint]->texture);
-        }
-    }
-
-    auto noSetBitSet =
-        m_set.getDescSetLayout()->getRequiredBindPoints() & (~m_updateBindPoints);
-
-    if (!noSetBitSet.none()) {
-        std::string notSetBits;
-        for (int i = 0; i < noSetBitSet.size(); i++) {
-            if(noSetBitSet[i]) {
-                notSetBits += " " + std::to_string(i);
+            if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
+                ubo(bindPoint, m_boundDescriptors[bindPoint]->buffer);
+            } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
+                ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint]->buffer);
+            } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
+                texture(bindPoint, m_boundDescriptors[bindPoint]->texture);
             }
         }
 
-        std::cerr << "required descriptors " << notSetBits << " were not set during update" << std::endl;
-        throw std::runtime_error("required descriptors were not set");
+        auto noSetBitSet =
+            m_set.getDescSetLayout()->getRequiredBindPoints() & (~m_updateBindPoints);
+
+        if (!noSetBitSet.none()) {
+            std::string notSetBits;
+            for (int i = 0; i < noSetBitSet.size(); i++) {
+                if (noSetBitSet[i]) {
+                    notSetBits += " " + std::to_string(i);
+                }
+            }
+
+            std::cerr << "required descriptors " << notSetBits << " were not set during update" << std::endl;
+            throw std::runtime_error("required descriptors were not set");
+        }
     }
 
     std::sort(dynamicBufferIndexes.begin(), dynamicBufferIndexes.end());

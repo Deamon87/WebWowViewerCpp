@@ -147,7 +147,9 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
             auto const &layout = layouts[i];
             if (bindlessBindPoints.find(layout.binding) != bindlessBindPoints.end()) {
                 m_bindlessDescSizes[i] = layout.descriptorCount;
-                flags[i] = VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT | VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+                flags[i] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
+                    VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT |
+                    VK_DESCRIPTOR_BINDING_UPDATE_UNUSED_WHILE_PENDING_BIT ;
             } else {
                 m_bindlessDescSizes[i] = 0;
                 flags[i] = 0;
