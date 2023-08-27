@@ -162,7 +162,8 @@ void main() {
     vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult.x;
     finalColor.rgb += specTerm;
 
-    finalColor = makeFog(fogData, finalColor, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
+    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz,
+        vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
 
     finalColor.a = 1.0;
     outColor = finalColor;

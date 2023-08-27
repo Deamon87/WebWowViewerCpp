@@ -764,13 +764,21 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         float FogHeightScaler = 0;
         float FogHeightDensity = 0;
         float SunFogAngle = 0;
-
-        mathfu::vec3 EndFogColor = {0, 0, 0};
+        mathfu::vec3 EndFogColor = mathfu::vec3(0,0,0);
         float EndFogColorDistance = 0;
-        mathfu::vec3 SunFogColor = {0, 0, 0};
+        mathfu::vec3 SunFogColor = mathfu::vec3(0,0,0);
         float SunFogStrength = 0;
-        mathfu::vec3 FogHeightColor = {0, 0, 0};
-        mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
+        mathfu::vec3 FogHeightColor = mathfu::vec3(0,0,0);
+        mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
+        mathfu::vec4 MainFogCoefficients = mathfu::vec4(0,0,0,0);
+        mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0,0,0,0);
+        float FogZScalar = 0;
+        float LegacyFogScalar = 0;
+        float MainFogStartDist = 0;
+        float MainFogEndDist = 0;
+        float FogBlendAlpha = 0;
+        mathfu::vec3 HeightEndFogColor = mathfu::vec3(0,0,0);
+        float FogStartOffset = 0;
 
         std::vector<LightResult> combinedResults = {};
         float totalSummator = 0.0;
@@ -875,8 +883,18 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
             SunFogStrength += _light.SunFogStrength * _light.blendCoef;
             FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
-            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
+            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients.data()) * _light.blendCoef;
+            MainFogCoefficients += mathfu::vec4(_light.MainFogCoefficients.data()) * _light.blendCoef;
+            HeightDensityFogCoefficients += mathfu::vec4(_light.HeightDensityFogCoefficients.data()) * _light.blendCoef;
+            FogZScalar += _light.FogZScalar * _light.blendCoef;
+            LegacyFogScalar += _light.LegacyFogScalar * _light.blendCoef;
+            MainFogStartDist += _light.MainFogStartDist * _light.blendCoef;
+            MainFogEndDist += _light.MainFogEndDist * _light.blendCoef;
+            FogBlendAlpha += _light.FogBlendAlpha * _light.blendCoef;
+            HeightEndFogColor += mathfu::vec3(_light.HeightEndFogColor.data()) * _light.blendCoef;
+            FogStartOffset += _light.FogStartOffset * _light.blendCoef;
         }
+        FogBlendAlpha = 1.0f;
 
         //In case of no data -> disable the fog
         {
@@ -903,6 +921,18 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             fdd->FogHeightColor = mathfu::vec3(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
             fdd->FogHeightCoefficients = mathfu::vec4(FogHeightCoefficients[0], FogHeightCoefficients[1],
                                              FogHeightCoefficients[2], FogHeightCoefficients[3]);
+            fdd->MainFogCoefficients = mathfu::vec4(MainFogCoefficients[0], MainFogCoefficients[1],
+                                                    MainFogCoefficients[2], MainFogCoefficients[3]);
+            fdd->HeightDensityFogCoefficients = mathfu::vec4(HeightDensityFogCoefficients[0], HeightDensityFogCoefficients[1],
+                                                             HeightDensityFogCoefficients[2], HeightDensityFogCoefficients[3]);
+
+            fdd->FogZScalar = FogZScalar;
+            fdd->LegacyFogScalar = LegacyFogScalar;
+            fdd->MainFogStartDist = MainFogStartDist;
+            fdd->MainFogEndDist = MainFogEndDist;
+            fdd->FogBlendAlpha = FogBlendAlpha;
+            fdd->HeightEndFogColor = mathfu::vec3(HeightEndFogColor[2], HeightEndFogColor[1], HeightEndFogColor[0]);
+            fdd->FogStartOffset = FogStartOffset;
         }
     }
 

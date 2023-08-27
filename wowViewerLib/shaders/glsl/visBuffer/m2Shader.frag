@@ -191,7 +191,7 @@ void main() {
             )
             .xyz;
 
-        finalColor = makeFog(fogData, finalColor, vPosition_EdgeFade.xyz, sunDir.xyz, meshWide.PixelShader_UnFogged_blendMode.z);
+        finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz, meshWide.PixelShader_UnFogged_blendMode.z);
     }
 
     //Forward rendering without lights

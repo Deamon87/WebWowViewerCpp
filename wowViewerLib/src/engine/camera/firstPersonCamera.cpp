@@ -137,7 +137,6 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     this->lookAt = camera + dir;
 
-//    cameraRotationMat = cameraRotationMat * MathHelper::RotationX(90*M_PI/180);
     lookAtMat = mathfu::mat4(
         right_move.x, up.x, -dir.x, 0.0f,
         right_move.y, up.y, -dir.y, 0.0f,
@@ -148,10 +147,6 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 
     this->camera = mathfu::vec4(camera, 1.0);//(lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
-
-    //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
-
-
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
     interiorSunDir = invTranspViewMat * interiorSunDir;

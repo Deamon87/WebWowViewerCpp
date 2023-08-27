@@ -39,15 +39,24 @@ struct LightResult {
     float FogHeight;
     float FogHeightScaler;
     float FogHeightDensity;
-    float SunFogAngle;
-    float SunAngleBlend = 0.0f;
+    float SunFogAngle; //Blended Separately
+    float SunAngleBlend = 0.0f; //Blended Separately
 
     std::array<float, 3> EndFogColor;
     float EndFogColorDistance;
     std::array<float, 3> SunFogColor;
-    float SunFogStrength;
+    float SunFogStrength; //Blended Separately
     std::array<float, 3> FogHeightColor;
-    float FogHeightCoefficients[4];
+    std::array<float, 4> FogHeightCoefficients;
+    std::array<float, 4> MainFogCoefficients;
+    std::array<float, 4> HeightDensityFogCoefficients;
+    float FogZScalar = 0;
+    float LegacyFogScalar = 0; //calculated separately
+    float MainFogStartDist = 0;
+    float MainFogEndDist = 0;
+    float FogBlendAlpha = 0.0f; //Set manually in map.cpp //TODO BTW
+    std::array<float, 3> HeightEndFogColor;
+    float FogStartOffset = 0;
 
 
     std::string skyBoxName;

@@ -75,7 +75,7 @@ void main() {
     }
 
     //BlendMode is always GxBlend_Alpha
-    finalColor.rgb = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, 2).rgb;
+    finalColor.rgb = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 2).rgb;
 
     outputColor = vec4(finalColor.rgb, 0.7);
 }

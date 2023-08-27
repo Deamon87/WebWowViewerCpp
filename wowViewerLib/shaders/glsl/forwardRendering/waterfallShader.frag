@@ -115,7 +115,7 @@ void main() {
     );
 
     vec3 sunDir = scene.extLight.uExteriorDirectColorDir.xyz;
-    finalColor = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, 0);
+    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 0);
 
 
     outputColor = finalColor;

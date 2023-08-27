@@ -89,7 +89,8 @@ void main() {
         finalOpacity
     );
 
-    finalColor = makeFog(fogData, finalColor, vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
+    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz,
+        vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
     finalColor.a = 1.0;
 
     outputColor = finalColor;

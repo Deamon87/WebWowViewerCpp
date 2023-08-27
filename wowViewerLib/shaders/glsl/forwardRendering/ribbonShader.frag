@@ -46,7 +46,7 @@ void main() {
 
     vec3 sunDir = scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor = makeFog(fogData, finalColor, vPosition.xyz, sunDir.xyz, uPixelShader_BlendMode_TextureTransformIndex.y);
+    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShader_BlendMode_TextureTransformIndex.y);
 
     outputColor = finalColor;
 }

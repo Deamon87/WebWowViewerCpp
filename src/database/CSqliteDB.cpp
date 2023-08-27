@@ -272,6 +272,12 @@ void initWithZeros(std::array<float, 3> &colorF) {
     colorF[1] = 0;
     colorF[2] = 0;
 }
+void initWithZeros(std::array<float, 4> &colorF) {
+    colorF[0] = 0;
+    colorF[1] = 0;
+    colorF[2] = 0;
+    colorF[3] = 0;
+}
 void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
     colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<0>(lastLdRes) *
@@ -410,16 +416,32 @@ void CSqliteDB::addOnlyOne(LightResult &lightResult,
     ::addOnlyOne(lightResult.FogHeight, currLdRes.FogHeight, innerAlpha);
     ::addOnlyOne(lightResult.FogHeightScaler, currLdRes.FogHeightScaler, innerAlpha);
     ::addOnlyOne(lightResult.FogHeightDensity, currLdRes.FogHeightDensity, innerAlpha);
-    ::addOnlyOne(lightResult.SunFogAngle, currLdRes.SunFogAngle, innerAlpha);
+
     ::addOnlyOne(lightResult.EndFogColor, currLdRes.EndFogColor, innerAlpha);
     ::addOnlyOne(lightResult.EndFogColorDistance, currLdRes.EndFogColorDistance, innerAlpha);
     ::addOnlyOne(lightResult.SunFogColor, currLdRes.SunFogColor, innerAlpha);
-    ::addOnlyOne(lightResult.SunFogStrength, currLdRes.SunFogStrength, innerAlpha);
+
     ::addOnlyOne(lightResult.FogHeightColor, currLdRes.FogHeightColor, innerAlpha);
     ::addOnlyOne(lightResult.FogHeightCoefficients[0], currLdRes.FogHeightCoefficients[0], innerAlpha);
     ::addOnlyOne(lightResult.FogHeightCoefficients[1], currLdRes.FogHeightCoefficients[1], innerAlpha);
     ::addOnlyOne(lightResult.FogHeightCoefficients[2], currLdRes.FogHeightCoefficients[2], innerAlpha);
     ::addOnlyOne(lightResult.FogHeightCoefficients[3], currLdRes.FogHeightCoefficients[3], innerAlpha);
+
+    ::addOnlyOne(lightResult.MainFogCoefficients[0], currLdRes.MainFogCoefficients[0], innerAlpha);
+    ::addOnlyOne(lightResult.MainFogCoefficients[1], currLdRes.MainFogCoefficients[1], innerAlpha);
+    ::addOnlyOne(lightResult.MainFogCoefficients[2], currLdRes.MainFogCoefficients[2], innerAlpha);
+    ::addOnlyOne(lightResult.MainFogCoefficients[3], currLdRes.MainFogCoefficients[3], innerAlpha);
+
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[0], currLdRes.HeightDensityFogCoeff[0], innerAlpha);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[1], currLdRes.HeightDensityFogCoeff[1], innerAlpha);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[2], currLdRes.HeightDensityFogCoeff[2], innerAlpha);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[3], currLdRes.HeightDensityFogCoeff[3], innerAlpha);
+
+    ::addOnlyOne(lightResult.FogZScalar, currLdRes.FogZScalar, innerAlpha);
+    ::addOnlyOne(lightResult.MainFogStartDist, currLdRes.MainFogStartDist, innerAlpha);
+    ::addOnlyOne(lightResult.MainFogEndDist, currLdRes.MainFogEndDist, innerAlpha);
+    ::addOnlyOne(lightResult.HeightEndFogColor, currLdRes.EndFogHeightColor, innerAlpha);
+    ::addOnlyOne(lightResult.FogStartOffset, currLdRes.FogStartOffset, innerAlpha);
 }
 
 void CSqliteDB::blendTwoAndAdd(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &lastLdRes,
@@ -488,6 +510,31 @@ void CSqliteDB::blendTwoAndAdd(LightResult &lightResult, const CSqliteDB::InnerL
     ::blendTwoAndAdd(lightResult.FogHeightCoefficients[1], currLdRes.FogHeightCoefficients[1], lastLdRes.FogHeightCoefficients[1], timeAlphaBlend, innerAlpha);
     ::blendTwoAndAdd(lightResult.FogHeightCoefficients[2], currLdRes.FogHeightCoefficients[2], lastLdRes.FogHeightCoefficients[2], timeAlphaBlend, innerAlpha);
     ::blendTwoAndAdd(lightResult.FogHeightCoefficients[3], currLdRes.FogHeightCoefficients[3], lastLdRes.FogHeightCoefficients[3], timeAlphaBlend, innerAlpha);
+
+
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[0], currLdRes.MainFogCoefficients[0], lastLdRes.MainFogCoefficients[0], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[1], currLdRes.MainFogCoefficients[1], lastLdRes.MainFogCoefficients[1], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[2], currLdRes.MainFogCoefficients[2], lastLdRes.MainFogCoefficients[2], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[3], currLdRes.MainFogCoefficients[3], lastLdRes.MainFogCoefficients[3], timeAlphaBlend, innerAlpha);
+
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[0], currLdRes.HeightDensityFogCoeff[0], lastLdRes.HeightDensityFogCoeff[0], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[1], currLdRes.HeightDensityFogCoeff[1], lastLdRes.HeightDensityFogCoeff[1], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[2], currLdRes.HeightDensityFogCoeff[2], lastLdRes.HeightDensityFogCoeff[2], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[3], currLdRes.HeightDensityFogCoeff[3], lastLdRes.HeightDensityFogCoeff[3], timeAlphaBlend, innerAlpha);
+
+    ::blendTwoAndAdd(lightResult.FogZScalar,        currLdRes.FogZScalar,       lastLdRes.FogZScalar, timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.MainFogStartDist,  currLdRes.MainFogStartDist, lastLdRes.MainFogStartDist, timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.MainFogEndDist,    currLdRes.MainFogEndDist,   lastLdRes.MainFogEndDist, timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.HeightEndFogColor, currLdRes.EndFogHeightColor,lastLdRes.EndFogHeightColor, timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.FogStartOffset,    currLdRes.FogStartOffset,   lastLdRes.FogStartOffset, timeAlphaBlend, innerAlpha);
+}
+
+float arr4SqrLength(const std::array<float,4> &arr) {
+    return
+        arr[0] * arr[0] +
+        arr[1] * arr[1] +
+        arr[2] * arr[2] +
+        arr[3] * arr[3];
 }
 
 void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults,
@@ -523,7 +570,10 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         initWithZeros(lightResult.SunFogColor);
         initWithZeros(lightResult.FogHeightColor);
         initWithZeros(lightResult.FogHeightCoefficients);
-        lightResult.FogHeightCoefficients[3] = 0;
+        initWithZeros(lightResult.MainFogCoefficients);
+        initWithZeros(lightResult.HeightDensityFogCoefficients);
+        initWithZeros(lightResult.HeightEndFogColor);
+
 
         lightResult.skyBoxFdid = 0;
         lightResult.lightSkyboxId = 0;
@@ -538,6 +588,12 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         lightResult.SunFogAngle = 0.0;
         lightResult.EndFogColorDistance = 0.0;
         lightResult.SunFogStrength = 0.0;
+        lightResult.FogZScalar = 0.0;
+        lightResult.LegacyFogScalar = 0.0;
+        lightResult.MainFogStartDist = 0.0;
+        lightResult.MainFogEndDist = 0.0;
+        lightResult.FogBlendAlpha = 0.0;
+        lightResult.FogStartOffset = 0.0;
 
 
 
@@ -574,7 +630,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         bool hasSunFogColor = getLightData.getFieldIndex("SunFogColor") >= 0;
         bool hasSunFogStrength = getLightData.getFieldIndex("SunFogStrength") >= 0;
         bool hasFogHeightColor = getLightData.getFieldIndex("FogHeightColor") >= 0;
-        bool hasFogHeightCoefficients = getLightData.getFieldIndex("HeightDensityFogCoeff") >= 0;
+        bool hasFogHeightCoefficients = getLightData.getFieldIndex("FogHeightCoefficients_0") >= 0;
         bool hasFogZScalar = getLightData.getFieldIndex("FogZScalar") >= 0;
         bool hasMainFogStartDist = getLightData.getFieldIndex("MainFogStartDist") >= 0;
         bool hasMainFogEndDist = getLightData.getFieldIndex("MainFogEndDist") >= 0;
@@ -618,7 +674,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             currLdRes.FogHeightDensity = hasFogHeightDensity ? getLightData.getField("FogHeightDensity").getDouble() : 0.0f;
             currLdRes.FogZScalar = hasFogZScalar ? getLightData.getField("FogZScalar").getDouble() : 0.0f;
             currLdRes.MainFogStartDist = hasMainFogStartDist ? getLightData.getField("MainFogStartDist").getDouble() : 0.0f;
-            currLdRes.MainFogStartDist = hasMainFogEndDist ? getLightData.getField("MainFogEndDist").getDouble() : 0.0f;
+            currLdRes.MainFogEndDist = hasMainFogEndDist ? getLightData.getField("MainFogEndDist").getDouble() : 0.0f;
             currLdRes.SunFogAngle = hasSunFogAngle ? getLightData.getField("SunFogAngle").getDouble() : 0.f;
             currLdRes.EndFogColor = hasEndFogColor ? getLightData.getField("EndFogColor").getInt() : 0;
             currLdRes.EndFogColorDistance = hasEndFogColorDistance ? getLightData.getField("EndFogColorDistance").getDouble() : 0;
@@ -635,10 +691,10 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             currLdRes.MainFogCoefficients[1] = hasMainFogCoefficients ? getLightData.getField("MainFogCoefficients_1").getDouble(): 0.0f;
             currLdRes.MainFogCoefficients[2] = hasMainFogCoefficients ? getLightData.getField("MainFogCoefficients_2").getDouble(): 0.0f;
             currLdRes.MainFogCoefficients[3] = hasMainFogCoefficients ? getLightData.getField("MainFogCoefficients_3").getDouble(): 0.0f;
-            currLdRes.HeightDensityFogCoeff[0] = hasFogHeightCoefficients ? getLightData.getField("HeightDensityFogCoeff_0").getDouble() : 0.0f;
-            currLdRes.HeightDensityFogCoeff[1] = hasFogHeightCoefficients ? getLightData.getField("HeightDensityFogCoeff_1").getDouble(): 0.0f;
-            currLdRes.HeightDensityFogCoeff[2] = hasFogHeightCoefficients ? getLightData.getField("HeightDensityFogCoeff_2").getDouble(): 0.0f;
-            currLdRes.HeightDensityFogCoeff[3] = hasFogHeightCoefficients ? getLightData.getField("HeightDensityFogCoeff_3").getDouble(): 0.0f;
+            currLdRes.HeightDensityFogCoeff[0] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_0").getDouble() : 0.0f;
+            currLdRes.HeightDensityFogCoeff[1] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_1").getDouble(): 0.0f;
+            currLdRes.HeightDensityFogCoeff[2] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_2").getDouble(): 0.0f;
+            currLdRes.HeightDensityFogCoeff[3] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_3").getDouble(): 0.0f;
 
             currLdRes.time = getLightData.getField("Time").getInt();
 
@@ -650,7 +706,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                 currLdRes.FogHeightColor = currLdRes.SkyFogColor;
             }
             if (!currLdRes.EndFogHeightColor) {
-                currLdRes.FogHeightColor = currLdRes.EndFogColor;
+                currLdRes.EndFogHeightColor = currLdRes.EndFogColor;
             }
             currLdRes.FogScaler = std::clamp(currLdRes.FogScaler, -1.0f, 1.0f);
             currLdRes.FogEnd = std::max<float>(currLdRes.FogEnd, 10.0f);
@@ -679,7 +735,6 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                 //Blend using time as alpha
                 float timeAlphaBlend = 1.0f - (((float) currLdRes.time - (float) ptime) /
                                                ((float) currLdRes.time - (float) lastLdRes.time));
-
 
                 //Hack for SunFogAngle
                 {
@@ -711,7 +766,6 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                         lightResult.SunFogStrength = currLdRes.SunFogStrength;
                     }
                 }
-
                 if (lastLdRes.time == -1) {
                     addOnlyOne(lightResult, currLdRes, innerAlpha);
                 } else {
@@ -726,6 +780,15 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             addOnlyOne(lightResult, lastLdRes, innerAlpha);
         }
 
+        //Hack for LegacyFogScaler
+        if (
+            arr4SqrLength(lightResult.MainFogCoefficients) > 0.00000011920929f ||
+            arr4SqrLength(lightResult.MainFogCoefficients) > 0.00000011920929f
+            ) {
+            lightResult.LegacyFogScalar = 0.0f;
+        } else {
+            lightResult.LegacyFogScalar = 1.0f;
+        }
 
         lightResults.push_back(lightResult);
 
