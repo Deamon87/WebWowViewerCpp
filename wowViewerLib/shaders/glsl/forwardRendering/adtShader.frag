@@ -26,7 +26,7 @@ layout(set=2, binding=13) uniform sampler2D uLayerHeight3;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
@@ -159,10 +159,10 @@ void main() {
     float specBlend = final.a;
     vec3 halfVec = -(normalize((scene.extLight.uExteriorDirectColorDir.xyz + normalize(vPosition))));
     vec3 lSpecular = ((scene.extLight.uExteriorDirectColor.xyz * pow(max(0.0, dot(halfVec, normalize(vNormal))), 20.0)));
-    vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult.x;
+    vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult_fogCount.x;
     finalColor.rgb += specTerm;
 
-    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz,
+    finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz,
         vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
 
     finalColor.a = 1.0;

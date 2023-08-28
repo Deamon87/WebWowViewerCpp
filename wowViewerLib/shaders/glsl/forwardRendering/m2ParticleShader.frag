@@ -17,7 +17,7 @@ layout(location = 5) in float alphaCutoff;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 //Individual meshes
@@ -104,7 +104,7 @@ void main() {
 //        .xyz;
     vec3 sunDir =scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShaderBlendModev.y);
+    finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShaderBlendModev.y);
 
     outputColor.rgba = finalColor ;
 }

@@ -26,7 +26,7 @@ layout(location = 5) out float vAlphaCutoff;
 
 layout(std140, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 void main() {

@@ -15,7 +15,7 @@ layout(location = 2) in vec2 vTexcoord0;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 layout(std140, set=1, binding=3) uniform textureMatrices {
@@ -46,7 +46,7 @@ void main() {
 
     vec3 sunDir = scene.extLight.uExteriorDirectColorDir.xyz;
 
-    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShader_BlendMode_TextureTransformIndex.y);
+    finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShader_BlendMode_TextureTransformIndex.y);
 
     outputColor = finalColor;
 }

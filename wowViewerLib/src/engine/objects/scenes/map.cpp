@@ -869,32 +869,32 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             }
         }
 
-        for (auto &_light : combinedResults) {
-            FogEnd += _light.FogEnd * _light.blendCoef;
-            FogScaler += _light.FogScaler * _light.blendCoef;
-            FogDensity += _light.FogDensity * _light.blendCoef;
-            FogHeight += _light.FogHeight * _light.blendCoef;
-            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
-            FogHeightDensity += _light.FogHeightDensity * _light.blendCoef;
-            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
-
-            EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
-            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
-            SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
-            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
-            FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
-            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients.data()) * _light.blendCoef;
-            MainFogCoefficients += mathfu::vec4(_light.MainFogCoefficients.data()) * _light.blendCoef;
-            HeightDensityFogCoefficients += mathfu::vec4(_light.HeightDensityFogCoefficients.data()) * _light.blendCoef;
-            FogZScalar += _light.FogZScalar * _light.blendCoef;
-            LegacyFogScalar += _light.LegacyFogScalar * _light.blendCoef;
-            MainFogStartDist += _light.MainFogStartDist * _light.blendCoef;
-            MainFogEndDist += _light.MainFogEndDist * _light.blendCoef;
-            FogBlendAlpha += _light.FogBlendAlpha * _light.blendCoef;
-            HeightEndFogColor += mathfu::vec3(_light.HeightEndFogColor.data()) * _light.blendCoef;
-            FogStartOffset += _light.FogStartOffset * _light.blendCoef;
-        }
-        FogBlendAlpha = 1.0f;
+//        for (auto &_light : combinedResults) {
+//            FogEnd += _light.FogEnd * _light.blendCoef;
+//            FogScaler += _light.FogScaler * _light.blendCoef;
+//            FogDensity += _light.FogDensity * _light.blendCoef;
+//            FogHeight += _light.FogHeight * _light.blendCoef;
+//            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
+//            FogHeightDensity += _light.FogHeightDensity * _light.blendCoef;
+//            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
+//
+//            EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
+//            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
+//            SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
+//            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
+//            FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
+//            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients.data()) * _light.blendCoef;
+//            MainFogCoefficients += mathfu::vec4(_light.MainFogCoefficients.data()) * _light.blendCoef;
+//            HeightDensityFogCoefficients += mathfu::vec4(_light.HeightDensityFogCoefficients.data()) * _light.blendCoef;
+//            FogZScalar += _light.FogZScalar * _light.blendCoef;
+//            LegacyFogScalar += _light.LegacyFogScalar * _light.blendCoef;
+//            MainFogStartDist += _light.MainFogStartDist * _light.blendCoef;
+//            MainFogEndDist += _light.MainFogEndDist * _light.blendCoef;
+//            FogBlendAlpha += _light.FogBlendAlpha * _light.blendCoef;
+//            HeightEndFogColor += mathfu::vec3(_light.HeightEndFogColor.data()) * _light.blendCoef;
+//            FogStartOffset += _light.FogStartOffset * _light.blendCoef;
+//        }
+//        FogBlendAlpha = 1.0f;
 
         //In case of no data -> disable the fog
         {
@@ -902,37 +902,44 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             fdd->FogDataFound = !combinedResults.empty();
 //            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
 //            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
-            fdd->FogEnd = FogEnd;
-            fdd->FogScaler = FogScaler;
-            fdd->FogDensity = FogDensity;
-            fdd->FogHeight = FogHeight;
-            fdd->FogHeightScaler = FogHeightScaler;
-            fdd->FogHeightDensity = FogHeightDensity;
-            fdd->SunFogAngle = SunFogAngle;
-            if (fdd->overrideValuesWithFinalFog) {
-                fdd->FogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
-            } else {
-                fdd->FogColor = fdd->SkyFogColor.xyz();
-            }
-            fdd->EndFogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
-            fdd->EndFogColorDistance = EndFogColorDistance;
-            fdd->SunFogColor = mathfu::vec3(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
-            fdd->SunFogStrength = SunFogStrength;
-            fdd->FogHeightColor = mathfu::vec3(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
-            fdd->FogHeightCoefficients = mathfu::vec4(FogHeightCoefficients[0], FogHeightCoefficients[1],
-                                             FogHeightCoefficients[2], FogHeightCoefficients[3]);
-            fdd->MainFogCoefficients = mathfu::vec4(MainFogCoefficients[0], MainFogCoefficients[1],
-                                                    MainFogCoefficients[2], MainFogCoefficients[3]);
-            fdd->HeightDensityFogCoefficients = mathfu::vec4(HeightDensityFogCoefficients[0], HeightDensityFogCoefficients[1],
-                                                             HeightDensityFogCoefficients[2], HeightDensityFogCoefficients[3]);
+            fdd->EndFogColor = mathfu::vec3(0.0f, 0, 0);
+            for (auto &_light : lightResults) {
+                auto &fogResult = fdd->fogResults.emplace_back();
+                fogResult.FogEnd = _light.FogEnd;
+                fogResult.FogScaler = _light.FogScaler;
+                fogResult.FogDensity = _light.FogDensity;
+                fogResult.FogHeight = _light.FogHeight;
+                fogResult.FogHeightScaler = _light.FogHeightScaler;
+                fogResult.FogHeightDensity = _light.FogHeightDensity;
+                fogResult.SunFogAngle = _light.SunFogAngle;
+                if (fdd->overrideValuesWithFinalFog) {
+                    fogResult.FogColor = mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]);
+                } else {
+                    fogResult.FogColor = mathfu::vec3(_light.SkyFogColor[2], _light.SkyFogColor[1], _light.SkyFogColor[0]);
+                }
+                fogResult.EndFogColor = mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]);
+                fdd->EndFogColor += fogResult.EndFogColor * _light.blendCoef;
+                fogResult.EndFogColorDistance = _light.EndFogColorDistance;
+                fogResult.SunFogColor = mathfu::vec3(_light.SunFogColor[2], _light.SunFogColor[1], _light.SunFogColor[0]);
+                fogResult.SunFogStrength = _light.SunFogStrength;
+                fogResult.FogHeightColor = mathfu::vec3(_light.FogHeightColor[2], _light.FogHeightColor[1], _light.FogHeightColor[0]);
+                fogResult.FogHeightCoefficients = mathfu::vec4(_light.FogHeightCoefficients[0], _light.FogHeightCoefficients[1],
+                                                          _light.FogHeightCoefficients[2], _light.FogHeightCoefficients[3]);
+                fogResult.MainFogCoefficients = mathfu::vec4(_light.MainFogCoefficients[0], _light.MainFogCoefficients[1],
+                                                        _light.MainFogCoefficients[2], _light.MainFogCoefficients[3]);
+                fogResult.HeightDensityFogCoefficients = mathfu::vec4(_light.HeightDensityFogCoefficients[0],
+                                                                 _light.HeightDensityFogCoefficients[1],
+                                                                 _light.HeightDensityFogCoefficients[2],
+                                                                 _light.HeightDensityFogCoefficients[3]);
 
-            fdd->FogZScalar = FogZScalar;
-            fdd->LegacyFogScalar = LegacyFogScalar;
-            fdd->MainFogStartDist = MainFogStartDist;
-            fdd->MainFogEndDist = MainFogEndDist;
-            fdd->FogBlendAlpha = FogBlendAlpha;
-            fdd->HeightEndFogColor = mathfu::vec3(HeightEndFogColor[2], HeightEndFogColor[1], HeightEndFogColor[0]);
-            fdd->FogStartOffset = FogStartOffset;
+                fogResult.FogZScalar = _light.FogZScalar;
+                fogResult.LegacyFogScalar = _light.LegacyFogScalar;
+                fogResult.MainFogStartDist = _light.MainFogStartDist;
+                fogResult.MainFogEndDist = _light.MainFogEndDist;
+                fogResult.FogBlendAlpha = _light.blendCoef;
+                fogResult.HeightEndFogColor = mathfu::vec3(_light.HeightEndFogColor[2], _light.HeightEndFogColor[1], _light.HeightEndFogColor[0]);
+                fogResult.FogStartOffset = _light.FogStartOffset;
+            }
         }
     }
 

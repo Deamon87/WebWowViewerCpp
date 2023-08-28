@@ -26,7 +26,7 @@ layout(location=9) in vec4 vWmoAmbient;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 layout(std140, set=1, binding=4) uniform meshWideBlockPS {
@@ -89,7 +89,7 @@ void main() {
         finalOpacity
     );
 
-    finalColor = makeFog2(fogData, fogData, finalColor, scene.uViewUpSceneTime.xyz,
+    finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz,
         vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
     finalColor.a = 1.0;
 

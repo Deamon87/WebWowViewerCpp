@@ -14,7 +14,7 @@ layout(location=1) in vec2 aTexCoord;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 layout(std140, set=1, binding=1) uniform modelWideBlockVS {

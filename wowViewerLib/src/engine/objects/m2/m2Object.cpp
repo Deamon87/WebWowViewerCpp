@@ -1401,7 +1401,6 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     pipelineTemplate.depthWrite = false;
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = false;
-    pipelineTemplate.triCCW = true;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
@@ -1609,7 +1608,6 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     pipelineTemplate.depthWrite = !(renderFlag->flags & 0x10);
     pipelineTemplate.depthCulling = !(renderFlag->flags & 0x8);
     pipelineTemplate.backFaceCulling = !(renderFlag->flags & 0x4);
-    pipelineTemplate.triCCW = true;
     if (overrideBlend) {
         pipelineTemplate.blendMode = blendMode;
         if (blendMode > EGxBlendEnum::GxBlend_AlphaKey)

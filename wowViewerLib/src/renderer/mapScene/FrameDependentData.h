@@ -35,29 +35,33 @@ struct FrameDependantData {
 //Fog params
     bool FogDataFound = false;
 
-    float FogEnd = 0;
-    float FogScaler = 0;
-    float FogDensity = 0;
-    float FogHeight = 0;
-    float FogHeightScaler = 0;
-    float FogHeightDensity = 0;
-    float SunFogAngle = 0;
-    mathfu::vec3 FogColor = mathfu::vec3(0,0,0);
-    mathfu::vec3 EndFogColor = mathfu::vec3(0,0,0);
-    float EndFogColorDistance = 0;
-    mathfu::vec3 SunFogColor = mathfu::vec3(0,0,0);
-    float SunFogStrength = 0;
-    mathfu::vec3 FogHeightColor = mathfu::vec3(0,0,0);
-    mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
-    mathfu::vec4 MainFogCoefficients = mathfu::vec4(0,0,0,0);
-    mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0,0,0,0);
-    float FogZScalar = 0.00001;
-    float LegacyFogScalar = 0.00001;
-    float MainFogStartDist = 0.00001;
-    float MainFogEndDist = 0.00001;
-    float FogBlendAlpha = 0.00001;
-    mathfu::vec3 HeightEndFogColor = mathfu::vec3(0,0,0);
-    float FogStartOffset = 0.00001;
+    struct FogResult {
+        float FogEnd = 0;
+        float FogScaler = 0;
+        float FogDensity = 0;
+        float FogHeight = 0;
+        float FogHeightScaler = 0;
+        float FogHeightDensity = 0;
+        float SunFogAngle = 0;
+        mathfu::vec3 FogColor = mathfu::vec3(0, 0, 0);
+        mathfu::vec3 EndFogColor = mathfu::vec3(0, 0, 0);
+        float EndFogColorDistance = 0;
+        mathfu::vec3 SunFogColor = mathfu::vec3(0, 0, 0);
+        float SunFogStrength = 0;
+        mathfu::vec3 FogHeightColor = mathfu::vec3(0, 0, 0);
+        mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0, 0, 0, 0);
+        mathfu::vec4 MainFogCoefficients = mathfu::vec4(0, 0, 0, 0);
+        mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0, 0, 0, 0);
+        float FogZScalar = 0.00001;
+        float LegacyFogScalar = 0.00001;
+        float MainFogStartDist = 0.00001;
+        float MainFogEndDist = 0.00001;
+        float FogBlendAlpha = 0.00001;
+        mathfu::vec3 HeightEndFogColor = mathfu::vec3(0, 0, 0);
+        float FogStartOffset = 0.00001;
+    };
+    std::vector<FogResult> fogResults;
+    mathfu::vec3 EndFogColor = mathfu::vec3(0, 0, 0);
 
 //Water params
     bool useMinimapWaterColor;

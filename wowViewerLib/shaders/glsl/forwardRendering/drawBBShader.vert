@@ -13,7 +13,7 @@ layout(location = 0) in vec3 aPosition;
 
 layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
     SceneWideParams scene;
-    PSFog fogData;
+    PSFog fogData[8];
 };
 
 // Whole model

@@ -710,14 +710,11 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             }
             currLdRes.FogScaler = std::clamp(currLdRes.FogScaler, -1.0f, 1.0f);
             currLdRes.FogEnd = std::max<float>(currLdRes.FogEnd, 10.0f);
-            currLdRes.FogHeight = std::max<float>(currLdRes.FogEnd, -10000.0f);
+            currLdRes.FogHeight = std::max<float>(currLdRes.FogHeight, -10000.0f);
             currLdRes.FogHeightScaler = std::clamp(currLdRes.FogScaler, -1.0f, 1.0f);
             if (!currLdRes.SunFogColor)
                 currLdRes.SunFogAngle = 1.0f;
 
-            if (currLdRes.FogHeightScaler == 0.0) {
-                currLdRes.FogHeightDensity = currLdRes.FogDensity;
-            }
             if (currLdRes.FogHeight > 10000.0f)
                 currLdRes.FogHeight = 0.0f;
 
@@ -727,8 +724,12 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                 if ( b > a || a <= 0.0 )
                     currLdRes.FogDensity = 1.5;
                 else
-                    currLdRes.FogDensity = (float)((float)(1.0 - (float)(b / a)) * 5.5) + 1.5;
+                    currLdRes.FogDensity = (float)((float)(1.0f - (float)(b / a)) * 5.5f) + 1.5f;
             }
+
+//            if (currLdRes.FogHeightScaler == 0.0) {
+//                currLdRes.FogHeightDensity = currLdRes.FogDensity;
+//            }
 
             if (currLdRes.time > ptime) {
                 assigned = true;

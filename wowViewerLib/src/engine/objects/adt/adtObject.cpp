@@ -345,7 +345,6 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
-    pipelineTemplate.triCCW = true;
     pipelineTemplate.depthWrite = true;
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = true;

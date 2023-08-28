@@ -121,17 +121,6 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
 
     const static mathfu::vec4 zUp = {0,0,1.0,0};
 
-    mathfu::vec3 zUpPointInView =
-        (renderingMatrices->lookAtMat * mathfu::vec4((zUp * fdd->FogHeight).xyz(), 1.0f)).xyz();
-    mathfu::vec4 heightPlaneVec =
-        renderingMatrices->invTranspViewMat * mathfu::vec4((zUp * fdd->FogHeight).xyz(), 0.0);
-    mathfu::vec3 heightPlaneVecNorm = heightPlaneVec.xyz().LengthSquared() > 0 ?
-        heightPlaneVec.Normalized().xyz() :
-        mathfu::vec3(0,0,0);
-    mathfu::vec4 heightPlane = mathfu::vec4(
-        heightPlaneVecNorm,
-        -(mathfu::vec3::DotProduct(heightPlaneVecNorm, zUpPointInView))
-    );
 
     auto &blockPSVS = sceneWideChunk->getObject(0);
     blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
@@ -148,67 +137,78 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
     blockPSVS.extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
     blockPSVS.extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
     blockPSVS.extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
-    blockPSVS.extLight.uAdtSpecMult = mathfu::vec4(m_config->adtSpecMult, 0, 0, 1.0);
+    blockPSVS.extLight.uAdtSpecMult_FogCount = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
 
-    float fogEnd = std::min<float>(std::max<float>(m_config->farPlane, 277.5), m_config->farPlane);
-    if (m_config->disableFog || !fdd->FogDataFound) {
-        fogEnd = 100000000.0f;
-        fdd->FogScaler = 0;
-        fdd->FogDensity = 0;
+    for (int i = 0; i < std::min<int>(fdd->fogResults.size(), FOG_MAX_SHADER_COUNT); i++)
+    {
+        auto &fogResult = fdd->fogResults[i];
+
+        mathfu::vec4 heightPlane = mathfu::vec4(
+            zUp.xyz(),
+            -(mathfu::vec3::DotProduct(zUp.xyz(), (zUp * fogResult.FogHeight).xyz()))
+        );
+        heightPlane = renderingMatrices->invTranspViewMat * heightPlane;
+
+        float fogEnd = std::min<float>(std::max<float>(m_config->farPlane, 277.5), m_config->farPlane);
+        if (m_config->disableFog || !fdd->FogDataFound) {
+            fogEnd = 100000000.0f;
+            fogResult.FogScaler = 0;
+            fogResult.FogDensity = 0;
+        }
+
+        const float densityMultFix =  0.00050000002;
+        float fogScaler = fogResult.FogScaler;
+        if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
+        float fogStart = std::min<float>(m_config->farPlane, 3000) * fogScaler;
+
+        blockPSVS.fogData[i].densityParams = mathfu::vec4(
+            fogStart,
+            fogEnd,
+            fogResult.FogDensity * densityMultFix,
+            0);
+        blockPSVS.fogData[i].classicFogParams = mathfu::vec4(0, 0, 0, 0);
+        blockPSVS.fogData[i].heightPlane = heightPlane;
+        blockPSVS.fogData[i].color_and_heightRate = mathfu::vec4(fogResult.FogColor, fogResult.FogHeightScaler);
+        blockPSVS.fogData[i].heightDensity_and_endColor = mathfu::vec4(
+            fogResult.FogHeightDensity * densityMultFix,
+            fogResult.EndFogColor.x,
+            fogResult.EndFogColor.y,
+            fogResult.EndFogColor.z
+        );
+        blockPSVS.fogData[i].sunAngle_and_sunColor = mathfu::vec4(
+            fogResult.SunFogAngle,
+            fogResult.SunFogColor.x,
+            fogResult.SunFogColor.y,
+            fogResult.SunFogColor.z
+        );
+        blockPSVS.fogData[i].heightColor_and_endFogDistance = mathfu::vec4(
+            fogResult.FogHeightColor,
+            (fogResult.EndFogColorDistance > 0) ?
+                fogResult.EndFogColorDistance :
+                1000.0f
+        );
+        blockPSVS.fogData[i].sunPercentage = mathfu::vec4(
+            0.0f, //fdd->SunFogAngle * fdd->SunFogStrength,
+            0, 1.0, 1.0);
+        blockPSVS.fogData[i].sunDirection_and_fogZScalar = mathfu::vec4(
+            fdd->exteriorDirectColorDir, //TODO: for fog this is calculated from SUN position
+            fogResult.FogZScalar
+        );
+        blockPSVS.fogData[i].heightFogCoeff = fogResult.FogHeightCoefficients;
+        blockPSVS.fogData[i].mainFogCoeff = fogResult.MainFogCoefficients;
+        blockPSVS.fogData[i].heightDensityFogCoeff = fogResult.HeightDensityFogCoefficients;
+
+        bool mainFogOk = (fogResult.MainFogStartDist + 0.001 <= fogResult.MainFogEndDist);
+        blockPSVS.fogData[i].mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha = mathfu::vec4(
+            mainFogOk ? fogResult.MainFogEndDist : fogResult.MainFogStartDist + 0.001,
+            fogResult.MainFogStartDist >= 0.0 ? fogResult.MainFogStartDist : 0.0f,
+            fogResult.LegacyFogScalar,
+            fogResult.FogBlendAlpha
+        );
+        blockPSVS.fogData[i].heightFogEndColor_fogStartOffset = mathfu::vec4(
+            fogResult.HeightEndFogColor,
+            fogResult.FogStartOffset
+        );
     }
-
-    const float densityMultFix = 1.0/1000; ;
-    float fogScaler = fdd->FogScaler;
-    if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
-    float fogStart = std::min<float>(m_config->farPlane, 3000) * fogScaler;
-
-    blockPSVS.fogData.densityParams = mathfu::vec4(
-        fogStart,
-        fogEnd,
-        fdd->FogDensity * densityMultFix,
-        0);
-    blockPSVS.fogData.classicFogParams = mathfu::vec4(0, 0, 0, 0);
-    blockPSVS.fogData.heightPlane = heightPlane;
-    blockPSVS.fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor, fdd->FogHeightScaler);
-    blockPSVS.fogData.heightDensity_and_endColor = mathfu::vec4(
-        fdd->FogHeightDensity * densityMultFix,
-        fdd->EndFogColor.x,
-        fdd->EndFogColor.y,
-        fdd->EndFogColor.z
-    );
-    blockPSVS.fogData.sunAngle_and_sunColor = mathfu::vec4(
-        fdd->SunFogAngle,
-        fdd->SunFogColor.x,
-        fdd->SunFogColor.y,
-        fdd->SunFogColor.z
-    );
-    blockPSVS.fogData.heightColor_and_endFogDistance = mathfu::vec4(
-        fdd->FogHeightColor,
-        (fdd->EndFogColorDistance > 0) ?
-            fdd->EndFogColorDistance :
-            1000.0f
-    );
-    blockPSVS.fogData.sunPercentage = mathfu::vec4(
-        0.0f, //fdd->SunFogAngle * fdd->SunFogStrength,
-        0, 1.0, 1.0);
-    blockPSVS.fogData.sunDirection_and_fogZScalar = mathfu::vec4(
-        fdd->exteriorDirectColorDir, //TODO: for fog this is calculated from SUN position
-        fdd->FogZScalar
-    );
-    blockPSVS.fogData.heightFogCoeff = fdd->FogHeightCoefficients;
-    blockPSVS.fogData.mainFogCoeff = fdd->MainFogCoefficients;
-    blockPSVS.fogData.heightDensityFogCoeff = fdd->HeightDensityFogCoefficients;
-
-    bool mainFogOk = (fdd->MainFogStartDist + 0.001 <= fdd->MainFogEndDist);
-    blockPSVS.fogData.mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha = mathfu::vec4(
-        mainFogOk ? fdd->MainFogEndDist : fdd->MainFogStartDist + 0.001,
-        fdd->MainFogStartDist >= 0.0 ? fdd->MainFogStartDist : 0.0f,
-        fdd->LegacyFogScalar,
-        fdd->FogBlendAlpha
-    );
-    blockPSVS.fogData.heightFogEndColor_fogStartOffset = mathfu::vec4(
-        fdd->HeightEndFogColor,
-        fdd->FogStartOffset
-    );
     sceneWideChunk->saveVersion(0);
 }

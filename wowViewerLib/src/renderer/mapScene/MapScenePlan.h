@@ -33,6 +33,7 @@ struct MapRenderPlan {
 
     HFrameDependantData frameDependentData = std::make_shared<FrameDependantData>();
 
+
     //Objects for update and rendering
     std::vector<std::shared_ptr<ADTObjRenderRes>> adtArray = {};
 

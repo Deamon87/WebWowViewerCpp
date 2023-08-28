@@ -13,7 +13,7 @@ struct SceneExteriorLight {
      vec4 uExteriorGroundAmbientColor;
      vec4 uExteriorDirectColor;
      vec4 uExteriorDirectColorDir;
-     vec4 adtSpecMult;
+     vec4 adtSpecMult_fogCount;
  };
 
 struct SceneWideParams {
