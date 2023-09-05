@@ -660,6 +660,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         // ---------------------
         {
             ZoneScopedN("submit buffers");
+            VkZone(uploadCmd, "submit buffers")
             uploadCmd.submitBufferUploads(l_this->uboBuffer);
             uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
 
@@ -696,6 +697,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 
             {
                 ZoneScopedN("submit opaque");
+                VkZone(frameBufCmd, "render opaque")
                 for (auto const &mesh: *opaqueMeshes) {
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
                 }
@@ -725,6 +727,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
             }
             {
+                VkZone(frameBufCmd, "render transparent")
                 ZoneScopedN("submit transparent");
                 for (int i = 0; i < transparentMeshes->size(); i++) {
                     auto const &mesh = transparentMeshes->at(i);
@@ -743,9 +746,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             }
         }
 
-        l_this->glowPass->doPass(frameBufCmd, swapChainCmd,
-                         l_this->m_device->getSwapChainRenderPass(),
-                         frameInputParams->viewPortDimensions);
+        {
+//            VkZone(frameBufCmd, "glowPassFrameBuf");
+//            VkZone(swapChainCmd, "glowPassSwapBuf");
+            l_this->glowPass->doPass(frameBufCmd, swapChainCmd,
+                                     l_this->m_device->getSwapChainRenderPass(),
+                                     frameInputParams->viewPortDimensions);
+        }
     });
 }
 

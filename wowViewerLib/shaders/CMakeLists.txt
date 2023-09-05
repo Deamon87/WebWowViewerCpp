@@ -7,11 +7,11 @@ endif()
 
 if (COMPILE_SHADER_WITH_DEBUG)
     set(SHADER_DEBUG_FLAG "-g")
+    set(APP_RUN_PREFIX "")
 else()
     set(SHADER_DEBUG_FLAG "")
 endif()
 
-set(APP_RUN_PREFIX "")
 if (EMSCRIPTEN)
     set(APP_RUN_PREFIX node --experimental-wasm-simd)
 endif()

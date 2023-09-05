@@ -11,14 +11,6 @@
 #include <emscripten.h>
 #endif
 
-
-
-void SceneComposer::processCaches(int limit) {
-    if (m_apiContainer->cacheStorage) {
-        m_apiContainer->cacheStorage->processCaches(limit);
-    }
-}
-
 SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiContainer) {
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
@@ -29,25 +21,32 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         loadingResourcesThread = std::thread([&]() {
             setThreadName("ResourceLoader");
             using namespace std::chrono_literals;
+
+            HRequestProcessor currentProcessor = nullptr;
+
             while (!this->m_isTerminating) {
-                std::this_thread::sleep_for(1ms);
-                processCaches(1000);
+                if (currentProcessor != m_apiContainer->requestProcessor) {
+                    currentProcessor = m_apiContainer->requestProcessor;
+                    if (currentProcessor != nullptr)
+                        currentProcessor->initThreadQueue(this->m_isTerminating);
+                }
+
+                if (currentProcessor != nullptr) {
+                    m_apiContainer->requestProcessor->processRequests(INT_MAX);
+                } else {
+                    std::this_thread::sleep_for(1ms);
+                }
             }
         });
 
-
         cullingThread = std::thread(([&]() {
             using namespace std::chrono_literals;
-            FrameCounter frameCounter;
             setThreadName("Culling");
 
             while (!this->m_isTerminating) {
                 auto frameScenario = cullingInput.waitForNewInput();
                 if (m_isTerminating)
                     continue;
-
-
-                frameCounter.beginMeasurement();
 
                 //Do the culling and make function for further pipeline
                 if (frameScenario != nullptr) {
@@ -56,9 +55,6 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
                 //Pass the culling result down the pipeline
                 updateInput.pushInput(frameScenario);
-
-                frameCounter.endMeasurement();
-                m_apiContainer->getConfig()->cullingTimePerFrame = frameCounter.getTimePerFrame();
             }
         }));
 
@@ -142,9 +138,9 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
     composerDrawTimePerFrame.beginMeasurement();
 
     if (!m_supportThreads) {
-        processCaches(10);
         consumeCulling(frameScenario);
         std::vector<std::unique_ptr<IRenderFunction>> renderFuncs = {};
+        m_apiContainer->requestProcessor->processRequests(10);
         consumeUpdate(frameScenario,renderFuncs);
         consumeDraw(renderFuncs);
 

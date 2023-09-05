@@ -4,9 +4,6 @@
 #include <sstream>
 #include "RequestProcessor.h"
 
-std::mutex requestMtx;           // mutex for critical section
-std::mutex resultMtx;            // mutex for critical section
-
 std::mutex setProcessingMtx;     // mutex for critical section
 
 //1. Add request to FIFO
@@ -35,59 +32,36 @@ RequestProcessor::requestFile(std::string &fileName, CacheHolderType holderType,
     currentlyProcessingFnames.insert(fileName);
     setLck.unlock();
 
-    std::unique_lock<std::mutex> lck (requestMtx,std::defer_lock);
-    // critical section (exclusive access to std::cout signaled by locking lck):
-    lck.lock();
-
-    m_requestQueue.push_back({fileName, holderType, s_file});
+    m_requestQueue->pushInput({fileName, holderType, s_file});
     toBeProcessed++;
-    lck.unlock();
 }
 
-void RequestProcessor::processRequests (bool calledFromThread) {
+void RequestProcessor::processRequests (int limit) {
     using namespace std::chrono_literals;
     // critical section (exclusive access to std::cout signaled by locking lck):
-    std::unique_lock<std::mutex> lck (requestMtx,std::defer_lock);
+    std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
 
-    if (calledFromThread){
-        while (!this->isTerminating) {
-            if (m_requestQueue.empty()) {
-                std::this_thread::sleep_for(1ms);
-                continue;
-            }
-
-            lck.lock(); 
-            auto it = m_requestQueue.front();
-            m_requestQueue.pop_front();
-            lck.unlock();
-
+    if (m_threaded) {
+        m_requestQueue->waitAndProcess([&](const RequestStruct &it) {
             this->processFileRequest(it.fileName, it.holderType, it.s_file);
 
-            std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
             setLck.lock();
             currentlyProcessingFnames.erase(it.fileName);
             setLck.unlock();
-        }
-    } else if (!m_threaded) {
-        while (!m_requestQueue.empty()) {
-            lck.lock();
-            auto it = m_requestQueue.front();
-            m_requestQueue.pop_front();
-            lck.unlock();
-
+        });
+    } else {
+        m_requestQueue->blockProcessWithoutWait(limit, [&](const RequestStruct &it) {
             this->processFileRequest(it.fileName, it.holderType, it.s_file);
 
-            std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
             setLck.lock();
             currentlyProcessingFnames.erase(it.fileName);
             setLck.unlock();
-        }
+        });
     }
-
 }
 
 void
-RequestProcessor::processResult(std::shared_ptr<PersistentFile> s_file, HFileContent content, const std::string &fileName) {
+RequestProcessor::processResult(const std::shared_ptr<PersistentFile> &s_file, const HFileContent &content, const std::string &fileName) {
     if (s_file->getStatus() == FileStatus::FSLoaded) {
         std::cout << "sharedPtr->getStatus == FileStatus::FSLoaded " << fileName << std::endl;
     } if (s_file->getStatus() == FileStatus::FSRejected) {
@@ -95,5 +69,4 @@ RequestProcessor::processResult(std::shared_ptr<PersistentFile> s_file, HFileCon
     } else {
         s_file->process(content, fileName);
     }
-
 }

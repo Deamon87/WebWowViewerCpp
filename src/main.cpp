@@ -481,14 +481,6 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-        {
-            auto processor = frontendUI->getProcessor();
-            if (frontendUI->getProcessor()) {
-                if (!processor->getThreaded()) {
-                    processor->processRequests(false);
-                }
-            }
-        }
 
         apiContainer->camera->tick(deltaTime*(1000.0f));
         if (apiContainer->debugCamera != nullptr) {

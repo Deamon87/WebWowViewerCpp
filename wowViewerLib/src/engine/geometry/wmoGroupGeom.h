@@ -38,12 +38,10 @@ public:
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
-    void setMOHD(SMOHeader *mohd) {this->mohd = mohd; };
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
     bool hasWater() const {return m_mliq != nullptr; };
 
-
-    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, mathfu::vec4 localAmbient);
+    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd, mathfu::vec4 localAmbient);
     HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type, CAaBox &waterAaBB);
 
     int getFileDataId() const {return m_fileDataId;}
@@ -59,8 +57,6 @@ public:
     int m_fileDataId = 0;
 
     HFileContent m_wmoGroupFile;
-
-    SMOHeader *mohd = nullptr;
 
     MOGP *mogp = nullptr;
 

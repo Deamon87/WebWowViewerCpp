@@ -74,18 +74,20 @@ const std::string getLightSQL = R"===(
         select
         l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
         IFNULL(ls.SkyboxFileDataID, 0) as SkyboxFileDataID, IFNULL(lp.LightSkyboxID, 0) as LightSkyboxID,
-        lp.Glow, IFNULL(ls.Flags, 0) as SkyboxFlags
-        from Light l
-            left join LightParams lp on lp.ID = l.LightParamsID_0
-            left join LightSkybox ls on ls.ID = lp.LightSkyboxID
-         where
-           ((l.ContinentID = ?) and ((
-            abs(l.GameCoords_0 - ?) < l.GameFalloffEnd and
-            abs(l.GameCoords_1 - ?) < l.GameFalloffEnd and
-            abs(l.GameCoords_2 - ?) < l.GameFalloffEnd
-          ) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0)))
-            or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)
-        ORDER BY l.ID desc
+        lp.Glow, IFNULL(ls.Flags, 0) as SkyboxFlags, l.ContinentID,
+        (abs(l.GameCoords_0 - ?1) * abs(l.GameCoords_0 - ?1) +
+         abs(l.GameCoords_1 - ?2) * abs(l.GameCoords_1 - ?2) +
+         abs(l.GameCoords_2 - ?3) * abs(l.GameCoords_2 - ?3)) as lightDistSQR
+    from Light l
+             left join LightParams lp on lp.ID = l.LightParamsID_0
+             left join LightSkybox ls on ls.ID = lp.LightSkyboxID
+    where
+        ((l.ContinentID = ?4) and
+        (
+             (lightDistSQR < (l.GameFalloffEnd * l.GameFalloffEnd)) or
+             (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0)
+        )) or (l.GameCoords_0 = 0 and l.GameCoords_1 = 0 and l.GameCoords_2 = 0 and l.ContinentID = 0)
+    ORDER BY l.ID desc
 )===";
 
 const std::string lightDataSQL = R"===(
@@ -278,47 +280,47 @@ void initWithZeros(std::array<float, 4> &colorF) {
     colorF[2] = 0;
     colorF[3] = 0;
 }
-void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
+void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend) {
     colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<0>(lastLdRes) *
-                                    (1.0f - timeAlphaBlend)) * innerAlpha;
+                                    (1.0f - timeAlphaBlend));
     colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<1>(lastLdRes) *
-                                    (1.0f - timeAlphaBlend)) * innerAlpha;
+                                    (1.0f - timeAlphaBlend));
     colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<2>(lastLdRes) *
-                                    (1.0f - timeAlphaBlend)) * innerAlpha;
+                                    (1.0f - timeAlphaBlend));
 }
-inline void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend, float innerAlpha) {
+inline void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend) {
     colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<0>(lastLdRes) *
-                  (1.0f - timeAlphaBlend)) * innerAlpha;
+                  (1.0f - timeAlphaBlend));
     colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<1>(lastLdRes) *
-                  (1.0f - timeAlphaBlend)) * innerAlpha;
+                  (1.0f - timeAlphaBlend));
     colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<2>(lastLdRes) *
-                  (1.0f - timeAlphaBlend)) * innerAlpha;
+                  (1.0f - timeAlphaBlend));
 }
 
-inline void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, float timeAlphaBlend, float innerAlpha) {
-    colorF += (currLdRes * timeAlphaBlend + lastLdRes * (1.0f - timeAlphaBlend)) * innerAlpha;
+inline void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, float timeAlphaBlend) {
+    colorF += (currLdRes * timeAlphaBlend + lastLdRes * (1.0f - timeAlphaBlend));
 }
 
-inline void addOnlyOne(float *colorF, int currLdRes, float innerAlpha) {
-    colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
-    colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
-    colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
+inline void addOnlyOne(float *colorF, int currLdRes) {
+    colorF[0] += getFloatFromInt<0>(currLdRes);
+    colorF[1] += getFloatFromInt<1>(currLdRes);
+    colorF[2] += getFloatFromInt<2>(currLdRes);
 }
 
-inline void addOnlyOne(std::array<float, 3> &colorF, int currLdRes, float innerAlpha) {
-    colorF[0] += getFloatFromInt<0>(currLdRes) * innerAlpha;
-    colorF[1] += getFloatFromInt<1>(currLdRes) * innerAlpha;
-    colorF[2] += getFloatFromInt<2>(currLdRes) * innerAlpha;
+inline void addOnlyOne(std::array<float, 3> &colorF, int currLdRes) {
+    colorF[0] += getFloatFromInt<0>(currLdRes);
+    colorF[1] += getFloatFromInt<1>(currLdRes);
+    colorF[2] += getFloatFromInt<2>(currLdRes);
 }
 
-inline void addOnlyOne(float &colorF, float currLdRes, float innerAlpha) {
-    colorF += currLdRes * innerAlpha;
+inline void addOnlyOne(float &colorF, float currLdRes) {
+    colorF += currLdRes;
 }
 void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult, float farClip) {
     getLightByIdStatement.setInputs( lightId );
@@ -336,8 +338,6 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult, fl
         ilr.lightSkyboxId = getLightByIdStatement.getField("LightSkyboxID").getInt();
         ilr.glow = getLightByIdStatement.getField("Glow").getDouble();
         ilr.skyBoxFlags = getLightByIdStatement.getField("SkyboxFlags").getInt();
-
-        ilr.blendAlpha = 1.0f;
     }
     std::vector<LightResult> lightResults;
     convertInnerResultsToPublic(time, lightResults, innerResults, farClip);
@@ -347,9 +347,11 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult, fl
 
 };
 void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, std::vector<LightResult> &lightResults, float farClip) {
-    getLightStatement.setInputs( mapId, x, y, z );
+    getLightStatement.setInputs(x, y, z, mapId );
 
     std::vector<InnerLightResult> innerResults;
+    bool defaultRecordSet = false;
+    InnerLightResult defaultRecord;
 
     float totalBlend = 0;
     while (getLightStatement.execute()) {
@@ -365,168 +367,163 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, std:
         ilr.glow = getLightStatement.getField("Glow").getDouble();
         ilr.skyBoxFlags = getLightStatement.getField("SkyboxFlags").getInt();
 
-        bool defaultRec = false;
+        ilr.lightDistSQR = getLightStatement.getField("lightDistSQR").getDouble();
+
+        ilr.blendAlpha =
+            sqrtf(ilr.lightDistSQR) > ilr.fallbackStart ?
+            std::max<float>( ((ilr.fallbackStart - sqrtf(ilr.lightDistSQR)) / (ilr.fallbackEnd - ilr.fallbackStart)) + 1.0f, 0.0f) :
+            1.0f;
+
         if (ilr.pos[0] == 0 && ilr.pos[1] == 0 && ilr.pos[2] == 0 ) {
-            if (totalBlend > 1) continue;
-            defaultRec = true;
-        }
-
-        if (!defaultRec) {
-            float distanceToLight =
-                std::sqrt(
-                    (ilr.pos[0] - x) * (ilr.pos[0] - x) +
-                    (ilr.pos[1] - y) * (ilr.pos[1] - y) +
-                    (ilr.pos[2] - z) * (ilr.pos[2] - z));
-
-            ilr.blendAlpha = 1.0f - (distanceToLight - ilr.fallbackStart) / (ilr.fallbackEnd - ilr.fallbackStart);
-            if (ilr.blendAlpha <= 0) continue;
-
-            totalBlend += ilr.blendAlpha;
-        } else {
-            ilr.blendAlpha = 1.0f - totalBlend;
-            ilr.isDefault = true;
+            if (!defaultRecordSet || mapId == getLightStatement.getField("ContinentID").getInt()){
+                defaultRecord = ilr;
+                defaultRecord.isDefault = true;
+                defaultRecord.blendAlpha = 1.0f;
+                defaultRecordSet = true;
+            }
+            innerResults.resize(std::max<int>(innerResults.size() - 1, 0));
         }
     }
+    if (defaultRecordSet) innerResults.push_back(defaultRecord);
+
     convertInnerResultsToPublic(ptime, lightResults, innerResults, farClip);
 }
 void CSqliteDB::addOnlyOne(LightResult &lightResult,
-                           const CSqliteDB::InnerLightDataRes &currLdRes,
-                           float innerAlpha) const {//Set as is
-    ::addOnlyOne(lightResult.ambientColor, currLdRes.ambientLight, innerAlpha);
-    ::addOnlyOne(lightResult.horizontAmbientColor, currLdRes.horizontAmbientColor, innerAlpha);
-    ::addOnlyOne(lightResult.groundAmbientColor, currLdRes.groundAmbientColor, innerAlpha);
+                           const CSqliteDB::InnerLightDataRes &currLdRes) const {//Set as is
+    ::addOnlyOne(lightResult.ambientColor, currLdRes.ambientLight);
+    ::addOnlyOne(lightResult.horizontAmbientColor, currLdRes.horizontAmbientColor);
+    ::addOnlyOne(lightResult.groundAmbientColor, currLdRes.groundAmbientColor);
 
-    ::addOnlyOne(lightResult.directColor, currLdRes.directLight, innerAlpha);
+    ::addOnlyOne(lightResult.directColor, currLdRes.directLight);
 
-    ::addOnlyOne(lightResult.closeRiverColor, currLdRes.closeRiverColor, innerAlpha);
-    ::addOnlyOne(lightResult.farRiverColor, currLdRes.farRiverColor, innerAlpha);
-    ::addOnlyOne(lightResult.closeOceanColor, currLdRes.closeOceanColor, innerAlpha);
-    ::addOnlyOne(lightResult.farOceanColor, currLdRes.farOceanColor, innerAlpha);
+    ::addOnlyOne(lightResult.closeRiverColor, currLdRes.closeRiverColor);
+    ::addOnlyOne(lightResult.farRiverColor, currLdRes.farRiverColor);
+    ::addOnlyOne(lightResult.closeOceanColor, currLdRes.closeOceanColor);
+    ::addOnlyOne(lightResult.farOceanColor, currLdRes.farOceanColor);
 
-    ::addOnlyOne(lightResult.SkyTopColor, currLdRes.SkyTopColor, innerAlpha);
-    ::addOnlyOne(lightResult.SkyMiddleColor, currLdRes.SkyMiddleColor, innerAlpha);
-    ::addOnlyOne(lightResult.SkyBand1Color, currLdRes.SkyBand1Color, innerAlpha);
-    ::addOnlyOne(lightResult.SkyBand2Color, currLdRes.SkyBand2Color, innerAlpha);
-    ::addOnlyOne(lightResult.SkySmogColor, currLdRes.SkySmogColor, innerAlpha);
-    ::addOnlyOne(lightResult.SkyFogColor, currLdRes.SkyFogColor, innerAlpha);
+    ::addOnlyOne(lightResult.SkyTopColor, currLdRes.SkyTopColor);
+    ::addOnlyOne(lightResult.SkyMiddleColor, currLdRes.SkyMiddleColor);
+    ::addOnlyOne(lightResult.SkyBand1Color, currLdRes.SkyBand1Color);
+    ::addOnlyOne(lightResult.SkyBand2Color, currLdRes.SkyBand2Color);
+    ::addOnlyOne(lightResult.SkySmogColor, currLdRes.SkySmogColor);
+    ::addOnlyOne(lightResult.SkyFogColor, currLdRes.SkyFogColor);
 
-    ::addOnlyOne(lightResult.FogEnd, currLdRes.FogEnd, innerAlpha);
-    ::addOnlyOne(lightResult.FogScaler, currLdRes.FogScaler, innerAlpha);
-    ::addOnlyOne(lightResult.FogDensity, currLdRes.FogDensity, innerAlpha);
-    ::addOnlyOne(lightResult.FogHeight, currLdRes.FogHeight, innerAlpha);
-    ::addOnlyOne(lightResult.FogHeightScaler, currLdRes.FogHeightScaler, innerAlpha);
-    ::addOnlyOne(lightResult.FogHeightDensity, currLdRes.FogHeightDensity, innerAlpha);
+    ::addOnlyOne(lightResult.FogEnd, currLdRes.FogEnd);
+    ::addOnlyOne(lightResult.FogScaler, currLdRes.FogScaler);
+    ::addOnlyOne(lightResult.FogDensity, currLdRes.FogDensity);
+    ::addOnlyOne(lightResult.FogHeight, currLdRes.FogHeight);
+    ::addOnlyOne(lightResult.FogHeightScaler, currLdRes.FogHeightScaler);
+    ::addOnlyOne(lightResult.FogHeightDensity, currLdRes.FogHeightDensity);
 
-    ::addOnlyOne(lightResult.EndFogColor, currLdRes.EndFogColor, innerAlpha);
-    ::addOnlyOne(lightResult.EndFogColorDistance, currLdRes.EndFogColorDistance, innerAlpha);
-    ::addOnlyOne(lightResult.SunFogColor, currLdRes.SunFogColor, innerAlpha);
+    ::addOnlyOne(lightResult.EndFogColor, currLdRes.EndFogColor);
+    ::addOnlyOne(lightResult.EndFogColorDistance, currLdRes.EndFogColorDistance);
+    ::addOnlyOne(lightResult.SunFogColor, currLdRes.SunFogColor);
 
-    ::addOnlyOne(lightResult.FogHeightColor, currLdRes.FogHeightColor, innerAlpha);
-    ::addOnlyOne(lightResult.FogHeightCoefficients[0], currLdRes.FogHeightCoefficients[0], innerAlpha);
-    ::addOnlyOne(lightResult.FogHeightCoefficients[1], currLdRes.FogHeightCoefficients[1], innerAlpha);
-    ::addOnlyOne(lightResult.FogHeightCoefficients[2], currLdRes.FogHeightCoefficients[2], innerAlpha);
-    ::addOnlyOne(lightResult.FogHeightCoefficients[3], currLdRes.FogHeightCoefficients[3], innerAlpha);
+    ::addOnlyOne(lightResult.FogHeightColor, currLdRes.FogHeightColor);
+    ::addOnlyOne(lightResult.FogHeightCoefficients[0], currLdRes.FogHeightCoefficients[0]);
+    ::addOnlyOne(lightResult.FogHeightCoefficients[1], currLdRes.FogHeightCoefficients[1]);
+    ::addOnlyOne(lightResult.FogHeightCoefficients[2], currLdRes.FogHeightCoefficients[2]);
+    ::addOnlyOne(lightResult.FogHeightCoefficients[3], currLdRes.FogHeightCoefficients[3]);
 
-    ::addOnlyOne(lightResult.MainFogCoefficients[0], currLdRes.MainFogCoefficients[0], innerAlpha);
-    ::addOnlyOne(lightResult.MainFogCoefficients[1], currLdRes.MainFogCoefficients[1], innerAlpha);
-    ::addOnlyOne(lightResult.MainFogCoefficients[2], currLdRes.MainFogCoefficients[2], innerAlpha);
-    ::addOnlyOne(lightResult.MainFogCoefficients[3], currLdRes.MainFogCoefficients[3], innerAlpha);
+    ::addOnlyOne(lightResult.MainFogCoefficients[0], currLdRes.MainFogCoefficients[0]);
+    ::addOnlyOne(lightResult.MainFogCoefficients[1], currLdRes.MainFogCoefficients[1]);
+    ::addOnlyOne(lightResult.MainFogCoefficients[2], currLdRes.MainFogCoefficients[2]);
+    ::addOnlyOne(lightResult.MainFogCoefficients[3], currLdRes.MainFogCoefficients[3]);
 
-    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[0], currLdRes.HeightDensityFogCoeff[0], innerAlpha);
-    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[1], currLdRes.HeightDensityFogCoeff[1], innerAlpha);
-    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[2], currLdRes.HeightDensityFogCoeff[2], innerAlpha);
-    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[3], currLdRes.HeightDensityFogCoeff[3], innerAlpha);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[0], currLdRes.HeightDensityFogCoeff[0]);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[1], currLdRes.HeightDensityFogCoeff[1]);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[2], currLdRes.HeightDensityFogCoeff[2]);
+    ::addOnlyOne(lightResult.HeightDensityFogCoefficients[3], currLdRes.HeightDensityFogCoeff[3]);
 
-    ::addOnlyOne(lightResult.FogZScalar, currLdRes.FogZScalar, innerAlpha);
-    ::addOnlyOne(lightResult.MainFogStartDist, currLdRes.MainFogStartDist, innerAlpha);
-    ::addOnlyOne(lightResult.MainFogEndDist, currLdRes.MainFogEndDist, innerAlpha);
-    ::addOnlyOne(lightResult.HeightEndFogColor, currLdRes.EndFogHeightColor, innerAlpha);
-    ::addOnlyOne(lightResult.FogStartOffset, currLdRes.FogStartOffset, innerAlpha);
+    ::addOnlyOne(lightResult.FogZScalar, currLdRes.FogZScalar);
+    ::addOnlyOne(lightResult.MainFogStartDist, currLdRes.MainFogStartDist);
+    ::addOnlyOne(lightResult.MainFogEndDist, currLdRes.MainFogEndDist);
+    ::addOnlyOne(lightResult.HeightEndFogColor, currLdRes.EndFogHeightColor);
+    ::addOnlyOne(lightResult.FogStartOffset, currLdRes.FogStartOffset);
 }
 
 void CSqliteDB::blendTwoAndAdd(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &lastLdRes,
-                               const CSqliteDB::InnerLightDataRes &currLdRes, float timeAlphaBlend,
-                               float innerAlpha) const {
+                               const CSqliteDB::InnerLightDataRes &currLdRes, float timeAlphaBlend) const {
     ::blendTwoAndAdd(lightResult.ambientColor,
                      currLdRes.ambientLight, lastLdRes.ambientLight,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.horizontAmbientColor,
                      currLdRes.horizontAmbientColor, lastLdRes.horizontAmbientColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.groundAmbientColor,
                      currLdRes.groundAmbientColor, lastLdRes.groundAmbientColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
 
     ::blendTwoAndAdd(lightResult.directColor,
                      currLdRes.directLight, lastLdRes.directLight,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
 
     ::blendTwoAndAdd(lightResult.closeRiverColor,
                      currLdRes.closeRiverColor, lastLdRes.closeRiverColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.farRiverColor,
                      currLdRes.farRiverColor, lastLdRes.farRiverColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.closeOceanColor,
                      currLdRes.closeOceanColor, lastLdRes.closeOceanColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.farOceanColor,
                      currLdRes.farOceanColor, lastLdRes.farOceanColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
 
     ::blendTwoAndAdd(lightResult.SkyTopColor,
                      currLdRes.SkyTopColor, lastLdRes.SkyTopColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
 
     ::blendTwoAndAdd(lightResult.SkyMiddleColor,
                      currLdRes.SkyMiddleColor, lastLdRes.SkyMiddleColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.SkyBand1Color,
                      currLdRes.SkyBand1Color, lastLdRes.SkyBand1Color,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.SkyBand2Color,
                      currLdRes.SkyBand2Color, lastLdRes.SkyBand2Color,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.SkySmogColor,
                      currLdRes.SkySmogColor, lastLdRes.SkySmogColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.SkyFogColor,
                      currLdRes.SkyFogColor, lastLdRes.SkyFogColor,
-                     timeAlphaBlend, innerAlpha);
+                     timeAlphaBlend);
 
-    ::blendTwoAndAdd(lightResult.FogEnd, currLdRes.FogEnd, lastLdRes.FogEnd, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogScaler, currLdRes.FogScaler, lastLdRes.FogScaler, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogDensity, currLdRes.FogDensity, lastLdRes.FogDensity, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeight, currLdRes.FogHeight, lastLdRes.FogHeight, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightScaler, currLdRes.FogHeightScaler, lastLdRes.FogHeightScaler, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightDensity, currLdRes.FogHeightDensity, lastLdRes.FogHeightDensity, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.SunFogAngle, currLdRes.SunFogAngle, lastLdRes.SunFogAngle, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.EndFogColor, currLdRes.EndFogColor, lastLdRes.EndFogColor, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.EndFogColorDistance, currLdRes.EndFogColorDistance, lastLdRes.EndFogColorDistance, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.SunFogColor, currLdRes.SunFogColor, lastLdRes.SunFogColor, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.SunFogStrength, currLdRes.SunFogStrength, lastLdRes.SunFogStrength, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightColor, currLdRes.FogHeightColor, lastLdRes.FogHeightColor, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[0], currLdRes.FogHeightCoefficients[0], lastLdRes.FogHeightCoefficients[0], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[1], currLdRes.FogHeightCoefficients[1], lastLdRes.FogHeightCoefficients[1], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[2], currLdRes.FogHeightCoefficients[2], lastLdRes.FogHeightCoefficients[2], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[3], currLdRes.FogHeightCoefficients[3], lastLdRes.FogHeightCoefficients[3], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.FogEnd, currLdRes.FogEnd, lastLdRes.FogEnd, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogScaler, currLdRes.FogScaler, lastLdRes.FogScaler, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogDensity, currLdRes.FogDensity, lastLdRes.FogDensity, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeight, currLdRes.FogHeight, lastLdRes.FogHeight, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightScaler, currLdRes.FogHeightScaler, lastLdRes.FogHeightScaler, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightDensity, currLdRes.FogHeightDensity, lastLdRes.FogHeightDensity, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.SunFogAngle, currLdRes.SunFogAngle, lastLdRes.SunFogAngle, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.EndFogColor, currLdRes.EndFogColor, lastLdRes.EndFogColor, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.EndFogColorDistance, currLdRes.EndFogColorDistance, lastLdRes.EndFogColorDistance, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.SunFogColor, currLdRes.SunFogColor, lastLdRes.SunFogColor, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.SunFogStrength, currLdRes.SunFogStrength, lastLdRes.SunFogStrength, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightColor, currLdRes.FogHeightColor, lastLdRes.FogHeightColor, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[0], currLdRes.FogHeightCoefficients[0], lastLdRes.FogHeightCoefficients[0], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[1], currLdRes.FogHeightCoefficients[1], lastLdRes.FogHeightCoefficients[1], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[2], currLdRes.FogHeightCoefficients[2], lastLdRes.FogHeightCoefficients[2], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogHeightCoefficients[3], currLdRes.FogHeightCoefficients[3], lastLdRes.FogHeightCoefficients[3], timeAlphaBlend);
 
 
-    ::blendTwoAndAdd(lightResult.MainFogCoefficients[0], currLdRes.MainFogCoefficients[0], lastLdRes.MainFogCoefficients[0], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.MainFogCoefficients[1], currLdRes.MainFogCoefficients[1], lastLdRes.MainFogCoefficients[1], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.MainFogCoefficients[2], currLdRes.MainFogCoefficients[2], lastLdRes.MainFogCoefficients[2], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.MainFogCoefficients[3], currLdRes.MainFogCoefficients[3], lastLdRes.MainFogCoefficients[3], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[0], currLdRes.MainFogCoefficients[0], lastLdRes.MainFogCoefficients[0], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[1], currLdRes.MainFogCoefficients[1], lastLdRes.MainFogCoefficients[1], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[2], currLdRes.MainFogCoefficients[2], lastLdRes.MainFogCoefficients[2], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.MainFogCoefficients[3], currLdRes.MainFogCoefficients[3], lastLdRes.MainFogCoefficients[3], timeAlphaBlend);
 
-    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[0], currLdRes.HeightDensityFogCoeff[0], lastLdRes.HeightDensityFogCoeff[0], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[1], currLdRes.HeightDensityFogCoeff[1], lastLdRes.HeightDensityFogCoeff[1], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[2], currLdRes.HeightDensityFogCoeff[2], lastLdRes.HeightDensityFogCoeff[2], timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[3], currLdRes.HeightDensityFogCoeff[3], lastLdRes.HeightDensityFogCoeff[3], timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[0], currLdRes.HeightDensityFogCoeff[0], lastLdRes.HeightDensityFogCoeff[0], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[1], currLdRes.HeightDensityFogCoeff[1], lastLdRes.HeightDensityFogCoeff[1], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[2], currLdRes.HeightDensityFogCoeff[2], lastLdRes.HeightDensityFogCoeff[2], timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.HeightDensityFogCoefficients[3], currLdRes.HeightDensityFogCoeff[3], lastLdRes.HeightDensityFogCoeff[3], timeAlphaBlend);
 
-    ::blendTwoAndAdd(lightResult.FogZScalar,        currLdRes.FogZScalar,       lastLdRes.FogZScalar, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.MainFogStartDist,  currLdRes.MainFogStartDist, lastLdRes.MainFogStartDist, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.MainFogEndDist,    currLdRes.MainFogEndDist,   lastLdRes.MainFogEndDist, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.HeightEndFogColor, currLdRes.EndFogHeightColor,lastLdRes.EndFogHeightColor, timeAlphaBlend, innerAlpha);
-    ::blendTwoAndAdd(lightResult.FogStartOffset,    currLdRes.FogStartOffset,   lastLdRes.FogStartOffset, timeAlphaBlend, innerAlpha);
+    ::blendTwoAndAdd(lightResult.FogZScalar,        currLdRes.FogZScalar,       lastLdRes.FogZScalar, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.MainFogStartDist,  currLdRes.MainFogStartDist, lastLdRes.MainFogStartDist, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.MainFogEndDist,    currLdRes.MainFogEndDist,   lastLdRes.MainFogEndDist, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.HeightEndFogColor, currLdRes.EndFogHeightColor,lastLdRes.EndFogHeightColor, timeAlphaBlend);
+    ::blendTwoAndAdd(lightResult.FogStartOffset,    currLdRes.FogStartOffset,   lastLdRes.FogStartOffset, timeAlphaBlend);
 }
 
 float arr4SqrLength(const std::array<float,4> &arr) {
@@ -542,13 +539,26 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                                             float farClip)  {
 
     //From lowest to highest
-    std::sort(innerResults.begin(), innerResults.end(), [](const InnerLightResult &a, const InnerLightResult &b) {
-        return a.blendAlpha > b.blendAlpha;
+    std::sort(innerResults.begin(), innerResults.end(), +[](const InnerLightResult &a, const InnerLightResult &b) -> bool {
+        if (a.isDefault) return true;
+        if (b.isDefault) return false;
+
+        float distanceSqr =
+            (a.pos[0] - b.pos[0]) * (a.pos[0] - b.pos[0]) +
+            (a.pos[1] - b.pos[1]) * (a.pos[1] - b.pos[1]) +
+            (a.pos[2] - b.pos[2]) * (a.pos[2] - b.pos[2]);
+
+        static const float tolerance = 0.33333334f;
+        if (sqrtf(distanceSqr) < tolerance) {
+            return a.fallbackStart < b.fallbackStart;
+        } else {
+            return a.lightDistSQR < b.lightDistSQR;
+        }
+
+        return false;
     });
 
-
-    float totalSummator = 0.0f;
-    for (int i = 0; i < innerResults.size() && totalSummator < 1.0f; i++) {
+    for (int i = 0; i < innerResults.size(); i++) {
         LightResult lightResult;
         initWithZeros(lightResult.ambientColor);
         initWithZeros(lightResult.horizontAmbientColor);
@@ -607,11 +617,9 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
 
         InnerLightDataRes lastLdRes = {0, 0, -1};
         bool assigned = false;
-        float innerAlpha = innerResult.blendAlpha < 1.0 ? innerResult.blendAlpha : 1.0;
-        if (totalSummator + innerAlpha > 1.0f) {
-            innerAlpha = 1.0f - totalSummator;
-        }
-        lightResult.blendCoef = innerAlpha;
+
+        lightResult.blendCoef = innerResult.blendAlpha;
+
 
         lightResult.skyBoxFdid = innerResult.skyBoxFileId;
         lightResult.skyBoxFlags = innerResult.skyBoxFlags;
@@ -750,13 +758,13 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                             lightResult.SunAngleBlend = 1.0f;
                             ::blendTwoAndAdd(lightResult.SunFogStrength,
                                              currLdRes.SunFogStrength, lastLdRes.SunFogStrength,
-                                             timeAlphaBlend, innerAlpha);
+                                             timeAlphaBlend);
                             ::blendTwoAndAdd(lightResult.SunFogAngle,
                                              currLdRes.SunFogAngle, lastLdRes.SunFogAngle,
-                                             timeAlphaBlend, innerAlpha);
+                                             timeAlphaBlend);
                             lightResult.SunFogAngle = 1.0f;
                     } else
-                    if ((SunFogAngle2 >= 1.0f and SunFogAngle2 >= 1.0) || (SunFogAngle1 < 1.0 and SunFogAngle2 >= 1.0))
+                    if ((SunFogAngle2 >= 1.0f && SunFogAngle2 >= 1.0) || (SunFogAngle1 < 1.0 && SunFogAngle2 >= 1.0))
                     {
                         lightResult.SunAngleBlend = 1.0f - timeAlphaBlend;
                         lightResult.SunFogStrength = lastLdRes.SunFogStrength;
@@ -768,9 +776,9 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                     }
                 }
                 if (lastLdRes.time == -1) {
-                    addOnlyOne(lightResult, currLdRes, innerAlpha);
+                    addOnlyOne(lightResult, currLdRes);
                 } else {
-                    blendTwoAndAdd(lightResult, lastLdRes, currLdRes, timeAlphaBlend, innerAlpha);
+                    blendTwoAndAdd(lightResult, lastLdRes, currLdRes, timeAlphaBlend);
                 }
                 break;
             }
@@ -778,7 +786,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         }
 
         if (!assigned) {
-            addOnlyOne(lightResult, lastLdRes, innerAlpha);
+            addOnlyOne(lightResult, lastLdRes);
         }
 
         //Hack for LegacyFogScaler
@@ -792,8 +800,6 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         }
 
         lightResults.push_back(lightResult);
-
-        totalSummator += innerResult.blendAlpha;
     }
 }
 

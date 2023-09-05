@@ -3,6 +3,8 @@
 //
 
 #include <array>
+#include <string>
+#include <vector>
 
 #ifndef AWEBWOWVIEWERCPP_DBSTRUCTS_H
 #define AWEBWOWVIEWERCPP_DBSTRUCTS_H

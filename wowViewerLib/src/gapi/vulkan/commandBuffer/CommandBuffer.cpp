@@ -4,13 +4,16 @@
 
 #include "CommandBuffer.h"
 
+
 GCommandBuffer::GCommandBuffer(IDeviceVulkan &deviceVlk,
+                               VkQueue vkQueue,
                                VkCommandPool commandPool,
                                bool isPrimary,
                                uint32_t queueFamilyIndex) : m_device(deviceVlk),
                                                             m_isPrimary(isPrimary),
                                                             m_queueFamilyIndex(queueFamilyIndex),
-                                                            m_commandPool(commandPool)
+                                                            m_commandPool(commandPool),
+                                                            m_vkQueue(vkQueue)
 {
 
 }
@@ -31,11 +34,19 @@ void GCommandBuffer::createCommandBufVLK() {
     if (m_cmdBufWasCreated) {
         //Dispose of previous buffer
         auto l_cmdBuf = m_cmdBuffer;
+
         auto l_deviceVlk = m_device.getVkDevice();
         auto l_commandPool = m_commandPool;
-        m_device.addDeallocationRecord([l_cmdBuf, l_deviceVlk, l_commandPool]() -> void {
+        auto l_tracyContext = tracyContext;
+
+        m_device.addDeallocationRecord([l_cmdBuf, l_deviceVlk, l_tracyContext, l_commandPool]() -> void {
+#ifdef LINK_TRACY
+            TracyVkCollect(l_tracyContext, l_cmdBuf);
+#endif
             vkFreeCommandBuffers(l_deviceVlk, l_commandPool, 1, &l_cmdBuf);
         });
+
+
     }
 
     VkCommandBufferAllocateInfo allocInfo = {};
@@ -48,5 +59,10 @@ void GCommandBuffer::createCommandBufVLK() {
         throw std::runtime_error("failed to allocate command buffers!");
     }
 
+    if (!m_cmdBufWasCreated) {
+#ifdef LINK_TRACY
+        tracyContext = TracyVkContext(m_device.getVkPhysicalDevice(), m_device.getVkDevice(), m_vkQueue, m_cmdBuffer);
+#endif LINK_TRACY
+    }
     m_cmdBufWasCreated = true;
 }

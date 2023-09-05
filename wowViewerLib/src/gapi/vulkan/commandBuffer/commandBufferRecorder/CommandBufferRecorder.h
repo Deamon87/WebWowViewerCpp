@@ -8,6 +8,7 @@
 #include <memory>
 #include "../../GRenderPassVLK.h"
 #include "../../GFrameBufferVLK.h"
+#include "../../../../renderer/frame/FrameProfile.h"
 
 
 
@@ -20,6 +21,11 @@ class CommandBufferDebugLabel;
 #include "RenderPassHelper.h"
 #include "CommandBufferDebugLabel.h"
 #include "../../descriptorSets/GDescriptorSet.h"
+
+#ifdef LINK_TRACY
+#define VkZone(buffRecorder,a) TracyVkZone(buffRecorder.getTracyContext(), buffRecorder.getNativeCmdBuffer(), a)
+#endif
+
 class CmdBufRecorder {
 public:
     enum class ViewportType: int {vp_none = -1, vp_usual = 0, vp_mapArea = 1, vp_skyBox = 2, vp_MAX = 3};
@@ -60,6 +66,12 @@ public:
     friend class RenderPassHelper;
 
     void setViewPort(ViewportType viewportType);
+
+#ifdef LINK_TRACY
+    //Those should only be used for initialization of tracy zone
+    TracyVkCtx const &getTracyContext();;
+    VkCommandBuffer getNativeCmdBuffer();;
+#endif
 private:
     const GCommandBuffer &m_gCmdBuffer;
 

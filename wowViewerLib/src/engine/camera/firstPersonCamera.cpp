@@ -106,8 +106,8 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     /* Calc look at position */
 
-    dir = mathfu::mat3::RotationY((float) (-this->av * M_PI / 180.0f)) * dir;
-    dir = mathfu::mat3::RotationZ((float) (this->ah * M_PI / 180.0f)) * dir;
+    dir = mathfu::mat3::RotationY((float) (this->av * M_PI / 180.0f)) * dir;
+    dir = mathfu::mat3::RotationZ((float) (-this->ah * M_PI / 180.0f)) * dir;
 
     dir = mathfu::normalize(dir);
 
@@ -129,7 +129,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         mathfu::vec3 movDir = mathfu::vec3(dir);
 
         movDir = movDir * depthDiff;
-        camera = camera - movDir;
+        camera = camera + movDir;
     }
     if (verticalDiff != 0) {
         camera[2] = camera[2] + verticalDiff;
@@ -138,9 +138,9 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     this->lookAt = camera + dir;
 
     lookAtMat = mathfu::mat4(
-        right_move.x, up.x, dir.x, 0.0f,
-        right_move.y, up.y, dir.y, 0.0f,
-        right_move.z, up.z, dir.z, 0.0f,
+        right_move.x, up.x, -dir.x, 0.0f,
+        right_move.y, up.y, -dir.y, 0.0f,
+        right_move.z, up.z, -dir.z, 0.0f,
         0,0,0,1.0f //translation
     );
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;

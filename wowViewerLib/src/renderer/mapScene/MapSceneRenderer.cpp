@@ -154,9 +154,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             fogEnd = 100000000.0f;
             fogResult.FogScaler = 0;
             fogResult.FogDensity = 0;
+            fogResult.FogHeightDensity = 0;
         }
 
-        const float densityMultFix =  0.00050000002;
+        const float densityMultFix =  0.00050000002 * std::pow(10, m_config->fogDensityIncreaser);
         float fogScaler = fogResult.FogScaler;
         if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
         float fogStart = std::min<float>(m_config->farPlane, 3000) * fogScaler;
@@ -168,13 +169,15 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             0);
         blockPSVS.fogData[i].classicFogParams = mathfu::vec4(0, 0, 0, 0);
         blockPSVS.fogData[i].heightPlane = heightPlane;
-        blockPSVS.fogData[i].color_and_heightRate = mathfu::vec4(fogResult.FogColor, fogResult.FogHeightScaler);
+        blockPSVS.fogData[i].color_and_heightRate = mathfu::vec4(fogResult.FogColor, fogResult.FogHeightScaler * 0.5f);
         blockPSVS.fogData[i].heightDensity_and_endColor = mathfu::vec4(
             fogResult.FogHeightDensity * densityMultFix,
             fogResult.EndFogColor.x,
             fogResult.EndFogColor.y,
             fogResult.EndFogColor.z
         );
+
+        fogResult.SunFogAngle = 0.0f;
         blockPSVS.fogData[i].sunAngle_and_sunColor = mathfu::vec4(
             fogResult.SunFogAngle,
             fogResult.SunFogColor.x,
@@ -188,7 +191,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                 1000.0f
         );
         blockPSVS.fogData[i].sunPercentage = mathfu::vec4(
-            0.0f, //fdd->SunFogAngle * fdd->SunFogStrength,
+            fogResult.SunFogAngle * fogResult.SunFogStrength,
             0, 1.0, 1.0);
         blockPSVS.fogData[i].sunDirection_and_fogZScalar = mathfu::vec4(
             fdd->exteriorDirectColorDir, //TODO: for fog this is calculated from SUN position

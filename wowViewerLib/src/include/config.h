@@ -90,6 +90,8 @@ public:
     float farPlane = 1000;
     float farPlaneForCulling = 400;
 
+    float fogDensityIncreaser = 0;
+
     bool disableGlow = false;
 
     bool pauseAnimation = false;
@@ -156,7 +158,6 @@ public:
 
 
     //Stuff to display in UI
-    double cullingTimePerFrame = 0;
     double composerDrawTimePerFrame = 0;
     double consumeDraw = 0;
     double consumeUpdate = 0;

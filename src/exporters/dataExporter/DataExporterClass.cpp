@@ -222,11 +222,23 @@ void DataExporter::DataExporterClass::exportDBSkin(int id) {
         auto const batch = skinProfile->batches.getElement(batchIndex);
 
         DataExporter::DBM2Batch dbm2Batch;
-        *dynamic_cast<M2Batch*>(&dbm2Batch) = *batch;
+        *dynamic_cast<M2Batch *>(&dbm2Batch) = *batch;
 
         dbm2Batch.m2Id = id;
         dbm2Batch.batchIndex = batchIndex;
 
         m_storage.insert(dbm2Batch);
+    }
+
+    M2Array<M2SkinSection> &skinSections = skinProfile->skinSections;
+    for (int skinSectionIndex = 0; skinSectionIndex < skinSections.size; skinSectionIndex++) {
+        auto const skinSection = skinProfile->skinSections.getElement(skinSectionIndex);
+
+        DataExporter::DBSkinSection dbm2SkinSection;
+        *dynamic_cast<M2SkinSection *>(&dbm2SkinSection) = *skinSection;
+        dbm2SkinSection.m2Id = id;
+        dbm2SkinSection.skinSectionIndex = skinSectionIndex;
+
+        m_storage.insert(dbm2SkinSection);
     }
 }

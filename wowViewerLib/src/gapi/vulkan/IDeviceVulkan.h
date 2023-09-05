@@ -30,6 +30,7 @@ public:
     virtual ~IDeviceVulkan() = default;
 
     virtual VkDevice getVkDevice() = 0;
+    virtual VkPhysicalDevice getVkPhysicalDevice() = 0;
     virtual void addDeallocationRecord(std::function<void()> callback) = 0;
     virtual VkDescriptorSet allocateDescriptorSetPrimitive(
         const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout, std::shared_ptr<GDescriptorPoolVLK> &out_desciptorPool) = 0;

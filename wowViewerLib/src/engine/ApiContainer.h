@@ -14,6 +14,7 @@ typedef std::shared_ptr<ApiContainer> HApiContainer;
 #include "camera/CameraInterface.h"
 #include "../include/config.h"
 #include "../include/databaseHandler.h"
+#include "../../../src/persistance/RequestProcessor.h"
 
 
 class ApiContainer {
@@ -21,6 +22,7 @@ private:
     Config config;
 public:
     HWoWFilesCacheStorage cacheStorage = nullptr;
+    HRequestProcessor requestProcessor = nullptr;
     HGDevice hDevice = nullptr;
     std::shared_ptr<IClientDatabase> databaseHandler = nullptr;
     std::shared_ptr<ICamera> camera = nullptr;

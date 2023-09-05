@@ -39,7 +39,6 @@
 
 FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
     m_api = api;
-    m_processor = processor;
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
@@ -48,6 +47,7 @@ FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
 }
 
 void FrontendUI::composeUI() {
+
     if (m_dataExporter != nullptr) {
         m_dataExporter->process();
         if (m_dataExporter->isDone())
@@ -270,7 +270,6 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Elapsed time on consumeUpdate : %.3f ms", m_api->getConfig()->consumeUpdate);
             ImGui::Text("Elapsed time on consumeDraw : %.3f ms", m_api->getConfig()->consumeDraw);
             ImGui::Text("Elapsed time on composerDrawTimePerFrame : %.3f ms", m_api->getConfig()->composerDrawTimePerFrame);
-            ImGui::Text("Elapsed time on culling : %.3f ms", m_api->getConfig()->cullingTimePerFrame);
             ImGui::Text("- Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
             ImGui::Text("- Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
             ImGui::Text("- Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
@@ -722,8 +721,8 @@ void FrontendUI::showMainMenu() {
             }
             if (ImGui::MenuItem("Update keys", "", false)) {
                 m_keyUpdateWorkFlow = std::make_shared<KeysUpdateWorkflow>(
-                        std::dynamic_pointer_cast<CascRequestProcessor>(m_processor)
-                    );
+                    std::dynamic_pointer_cast<CascRequestProcessor>(m_api->requestProcessor)
+                );
             }
             ImGui::EndMenu();
         }
@@ -1412,6 +1411,10 @@ void FrontendUI::showSettingsDialog() {
         if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
             m_api->camera->setMovementSpeed(movementSpeed);
         }
+        auto fogDensityIncreaser = m_api->getConfig()->fogDensityIncreaser;
+        if (ImGui::SliderFloat("Fog Density", &fogDensityIncreaser, -4, 4)) {
+            m_api->getConfig()->fogDensityIncreaser = fogDensityIncreaser;
+        }
 
         switch(m_api->getConfig()->globalLighting) {
             case EParameterSource::eDatabase: {
@@ -1910,14 +1913,13 @@ bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     try {
         newProcessor = std::make_shared<CascRequestProcessor>(cascPath, buildDef);
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
-        newProcessor->setThreaded(true);
         newProcessor->setFileRequester(newStorage.get());
     } catch (...){
         return false;
     };
 
     m_api->cacheStorage = newStorage;
-    m_processor = newProcessor;
+    m_api->requestProcessor = newProcessor;
 
     return true;
 }
@@ -2058,13 +2060,12 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-    m_processor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    m_api->requestProcessor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
 //    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
 ////        processor->setThreaded(false);
 ////
-    m_processor->setThreaded(true);
-    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_processor.get());
-    m_processor->setFileRequester(m_api->cacheStorage.get());
+    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_api->requestProcessor.get());
+    m_api->requestProcessor->setFileRequester(m_api->cacheStorage.get());
     overrideCascOpened(true);
 }
 
@@ -2073,8 +2074,7 @@ void FrontendUI::showMinimapGenerationSettingsDialog() {
         if (m_minimapGenerationWindow == nullptr)
             m_minimapGenerationWindow = std::make_shared<MinimapGenerationWindow>(m_api,
                                                                                   m_uiRenderer,
-                                                                                  m_processor,
-                                                                                 showMinimapGeneratorSettings);
+                                                                                  showMinimapGeneratorSettings);
 
         m_minimapGenerationWindow->render();
     } else {

@@ -776,14 +776,14 @@ void GDeviceVLK::createCommandPoolForUpload(){
 
 void GDeviceVLK::createCommandBuffers() {
     for (auto & commandBuffer : fbCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily.value());
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, graphicsQueue, commandPool, true, indices.graphicsFamily.value());
     }
     for (auto & commandBuffer : swapChainCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, commandPool, true, indices.graphicsFamily.value());
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, graphicsQueue, commandPool, true, indices.graphicsFamily.value());
     }
 
     for (auto & commandBuffer : uploadCommandBuffers) {
-        commandBuffer = std::make_shared<GCommandBuffer>(*this, uploadCommandPool, true, indices.transferFamily.value());
+        commandBuffer = std::make_shared<GCommandBuffer>(*this, uploadQueue, uploadCommandPool, true, indices.transferFamily.value());
     }
 
 }

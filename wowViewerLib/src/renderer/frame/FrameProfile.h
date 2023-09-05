@@ -7,7 +7,12 @@
 
 #ifdef LINK_TRACY
 #include "Tracy.hpp"
-//#include "tracy/TracyVulkan.hpp"
+
+#ifdef LINK_VULKAN
+    #include "../../gapi/vulkan/context/vulkan_context.h"
+    #include "tracy/TracyVulkan.hpp"
+#endif
+
 #define setThreadName(a)  tracy::SetThreadName(a);
 #else
 #define setThreadName(a)

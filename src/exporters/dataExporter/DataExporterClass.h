@@ -22,9 +22,25 @@ namespace DataExporter {
         int batchIndex = -1;
     };
 
-    struct DBSkinSection {
+    struct DBSkinSection : public M2SkinSection{
         int m2Id = -1;
-        M2SkinSection skinSection;
+        int skinSectionIndex = -1;
+
+        float getCenterPositionX() const {return this->centerPosition.x;};
+        float getCenterPositionY() const {return this->centerPosition.y;};
+        float getCenterPositionZ() const {return this->centerPosition.z;};
+
+        float getSortCenterPositionX() const {return this->sortCenterPosition.x;};
+        float getSortCenterPositionY() const {return this->sortCenterPosition.y;};
+        float getSortCenterPositionZ() const {return this->sortCenterPosition.z;};
+
+        void setCenterPositionX(float value) {this->sortCenterPosition.x = value;};
+        void setCenterPositionY(float value) {this->sortCenterPosition.y = value;};
+        void setCenterPositionZ(float value) {this->sortCenterPosition.z = value;};
+
+        void setSortCenterPositionX(float value) {this->sortCenterPosition.x = value;};
+        void setSortCenterPositionY(float value) {this->sortCenterPosition.y = value;};
+        void setSortCenterPositionZ(float value) {this->sortCenterPosition.z = value;};
     };
 
     struct DBM2Material : M2Material{
@@ -147,6 +163,32 @@ namespace DataExporter {
                    make_column("textureTransformComboIndex", &DBM2Batch::textureTransformComboIndex),
                    foreign_key(&DBM2Batch::m2Id).references(&DBM2::m2Id),
                    unique(&DBM2Batch::m2Id, &DBM2Batch::batchIndex)
+                ),
+                make_table("M2SkinSection",
+                   make_column("m2Id", &DBSkinSection::m2Id),
+                   make_column("skinSectionIndex", &DBSkinSection::skinSectionIndex),
+#ifdef _MSC_VER
+                   make_column("skinSectionId", &DBSkinSection::skinSectionId),
+                   make_column("Level", &DBSkinSection::Level),
+                   make_column("vertexStart", &DBSkinSection::vertexStart),
+                   make_column("vertexCount", &DBSkinSection::vertexCount),
+                   make_column("indexStart", &DBSkinSection::indexStart),
+                   make_column("indexCount", &DBSkinSection::indexCount),
+                   make_column("boneCount", &DBSkinSection::boneCount),
+                   make_column("boneComboIndex", &DBSkinSection::boneComboIndex),
+                   make_column("boneInfluences", &DBSkinSection::boneInfluences),
+                   make_column("centerBoneIndex", &DBSkinSection::centerBoneIndex),
+
+                   make_column("centerPosition_0", &DBSkinSection::getCenterPositionX, &DBSkinSection::setCenterPositionX),
+                   make_column("centerPosition_1", &DBSkinSection::getCenterPositionY, &DBSkinSection::setCenterPositionY),
+                   make_column("centerPosition_2", &DBSkinSection::getCenterPositionZ, &DBSkinSection::setCenterPositionZ),
+                   make_column("sortCenterPosition_0", &DBSkinSection::getSortCenterPositionX, &DBSkinSection::setSortCenterPositionX),
+                   make_column("sortCenterPosition_1", &DBSkinSection::getSortCenterPositionY, &DBSkinSection::setSortCenterPositionY),
+                   make_column("sortCenterPosition_2", &DBSkinSection::getSortCenterPositionZ, &DBSkinSection::setSortCenterPositionZ),
+#endif
+                   make_column("sortRadius", &DBSkinSection::sortRadius),
+                   foreign_key(&DBSkinSection::m2Id).references(&DBM2::m2Id),
+                   unique(&DBSkinSection::m2Id, &DBSkinSection::skinSectionIndex)
                 ),
                 make_table("M2Material",
                    make_column("m2Id", &DBM2Material::m2Id),

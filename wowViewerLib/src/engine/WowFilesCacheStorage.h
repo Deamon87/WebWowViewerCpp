@@ -41,12 +41,9 @@ private:
     Cache<Db2File> db2Cache;
 public:
     WoWFilesCacheStorage(IFileRequest * requestProcessor);
-    void provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data)  ;
     void rejectFile(CacheHolderType holderType, const char* fileName) override ;
 
     void actuallDropCache();
-
-    void processCaches(int limit);
 
     Cache<AdtFile> *getAdtGeomCache();
     Cache<M2Geom> *getM2GeomCache();

@@ -225,11 +225,6 @@ void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileNam
     CChunkFileReader reader(*m_wmoGroupFile.get());
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
-    fixColorVertexAlpha(mohd);
-    if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
-        this->m_attenuateFunc(*this);
-    }
-
     fsStatus = FileStatus::FSLoaded;
 }
 
@@ -385,9 +380,15 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     return indexVBO;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, mathfu::vec4 localAmbient) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd, mathfu::vec4 localAmbient) {
     if (vertexBufferBindings == nullptr) {
-
+        //Do postLoading stuff here
+        if (mohd) {
+            fixColorVertexAlpha(mohd);
+            if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
+                this->m_attenuateFunc(*this);
+            }
+        }
         vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer), localAmbient);
     }
 

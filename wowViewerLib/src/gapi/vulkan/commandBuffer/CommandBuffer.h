@@ -10,6 +10,7 @@
 #include "../GDeviceVulkan.h"
 #include "../GFrameBufferVLK.h"
 #include "commandBufferRecorder/CommandBufferRecorder.h"
+#include "../../../renderer/frame/FrameProfile.h"
 
 class GCommandBuffer {
 public:
@@ -19,7 +20,7 @@ public:
     friend class IDeviceVulkan;
 
 public:
-    GCommandBuffer(IDeviceVulkan &deviceVlk, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
+    GCommandBuffer(IDeviceVulkan &deviceVlk, VkQueue vkQueue, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
 
     CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass);
     VkCommandBuffer getNativeCmdBuffer() const {
@@ -31,12 +32,17 @@ private:
 private:
     IDeviceVulkan &m_device;
     VkCommandBuffer m_cmdBuffer;
+    VkQueue m_vkQueue;
     bool m_isPrimary = true;
     const uint32_t m_queueFamilyIndex;
     VkCommandPool m_commandPool;
 
     bool m_cmdBufWasCreated = false;
     bool m_hasData = false;
+
+#ifdef LINK_TRACY
+    TracyVkCtx tracyContext;
+#endif
 };
 
 

@@ -300,3 +300,8 @@ void CmdBufRecorder::createDefaultScissors(const std::array<int32_t, 2> &areaOff
         static_cast<uint32_t>(areaSize[1])
     };
 }
+
+#ifdef LINK_TRACY
+VkCommandBuffer CmdBufRecorder::getNativeCmdBuffer() { return m_gCmdBuffer.getNativeCmdBuffer(); }
+TracyVkCtx const &CmdBufRecorder::getTracyContext() { return m_gCmdBuffer.tracyContext; }
+#endif

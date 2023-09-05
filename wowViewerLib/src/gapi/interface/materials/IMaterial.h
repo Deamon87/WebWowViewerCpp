@@ -12,7 +12,7 @@ struct PipelineTemplate {
     DrawElementMode element;
 
     bool backFaceCulling = true;
-    bool triCCW = false; //counter-clockwise
+    bool triCCW = true; //counter-clockwise
     EGxBlendEnum blendMode;
     bool depthCulling = true;
     bool depthWrite = true;

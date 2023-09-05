@@ -133,7 +133,7 @@ HFileContent CascRequestProcessor::tryGetFile(void *cascStorage, void *fileNameT
     return fileContent;
 }
 
-void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+void CascRequestProcessor::processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) {
     auto perstFile = s_file.lock();
     uint32_t fileDataId = 0;
     if (fileName.find("File") == 0) {

@@ -564,9 +564,16 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 //    }
 }
 
-mathfu::vec3 blendV3(mathfu::vec3 a, mathfu::vec3 b, float alpha) {
-    return (a - b) * alpha + a;
+static inline mathfu::vec4 mix(const mathfu::vec4 &a, const mathfu::vec4 &b, float alpha) {
+    return (b - a) * alpha + a;
 }
+static inline mathfu::vec3 mix(const mathfu::vec3 &a, const mathfu::vec3 &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+static inline float mix(const float &a, const float &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+
 
 void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
@@ -662,24 +669,24 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         float currentGlow = 0;
 
         for (auto &_light : lightResults) {
-            currentGlow += _light.glow * _light.blendCoef;
+            currentGlow = mix(currentGlow, _light.glow, _light.blendCoef);
 
-            ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
-            horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
-            groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
-            directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
+            ambientColor = mix(ambientColor, mathfu::vec3(_light.ambientColor), _light.blendCoef);
+            horizontAmbientColor = mix(horizontAmbientColor, mathfu::vec3(_light.horizontAmbientColor), _light.blendCoef);
+            groundAmbientColor = mix(groundAmbientColor, mathfu::vec3(_light.groundAmbientColor), _light.blendCoef);
+            directColor = mix(directColor, mathfu::vec3(_light.directColor), _light.blendCoef);
 
-            closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
-            farRiverColor += mathfu::vec3(_light.farRiverColor) * _light.blendCoef;
-            closeOceanColor += mathfu::vec3(_light.closeOceanColor) * _light.blendCoef;
-            farOceanColor += mathfu::vec3(_light.farOceanColor) * _light.blendCoef;
+            closeRiverColor = mix(closeRiverColor, mathfu::vec3(_light.closeRiverColor), _light.blendCoef);
+            farRiverColor = mix(farRiverColor, mathfu::vec3(_light.farRiverColor), _light.blendCoef);
+            closeOceanColor = mix(closeOceanColor, mathfu::vec3(_light.closeOceanColor), _light.blendCoef);
+            farOceanColor = mix(farOceanColor, mathfu::vec3(_light.farOceanColor), _light.blendCoef);
 
-            SkyTopColor += mathfu::vec3(_light.SkyTopColor.data()) * _light.blendCoef;
-            SkyMiddleColor += mathfu::vec3(_light.SkyMiddleColor) * _light.blendCoef;
-            SkyBand1Color += mathfu::vec3(_light.SkyBand1Color) * _light.blendCoef;
-            SkyBand2Color += mathfu::vec3(_light.SkyBand2Color) * _light.blendCoef;
-            SkySmogColor += mathfu::vec3(_light.SkySmogColor) * _light.blendCoef;
-            SkyFogColor += mathfu::vec3(_light.SkyFogColor.data()) * _light.blendCoef;
+            SkyTopColor = mix(SkyTopColor, mathfu::vec3(_light.SkyTopColor.data()), _light.blendCoef);
+            SkyMiddleColor = mix(SkyMiddleColor, mathfu::vec3(_light.SkyMiddleColor), _light.blendCoef);
+            SkyBand1Color = mix(SkyBand1Color, mathfu::vec3(_light.SkyBand1Color), _light.blendCoef);
+            SkyBand2Color = mix(SkyBand2Color, mathfu::vec3(_light.SkyBand2Color), _light.blendCoef);
+            SkySmogColor = mix(SkySmogColor, mathfu::vec3(_light.SkySmogColor), _light.blendCoef);
+            SkyFogColor = mix(SkyFogColor, mathfu::vec3(_light.SkyFogColor.data()), _light.blendCoef);
         }
 
         //Database is in BGRA
@@ -903,47 +910,50 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
 //            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
 //            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
             fdd->EndFogColor = mathfu::vec3(0.0f, 0, 0);
+            auto &fogResult = fdd->fogResults.emplace_back();
             for (auto &_light : lightResults) {
-                auto &fogResult = fdd->fogResults.emplace_back();
-                fogResult.FogEnd = _light.FogEnd;
-                fogResult.FogScaler = _light.FogScaler;
-                fogResult.FogDensity = _light.FogDensity;
-                fogResult.FogHeight = _light.FogHeight;
-                fogResult.FogHeightScaler = _light.FogHeightScaler;
-                fogResult.FogHeightDensity = _light.FogHeightDensity;
-                fogResult.SunFogAngle = _light.SunFogAngle;
+                fogResult.FogEnd = mix(fogResult.FogEnd, _light.FogEnd, _light.blendCoef);
+                fogResult.FogScaler = mix(fogResult.FogScaler, _light.FogScaler, _light.blendCoef);
+                fogResult.FogDensity = mix(fogResult.FogDensity, _light.FogDensity, _light.blendCoef);
+                fogResult.FogHeight = mix(fogResult.FogHeight, _light.FogHeight, _light.blendCoef);
+                fogResult.FogHeightScaler = mix(fogResult.FogHeightScaler, _light.FogHeightScaler, _light.blendCoef);
+                fogResult.FogHeightDensity = mix(fogResult.FogHeightDensity, _light.FogHeightDensity, _light.blendCoef);
+                fogResult.SunFogAngle = mix(fogResult.SunFogAngle, _light.SunFogAngle, _light.blendCoef);
                 if (fdd->overrideValuesWithFinalFog) {
-                    fogResult.FogColor = mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]);
+                    fogResult.FogColor = mix(fogResult.FogColor, mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]), _light.blendCoef);
                 } else {
-                    fogResult.FogColor = mathfu::vec3(_light.SkyFogColor[2], _light.SkyFogColor[1], _light.SkyFogColor[0]);
+                    fogResult.FogColor = mix(fogResult.FogColor, mathfu::vec3(_light.SkyFogColor[2], _light.SkyFogColor[1], _light.SkyFogColor[0]), _light.blendCoef);
                 }
-                fogResult.EndFogColor = mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]);
-                fdd->EndFogColor += fogResult.EndFogColor * _light.blendCoef;
-                fogResult.EndFogColorDistance = _light.EndFogColorDistance;
-                fogResult.SunFogColor = mathfu::vec3(_light.SunFogColor[2], _light.SunFogColor[1], _light.SunFogColor[0]);
-                fogResult.SunFogStrength = _light.SunFogStrength;
-                fogResult.FogHeightColor = mathfu::vec3(_light.FogHeightColor[2], _light.FogHeightColor[1], _light.FogHeightColor[0]);
-                fogResult.FogHeightCoefficients = mathfu::vec4(_light.FogHeightCoefficients[0], _light.FogHeightCoefficients[1],
-                                                          _light.FogHeightCoefficients[2], _light.FogHeightCoefficients[3]);
-                fogResult.MainFogCoefficients = mathfu::vec4(_light.MainFogCoefficients[0], _light.MainFogCoefficients[1],
-                                                        _light.MainFogCoefficients[2], _light.MainFogCoefficients[3]);
-                fogResult.HeightDensityFogCoefficients = mathfu::vec4(_light.HeightDensityFogCoefficients[0],
-                                                                 _light.HeightDensityFogCoefficients[1],
-                                                                 _light.HeightDensityFogCoefficients[2],
-                                                                 _light.HeightDensityFogCoefficients[3]);
+                fogResult.EndFogColor = mix(fogResult.EndFogColor, mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]), _light.blendCoef);
+                fogResult.EndFogColorDistance = mix(fogResult.EndFogColorDistance, _light.EndFogColorDistance, _light.blendCoef);
+                fogResult.SunFogColor = mix(fogResult.SunFogColor, mathfu::vec3(_light.SunFogColor[2], _light.SunFogColor[1], _light.SunFogColor[0]), _light.blendCoef);
+                fogResult.SunFogStrength = mix(fogResult.SunFogStrength, _light.SunFogStrength, _light.blendCoef);
+                fogResult.FogHeightColor = mix(fogResult.FogHeightColor, mathfu::vec3(_light.FogHeightColor[2], _light.FogHeightColor[1], _light.FogHeightColor[0]), _light.blendCoef);
+                fogResult.FogHeightCoefficients = mix(
+                    fogResult.FogHeightCoefficients,
+                    mathfu::vec4(_light.FogHeightCoefficients[3], _light.FogHeightCoefficients[2],
+                    _light.FogHeightCoefficients[1], _light.FogHeightCoefficients[0]), _light.blendCoef);
+                fogResult.MainFogCoefficients = mix(
+                    fogResult.MainFogCoefficients,
+                    mathfu::vec4(_light.MainFogCoefficients[3], _light.MainFogCoefficients[2],
+                    _light.MainFogCoefficients[1], _light.MainFogCoefficients[0]), _light.blendCoef);
+                fogResult.HeightDensityFogCoefficients = mix(
+                    fogResult.HeightDensityFogCoefficients,
+                    mathfu::vec4(_light.HeightDensityFogCoefficients[3],
+                        _light.HeightDensityFogCoefficients[2],
+                        _light.HeightDensityFogCoefficients[1],
+                        _light.HeightDensityFogCoefficients[0]), _light.blendCoef);
 
-                fogResult.FogZScalar = _light.FogZScalar;
-                fogResult.LegacyFogScalar = _light.LegacyFogScalar;
-                fogResult.MainFogStartDist = _light.MainFogStartDist;
-                fogResult.MainFogEndDist = _light.MainFogEndDist;
-                fogResult.FogBlendAlpha = _light.blendCoef;
-                fogResult.HeightEndFogColor = mathfu::vec3(_light.HeightEndFogColor[2], _light.HeightEndFogColor[1], _light.HeightEndFogColor[0]);
-                fogResult.FogStartOffset = _light.FogStartOffset;
+                fogResult.FogZScalar = mix(fogResult.FogZScalar, _light.FogZScalar, _light.blendCoef);
+                fogResult.LegacyFogScalar = mix(fogResult.LegacyFogScalar, _light.LegacyFogScalar, _light.blendCoef);
+                fogResult.MainFogStartDist = mix(fogResult.MainFogStartDist, _light.MainFogStartDist, _light.blendCoef);
+                fogResult.MainFogEndDist = mix(fogResult.MainFogEndDist, _light.MainFogEndDist, _light.blendCoef);
+                fogResult.FogBlendAlpha = mix(fogResult.FogBlendAlpha, _light.blendCoef, _light.blendCoef);
+                fogResult.HeightEndFogColor = mix(fogResult.HeightEndFogColor, mathfu::vec3(_light.HeightEndFogColor[2], _light.HeightEndFogColor[1], _light.HeightEndFogColor[0]), _light.blendCoef);
+                fogResult.FogStartOffset = mix(fogResult.FogStartOffset, _light.FogStartOffset, _light.blendCoef);
             }
         }
     }
-
-//    this->m_api->getConfig()->setClearColor(0,0,0,0);
 }
 
 void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) {
@@ -1355,15 +1365,21 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
 
-    for (auto &m2Object : renderPlan->m2Array.getToLoadMain()) {
-        if (m2Object == nullptr) continue;
-        m2Object->doLoadMainFile();
+    {
+        ZoneScopedN("Load m2 main");
+        for (auto &m2Object: renderPlan->m2Array.getToLoadMain()) {
+            if (m2Object == nullptr) continue;
+            m2Object->doLoadMainFile();
+        }
     }
-    for (auto &m2Object : renderPlan->m2Array.getToLoadGeom()) {
-        if (m2Object == nullptr) continue;
-        m2Object->doLoadGeom(sceneRenderer);
-        m2ProcessedThisFrame++;
+    {
+        ZoneScopedN("Load m2 geom");
+        for (auto &m2Object: renderPlan->m2Array.getToLoadGeom()) {
+            if (m2Object == nullptr) continue;
+            m2Object->doLoadGeom(sceneRenderer);
+            m2ProcessedThisFrame++;
 //        if (m2ProcessedThisFrame > 100) break;
+        }
     }
 
     if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
@@ -1378,19 +1394,28 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     }
 //    }
 
-    for (auto &wmoObject : renderPlan->wmoArray.getToLoad()) {
-        if (wmoObject == nullptr) continue;
-        wmoObject->doPostLoad(sceneRenderer);
+    {
+        ZoneScopedN("Load wmoObject");
+        for (auto &wmoObject: renderPlan->wmoArray.getToLoad()) {
+            if (wmoObject == nullptr) continue;
+            wmoObject->doPostLoad(sceneRenderer);
+        }
     }
-    for (auto &wmoGroupObject : renderPlan->wmoGroupArray.getToLoad()) {
-        if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->doPostLoad(sceneRenderer);
-        wmoGroupsProcessedThisFrame++;
-        if (wmoGroupsProcessedThisFrame > 20) break;
+    {
+        ZoneScopedN("Load wmo group");
+        for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToLoad()) {
+            if (wmoGroupObject == nullptr) continue;
+            wmoGroupObject->doPostLoad(sceneRenderer);
+            wmoGroupsProcessedThisFrame++;
+            if (wmoGroupsProcessedThisFrame > 20) break;
+        }
     }
 
-    for (auto &adtObject : renderPlan->adtArray) {
-        adtObject->adtObject->doPostLoad(sceneRenderer);
+    {
+        ZoneScopedN("Load adt");
+        for (auto &adtObject: renderPlan->adtArray) {
+            adtObject->adtObject->doPostLoad(sceneRenderer);
+        }
     }
 
     if (quadBindings == nullptr)

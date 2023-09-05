@@ -1261,7 +1261,7 @@ void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogR
                     1.0f);
                 wmoFog.isDefault = false;
             }
-            std::array<float, 3> fogColor = {fogRecord.fog.color.b/255.0f, fogRecord.fog.color.g/255.0f,  fogRecord.fog.color.r/255.0f};
+            std::array<float, 3> fogColor = {fogRecord.fog.color.r/255.0f, fogRecord.fog.color.g/255.0f,  fogRecord.fog.color.b/255.0f};
             wmoFog.EndFogColor = fogColor;
             wmoFog.SunFogColor = fogColor;
             wmoFog.FogHeightColor = fogColor;

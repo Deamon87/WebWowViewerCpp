@@ -165,7 +165,7 @@ public:
     virtual VkDevice getVkDevice() override {
         return device;
     };
-    virtual VkPhysicalDevice getVkPhysicalDevice() {
+    virtual VkPhysicalDevice getVkPhysicalDevice() override {
         return physicalDevice;
     };
     virtual VkExtent2D getCurrentExtent() {

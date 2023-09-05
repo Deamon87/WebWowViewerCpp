@@ -13,10 +13,9 @@
 
 class MinimapGenerationWindow {
 public:
-    MinimapGenerationWindow(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, HRequestProcessor processor, bool &showMinimapGeneratorSettings) :
+    MinimapGenerationWindow(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, bool &showMinimapGeneratorSettings) :
     m_showMinimapGeneratorSettings(showMinimapGeneratorSettings), m_renderer(renderer) {
         m_api = api;
-        m_processor = processor;
 
         m_minimapDB = std::make_shared<CMinimapDataDB::DataBaseClass>("minimapdb.sqlite");
         m_minimapDB->getScenarios(sceneDefList);

@@ -101,7 +101,7 @@ void WmoGroupObject::startLoading() {
         } else {
             m_geom = m_api->cacheStorage->getWmoGroupGeomCache()->get(m_fileName);
         }
-        m_geom->setMOHD(this->m_wmoApi->getWmoHeader());
+
         m_geom->setAttenuateFunction(this->m_wmoApi->getAttenFunction());
     }
 }
@@ -130,7 +130,8 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     HGDevice device = m_api->hDevice;
 
-    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, mathfu::vec4(
+    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader(),
+                                                               mathfu::vec4(
         this->getAmbientColor().xyz(),
         ((this->m_geom->mogp->flags.INTERIOR > 0) && (!this->m_geom->mogp->flags.EXTERIOR_LIT)) ? 1.0f : 0.0f
     ));

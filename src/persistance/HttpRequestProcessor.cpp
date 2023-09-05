@@ -40,7 +40,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
-void HttpRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+void HttpRequestProcessor::processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) {
     auto perstFile = s_file.lock();
     if (perstFile == nullptr){
         toBeProcessed--;

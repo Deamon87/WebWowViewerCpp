@@ -17,7 +17,7 @@ private:
     std::string m_urlBase;
     std::string m_urlBaseFileId;
 protected:
-    void processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) override;
+    void processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) override;
 };
 
 

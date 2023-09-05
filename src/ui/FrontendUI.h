@@ -45,10 +45,6 @@ public:
         return shared_from_this();
     }
 
-    HRequestProcessor getProcessor() {
-        return m_processor;
-    }
-
 //    void produceDrawStage(HDrawStage &resultDrawStage);
     HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
 
@@ -173,7 +169,6 @@ private:
     float worldPosZ = 0;
 
     HApiContainer m_api;
-    HRequestProcessor m_processor;
 
     HWdtFile m_wdtFile = nullptr;
 

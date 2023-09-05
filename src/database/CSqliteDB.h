@@ -132,6 +132,7 @@ private:
         float pos[3];
         float fallbackStart;
         float fallbackEnd;
+        float lightDistSQR = 0;
         float blendAlpha = 0;
         int paramId;
         int skyBoxFileId;
@@ -187,13 +188,12 @@ private:
                                      std::vector<InnerLightResult> &innerResults, float farClip);
 
     void
-    addOnlyOne(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &currLdRes,
-               float innerAlpha) const;
+    addOnlyOne(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &currLdRes) const;
 
     void
     blendTwoAndAdd(LightResult &lightResult, const InnerLightDataRes &lastLdRes,
                    const InnerLightDataRes &currLdRes,
-                   float timeAlphaBlend, float innerAlpha) const;
+                   float timeAlphaBlend) const;
 
 };
 
