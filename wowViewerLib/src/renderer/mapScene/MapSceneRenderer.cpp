@@ -169,7 +169,9 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             0);
         blockPSVS.fogData[i].classicFogParams = mathfu::vec4(0, 0, 0, 0);
         blockPSVS.fogData[i].heightPlane = heightPlane;
-        blockPSVS.fogData[i].color_and_heightRate = mathfu::vec4(fogResult.FogColor, fogResult.FogHeightScaler * 0.5f);
+        blockPSVS.fogData[i].color_and_heightRate = mathfu::vec4(fogResult.FogColor, fogResult.FogHeightScaler
+//            * 0.01
+        );
         blockPSVS.fogData[i].heightDensity_and_endColor = mathfu::vec4(
             fogResult.FogHeightDensity * densityMultFix,
             fogResult.EndFogColor.x,

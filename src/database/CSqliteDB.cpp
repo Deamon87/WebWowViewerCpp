@@ -719,7 +719,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
             currLdRes.FogScaler = std::clamp(currLdRes.FogScaler, -1.0f, 1.0f);
             currLdRes.FogEnd = std::max<float>(currLdRes.FogEnd, 10.0f);
             currLdRes.FogHeight = std::max<float>(currLdRes.FogHeight, -10000.0f);
-            currLdRes.FogHeightScaler = std::clamp(currLdRes.FogScaler, -1.0f, 1.0f);
+            currLdRes.FogHeightScaler = std::clamp(currLdRes.FogHeightScaler, -1.0f, 1.0f);
             if (!currLdRes.SunFogColor)
                 currLdRes.SunFogAngle = 1.0f;
 

@@ -16,6 +16,10 @@ set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 set(LINK_TRACY 1)
 set(COMPILE_SHADER_WITH_DEBUG 1)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(COMPILE_SHADER_WITH_DEBUG 1)
+endif ()
+
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 

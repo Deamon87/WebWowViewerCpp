@@ -8,6 +8,7 @@ endif()
 if (COMPILE_SHADER_WITH_DEBUG)
     set(SHADER_DEBUG_FLAG "-g")
     set(APP_RUN_PREFIX "")
+    set (SPIRV_OPT_APP "")
 else()
     set(SHADER_DEBUG_FLAG "")
 endif()
@@ -72,7 +73,7 @@ else()
     add_custom_target(spirv_reflection)
 endif()
 
-set (SPIRV_OPT_APP "")
+
 
 macro(configure_filesVLK rootDir srcCommonDir shaderDirs destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
