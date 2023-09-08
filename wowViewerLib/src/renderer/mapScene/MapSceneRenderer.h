@@ -107,14 +107,6 @@ public:
                               animTime_t sceneTime);
 
 private:
-    FrameCounter mapProduceUpdateCounter;
-    FrameCounter interiorViewCollectMeshCounter;
-    FrameCounter exteriorViewCollectMeshCounter;
-    FrameCounter m2CollectMeshCounter;
-    FrameCounter sortMeshCounter;
-    FrameCounter collectBuffersCounter;
-    FrameCounter sortBuffersCounter;
-
     Config *m_config;
 };
 

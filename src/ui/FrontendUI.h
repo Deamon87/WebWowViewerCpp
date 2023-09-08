@@ -157,11 +157,6 @@ private:
 
     int currentCameraNum = -1;
 
-    std::array<float, 3> exteriorAmbientColor = {1, 1, 1};
-    std::array<float, 3> exteriorHorizontAmbientColor = {1, 1, 1};
-    std::array<float, 3> exteriorGroundAmbientColor= {1, 1, 1};
-    std::array<float, 3> exteriorDirectColor = {0, 0, 0};
-
     MapRecord prevMapRec;
 
     float worldPosX = 0;

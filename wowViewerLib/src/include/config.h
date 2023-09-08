@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <thread>
 #include <mathfu/glsl_mappings.h>
+#include "../renderer/mapScene/FrameDependentData.h"
 
 struct RiverColorOverride {
     int liquidObjectId;
@@ -35,7 +36,6 @@ enum class EFreeStrategy : char {
 class Config {
 public:
     Config() {
-        threadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
         m_hardwareThreadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
     }
 
@@ -79,9 +79,6 @@ public:
     int minParticle = 0;
     int maxParticle = 9999;
 
-    int threadCount = 4;
-    int quickSortCutoff = 100;
-
     int currentTime = 0;
 
     bool useWotlkLogic = false;
@@ -99,17 +96,10 @@ public:
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
     EParameterSource globalLighting = EParameterSource::eDatabase;
-    mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
+    ExteriorColors exteriorColors;
     mathfu::vec3 exteriorDirectColorDir;
 
     float adtSpecMult = 1.0;
-
-    mathfu::vec4 interiorAmbientColor;
-    mathfu::vec4 interiorSunColor;
-    mathfu::vec3 interiorSunDir;
 
     bool useMinimapWaterColor = false;
     bool useCloseRiverColorForDB = false;
@@ -120,29 +110,10 @@ public:
     mathfu::vec4 farOceanColor = {1,1,1,1};
 
     EParameterSource skyParams = EParameterSource::eDatabase;
-    mathfu::vec4 SkyTopColor;
-    mathfu::vec4 SkyMiddleColor;
-    mathfu::vec4 SkyBand1Color;
-    mathfu::vec4 SkyBand2Color;
-    mathfu::vec4 SkySmogColor;
-    mathfu::vec4 SkyFogColor;
+    SkyColors skyColors;
 
     EParameterSource globalFog = EParameterSource::eDatabase;
-    mathfu::vec4 actualFogColor = mathfu::vec4(1,1,1, 1);
-    float FogEnd = 0;
-    float FogScaler = 0;
-    float FogDensity = 0;
-    float FogHeight = 0;
-    float FogHeightScaler = 0;
-    float FogHeightDensity = 0;
-    float SunFogAngle = 0;
-    mathfu::vec3 FogColor = mathfu::vec3(0,0,0);
-    mathfu::vec3 EndFogColor = mathfu::vec3(0,0,0);
-    float EndFogColorDistance = 0;
-    mathfu::vec3 SunFogColor = mathfu::vec3(0,0,0);
-    float SunFogStrength = 0;
-    mathfu::vec3 FogHeightColor = mathfu::vec3(0,0,0);
-    mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
+    FogResult fogResult;
 
     std::string areaName;
 
@@ -155,51 +126,6 @@ public:
     double adtTTLWithoutUpdate = 10000; //10 secs by default
     double adtFTLWithoutUpdate = 6; //25 frames by default
     EFreeStrategy adtFreeStrategy = EFreeStrategy::eTimeBased;
-
-
-    //Stuff to display in UI
-    double composerDrawTimePerFrame = 0;
-    double consumeDraw = 0;
-    double consumeUpdate = 0;
-    double updateTimePerFrame = 0;
-    double mapUpdateTime = 0;
-    double m2UpdateTime = 0;
-    double wmoGroupUpdateTime = 0;
-    double adtUpdateTime = 0;
-    double m2calcDistanceTime = 0;
-    double adtCleanupTime = 0;
-
-    double mapProduceUpdateTime = 0;
-    double interiorViewCollectMeshTime = 0;
-    double exteriorViewCollectMeshTime = 0;
-    double m2CollectMeshTime = 0;
-    double sortMeshTime = 0;
-    double collectBuffersTime = 0;
-    double sortBuffersTime = 0;
-
-    double startUpdateForNexFrame = 0;
-    double singleUpdateCNT = 0;
-    double produceDrawStage = 0;
-    double meshesCollectCNT = 0;
-    double updateBuffersCNT = 0;
-    double updateBuffersDeviceCNT = 0;
-    double postLoadCNT = 0;
-    double textureUploadCNT = 0;
-    double drawStageAndDepsCNT = 0;
-    double endUpdateCNT = 0;
-
-    double cullCreateVarsCounter = 0;
-    double cullGetCurrentWMOCounter = 0;
-    double cullGetCurrentZoneCounter = 0;
-    double cullUpdateLightsFromDBCounter = 0;
-    double cullExterior = 0;
-    double cullExteriorSetDecl = 0;
-    double cullExteriorWDLCull = 0;
-    double cullExteriorGetCands = 0;
-    double cullExterioFrustumWMO = 0;
-    double cullExterioFrustumM2 = 0;
-    double cullSkyDoms = 0;
-    double cullCombineAllObjects = 0;
 
     HRiverColorOverrideHolder colorOverrideHolder = nullptr;
 private:

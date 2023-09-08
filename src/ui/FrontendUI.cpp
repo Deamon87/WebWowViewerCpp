@@ -138,6 +138,40 @@ void FrontendUI::composeUI() {
     ImGui::Render();
 }
 
+inline void drawColumnF(const std::string &text, const float &value) {
+    ImGui::TableNextRow();
+
+    ImGui::TableNextColumn();
+    ImGui::Text(text.c_str());
+    ImGui::TableNextColumn();
+    ImGui::Text("%.3f", value);
+}
+inline void drawColumnVec4(const std::string &text, const mathfu::vec4 &value) {
+    ImGui::TableNextRow();
+
+    ImGui::TableNextColumn();
+    ImGui::Text(text.c_str());
+    ImGui::TableNextColumn();
+    ImGui::Text("%.3f, %.3f, %.3f, %.3f", value.x, value.y, value.z, value.w);
+}
+
+inline void drawColumnColorVec3(const std::string &text, const std::string &name, const mathfu::vec3 &value) {
+    ImGui::TableNextRow();
+
+    const std::string message = "(%.3f, %.3f, %.3f)";
+    const std::string varName = name + "##b";
+    ImGui::TableNextColumn();
+    ImGui::Text(text.c_str());
+
+    ImGui::TableNextColumn();
+    ImGui::Text(message.c_str(),
+                value.x,
+                value.y,
+                value.z);
+    ImGui::SameLine();
+    ImGui::ColorButton(varName.c_str(), ImVec4(value.x, value.y, value.z, 0));
+}
+
 void FrontendUI::showCurrentStatsDialog() {
     static float f = 0.0f;
     static int counter = 0;
@@ -162,45 +196,48 @@ void FrontendUI::showCurrentStatsDialog() {
             }
             ImGui::Separator();
         }
-        ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
-                    ImGui::GetIO().Framerate);
+        if (ImGui::CollapsingHeader("General statistics")) {
+            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
+                        ImGui::GetIO().Framerate);
 //            if(getCurrentAreaName) {
-        ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
+            ImGui::Text("Current area name: %s", getCurrentAreaName().c_str());
 
-        ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
+            ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
 
-        float m2s = m2SizeLoaded / 1024.0f / 1024.f;
-        ImGui::Text("Total size of m2 files loaded %f MB", m2s);
-        int l_blpTexturesLoaded = blpTexturesLoaded;
-        float l_blpTexturesSizeLoaded = blpTexturesSizeLoaded / 1024.0f / 1024.f;
-        ImGui::Text("Current blp files loaded %d", l_blpTexturesLoaded);
-        ImGui::Text("Current blp files size %f MB", l_blpTexturesSizeLoaded);
+            float m2s = m2SizeLoaded / 1024.0f / 1024.f;
+            ImGui::Text("Total size of m2 files loaded %f MB", m2s);
+            int l_blpTexturesLoaded = blpTexturesLoaded;
+            float l_blpTexturesSizeLoaded = blpTexturesSizeLoaded / 1024.0f / 1024.f;
+            ImGui::Text("Current blp files loaded %d", l_blpTexturesLoaded);
+            ImGui::Text("Current blp files size %f MB", l_blpTexturesSizeLoaded);
 
-        int l_blpTexturesVulkanLoaded = blpTexturesVulkanLoaded;
-        float l_blpTexturesVulkanSizeLoaded = blpTexturesVulkanSizeLoaded / 1024.0f / 1024.f;
-        ImGui::Text("Current blp vulkan textures loaded %d", l_blpTexturesVulkanLoaded);
-        ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
+            int l_blpTexturesVulkanLoaded = blpTexturesVulkanLoaded;
+            float l_blpTexturesVulkanSizeLoaded = blpTexturesVulkanSizeLoaded / 1024.0f / 1024.f;
+            ImGui::Text("Current blp vulkan textures loaded %d", l_blpTexturesVulkanLoaded);
+            ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
+        }
 
         if (m_sceneRenderer) {
             auto mapPlan = m_sceneRenderer->getLastCreatedPlan();
             if (mapPlan) {
-                auto &adtArray = mapPlan->adtArray;
-                auto &wmoArray = mapPlan->wmoArray;
-                auto &wmoGroupArray = mapPlan->wmoGroupArray;
-                auto &m2Array = mapPlan->m2Array;
-
-                ImGui::Text("Candidates WMO %d", wmoArray.getCandidates().size());
-                ImGui::Text("Candidates M2 objects %d", m2Array.getCandidates().size());
-
-                ImGui::Text("Rendered ADT files %d", adtArray.size());
-                ImGui::Text("Rendered WMO %d", wmoArray.getToDrawn().size());
-                ImGui::Text("Rendered WMO groups %d", wmoGroupArray.getToDraw().size());
-                ImGui::Text("Rendered M2 objects %d", m2Array.getDrawn().size());
-
-
                 auto &cullStageData = mapPlan;
 
                 if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
+                    auto &adtArray = mapPlan->adtArray;
+                    auto &wmoArray = mapPlan->wmoArray;
+                    auto &wmoGroupArray = mapPlan->wmoGroupArray;
+                    auto &m2Array = mapPlan->m2Array;
+
+                    ImGui::Text("Candidates WMO %d", wmoArray.getCandidates().size());
+                    ImGui::Text("Candidates M2 objects %d", m2Array.getCandidates().size());
+
+                    ImGui::Text("Rendered ADT files %d", adtArray.size());
+                    ImGui::Text("Rendered WMO %d", wmoArray.getToDrawn().size());
+                    ImGui::Text("Rendered WMO groups %d", wmoGroupArray.getToDraw().size());
+                    ImGui::Text("Rendered M2 objects %d", m2Array.getDrawn().size());
+
+                    ImGui::Separator();
+
                     int m2ObjectsBeforeCullingExterior = 0;
                     if (cullStageData->viewsHolder.getExterior() != nullptr) {
                         m2ObjectsBeforeCullingExterior = cullStageData->viewsHolder.getExterior()->m2List.getCandidates().size();
@@ -225,103 +262,90 @@ void FrontendUI::showCurrentStatsDialog() {
 
                     ImGui::Separator();
                 }
-//
-//                if (ImGui::CollapsingHeader("Current fog params")) {
-//                    if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr) {
-//                        ImGui::Text("Fog end: %.3f", cullStageData->frameDependentData->FogEnd);
-//                        ImGui::Text("Fog Scalar: %.3f", cullStageData->frameDependentData->FogScaler);
-//                        ImGui::Text("Fog Density: %.3f", cullStageData->frameDependentData->FogDensity);
-//                        ImGui::Text("Fog Height: %.3f", cullStageData->frameDependentData->FogHeight);
-//                        ImGui::Text("Fog Height Scaler: %.3f", cullStageData->frameDependentData->FogHeightScaler);
-//                        ImGui::Text("Fog Height Density: %.3f", cullStageData->frameDependentData->FogHeightDensity);
-//                        ImGui::Text("Sun Fog Angle: %.3f", cullStageData->frameDependentData->SunFogAngle);
-//                        ImGui::Text("Fog Color: (%.3f, %.3f, %.3f)",
-//                                    cullStageData->frameDependentData->FogColor.x,
-//                                    cullStageData->frameDependentData->FogColor.y,
-//                                    cullStageData->frameDependentData->FogColor.z);
-//                        ImGui::Text("End Fog Color: (%.3f, %.3f, %.3f)",
-//                                    cullStageData->frameDependentData->EndFogColor.x,
-//                                    cullStageData->frameDependentData->EndFogColor.y,
-//                                    cullStageData->frameDependentData->EndFogColor.z);
-//                        ImGui::Text("End Fog Color Distance: %.3f",
-//                                    cullStageData->frameDependentData->EndFogColorDistance);
-//                        ImGui::Text("Sun Fog Color: (%.3f, %.3f, %.3f)",
-//                                    cullStageData->frameDependentData->SunFogColor.x,
-//                                    cullStageData->frameDependentData->SunFogColor.y,
-//                                    cullStageData->frameDependentData->SunFogColor.z);
-//                        ImGui::Text("Sun Fog Strength: %.3f", cullStageData->frameDependentData->SunFogStrength);
-//                        ImGui::Text("Fog Height Color: (%.3f, %.3f, %.3f)",
-//                                    cullStageData->frameDependentData->FogHeightColor.x,
-//                                    cullStageData->frameDependentData->FogHeightColor.y,
-//                                    cullStageData->frameDependentData->FogHeightColor.z);
-//                        ImGui::Text("Fog Height Coefficients: (%.3f, %.3f, %.3f)",
-//                                    cullStageData->frameDependentData->FogHeightCoefficients.x,
-//                                    cullStageData->frameDependentData->FogHeightCoefficients.y,
-//                                    cullStageData->frameDependentData->FogHeightCoefficients.z);
-//                        ImGui::Separator();
-//                    }
-//                }
+
+                if (ImGui::CollapsingHeader("Active db2 lights")) {
+                    if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr ) {
+                        ImGui::Text("List of current Light.db2 ids:");
+
+                        for (auto lightId : cullStageData->frameDependentData->currentLightIds) {
+                            ImGui::Text("%d", lightId);
+                        }
+
+                        ImGui::Separator();
+
+                        ImGui::Text("List of current LightParams.db2 ids:");
+                        for (auto lightParamId : cullStageData->frameDependentData->currentLightParamIds) {
+                            ImGui::Text("%d", lightParamId);
+                        }
+                    }
+                }
+
+                if (ImGui::CollapsingHeader("Current fog params")) {
+                    if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr &&
+                        !cullStageData->frameDependentData->fogResults.empty() )
+                    {
+                        ImGui::BeginTable("CurrentFogParams", 2);
+
+
+                        const auto &fogData = cullStageData->frameDependentData->fogResults[0];
+                        drawColumnF("Fog End:", fogData.FogEnd);
+                        drawColumnF("Fog Scalar:", fogData.FogScaler);
+                        drawColumnF("Fog Density:", fogData.FogDensity);
+                        drawColumnF("Fog Height:", fogData.FogHeight);
+                        drawColumnF("Fog Height Scaler:", fogData.FogHeightScaler);
+                        drawColumnF("Fog Height Density:", fogData.FogHeightDensity);
+                        drawColumnF("Sun Fog Angle:", fogData.SunFogAngle);
+                        drawColumnF("End Fog Color Distance:", fogData.EndFogColorDistance);
+                        drawColumnF("Sun Fog Strength:", fogData.SunFogStrength);
+                        drawColumnVec4("Fog Height Coefficients:", fogData.FogHeightCoefficients);
+                        drawColumnVec4("Main Fog Coefficients:", fogData.MainFogCoefficients);
+                        drawColumnVec4("Height Density Fog Coefficients:", fogData.HeightDensityFogCoefficients);
+                        drawColumnF("Fog Z Scalar:", fogData.FogZScalar);
+                        drawColumnF("Legacy Fog Scalar:", fogData.LegacyFogScalar);
+                        drawColumnF("Main Fog Start Dist:", fogData.MainFogStartDist);
+                        drawColumnF("Main Fog End Dist:", fogData.MainFogEndDist);
+                        drawColumnF("Fog Blend Alpha:", fogData.FogBlendAlpha);
+                        drawColumnF("Fog Start Offset:", fogData.FogStartOffset);
+                        drawColumnColorVec3("Sun Fog Color:", "SunFogColor", fogData.SunFogColor);
+                        drawColumnColorVec3("Fog Color:", "FogColor", fogData.FogColor);
+                        drawColumnColorVec3("End Fog Color:", "EndFogColor", fogData.EndFogColor);
+                        drawColumnColorVec3("Fog Height Color:", "FogHeightColor", fogData.FogHeightColor);
+                        drawColumnColorVec3("Height End Fog Color:", "HeightEndFogColor", fogData.HeightEndFogColor);
+                        ImGui::EndTable();
+
+                        ImGui::Separator();
+                    }
+                }
+                if (ImGui::CollapsingHeader("Current Sky colors")) {
+                    if (cullStageData->frameDependentData != nullptr) {
+                        auto frameDependentData = cullStageData->frameDependentData;
+
+                        ImGui::BeginTable("CurrentSkyColors", 2);
+                        drawColumnColorVec3("Sky Top:", "SkyTopColor", frameDependentData->skyColors.SkyTopColor.xyz());
+                        drawColumnColorVec3("Sky Middle:", "SkyMiddleColor", frameDependentData->skyColors.SkyMiddleColor.xyz());
+                        drawColumnColorVec3("Sky Band1:", "SkyBand1Color", frameDependentData->skyColors.SkyBand1Color.xyz());
+                        drawColumnColorVec3("Sky Band2:", "SkyBand2Color", frameDependentData->skyColors.SkyBand2Color.xyz());
+                        drawColumnColorVec3("Sky Smog:", "SkySmogColor", frameDependentData->skyColors.SkySmogColor.xyz());
+                        drawColumnColorVec3("Sky Fog:", "SkyFogColor", frameDependentData->skyColors.SkyFogColor.xyz());
+                        ImGui::EndTable();
+                    }
+                }
+                if (ImGui::CollapsingHeader("Current global light")) {
+                    if (cullStageData->frameDependentData != nullptr) {
+                        auto frameDependentData = cullStageData->frameDependentData;
+
+                        ImGui::BeginTable("CurrentLightParams", 2);
+
+                        drawColumnColorVec3("Exterior Ambient:", "ExteriorAmbient", frameDependentData->colors.exteriorAmbientColor.xyz());
+                        drawColumnColorVec3("Exterior Horizon Ambient:", "ExteriorHorizonAmbient", frameDependentData->colors.exteriorAmbientColor.xyz());
+                        drawColumnColorVec3("Exterior Ground Ambient:", "ExteriorGroundAmbient", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
+                        drawColumnColorVec3("Exterior Direct Color:", "ExteriorDirectColor", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
+                        drawColumnF("Glow:", cullStageData->frameDependentData->currentGlow);
+                        ImGui::EndTable();
+                    }
+                }
             }
         }
-
-        ImGui::NewLine();
-
-        if (ImGui::CollapsingHeader("Elapsed times")) {
-            ImGui::Text("Elapsed time on consumeUpdate : %.3f ms", m_api->getConfig()->consumeUpdate);
-            ImGui::Text("Elapsed time on consumeDraw : %.3f ms", m_api->getConfig()->consumeDraw);
-            ImGui::Text("Elapsed time on composerDrawTimePerFrame : %.3f ms", m_api->getConfig()->composerDrawTimePerFrame);
-            ImGui::Text("- Elapsed time on cullCreateVarsCounter: %.3f ms", m_api->getConfig()->cullCreateVarsCounter);
-            ImGui::Text("- Elapsed time on cullGetCurrentWMOCounter: %.3f ms", m_api->getConfig()->cullGetCurrentWMOCounter);
-            ImGui::Text("- Elapsed time on cullGetCurrentZoneCounter: %.3f ms", m_api->getConfig()->cullGetCurrentZoneCounter);
-            ImGui::Text("- Elapsed time on cullUpdateLightsFromDBCounter: %.3f ms", m_api->getConfig()->cullUpdateLightsFromDBCounter);
-            ImGui::Text("- Elapsed time on cullExterior: %.3f ms", m_api->getConfig()->cullExterior);
-            ImGui::Text("-- Elapsed time on cullExteriorWDLCull: %.3f ms", m_api->getConfig()->cullExteriorWDLCull);
-            ImGui::Text("-- Elapsed time on cullExteriorGetCands: %.3f ms", m_api->getConfig()->cullExteriorGetCands);
-            ImGui::Text("-- Elapsed time on cullExterioFrustumWMO: %.3f ms", m_api->getConfig()->cullExterioFrustumWMO);
-            ImGui::Text("-- Elapsed time on cullExterioFrustumM2: %.3f ms", m_api->getConfig()->cullExterioFrustumM2);
-            ImGui::Text("- Elapsed time on cullSkyDoms: %.3f ms", m_api->getConfig()->cullSkyDoms);
-            ImGui::Text("- Elapsed time on cullCombineAllObjects: %.3f ms", m_api->getConfig()->cullCombineAllObjects);
-
-            ImGui::Text("Elapsed time on drawStageAndDepsCNT: %.3f ms", m_api->getConfig()->drawStageAndDepsCNT);
-
-            ImGui::Text("Elapsed time on update : %.3f ms", m_api->getConfig()->updateTimePerFrame);
-            ImGui::Text("- Elapsed time on startUpdateForNexFrame: %.3f ms", m_api->getConfig()->startUpdateForNexFrame);
-            ImGui::Text("- Elapsed time on singleUpdateCNT: %.3f ms", m_api->getConfig()->singleUpdateCNT);
-            ImGui::Text("-- Elapsed time on mapProduceUpdateTime : %.3f ms", m_api->getConfig()->mapProduceUpdateTime);
-            ImGui::Text("--- Elapsed time on map update : %.3f ms", m_api->getConfig()->mapUpdateTime);
-            ImGui::Text("---- Elapsed time on m2 update : %.3f ms", m_api->getConfig()->m2UpdateTime);
-            ImGui::Text("---- Elapsed time on wmo group update : %.3f ms", m_api->getConfig()->wmoGroupUpdateTime);
-            ImGui::Text("---- Elapsed time on adtUpdate update : %.3f ms", m_api->getConfig()->adtUpdateTime);
-            ImGui::Text("---- Elapsed time on m2 calc distance : %.3f ms", m_api->getConfig()->m2calcDistanceTime);
-            ImGui::Text("---- Elapsed time on adt cleanup : %.3f ms", m_api->getConfig()->adtCleanupTime);
-            ImGui::Text("--- Elapsed time on interiorViewCollectMeshTime : %.3f ms", m_api->getConfig()->interiorViewCollectMeshTime);
-            ImGui::Text("--- Elapsed time on exteriorViewCollectMeshTime : %.3f ms", m_api->getConfig()->exteriorViewCollectMeshTime);
-            ImGui::Text("--- Elapsed time on m2CollectMeshTime : %.3f ms", m_api->getConfig()->m2CollectMeshTime);
-            ImGui::Text("--- Elapsed time on sortMeshTime : %.3f ms", m_api->getConfig()->sortMeshTime);
-            ImGui::Text("--- Elapsed time on collectBuffersTime : %.3f ms", m_api->getConfig()->collectBuffersTime);
-            ImGui::Text("--- Elapsed time on sortBuffersTime : %.3f ms", m_api->getConfig()->sortBuffersTime);
-
-            ImGui::Text("- Elapsed time on produceDrawStage: %.3f ms", m_api->getConfig()->produceDrawStage);
-            ImGui::Text("- Elapsed time on meshesCollectCNT: %.3f ms", m_api->getConfig()->meshesCollectCNT);
-            ImGui::Text("- Elapsed time on updateBuffersCNT: %.3f ms", m_api->getConfig()->updateBuffersCNT);
-            ImGui::Text("- Elapsed time on updateBuffersDeviceCNT: %.3f ms", m_api->getConfig()->updateBuffersDeviceCNT);
-            ImGui::Text("- Elapsed time on postLoadCNT: %.3f ms", m_api->getConfig()->postLoadCNT);
-            ImGui::Text("- Elapsed time on textureUploadCNT: %.3f ms", m_api->getConfig()->textureUploadCNT);
-            ImGui::Text("- Elapsed time on endUpdateCNT: %.3f ms", m_api->getConfig()->endUpdateCNT);
-
-            ImGui::Text("Elapsed time on wait for begin update: %.3f ms", m_api->hDevice->getWaitForUpdate());
-
-
-            ImGui::Separator();
-        }
-
-
-//        if (ImGui::CollapsingHeader("Current light params")) {
-//            if (cullStageData->frameDependentData != nullptr) {
-//                ImGui::Text("Glow: %.3f", cullStageData->frameDependentData->currentGlow);
-//            }
-//        }
-
         ImGui::End();
     }
 }
@@ -1297,113 +1321,8 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->farPlaneForCulling = farPlane+50;
         }
 
-        if (ImGui::Checkbox("Disable glow", &disableGlow)) {
-            m_api->getConfig()->disableGlow = disableGlow;
-        }
-
-        bool disableFog = m_api->getConfig()->disableFog;
-        if (ImGui::Checkbox("Disable fog", &disableFog)) {
-            m_api->getConfig()->disableFog = disableFog;
-        }
-
-        bool renderADT = m_api->getConfig()->renderAdt;
-        if (ImGui::Checkbox("Render ADT", &renderADT)) {
-            m_api->getConfig()->renderAdt = renderADT;
-        }
-
-        bool renderM2 = m_api->getConfig()->renderM2;
-        if (ImGui::Checkbox("Render M2", &renderM2)) {
-            m_api->getConfig()->renderM2 = renderM2;
-        }
-
-        bool renderWMO = m_api->getConfig()->renderWMO;
-        if (ImGui::Checkbox("Render WMO", &renderWMO)) {
-            m_api->getConfig()->renderWMO = renderWMO;
-        }
-
-        bool renderLiquid = m_api->getConfig()->renderLiquid;
-        if (ImGui::Checkbox("Render Liquid", &renderLiquid)) {
-            m_api->getConfig()->renderLiquid = renderLiquid;
-        }
-
-        bool drawM2BB = m_api->getConfig()->drawM2BB;
-        if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
-            m_api->getConfig()->drawM2BB = drawM2BB;
-        }
-
-        bool discardInvisibleMeshes = m_api->getConfig()->discardInvisibleMeshes;
-        if (ImGui::Checkbox("Discard invisible M2 meshes", &discardInvisibleMeshes)) {
-            m_api->getConfig()->discardInvisibleMeshes = discardInvisibleMeshes;
-        }
-
-        bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
-        if (ImGui::Checkbox("Ignore ADT holes for rendering", &ignoreADTHoles)) {
-            m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
-        }
-
-
-        bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
-        if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {
-            m_api->getConfig()->usePortalCulling = !disablePortalCulling;
-        }
-
-        bool renderPortals = m_api->getConfig()->renderPortals;
-        if (ImGui::Checkbox("Render portals", &renderPortals)) {
-            m_api->getConfig()->renderPortals = renderPortals;
-        }
-        bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
-        if (ImGui::Checkbox("Render anti portals", &renderAntiPortals)) {
-            m_api->getConfig()->renderAntiPortals = renderAntiPortals;
-        }
-
-        if (renderPortals || renderAntiPortals) {
-            bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
-            if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
-                m_api->getConfig()->renderPortalsIgnoreDepth = renderPortalsIgnoreDepth;
-            }
-        }
-
-        bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
-        if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
-            m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;
-        }
-
-        if (useDoubleCameraDebug) {
-            if (m_api->debugCamera == nullptr) {
-                m_api->debugCamera = std::make_shared<FirstPersonCamera>();
-                m_api->debugCamera->setMovementSpeed(movementSpeed);
-                float currentCameraPos[4] = {0, 0, 0, 0};
-                m_api->camera->getCameraPosition(&currentCameraPos[0]);
-
-
-                m_api->debugCamera->setCameraPos(currentCameraPos[0],
-                                                 currentCameraPos[1],
-                                                 currentCameraPos[2]);
-            }
-
-            bool controlSecondCamera = m_api->getConfig()->controlSecondCamera;
-            if (ImGui::Checkbox("Control debug camera", &controlSecondCamera)) {
-                m_api->getConfig()->controlSecondCamera = controlSecondCamera;
-            }
-
-            bool swapMainAndDebug = m_api->getConfig()->swapMainAndDebug;
-            if (ImGui::Checkbox("Swap main and debug cameras", &swapMainAndDebug)) {
-                m_api->getConfig()->swapMainAndDebug = swapMainAndDebug;
-            }
-        } else {
-            m_api->debugCamera = nullptr;
-        }
-
-        pauseAnimation = m_api->getConfig()->pauseAnimation;
-        if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
-            m_api->getConfig()->pauseAnimation = pauseAnimation;
-        }
-
-        if (ImGui::Button("Reset Animation")) {
-                resetAnimationCallback();
-        }
-
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+
         if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
             m_api->getConfig()->currentTime = currentTime;
         }
@@ -1416,130 +1335,192 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->fogDensityIncreaser = fogDensityIncreaser;
         }
 
-        switch(m_api->getConfig()->globalLighting) {
-            case EParameterSource::eDatabase: {
-                lightSource = 0;
-                break;
+        if (ImGui::CollapsingHeader("Option toogles")) {
+
+
+            if (ImGui::Checkbox("Disable glow", &disableGlow)) {
+                m_api->getConfig()->disableGlow = disableGlow;
             }
-            case EParameterSource::eM2: {
-                lightSource = 1;
-                break;
+
+            bool disableFog = m_api->getConfig()->disableFog;
+            if (ImGui::Checkbox("Disable fog", &disableFog)) {
+                m_api->getConfig()->disableFog = disableFog;
             }
-            case EParameterSource::eConfig: {
-                lightSource = 2;
-                break;
+
+            bool renderADT = m_api->getConfig()->renderAdt;
+            if (ImGui::Checkbox("Render ADT", &renderADT)) {
+                m_api->getConfig()->renderAdt = renderADT;
+            }
+
+            bool renderM2 = m_api->getConfig()->renderM2;
+            if (ImGui::Checkbox("Render M2", &renderM2)) {
+                m_api->getConfig()->renderM2 = renderM2;
+            }
+
+            bool renderWMO = m_api->getConfig()->renderWMO;
+            if (ImGui::Checkbox("Render WMO", &renderWMO)) {
+                m_api->getConfig()->renderWMO = renderWMO;
+            }
+
+            bool renderLiquid = m_api->getConfig()->renderLiquid;
+            if (ImGui::Checkbox("Render Liquid", &renderLiquid)) {
+                m_api->getConfig()->renderLiquid = renderLiquid;
+            }
+
+            bool drawM2BB = m_api->getConfig()->drawM2BB;
+            if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
+                m_api->getConfig()->drawM2BB = drawM2BB;
+            }
+
+            bool discardInvisibleMeshes = m_api->getConfig()->discardInvisibleMeshes;
+            if (ImGui::Checkbox("Discard invisible M2 meshes", &discardInvisibleMeshes)) {
+                m_api->getConfig()->discardInvisibleMeshes = discardInvisibleMeshes;
+            }
+
+            bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
+            if (ImGui::Checkbox("Ignore ADT holes for rendering", &ignoreADTHoles)) {
+                m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
+            }
+
+
+            bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
+            if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {
+                m_api->getConfig()->usePortalCulling = !disablePortalCulling;
+            }
+
+            bool renderPortals = m_api->getConfig()->renderPortals;
+            if (ImGui::Checkbox("Render portals", &renderPortals)) {
+                m_api->getConfig()->renderPortals = renderPortals;
+            }
+            bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
+            if (ImGui::Checkbox("Render anti portals", &renderAntiPortals)) {
+                m_api->getConfig()->renderAntiPortals = renderAntiPortals;
+            }
+
+            if (renderPortals || renderAntiPortals) {
+                bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
+                if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
+                    m_api->getConfig()->renderPortalsIgnoreDepth = renderPortalsIgnoreDepth;
+                }
+            }
+
+            bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
+            if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
+                m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;
+            }
+
+            if (useDoubleCameraDebug) {
+                if (m_api->debugCamera == nullptr) {
+                    m_api->debugCamera = std::make_shared<FirstPersonCamera>();
+                    m_api->debugCamera->setMovementSpeed(movementSpeed);
+                    float currentCameraPos[4] = {0, 0, 0, 0};
+                    m_api->camera->getCameraPosition(&currentCameraPos[0]);
+
+
+                    m_api->debugCamera->setCameraPos(currentCameraPos[0],
+                                                     currentCameraPos[1],
+                                                     currentCameraPos[2]);
+                }
+
+                bool controlSecondCamera = m_api->getConfig()->controlSecondCamera;
+                if (ImGui::Checkbox("Control debug camera", &controlSecondCamera)) {
+                    m_api->getConfig()->controlSecondCamera = controlSecondCamera;
+                }
+
+                bool swapMainAndDebug = m_api->getConfig()->swapMainAndDebug;
+                if (ImGui::Checkbox("Swap main and debug cameras", &swapMainAndDebug)) {
+                    m_api->getConfig()->swapMainAndDebug = swapMainAndDebug;
+                }
+            } else {
+                m_api->debugCamera = nullptr;
+            }
+
+            pauseAnimation = m_api->getConfig()->pauseAnimation;
+            if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
+                m_api->getConfig()->pauseAnimation = pauseAnimation;
+            }
+
+            if (ImGui::Button("Reset Animation")) {
+                resetAnimationCallback();
             }
         }
 
-        if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
-            m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
-        }
-        if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
-            m_api->getConfig()->globalLighting = EParameterSource::eM2;
-        }
-        if (ImGui::RadioButton("Manual light", &lightSource, 2)) {
-            m_api->getConfig()->globalLighting = EParameterSource::eConfig;
-        }
+        if (ImGui::CollapsingHeader("Light options")) {
+            auto mapPlan = (m_sceneRenderer != nullptr) ?
+                m_sceneRenderer->getLastCreatedPlan() :
+                nullptr;
 
-        if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
+            switch(m_api->getConfig()->globalLighting) {
+                case EParameterSource::eDatabase: {
+                    lightSource = 0;
+                    break;
+                }
+                case EParameterSource::eM2: {
+                    lightSource = 1;
+                    break;
+                }
+                case EParameterSource::eConfig: {
+                    lightSource = 2;
+                    break;
+                }
+            }
+
+            if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
+                m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
+            }
+            ImGui::SameLine();
+            if (mapPlan != nullptr && mapPlan->frameDependentData != nullptr &&
+                ImGui::Button("Edit current colors"))
             {
-                auto ambient = m_api->getConfig()->exteriorAmbientColor;
-                exteriorAmbientColor = {ambient.x, ambient.y, ambient.z};
-                ImVec4 col = ImVec4(ambient.x, ambient.y, ambient.z, 1.0);
-                if (ImGui::ColorButton("ExteriorAmbientColor##3b", col)) {
-                    ImGui::OpenPopup("Exterior Ambient picker");
-                }
-                ImGui::SameLine();
-                ImGui::Text("Exterior Ambient");
-
-                if (ImGui::BeginPopup("Exterior Ambient picker")) {
-                    if (ImGui::ColorPicker3("Exterior Ambient", exteriorAmbientColor.data())) {
-                        m_api->getConfig()->exteriorAmbientColor = mathfu::vec4(
-                            exteriorAmbientColor[0], exteriorAmbientColor[1], exteriorAmbientColor[2], 1.0);
-                    }
-                    ImGui::EndPopup();
-                }
+                m_api->getConfig()->exteriorColors = mapPlan->frameDependentData->colors;
+                m_api->getConfig()->globalLighting = EParameterSource::eConfig;
             }
 
-            {
-                auto horizontAmbient = m_api->getConfig()->exteriorHorizontAmbientColor;
-                exteriorHorizontAmbientColor = {horizontAmbient.x, horizontAmbient.y, horizontAmbient.z};
-                ImVec4 col = ImVec4(horizontAmbient.x, horizontAmbient.y, horizontAmbient.z, 1.0);
-                if (ImGui::ColorButton("ExteriorHorizontAmbientColor##3b", col)) {
-                    ImGui::OpenPopup("Exterior Horizont Ambient picker");
-                }
-                ImGui::SameLine();
-                ImGui::Text("Exterior Horizont Ambient");
-
-                if (ImGui::BeginPopup("Exterior Horizont Ambient picker")) {
-                    if (ImGui::ColorPicker3("Exterior Horizont Ambient", exteriorHorizontAmbientColor.data())) {
-                        m_api->getConfig()->exteriorHorizontAmbientColor = mathfu::vec4 (
-                            exteriorHorizontAmbientColor[0],
-                            exteriorHorizontAmbientColor[1], exteriorHorizontAmbientColor[2], 1.0);
-                    }
-                    ImGui::EndPopup();
-                }
+            if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
+                m_api->getConfig()->globalLighting = EParameterSource::eM2;
             }
-            {
-                auto groundAmbient = m_api->getConfig()->exteriorGroundAmbientColor;
-                exteriorGroundAmbientColor = {groundAmbient.x, groundAmbient.y, groundAmbient.z};
-                ImVec4 col = ImVec4(groundAmbient.x, groundAmbient.y, groundAmbient.z, 1.0);
+            if (ImGui::RadioButton("Manual light", &lightSource, 2)) {
+                m_api->getConfig()->globalLighting = EParameterSource::eConfig;
+            }
 
-                if (ImGui::ColorButton("ExteriorGroundAmbientColor##3b", col)) {
-                    ImGui::OpenPopup("Exterior Ground Ambient picker");
+            if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
+                auto config = m_api->getConfig();
+
+                ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor);
+                ImGui::CompactColorPicker("Exterior Horizon Ambient",
+                                          config->exteriorColors.exteriorHorizontAmbientColor);
+                ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor);
+                ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor);
+            }
+
+            //Glow source
+            switch (m_api->getConfig()->glowSource) {
+                case EParameterSource::eDatabase: {
+                    glowSource = 0;
+                    break;
                 }
-                ImGui::SameLine();
-                ImGui::Text("Exterior Ground Ambient");
+                case EParameterSource::eConfig: {
+                    glowSource = 1;
+                    break;
+                }
+                default:
+                    glowSource = 1;
+            }
+            ImGui::Separator();
 
-                if (ImGui::BeginPopup("Exterior Ground Ambient picker")) {
-                    if (ImGui::ColorPicker3("Exterior Ground Ambient", exteriorGroundAmbientColor.data())) {
-                        m_api->getConfig()->exteriorGroundAmbientColor = mathfu::vec4(
-                            exteriorGroundAmbientColor[0],
-                            exteriorGroundAmbientColor[1], exteriorGroundAmbientColor[2], 1.0);
-                    }
-                    ImGui::EndPopup();
+            if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
+                m_api->getConfig()->glowSource = EParameterSource::eDatabase;
+            }
+            if (ImGui::RadioButton("Manual glow", &glowSource, 1)) {
+                m_api->getConfig()->glowSource = EParameterSource::eConfig;
+            }
+
+            if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
+                if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
+                    m_api->getConfig()->currentGlow = customGlow;
                 }
             }
         }
-
-        //Glow source
-        switch(m_api->getConfig()->glowSource) {
-            case EParameterSource::eDatabase: {
-                glowSource = 0;
-                break;
-            }
-            case EParameterSource::eConfig: {
-                glowSource = 1;
-                break;
-            }
-            default:
-                glowSource = 1;
-        }
-
-        if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
-            m_api->getConfig()->glowSource = EParameterSource::eDatabase;
-        }
-        if (ImGui::RadioButton("Manual glow", &glowSource, 1)) {
-            m_api->getConfig()->glowSource = EParameterSource::eConfig;
-        }
-
-        if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
-            if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
-                m_api->getConfig()->currentGlow = customGlow;
-            }
-        }
-
-
-        if (ImGui::SliderInt("Thread Count", &threadCount, 2, 16)) {
-            m_api->getConfig()->threadCount = threadCount;
-        }
-//        if (ImGui::SliderInt("QuickSort cutoff", &quickSortCutoff, 1, 1000)) {
-//            if (setQuicksortCutoff){
-//                setQuicksortCutoff(quickSortCutoff);
-//            }
-//        }
-
-
 
 
         ImGui::End();

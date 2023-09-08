@@ -108,22 +108,14 @@ void SceneComposer::consumeUpdate(HFrameScenario &frameScenario, std::vector<std
     if (frameScenario == nullptr)
         return;
 
-    drawFuncGeneration.beginMeasurement();
-
     for (int i = 0; i < frameScenario->drawUpdateFunction.size(); i++) {
         renderFunctions.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
     }
-    drawFuncGeneration.endMeasurement();
-    m_apiContainer->getConfig()->consumeUpdate = drawFuncGeneration.getTimePerFrame();
 }
 
 void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
     ZoneScoped ;
-    deviceDrawFrame.beginMeasurement();
     m_apiContainer->hDevice->drawFrame(renderFuncs);
-    deviceDrawFrame.endMeasurement();
-
-    m_apiContainer->getConfig()->consumeDraw = deviceDrawFrame.getTimePerFrame();
 }
 
 
@@ -135,7 +127,6 @@ void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunctio
 
 void SceneComposer::draw(HFrameScenario frameScenario) {
     ZoneScoped ;
-    composerDrawTimePerFrame.beginMeasurement();
 
     if (!m_supportThreads) {
         consumeCulling(frameScenario);
@@ -165,6 +156,4 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
 
 //    m_apiContainer->hDevice->submitDrawCommands();
     m_apiContainer->hDevice->increaseFrameNumber();
-    composerDrawTimePerFrame.endMeasurement();
-    m_apiContainer->getConfig()->composerDrawTimePerFrame = composerDrawTimePerFrame.getTimePerFrame();
 }

@@ -11,57 +11,67 @@
 #endif
 #include "mathfu/glsl_mappings.h"
 
-struct FrameDependantData {
-    //Glow
-    float currentGlow;
+struct FogResult {
+    float FogEnd = 0;
+    float FogScaler = 0;
+    float FogDensity = 0;
+    float FogHeight = 0;
+    float FogHeightScaler = 0;
+    float FogHeightDensity = 0;
+    float SunFogAngle = 0;
+    mathfu::vec3 FogColor = mathfu::vec3(0, 0, 0);
+    mathfu::vec3 EndFogColor = mathfu::vec3(0, 0, 0);
+    float EndFogColorDistance = 0;
+    mathfu::vec3 SunFogColor = mathfu::vec3(0, 0, 0);
+    float SunFogStrength = 0;
+    mathfu::vec3 FogHeightColor = mathfu::vec3(0, 0, 0);
+    mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0, 0, 0, 0);
+    mathfu::vec4 MainFogCoefficients = mathfu::vec4(0, 0, 0, 0);
+    mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0, 0, 0, 0);
+    float FogZScalar = 0.00001;
+    float LegacyFogScalar = 0.00001;
+    float MainFogStartDist = 0.00001;
+    float MainFogEndDist = 0.00001;
+    float FogBlendAlpha = 0.00001;
+    mathfu::vec3 HeightEndFogColor = mathfu::vec3(0, 0, 0);
+    float FogStartOffset = 0.00001;
+};
 
-    //Ambient
-    mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
-    mathfu::vec3 exteriorDirectColorDir;
-
-//Sky params
-    bool overrideValuesWithFinalFog = false;
-
+struct SkyColors {
     mathfu::vec4 SkyTopColor;
     mathfu::vec4 SkyMiddleColor;
     mathfu::vec4 SkyBand1Color;
     mathfu::vec4 SkyBand2Color;
     mathfu::vec4 SkySmogColor;
     mathfu::vec4 SkyFogColor;
+};
+
+struct ExteriorColors {
+    mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
+    mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
+    mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
+    mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
+};
+
+struct FrameDependantData {
+    //Glow
+    float currentGlow;
+
+    //Ambient
+    ExteriorColors colors;
+    mathfu::vec3 exteriorDirectColorDir;
+
+    std::vector<int> currentLightIds;
+    std::vector<int> currentLightParamIds;
+
+//Sky params
+    bool overrideValuesWithFinalFog = false;
+    SkyColors skyColors;
+
 
 //Fog params
     bool FogDataFound = false;
-
-    struct FogResult {
-        float FogEnd = 0;
-        float FogScaler = 0;
-        float FogDensity = 0;
-        float FogHeight = 0;
-        float FogHeightScaler = 0;
-        float FogHeightDensity = 0;
-        float SunFogAngle = 0;
-        mathfu::vec3 FogColor = mathfu::vec3(0, 0, 0);
-        mathfu::vec3 EndFogColor = mathfu::vec3(0, 0, 0);
-        float EndFogColorDistance = 0;
-        mathfu::vec3 SunFogColor = mathfu::vec3(0, 0, 0);
-        float SunFogStrength = 0;
-        mathfu::vec3 FogHeightColor = mathfu::vec3(0, 0, 0);
-        mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0, 0, 0, 0);
-        mathfu::vec4 MainFogCoefficients = mathfu::vec4(0, 0, 0, 0);
-        mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0, 0, 0, 0);
-        float FogZScalar = 0.00001;
-        float LegacyFogScalar = 0.00001;
-        float MainFogStartDist = 0.00001;
-        float MainFogEndDist = 0.00001;
-        float FogBlendAlpha = 0.00001;
-        mathfu::vec3 HeightEndFogColor = mathfu::vec3(0, 0, 0);
-        float FogStartOffset = 0.00001;
-    };
     std::vector<FogResult> fogResults;
-    mathfu::vec3 EndFogColor = mathfu::vec3(0, 0, 0);
 
 //Water params
     bool useMinimapWaterColor;

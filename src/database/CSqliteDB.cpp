@@ -72,7 +72,7 @@ const std::string getLightByIdSQL = R"===(
 
 const std::string getLightSQL = R"===(
         select
-        l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
+        l.id as LightId, l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
         IFNULL(ls.SkyboxFileDataID, 0) as SkyboxFileDataID, IFNULL(lp.LightSkyboxID, 0) as LightSkyboxID,
         lp.Glow, IFNULL(ls.Flags, 0) as SkyboxFlags, l.ContinentID,
         (abs(l.GameCoords_0 - ?1) * abs(l.GameCoords_0 - ?1) +
@@ -281,24 +281,24 @@ void initWithZeros(std::array<float, 4> &colorF) {
     colorF[3] = 0;
 }
 void blendTwoAndAdd(float *colorF, int currLdRes, int lastLdRes, float timeAlphaBlend) {
-    colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
+    colorF[0] = (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<0>(lastLdRes) *
                                     (1.0f - timeAlphaBlend));
-    colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
+    colorF[1] = (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<1>(lastLdRes) *
                                     (1.0f - timeAlphaBlend));
-    colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
+    colorF[2] = (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
                                     getFloatFromInt<2>(lastLdRes) *
                                     (1.0f - timeAlphaBlend));
 }
 inline void blendTwoAndAdd(std::array<float, 3> &colorF, int currLdRes, int lastLdRes, float timeAlphaBlend) {
-    colorF[0] += (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
+    colorF[0] = (getFloatFromInt<0>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<0>(lastLdRes) *
                   (1.0f - timeAlphaBlend));
-    colorF[1] += (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
+    colorF[1] = (getFloatFromInt<1>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<1>(lastLdRes) *
                   (1.0f - timeAlphaBlend));
-    colorF[2] += (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
+    colorF[2] = (getFloatFromInt<2>(currLdRes) * timeAlphaBlend +
                   getFloatFromInt<2>(lastLdRes) *
                   (1.0f - timeAlphaBlend));
 }
@@ -308,19 +308,19 @@ inline void blendTwoAndAdd(float &colorF, float currLdRes, float lastLdRes, floa
 }
 
 inline void addOnlyOne(float *colorF, int currLdRes) {
-    colorF[0] += getFloatFromInt<0>(currLdRes);
-    colorF[1] += getFloatFromInt<1>(currLdRes);
-    colorF[2] += getFloatFromInt<2>(currLdRes);
+    colorF[0] = getFloatFromInt<0>(currLdRes);
+    colorF[1] = getFloatFromInt<1>(currLdRes);
+    colorF[2] = getFloatFromInt<2>(currLdRes);
 }
 
 inline void addOnlyOne(std::array<float, 3> &colorF, int currLdRes) {
-    colorF[0] += getFloatFromInt<0>(currLdRes);
-    colorF[1] += getFloatFromInt<1>(currLdRes);
-    colorF[2] += getFloatFromInt<2>(currLdRes);
+    colorF[0] = getFloatFromInt<0>(currLdRes);
+    colorF[1] = getFloatFromInt<1>(currLdRes);
+    colorF[2] = getFloatFromInt<2>(currLdRes);
 }
 
 inline void addOnlyOne(float &colorF, float currLdRes) {
-    colorF += currLdRes;
+    colorF = currLdRes;
 }
 void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult, float farClip) {
     getLightByIdStatement.setInputs( lightId );
@@ -338,6 +338,7 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult, fl
         ilr.lightSkyboxId = getLightByIdStatement.getField("LightSkyboxID").getInt();
         ilr.glow = getLightByIdStatement.getField("Glow").getDouble();
         ilr.skyBoxFlags = getLightByIdStatement.getField("SkyboxFlags").getInt();
+        ilr.id = lightId;
     }
     std::vector<LightResult> lightResults;
     convertInnerResultsToPublic(time, lightResults, innerResults, farClip);
@@ -356,6 +357,7 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, std:
     float totalBlend = 0;
     while (getLightStatement.execute()) {
         InnerLightResult &ilr = innerResults.emplace_back();
+        ilr.id = getLightStatement.getField("LightId").getInt();
         ilr.pos[0] = getLightStatement.getField("GameCoords_0").getDouble();
         ilr.pos[1] = getLightStatement.getField("GameCoords_1").getDouble();
         ilr.pos[2] = getLightStatement.getField("GameCoords_2").getDouble();
@@ -497,7 +499,7 @@ void CSqliteDB::blendTwoAndAdd(LightResult &lightResult, const CSqliteDB::InnerL
     ::blendTwoAndAdd(lightResult.FogHeight, currLdRes.FogHeight, lastLdRes.FogHeight, timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.FogHeightScaler, currLdRes.FogHeightScaler, lastLdRes.FogHeightScaler, timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.FogHeightDensity, currLdRes.FogHeightDensity, lastLdRes.FogHeightDensity, timeAlphaBlend);
-    ::blendTwoAndAdd(lightResult.SunFogAngle, currLdRes.SunFogAngle, lastLdRes.SunFogAngle, timeAlphaBlend);
+//    ::blendTwoAndAdd(lightResult.SunFogAngle, currLdRes.SunFogAngle, lastLdRes.SunFogAngle, timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.EndFogColor, currLdRes.EndFogColor, lastLdRes.EndFogColor, timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.EndFogColorDistance, currLdRes.EndFogColorDistance, lastLdRes.EndFogColorDistance, timeAlphaBlend);
     ::blendTwoAndAdd(lightResult.SunFogColor, currLdRes.SunFogColor, lastLdRes.SunFogColor, timeAlphaBlend);
@@ -610,6 +612,7 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
         auto &innerResult = innerResults[i];
         lightResult.isDefault = innerResult.isDefault;
         lightResult.lightParamId = innerResult.paramId;
+        lightResult.id = innerResult.id;
 
         getLightData.setInputs( innerResult.paramId );
 
@@ -775,11 +778,8 @@ void CSqliteDB::convertInnerResultsToPublic(int ptime, std::vector<LightResult> 
                         lightResult.SunFogStrength = currLdRes.SunFogStrength;
                     }
                 }
-                if (lastLdRes.time == -1) {
-                    addOnlyOne(lightResult, currLdRes);
-                } else {
-                    blendTwoAndAdd(lightResult, lastLdRes, currLdRes, timeAlphaBlend);
-                }
+                blendTwoAndAdd(lightResult, lastLdRes, currLdRes, timeAlphaBlend);
+
                 break;
             }
             lastLdRes = currLdRes;

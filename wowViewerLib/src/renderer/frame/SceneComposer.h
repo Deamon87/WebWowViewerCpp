@@ -27,10 +27,6 @@ private:
     bool m_isTerminating = false;
     bool m_firstFrame = true;
 
-    FrameCounter composerDrawTimePerFrame;
-    FrameCounter deviceDrawFrame;
-    FrameCounter drawFuncGeneration;
-
     void consumeCulling(HFrameScenario &frameScenario);
     void consumeUpdate(HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions);
     void consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs);

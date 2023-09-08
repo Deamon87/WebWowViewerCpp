@@ -38,10 +38,10 @@ void M2Scene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
 
         auto frameDepedantData = mapRenderPlan->frameDependentData;
 
-        frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        frameDepedantData->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        frameDepedantData->exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
+        frameDepedantData->colors.exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDepedantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDepedantData->colors.exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDepedantData->colors.exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
         frameDepedantData->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
     }
     auto frameDepedantData = mapRenderPlan->frameDependentData;

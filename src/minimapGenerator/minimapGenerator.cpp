@@ -35,10 +35,10 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGD
 //    config->adtTTLWithoutUpdate = 500; //0.5 sec
     config->adtFreeStrategy = EFreeStrategy::eFrameBase; //
 
-    config->exteriorAmbientColor =  mathfu::vec4(0.5f,0.5f,0.5f,1.0);;
-    config->exteriorHorizontAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
-    config->exteriorGroundAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
-    config->exteriorDirectColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
+    config->exteriorColors.exteriorAmbientColor =  mathfu::vec4(0.5f,0.5f,0.5f,1.0);;
+    config->exteriorColors.exteriorHorizontAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
+    config->exteriorColors.exteriorGroundAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
+    config->exteriorColors.exteriorDirectColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
 
     config->adtSpecMult = 0.0;
 

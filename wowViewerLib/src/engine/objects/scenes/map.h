@@ -36,30 +36,6 @@ private:
         }
     }
 protected:
-
-
-    FrameCounter mapUpdateCounter;
-    FrameCounter m2UpdateframeCounter;
-    FrameCounter m2calcDistanceCounter;
-    FrameCounter adtCleanupCounter;
-    FrameCounter wmoUpdate;
-    FrameCounter wmoGroupUpdate;
-    FrameCounter adtUpdate;
-
-
-    FrameCounter cullCreateVarsCounter;
-    FrameCounter cullGetCurrentWMOCounter;
-    FrameCounter cullGetCurrentZoneCounter;
-    FrameCounter cullUpdateLightsFromDBCounter;
-    FrameCounter cullExterior;
-    FrameCounter cullExteriorSetDecl;
-    FrameCounter cullExteriorWDLCull;
-    FrameCounter cullExteriorGetCands;
-    FrameCounter cullExterioFrustumWMO;
-    FrameCounter cullExterioFrustumM2;
-    FrameCounter cullSkyDoms;
-    FrameCounter cullCombineAllObjects;
-
     HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::vector<std::array<uint8_t, 2>> m_mandatoryADT;

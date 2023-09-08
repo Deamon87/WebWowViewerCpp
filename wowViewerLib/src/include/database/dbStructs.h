@@ -35,13 +35,13 @@ struct LightResult {
     std::array<float, 3> SkyFogColor;
 
     //Fog
-    float FogEnd;
-    float FogScaler;
-    float FogDensity;
-    float FogHeight;
-    float FogHeightScaler;
-    float FogHeightDensity;
-    float SunFogAngle; //Blended Separately
+    float FogEnd = 0.0;
+    float FogScaler = 0.0;
+    float FogDensity = 100000;
+    float FogHeight = 0.0;
+    float FogHeightScaler = 0.0;
+    float FogHeightDensity = 100000;
+    float SunFogAngle = 0.0; //Blended Separately
     float SunAngleBlend = 0.0f; //Blended Separately
 
     std::array<float, 3> EndFogColor;

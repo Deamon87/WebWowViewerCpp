@@ -129,6 +129,7 @@ private:
     }
 
     struct InnerLightResult {
+        int id;
         float pos[3];
         float fallbackStart;
         float fallbackEnd;

@@ -36,10 +36,10 @@ void WmoScene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, Mat
 
     auto frameDependantData = mapRenderPlan->frameDependentData;
 
-    frameDependantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDependantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDependantData->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDependantData->exteriorDirectColor = mathfu::vec4(0.3, 0.30, 0.3, 0.3);
+    frameDependantData->colors.exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+    frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+    frameDependantData->colors.exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+    frameDependantData->colors.exteriorDirectColor = mathfu::vec4(0.3, 0.30, 0.3, 0.3);
     frameDependantData->exteriorDirectColorDir = MathHelper::calcExteriorColorDir(
         mapRenderPlan->renderingMatrices->lookAtMat,
         m_api->getConfig()->currentTime

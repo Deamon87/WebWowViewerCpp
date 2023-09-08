@@ -121,7 +121,6 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
 
     vec4 outColor_713 = vec4(0.0); //accumulator
 
-
     for (int i = 0; i < fogCount; i++) {
         vec4 classicFogParams = mainFogData[i].classicFogParams;
         float classicFogEnabled = classicFogParams.x;
@@ -185,11 +184,13 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
             float expMax_781 = max(0.0f, (z_779 - start));
             float exp_783 = exp((expMax_781 * heightDensity));
             float legacyExpFogHeight_784 = (1.0 / exp_783);
+
             vec4 t785 = mainFogData[i].heightPlane;
             float dot_787 = dot(t785.xyz, vertexInViewSpace);
             float height_789 = (dot_787 + t785.w);
             float saturate_791 = saturatef((height_789 * heightRate));
             float heightFog_792 = (1.0f - saturate_791);
+
             vec4 t793 = mainFogData[i].heightFogCoeff;
             float xSqrd_794 = (heightFog_792 * heightFog_792);
             float xCubed_795 = (xSqrd_794 * heightFog_792);
@@ -199,11 +200,13 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
             float exp_810 = exp((expMax_781 * density));
             float legacyFogResult_811 = (1.0 / exp_810);
             float lerp_812 = mix(legacyFogResult_811, legacyExpFogHeight_784, heightFog_807);
+
             float finalLegacyFog_815 = (1.0f - ((1.0f - lerp_812) * fogRateScalar));
             float endFadeFog_818 = saturatef((1.42857146f * (1.0f - normalizedDistance_808)));
             float finalLegacyFog_819 = min(finalLegacyFog_815, endFadeFog_818);
             float artFogNormalizedDistance_823 = saturatef(((vLength_778 - mainFogCurveStartDist) / (mainFogCurveEndDist - mainFogCurveStartDist)));
             float engineFogNormalizedDistance_825 = saturatef((vLength_778 / mainFogCurveEndDist));
+
             vec4 t826 = mainFogData[i].mainFogCoeff;
             float xSqrd_827 = (artFogNormalizedDistance_823 * artFogNormalizedDistance_823);
             float xCubed_828 = (xSqrd_827 * artFogNormalizedDistance_823);
@@ -215,6 +218,7 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
             float saturate_855 = saturatef(((((t842.x * xCubed_844) + (t842.y * xSqrd_843)) + (t842.z * artFogNormalizedDistance_823)) + t842.w));
             float heightFogResult_857 = saturatef((1.0f - saturate_855));
             float lerp_858 = mix(fogResult_841, heightFogResult_857, heightFog_807);
+
             float finalFog_861 = (1.0f - ((1.0f - lerp_858) * fogRateScalar));
             float endPct_863 = saturatef((end / mainFogCurveEndDist));
             float finalFogBeginPct_864 = (endPct_863 - 0.300000012f);

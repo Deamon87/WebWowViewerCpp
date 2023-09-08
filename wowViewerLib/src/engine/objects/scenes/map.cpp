@@ -324,7 +324,6 @@ std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSc
 void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
     ZoneScoped ;
 
-    cullCreateVarsCounter.beginMeasurement();
     Config* config = this->m_api->getConfig();
 
     mathfu::vec4 cameraPos = frameInputParams.frameParameters->matricesForCulling->cameraPos;
@@ -374,11 +373,8 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     WMOListContainer potentialWmo;
     M2ObjectListContainer potentialM2;
 
-    cullCreateVarsCounter.endMeasurement();
-
     {
         ZoneScopedN("cullGetCurrentWMOCounter");
-        cullGetCurrentWMOCounter.beginMeasurement();
         //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
         getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
 
@@ -402,10 +398,8 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
                 break;
             }
         }
-        cullGetCurrentWMOCounter.endMeasurement();
     }
 
-    cullGetCurrentZoneCounter.beginMeasurement();
 
     //7. Get AreaId and Area Name
     StateForConditions stateForConditions;
@@ -435,12 +429,9 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     mapRenderPlan->areaId = areaRecord.areaId;
     mapRenderPlan->parentAreaId = areaRecord.parentAreaId;
 
-    cullGetCurrentZoneCounter.endMeasurement();
 
     //Get lights from DB
-    cullUpdateLightsFromDBCounter.beginMeasurement();
     updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
-    cullUpdateLightsFromDBCounter.endMeasurement();
 
     ///-----------------------------------
 
@@ -460,7 +451,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
             mapRenderPlan->wmoArray.addToDrawn(mapRenderPlan->m_currentWMO);
         }
 
-        cullExterior.beginMeasurement();
         auto exterior = mapRenderPlan->viewsHolder.getExterior();
         if ( exterior != nullptr ) {
             //Fix FrustumData for exterior was created after WMO traversal. So we need to fix it
@@ -470,16 +460,12 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
             checkExterior(cameraPos, exterior->frustumData, m_viewRenderOrder, mapRenderPlan);
         }
-        cullExterior.endMeasurement();
     } else {
         //Cull exterior
-        cullExterior.beginMeasurement();
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
         checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, mapRenderPlan);
-        cullExterior.endMeasurement();
     }
 
-    cullSkyDoms.beginMeasurement();
 
 
     if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
@@ -501,9 +487,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
             }
         }
     }
-    cullSkyDoms.endMeasurement();
 
-    cullCombineAllObjects.beginMeasurement();
     {
         auto exteriorView = mapRenderPlan->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
@@ -529,8 +513,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         }
     }
 
-    cullCombineAllObjects.endMeasurement();
-
     mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom &&
         (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupIsExtLit));
 
@@ -541,18 +523,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         mapRenderPlan->skyMesh0x4 = skyMesh0x4Sky;
     }
 
-    m_api->getConfig()->cullCreateVarsCounter           = cullCreateVarsCounter.getTimePerFrame();
-    m_api->getConfig()->cullGetCurrentWMOCounter        = cullGetCurrentWMOCounter.getTimePerFrame();
-    m_api->getConfig()->cullGetCurrentZoneCounter       = cullGetCurrentZoneCounter.getTimePerFrame();
-    m_api->getConfig()->cullUpdateLightsFromDBCounter   = cullUpdateLightsFromDBCounter.getTimePerFrame();
-    m_api->getConfig()->cullExterior                    = cullExterior.getTimePerFrame();
-    m_api->getConfig()->cullExteriorSetDecl             = cullExteriorSetDecl.getTimePerFrame();
-    m_api->getConfig()->cullExteriorWDLCull             = cullExteriorWDLCull.getTimePerFrame();
-    m_api->getConfig()->cullExteriorGetCands            = cullExteriorGetCands.getTimePerFrame();
-    m_api->getConfig()->cullExterioFrustumWMO           = cullExterioFrustumWMO.getTimePerFrame();
-    m_api->getConfig()->cullExterioFrustumM2            = cullExterioFrustumM2.getTimePerFrame();
-    m_api->getConfig()->cullSkyDoms                     = cullSkyDoms.getTimePerFrame();
-    m_api->getConfig()->cullCombineAllObjects           = cullCombineAllObjects.getTimePerFrame();
 //    //Limit M2 count based on distance/m2 height
 //    for (auto it = this->m2RenderedThisFrameArr.begin();
 //         it != this->m2RenderedThisFrameArr.end();) {
@@ -593,6 +563,15 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
         getLightResultsFromDB(frustumData.cameraPos, config, lightResults, &stateForConditions);
+
+        {
+            auto &fdd = mapRenderPlan->frameDependentData;
+            //Fill current light ids
+            for (auto &light : lightResults) {
+                fdd->currentLightIds.push_back(light.id);
+                fdd->currentLightParamIds.push_back(light.lightParamId);
+            }
+        }
 
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
@@ -707,12 +686,12 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         if (config->globalLighting == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
 
-            fdd->exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
-            fdd->exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
+            fdd->colors.exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
+            fdd->colors.exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
                                                   0);
-            fdd->exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
+            fdd->colors.exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
                                                     horizontAmbientColor[0], 0);
-            fdd->exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
+            fdd->colors.exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
             auto extDir = MathHelper::calcExteriorColorDir(
                 frustumData.viewMat,
                 m_api->getConfig()->currentTime
@@ -721,10 +700,10 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         } else if (config->globalLighting == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
 
-            fdd->exteriorAmbientColor = config->exteriorAmbientColor;
-            fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
-            fdd->exteriorHorizontAmbientColor = config->exteriorHorizontAmbientColor;
-            fdd->exteriorDirectColor = config->exteriorDirectColor;
+            fdd->colors.exteriorAmbientColor = config->exteriorColors.exteriorAmbientColor;
+            fdd->colors.exteriorGroundAmbientColor = config->exteriorColors.exteriorGroundAmbientColor;
+            fdd->colors.exteriorHorizontAmbientColor = config->exteriorColors.exteriorHorizontAmbientColor;
+            fdd->colors.exteriorDirectColor = config->exteriorColors.exteriorDirectColor;
             auto extDir = MathHelper::calcExteriorColorDir(
                 frustumData.viewMat,
                 m_api->getConfig()->currentTime
@@ -753,12 +732,12 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         }
         if (config->skyParams == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
-            fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
-            fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
-            fdd->SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 1.0);
-            fdd->SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 1.0);
-            fdd->SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 1.0);
+            fdd->skyColors.SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
+            fdd->skyColors.SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
+            fdd->skyColors.SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
+            fdd->skyColors.SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 1.0);
+            fdd->skyColors.SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 1.0);
+            fdd->skyColors.SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 1.0);
         }
     }
 
@@ -845,24 +824,24 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
                 }
             } else if (config->globalFog == EParameterSource::eConfig) {
                 LightResult globalFog;
-                globalFog.FogScaler = config->FogScaler;
-                globalFog.FogEnd = config->FogEnd;
-                globalFog.FogDensity = config->FogDensity;
+                globalFog.FogScaler = config->fogResult.FogScaler;
+                globalFog.FogEnd = config->fogResult.FogEnd;
+                globalFog.FogDensity = config->fogResult.FogDensity;
 
-                globalFog.FogHeightScaler = config->FogHeightScaler;
-                globalFog.FogHeightDensity = config->FogHeightDensity;
-                globalFog.SunFogAngle = config->SunFogAngle;
-                globalFog.EndFogColorDistance = config->EndFogColorDistance;
-                globalFog.SunFogStrength = config->SunFogStrength;
+                globalFog.FogHeightScaler = config->fogResult.FogHeightScaler;
+                globalFog.FogHeightDensity = config->fogResult.FogHeightDensity;
+                globalFog.SunFogAngle = config->fogResult.SunFogAngle;
+                globalFog.EndFogColorDistance = config->fogResult.EndFogColorDistance;
+                globalFog.SunFogStrength = config->fogResult.SunFogStrength;
 
                 globalFog.blendCoef = 1.0 - totalSummator;
                 globalFog.isDefault = true;
 
-                globalFog.EndFogColor = {config->EndFogColor.z, config->EndFogColor.y, config->EndFogColor.x};
-                globalFog.SunFogColor = {config->SunFogColor.z, config->SunFogColor.y, config->SunFogColor.x};
-                globalFog.FogHeightColor = {config->FogHeightColor.z, config->FogHeightColor.y, config->FogHeightColor.x};
+                globalFog.EndFogColor = {config->fogResult.EndFogColor.z, config->fogResult.EndFogColor.y, config->fogResult.EndFogColor.x};
+                globalFog.SunFogColor = {config->fogResult.SunFogColor.z, config->fogResult.SunFogColor.y, config->fogResult.SunFogColor.x};
+                globalFog.FogHeightColor = {config->fogResult.FogHeightColor.z, config->fogResult.FogHeightColor.y, config->fogResult.FogHeightColor.x};
 
-                combinedResults.push_back(globalFog);
+                combinedResults = {globalFog};
             }
         }
         std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
@@ -876,40 +855,11 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             }
         }
 
-//        for (auto &_light : combinedResults) {
-//            FogEnd += _light.FogEnd * _light.blendCoef;
-//            FogScaler += _light.FogScaler * _light.blendCoef;
-//            FogDensity += _light.FogDensity * _light.blendCoef;
-//            FogHeight += _light.FogHeight * _light.blendCoef;
-//            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
-//            FogHeightDensity += _light.FogHeightDensity * _light.blendCoef;
-//            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
-//
-//            EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
-//            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
-//            SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
-//            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
-//            FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
-//            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients.data()) * _light.blendCoef;
-//            MainFogCoefficients += mathfu::vec4(_light.MainFogCoefficients.data()) * _light.blendCoef;
-//            HeightDensityFogCoefficients += mathfu::vec4(_light.HeightDensityFogCoefficients.data()) * _light.blendCoef;
-//            FogZScalar += _light.FogZScalar * _light.blendCoef;
-//            LegacyFogScalar += _light.LegacyFogScalar * _light.blendCoef;
-//            MainFogStartDist += _light.MainFogStartDist * _light.blendCoef;
-//            MainFogEndDist += _light.MainFogEndDist * _light.blendCoef;
-//            FogBlendAlpha += _light.FogBlendAlpha * _light.blendCoef;
-//            HeightEndFogColor += mathfu::vec3(_light.HeightEndFogColor.data()) * _light.blendCoef;
-//            FogStartOffset += _light.FogStartOffset * _light.blendCoef;
-//        }
-//        FogBlendAlpha = 1.0f;
-
         //In case of no data -> disable the fog
         {
             auto fdd = mapRenderPlan->frameDependentData;
             fdd->FogDataFound = !combinedResults.empty();
-//            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
-//            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
-            fdd->EndFogColor = mathfu::vec3(0.0f, 0, 0);
+
             auto &fogResult = fdd->fogResults.emplace_back();
             for (auto &_light : lightResults) {
                 fogResult.FogEnd = mix(fogResult.FogEnd, _light.FogEnd, _light.blendCoef);
@@ -1007,24 +957,21 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
     if (zoneLightFound) {
         float blendCoef = 1.0;
 
+        //Replace default light with ZoneLight
+        //TODO: make a blend coef to zonelight border based on the least distance to border and replace default only if that coef is 1.0
+        bool hasDefault = false;
+        zoneLightResult.blendCoef = 1.0f;
         for (auto &_light : lightResults) {
-            if (!_light.isDefault) {
-                blendCoef -= _light.blendCoef;
+            if (_light.isDefault) {
+                hasDefault = true;
+                _light = zoneLightResult;
             }
         }
-        if (blendCoef > 0) {
-            zoneLightResult.blendCoef = blendCoef;
+        if (!hasDefault) {
             lightResults.push_back(zoneLightResult);
-            //Delete default from results;
-            auto it = lightResults.begin();
-            while (it != lightResults.end()) {
-                if (it->isDefault) {
-                    lightResults.erase(it);
-                    break;
-                } else
-                    it++;
-            }
         }
+        std::sort(lightResults.begin(), lightResults.end(), [](auto const &a, auto const &b) {return a.blendCoef > b.blendCoef; });
+
     }
 }
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
@@ -1119,17 +1066,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     auto exteriorView = mapRenderPlan->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
 
-    cullExteriorWDLCull.beginMeasurement();
     if (m_wdlObject != nullptr) {
         m_wdlObject->checkFrustumCulling(frustumData, cameraPos, exteriorView->m2List, mapRenderPlan->wmoArray);
     }
-    cullExteriorWDLCull.endMeasurement();
 
-    cullExteriorGetCands.beginMeasurement();
     getCandidatesEntities(frustumData, cameraPos, mapRenderPlan, exteriorView->m2List, mapRenderPlan->wmoArray);
-    cullExteriorGetCands.endMeasurement();
 
-    cullExterioFrustumWMO.beginMeasurement();
     //Frustum cull
     for (auto &wmoCandidate : mapRenderPlan->wmoArray.getCandidates()) {
         if (!wmoCandidate->isLoaded()) continue;
@@ -1146,12 +1088,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             mapRenderPlan->wmoArray.addToDrawn(wmoCandidate);
         }
     }
-    cullExterioFrustumWMO.endMeasurement();
 
-    cullExterioFrustumM2.beginMeasurement();
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
-        int numThreads = m_api->getConfig()->threadCount;
         auto results = std::vector<uint32_t>();
 
         auto &candidates = exteriorView->m2List.getCandidates();
@@ -1185,7 +1124,6 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                 exteriorView->m2List.addToDraw(m2ObjectCandidate);
             }
         }
-        cullExterioFrustumM2.endMeasurement();
     }
 }
 
@@ -1497,7 +1435,6 @@ void Map::update(const HMapRenderPlan &renderPlan) {
     auto &m2ToDraw = renderPlan->m2Array.getDrawn();
     {
         ZoneScopedN("m2UpdateframeCounter");
-        m2UpdateframeCounter.beginMeasurement();
 
         auto threadsAvailable = m_api->getConfig()->hardwareThreadCount();
 
@@ -1519,33 +1456,27 @@ void Map::update(const HMapRenderPlan &renderPlan) {
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
             }
         }
-
-        m2UpdateframeCounter.endMeasurement();
     }
 
     {
         ZoneScopedN("wmoUpdate");
-        wmoUpdate.beginMeasurement();
+
         for (const auto &wmoObject: renderPlan->wmoArray.getToDrawn()) {
             if (wmoObject == nullptr) continue;
             wmoObject->update();
         }
-        wmoUpdate.endMeasurement();
     }
 
     {
         ZoneScopedN("wmoGroupUpdate");
-        wmoGroupUpdate.beginMeasurement();
         for (const auto &wmoGroupObject: renderPlan->wmoGroupArray.getToDraw()) {
             if (wmoGroupObject == nullptr) continue;
             wmoGroupObject->update();
         }
-        wmoGroupUpdate.endMeasurement();
     }
 
     {
         ZoneScopedN("adtUpdate");
-        adtUpdate.beginMeasurement();
         {
             std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
             for (const auto &adtObjectRes: renderPlan->adtArray) {
@@ -1555,12 +1486,10 @@ void Map::update(const HMapRenderPlan &renderPlan) {
                 }
             }
         }
-        adtUpdate.endMeasurement();
     }
 
 
     //2. Calc distance every 100 ms
-    m2calcDistanceCounter.beginMeasurement();
     tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
           [&](tbb::blocked_range<size_t> r) {
               for (size_t i = r.begin(); i != r.end(); ++i) {
@@ -1570,11 +1499,9 @@ void Map::update(const HMapRenderPlan &renderPlan) {
               }
           }, tbb::auto_partitioner()
     );
-    m2calcDistanceCounter.endMeasurement();
 
     //Cleanup ADT every 10 seconds
-    adtCleanupCounter.beginMeasurement();
-    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
+     if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
                 auto adtObj = mapTiles[i][j];
@@ -1589,23 +1516,25 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
         adtFreeLambda(false, true, this->m_currentTime + deltaTime);
     }
-    adtCleanupCounter.endMeasurement();
-    this->m_currentTime += deltaTime;
 
-    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
-    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
-    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
-    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
-    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
-    //Collect meshes
+    this->m_currentTime += deltaTime;
 }
 
 void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
     ZoneScoped;
     {
         auto &meshblockVS = skyMeshMat0x4->m_skyColors->getObject();
-        auto EndFogColorV4_1 = mathfu::vec4(renderPlan->frameDependentData->EndFogColor, 0.0);
-        auto EndFogColorV4_2 = mathfu::vec4(renderPlan->frameDependentData->EndFogColor, 1.0);
+        auto EndFogColor = !renderPlan->frameDependentData->fogResults.empty() ?
+                           renderPlan->frameDependentData->fogResults[0].EndFogColor:
+                           mathfu::vec3(0,0,0);
+
+        if (EndFogColor.Length() < 0.0001) {
+            EndFogColor = renderPlan->frameDependentData->skyColors.SkyFogColor.xyz();
+        }
+
+
+        auto EndFogColorV4_1 = mathfu::vec4(EndFogColor, 0.0);
+        auto EndFogColorV4_2 = mathfu::vec4(EndFogColor, 1.0);
         meshblockVS.skyColor[0] = EndFogColorV4_1;
         meshblockVS.skyColor[1] = EndFogColorV4_1;
         meshblockVS.skyColor[2] = EndFogColorV4_1;
@@ -1616,12 +1545,12 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
     }
     {
         auto &meshblockVS = skyMeshMat->m_skyColors->getObject();
-        meshblockVS.skyColor[0] = renderPlan->frameDependentData->SkyTopColor;
-        meshblockVS.skyColor[1] = renderPlan->frameDependentData->SkyMiddleColor;
-        meshblockVS.skyColor[2] = renderPlan->frameDependentData->SkyBand1Color;
-        meshblockVS.skyColor[3] = renderPlan->frameDependentData->SkyBand2Color;
-        meshblockVS.skyColor[4] = renderPlan->frameDependentData->SkySmogColor;
-        meshblockVS.skyColor[5] = renderPlan->frameDependentData->SkyFogColor;
+        meshblockVS.skyColor[0] = renderPlan->frameDependentData->skyColors.SkyTopColor;
+        meshblockVS.skyColor[1] = renderPlan->frameDependentData->skyColors.SkyMiddleColor;
+        meshblockVS.skyColor[2] = renderPlan->frameDependentData->skyColors.SkyBand1Color;
+        meshblockVS.skyColor[3] = renderPlan->frameDependentData->skyColors.SkyBand2Color;
+        meshblockVS.skyColor[4] = renderPlan->frameDependentData->skyColors.SkySmogColor;
+        meshblockVS.skyColor[5] = renderPlan->frameDependentData->skyColors.SkyFogColor;
         skyMeshMat->m_skyColors->save();
     }
 

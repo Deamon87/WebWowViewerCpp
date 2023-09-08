@@ -493,8 +493,7 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
 
     std::list<int> listForDeletion;
 
-    int numThreads = m_api->getConfig()->threadCount;
-
+    int numThreads = 10;
     #pragma omp parallel for schedule(dynamic, 200) default(none) shared(delta, forces) num_threads(numThreads)
     for (int i = 0; i < this->particles.size(); i++) {
         auto &p = this->particles[i];

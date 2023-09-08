@@ -26,7 +26,6 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
                                      const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
     ZoneScoped;
-    mapProduceUpdateCounter.beginMeasurement();
 
     auto &opaqueMeshes = *hopaqueMeshes;
     auto &transparentMeshes = *htransparentMeshes;
@@ -46,7 +45,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     int m_viewRenderOrder = 0;
 
     // Put everything into one array and sort
-    interiorViewCollectMeshCounter.beginMeasurement();
+
     bool renderPortals = m_config->renderPortals;
     bool renderADT = m_config->renderAdt;
     bool renderWMO = m_config->renderWMO;
@@ -54,18 +53,14 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
         view->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes);
     }
-    interiorViewCollectMeshCounter.endMeasurement();
 
-    exteriorViewCollectMeshCounter.beginMeasurement();
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
             exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes);
         }
     }
-    exteriorViewCollectMeshCounter.endMeasurement();
 
-    m2CollectMeshCounter.beginMeasurement();
     if (m_config->renderM2) {
         for (auto &m2Object : cullStage->m2Array.getDrawn()) {
             if (m2Object == nullptr) continue;
@@ -82,28 +77,14 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
             }
         }
     }
-    m2CollectMeshCounter.endMeasurement();
 
     //No need to sort array which has only one element
-    sortMeshCounter.beginMeasurement();
     if (transparentMeshes.size() > 1) {
         std::sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
     }
     if (skyTransparentMeshes.size() > 1) {
         std::sort(skyTransparentMeshes.begin(), skyTransparentMeshes.end(), SortMeshes);
     }
-    sortMeshCounter.endMeasurement();
-
-    mapProduceUpdateCounter.endMeasurement();
-
-
-    m_config->mapProduceUpdateTime = mapProduceUpdateCounter.getTimePerFrame();
-    m_config->interiorViewCollectMeshTime = interiorViewCollectMeshCounter.getTimePerFrame();
-    m_config->exteriorViewCollectMeshTime = exteriorViewCollectMeshCounter.getTimePerFrame();
-    m_config->m2CollectMeshTime = m2CollectMeshCounter.getTimePerFrame();
-    m_config->sortMeshTime = sortMeshCounter.getTimePerFrame();
-    m_config->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
-    m_config->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
 }
 
 void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
@@ -132,10 +113,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
     blockPSVS.uInteriorSunDir = renderingMatrices->interiorDirectLightDir;
     blockPSVS.uViewUpSceneTime = mathfu::vec4(renderingMatrices->viewUp.xyz(), sceneTime);
 
-    blockPSVS.extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
-    blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
-    blockPSVS.extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
-    blockPSVS.extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
+    blockPSVS.extLight.uExteriorAmbientColor = fdd->colors.exteriorAmbientColor;
+    blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->colors.exteriorHorizontAmbientColor;
+    blockPSVS.extLight.uExteriorGroundAmbientColor = fdd->colors.exteriorGroundAmbientColor;
+    blockPSVS.extLight.uExteriorDirectColor = fdd->colors.exteriorDirectColor;
     blockPSVS.extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
     blockPSVS.extLight.uAdtSpecMult_FogCount = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
 
@@ -179,7 +160,6 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             fogResult.EndFogColor.z
         );
 
-        fogResult.SunFogAngle = 0.0f;
         blockPSVS.fogData[i].sunAngle_and_sunColor = mathfu::vec4(
             fogResult.SunFogAngle,
             fogResult.SunFogColor.x,
