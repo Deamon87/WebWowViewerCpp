@@ -41,9 +41,6 @@ void main() {
 
     float uAlphaTest = uAlphaTestv.x;
 
-    if(tex.a < uAlphaTest)
-        discard;
-
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
     int uNonOptPixelShader = uPixelShaderBlendModev.x;
     if (uNonOptPixelShader == 0) { //particle_mod
