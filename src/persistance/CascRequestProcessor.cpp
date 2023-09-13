@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <sstream>
+#include <iterator>
 #include "CascRequestProcessor.h"
 #include "../../3rdparty/casclib/src/CascLib.h"
 #include "../../3rdparty/filesystem_impl/include/ghc/filesystem.hpp"
@@ -133,6 +134,37 @@ HFileContent CascRequestProcessor::tryGetFile(void *cascStorage, void *fileNameT
     return fileContent;
 }
 
+static const std::string cacheDirectory = "./file_edits/";
+HFileContent CascRequestProcessor::tryGetFileFromOverrides(int fileDataId) {
+
+    std::string inputFileName = cacheDirectory + std::to_string(fileDataId);
+    std::ifstream cache_file(inputFileName, std::ios::in |std::ios::binary);
+    if (cache_file.good()) {
+        cache_file.unsetf(std::ios::skipws);
+
+        // get its size:
+        std::streampos fileSize;
+
+        cache_file.seekg(0, std::ios::end);
+        fileSize = cache_file.tellg();
+        cache_file.seekg(0, std::ios::beg);
+
+
+        HFileContent vec = std::make_shared<FileContent>(fileSize);
+        cache_file.read((char *) vec->data(), fileSize);
+
+        // read the data:
+        std::copy(std::istream_iterator<unsigned char>(cache_file),
+                  std::istream_iterator<unsigned char>(),
+                  std::back_inserter(*vec.get()));
+
+        std::cout << "Loaded fdid = " << fileDataId << " from " << inputFileName << std::endl;
+
+        return vec;
+    }
+    return nullptr;
+}
+
 void CascRequestProcessor::processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) {
     auto perstFile = s_file.lock();
     uint32_t fileDataId = 0;
@@ -166,8 +198,10 @@ void CascRequestProcessor::processFileRequest(const std::string &fileName, Cache
 
     openFlags |= CASC_OVERCOME_ENCRYPTED;
 
-    HFileContent fileContent;
-    if (this->m_storage != nullptr) {
+    HFileContent fileContent = nullptr;
+
+    fileContent = this->tryGetFileFromOverrides(fileDataId);
+    if (this->m_storage != nullptr && fileContent == nullptr) {
         fileContent = this->tryGetFile(this->m_storage, fileNameToPass, openFlags);
         if (fileContent == nullptr) {
             if (fileDataId > 0) {

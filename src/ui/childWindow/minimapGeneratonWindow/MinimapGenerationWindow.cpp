@@ -154,10 +154,10 @@ void MinimapGenerationWindow::editComponentsForConfig(Config * config) {
     ImGui::BeginGroupPanel("Exterior Lighting");
 
     {
-        ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor);
-        ImGui::CompactColorPicker("Exterior Horizon Ambient", config->exteriorColors.exteriorHorizontAmbientColor);
-        ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor);
-        ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor);
+        ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor, false);
+        ImGui::CompactColorPicker("Exterior Horizon Ambient", config->exteriorColors.exteriorHorizontAmbientColor, false);
+        ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor, false);
+        ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor, false);
     }
 
     ImGui::EndGroupPanel();
@@ -407,7 +407,7 @@ void MinimapGenerationWindow::renderEditTab() {
             }
             ImGui::BeginGroupPanel("Ocean color override");
             {
-                ImGui::CompactColorPicker("Close Ocean Color", sceneDef->closeOceanColor);
+                ImGui::CompactColorPicker("Close Ocean Color", sceneDef->closeOceanColor, false);
                 ImGui::EndGroupPanel();
             }
             ImGui::BeginGroupPanel("Image settings");
@@ -465,7 +465,7 @@ void MinimapGenerationWindow::renderEditTab() {
                 minimapGenerator->getCurrentFDData(areaId, parentAreaId, riverColor);
                 ImGui::Text("Current areaId %d", areaId);
                 ImGui::Text("Current parent areaId %d", parentAreaId);
-                ImGui::CompactColorPicker("Current River Color", riverColor);
+                ImGui::CompactColorPicker("Current River Color", riverColor, false);
 
                 ImGui::EndGroupPanel();
             }

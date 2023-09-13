@@ -27,6 +27,7 @@ protected:
     void processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) override;
 private:
     HFileContent tryGetFile(void *cascStorage, void *fileNameToPass, uint32_t openFlags);
+    HFileContent tryGetFileFromOverrides(int fileDataId);
 };
 
 

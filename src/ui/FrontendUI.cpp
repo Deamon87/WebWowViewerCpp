@@ -47,6 +47,7 @@ FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
 }
 
 void FrontendUI::composeUI() {
+    ZoneScoped;
 
     if (m_dataExporter != nullptr) {
         m_dataExporter->process();
@@ -286,7 +287,6 @@ void FrontendUI::showCurrentStatsDialog() {
                     {
                         ImGui::BeginTable("CurrentFogParams", 2);
 
-
                         const auto &fogData = cullStageData->frameDependentData->fogResults[0];
                         drawColumnF("Fog End:", fogData.FogEnd);
                         drawColumnF("Fog Scalar:", fogData.FogScaler);
@@ -337,9 +337,9 @@ void FrontendUI::showCurrentStatsDialog() {
                         ImGui::BeginTable("CurrentLightParams", 2);
 
                         drawColumnColorVec3("Exterior Ambient:", "ExteriorAmbient", frameDependentData->colors.exteriorAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Horizon Ambient:", "ExteriorHorizonAmbient", frameDependentData->colors.exteriorAmbientColor.xyz());
+                        drawColumnColorVec3("Exterior Horizon Ambient:", "ExteriorHorizonAmbient", frameDependentData->colors.exteriorHorizontAmbientColor.xyz());
                         drawColumnColorVec3("Exterior Ground Ambient:", "ExteriorGroundAmbient", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Direct Color:", "ExteriorDirectColor", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
+                        drawColumnColorVec3("Exterior Direct Color:", "ExteriorDirectColor", frameDependentData->colors.exteriorDirectColor.xyz());
                         drawColumnF("Glow:", cullStageData->frameDependentData->currentGlow);
                         ImGui::EndTable();
                     }
@@ -1315,6 +1315,8 @@ void FrontendUI::showSettingsDialog() {
 //                ImGui::EndCombo();
 //            }
 //        }
+        if (ImGui::SliderFloat("fov", &fov, 10, 150)) {
+        }
 
         if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
             m_api->getConfig()->farPlane = farPlane;
@@ -1468,12 +1470,15 @@ void FrontendUI::showSettingsDialog() {
             if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
                 m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
             }
-            ImGui::SameLine();
-            if (mapPlan != nullptr && mapPlan->frameDependentData != nullptr &&
-                ImGui::Button("Edit current colors"))
-            {
-                m_api->getConfig()->exteriorColors = mapPlan->frameDependentData->colors;
-                m_api->getConfig()->globalLighting = EParameterSource::eConfig;
+            if (mapPlan != nullptr &&
+                mapPlan->frameDependentData != nullptr &&
+                m_api->getConfig()->globalLighting == EParameterSource::eDatabase) {
+
+                ImGui::SameLine();
+                if (ImGui::Button("Edit current colors")) {
+                    m_api->getConfig()->exteriorColors = mapPlan->frameDependentData->colors;
+                    m_api->getConfig()->globalLighting = EParameterSource::eConfig;
+                }
             }
 
             if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
@@ -1486,11 +1491,15 @@ void FrontendUI::showSettingsDialog() {
             if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
                 auto config = m_api->getConfig();
 
-                ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor);
+                ImGui::BeginTable("CurrentFogParams", 2);
+
+                ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor,true);
                 ImGui::CompactColorPicker("Exterior Horizon Ambient",
-                                          config->exteriorColors.exteriorHorizontAmbientColor);
-                ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor);
-                ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor);
+                                          config->exteriorColors.exteriorHorizontAmbientColor,true);
+                ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor,true);
+                ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor,true);
+
+                ImGui::EndTable();
             }
 
             //Glow source
@@ -1626,104 +1635,9 @@ mathfu::mat4 getInfZMatrix(float f, float aspect) {
         0.0f, 0.0f, 1,  0.0f);
 }
 
-//HDrawStage createSceneDrawStage(HFrameScenario sceneScenario, int width, int height, double deltaTime, bool isScreenshot,
-//                                bool produceDoubleCamera, bool swapDebugCamera,
-//                                ApiContainer &apiContainer, std::shared_ptr<IScene> &currentScene, HCullStage &cullStage) {
-//
-//
-//    static const mathfu::mat4 vulkanMatrixFix2 = mathfu::mat4(1, 0, 0, 0,
-//                                                              0, -1, 0, 0,
-//                                                              0, 0, 1.0/2.0, 1.0/2.0,
-//                                                              0, 0, 0, 1).Transpose();
-//
-//    float farPlaneRendering = apiContainer.getConfig()->farPlane;
-//    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
-//
-//    float nearPlane = 1.0;
-//    float fov = toRadian(45.0);
-//
-//    float canvasAspect = (float)width / (float)height;
-//
-//    HCameraMatrices cameraMatricesCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-//    HCameraMatrices cameraMatricesUpdate = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-//    HCameraMatrices cameraMatricesRendering = cameraMatricesUpdate;
-//    HCameraMatrices cameraMatricesRenderingDebug = nullptr;
-//
-//    if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
-//        cameraMatricesRenderingDebug = apiContainer.debugCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
-//
-//
-//    //Frustum matrix with reversed Z
-//    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-//    if (isInfZSupported)
-//    {
-//        float f = 1.0f / tan(fov / 2.0f);
-//        cameraMatricesRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
-//        if (cameraMatricesRenderingDebug != nullptr) {
-//            cameraMatricesRenderingDebug->perspectiveMat = cameraMatricesRendering->perspectiveMat;
-//        }
-//    }
-//
-//    if (apiContainer.hDevice->getIsVulkanAxisSystem() ) {
-//        auto &perspectiveMatrix = cameraMatricesRendering->perspectiveMat;
-//
-//        perspectiveMatrix = vulkanMatrixFix2 * perspectiveMatrix;
-//    }
-//
-//    auto clearColor = apiContainer.getConfig()->clearColor;
-//
-//    if (cameraMatricesRenderingDebug && swapDebugCamera) {
-//        std::swap(cameraMatricesRendering, cameraMatricesRenderingDebug);
-//    }
-//
-//    if (currentScene != nullptr) {
-//        ViewPortDimensions dimensions = {{0, 0}, {width, height}};
-//
-//        HFrameBuffer fb = nullptr;
-//        if (isScreenshot) {
-//            fb = apiContainer.hDevice->createFrameBuffer(width, height,
-//                                                         {ITextureFormat::itRGBA},
-//                                                         ITextureFormat::itDepth32,
-//                                                         apiContainer.hDevice->getMaxSamplesCnt(), 4);
-//        }
-//
-//        cullStage = sceneScenario->addCullStage(cameraMatricesCulling, currentScene);
-//        auto updateStage = sceneScenario->addUpdateStage(cullStage, deltaTime*(1000.0f), cameraMatricesUpdate);
-//        std::vector<HUpdateStage> updateStages = {updateStage};
-//
-//        std::vector<HDrawStage> drawStageDependencies = {};
-//        if (produceDoubleCamera) {
-//            std::vector<HDrawStage> drawStageDependencies__ = {};
-//
-//            HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStages, currentScene, cameraMatricesRenderingDebug, drawStageDependencies__,
-//                                                                    true,
-//                                                                    dimensions,
-//                                                                    true, isInfZSupported, clearColor, fb);
-//            drawStageDependencies.push_back(sceneDrawStage);
-//
-//            int newWidth = floor(dimensions.maxs[0]*0.25f);
-//            int newHeight = floor((float)newWidth / canvasAspect);
-//
-//            int newX = dimensions.maxs[0] - newWidth;
-//            int newY = dimensions.maxs[1] - newHeight;
-//
-//            dimensions = {{newX, newY}, {newWidth, newHeight}};
-//        }
-//
-//        HDrawStage sceneDrawStage = sceneScenario->addDrawStage(updateStages, currentScene, cameraMatricesRendering, drawStageDependencies,
-//                                                                true,
-//                                                                dimensions,
-//                                                                true, isInfZSupported, clearColor, fb);
-//
-//
-//        return sceneDrawStage;
-//    }
-//
-//    return nullptr;
-//}
-
 HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
                                                      int width, int height,
+                                                     float fov,
                                                      bool produceDoubleCamera,
                                                      bool swapDebugCamera,
                                                      const std::shared_ptr<IScene> &currentScene) {
@@ -1735,23 +1649,23 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
     float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
 
     float nearPlane = 1.0;
-    float fov = toRadian(45.0);
+    float fovR = toRadian(fov);
 
     float canvasAspect = (float)width / (float)height;
 
-    result->matricesForCulling = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
-    result->cameraMatricesForRendering = apiContainer.camera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneCulling);
+    result->matricesForCulling = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
+    result->cameraMatricesForRendering = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
     result->cameraMatricesForDebugCamera = nullptr;
 
     if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
-        result->cameraMatricesForDebugCamera = apiContainer.debugCamera->getCameraMatrices(fov, canvasAspect, nearPlane, farPlaneRendering);
+        result->cameraMatricesForDebugCamera = apiContainer.debugCamera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneRendering);
 
 
     //Frustum matrix with reversed Z
     bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
     if (isInfZSupported)
     {
-        float f = 1.0f / tan(fov / 2.0f);
+        float f = 1.0f / tan(fovR / 2.0f);
         result->cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
         if (result->cameraMatricesForDebugCamera != nullptr) {
             result->cameraMatricesForDebugCamera->perspectiveMat = result->cameraMatricesForRendering->perspectiveMat;
@@ -1785,6 +1699,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             wowSceneFrameInput->viewPortDimensions = dimension;
             wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
                                                                        canvWidth, canvHeight,
+                                                                       fov,
                                                                        m_api->getConfig()->doubleCameraDebug,
                                                                        m_api->getConfig()->swapMainAndDebug,
                                                                        m_currentScene);
@@ -1792,6 +1707,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             if (needToMakeScreenshot) {
                 wowSceneFrameInput->screenShotParameters = createMapSceneParams(*m_api,
                                                                                 screenShotWidth, screenShotHeight,
+                                                                                fov,
                                                                            false,
                                                                            false,
                                                                            m_currentScene);
@@ -1824,67 +1740,6 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
 
     return scenario;
-//
-//    HFrameScenario sceneScenario = std::make_shared<FrameScenario>();
-//    std::vector<HDrawStage> uiDependecies = {};
-//
-//    if (needToMakeScreenshot)
-//    {
-//        HCullStage tempCullStage = nullptr;
-//        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true,
-//                                              false, false, *m_api,
-//                                              currentScene,tempCullStage);
-//        if (drawStage != nullptr) {
-//            uiDependecies.push_back(drawStage);
-//            screenshotDS = drawStage;
-//            screenshotFrame = m_api->hDevice->getFrameNumber();
-//        }
-//        needToMakeScreenshot = false;
-//    }
-//    if (m_minimapGenerationWindow != nullptr) {
-//        auto drawStage = m_minimapGenerationWindow->getDrawStage(sceneScenario);
-//        if (drawStage != nullptr) {
-//            uiDependecies.push_back(drawStage);
-//        }
-//    }
-//
-//    //DrawStage for current frame
-//    bool clearOnUi = true;
-//    if (currentScene != nullptr && m_api->camera != nullptr)
-//    {
-//        int currentFrame = m_api->hDevice->getDrawFrameNumber();
-//        auto &cullStageData = m_cullstages[currentFrame];
-//        cullStageData = nullptr;
-//
-//
-//
-//        auto drawStage = createSceneDrawStage(sceneScenario, canvWidth, canvHeight, deltaTime,
-//                                              false,
-//                                              m_api->getConfig()->doubleCameraDebug,
-//                                              m_api->getConfig()->swapMainAndDebug,
-//                                              *m_api,
-//                                              currentScene, cullStageData);
-//        if (drawStage != nullptr) {
-//            uiDependecies.push_back(drawStage);
-//            clearOnUi = false;
-//        }
-//    }
-//    //DrawStage for UI
-//    {
-//        ViewPortDimensions dimension = {
-//            {0,     0},
-//            {canvWidth, canvHeight}
-//        };
-//        auto clearColor = m_api->getConfig()->clearColor;
-//
-//        auto uiCullStage = sceneScenario->addCullStage(nullptr, getShared());
-//        auto uiUpdateStage = sceneScenario->addUpdateStage(uiCullStage, deltaTime * (1000.0f), nullptr);
-//        std::vector<HUpdateStage> updateStages = {uiUpdateStage};
-//        HDrawStage frontUIDrawStage = sceneScenario->addDrawStage(updateStages, getShared(), nullptr, uiDependecies,
-//                                                                  true, dimension, clearOnUi, false, clearColor, nullptr);
-//    }
-//
-//    return sceneScenario;
 }
 
 bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
