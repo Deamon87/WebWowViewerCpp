@@ -204,11 +204,13 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
     if (submitRecords.get().empty())
         return;
 
-    vkCmdCopyBuffer(m_gCmdBuffer.m_cmdBuffer,
-                    bufferVLK->getCPUBuffer(),
-                    bufferVLK->getGPUBuffer(),
-                    submitRecords.get().size(),
-                    submitRecords.get().data());
+    for (auto &submitRecord : submitRecords.get()) {
+        vkCmdCopyBuffer(m_gCmdBuffer.m_cmdBuffer,
+                        submitRecord.src,
+                        submitRecord.dst,
+                        submitRecord.copyRegions.size(),
+                        submitRecord.copyRegions.data());
+    }
 }
 
 void CmdBufRecorder::setViewPort(ViewportType viewportType) {

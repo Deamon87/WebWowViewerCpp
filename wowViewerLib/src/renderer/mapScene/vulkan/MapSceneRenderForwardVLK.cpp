@@ -37,17 +37,17 @@ static const ShaderConfig m2ForwardShaderConfig = {
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
-    iboBuffer   = m_device->createIndexBuffer(1024*1024);
+    iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
-    vboM2Buffer         = m_device->createVertexBuffer(1024*1024);
-    vboPortalBuffer     = m_device->createVertexBuffer(1024*1024);
-    vboM2ParticleBuffer = m_device->createVertexBuffer(1024*1024);
-    vboM2RibbonBuffer   = m_device->createVertexBuffer(1024*1024);
-    vboAdtBuffer        = m_device->createVertexBuffer(3*1024*1024);
-    vboWMOBuffer        = m_device->createVertexBuffer(1024*1024);
-    vboWaterBuffer      = m_device->createVertexBuffer(1024*1024);
-    vboSkyBuffer        = m_device->createVertexBuffer(1024*1024);
-    vboWMOGroupAmbient  = m_device->createVertexBuffer(16*200);
+    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024);
+    vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024);
+    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024);
+    vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024);
+    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024);
+    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
+    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
+    vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
+    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200);
 
     {
         const float epsilon = 0.f;
@@ -61,8 +61,8 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
             0, 1, 2,
             2, 1, 3
         };
-        m_vboQuad = m_device->createVertexBuffer(vertexBuffer.size() * sizeof(mathfu::vec2_packed));
-        m_iboQuad = m_device->createIndexBuffer(indexBuffer.size() * sizeof(uint16_t));
+        m_vboQuad = m_device->createVertexBuffer("Scene_VBO_Quad", vertexBuffer.size() * sizeof(mathfu::vec2_packed));
+        m_iboQuad = m_device->createIndexBuffer("Scene_IBO_Quad", indexBuffer.size() * sizeof(uint16_t));
         m_vboQuad->uploadData(vertexBuffer.data(), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
         m_iboQuad->uploadData(indexBuffer.data(), indexBuffer.size() * sizeof(uint16_t));
 
@@ -72,10 +72,10 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
         m_drawQuadVao->save();
     }
 
-    uboBuffer = m_device->createUniformBuffer(1024*1024);
-    uboStaticBuffer = m_device->createUniformBuffer(1024*1024);
+    uboBuffer = m_device->createUniformBuffer("Scene_UBO", 1024*1024);
+    uboStaticBuffer = m_device->createUniformBuffer("Scene_UBOStatic", 1024*1024);
 
-    uboM2BoneMatrixBuffer = m_device->createUniformBuffer(5000*64);
+    uboM2BoneMatrixBuffer = m_device->createUniformBuffer("Scene_UBO_M2BoneMats", 5000*64);
 
     m_emptyADTVAO = createADTVAO(nullptr, nullptr);
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);

@@ -169,6 +169,39 @@ void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& create
 }
 
 
+std::set<std::string> get_supported_extensions() {
+    VkResult result = VK_NOT_READY;
+
+    /*
+     * From the link above:
+     * If `pProperties` is NULL, then the number of extensions properties
+     * available is returned in `pPropertyCount`.
+     *
+     * Basically, gets the number of extensions.
+     */
+    uint32_t count = 0;
+    result = vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr);
+    if (result != VK_SUCCESS) {
+        return {};
+    }
+
+    std::vector<VkExtensionProperties> extensionProperties(count);
+
+    // Get the extensions
+    result = vkEnumerateInstanceExtensionProperties(nullptr, &count, extensionProperties.data());
+    if (result != VK_SUCCESS) {
+        // Throw an exception or log the error
+        return {};
+    }
+
+    std::set<std::string> extensions;
+    for (auto & extension : extensionProperties) {
+        extensions.insert(extension.extensionName);
+    }
+
+    return extensions;
+}
+
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
     enableValidationLayers = false;
@@ -204,14 +237,25 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     createInfo.pNext = NULL;
     createInfo.pApplicationInfo = &appInfo;
 
+    {
+        auto supportedExtensions = get_supported_extensions();
+        std::cout << "available instance extensions: " << std::endl;
+        for (auto &ext: supportedExtensions) {
+            std::cout << " " << ext << std::endl;
+        }
+        std::cout << std::endl;
+    }
+
     char** extensions;
     int extensionCnt = 0;
     callback->getRequiredExtensions(extensions, extensionCnt);
     std::vector<const char *> extensionsVec(extensions, extensions+extensionCnt);
     if (enableValidationLayers) {
         extensionsVec.push_back("VK_EXT_debug_report");
-        extensionsVec.push_back("VK_EXT_debug_utils");
     }
+
+    //TODO: disable in general case
+    extensionsVec.push_back("VK_EXT_debug_utils");
 
     createInfo.enabledExtensionCount = extensionsVec.size();
     createInfo.ppEnabledExtensionNames = extensionsVec.data();
@@ -323,6 +367,10 @@ void GDeviceVLK::initialize() {
     m_textureManager->initialize();
 //---------------
 
+    stagingRingBuffer = std::make_shared<GStagingRingBuffer>(this->shared_from_this());
+
+//---------------
+
     createSwapChainAndFramebuffer();
 
     createCommandPool();
@@ -341,6 +389,7 @@ void GDeviceVLK::initialize() {
     m_whitePixelTexture = createTexture(false, false);
     unsigned int ff = 0xffffffff;
     m_whitePixelTexture->getTexture()->loadData(1,1,&ff, ITextureFormat::itRGBA);
+
 }
 
 void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const char *name)
@@ -837,6 +886,8 @@ float GDeviceVLK::getAnisLevel() {
 
 void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
     ZoneScoped;
+    stagingRingBuffer->flushBuffers();
+
     this->waitInDrawStageAndDeps.beginMeasurement();
     int currentDrawFrame = getDrawFrameNumber();
 
@@ -1101,24 +1152,24 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName
     return sharedPtr;
 }
 
-HGBufferVLK GDeviceVLK::createUniformBuffer(size_t initialSize) {
-    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize, uniformBufferOffsetAlign);
+HGBufferVLK GDeviceVLK::createUniformBuffer(const char * objName, size_t initialSize) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, stagingRingBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize, uniformBufferOffsetAlign);
     return h_uniformBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createSSBOBuffer(size_t initialSize, int recordSize) {
-    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, initialSize, recordSize);
+HGBufferVLK GDeviceVLK::createSSBOBuffer(const char * objName, size_t initialSize, int recordSize) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, stagingRingBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, initialSize, recordSize);
     return h_uniformBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createVertexBuffer(size_t initialSize) {
-    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize);
+HGBufferVLK GDeviceVLK::createVertexBuffer(const char * objName, size_t initialSize) {
+    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, stagingRingBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize);
 
     return h_vertexBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createIndexBuffer(size_t initialSize) {
-    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize);
+HGBufferVLK GDeviceVLK::createIndexBuffer(const char * objName, size_t initialSize) {
+    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, stagingRingBuffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize);
     return h_indexBuffer;
 }
 

@@ -20,9 +20,9 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
-    iboBuffer = m_device->createIndexBuffer(1024*1024);
-    vboBuffer = m_device->createVertexBuffer(1024*1024);
-    uboBuffer = m_device->createUniformBuffer(sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
+    iboBuffer = m_device->createIndexBuffer("UI_Ibo_Buffer", 1024*1024);
+    vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024);
+    uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
 }

@@ -5,69 +5,31 @@
 #include "GBufferVLK.h"
 #include "../vk_mem_alloc.h"
 
-GBufferVLK::GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize, int alignment) : m_device(device) {
+GBufferVLK::GBufferVLK(const HGDeviceVLK &device, const char *objName,
+                       const std::shared_ptr<GStagingRingBuffer> &ringBuff,
+                       VkBufferUsageFlags usageFlags, int maxSize, int alignment) : m_device(device) {
     m_usageFlags = usageFlags;
     m_bufferSize = maxSize;
     m_alignment = alignment;
+
+    m_ringBuff = ringBuff;
+
+    m_objName = objName;
 
     //Create virtual buffer off this native buffer
     auto allocator = OffsetAllocator::Allocator(m_bufferSize);
     offsetAllocator = std::move(allocator);
 
-    createBuffer(currentBuffer);
+    m_gpuBuffer = std::make_shared<BufferGpuVLK>(m_device, maxSize, m_usageFlags, m_objName.c_str());
 }
 
 GBufferVLK::~GBufferVLK() {
-    destroyBuffer(currentBuffer);
+
 }
 
-void GBufferVLK::createBuffer(BufferInternal &buffer) {
-    //Create new buffer
-    {
-        VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        vbInfo.size = m_bufferSize;
-        vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-        VmaAllocationCreateInfo stagingAllocInfo = {};
-        stagingAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
-        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT;
-        stagingAllocInfo.requiredFlags = VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
 
-        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
-                                         &buffer.stagingBuffer,
-                                         &buffer.stagingBufferAlloc,
-                                         &buffer.stagingBufferAllocInfo));
-    }
-
-    {
-        // No need to flush stagingBuffer memory because CPU_ONLY memory is always HOST_COHERENT.
-        VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-        vbInfo.size = m_bufferSize;
-        vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | m_usageFlags;
-        vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-        VmaAllocationCreateInfo stagingAllocInfo = {};
-        stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO;
-        stagingAllocInfo.flags = 0;
-        ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
-                                         &buffer.g_hBuffer,
-                                         &buffer.g_hBufferAlloc, nullptr));
-    }
-}
-
-void GBufferVLK::destroyBuffer(BufferInternal &buffer) {
-    auto l_device = m_device;
-    auto l_buffer = buffer;
-    m_device->addDeallocationRecord(
-        [l_buffer, l_device]() {
-            vmaDestroyBuffer(l_device->getVMAAllocator(), l_buffer.stagingBuffer, l_buffer.stagingBufferAlloc);
-            vmaDestroyBuffer(l_device->getVMAAllocator(), l_buffer.g_hBuffer, l_buffer.g_hBufferAlloc);
-        }
-    );
-}
-
-VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc) {
+VkResult GBufferVLK::allocateSubBuffer(int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc) {
     std::unique_lock<std::mutex> lock(m_mutex, std::defer_lock);
 
     bool minAddressStrategy = sizeInBytes < fakeSize && fakeSize > 0;
@@ -105,7 +67,7 @@ VkResult GBufferVLK::allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, 
     return result;
 }
 
-void GBufferVLK::deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc) {
+void GBufferVLK::deallocateSubBuffer(const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc) {
     //Destruction of this virtualBlock happens only in deallocation queue.
     //So it's safe to assume that even if the buffer's handle been changed by the time VirtualFree happens,
     //the virtualBlock was still not been free'd
@@ -134,9 +96,24 @@ void GBufferVLK::uploadData(const void *data, int length) {
         resize(length);
     }
 
-    memcpy(currentBuffer.stagingBufferAllocInfo.pMappedData, data, length);
+    void * ptr = allocatePtr(0, length);
 
-    uploadFromStaging(0, 0, length);
+    memcpy(ptr, data, length);
+}
+
+void *GBufferVLK::allocatePtr(int offset, int length) {
+//    std::unique_lock<std::mutex> lock(m_mutex);
+
+    VkBuffer staging;
+    int stage_offset;
+    auto *ptr = m_ringBuff->allocateNext(length, staging, stage_offset);
+    uploadRegionsPerStaging[staging].push_back({
+        .srcOffset = static_cast<VkDeviceSize>(stage_offset),
+        .dstOffset = static_cast<VkDeviceSize>(offset),
+        .size = static_cast<VkDeviceSize>(length)
+    });
+
+    return ptr;
 }
 
 void GBufferVLK::resize(int newLength) {
@@ -144,29 +121,12 @@ void GBufferVLK::resize(int newLength) {
     lock.lock();
     auto oldSize = m_bufferSize;
     offsetAllocator.growSize(newLength - oldSize);
-
     m_bufferSize = newLength;
 
+    lock.unlock();
+}
 
-    BufferInternal newBuffer;
-    createBuffer(newBuffer);
-
-    //Reallocate subBuffers and copy their data
-    for (std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator it = currentSubBuffers.begin(); it != currentSubBuffers.end(); ++it){
-        auto subBuffer = it->lock();
-        if (subBuffer != nullptr) {
-            subBuffer->setParentDataPointer(newBuffer.stagingBufferAllocInfo.pMappedData);
-        }
-    }
-    memcpy((uint8_t *)newBuffer.stagingBufferAllocInfo.pMappedData,
-           (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData,
-           oldSize
-    );
-
-    destroyBuffer(currentBuffer);
-    currentBuffer = newBuffer;
-
-
+void GBufferVLK::executeOnChangeForBufAndSubBuf() {
     for (std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator it = currentSubBuffers.begin(); it != currentSubBuffers.end(); ++it){
         auto subBuffer = it->lock();
         if (subBuffer != nullptr) {
@@ -175,7 +135,6 @@ void GBufferVLK::resize(int newLength) {
     }
 
     executeOnChange();
-    lock.unlock();
 }
 
 static inline uint8_t BitScanMSB(uint32_t mask)
@@ -208,7 +167,7 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
 
     VkResult res = VK_ERROR_OUT_OF_DEVICE_MEMORY;
     if (sizeInBytes < m_bufferSize) {
-        res = allocateSubBuffer(currentBuffer, sizeInBytes, fakeSize, alloc);
+        res = allocateSubBuffer(sizeInBytes, fakeSize, alloc);
     }
 
     if(res == VK_SUCCESS)
@@ -219,18 +178,15 @@ std::shared_ptr<GBufferVLK::GSubBufferVLK> GBufferVLK::getSubBuffer(int sizeInBy
             uiaAlloc = uiaAllocator.allocate(1);
             if (uiaAlloc.offset == OffsetAllocator::Allocation::NO_SPACE) {
                 this->uiaAllocator.growSize(1000);
-                uploadIntervalActivatable.resize(uploadIntervalActivatable.size() + 1000);
                 uiaAlloc = this->uiaAllocator.allocate(1);
             }
         }
-        uploadIntervalActivatable[uiaAlloc.offset] = {alloc.offset, static_cast<size_t>(sizeInBytes), false};
 
         auto subBuffer = std::make_shared<GSubBufferVLK>(
                                                           shared_from_this(),
                                                           alloc,
                                                           sizeInBytes, fakeSize,
-                                                          uiaAlloc,
-                                                         (uint8_t *)currentBuffer.stagingBufferAllocInfo.pMappedData+alloc.offset);
+                                                          uiaAlloc);
 
 
         {
@@ -255,93 +211,73 @@ void GBufferVLK::deleteSubBuffer(std::list<std::weak_ptr<GSubBufferVLK>>::const_
 
     std::unique_lock<std::mutex> lock(m_mutex);
     if (subBuffersize > 0) {
-        deallocateSubBuffer(currentBuffer, alloc, uiaAlloc);
+        deallocateSubBuffer(alloc, uiaAlloc);
     }
     
     currentSubBuffers.erase(it);
 }
 
-void GBufferVLK::uploadFromStaging(int offset, int destOffset, int length) {
-    std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
-
-    VkBufferCopy &vbCopyRegion = dataToBeUploaded.emplace_back();
-    vbCopyRegion.srcOffset = offset;
-    vbCopyRegion.dstOffset = destOffset;
-    vbCopyRegion.size = length;
-}
-
 void GBufferVLK::save(int length) {
-    uploadFromStaging(0, 0, length);
+
 }
 
-void GBufferVLK::addIntervalIndexForUpload(int index) {
-    this->uploadIntervalActivatable[index].requiresUpdate = true;
-}
-
-MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
+MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
     {
         std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
 
-        std::vector<uploadInterval> intervals;
-        for (auto &interval : uploadIntervalActivatable) {
-            if (!interval.requiresUpdate) continue;
-            interval.requiresUpdate = false;
+        dataToBeUploaded.clear();
+        if (m_gpuBuffer->size() != m_bufferSize) {
+            auto newGpuBuf = std::make_shared<BufferGpuVLK>(m_device, m_bufferSize, m_usageFlags, m_objName.c_str());
 
-            auto &newInterval = intervals.emplace_back();
-            newInterval = interval;
+            auto &copyCmd = dataToBeUploaded.emplace_back();
+            copyCmd.src = m_gpuBuffer->getBuffer();
+            copyCmd.dst = newGpuBuf->getBuffer();
+
+            auto &region = copyCmd.copyRegions.emplace_back();
+            region.size = m_gpuBuffer->size();
+            region.srcOffset = 0;
+            region.dstOffset = 0;
+
+            m_gpuBuffer = newGpuBuf;
+
+            executeOnChangeForBufAndSubBuf();
         }
 
-        if (lastSubmittedBufferSize != m_bufferSize) {
-            if (lastSubmittedBufferSize > 0) {
-                auto& newInterval = intervals.emplace_back();
-                newInterval = { .start = 0, .size = lastSubmittedBufferSize };
+        for (auto &stagingRecord : uploadRegionsPerStaging) {
+            auto &intervals = stagingRecord.second;
+            std::sort(intervals.begin(), intervals.end(), [](auto &a, auto &b) -> bool {
+                return
+                    a.srcOffset != b.srcOffset
+                    ? a.srcOffset < b.srcOffset
+                    : a.size < b.size;
+            });
+
+            if (!intervals.empty()) {
+                auto currInterval = intervals[0];
+                const static auto calcIntervalEnd = [](decltype(currInterval) interval, int aligment) -> size_t {
+//                    return aligment > 0 ?
+//                           ((interval.srcOffset + interval.size + aligment - 1) / aligment) * aligment :
+//                           interval.srcOffset + interval.size;
+                    return interval.srcOffset + interval.size;
+                };
+
+                size_t currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
+
+                auto &uploadData = dataToBeUploaded.emplace_back();
+                uploadData.src = stagingRecord.first;
+                uploadData.dst = m_gpuBuffer->getBuffer();
+
+                uploadData.copyRegions = intervals;
             }
-
-            lastSubmittedBufferSize = m_bufferSize;
         }
-
-        std::sort(intervals.begin(), intervals.end(), [](auto &a, auto &b ) -> bool {
-            return
-                a.start != b.start
-                ? a.start < b.start
-                : a.size < b.size;
-        });
-
-        if (!intervals.empty()) {
-            auto currInterval = intervals[0];
-            const static auto calcIntervalEnd = [](decltype(currInterval) interval, int aligment) -> size_t {
-                return aligment > 0 ?
-                    ((interval.start + interval.size + aligment - 1) / aligment) * aligment:
-                    interval.start + interval.size;
-            };
-
-            size_t currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
-
-            for (int i = 1; i < intervals.size(); i++) {
-                auto &nextInterval = intervals[i];
-                if (currIntervalEnd < nextInterval.start) {
-                    VkBufferCopy &vbCopyRegion = dataToBeUploaded.emplace_back();
-                    vbCopyRegion.srcOffset = currInterval.start;
-                    vbCopyRegion.dstOffset = currInterval.start;
-                    vbCopyRegion.size = currInterval.size;
-
-                    currInterval = intervals[i];
-                    currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
-                } else {
-                    assert(nextInterval.start - currInterval.start >= 0);
-                    currInterval.size = std::max<size_t>(currInterval.size, (nextInterval.start - currInterval.start) + nextInterval.size);
-                    currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
-                }
-            }
-
-            VkBufferCopy &vbCopyRegion = dataToBeUploaded.emplace_back();
-            vbCopyRegion.srcOffset = currInterval.start;
-            vbCopyRegion.dstOffset = currInterval.start;
-            vbCopyRegion.size = currInterval.size;
-        }
+        uploadRegionsPerStaging.clear();
     }
 
-    return MutexLockedVector<VkBufferCopy>(dataToBeUploaded, dataToBeUploadedMtx, true);
+    return MutexLockedVector<VulkanCopyCommands>(dataToBeUploaded, dataToBeUploadedMtx, true);
+}
+
+VkBuffer GBufferVLK::getGPUBuffer() {
+    return m_gpuBuffer->getBuffer();
 }
 
 //----------------------------------------------------------------
@@ -351,13 +287,11 @@ MutexLockedVector<VkBufferCopy> GBufferVLK::getSubmitRecords() {
 GBufferVLK::GSubBufferVLK::GSubBufferVLK(HGBufferVLK parent,
                                          OffsetAllocator::Allocation alloc,
                                          int size, int fakeSize,
-                                         OffsetAllocator::Allocation uiaAlloc,
-                                         uint8_t *dataPointer) : m_parentBuffer(parent) {
+                                         OffsetAllocator::Allocation uiaAlloc) : m_parentBuffer(parent) {
     m_alloc = alloc;
     m_uiaAlloc = uiaAlloc;
     m_size = size;
     m_fakeSize = fakeSize > 0 ? fakeSize : m_size;
-    m_dataPointer = dataPointer;
 }
 
 GBufferVLK::GSubBufferVLK::~GSubBufferVLK() {
@@ -369,16 +303,15 @@ void GBufferVLK::GSubBufferVLK::uploadData(const void *data, int length) {
         std::cerr << "invalid dataSize" << std::endl;
     }
 
-    memcpy(m_dataPointer, data, length);
-
-    m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
-//    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
+    void * dataPointer = m_parentBuffer->allocatePtr(m_alloc.offset, m_size);
+    memcpy(dataPointer, data, length);
 }
 
 void *GBufferVLK::GSubBufferVLK::getPointer() {
     if (m_size <= 0) return nullptr;
 
-    return m_dataPointer;
+    void * dataPointer = m_parentBuffer->allocatePtr(m_alloc.offset, m_size);
+    return dataPointer;
 }
 
 void GBufferVLK::GSubBufferVLK::save(int length) {
@@ -386,9 +319,6 @@ void GBufferVLK::GSubBufferVLK::save(int length) {
         std::cerr << "invalid dataSize" << std::endl;
     }
     if (m_size <= 0) return;
-
-    m_parentBuffer->addIntervalIndexForUpload(m_uiaAlloc.offset);
-//    m_parentBuffer->uploadFromStaging(m_offset, m_offset, length);
 }
 
 size_t GBufferVLK::GSubBufferVLK::getSize() {

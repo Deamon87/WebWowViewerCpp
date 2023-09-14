@@ -105,10 +105,10 @@ public:
 
     std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConf);
 
-    HGBufferVLK createUniformBuffer(size_t size);
-    HGBufferVLK createSSBOBuffer(size_t size, int recordSize);
-    HGBufferVLK createVertexBuffer(size_t size);
-    HGBufferVLK createIndexBuffer(size_t size);
+    HGBufferVLK createUniformBuffer(const char * objName, size_t size);
+    HGBufferVLK createSSBOBuffer(const char * objName, size_t size, int recordSize);
+    HGBufferVLK createVertexBuffer(const char * objName, size_t size);
+    HGBufferVLK createIndexBuffer(const char * objName, size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
@@ -332,6 +332,8 @@ protected:
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
     HGVertexBufferBindings m_defaultVao;
+
+    std::shared_ptr<GStagingRingBuffer> stagingRingBuffer;
 
     HGSamplableTexture m_blackPixelTexture = nullptr;
     HGSamplableTexture m_whitePixelTexture = nullptr;

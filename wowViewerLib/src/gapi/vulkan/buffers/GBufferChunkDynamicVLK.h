@@ -71,7 +71,6 @@ public:
 private:
     HGDeviceVLK m_device;
     int m_realSize = 0;
-    void *ptr = nullptr;
     std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> subBuffers = {nullptr};
     std::array<IBufferVLK *, IDevice::MAX_FRAMES_IN_FLIGHT> pSubBuffers  = {nullptr};
 

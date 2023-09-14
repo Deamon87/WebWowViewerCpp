@@ -8,6 +8,7 @@
 
 #include "../../interface/buffers/IBufferChunk.h"
 #include "GBufferVLK.h"
+#include <type_traits>
 
 template<typename T>
 class CBufferChunkVLK : public IBufferChunk<T> {
@@ -24,21 +25,23 @@ public:
     ~CBufferChunkVLK() final = default;
 
     T &getObject() override {
-        return *(T*)pSubBuffer->getPointer();
+        using SubBuffer = std::invoke_result_t<decltype(&GBufferVLK::getSubBuffer), GBufferVLK, int, int>::element_type;
+
+        return *static_cast<T*>(((SubBuffer *)pSubBuffer)->getPointer());
     };
     void save() override {
         pSubBuffer->save(m_realSize);
     };
 
     size_t getIndex() {
-        return subBuffer->getIndex();
+        return pSubBuffer->getIndex();
     }
 
     inline std::shared_ptr<IBufferVLK> getSubBuffer() {return subBuffer;}
     operator const std::shared_ptr<IBufferVLK>() const { return subBuffer; }
 private:
     int m_realSize = 0;
-    void *ptr = nullptr;
+
     std::shared_ptr<IBufferVLK> subBuffer = nullptr;
     IBufferVLK *pSubBuffer  = nullptr;
 };

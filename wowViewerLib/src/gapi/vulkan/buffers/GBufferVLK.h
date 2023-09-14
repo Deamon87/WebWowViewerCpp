@@ -12,6 +12,8 @@ class GDeviceVLK;
 typedef std::shared_ptr<GDeviceVLK> HGDeviceVLK;
 
 class GBufferVLK;
+class BufferGpuVLK;
+class GStagingRingBuffer;
 typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 
 #include "../GDeviceVulkan.h"
@@ -20,32 +22,33 @@ typedef std::shared_ptr<GBufferVLK> HGBufferVLK;
 #include "../bindable/DSBindable.h"
 
 #include "../../../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
+#include "gpu/BufferGpuVLK.h"
+#include "GStagingRingBuffer.h"
+
+struct VulkanCopyCommands {
+    VkBuffer src;
+    VkBuffer dst;
+    std::vector<VkBufferCopy> copyRegions;
+};
 
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {
     friend class GDeviceVLK;
     class GSubBufferVLK;
 public:
-    GBufferVLK(const HGDeviceVLK &device, VkBufferUsageFlags usageFlags, int maxSize, int alignment = -1);
+    GBufferVLK(const HGDeviceVLK &device, const char *objName, const std::shared_ptr<GStagingRingBuffer> &ringBuff,
+               VkBufferUsageFlags usageFlags, int maxSize, int alignment = -1);
     ~GBufferVLK() override;
 
     //Doesn't make actual upload, only queues it.
     void uploadData(const void *, int length) override;
-    void uploadFromStaging(int offset, int destOffset, int length);
-    void addIntervalIndexForUpload(int index);
 
-    void *getPointer() override { return currentBuffer.stagingBufferAllocInfo.pMappedData;};
+    void *getPointer() override { return allocatePtr(0, m_bufferSize);}
     //Submits data edited with Pointer
     void save(int length) override;
 
-
     size_t getSize() override { return m_bufferSize;};
 
-    VkBuffer getGPUBuffer() override {
-        return currentBuffer.g_hBuffer;
-    }
-    VkBuffer getCPUBuffer() {
-        return currentBuffer.stagingBuffer;
-    }
+    VkBuffer getGPUBuffer() override;
     size_t getOffset() override {
         return 0;
     };
@@ -53,34 +56,26 @@ public:
         return 0;
     };
 
-    MutexLockedVector<VkBufferCopy> getSubmitRecords();
+    MutexLockedVector<VulkanCopyCommands> getSubmitRecords();
 
     void resize(int newLength);
 
     struct uploadInterval {size_t start; size_t size;};
-    struct uploadIntervalActivatable : uploadInterval {
-        bool requiresUpdate = false;
-    };
+
 private:
     HGDeviceVLK m_device;
+    std::shared_ptr<GStagingRingBuffer> m_ringBuff;
+
+    std::string m_objName;
 
     VkBufferUsageFlags m_usageFlags;
     int m_bufferSize;
     int m_alignment;
+
     //Buffers
-    struct BufferInternal {
-        VkBuffer g_hBuffer = VK_NULL_HANDLE;
-        VmaAllocation g_hBufferAlloc = VK_NULL_HANDLE;
-
-        VkBuffer stagingBuffer = VK_NULL_HANDLE;
-        VmaAllocation stagingBufferAlloc = VK_NULL_HANDLE;
-        VmaAllocationInfo stagingBufferAllocInfo;
-
-        //Virtual block for suballocations
-    } currentBuffer;
-
+    std::unordered_map<VkBuffer, std::vector<VkBufferCopy>> uploadRegionsPerStaging;
     std::mutex dataToBeUploadedMtx;
-    std::vector<VkBufferCopy> dataToBeUploaded;
+    std::vector<VulkanCopyCommands> dataToBeUploaded;
 
     OffsetAllocator::Allocator offsetAllocator = OffsetAllocator::Allocator(1000);
 
@@ -95,11 +90,10 @@ private:
     public:
         explicit GSubBufferVLK(HGBufferVLK parent, OffsetAllocator::Allocation alloc,
                                int size, int fakeSize,
-                               OffsetAllocator::Allocation uiaAlloc,
-                               uint8_t * dataPointer);
+                               OffsetAllocator::Allocation uiaAlloc);
         ~GSubBufferVLK() override;
         void uploadData(const void *data, int length) override;
-        void *getPointer() override;
+        void *getPointer() final override;
         void save(int length) override;
         size_t getSize() override;
 
@@ -115,27 +109,21 @@ private:
                     m_alloc.offset;
         };
     private:
-        void setParentDataPointer(void * ptr) {
-            m_dataPointer = ((uint8_t *) ptr) + m_alloc.offset;
-        }
-    private:
         HGBufferVLK m_parentBuffer;
 
         OffsetAllocator::Allocation m_alloc;
         OffsetAllocator::Allocation m_uiaAlloc;
         int m_size;
         int m_fakeSize;
-        uint8_t * m_dataPointer = nullptr;
+
         std::list<std::weak_ptr<GSubBufferVLK>>::const_iterator m_iterator;
     };
 
-
+    std::shared_ptr<BufferGpuVLK> m_gpuBuffer;
 
     std::list<std::weak_ptr<GBufferVLK::GSubBufferVLK>> currentSubBuffers;
-    std::vector<uploadInterval> uploadIntervals;
 
     OffsetAllocator::Allocator uiaAllocator = OffsetAllocator::Allocator(0);
-    std::vector<uploadIntervalActivatable> uploadIntervalActivatable;
 
 //    uploadCache = {};
 public:
@@ -145,11 +133,12 @@ public:
                          const OffsetAllocator::Allocation &uiaAlloc,
                          int subBuffersize);
 private:
-    void createBuffer(BufferInternal &buffer);
-    void destroyBuffer(BufferInternal &buffer);
+    VkResult allocateSubBuffer(int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc);
+    void deallocateSubBuffer(const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc);
 
-    VkResult allocateSubBuffer(BufferInternal &buffer, int sizeInBytes, int fakeSize, OffsetAllocator::Allocation &alloc);
-    void deallocateSubBuffer(BufferInternal &buffer, const OffsetAllocator::Allocation &alloc, const OffsetAllocator::Allocation &uiaAlloc);
+    void executeOnChangeForBufAndSubBuf();
+
+    void* allocatePtr(int offset, int length);
 };
 
 

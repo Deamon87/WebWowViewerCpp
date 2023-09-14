@@ -81,7 +81,7 @@ private:
     HGDeviceVLK m_device;
     int m_realSize = 0;
     int m_currentVersion = 0;
-    void *ptr = nullptr;
+
     std::vector<std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT>> subBufferVersions;
     std::unique_ptr<DescriptorRecord::RecordInter> iteratorUnique = nullptr;
 };
