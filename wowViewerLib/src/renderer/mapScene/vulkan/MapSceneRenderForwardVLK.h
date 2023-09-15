@@ -146,6 +146,8 @@ private:
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
+    std::shared_ptr<GStagingRingBuffer> m_stagingRingBuffer;
+
     void createFrameBuffers();
 };
 

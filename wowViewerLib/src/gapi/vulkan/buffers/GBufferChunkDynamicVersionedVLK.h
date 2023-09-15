@@ -55,7 +55,7 @@ public:
     }
 
     size_t getIndex() override {
-        auto index = m_device->getCurrentProcessingFrameNumber();
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return subBufferVersions[m_currentVersion][index]->getIndex();
     }
 

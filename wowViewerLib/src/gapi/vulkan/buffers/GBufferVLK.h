@@ -73,7 +73,7 @@ private:
     int m_alignment;
 
     //Buffers
-    std::unordered_map<VkBuffer, std::vector<VkBufferCopy>> uploadRegionsPerStaging;
+    std::array<std::unordered_map<VkBuffer, std::vector<VkBufferCopy>>, IDevice::MAX_FRAMES_IN_FLIGHT> uploadRegionsPerStaging;
     std::mutex dataToBeUploadedMtx;
     std::vector<VulkanCopyCommands> dataToBeUploaded;
 

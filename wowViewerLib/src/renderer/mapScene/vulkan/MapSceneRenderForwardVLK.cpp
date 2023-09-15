@@ -37,17 +37,19 @@ static const ShaderConfig m2ForwardShaderConfig = {
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
-    iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
+    m_stagingRingBuffer = std::make_shared<GStagingRingBuffer>(m_device);
 
-    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024);
-    vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024);
-    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024);
-    vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024);
-    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024);
-    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
-    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
-    vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
-    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200);
+    iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024, m_stagingRingBuffer);
+
+    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024, m_stagingRingBuffer);
+    vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024, m_stagingRingBuffer);
+    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024, m_stagingRingBuffer);
+    vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024, m_stagingRingBuffer);
+    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024, m_stagingRingBuffer);
+    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024, m_stagingRingBuffer);
+    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024, m_stagingRingBuffer);
+    vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024, m_stagingRingBuffer);
+    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200, m_stagingRingBuffer);
 
     {
         const float epsilon = 0.f;
@@ -61,8 +63,8 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
             0, 1, 2,
             2, 1, 3
         };
-        m_vboQuad = m_device->createVertexBuffer("Scene_VBO_Quad", vertexBuffer.size() * sizeof(mathfu::vec2_packed));
-        m_iboQuad = m_device->createIndexBuffer("Scene_IBO_Quad", indexBuffer.size() * sizeof(uint16_t));
+        m_vboQuad = m_device->createVertexBuffer("Scene_VBO_Quad", vertexBuffer.size() * sizeof(mathfu::vec2_packed), m_stagingRingBuffer);
+        m_iboQuad = m_device->createIndexBuffer("Scene_IBO_Quad", indexBuffer.size() * sizeof(uint16_t), m_stagingRingBuffer);
         m_vboQuad->uploadData(vertexBuffer.data(), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
         m_iboQuad->uploadData(indexBuffer.data(), indexBuffer.size() * sizeof(uint16_t));
 
@@ -72,10 +74,10 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
         m_drawQuadVao->save();
     }
 
-    uboBuffer = m_device->createUniformBuffer("Scene_UBO", 1024*1024);
-    uboStaticBuffer = m_device->createUniformBuffer("Scene_UBOStatic", 1024*1024);
+    uboBuffer = m_device->createUniformBuffer("Scene_UBO", 1024*1024, m_stagingRingBuffer);
+    uboStaticBuffer = m_device->createUniformBuffer("Scene_UBOStatic", 1024*1024, m_stagingRingBuffer);
 
-    uboM2BoneMatrixBuffer = m_device->createUniformBuffer("Scene_UBO_M2BoneMats", 5000*64);
+    uboM2BoneMatrixBuffer = m_device->createUniformBuffer("Scene_UBO_M2BoneMats", 5000*64, m_stagingRingBuffer);
 
     m_emptyADTVAO = createADTVAO(nullptr, nullptr);
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
@@ -614,11 +616,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
 
-    //Needs to be executed only after lock
-    m_lastCreatedPlan = framePlan;
-
     //The portal meshes are created here. Need to call doPostLoad before CollectMeshes
-    mapScene->doPostLoad(l_this, framePlan);
+//    mapScene->doPostLoad(l_this, framePlan);
 
 //    TracyMessageL("collect meshes created");
 //    std::future<void> collectMeshAsync = std::async(std::launch::async,
@@ -647,55 +646,59 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     bool renderSky = framePlan->renderSky;
     auto skyMesh = framePlan->skyMesh;
     auto skyMesh0x4 = framePlan->skyMesh0x4;
-    return createRenderFuncVLK([opaqueMeshes, transparentMeshes,
-                                skyOpaqueMeshes, skyTransparentMeshes,
-                                renderSky,
-                                skyMesh,
-                                skyMesh0x4,
-                                mapScene, framePlan,
-                                l_this, frameInputParams](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+    return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes](CmdBufRecorder &uploadCmd) -> void {
+            //Do postLoad here. So creation of stuff is done from main thread
+            mapScene->doPostLoad(l_this, framePlan);
+            //And add portal meshes
+            for (auto &view : framePlan->viewsHolder.getInteriorViews()) {
+               view->collectPortalMeshes(*transparentMeshes);
+            }
+            {
+               auto exteriorView = framePlan->viewsHolder.getExterior();
+               if (exteriorView != nullptr) {
+                   exteriorView->collectPortalMeshes(*transparentMeshes);
+               }
+            }
+
+            //Needs to be executed only after lock
+            l_this->m_lastCreatedPlan = framePlan;
+
+            l_this->m_stagingRingBuffer->flushBuffers();
+
+            // ---------------------
+            // Upload stuff
+            // ---------------------
+            {
+               ZoneScopedN("submit buffers");
+               VkZone(uploadCmd, "submit buffers")
+               uploadCmd.submitBufferUploads(l_this->uboBuffer);
+               uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
+
+               uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
+
+               uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
+               uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
+               uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
+               uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
+               uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
+               uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
+               uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
+               uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
+               uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
+
+               uploadCmd.submitBufferUploads(l_this->iboBuffer);
+               uploadCmd.submitBufferUploads(l_this->m_vboQuad);
+               uploadCmd.submitBufferUploads(l_this->m_iboQuad);
+            }
+       }, [opaqueMeshes, transparentMeshes,
+        skyOpaqueMeshes, skyTransparentMeshes,
+        renderSky,
+        skyMesh,
+        skyMesh0x4,
+        mapScene, framePlan,
+        l_this, frameInputParams](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
 
         TracyMessageStr(("Draw stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
-
-//        //Do postLoad here. So creation of stuff is done from main thread
-//        mapScene->doPostLoad(l_this, framePlan);
-//        //And add portal meshes
-//        for (auto &view : framePlan->viewsHolder.getInteriorViews()) {
-//            view->collectPortalMeshes(*transparentMeshes);
-//        }
-//        {
-//            auto exteriorView = framePlan->viewsHolder.getExterior();
-//            if (exteriorView != nullptr) {
-//                exteriorView->collectPortalMeshes(*transparentMeshes);
-//            }
-//        }
-
-
-        // ---------------------
-        // Upload stuff
-        // ---------------------
-        {
-            ZoneScopedN("submit buffers");
-            VkZone(uploadCmd, "submit buffers")
-            uploadCmd.submitBufferUploads(l_this->uboBuffer);
-            uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
-
-            uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
-
-            uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
-            uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
-            uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
-
-            uploadCmd.submitBufferUploads(l_this->iboBuffer);
-            uploadCmd.submitBufferUploads(l_this->m_vboQuad);
-            uploadCmd.submitBufferUploads(l_this->m_iboQuad);
-        }
 
         // ----------------------
         // Draw meshes
@@ -704,7 +707,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         {
             auto passHelper = frameBufCmd.beginRenderPass(false,
                                                           l_this->m_renderPass,
-                                                          l_this->m_colorFrameBuffers[l_this->m_device->getCurrentProcessingFrameNumber()],
+                                                          l_this->m_colorFrameBuffers[l_this->m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
                                                           frameInputParams->viewPortDimensions.mins,
                                                           frameInputParams->viewPortDimensions.maxs,
                                                           vec4ToArr3(frameInputParams->frameParameters->clearColor),

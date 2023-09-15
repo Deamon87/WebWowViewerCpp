@@ -363,7 +363,7 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer) 
             }
         }
 
-        combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(WMOVertex)));
+        //combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(WMOVertex)));
     }
 
     return combinedVBO;

@@ -107,7 +107,9 @@ void *GBufferVLK::allocatePtr(int offset, int length) {
     VkBuffer staging;
     int stage_offset;
     auto *ptr = m_ringBuff->allocateNext(length, staging, stage_offset);
-    uploadRegionsPerStaging[staging].push_back({
+
+    auto frameIndex = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    uploadRegionsPerStaging[frameIndex][staging].push_back({
         .srcOffset = static_cast<VkDeviceSize>(stage_offset),
         .dstOffset = static_cast<VkDeviceSize>(offset),
         .size = static_cast<VkDeviceSize>(length)
@@ -243,7 +245,8 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
             executeOnChangeForBufAndSubBuf();
         }
 
-        for (auto &stagingRecord : uploadRegionsPerStaging) {
+        auto& stagingRecords = uploadRegionsPerStaging[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+        for (auto &stagingRecord : stagingRecords) {
             auto &intervals = stagingRecord.second;
             std::sort(intervals.begin(), intervals.end(), [](auto &a, auto &b) -> bool {
                 return
@@ -270,7 +273,7 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
                 uploadData.copyRegions = intervals;
             }
         }
-        uploadRegionsPerStaging.clear();
+        stagingRecords.clear();
     }
 
     return MutexLockedVector<VulkanCopyCommands>(dataToBeUploaded, dataToBeUploadedMtx, true);

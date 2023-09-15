@@ -20,9 +20,11 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
-    iboBuffer = m_device->createIndexBuffer("UI_Ibo_Buffer", 1024*1024);
-    vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024);
-    uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
+    m_ringBuffer = std::make_shared<GStagingRingBuffer>(m_device);
+
+    iboBuffer = m_device->createIndexBuffer("UI_Ibo_Buffer", 1024*1024, m_ringBuffer);
+    vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024, m_ringBuffer);
+    uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT, m_ringBuffer);
 
     m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
 }
@@ -82,6 +84,9 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
     const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams,
     const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) {
 
+    TracyMessageStr(("Update UI buffers = " + std::to_string(m_device->getCurrentProcessingFrameNumber())));
+    ZoneScopedN("Update UI buffers");
+
     auto meshes = std::make_shared<std::vector<HGMesh>>();
     this->consumeFrameInput(frameInputParams, *meshes);
 
@@ -92,52 +97,61 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
 
     //Record commands to update buffer and draw
     auto l_this = std::dynamic_pointer_cast<FrontendUIRenderForwardVLK>(this->shared_from_this());
-    return createRenderFuncVLK(std::move([meshes, l_this](CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
-        // ---------------------
-        // Upload stuff
-        // ---------------------
-        uploadCmd.submitBufferUploads(l_this->uboBuffer);
-        uploadCmd.submitBufferUploads(l_this->vboBuffer);
-        uploadCmd.submitBufferUploads(l_this->iboBuffer);
+    return createRenderFuncVLK(
+        std::move([meshes, l_this](CmdBufRecorder &uploadCmd) {
+            TracyMessageStr(("Upload stuff stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
+            ZoneScopedN("Upload UI buffs");
+            // ---------------------
+            // Upload stuff
+            // ---------------------
+            l_this->m_ringBuffer->flushBuffers();
 
-        // ----------------------
-        // Draw meshes
-        // ----------------------
+            uploadCmd.submitBufferUploads(l_this->uboBuffer);
+            uploadCmd.submitBufferUploads(l_this->vboBuffer);
+            uploadCmd.submitBufferUploads(l_this->iboBuffer);
+        }),
+        std::move([meshes, l_this](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
+                TracyMessageStr(("Render stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
+                ZoneScopedN("Render UI");
+                // ----------------------
+                // Draw meshes
+                // ----------------------
 
-        for (auto const &mesh : *meshes) {
-            const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
-            auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
+                for (auto const &mesh : *meshes) {
+                    const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
+                    auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
 
-            //1. Bind VBOs
-            swapChainCmd.bindVertexBuffers(vulkanBindings->getVertexBuffers());
+                    //1. Bind VBOs
+                    swapChainCmd.bindVertexBuffers(vulkanBindings->getVertexBuffers());
 
-            //2. Bind IBOs
-            swapChainCmd.bindIndexBuffer(vulkanBindings->getIndexBuffer());
+                    //2. Bind IBOs
+                    swapChainCmd.bindIndexBuffer(vulkanBindings->getIndexBuffer());
 
-            //3. Bind pipeline
-            auto material = meshVlk->material();
-            swapChainCmd.bindPipeline(material->getPipeline());
+                    //3. Bind pipeline
+                    auto material = meshVlk->material();
+                    swapChainCmd.bindPipeline(material->getPipeline());
 
-            //4. Bind Descriptor sets
-            auto const &descSets = material->getDescriptorSets();
-            for (int i = 0; i < descSets.size(); i++) {
-                if (descSets[i] != nullptr) {
-                    swapChainCmd.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
+                    //4. Bind Descriptor sets
+                    auto const &descSets = material->getDescriptorSets();
+                    for (int i = 0; i < descSets.size(); i++) {
+                        if (descSets[i] != nullptr) {
+                            swapChainCmd.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
+                        }
+                    }
+
+                    //5. Set view port
+                    swapChainCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
+
+                    //6. Set scissors
+                    if (meshVlk->scissorEnabled()) {
+                        swapChainCmd.setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
+                    } else {
+                        swapChainCmd.setDefaultScissors();
+                    }
+
+                    //7. Draw the mesh
+                    swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
                 }
-            }
-
-            //5. Set view port
-            swapChainCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
-
-            //6. Set scissors
-            if (meshVlk->scissorEnabled()) {
-                swapChainCmd.setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
-            } else {
-                swapChainCmd.setDefaultScissors();
-            }
-
-            //7. Draw the mesh
-            swapChainCmd.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
-        }
-    }));
+            })
+    );
 }

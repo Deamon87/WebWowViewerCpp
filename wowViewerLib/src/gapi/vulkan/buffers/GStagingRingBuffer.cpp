@@ -5,7 +5,7 @@
 #include "GStagingRingBuffer.h"
 
 void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_offset) {
-    auto frame = m_device->getCurrentProcessingFrameNumber();
+    auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
     int startOffset = 0;
@@ -38,7 +38,7 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
 }
 
 void GStagingRingBuffer::flushBuffers() {
-    auto frame = m_device->getCurrentProcessingFrameNumber();
+    auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
     int maxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;
@@ -55,5 +55,5 @@ void GStagingRingBuffer::flushBuffers() {
     int prevMaxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;
     currentOffset = 0;
 
-    vec.resize(std::min<int>(prevMaxIndex, vec.size()));
+    vec.resize(std::min<int>(prevMaxIndex+1, vec.size()));
 }

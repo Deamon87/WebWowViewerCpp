@@ -1571,28 +1571,28 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         }
 
 
-        if (granSize > 0) {
-            auto l_device = m_api->hDevice;
-            auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-            [&](tbb::blocked_range<size_t> r) {
-                l_device->setCurrentProcessingFrameNumber(processingFrame);
-                for (size_t i = r.begin(); i != r.end(); ++i) {
-                    auto &m2Object = m2ToDraw[i];
-                    if (m2Object != nullptr) {
-                        m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                                       renderPlan->frameDependentData);
-                    }
-                }
-            }, tbb::simple_partitioner());
-        }
+        //if (granSize > 0) {
+        //    auto l_device = m_api->hDevice;
+        //    auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+        //    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+        //    [&](tbb::blocked_range<size_t> r) {
+        //        l_device->setCurrentProcessingFrameNumber(processingFrame);
+        //        for (size_t i = r.begin(); i != r.end(); ++i) {
+        //            auto &m2Object = m2ToDraw[i];
+        //            if (m2Object != nullptr) {
+        //                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+        //                                               renderPlan->frameDependentData);
+        //            }
+        //        }
+        //    }, tbb::simple_partitioner());
+        //}
 
-//        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
-//            if (m2Object != nullptr) {
-//                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-//                                                 renderPlan->frameDependentData);
-//            }
-//        }
+        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+            if (m2Object != nullptr) {
+                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
+        }
     }
     {
         ZoneScopedN("m2SkyboxBuffersUpdate");

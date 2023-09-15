@@ -12,27 +12,34 @@ class IRenderFunctionVLK : public IRenderFunction {
 public:
     ~IRenderFunctionVLK() override = default;
 public:
-    virtual void execute(IDevice &device, CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) = 0;
+    virtual void executeUpload(IDevice &device, CmdBufRecorder &uploadCmd) = 0;
+    virtual void executeRender(IDevice &device, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) = 0;
 };
 
-template<typename T>
+template<typename REND, typename UP >
 class TemplateIRenderFunctionVLK : public IRenderFunctionVLK {
 public:
-    TemplateIRenderFunctionVLK(T a) : m_a(std::move(a)){
+    TemplateIRenderFunctionVLK(UP a, REND b) : m_render(std::move(b)), m_upload(std::move(a)) {
 
     };
-    void execute(IDevice &device, CmdBufRecorder &uploadCmd, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) override {
+    void executeUpload(IDevice &device, CmdBufRecorder &uploadCmd) override {
         //Hack through currently processing frame
         device.setCurrentProcessingFrameNumber(getProcessingFrame());
-        m_a(uploadCmd, frameBufCmd, swapChainCmd);
+        m_upload(uploadCmd);
+    };
+    void executeRender(IDevice &device, CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) override {
+        //Hack through currently processing frame
+        device.setCurrentProcessingFrameNumber(getProcessingFrame());
+        m_render(frameBufCmd, swapChainCmd);
     };
 private:
-    T m_a;
+    REND m_render;
+    UP m_upload;
 };
 
-template<typename T>
-std::unique_ptr<IRenderFunctionVLK> createRenderFuncVLK(T a) {
-    return std::make_unique<TemplateIRenderFunctionVLK<T>>(std::move(a));
+template<typename REND, typename UP>
+std::unique_ptr<IRenderFunctionVLK> createRenderFuncVLK(UP a, REND b) {
+    return std::make_unique<TemplateIRenderFunctionVLK<REND, UP>>(std::move(a), std::move(b));
 }
 
 

@@ -756,7 +756,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
         {
             auto passHelper = frameBufCmd.beginRenderPass(false,
                                                           l_this->m_renderPass,
-                                                          l_this->m_colorFrameBuffers[l_this->m_device->getCurrentProcessingFrameNumber()],
+                                                          l_this->m_colorFrameBuffers[l_this->m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
                                                           frameInputParams->viewPortDimensions.mins,
                                                           frameInputParams->viewPortDimensions.maxs,
                                                           vec4ToArr3(frameInputParams->frameParameters->clearColor),

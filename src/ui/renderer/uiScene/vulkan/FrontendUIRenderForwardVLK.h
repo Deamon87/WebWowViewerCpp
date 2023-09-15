@@ -42,7 +42,7 @@ private:
     HGBufferVLK iboBuffer;
     HGBufferVLK uboBuffer;
 
-    std::vector<HGBufferVLK> allBuffers;
+    std::shared_ptr<GStagingRingBuffer> m_ringBuffer;
 
     void createBuffers();
 

@@ -216,17 +216,23 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     imageCreateInfo.arrayLayers = 1;
     imageCreateInfo.samples = numSamples;
     imageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
 
     // Set initial layout of the image to undefined
     imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageCreateInfo.extent = {static_cast<uint32_t>(m_width), static_cast<uint32_t>(m_height), 1};
     imageCreateInfo.usage = imageUsageFlags;
 
+    imageCreateInfo.sharingMode = VK_SHARING_MODE_CONCURRENT;
     imageCreateInfo.queueFamilyIndexCount = 2;
+
     auto &indicies = m_device.getQueueFamilyIndices();
     std::array<uint32_t, 2> families = {indicies.graphicsFamily.value(), indicies.transferFamily.value()};
     imageCreateInfo.pQueueFamilyIndices = families.data();
+
+    if (indicies.graphicsFamily.value() == indicies.transferFamily.value()) {
+        imageCreateInfo.queueFamilyIndexCount = 1;
+        imageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    }
 
     VmaAllocationCreateInfo allocImageCreateInfo = {};
     allocImageCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;

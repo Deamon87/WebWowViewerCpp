@@ -83,7 +83,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
     //Insert one temp element for balancing
     updateInput.pushInput(nullptr);
 //    drawInput.pushInput(nullptr);
-    drawInput.pushInput(nullptr);
+//    drawInput.pushInput(nullptr);
 }
 
 void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
