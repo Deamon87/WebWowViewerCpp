@@ -12,7 +12,7 @@ class BufferStagingVLK;
 #include "gpu/BufferStagingVLK.h"
 
 class GStagingRingBuffer {
-    static constexpr int STAGE_BUFFER_SIZE = 20*1024*1024;
+    static constexpr uint32_t STAGE_BUFFER_SIZE = 20*1024*1024;
 public:
     GStagingRingBuffer(const HGDeviceVLK &device) : m_device(device) {};
 
@@ -23,7 +23,8 @@ private:
     HGDeviceVLK m_device;
 
     std::mutex m_mutex;
-    uint32_t currentOffset = 0;
+
+    std::array<uint32_t, IDevice::MAX_FRAMES_IN_FLIGHT> offsets = {0,0,0};
     struct BufferAndCPU {
         std::shared_ptr<BufferStagingVLK> staging;
         std::array<uint8_t, STAGE_BUFFER_SIZE> cpuBuffer;

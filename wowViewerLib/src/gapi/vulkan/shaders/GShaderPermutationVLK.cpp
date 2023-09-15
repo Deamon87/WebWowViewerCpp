@@ -40,6 +40,8 @@ VkShaderModule GShaderPermutationVLK::createShaderModule(const std::vector<char>
         throw std::runtime_error("failed to create shader module!");
     }
 
+    m_device->setObjectName((uint64_t) shaderModule, VK_OBJECT_TYPE_SHADER_MODULE, m_combinedName.c_str());
+
     return shaderModule;
 }
 
