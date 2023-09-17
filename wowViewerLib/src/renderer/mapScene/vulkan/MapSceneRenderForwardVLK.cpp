@@ -628,7 +628,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //    );
 
     mapScene->update(framePlan);
-    mapScene->updateBuffers(framePlan);
+    mapScene->updateBuffers(l_this, framePlan);
     glowPass->assignFFXGlowUBOConsts(framePlan->frameDependentData->currentGlow);
 
     updateSceneWideChunk(sceneWideChunk,
@@ -647,23 +647,33 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     auto skyMesh = framePlan->skyMesh;
     auto skyMesh0x4 = framePlan->skyMesh0x4;
     return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes](CmdBufRecorder &uploadCmd) -> void {
+        {
+            ZoneScopedN("Post Load");
             //Do postLoad here. So creation of stuff is done from main thread
             mapScene->doPostLoad(l_this, framePlan);
+        }
+        {
+            ZoneScopedN("Collect Portal Meshes");
             //And add portal meshes
-            for (auto &view : framePlan->viewsHolder.getInteriorViews()) {
-               view->collectPortalMeshes(*transparentMeshes);
+            for (auto const &view: framePlan->viewsHolder.getInteriorViews()) {
+                view->collectPortalMeshes(*transparentMeshes);
             }
             {
-               auto exteriorView = framePlan->viewsHolder.getExterior();
-               if (exteriorView != nullptr) {
-                   exteriorView->collectPortalMeshes(*transparentMeshes);
-               }
+                auto const &exteriorView = framePlan->viewsHolder.getExterior();
+                if (exteriorView != nullptr) {
+                    exteriorView->collectPortalMeshes(*transparentMeshes);
+                }
             }
-
+        }
+        {
+            ZoneScopedN("Set Last Created Plan");
             //Needs to be executed only after lock
             l_this->m_lastCreatedPlan = framePlan;
-
+        }
+        {
+            ZoneScopedN("Flush Staging Buffer");
             l_this->m_stagingRingBuffer->flushBuffers();
+        }
 
             // ---------------------
             // Upload stuff

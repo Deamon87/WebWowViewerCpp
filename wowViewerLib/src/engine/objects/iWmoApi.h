@@ -311,7 +311,7 @@ public:
     virtual SMOHeader *getWmoHeader() = 0;
     virtual mathfu::vec3 getAmbientColor() = 0;
     virtual PointerChecker<SMOMaterial> &getMaterials() = 0;
-    virtual std::shared_ptr<IWMOMaterial> getMaterialInstance(int index) = 0;
+    virtual std::shared_ptr<IWMOMaterial> getMaterialInstance(int index, const HMapSceneBufferCreate &sceneRenderer) = 0;
     virtual bool isLoaded() = 0;
     virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() = 0;
     virtual PointerChecker<SMOLight> &getLightArray() = 0;

@@ -13,7 +13,7 @@ LiquidInstance::LiquidInstance(const HApiContainer &api,
                                const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &waterPlacementChunk,
                                const mathfu::vec3 &liquidBasePos,
                                const PointerChecker<char> &mH2OBlob, CAaBox &waterAaBB) :
-    m_api(api), m_sceneRenderer(sceneRenderer), m_waterPlacementChunk(waterPlacementChunk),
+    m_api(api), m_waterPlacementChunk(waterPlacementChunk),
     m_waterBBox(waterAaBB){
 
     //Creating liquid instance from ADT data
@@ -45,7 +45,7 @@ LiquidInstance::LiquidInstance(const HApiContainer &api,
                                int indexBufferSize,
                                const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &waterPlacementChunk,
                                CAaBox &waterAaBB): m_api(api),
-                                                   m_sceneRenderer(sceneRenderer), m_waterPlacementChunk(waterPlacementChunk), m_waterBBox(waterAaBB){
+                                                   m_waterPlacementChunk(waterPlacementChunk), m_waterBBox(waterAaBB){
     bool generateTexCoordsFromPos;
     getInfoFromDatabase(0,
                         liquidType,

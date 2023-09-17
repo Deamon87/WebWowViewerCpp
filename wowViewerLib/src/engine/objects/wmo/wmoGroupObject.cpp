@@ -148,7 +148,7 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             materialIndex = renderBatch.material_id;
         }
 
-        auto materialInstance = m_wmoApi->getMaterialInstance(materialIndex);
+        auto materialInstance = m_wmoApi->getMaterialInstance(materialIndex, sceneRenderer);
 
         gMeshTemplate meshTemplate(binding);
 

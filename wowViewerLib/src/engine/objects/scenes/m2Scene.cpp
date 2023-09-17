@@ -11,7 +11,7 @@
 
 void M2Scene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                    const mathfu::vec4 &cameraPos,
-                                   HMapRenderPlan &mapRenderPlan,
+                                   const HMapRenderPlan &mapRenderPlan,
                                    M2ObjectListContainer &potentialM2,
                                    WMOListContainer &potentialWmo)  {
     potentialM2.addCandidate(m_m2Object);
@@ -19,7 +19,7 @@ void M2Scene::getPotentialEntities(const MathHelper::FrustumCullingData &frustum
 
 void M2Scene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
-                                    HMapRenderPlan &mapRenderPlan,
+                                    const HMapRenderPlan &mapRenderPlan,
                                     M2ObjectListContainer &m2ObjectsCandidates,
                                     WMOListContainer &wmoCandidates) {
     m2ObjectsCandidates.addCandidate(m_m2Object);

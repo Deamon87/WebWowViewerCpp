@@ -63,7 +63,7 @@ public:
         std::vector<float> &transparencies,
         std::vector<M2LightResult> &lights,
         std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
-        std::vector<CRibbonEmitter *> &ribbonEmitters
+        std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters
 
         /*cameraDetails, particleEmitters*/);
 
@@ -87,7 +87,7 @@ public:
         const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
         std::vector<mathfu::mat4> &bonesMatrices);
 
-    void calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters);
+    void calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters);
 
     void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
 };

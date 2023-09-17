@@ -260,7 +260,6 @@ static const std::array<EGxBlendEnum, 8> ParticleBlendingModeToEGxBlendEnum =
 
 void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     HGDevice device = m_api->hDevice;
-    m_sceneRenderer = sceneRenderer;
 
     if (m_indexVBO == nullptr) {
         //TODO:
@@ -342,7 +341,7 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     //Create Buffers
     for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
         //Create mesh
-        createMesh(m_sceneRenderer, frame[i], 10 * sizeof(ParticleBuffStructQuad));
+        createMesh(sceneRenderer, frame[i], 10 * sizeof(ParticleBuffStructQuad));
     }
 }
 void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &currFrame, int size) {
@@ -672,7 +671,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     }
 }
 
-void ParticleEmitter::fitBuffersToSize() {
+void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
     if (particles.size() == 0) {
         return;
     }
@@ -685,7 +684,7 @@ void ParticleEmitter::fitBuffersToSize() {
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
     if (maxFutureSize > vboBufferDynamic->getSize()) {
-        createMesh(m_sceneRenderer, frame[frameNum], maxFutureSize);
+        createMesh(sceneRenderer, frame[frameNum], maxFutureSize);
     }
 }
 

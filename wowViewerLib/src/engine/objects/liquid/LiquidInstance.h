@@ -30,7 +30,6 @@ public:
     void collectMeshes(std::vector<HGSortableMesh> &transparentMeshes);
 private:
     const HApiContainer &m_api;
-    const HMapSceneBufferCreate &m_sceneRenderer;
     const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_waterPlacementChunk;
     std::vector<std::shared_ptr<IWaterMaterial>> m_liquidMaterials;
     std::vector<HGSortableMesh> m_liquidMeshes;

@@ -321,7 +321,7 @@ std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSc
     return {hmesh, material};
 }
 
-void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan) {
+void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, const HMapRenderPlan &mapRenderPlan) {
     ZoneScoped ;
 
     Config* config = this->m_api->getConfig();
@@ -976,7 +976,7 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
 }
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
-                               HMapRenderPlan &mapRenderPlan,
+                               const HMapRenderPlan &mapRenderPlan,
                                M2ObjectListContainer &potentialM2,
                                WMOListContainer &potentialWmo) {
 
@@ -1053,7 +1053,7 @@ void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAr
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         const MathHelper::FrustumCullingData &frustumData,
                         int viewRenderOrder,
-                        HMapRenderPlan &mapRenderPlan
+                        const HMapRenderPlan &mapRenderPlan
 ) {
     ZoneScoped ;
 //    std::cout << "Map::checkExterior finished called" << std::endl;
@@ -1129,7 +1129,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
 void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                 const mathfu::vec4 &cameraPos,
-                                HMapRenderPlan &mapRenderPlan,
+                                const HMapRenderPlan &mapRenderPlan,
                                 M2ObjectListContainer &m2ObjectsCandidates,
                                 WMOListContainer &wmoCandidates) {
     if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
@@ -1193,7 +1193,7 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
 void Map::checkADTCulling(int i, int j,
                           const MathHelper::FrustumCullingData &frustumData,
                           const mathfu::vec4 &cameraPos,
-                          HMapRenderPlan &mapRenderPlan,
+                          const HMapRenderPlan &mapRenderPlan,
                           M2ObjectListContainer &m2ObjectsCandidates,
                           WMOListContainer &wmoCandidates) {
     if ((i < 0) || (i > 64)) return;
@@ -1520,7 +1520,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
     this->m_currentTime += deltaTime;
 }
 
-void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
+void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
     ZoneScoped;
     if (skyMeshMat0x4)
     {
@@ -1566,7 +1566,7 @@ void Map::updateBuffers(const HMapRenderPlan &renderPlan) {
         //Can't be paralleled?
         for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
             if (m2Object != nullptr) {
-                m2Object->fitParticleAndRibbonBuffersToSize();
+                m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
             }
         }
 

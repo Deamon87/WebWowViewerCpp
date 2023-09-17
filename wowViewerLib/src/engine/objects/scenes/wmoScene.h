@@ -17,13 +17,13 @@ private:
 
     void getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                               const mathfu::vec4 &cameraPos,
-                              HMapRenderPlan &mapRenderPlan,
+                              const HMapRenderPlan &mapRenderPlan,
                               M2ObjectListContainer &potentialM2,
                               WMOListContainer &potentialWmo) override;
 
     void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
-                               HMapRenderPlan &mapRenderPlan,
+                               const HMapRenderPlan &mapRenderPlan,
                                M2ObjectListContainer &m2ObjectsCandidates,
                                WMOListContainer &wmoCandidates) override;
 public:

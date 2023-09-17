@@ -12,7 +12,7 @@ CRibbonEmitter::CRibbonEmitter(const HApiContainer &api, const HMapSceneBufferCr
                                const std::shared_ptr<IM2ModelData> &m2ModelData,
                                M2Object *object,
                                std::vector<M2Material> &materials,
-                               std::vector<int> &textureIndicies, int textureTransformLookup) : m_api(api), m_sceneRenderer(sceneRenderer)
+                               std::vector<int> &textureIndicies, int textureTransformLookup) : m_api(api)
 {
   this->textureTransformLookup = textureTransformLookup;
   this->m_refCount = 1;
@@ -853,7 +853,7 @@ void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vecto
     }
 }
 
-void CRibbonEmitter::fitBuffersToSize() {
+void CRibbonEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
     if (this->IsDead()) {
         return;
     }
@@ -870,7 +870,7 @@ void CRibbonEmitter::fitBuffersToSize() {
         sizeInd > iboBufferDynamic->getSize() ||
         sizeVert > vboBufferDynamic->getSize()
     ) {
-        createMesh(m_sceneRenderer, frame[frameNum]);
+        createMesh(sceneRenderer, frame[frameNum]);
     }
 }
 

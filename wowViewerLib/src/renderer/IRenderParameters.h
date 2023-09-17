@@ -9,6 +9,7 @@
 #include <functional>
 #include <utility>
 #include "frame/FrameInputParams.h"
+#include "frame/FrameProfile.h"
 
 class IRenderFunction {
 public:
@@ -41,6 +42,8 @@ public:
 
         return [frameInputParams, this_s, l_currentFrame, l_updateProcessingFrame]() -> SceneUpdateLambda {
             l_updateProcessingFrame(l_currentFrame);
+            TracyMessageStr(("Culling stage frame = " + std::to_string(l_currentFrame)));
+
             std::shared_ptr<FramePlan> framePlan = this_s->processCulling(frameInputParams);
 
             return [framePlan, frameInputParams, this_s, l_currentFrame, l_updateProcessingFrame]() -> std::unique_ptr<IRenderFunction> {

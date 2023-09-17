@@ -297,7 +297,7 @@ void WmoObject::createWorldPortals() {
 bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
-            m_sceneRenderer = sceneRenderer;
+
             this->createMaterialCache();
             this->createGroupObjects();
             this->createWorldPortals();
@@ -1287,7 +1287,7 @@ PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
 }
 
-std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) {
+std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, const HMapSceneBufferCreate &sceneRenderer) {
     assert(materialIndex < m_materialCache.size());
 
     auto materialInstance = m_materialCache[materialIndex].lock();
@@ -1341,7 +1341,7 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex) 
         materialTemplate.textures[8] = getTexture(material.runTimeData[3], false);
     }
 
-    auto wmoMaterialInstance = m_sceneRenderer->createWMOMaterial(m_modelWideChunk,
+    auto wmoMaterialInstance = sceneRenderer->createWMOMaterial(m_modelWideChunk,
                                                                   pipelineTemplate, materialTemplate);
     m_materialCache[materialIndex] = wmoMaterialInstance;
 

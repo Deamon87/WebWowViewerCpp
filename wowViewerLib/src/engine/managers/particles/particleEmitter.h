@@ -71,7 +71,7 @@ public:
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
     void updateBuffers();
 
-    void fitBuffersToSize();
+    void fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
 
     int flags = 6;
     CParticleMaterialFlags materialFlags;
@@ -82,8 +82,6 @@ public:
     static bool randTableInited;
 private:
     HApiContainer m_api;
-    HMapSceneBufferCreate m_sceneRenderer;
-
 
     M2Particle *m_data;
     Exp2Record *m_exp2Data = nullptr;

@@ -129,7 +129,7 @@ private:
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
     std::vector<std::unique_ptr<ParticleEmitter>> particleEmitters;
-    std::vector<CRibbonEmitter*> ribbonEmitters;
+    std::vector<std::unique_ptr<CRibbonEmitter>> ribbonEmitters;
 
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
@@ -266,7 +266,7 @@ public:
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
-    void fitParticleAndRibbonBuffersToSize();
+    void fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();

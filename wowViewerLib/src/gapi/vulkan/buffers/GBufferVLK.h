@@ -80,6 +80,7 @@ private:
     OffsetAllocator::Allocator offsetAllocator = OffsetAllocator::Allocator(1000);
 
     std::mutex m_mutex;
+    std::mutex m_subBufferMutex;
 
     //If this variable is not equal current size -> whole buffer needs to be submitted
     size_t lastSubmittedBufferSize = 0;

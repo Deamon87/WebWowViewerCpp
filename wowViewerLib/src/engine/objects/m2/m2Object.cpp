@@ -468,9 +468,7 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
 }
 
 M2Object::~M2Object() {
-    for (auto obj: ribbonEmitters) {
-        delete obj;
-    }
+//    std::cout << "M2Object destroyed" << std::endl;
 }
 
 
@@ -1024,15 +1022,15 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     }
 }
 
-void M2Object::fitParticleAndRibbonBuffersToSize() {
+void M2Object::fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     for (int i = minParticle; i < maxParticle; i++) {
-        particleEmitters[i]->fitBuffersToSize();
+        particleEmitters[i]->fitBuffersToSize(sceneRenderer);
     }
     for (int i = 0; i < ribbonEmitters.size(); i++) {
-        ribbonEmitters[i]->fitBuffersToSize();
+        ribbonEmitters[i]->fitBuffersToSize(sceneRenderer);
     }
 }
 
@@ -1740,7 +1738,7 @@ void M2Object::initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer) 
 }
 
 void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
-    ribbonEmitters = std::vector<CRibbonEmitter *>();
+    ribbonEmitters = std::vector<std::unique_ptr<CRibbonEmitter>>();
 //    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
     auto m2Data = m_m2Geom->getM2Data();
     for (int i = 0; i < m2Data->ribbon_emitters.size; i++) {
@@ -1758,9 +1756,8 @@ void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
 
         int textureTransformLookup = (m2Data->global_flags.flag_unk_0x20000 != 0) ? m2Ribbon->textureTransformLookupIndex : -1;
 
-        auto emitter = new CRibbonEmitter(m_api, sceneRenderer, m_modelWideDataBuff,
+        auto emitter = std::make_unique<CRibbonEmitter>(m_api, sceneRenderer, m_modelWideDataBuff,
                                           this, materials, textureIndicies, textureTransformLookup);
-        ribbonEmitters.push_back(emitter);
 
         CImVector color;
         color.r = 255;
@@ -1777,6 +1774,8 @@ void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
         emitter->SetGravity(m2Ribbon->gravity);
         emitter->SetPriority(m2Ribbon->priorityPlane);
         emitter->SetDataEnabled(0);
+
+        ribbonEmitters.push_back(std::move(emitter));
     }
 }
 

@@ -74,7 +74,6 @@ class CRibbonEmitter {
 
 private:
     HApiContainer m_api;
-    HMapSceneBufferCreate m_sceneRenderer;
 
     struct RibbonFrame {
         HGIndexBuffer m_indexVBO;
@@ -126,7 +125,7 @@ public:
     void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
 
     void updateBuffers();
-    void fitBuffersToSize();
+    void fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
 
 
 };

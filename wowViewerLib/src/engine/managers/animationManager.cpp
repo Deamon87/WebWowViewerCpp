@@ -722,7 +722,7 @@ void AnimationManager::update(
     std::vector<float> &transparencies,
     std::vector<M2LightResult> &lights,
     std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
-    std::vector<CRibbonEmitter *> &ribbonEmitters) {
+    std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters) {
 
 
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
@@ -1313,7 +1313,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
 
 }
 
-void AnimationManager::calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters){
+void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters){
     auto &ribbonRecords = boneMasterData->getM2Geom()->getM2Data()->ribbon_emitters;
     if (ribbonRecords.size <= 0) return;
 

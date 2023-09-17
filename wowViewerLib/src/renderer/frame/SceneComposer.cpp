@@ -88,6 +88,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 
 void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
     ZoneScoped ;
+
     if (frameScenario == nullptr)
         return;
 

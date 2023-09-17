@@ -10,7 +10,7 @@
 
 void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
-                                    HMapRenderPlan &mapRenderPlan,
+                                    const HMapRenderPlan &mapRenderPlan,
                                     M2ObjectListContainer &potentialM2,
                                     WMOListContainer &potentialWmo) {
     potentialWmo.addCand(this->m_wmoObject);
@@ -18,7 +18,7 @@ void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustu
 
 void WmoScene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                      const mathfu::vec4 &cameraPos,
-                                     HMapRenderPlan &mapRenderPlan,
+                                     const HMapRenderPlan &mapRenderPlan,
                                      M2ObjectListContainer &m2ObjectsCandidates,
                                      WMOListContainer &wmoCandidates) {
 

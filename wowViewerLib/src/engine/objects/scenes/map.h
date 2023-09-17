@@ -94,20 +94,20 @@ protected:
     virtual void getPotentialEntities(
         const MathHelper::FrustumCullingData &frustumData,
         const mathfu::vec4 &cameraPos,
-        HMapRenderPlan &mapRenderPlan,
+        const HMapRenderPlan &mapRenderPlan,
         M2ObjectListContainer &potentialM2,
         WMOListContainer &potentialWmo);
 
     virtual void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                        const mathfu::vec4 &cameraPos,
-                                       HMapRenderPlan &mapRenderPlan,
+                                       const HMapRenderPlan &mapRenderPlan,
                                        M2ObjectListContainer &m2ObjectsCandidates,
                                        WMOListContainer &wmoCandidates);
 
     void checkADTCulling(int i, int j,
                          const MathHelper::FrustumCullingData &frustumData,
                          const mathfu::vec4 &cameraPos,
-                         HMapRenderPlan &mapRenderPlan,
+                         const HMapRenderPlan &mapRenderPlan,
                          M2ObjectListContainer &m2ObjectsCandidates,
                          WMOListContainer &wmoCandidates);
 
@@ -177,7 +177,7 @@ public:
 	};
     animTime_t getCurrentSceneTime() override;
 
-    void makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, HMapRenderPlan &mapRenderPlan);
+    void makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, const HMapRenderPlan &mapRenderPlan);
 
     void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {
         m_mandatoryADT = mandatoryADTs;
@@ -191,12 +191,12 @@ public:
     void doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan);
 
     void update(const HMapRenderPlan &renderPlan);
-    void updateBuffers(const HMapRenderPlan &renderPlan);
+    void updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan);
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,
                        int viewRenderOrder,
-                       HMapRenderPlan &mapRenderPlan);
+                       const HMapRenderPlan &mapRenderPlan);
 
 //    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const;
 

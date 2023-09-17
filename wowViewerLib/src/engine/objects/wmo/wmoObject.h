@@ -49,7 +49,7 @@ private:
     HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
-    HMapSceneBufferCreate m_sceneRenderer;
+
     bool m_loading = false;
     bool m_loaded = false;
     CAaBox m_bbox;
@@ -119,7 +119,7 @@ public:
     mathfu::vec3 getAmbientColor() override;
 
     PointerChecker<SMOMaterial> &getMaterials() override;
-    std::shared_ptr<IWMOMaterial> getMaterialInstance(int index) override;
+    std::shared_ptr<IWMOMaterial> getMaterialInstance(int index, const HMapSceneBufferCreate &sceneRenderer) override;
 
     PointerChecker<SMOLight> &getLightArray() override;
     std::vector<PortalInfo_t> &getPortalInfos() override {
