@@ -23,11 +23,8 @@ layout(location = 5) out float vAlphaCutoff;
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 
+#include "../common/commonUboSceneData.glsl"
 
-layout(std140, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
 
 void main() {
     vec4 aPositionVec4 = vec4(aPosition, 1);

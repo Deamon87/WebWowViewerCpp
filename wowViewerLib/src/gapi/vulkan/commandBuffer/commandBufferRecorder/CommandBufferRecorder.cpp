@@ -204,12 +204,69 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
     if (submitRecords.get().empty())
         return;
 
-    for (auto &submitRecord : submitRecords.get()) {
+    auto &submits = submitRecords.get();
+    for (int i = 0; i < submits.size(); i++) {
+        auto &submit = submits[i];
+        if (submit.needsBarrier && !submit.copyRegions.empty()) {
+            VkBufferMemoryBarrier buffer_barrier =
+                {
+                    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                    nullptr,
+                    0,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_QUEUE_FAMILY_IGNORED,
+                    VK_QUEUE_FAMILY_IGNORED,
+                    submit.src,
+                    submit.copyRegions[0].srcOffset,
+                    submit.copyRegions[0].size
+                };
+
+            vkCmdPipelineBarrier(
+                m_gCmdBuffer.m_cmdBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0,
+                nullptr,
+                1,
+                &buffer_barrier,
+                0,
+                nullptr
+            );
+        }
         vkCmdCopyBuffer(m_gCmdBuffer.m_cmdBuffer,
-                        submitRecord.src,
-                        submitRecord.dst,
-                        submitRecord.copyRegions.size(),
-                        submitRecord.copyRegions.data());
+                        submit.src,
+                        submit.dst,
+                        submit.copyRegions.size(),
+                        submit.copyRegions.data());
+
+        if (submit.needsBarrier && !submit.copyRegions.empty()) {
+            VkBufferMemoryBarrier buffer_barrier =
+                {
+                    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                    nullptr,
+                    0,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_QUEUE_FAMILY_IGNORED,
+                    VK_QUEUE_FAMILY_IGNORED,
+                    submit.dst,
+                    submit.copyRegions[0].dstOffset,
+                    submit.copyRegions[0].size
+                };
+
+                vkCmdPipelineBarrier(
+                    m_gCmdBuffer.m_cmdBuffer,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    VK_PIPELINE_STAGE_TRANSFER_BIT,
+                    0,
+                    0,
+                    nullptr,
+                    1,
+                    &buffer_barrier,
+                    0,
+                    nullptr
+                );
+        }
     }
 }
 

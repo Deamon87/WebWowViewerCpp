@@ -358,8 +358,6 @@ void GDeviceVLK::initialize() {
 
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 //---------------
-    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
-    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
     uniformBufferOffsetAlign = deviceProperties.limits.minUniformBufferOffsetAlignment;
     maxUniformBufferSize = deviceProperties.limits.maxUniformBufferRange;
 //---------------
@@ -628,6 +626,28 @@ void GDeviceVLK::createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures
     }
 }
 
+std::string VkMemoryPropertyFlagBitsGetString(VkMemoryPropertyFlags value) {
+    std::string strings = "";
+    if (value == 0) { strings += "None"; return strings; }
+    if (VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT & value) strings += " MEMORY_PROPERTY_DEVICE_LOCAL_BIT";
+    if (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT & value) strings += " MEMORY_PROPERTY_HOST_VISIBLE_BIT";
+    if (VK_MEMORY_PROPERTY_HOST_COHERENT_BIT & value) strings += " MEMORY_PROPERTY_HOST_COHERENT_BIT";
+    if (VK_MEMORY_PROPERTY_HOST_CACHED_BIT & value) strings += " MEMORY_PROPERTY_HOST_CACHED_BIT";
+    if (VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT & value) strings += " MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT";
+    if (VK_MEMORY_PROPERTY_PROTECTED_BIT & value) strings += " MEMORY_PROPERTY_PROTECTED_BIT";
+    if (VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD & value) strings += " MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD";
+    if (VK_MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD & value) strings += " MEMORY_PROPERTY_DEVICE_UNCACHED_BIT_AMD";
+    if (VK_MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV & value) strings += " MEMORY_PROPERTY_RDMA_CAPABLE_BIT_NV";
+    return strings;
+}
+
+std::string VkMemoryHeapFlagBitsGetStrings(VkMemoryHeapFlags value) {
+    std::string string;
+    if (value == 0) { string  += "None"; return string; }
+    if (VK_MEMORY_HEAP_DEVICE_LOCAL_BIT & value) string  += " MEMORY_HEAP_DEVICE_LOCAL_BIT";
+    if (VK_MEMORY_HEAP_MULTI_INSTANCE_BIT & value) string  += " MEMORY_HEAP_MULTI_INSTANCE_BIT";
+    return string;
+}
 
 void GDeviceVLK::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
@@ -650,6 +670,29 @@ void GDeviceVLK::pickPhysicalDevice() {
     if (physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
+
+    vkGetPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+
+    VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
+
+    std::cout << "deviceMemoryProperties.memoryHeapCount = " << deviceMemoryProperties.memoryHeapCount << std::endl;
+    for (int i = 0; i < deviceMemoryProperties.memoryHeapCount; i++) {
+        std::cout << "memoryHeaps["<<i<<"] " << std::endl;
+        std::cout << "  size = " << deviceMemoryProperties.memoryHeaps[i].size << std::endl;
+        std::cout << "  flags = " << VkMemoryHeapFlagBitsGetStrings(deviceMemoryProperties.memoryHeaps[i].flags) << std::endl;
+    }
+    std::cout << std::endl;
+
+    std::cout << "deviceMemoryProperties.memoryTypeCount = " << deviceMemoryProperties.memoryTypeCount << std::endl;
+    for (int i = 0; i < deviceMemoryProperties.memoryTypeCount; i++) {
+        auto memType = deviceMemoryProperties.memoryTypes[i];
+        std::cout << "memoryTypes["<<i<<"] " << std::endl;
+        std::cout << "  heapIndex = " << memType.heapIndex << " "
+                   << VkMemoryPropertyFlagBitsGetString(memType.propertyFlags) << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 
@@ -681,10 +724,9 @@ void GDeviceVLK::createLogicalDevice() {
             indexing_features.descriptorBindingPartiallyBound ;
     }
 
-
-
     VkPhysicalDeviceFeatures deviceFeatures = {};
-    deviceFeatures.samplerAnisotropy = true;
+    deviceFeatures.samplerAnisotropy = supportedFeatures.samplerAnisotropy;
+    deviceFeatures.textureCompressionBC = supportedFeatures.textureCompressionBC;
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -692,8 +734,6 @@ void GDeviceVLK::createLogicalDevice() {
 
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
-
-    createInfo.pEnabledFeatures = &deviceFeatures;
 
     std::vector<const char*> enabledDeviceExtensions = deviceExtensions;
     createInfo.enabledExtensionCount = enabledDeviceExtensions.size();
@@ -714,9 +754,12 @@ void GDeviceVLK::createLogicalDevice() {
 
         vkGetPhysicalDeviceFeatures2( physicalDevice, &physical_features2 );
         physical_features2.pNext = &indexing_features;
+        physical_features2.features = deviceFeatures;
 
-
+        createInfo.pEnabledFeatures = nullptr;
         createInfo.pNext = &physical_features2;
+   } else {
+        createInfo.pEnabledFeatures = &deviceFeatures;
     }
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
@@ -842,6 +885,7 @@ void GDeviceVLK::createSyncObjects() {
         renderFinishedSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
 
         uploadSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
+        uploadSequenceSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
         frameBufSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
     }
 
@@ -894,28 +938,52 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
 
         }
 
-        auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
         {
-            for (int i = 0; i < renderFuncs.size(); i++) {
-                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeUpload(*this, uploadCmd);
+            auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
+            {
+                for (int i = 0; i < renderFuncs.size(); i++) {
+                    dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeUpload(*this, uploadCmd);
+                }
             }
-        }
 
-        auto frameBufCmd = frameBufCmdBuf->beginRecord(nullptr);
-
-        //Do Texture update
-        {
-            ZoneScopedN("Texture update");
-            m_textureManager->processBLPTextures();
-            auto textureVector = m_textureManager->getReadyToUploadTextures();
-            textureUploadStrategy(textureVector.get(), frameBufCmd, uploadCmd);
-            //The next loop updates DescriptorSets
-            for(auto &wtexture : textureVector.get()) {
-                if( auto texture = wtexture.lock()) {
-                    texture->executeOnChange();
+            //Do Texture update
+            {
+                ZoneScopedN("Texture update");
+                m_textureManager->processBLPTextures();
+                auto textureVector = m_textureManager->getReadyToUploadTextures();
+                textureUploadStrategy(textureVector.get(), uploadCmd);
+                //The next loop updates DescriptorSets
+                for (auto &wtexture: textureVector.get()) {
+                    if (auto texture = wtexture.lock()) {
+                        texture->executeOnChange();
+                    }
                 }
             }
         }
+        {
+            std::vector<VkSemaphore> uploadConseqWaitSemaphores = {};
+            std::vector<VkPipelineStageFlags> uploadWaitStages = {};
+            if (m_frameNumber > IDevice::MAX_FRAMES_IN_FLIGHT) {
+                uploadConseqWaitSemaphores = {
+                    uploadSequenceSemaphores[(currentDrawFrame + IDevice::MAX_FRAMES_IN_FLIGHT - 1) %
+                                             MAX_FRAMES_IN_FLIGHT]->getNativeSemaphore()
+                };
+                uploadWaitStages = {VK_PIPELINE_STAGE_TRANSFER_BIT};
+            }
+
+
+            submitQueue(
+                uploadQueue,
+                uploadConseqWaitSemaphores,
+                uploadWaitStages,
+                {uploadCmdBuf->getNativeCmdBuffer()},
+                {uploadSemaphores[currentDrawFrame]->getNativeSemaphore(),
+                 uploadSequenceSemaphores[currentDrawFrame]->getNativeSemaphore()},
+                uploadFences[currentDrawFrame]->getNativeFence()
+            );
+        }
+
+
         {
             ZoneScopedN("DescriptorSet update");
             m_descriptorSetUpdater->updateDescriptorSets();
@@ -931,6 +999,8 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         auto swapChainCmd = swapChainCmdBuf->beginRecord(nullptr);
 
         {
+            auto frameBufCmd = frameBufCmdBuf->beginRecord(nullptr);
+
             //Begin render pass for Swap chain
             this->getNextSwapImageIndex(imageIndex);
             auto swapChainRenderPass = this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
@@ -940,16 +1010,6 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
             }
         }
     }
-
-
-    submitQueue(
-        uploadQueue,
-        {},
-        {},
-        {uploadCmdBuf->getNativeCmdBuffer()},
-        {uploadSemaphores[currentDrawFrame]->getNativeSemaphore()},
-        uploadFences[currentDrawFrame]->getNativeFence()
-    );
 
     submitQueue(
         graphicsQueue,
@@ -1240,7 +1300,7 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
     presentInfo.pWaitSemaphores = waitSemaphores.data();
 
     presentInfo.swapchainCount = waitSemaphores.size();
-    presentInfo.pSwapchains = swapchains.data();
+    presentInfo.pSwapchains = swapchains.data(); 
     presentInfo.pImageIndices = imageIndexes.data();
 
     auto result = vkQueuePresentKHR(graphicsQueue, &presentInfo);
@@ -1263,17 +1323,6 @@ void GDeviceVLK::executeDeallocators() {
         }
 
         listOfDeallocators.pop_front();
-    }
-}
-void GDeviceVLK::executeBufferDeallocators() {
-    std::lock_guard<std::mutex> lock(m_listOfBufferDeallocatorsAccessMtx);
-    while ((!listOfBufferDeallocators.empty()) && (listOfBufferDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-        auto stuff = listOfBufferDeallocators.front();
-        if (stuff.callback != nullptr) {
-            stuff.callback();
-        }
-
-        listOfBufferDeallocators.pop_front();
     }
 }
 

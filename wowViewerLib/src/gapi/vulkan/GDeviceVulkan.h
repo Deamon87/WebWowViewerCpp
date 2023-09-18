@@ -188,14 +188,7 @@ public:
         dr.callback = callback;
         listOfDeallocators.push_back(dr);
     };
-    void addBufferDeallocationRecord(std::function<void()> callback) override {
-        std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
-        DeallocationRecord dr;
-        dr.frameNumberToDoAt = m_frameNumber+MAX_FRAMES_IN_FLIGHT;
-        dr.callback = callback;
-        listOfDeallocators.push_back(dr);
-    };
-    void executeBufferDeallocators();
+
 
     VkFormat findDepthFormat();
 
@@ -312,6 +305,7 @@ protected:
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
 
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSemaphores;
+    std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSequenceSemaphores;
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> frameBufSemaphores;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
@@ -382,9 +376,6 @@ protected:
 
     std::mutex m_listOfDeallocatorsAccessMtx;
     std::list<DeallocationRecord> listOfDeallocators;
-
-    std::mutex m_listOfBufferDeallocatorsAccessMtx;
-    std::list<DeallocationRecord> listOfBufferDeallocators;
 
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 

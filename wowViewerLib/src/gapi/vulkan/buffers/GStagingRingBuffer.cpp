@@ -12,6 +12,9 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
     int bufferIndex = 0;
     uint32_t &currentOffset = offsets[frame];
 
+    if (size > STAGE_BUFFER_SIZE)
+        throw std::runtime_error(("size > STAGE_BUFFER_SIZE; size = " + std::to_string(size)));
+
     {
 //        std::unique_lock l(m_mutex);
         int currentIndex = ( currentOffset ) / STAGE_BUFFER_SIZE;

@@ -7,11 +7,9 @@ precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
+#include "../common/commonUboSceneData.glsl"
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-	SceneWideParams scene;
-	PSFog fogData[8];
-};
+
 
 layout(location = 0) in vec4 vColor;
 layout(location = 0) out vec4 outputColor;

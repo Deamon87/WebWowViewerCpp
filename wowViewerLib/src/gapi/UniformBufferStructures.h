@@ -42,7 +42,8 @@ struct SceneExteriorLight {
     mathfu::vec4_packed uAdtSpecMult_FogCount;
 };
 
-const constexpr int FOG_MAX_SHADER_COUNT = 8;
+const constexpr int FOG_MAX_SHADER_COUNT = 1;
+
 struct sceneWideBlockVSPS {
     mathfu::mat4 uLookAtMat;
     mathfu::mat4 uPMatrix;
@@ -50,7 +51,7 @@ struct sceneWideBlockVSPS {
     mathfu::vec4_packed uInteriorSunDir;
 
     SceneExteriorLight extLight;
-    PSFog fogData[FOG_MAX_SHADER_COUNT];
+    PSFog fogData;
 };
 
 struct InteriorLightParam {

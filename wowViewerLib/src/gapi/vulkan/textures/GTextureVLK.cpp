@@ -235,7 +235,7 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     }
 
     VmaAllocationCreateInfo allocImageCreateInfo = {};
-    allocImageCreateInfo.usage = VMA_MEMORY_USAGE_AUTO;
+    allocImageCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 //    allocImageCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT; //this bit forces to create per one texture per memory
 
 
@@ -244,6 +244,9 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     if (!m_debugName.empty()) {
         m_device.setObjectName((uint64_t) texture.image, VK_OBJECT_TYPE_IMAGE, m_debugName.c_str());
     }
+#ifdef DUMP_SELECTION_OF_MEMTYPE
+    std::cout << "Texture "<< m_debugName <<", memtype = " << imageAllocationInfo.memoryType << std::endl;
+#endif
 
     // Create image view
     // Textures are not directly accessed by the shaders and

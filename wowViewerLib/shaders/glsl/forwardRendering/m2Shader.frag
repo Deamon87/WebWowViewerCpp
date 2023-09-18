@@ -8,19 +8,16 @@ precision highp int;
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
 #include "../common/commonM2Material.glsl"
+#include "../common/commonUboSceneData.glsl"
 
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
-layout(location=2) in vec2 vTexCoord3;
-layout(location=3) in vec3 vNormal;
-layout(location=4) in vec4 vPosition_EdgeFade;
+layout(location=2) in vec3 vNormal;
+layout(location=3) in vec4 vPosition_EdgeFade;
 
 layout(location=0) out vec4 outputColor;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+
 
 //Whole model
 #include "../common/commonM2DescriptorSet.glsl"
@@ -42,7 +39,7 @@ void main() {
     /* Animation support */
     vec2 texCoord = vTexCoord.xy;
     vec2 texCoord2 = vTexCoord2.xy;
-    vec2 texCoord3 = vTexCoord3.xy;
+    vec2 texCoord3 = vTexCoord2.xy;
 
     vec4 finalColor = vec4(0);
 
@@ -173,7 +170,7 @@ void main() {
             )
             .xyz;
 
-        finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz, PixelShader_UnFogged_blendMode.z);
+        finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz, PixelShader_UnFogged_blendMode.z);
     }
 
     //Forward rendering without lights

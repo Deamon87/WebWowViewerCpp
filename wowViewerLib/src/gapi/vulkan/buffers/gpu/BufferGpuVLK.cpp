@@ -7,6 +7,8 @@
 BufferGpuVLK::BufferGpuVLK(const HGDeviceVLK &device, int size, VkBufferUsageFlags usageFlags, const char *obj_name) : m_device(device) {
     m_size = size;
 
+    VmaAllocationInfo allocationInfo;
+
     VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
     vbInfo.size = m_size;
     vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | usageFlags;
@@ -17,9 +19,13 @@ BufferGpuVLK::BufferGpuVLK(const HGDeviceVLK &device, int size, VkBufferUsageFla
     stagingAllocInfo.flags = 0;
     ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
                                      &m_hBuffer,
-                                     &m_hBufferAlloc, nullptr));
+                                     &m_hBufferAlloc, &allocationInfo));
 
     device->setObjectName((uint64_t) m_hBuffer, VK_OBJECT_TYPE_BUFFER, obj_name);
+
+#ifdef DUMP_SELECTION_OF_MEMTYPE
+    std::cout << "GPU Buff "<< obj_name <<", memtype = " << allocationInfo.memoryType << std::endl;
+#endif
 
 }
 

@@ -9,6 +9,7 @@ precision highp int;
 #include "../common/commonM2Material.glsl"
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
+#include "../common/commonUboSceneData.glsl"
 
 precision highp float;
 
@@ -21,10 +22,7 @@ layout(location=4) in vec2 aTexCoord;
 layout(location=5) in vec2 aTexCoord2;
 
 //Whole scene
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+
 
 // Whole model
 #include "../common/commonM2DescriptorSet.glsl"

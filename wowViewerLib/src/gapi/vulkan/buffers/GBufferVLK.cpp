@@ -236,6 +236,7 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
             auto &copyCmd = dataToBeUploaded.emplace_back();
             copyCmd.src = m_gpuBuffer->getBuffer();
             copyCmd.dst = newGpuBuf->getBuffer();
+            copyCmd.needsBarrier = true;
 
             auto &region = copyCmd.copyRegions.emplace_back();
             region.size = m_gpuBuffer->size();

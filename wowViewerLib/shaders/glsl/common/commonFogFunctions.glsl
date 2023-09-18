@@ -1,3 +1,6 @@
+#ifndef COMMON_FOG_FUNCTIONS
+#define COMMON_FOG_FUNCTIONS
+
 struct PSFog
 {
     vec4 densityParams;
@@ -108,7 +111,7 @@ float saturatef(float x) {
     return clamp(x, 0.0f, 1.0f);
 }
 
-vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec3 uViewUp, in vec3 vertexInViewSpaceMy, in vec3 sunDirInViewSpace, in int blendMode) {
+vec4 makeFog2(const in PSFog mainFogData, in vec4 final, in vec3 uViewUp, in vec3 vertexInViewSpaceMy, in vec3 sunDirInViewSpace, in int blendMode) {
     float fogRateScalar = 1.0f; //Unk stuff atm.
     bool t138 = false; //some strange parameter from materials
     vec3 vertexInViewSpace = vertexInViewSpaceMy;
@@ -121,8 +124,11 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
 
     vec4 outColor_713 = vec4(0.0); //accumulator
 
-    for (int i = 0; i < fogCount; i++) {
-        vec4 classicFogParams = mainFogData[i].classicFogParams;
+    const PSFog mainFogData1 = mainFogData;
+    const PSFog mainFogData2 = mainFogData;
+    
+//    for (int i = 0; i < fogCount; i++) {
+        vec4 classicFogParams = mainFogData1.classicFogParams;
         float classicFogEnabled = classicFogParams.x;
         float classicEnd = classicFogParams.y;
         float classicEndMinusStartInv = classicFogParams.z;
@@ -148,15 +154,15 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
         if (!(_ret0_741))
         {
             // Block 743
-            vec4 densityParams = mainFogData[i].densityParams;
+            vec4 densityParams = mainFogData1.densityParams;
             float start = densityParams.x;
             float end = densityParams.y;
             float density = densityParams.z;
             float bias = densityParams.w;
-            float heightRate = mainFogData[i].color_and_heightRate.w;
-            float heightDensity = mainFogData[i].heightDensity_and_endColor.x;
-            float fogZScalar = mainFogData[i].sunDirection_and_fogZScalar.w;
-            vec4 t755 = mainFogData[i].mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha;
+            float heightRate = mainFogData1.color_and_heightRate.w;
+            float heightDensity = mainFogData1.heightDensity_and_endColor.x;
+            float fogZScalar = mainFogData1.sunDirection_and_fogZScalar.w;
+            vec4 t755 = mainFogData1.mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha;
             float mainFogCurveEndDist = t755.x;
             float mainFogCurveStartDist = t755.y;
             float legacyFogBlend = t755.z;
@@ -185,13 +191,13 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
             float exp_783 = exp((expMax_781 * heightDensity));
             float legacyExpFogHeight_784 = (1.0 / exp_783);
 
-            vec4 t785 = mainFogData[i].heightPlane;
+            vec4 t785 = mainFogData1.heightPlane;
             float dot_787 = dot(t785.xyz, vertexInViewSpace);
             float height_789 = (dot_787 + t785.w);
             float saturate_791 = saturatef((height_789 * heightRate));
             float heightFog_792 = (1.0f - saturate_791);
 
-            vec4 t793 = mainFogData[i].heightFogCoeff;
+            vec4 t793 = mainFogData1.heightFogCoeff;
             float xSqrd_794 = (heightFog_792 * heightFog_792);
             float xCubed_795 = (xSqrd_794 * heightFog_792);
             float saturate_806 = saturatef(((((t793.x * xCubed_795) + (t793.y * xSqrd_794)) + (t793.z * heightFog_792)) + t793.w));
@@ -207,12 +213,12 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
             float artFogNormalizedDistance_823 = saturatef(((vLength_778 - mainFogCurveStartDist) / (mainFogCurveEndDist - mainFogCurveStartDist)));
             float engineFogNormalizedDistance_825 = saturatef((vLength_778 / mainFogCurveEndDist));
 
-            vec4 t826 = mainFogData[i].mainFogCoeff;
+            vec4 t826 = mainFogData1.mainFogCoeff;
             float xSqrd_827 = (artFogNormalizedDistance_823 * artFogNormalizedDistance_823);
             float xCubed_828 = (xSqrd_827 * artFogNormalizedDistance_823);
             float saturate_839 = saturatef(((((t826.x * xCubed_828) + (t826.y * xSqrd_827)) + (t826.z * artFogNormalizedDistance_823)) + t826.w));
             float fogResult_841 = saturatef((1.0f - saturate_839));
-            vec4 t842 = mainFogData[i].heightDensityFogCoeff;
+            vec4 t842 = mainFogData1.heightDensityFogCoeff;
             float xSqrd_843 = (artFogNormalizedDistance_823 * artFogNormalizedDistance_823);
             float xCubed_844 = (xSqrd_843 * artFogNormalizedDistance_823);
             float saturate_855 = saturatef(((((t842.x * xCubed_844) + (t842.y * xSqrd_843)) + (t842.z * artFogNormalizedDistance_823)) + t842.w));
@@ -251,37 +257,37 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
         float _retVal_956 = _retVal_913;
         float heightFog_955 = heightFog_912;
         vec3 normalize_918 = normalize(vertexInViewSpace);
-        float t924 = mainFogData[i].sunAngle_and_sunColor.x;
+        float t924 = mainFogData1.sunAngle_and_sunColor.x;
         float alpha_935 = final.w;
         float end2_938 = saturatef(
-            (vLength - mainFogData[i].heightFogEndColor_fogStartOffset.w) /
-            mainFogData[i].heightColor_and_endFogDistance.w
+            (vLength - mainFogData1.heightFogEndColor_fogStartOffset.w) /
+            mainFogData1.heightColor_and_endFogDistance.w
         );
 
         //Height fog color calculation
         float end_940 = (end2_938 * (end2_938 * end2_938));
         vec3 heightColor_942 = mix(
-            validateFogColor(mainFogData[0].heightColor_and_endFogDistance.xyz, blendMode),
-            validateFogColor(mainFogData[0].heightFogEndColor_fogStartOffset.xyz, blendMode),
+            validateFogColor(mainFogData2.heightColor_and_endFogDistance.xyz, blendMode),
+            validateFogColor(mainFogData2.heightFogEndColor_fogStartOffset.xyz, blendMode),
             vec3(end2_938)
         );
 
         //Usual fog color calculation
         float saturate_943 = saturatef(end_940);
         vec3 fogFinal_945 = mix(
-            validateFogColor(mainFogData[0].color_and_heightRate.xyz, blendMode),
-            validateFogColor(mainFogData[0].heightDensity_and_endColor.yzw, blendMode),
+            validateFogColor(mainFogData2.color_and_heightRate.xyz, blendMode),
+            validateFogColor(mainFogData2.heightDensity_and_endColor.yzw, blendMode),
             vec3(saturate_943)
         );
 
         //Mix fog colors above together
         vec3 fogFinal_947 = mix(fogFinal_945, heightColor_942, vec3(heightFog_955));
-        float dot_948 = dot(normalize_918, mainFogData[i].sunDirection_and_fogZScalar.xyz);
+        float dot_948 = dot(normalize_918, mainFogData1.sunDirection_and_fogZScalar.xyz);
         float nDotSun_949 = saturatef(dot_948);
         vec3 sunColor_951 = mix(
             fogFinal_947,
-            validateFogColor(mainFogData[0].sunAngle_and_sunColor.yzw, blendMode),
-            vec3(mainFogData[i].sunPercentage.x)
+            validateFogColor(mainFogData2.sunAngle_and_sunColor.yzw, blendMode),
+            vec3(mainFogData1.sunPercentage.x)
         );
 
         float nDotSun_953 = saturatef((nDotSun_949 - t924));
@@ -323,9 +329,10 @@ vec4 makeFog2(const in PSFog mainFogData[8], int fogCount, in vec4 final, in vec
 
         vec4 t982 = vec4(lerp_981, alpha_988);
 
-        vec4 outColor_986 = (outColor_713 + (t982 * mainFogData[i].mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha.w));
+        vec4 outColor_986 = (outColor_713 + (t982 * mainFogData1.mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha.w));
         outColor_713 = outColor_986;
-    }
+//    }
     return outColor_713;
 }
 
+#endif

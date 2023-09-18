@@ -14,10 +14,7 @@ layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+#include "../common/commonUboSceneData.glsl"
 
 layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
     vec4 uPos;

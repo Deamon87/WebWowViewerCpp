@@ -19,10 +19,7 @@ layout(location=5) in flat int meshIndex;
 
 layout(location=0) out vec4 outputColor;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+#include "../common/commonUboSceneData.glsl"
 
 //Whole model
 #include "../common/commonM2IndirectDescriptorSet.glsl"
@@ -191,7 +188,7 @@ void main() {
             )
             .xyz;
 
-        finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz, meshWide.PixelShader_UnFogged_blendMode.z);
+        finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz, meshWide.PixelShader_UnFogged_blendMode.z);
     }
 
     //Forward rendering without lights

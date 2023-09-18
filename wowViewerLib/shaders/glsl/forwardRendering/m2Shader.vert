@@ -10,6 +10,7 @@ precision highp int;
 #include "../common/commonFogFunctions.glsl"
 #include "../common/commonFunctions.glsl"
 #include "../common/commonM2Material.glsl"
+#include "../common/commonUboSceneData.glsl"
 
 /* vertex shader code */
 layout(location=0) in vec3 aPosition;
@@ -20,10 +21,7 @@ layout(location=4) in vec2 aTexCoord;
 layout(location=5) in vec2 aTexCoord2;
 
 //Whole scene
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+
 
 //Whole model
 #include "../common/commonM2DescriptorSet.glsl"
@@ -39,9 +37,8 @@ layout(std140, set=2, binding=7) uniform meshWideBlockVSPS {
 //Shader output
 layout(location=0) out vec2 vTexCoord;
 layout(location=1) out vec2 vTexCoord2;
-layout(location=2) out vec2 vTexCoord3;
-layout(location=3) out vec3 vNormal;
-layout(location=4) out vec4 vPosition_EdgeFade;
+layout(location=2) out vec3 vNormal;
+layout(location=3) out vec4 vPosition_EdgeFade;
 
 
 void main() {
@@ -72,7 +69,6 @@ void main() {
 
     vTexCoord = aTexCoord;
     vTexCoord2 = aTexCoord2;
-    vTexCoord3 = aTexCoord2;
 
     gl_Position = scene.uPMatrix * vertexPosInView;
     vNormal = normal;

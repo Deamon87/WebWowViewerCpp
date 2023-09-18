@@ -24,10 +24,7 @@ layout(set=2, binding=11) uniform sampler2D uLayerHeight1;
 layout(set=2, binding=12) uniform sampler2D uLayerHeight2;
 layout(set=2, binding=13) uniform sampler2D uLayerHeight3;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+#include "../common/commonUboSceneData.glsl"
 
 layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
     vec4 uPos;
@@ -162,7 +159,7 @@ void main() {
     vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult_fogCount.x;
     finalColor.rgb += specTerm;
 
-    finalColor = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz,
+    finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz,
         vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
 
     finalColor.a = 1.0;

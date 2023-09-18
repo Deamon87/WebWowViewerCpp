@@ -112,6 +112,8 @@ vec3 calcLight(
     return result + specular;
 }
 
+
+
 vec3 calcSpec(const in float texAlpha) {
     return vec3(0.0f);
 }

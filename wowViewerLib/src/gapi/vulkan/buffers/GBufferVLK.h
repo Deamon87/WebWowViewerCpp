@@ -29,6 +29,7 @@ struct VulkanCopyCommands {
     VkBuffer src;
     VkBuffer dst;
     std::vector<VkBufferCopy> copyRegions;
+    bool needsBarrier = false;
 };
 
 class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBufferVLK> {

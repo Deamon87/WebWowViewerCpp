@@ -22,10 +22,8 @@ layout (location = 7) in vec4 aColor2;
 layout (location = 8) in vec4 aColorSecond;
 layout (location = 9) in vec4 wmoAmbient;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+#include "../common/commonUboSceneData.glsl"
+
 layout(std140, set=1, binding=1) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };

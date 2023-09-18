@@ -16,10 +16,7 @@ layout(location=0) out vec4 outputColor;
 
 layout(set=2,binding=5) uniform sampler2D uTexture;
 
-layout(std140, set=0, binding=0) uniform sceneWideBlockVSPS {
-    SceneWideParams scene;
-    PSFog fogData[8];
-};
+#include "../common/commonUboSceneData.glsl"
 
 //Individual meshes
 layout(std140, set=1, binding=4) uniform meshWideBlockPS {
@@ -75,7 +72,7 @@ void main() {
     }
 
     //BlendMode is always GxBlend_Alpha
-    finalColor.rgb = makeFog2(fogData, int(scene.extLight.adtSpecMult_fogCount.y), finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 2).rgb;
+    finalColor.rgb = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 2).rgb;
 
     outputColor = vec4(finalColor.rgb, 0.7);
 }

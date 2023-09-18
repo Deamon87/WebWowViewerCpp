@@ -19,6 +19,10 @@ BufferStagingVLK::BufferStagingVLK(const HGDeviceVLK &device, int size) : m_devi
                                          &m_stagingBuffer,
                                          &m_stagingBufferAlloc,
                                          &m_stagingBufferAllocInfo));
+
+#ifdef DUMP_SELECTION_OF_MEMTYPE
+        std::cout << "Staging CPU Buff, memtype = " << m_stagingBufferAllocInfo.memoryType << std::endl;
+#endif
     }
 }
 

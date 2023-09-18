@@ -26,7 +26,6 @@ void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
                                        const TransitionParams &transitionParams);
 
 void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textures,
-                           CmdBufRecorder &renderCmdBufRecorder,
                            CmdBufRecorder &uploadCmdBufRecorder);
 
 
