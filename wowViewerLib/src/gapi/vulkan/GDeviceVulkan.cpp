@@ -466,20 +466,25 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
 
     createSwapChain(swapChainSupport, surfaceFormat, extent);
 
-    uint32_t imageCount;
-    vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+    uint32_t imageCount = 0;
+    if (swapChain != VK_NULL_HANDLE) {
+        vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
+    }
 
     //Create swapchainImages and framebuffer
     std::vector<VkImage> swapChainImages = {};
     swapChainImages.resize(imageCount);
 
-    ERR_GUARD_VULKAN(vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data()));
+    if (swapChain != VK_NULL_HANDLE) {
+        ERR_GUARD_VULKAN(vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data()));
+    }
 
     swapChainExtent = extent;
 
     //Create imageView
     std::vector<VkImageView> swapChainImageViews;
     createSwapChainImageViews(swapChainImages, swapChainImageViews, surfaceFormat.format);
+
 
     //Create swapchain renderPass
     createSwapChainRenderPass(surfaceFormat.format);
@@ -488,7 +493,8 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
     std::vector<HGTextureVLK> swapChainTextures;
     swapChainTextures.resize(swapChainImages.size());
     for (int i = 0; i < swapChainImages.size(); i++) {
-        swapChainTextures[i] = std::make_shared<GTextureVLK>(*this, swapChainImages[i], swapChainImageViews[i], false);
+        swapChainTextures[i] = std::make_shared<GTextureVLK>(*this, swapChainImages[i], swapChainImageViews[i],
+                                                             false);
     }
 
     createFramebuffers(swapChainTextures, extent);
@@ -518,40 +524,54 @@ void GDeviceVLK::createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSu
 //        imageCount = swapChainSupport.capabilities.maxImageCount;
 //    }
 
-    VkSwapchainCreateInfoKHR createInfo = {};
-    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-    createInfo.pNext = nullptr;
-    createInfo.surface = vkSurface;
-    createInfo.flags = 0;
+    auto oldSwapChain = swapChain;
 
-    createInfo.minImageCount = imageCount;
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = extent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (extent.width > 0 && extent.height > 0) {
+        VkSwapchainCreateInfoKHR createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+        createInfo.pNext = nullptr;
+        createInfo.surface = vkSurface;
+        createInfo.flags = 0;
 
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+        createInfo.minImageCount = imageCount;
+        createInfo.imageFormat = surfaceFormat.format;
+        createInfo.imageColorSpace = surfaceFormat.colorSpace;
+        createInfo.imageExtent = extent;
+        createInfo.imageArrayLayers = 1;
+        createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
-//    if (indices.graphicsFamily != indices.presentFamily) {
-//        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-//        createInfo.queueFamilyIndexCount = 2;
-//        createInfo.pQueueFamilyIndices = queueFamilyIndices;
-//    } else {
+        uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+
+    //    if (indices.graphicsFamily != indices.presentFamily) {
+    //        createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+    //        createInfo.queueFamilyIndexCount = 2;
+    //        createInfo.pQueueFamilyIndices = queueFamilyIndices;
+    //    } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-//    }
+    //    }
 
-    createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-    createInfo.presentMode = presentMode;
-    createInfo.clipped = VK_TRUE;
+        createInfo.preTransform = swapChainSupport.capabilities.currentTransform;
+        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+        createInfo.presentMode = presentMode;
+        createInfo.clipped = VK_TRUE;
 
-    createInfo.oldSwapchain = swapChain;
 
-    auto error = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
-    if ( error != VK_SUCCESS) {
-        std::cout << "error = " << error << std::endl << std::flush;
-        throw std::runtime_error("failed to create swap chain!");
+        createInfo.oldSwapchain = oldSwapChain;
+
+        auto error = vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain);
+        if (error != VK_SUCCESS) {
+            std::cout << "error = " << error << std::endl << std::flush;
+            throw std::runtime_error("failed to create swap chain!");
+        }
+    } else {
+        swapChain = VK_NULL_HANDLE;
+    }
+
+    if (oldSwapChain != VK_NULL_HANDLE) {
+        auto vkDevice = this->getVkDevice();
+        addDeallocationRecord([oldSwapChain, vkDevice]() {
+            vkDestroySwapchainKHR(vkDevice, oldSwapChain, nullptr);
+        });
     }
 }
 
@@ -885,7 +905,6 @@ void GDeviceVLK::createSyncObjects() {
         renderFinishedSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
 
         uploadSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
-        uploadSequenceSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
         frameBufSemaphores[i] = std::make_shared<GSemaphoreVLK>(this->shared_from_this());
     }
 
@@ -916,7 +935,7 @@ float GDeviceVLK::getAnisLevel() {
     return deviceProperties.limits.maxSamplerAnisotropy;
 }
 
-void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
+void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) {
     ZoneScoped;
     this->waitInDrawStageAndDeps.beginMeasurement();
 
@@ -925,6 +944,10 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     auto &uploadCmdBuf = uploadCommandBuffers[currentDrawFrame];
     auto &swapChainCmdBuf = swapChainCommandBuffers[currentDrawFrame];
     auto &frameBufCmdBuf = fbCommandBuffers[currentDrawFrame];
+
+    if (windowSizeChanged) {
+        createSwapChainAndFramebuffer();
+    }
 
     uint32_t imageIndex = -1;
     {
@@ -961,24 +984,12 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
             }
         }
         {
-            std::vector<VkSemaphore> uploadConseqWaitSemaphores = {};
-            std::vector<VkPipelineStageFlags> uploadWaitStages = {};
-            if (m_frameNumber > IDevice::MAX_FRAMES_IN_FLIGHT) {
-                uploadConseqWaitSemaphores = {
-                    uploadSequenceSemaphores[(currentDrawFrame + IDevice::MAX_FRAMES_IN_FLIGHT - 1) %
-                                             MAX_FRAMES_IN_FLIGHT]->getNativeSemaphore()
-                };
-                uploadWaitStages = {VK_PIPELINE_STAGE_TRANSFER_BIT};
-            }
-
-
             submitQueue(
                 uploadQueue,
-                uploadConseqWaitSemaphores,
-                uploadWaitStages,
+                {},
+                {},
                 {uploadCmdBuf->getNativeCmdBuffer()},
-                {uploadSemaphores[currentDrawFrame]->getNativeSemaphore(),
-                 uploadSequenceSemaphores[currentDrawFrame]->getNativeSemaphore()},
+                {uploadSemaphores[currentDrawFrame]->getNativeSemaphore()},
                 uploadFences[currentDrawFrame]->getNativeFence()
             );
         }
@@ -997,10 +1008,10 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         }
 
         auto swapChainCmd = swapChainCmdBuf->beginRecord(nullptr);
+        auto frameBufCmd = frameBufCmdBuf->beginRecord(nullptr);
 
+        if (swapChain != VK_NULL_HANDLE)
         {
-            auto frameBufCmd = frameBufCmdBuf->beginRecord(nullptr);
-
             //Begin render pass for Swap chain
             this->getNextSwapImageIndex(imageIndex);
             auto swapChainRenderPass = this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
@@ -1022,24 +1033,29 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         frameBufFences[currentDrawFrame]->getNativeFence()
     );
 
+    std::vector<VkSemaphore> waitSemaphores = { frameBufSemaphores[currentDrawFrame]->getNativeSemaphore() };
+    if (swapChain != VK_NULL_HANDLE) waitSemaphores.push_back(imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore());
+
+    std::vector<VkSemaphore> signalSemaphores = {};
+    if (swapChain != VK_NULL_HANDLE) signalSemaphores = {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()};
+
     submitQueue(
         graphicsQueue,
-        {
-            frameBufSemaphores[currentDrawFrame]->getNativeSemaphore(),
-            imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore()
-        },
+        waitSemaphores,
         {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
 
         {swapChainCmdBuf->getNativeCmdBuffer()},
-        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
+        signalSemaphores,
         inFlightFences[currentDrawFrame]->getNativeFence()
     );
 
-    presentQueue(
-        {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
-        {swapChain},
-        {imageIndex}
-    );
+    if (swapChain != VK_NULL_HANDLE) {
+        presentQueue(
+            {renderFinishedSemaphores[currentDrawFrame]->getNativeSemaphore()},
+            {swapChain},
+            {imageIndex}
+        );
+    }
 
     executeDeallocators();
     this->waitInDrawStageAndDeps.endMeasurement();
@@ -1063,6 +1079,11 @@ RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBu
 
 void GDeviceVLK::getNextSwapImageIndex(uint32_t &imageIndex) {
     int currentDrawFrame = getProcessingFrameNumber();
+
+    if (swapChain == VK_NULL_HANDLE) {
+        imageIndex = 0xFFFFFFFF;
+        return;
+    }
 
     VkResult result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<uint64_t>::max(), imageAvailableSemaphores[currentDrawFrame]->getNativeSemaphore(), VK_NULL_HANDLE, &imageIndex);
 
@@ -1305,8 +1326,7 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
 
     auto result = vkQueuePresentKHR(graphicsQueue, &presentInfo);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-        framebufferResized = false;
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         createSwapChainAndFramebuffer();
         return;
     } else if (result != VK_SUCCESS) {
@@ -1457,52 +1477,6 @@ GDeviceVLK::createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescript
 }
 
 void GDeviceVLK::initUploadThread() {
-}
-
-
-
-HFrameBuffer GDeviceVLK::createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments,
-                                           ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) {
-
-    if (frameNumber > -1) {
-        for (auto &framebufAvalability : m_createdFrameBuffers) {
-            if ((framebufAvalability.frame < m_frameNumber) &&
-                framebufAvalability.attachments.size() == attachments.size() &&
-                framebufAvalability.depthAttachment == depthAttachment &&
-                framebufAvalability.width == width &&
-                framebufAvalability.height == height
-                ) {
-                //Check frame definition
-                bool notEqual = false;
-                for (int i = 0; i < attachments.size(); i++) {
-                    if (attachments[i] != framebufAvalability.attachments[i]) {
-                        notEqual = true;
-                        break;
-                    }
-                }
-                if (!notEqual) {
-                    framebufAvalability.frame = m_frameNumber + frameNumber+3;
-                    return framebufAvalability.frameBuffer;
-                }
-            }
-        }
-    }
-
-    HFrameBuffer h_frameBuffer = std::make_shared<GFrameBufferVLK>(*this, attachments, depthAttachment, multiSampleCnt, width, height);
-
-    if (frameNumber > -1) {
-        FramebufAvalabilityStruct avalabilityStruct;
-        avalabilityStruct.frameBuffer = h_frameBuffer;
-        avalabilityStruct.height = height;
-        avalabilityStruct.width = width;
-        avalabilityStruct.frame = m_frameNumber + frameNumber+3;
-        avalabilityStruct.attachments = attachments;
-        avalabilityStruct.depthAttachment = depthAttachment;
-
-        m_createdFrameBuffers.push_back(avalabilityStruct);
-    }
-
-    return h_frameBuffer;
 }
 
 void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callback) {

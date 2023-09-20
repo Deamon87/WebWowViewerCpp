@@ -84,7 +84,7 @@ public:
     void startUpdateForNextFrame() override {};
     void endUpdateForNextFrame() override {};
 
-    void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) override;
+    void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) override;
 
     void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
@@ -118,7 +118,7 @@ public:
 
     HGPUFence createFence() override;
 
-    HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) override ;
+
 
     HPipelineVLK createPipeline(const HGVertexBufferBindings &m_bindings,
                                 const HGShaderPermutation &shader,
@@ -168,9 +168,6 @@ public:
     virtual VkExtent2D getCurrentExtent() {
         return swapChainExtent;
     };
-
-    //    int currentFrameSemaphore = 0;
-    bool framebufferResized = false;
 
     VmaAllocator getVMAAllocator() override {
         return vmaAllocator;
@@ -305,7 +302,6 @@ protected:
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> renderFinishedSemaphores;
 
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSemaphores;
-    std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSequenceSemaphores;
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> frameBufSemaphores;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
@@ -376,8 +372,6 @@ protected:
 
     std::mutex m_listOfDeallocatorsAccessMtx;
     std::list<DeallocationRecord> listOfDeallocators;
-
-    std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
     struct RenderPassAvalabilityStruct {
         std::vector<ITextureFormat> attachments;

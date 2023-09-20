@@ -494,7 +494,8 @@ int main(){
         frontendUI->composeUI();
         auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);
 
-        sceneComposer.draw(sceneScenario);
+        sceneComposer.draw(sceneScenario, windowSizeChanged);
+        windowSizeChanged = false;
 
         double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
         lastFrame = currentFrame;

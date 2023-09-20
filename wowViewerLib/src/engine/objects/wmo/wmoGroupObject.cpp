@@ -740,7 +740,7 @@ void WmoGroupObject::setModelFileId(int fileId) {
     m_modelFileId = fileId;
 }
 
-void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, std::vector<HGSortableMesh> &liquidMeshes, int renderOrder) {
     if (!m_loaded) return;
     for (auto &i : this->m_meshArray) {
         opaqueMeshes.push_back(i);
@@ -754,7 +754,7 @@ void WmoGroupObject::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vecto
     }
 
     for (auto const &liquidInstance : m_liquidInstances) {
-        liquidInstance->collectMeshes(transparentMeshes);
+        liquidInstance->collectMeshes(liquidMeshes);
     }
 }
 

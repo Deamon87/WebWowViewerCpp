@@ -99,11 +99,6 @@ public:
 private:
     HGDeviceVLK m_device;
 
-    int m_width = 640;
-    int m_height = 480;
-
-    std::unique_ptr<FFXGlowPassVLK> glowPass;
-
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
     HGBufferVLK vboM2RibbonBuffer;
@@ -124,8 +119,6 @@ private:
     HGBufferVLK m_vboQuad;
     HGBufferVLK m_iboQuad;
     
-    std::vector<HGBufferVLK> allBuffers;
-
     HGVertexBufferBindings m_drawQuadVao = nullptr;
 
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
@@ -133,7 +126,6 @@ private:
 
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
-    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
 
     std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
 
@@ -148,7 +140,30 @@ private:
 
     std::shared_ptr<GStagingRingBuffer> m_stagingRingBuffer;
 
-    void createFrameBuffers();
+private:
+    class RenderView {
+    public:
+        RenderView(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO);
+        void update(int width, int height, float glow);
+
+        RenderPassHelper beginPass(CmdBufRecorder &frameBufCmd, const std::shared_ptr<GRenderPassVLK> &renderPass,
+                                   bool willExecuteSecondaryBuffs, mathfu::vec4 &clearColor);
+
+        void doPostGlow(CmdBufRecorder &frameBufCmd);
+        void doPostFinal(CmdBufRecorder &bufCmd);
+    private:
+        uint32_t m_width = 640;
+        uint32_t m_height = 480;
+
+        HGDeviceVLK m_device;
+
+        std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
+        std::unique_ptr<FFXGlowPassVLK> glowPass;
+
+        void createFrameBuffers();
+    };
+
+    std::unique_ptr<RenderView> defaultView;
 };
 
 class IM2ModelDataVLK : public IM2ModelData {

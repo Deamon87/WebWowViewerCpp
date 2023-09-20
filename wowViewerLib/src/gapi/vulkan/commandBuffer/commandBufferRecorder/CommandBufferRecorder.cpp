@@ -176,8 +176,8 @@ void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, ui
                      firstInstance);
 }
 
-void CmdBufRecorder::recordPipelineBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
-                                           const std::vector<VkImageMemoryBarrier> &imageBarrierData) {
+void CmdBufRecorder::recordPipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
+                                                const std::vector<VkImageMemoryBarrier> &imageBarrierData) {
     vkCmdPipelineBarrier(
         m_gCmdBuffer.m_cmdBuffer,
         srcStageMask,
@@ -186,6 +186,18 @@ void CmdBufRecorder::recordPipelineBarrier(VkPipelineStageFlags srcStageMask, Vk
         0, nullptr,
         0, nullptr,
         imageBarrierData.size(), imageBarrierData.data());
+}
+
+void CmdBufRecorder::recordPipelineBufferBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
+                                                 const std::vector<VkBufferMemoryBarrier> &bufferBarrierData) {
+    vkCmdPipelineBarrier(
+        m_gCmdBuffer.m_cmdBuffer,
+        srcStageMask,
+        dstStageMask,
+        0,
+        0, nullptr,
+        bufferBarrierData.size(), bufferBarrierData.data(),
+        0, nullptr);
 }
 
 void CmdBufRecorder::copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions) {
@@ -208,7 +220,7 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
     for (int i = 0; i < submits.size(); i++) {
         auto &submit = submits[i];
         if (submit.needsBarrier && !submit.copyRegions.empty()) {
-            VkBufferMemoryBarrier buffer_barrier =
+            this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, {
                 {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                     nullptr,
@@ -219,21 +231,10 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
                     submit.src,
                     submit.copyRegions[0].srcOffset,
                     submit.copyRegions[0].size
-                };
-
-            vkCmdPipelineBarrier(
-                m_gCmdBuffer.m_cmdBuffer,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
-                0,
-                0,
-                nullptr,
-                1,
-                &buffer_barrier,
-                0,
-                nullptr
-            );
+                }
+            });
         }
+
         vkCmdCopyBuffer(m_gCmdBuffer.m_cmdBuffer,
                         submit.src,
                         submit.dst,
@@ -241,7 +242,7 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
                         submit.copyRegions.data());
 
         if (submit.needsBarrier && !submit.copyRegions.empty()) {
-            VkBufferMemoryBarrier buffer_barrier =
+            this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, {
                 {
                     VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                     nullptr,
@@ -252,20 +253,8 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
                     submit.dst,
                     submit.copyRegions[0].dstOffset,
                     submit.copyRegions[0].size
-                };
-
-                vkCmdPipelineBarrier(
-                    m_gCmdBuffer.m_cmdBuffer,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    0,
-                    0,
-                    nullptr,
-                    1,
-                    &buffer_barrier,
-                    0,
-                    nullptr
-                );
+                }
+            });
         }
     }
 }

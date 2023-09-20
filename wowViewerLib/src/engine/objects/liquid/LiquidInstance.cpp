@@ -71,7 +71,7 @@ void LiquidInstance::createMaterialAndMesh(const HMapSceneBufferCreate &sceneRen
 
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
-    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthWrite = true;
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = false;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;

@@ -137,14 +137,6 @@ struct vkCallInitCallback {
 };
 #endif
 
-struct FramebufAvalabilityStruct {
-    int width; int height;
-    std::vector<ITextureFormat> attachments;
-    ITextureFormat depthAttachment;
-    HFrameBuffer frameBuffer;
-    int frame;
-};
-
 enum class GDeviceType {
     GOpenGL2, GOpenGL3, GVulkan,
 };
@@ -178,7 +170,7 @@ class IDevice {
 //        virtual void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData)= 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
 
-        virtual void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) = 0;
+        virtual void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) = 0;
 //        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
         virtual bool getIsAnisFiltrationSupported();
@@ -192,8 +184,6 @@ class IDevice {
     public:
         virtual HGPUFence createFence() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
-        //Creates or receives framebuffer and tells it would be occupied for frameNumber frames
-        virtual HFrameBuffer createFrameBuffer(int width, int height, std::vector<ITextureFormat> attachments, ITextureFormat depthAttachment, int multiSampleCnt, int frameNumber) = 0;
 
         virtual HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;

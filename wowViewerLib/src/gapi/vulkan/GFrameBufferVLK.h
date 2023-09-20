@@ -12,7 +12,7 @@
 
 class GFrameBufferVLK : public IFrameBuffer {
 public:
-    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, int width, int height);
+    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, bool invertZ, int width, int height);
     GFrameBufferVLK(IDevice &device, const HGTexture &colorImage,
                     int width, int height,
                     const std::shared_ptr<GRenderPassVLK> &renderPass);

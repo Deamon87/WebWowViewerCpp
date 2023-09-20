@@ -24,13 +24,44 @@ FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &ubo
                                               true, false);
     }
 
+    {
+        //Set constant values
+        auto &ffxGlowVs = m_ffxGlowVs->getObject();
+        ffxGlowVs = {1, 1, 0, 0};
+        m_ffxGlowVs->save();
 
+        static const std::array<std::array<float, 4>, 6> texOffsets = {{
+                                                                           //X & Y
+                                                                           {{-1, 0, 0, -1}},
+                                                                           {{2, 2, -1, -1}},
 
+                                                                           //X & Y
+                                                                           {{-6, -1, 1, 6}},
+                                                                           {{0, 0, 0, 0}},
+
+                                                                           //X & Y
+                                                                           {{0, 0, 0, 0}},
+                                                                           {{10, 2, -2, -10}},
+                                                                       }};
+
+        for (int i = 0; i < GAUSS_PASS_COUNT; i++) {
+            auto &ffxGlowPs1 = m_ffxGaussPSs[i]->getObject();
+            std::copy(std::begin(texOffsets[i * 2]), std::end(texOffsets[i * 2]), std::begin(ffxGlowPs1.texOffsetX));
+            std::copy(std::begin(texOffsets[i * 2 + 1]), std::end(texOffsets[i * 2 + 1]),
+                      std::begin(ffxGlowPs1.texOffsetY));
+            m_ffxGaussPSs[i]->save();
+        }
+    }
 }
 
 void FFXGlowPassVLK::updateDimensions(int width, int height,
                                       const std::vector<HGSamplableTexture> &inputColorTextures,
                                       const std::shared_ptr<GRenderPassVLK> &finalRenderPass) {
+
+    if (m_width == width && m_height == height) return;
+
+    m_width = width;
+    m_height = height;
 
     createFrameBuffers(width, height);
     assert(inputColorTextures.size() == IDevice::MAX_FRAMES_IN_FLIGHT);
@@ -96,9 +127,7 @@ void FFXGlowPassVLK::drawMaterial (CmdBufRecorder& cmdBuf, const std::shared_ptr
     cmdBuf.drawIndexed(6, 1, 0, 0);
 }
 
-void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd,
-                            const std::shared_ptr<GRenderPassVLK> &finalRenderPass,
-                            ViewPortDimensions &viewPortDimensions) {
+void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd) {
     ZoneScoped;
     auto currentFrame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     {
@@ -108,8 +137,8 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapCha
                 false,
                 m_renderPass,
                 getTargetFrameBuffer(i, currentFrame),
-                viewPortDimensions.mins,
-                {viewPortDimensions.maxs[0] >> 2, viewPortDimensions.maxs[1] >> 2},
+                {0,0},
+                {m_width >> 2, m_height >> 2},
                 {0, 0, 0},//todo
                 true
             );
@@ -118,41 +147,19 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapCha
             drawMaterial(frameBufCmd, ffxGaussMat[currentFrame][i]);
         }
     }
+}
+void FFXGlowPassVLK::doFinalPass(CmdBufRecorder &finalBufCmd) {
+    auto currentFrame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
     {
-        swapChainCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
-        swapChainCmd.setDefaultScissors();
-        drawMaterial(swapChainCmd, ffxGlowMat[currentFrame]);
+        finalBufCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
+        finalBufCmd.setDefaultScissors();
+        drawMaterial(finalBufCmd, ffxGlowMat[currentFrame]);
     }
 }
 
 void FFXGlowPassVLK::assignFFXGlowUBOConsts(float glow) {
     ZoneScoped;
-
-    auto &ffxGlowVs = m_ffxGlowVs->getObject();
-    ffxGlowVs = {1,1,0,0};
-    m_ffxGlowVs->save();
-
-    static const std::array<std::array<float, 4>, 6> texOffsets = {{
-       //X & Y
-       {{-1, 0, 0, -1}},
-       {{2, 2, -1, -1}},
-
-       //X & Y
-       {{-6, -1, 1, 6}},
-       {{0, 0, 0, 0}},
-
-       //X & Y
-       {{0, 0, 0, 0}},
-       {{10, 2, -2, -10}},
-    }};
-
-    for (int i = 0; i < GAUSS_PASS_COUNT; i++) {
-        auto &ffxGlowPs1 = m_ffxGaussPSs[i]->getObject();
-        std::copy(std::begin(texOffsets[i*2]),   std::end(texOffsets[i*2]),   std::begin(ffxGlowPs1.texOffsetX));
-        std::copy(std::begin(texOffsets[i*2+1]), std::end(texOffsets[i*2+1]), std::begin(ffxGlowPs1.texOffsetY));
-        m_ffxGaussPSs[i]->save();
-    }
 
     auto &ffxGlowPS = m_ffxGlowPS->getObject();
     ffxGlowPS = {1,1,0,glow};
@@ -171,6 +178,7 @@ void FFXGlowPassVLK::createFrameBuffers(int m_width, int m_height) {
                 dataFormat,
                 ITextureFormat::itNone,
                 1,
+                false,
                 targetWidth, targetHeight
             );
         }
@@ -180,6 +188,7 @@ void FFXGlowPassVLK::createFrameBuffers(int m_width, int m_height) {
                 dataFormat,
                 ITextureFormat::itNone,
                 1,
+                false,
                 targetWidth, targetHeight
             );
         }

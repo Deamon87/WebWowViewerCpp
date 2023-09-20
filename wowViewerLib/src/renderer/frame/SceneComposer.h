@@ -27,9 +27,9 @@ private:
     bool m_isTerminating = false;
     bool m_firstFrame = true;
 
-    void consumeCulling(HFrameScenario &frameScenario);
-    void consumeUpdate(HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions);
-    void consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs);
+    void consumeCulling(const HFrameScenario &frameScenario);
+    void consumeUpdate(const HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions);
+    void consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged);
 
     //Flip-flop delta promises
     int frameMod = 0;
@@ -54,9 +54,7 @@ public:
         loadingResourcesThread.join();
     }
 
-    void draw(HFrameScenario frameScenario);
-
-    void addInputParams(HFrameScenario rendererAndInput){};
+    void draw(const HFrameScenario &frameScenario, bool windowSizeChanged);
 };
 
 

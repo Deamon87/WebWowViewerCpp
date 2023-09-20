@@ -21,6 +21,7 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
 void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                                      const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
+                                     const std::shared_ptr<std::vector<HGSortableMesh>> &hliquidMeshes,
                                      const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
     ZoneScoped;
@@ -30,6 +31,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
 
     auto &skyOpaqueMeshes = *hSkyOpaqueMeshes;
     auto &skyTransparentMeshes = *hSkyTransparentMeshes;
+    auto &liquidMeshes = *hliquidMeshes;
 
     opaqueMeshes.reserve(30000);
     transparentMeshes.reserve(30000);
@@ -49,13 +51,13 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     bool renderWMO = m_config->renderWMO;
 
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
-        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes);
+        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes, liquidMeshes);
     }
 
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
-            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes);
+            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes, liquidMeshes);
         }
     }
 

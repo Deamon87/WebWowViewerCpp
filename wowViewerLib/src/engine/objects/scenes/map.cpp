@@ -494,7 +494,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
             exteriorView->addM2FromGroups(frustumData, cameraPos);
             for (auto &adtRes: exteriorView->drawnADTs) {
                 adtRes->adtObject->collectMeshes(*adtRes, exteriorView->m_adtOpaqueMeshes,
-                                                 exteriorView->m_adtLiquidTransparentMeshes,
+                                                 exteriorView->liquidMeshes,
                                                  exteriorView->renderOrder);
             }
             mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);

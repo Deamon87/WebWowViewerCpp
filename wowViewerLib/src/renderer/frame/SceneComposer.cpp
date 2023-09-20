@@ -86,7 +86,7 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
 //    drawInput.pushInput(nullptr);
 }
 
-void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
+void SceneComposer::consumeCulling(const HFrameScenario &frameScenario) {
     ZoneScoped ;
 
     if (frameScenario == nullptr)
@@ -98,7 +98,7 @@ void SceneComposer::consumeCulling(HFrameScenario &frameScenario) {
 }
 
 
-void SceneComposer::consumeUpdate(HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions) {
+void SceneComposer::consumeUpdate(const HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions) {
     ZoneScoped ;
 
     if (frameScenario == nullptr)
@@ -109,9 +109,9 @@ void SceneComposer::consumeUpdate(HFrameScenario &frameScenario, std::vector<std
     }
 }
 
-void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs) {
+void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) {
     ZoneScoped ;
-    m_apiContainer->hDevice->drawFrame(renderFuncs);
+    m_apiContainer->hDevice->drawFrame(renderFuncs, windowSizeChanged);
 }
 
 
@@ -121,7 +121,7 @@ void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunctio
 //}
 
 
-void SceneComposer::draw(HFrameScenario frameScenario) {
+void SceneComposer::draw(const HFrameScenario &frameScenario, bool windowSizeChanged) {
     ZoneScoped ;
 
     if (!m_supportThreads) {
@@ -129,7 +129,7 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
         std::vector<std::unique_ptr<IRenderFunction>> renderFuncs = {};
         m_apiContainer->requestProcessor->processRequests(10);
         consumeUpdate(frameScenario,renderFuncs);
-        consumeDraw(renderFuncs);
+        consumeDraw(renderFuncs, windowSizeChanged);
     } else {
         cullingInput.pushInput(frameScenario);
         {
@@ -141,7 +141,7 @@ void SceneComposer::draw(HFrameScenario frameScenario) {
 //                    consumeUpdate(frameScenario, *renderFuncs);
 //                }
                 if (renderFuncs != nullptr) {
-                    consumeDraw(*renderFuncs);
+                    consumeDraw(*renderFuncs, windowSizeChanged);
                 }
             }
             m_firstFrame = false;

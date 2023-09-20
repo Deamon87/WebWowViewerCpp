@@ -20,13 +20,16 @@ public:
                           const std::vector<HGSamplableTexture> &inputColorTextures,
                           const std::shared_ptr<GRenderPassVLK> &finalRenderPass);
 
-    void doPass(CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd,
-                const std::shared_ptr<GRenderPassVLK> &finalRenderPass,
-                ViewPortDimensions &viewPortDimensions);
+    void doPass(CmdBufRecorder &frameBufCmd);
+
+    void doFinalPass(CmdBufRecorder &finalBufCmds);
 
 private:
     static constexpr int GAUSS_PASS_COUNT = 3;
     HGDeviceVLK m_device;
+
+    unsigned int m_width = 0;
+    unsigned int m_height = 0;
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
     HGVertexBufferBindings m_drawQuadVao = nullptr;

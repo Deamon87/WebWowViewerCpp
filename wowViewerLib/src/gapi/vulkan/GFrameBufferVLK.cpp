@@ -108,6 +108,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  const std::vector<ITextureFormat> &textureAttachments,
                                  ITextureFormat depthAttachment,
                                  int multiSampleCnt,
+                                 bool invertZ,
                                  int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)),
                                                           m_height(height), m_width(width),
                                                           m_multiSampleCnt(multiSampleCnt){
@@ -190,7 +191,6 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
         attachments.push_back(h_depthTexture->texture.view);
     }
 
-    bool invertZ = true;
     m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, sampleCountToVkSampleCountFlagBits(multiSampleCnt), invertZ, false);
 
     VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
@@ -326,7 +326,7 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
                 1, &imageMemoryBarrier);
         }
 
-        // If source and destination support blit we'll blit as this also does automatic format conversion (e.g. from BGR to RGB)
+        // If source and destination support blit we'll blit as this also does automatic formt conversion (e.g. from BGR to RGB)a
         if (supportsBlit)
         {
             // Define the region to blit (we will blit the whole swapchain image)
