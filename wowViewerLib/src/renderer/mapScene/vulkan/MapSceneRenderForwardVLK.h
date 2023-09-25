@@ -96,6 +96,13 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
+
+//--------------------------------------
+// RenderView
+//--------------------------------------
+
+    std::shared_ptr<IRenderView> createRenderView(int width, int height) override;
+
 private:
     HGDeviceVLK m_device;
 
@@ -141,9 +148,11 @@ private:
     std::shared_ptr<GStagingRingBuffer> m_stagingRingBuffer;
 
 private:
-    class RenderView {
+    class RenderViewForwardVLK : public IRenderView {
     public:
-        RenderView(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO);
+        RenderViewForwardVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO);
+        ~RenderViewForwardVLK() override = default;
+
         void update(int width, int height, float glow);
 
         RenderPassHelper beginPass(CmdBufRecorder &frameBufCmd, const std::shared_ptr<GRenderPassVLK> &renderPass,
@@ -163,7 +172,7 @@ private:
         void createFrameBuffers();
     };
 
-    std::unique_ptr<RenderView> defaultView;
+    std::shared_ptr<RenderViewForwardVLK> defaultView;
 };
 
 class IM2ModelDataVLK : public IM2ModelData {

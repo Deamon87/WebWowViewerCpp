@@ -87,12 +87,6 @@ if (EMSCRIPTEN)
 endif ()
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
-option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
-
-if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DCULLED_NO_PORTAL_DRAWING")
-endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
-
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
@@ -562,13 +556,18 @@ if (LINK_VULKAN)
             src/gapi/vulkan/context/vulkan_context.h
             src/gapi/vulkan/shaders/ShaderConfig.h
             src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.cpp
-            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h src/gapi/vulkan/GDescriptorSetUpdater.cpp src/gapi/vulkan/GDescriptorSetUpdater.h src/gapi/vulkan/commandBuffer/CommandBufferThread.cpp src/gapi/vulkan/commandBuffer/CommandBufferThread.h
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h
+            src/gapi/vulkan/GDescriptorSetUpdater.cpp
+            src/gapi/vulkan/GDescriptorSetUpdater.h
+            src/gapi/vulkan/commandBuffer/CommandBufferThread.cpp
+            src/gapi/vulkan/commandBuffer/CommandBufferThread.h
             src/gapi/vulkan/buffers/GStagingRingBuffer.cpp
             src/gapi/vulkan/buffers/GStagingRingBuffer.h
             src/gapi/vulkan/buffers/gpu/BufferStagingVLK.cpp
             src/gapi/vulkan/buffers/gpu/BufferStagingVLK.h
             src/gapi/vulkan/buffers/gpu/BufferGpuVLK.cpp
-            src/gapi/vulkan/buffers/gpu/BufferGpuVLK.h)
+            src/gapi/vulkan/buffers/gpu/BufferGpuVLK.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
@@ -612,7 +611,7 @@ if (LINK_VULKAN)
             #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c )
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
     endif()
 
 

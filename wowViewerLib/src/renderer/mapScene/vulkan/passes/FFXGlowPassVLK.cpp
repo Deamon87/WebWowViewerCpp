@@ -7,6 +7,7 @@
 #include "../../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
 #include "../../../../gapi/vulkan/GVertexBufferBindingsVLK.h"
 #include "../../../frame/FrameProfile.h"
+#include "../../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
 
 
 FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device), m_drawQuadVao(quadVAO) {

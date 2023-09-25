@@ -8,7 +8,9 @@
 #include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/CBufferChunkVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/MaterialBuilderVLK.h"
+
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) : FrontendUIRenderer(
     hDevice), m_device(hDevice) {
@@ -77,7 +79,7 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture 
 }
 
 HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
-    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
+    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }
 
 std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(

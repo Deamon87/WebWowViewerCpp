@@ -47,19 +47,23 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
     auto candidatesArr = this->m2List.getCandidates();
     auto candCullRes = std::vector<uint32_t>(candidatesArr.size(), 0xFFFFFFFF);
 
-    oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 1000),
-                      [&](tbb::blocked_range<size_t> r) {
-//for (int i = 0; i < candidatesArr.size(); i++) {
+    oneapi::tbb::task_arena arena(oneapi::tbb::task_arena::automatic, 3);
+    arena.execute([&] {
+
+        oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 1000),
+                          [&](tbb::blocked_range<size_t> r) {
+    //for (int i = 0; i < candidatesArr.size(); i++) {
 #if (__AVX__ && __SSE2__)
-        ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(this->frustumData, r.begin(),
-                                                                       r.end(), candidatesArr,
-                                                                       candCullRes);
+            ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(this->frustumData, r.begin(),
+                                                                           r.end(), candidatesArr,
+                                                                           candCullRes);
 #else
-        ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
-                                                          r.begin(), r.end(), candidatesArr,
-                                                          candCullRes);
+            ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
+                                                              r.begin(), r.end(), candidatesArr,
+                                                              candCullRes);
 #endif
-    }, tbb::auto_partitioner());
+        }, tbb::auto_partitioner());
+    });
 
     for (int i = 0; i < candCullRes.size(); i++) {
         if (!candCullRes[i]) {

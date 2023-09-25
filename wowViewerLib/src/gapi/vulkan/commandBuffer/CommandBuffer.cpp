@@ -32,31 +32,31 @@ CmdBufRecorder GCommandBuffer::beginRecord(const std::shared_ptr<GRenderPassVLK>
 
 void GCommandBuffer::createCommandBufVLK() {
     if (m_cmdBufWasCreated) {
-        //Dispose of previous buffer
-        auto l_cmdBuf = m_cmdBuffer;
+//        //Dispose of previous buffer
+//        auto l_cmdBuf = m_cmdBuffer;
+//
+//        auto l_deviceVlk = m_device.getVkDevice();
+//        auto l_commandPool = m_commandPool;
+//        auto l_tracyContext = tracyContext;
+//
+//        m_device.addDeallocationRecord([l_cmdBuf, l_deviceVlk, l_tracyContext, l_commandPool]() -> void {
+//#ifdef LINK_TRACY
+//            TracyVkCollect(l_tracyContext, l_cmdBuf);
+//#endif
+//            vkFreeCommandBuffers(l_deviceVlk, l_commandPool, 1, &l_cmdBuf);
+//        });
+        vkResetCommandBuffer(m_cmdBuffer, 0);
+    } else {
 
-        auto l_deviceVlk = m_device.getVkDevice();
-        auto l_commandPool = m_commandPool;
-        auto l_tracyContext = tracyContext;
+        VkCommandBufferAllocateInfo allocInfo = {};
+        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        allocInfo.commandPool = m_commandPool;
+        allocInfo.level = m_isPrimary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
+        allocInfo.commandBufferCount = 1;
 
-        m_device.addDeallocationRecord([l_cmdBuf, l_deviceVlk, l_tracyContext, l_commandPool]() -> void {
-#ifdef LINK_TRACY
-            TracyVkCollect(l_tracyContext, l_cmdBuf);
-#endif
-            vkFreeCommandBuffers(l_deviceVlk, l_commandPool, 1, &l_cmdBuf);
-        });
-
-
-    }
-
-    VkCommandBufferAllocateInfo allocInfo = {};
-    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-    allocInfo.commandPool = m_commandPool;
-    allocInfo.level = m_isPrimary ? VK_COMMAND_BUFFER_LEVEL_PRIMARY : VK_COMMAND_BUFFER_LEVEL_SECONDARY;
-    allocInfo.commandBufferCount = 1;
-
-    if (vkAllocateCommandBuffers(m_device.getVkDevice(), &allocInfo, &m_cmdBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to allocate command buffers!");
+        if (vkAllocateCommandBuffers(m_device.getVkDevice(), &allocInfo, &m_cmdBuffer) != VK_SUCCESS) {
+            throw std::runtime_error("failed to allocate command buffers!");
+        }
     }
 
     if (!m_cmdBufWasCreated) {

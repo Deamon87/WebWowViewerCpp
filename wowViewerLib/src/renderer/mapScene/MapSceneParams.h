@@ -9,11 +9,22 @@
 #include "../../engine/CameraMatrices.h"
 #include "../../engine/objects/iScene.h"
 
+class IRenderView {
+public:
+    virtual ~IRenderView() = default;
+};
+
 struct MapSceneParams {
     std::shared_ptr<IScene> scene;
     HCameraMatrices matricesForCulling;
-    HCameraMatrices cameraMatricesForRendering;
-    HCameraMatrices cameraMatricesForDebugCamera;
+
+    struct RenderTuple {
+        HCameraMatrices cameraMatricesForRendering = nullptr;
+        std::shared_ptr<IRenderView> target = nullptr;
+        ViewPortDimensions viewPortDimensions = {{0,0}, {64, 64}};
+        bool clearTarget = false;
+    };
+    std::vector<RenderTuple> renderTargets;
 
     mathfu::vec4 clearColor;
 };

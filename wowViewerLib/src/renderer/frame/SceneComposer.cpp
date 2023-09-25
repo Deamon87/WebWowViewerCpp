@@ -6,6 +6,7 @@
 #include <future>
 #include "SceneComposer.h"
 #include "FrameProfile.h"
+#include "tbb/tbb.h"
 
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
@@ -40,6 +41,9 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         });
 
         cullingThread = std::thread(([&]() {
+//            tbb::global_control global_limit(oneapi::tbb::global_control::max_allowed_parallelism,
+//                                             2*apiContainer->getConfig()->hardwareThreadCount());
+
             using namespace std::chrono_literals;
             setThreadName("Culling");
 
@@ -59,6 +63,9 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
         }));
 
         updateThread = std::thread(([&]() {
+//            tbb::global_control global_limit(oneapi::tbb::global_control::max_allowed_parallelism,
+//                                             apiContainer->getConfig()->hardwareThreadCount());
+
             using namespace std::chrono_literals;
             setThreadName("Update");
 

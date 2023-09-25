@@ -16,13 +16,9 @@ struct ViewPortDimensions{
 template<typename PlanParameters>
 struct FrameInputParams {
     std::shared_ptr<PlanParameters> frameParameters;
-    std::shared_ptr<PlanParameters> screenShotParameters;
 
     //Time advance
     animTime_t delta = 0;
-
-    //Parameters for framebuffer
-    ViewPortDimensions viewPortDimensions = {{0,0}, {64, 64}};
 };
 
 #endif //AWEBWOWVIEWERCPP_FRAMEINPUTPARAMS_H

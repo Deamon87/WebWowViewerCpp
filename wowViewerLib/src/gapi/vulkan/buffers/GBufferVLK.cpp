@@ -102,18 +102,19 @@ void GBufferVLK::uploadData(const void *data, int length) {
 }
 
 void *GBufferVLK::allocatePtr(int offset, int length) {
-//    std::unique_lock<std::mutex> lock(m_mutex);
-
     VkBuffer staging;
     int stage_offset;
     auto *ptr = m_ringBuff->allocateNext(length, staging, stage_offset);
 
     auto frameIndex = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
-    uploadRegionsPerStaging[frameIndex][staging].push_back({
-        .srcOffset = static_cast<VkDeviceSize>(stage_offset),
-        .dstOffset = static_cast<VkDeviceSize>(offset),
-        .size = static_cast<VkDeviceSize>(length)
-    });
+    {
+//        std::unique_lock<std::mutex> lock(m_mutex);
+        uploadRegionsPerStaging[frameIndex][staging].push_back({
+           .srcOffset = static_cast<VkDeviceSize>(stage_offset),
+           .dstOffset = static_cast<VkDeviceSize>(offset),
+           .size = static_cast<VkDeviceSize>(length)
+       });
+    }
 
     return ptr;
 }
@@ -273,7 +274,7 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
                 uploadData.src = stagingRecord.first;
                 uploadData.dst = m_gpuBuffer->getBuffer();
 
-                uploadData.copyRegions = intervals;
+                uploadData.copyRegions = std::vector<VkBufferCopy>(intervals.begin(), intervals.end());
             }
         }
         stagingRecords.clear();

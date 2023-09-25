@@ -176,6 +176,10 @@ private:
     int lastHeight = 100;
 
     bool needToMakeScreenshot = false;
+    std::shared_ptr<IRenderView> m_screenShotRenderView = nullptr;
+    std::shared_ptr<IRenderView> m_debugRenderView = nullptr;
+
+
     std::string screenshotFilename = "";
     HFrameBuffer screenshotFramebuffer = nullptr;
     int screenShotWidth = 100;

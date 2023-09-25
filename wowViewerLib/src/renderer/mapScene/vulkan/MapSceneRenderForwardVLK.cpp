@@ -14,6 +14,7 @@
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVLK.h"
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h"
 #include "../../frame/FrameProfile.h"
+#include "../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
 #include <future>
 
 static const ShaderConfig forwardShaderConfig = {
@@ -96,7 +97,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
                                           sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
                                           true, false);
 
-    defaultView = std::make_unique<RenderView>(m_device, uboBuffer, m_drawQuadVao);
+    defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao);
 
     sceneWideChunk = std::make_shared<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>>(hDevice, 3, uboBuffer);
     MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig)
@@ -546,7 +547,7 @@ inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGM
     cmdBuf.bindIndexBuffer(vulkanBindings->getIndexBuffer());
 
     //3. Bind pipeline
-    auto material = meshVlk->material();
+    const auto &material = meshVlk->material();
     cmdBuf.bindPipeline(material->getPipeline());
 
     //4. Bind Descriptor sets
@@ -583,11 +584,17 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     auto l_this = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
     auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
 
-    defaultView->update(
-        frameInputParams->viewPortDimensions.maxs[0],
-        frameInputParams->viewPortDimensions.maxs[1],
-        framePlan->frameDependentData->currentGlow
-    );
+    for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
+        auto updatingTarget = std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
+        if (!updatingTarget) updatingTarget = defaultView;
+
+        updatingTarget->update(
+            renderTarget.viewPortDimensions.maxs[0],
+            renderTarget.viewPortDimensions.maxs[1],
+            framePlan->frameDependentData->currentGlow
+        );
+    }
+
 
     //Create meshes
     auto opaqueMeshes = std::make_shared<std::vector<HGMesh>>();
@@ -705,8 +712,10 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             {
                 ZoneScopedN("submit opaque");
                 VkZone(frameBufCmd, "render opaque")
-                for (auto const &mesh: *opaqueMeshes) {
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
+                auto const &pOpaqueMeshes = *opaqueMeshes;
+                auto const pOpaqueMeshesSize = pOpaqueMeshes.size();
+                for (int i = 0; i < pOpaqueMeshesSize; i++) {
+                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, pOpaqueMeshes[i], CmdBufRecorder::ViewportType::vp_usual);
                 }
             }
             {
@@ -731,7 +740,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
 //
 //                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
-                    
+
                     MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                 }
                 if (renderSky && skyMesh0x4)
@@ -778,11 +787,11 @@ std::shared_ptr<MapRenderPlan> MapSceneRenderForwardVLK::getLastCreatedPlan() {
 }
 
 HGMesh MapSceneRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
-    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material));
+    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }
 
 HGSortableMesh MapSceneRenderForwardVLK::createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
-    auto mesh = std::make_shared<GSortableMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane);
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
     return mesh;
 }
 
@@ -790,27 +799,31 @@ HGM2Mesh
 MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
                                        int layer, int priorityPlane) {
 
-    auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     return mesh;
 }
 HGM2Mesh MapSceneRenderForwardVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,
                                                          const std::shared_ptr<IM2WaterFallMaterial> &material,
                                                          int layer, int priorityPlane) {
-    auto mesh = std::make_shared<GM2MeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     return mesh;
 }
 
+std::shared_ptr<IRenderView> MapSceneRenderForwardVLK::createRenderView(int width, int height) {
+    return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao);
+}
+
 /*
- * RenderView
+ * RenderViewForwardVLK
  */
 
-MapSceneRenderForwardVLK::RenderView::RenderView(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device) {
+MapSceneRenderForwardVLK::RenderViewForwardVLK::RenderViewForwardVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
 
     createFrameBuffers();
 }
 
-void MapSceneRenderForwardVLK::RenderView::createFrameBuffers() {
+void MapSceneRenderForwardVLK::RenderViewForwardVLK::createFrameBuffers() {
     {
         auto const dataFormat = {ITextureFormat::itRGBA};
 
@@ -827,7 +840,7 @@ void MapSceneRenderForwardVLK::RenderView::createFrameBuffers() {
     }
 }
 
-void MapSceneRenderForwardVLK::RenderView::update(int width, int height, float glow) {
+void MapSceneRenderForwardVLK::RenderViewForwardVLK::update(int width, int height, float glow) {
     if (width != m_width || height != m_height) {
         m_width = width;
         m_height = height;
@@ -848,7 +861,7 @@ void MapSceneRenderForwardVLK::RenderView::update(int width, int height, float g
     glowPass->assignFFXGlowUBOConsts(glow);
 }
 
-RenderPassHelper MapSceneRenderForwardVLK::RenderView::beginPass(CmdBufRecorder &frameBufCmd,
+RenderPassHelper MapSceneRenderForwardVLK::RenderViewForwardVLK::beginPass(CmdBufRecorder &frameBufCmd,
                                                                  const std::shared_ptr<GRenderPassVLK> &renderPass,
                                                                  bool willExecuteSecondaryBuffs,
                                                                  mathfu::vec4 &clearColor) {
@@ -861,10 +874,10 @@ RenderPassHelper MapSceneRenderForwardVLK::RenderView::beginPass(CmdBufRecorder 
                                        true);
 }
 
-void MapSceneRenderForwardVLK::RenderView::doPostGlow(CmdBufRecorder &frameBufCmd) {
+void MapSceneRenderForwardVLK::RenderViewForwardVLK::doPostGlow(CmdBufRecorder &frameBufCmd) {
     glowPass->doPass(frameBufCmd);
 }
 
-void MapSceneRenderForwardVLK::RenderView::doPostFinal(CmdBufRecorder &bufCmd) {
+void MapSceneRenderForwardVLK::RenderViewForwardVLK::doPostFinal(CmdBufRecorder &bufCmd) {
     glowPass->doFinalPass(bufCmd);
 }

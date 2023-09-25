@@ -13,7 +13,7 @@ namespace ImGuiFramePlan {
 
     class ImGUIParam {
     public:
-        explicit ImGUIParam(ImDrawData *imData) {
+        explicit ImGUIParam(ImDrawData *imData, const ViewPortDimensions &dimensions) : m_dimensions(dimensions) {
             //Do copy of imData into local copy
             if (imData != nullptr) {
                 m_imData = *imData;
@@ -38,8 +38,10 @@ namespace ImGuiFramePlan {
         }
 
         const ImDrawData * const getImData() { return &m_imData; };
+        const ViewPortDimensions & getDimensions() const { return m_dimensions; };
     private:
         ImDrawData m_imData;
+        ViewPortDimensions m_dimensions;
     };
 }
 

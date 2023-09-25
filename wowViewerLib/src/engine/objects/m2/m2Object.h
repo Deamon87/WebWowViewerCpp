@@ -439,6 +439,8 @@ public:
 
 
     void lock() {
+        drawnCanHaveDuplicates = true;
+
         getCandidates();
         getToLoadGeom();
         getToLoadMain();

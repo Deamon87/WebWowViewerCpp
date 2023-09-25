@@ -216,13 +216,13 @@ void GPipelineVLK::createPipeline(
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
-    std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+    static const std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
     VkPipelineDynamicStateCreateInfo dynamicState = {};
     dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
     dynamicState.pNext = NULL;
     dynamicState.pDynamicStates = dynamicStateEnables.data();
-    dynamicState.dynamicStateCount = 2;
+    dynamicState.dynamicStateCount = dynamicStateEnables.size();
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -245,4 +245,7 @@ void GPipelineVLK::createPipeline(
                                   &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
+
+    auto combinedName = shaderVLK->getShaderCombinedName();
+    m_device.setObjectName(reinterpret_cast<uint64_t>(graphicsPipeline), VK_OBJECT_TYPE_PIPELINE, combinedName.c_str());
 }

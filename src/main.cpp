@@ -453,6 +453,8 @@ int main(){
     uiScale = 1.0;
     frontendUI->setUIScale(uiScale);
 
+//    auto native_me = std::this_thread::get_id().native_handle();
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
@@ -466,6 +468,8 @@ int main(){
         glfwGetFramebufferSize(window, &canvWidth, &canvHeight);
     }
     glfwSwapInterval(0);
+    tbb::global_control global_limit(oneapi::tbb::global_control::max_allowed_parallelism,
+                                     2*apiContainer->getConfig()->hardwareThreadCount());
 
 //try {
     while (!glfwWindowShouldClose(window)) {

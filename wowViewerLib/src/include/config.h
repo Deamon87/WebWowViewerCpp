@@ -36,7 +36,7 @@ enum class EFreeStrategy : char {
 class Config {
 public:
     Config() {
-        m_hardwareThreadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
+        m_hardwareThreadCount = std::max<int>((int)std::thread::hardware_concurrency()-3, 1);
     }
 
 public:

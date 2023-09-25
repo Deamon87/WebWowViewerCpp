@@ -107,9 +107,11 @@ public:
                               bool isVulkan,
                               animTime_t sceneTime);
 
+    virtual std::shared_ptr<IRenderView> createRenderView(int width, int height) = 0;
 private:
     Config *m_config;
 };
+
 
 //typedef FrameInputParams<MapRenderPlan, void> MapSceneRendererInputParams;
 typedef FrameInputParams<MapSceneParams> MapSceneRendererInputParams;

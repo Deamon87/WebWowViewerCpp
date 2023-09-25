@@ -22,6 +22,7 @@
 #define ZoneScopedN(a)
 #define TracyVkContext(x,y,z,w)
 #define TracyMessageStr(a)
+#define VkZone(a, b)
 
 #endif
 

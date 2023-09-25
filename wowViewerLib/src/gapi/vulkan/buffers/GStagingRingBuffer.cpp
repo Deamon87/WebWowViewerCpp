@@ -10,31 +10,38 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
 
     int startOffset = 0;
     int bufferIndex = 0;
-    uint32_t &currentOffset = offsets[frame];
+    auto &currentOffset = offsets[frame];
 
     if (size > STAGE_BUFFER_SIZE)
         throw std::runtime_error(("size > STAGE_BUFFER_SIZE; size = " + std::to_string(size)));
 
-    {
-//        std::unique_lock l(m_mutex);
-        int currentIndex = ( currentOffset ) / STAGE_BUFFER_SIZE;
-        int currentIndexAfter = (currentOffset + size) / STAGE_BUFFER_SIZE;
 
-        if (currentIndex != currentIndexAfter)
-            currentOffset = currentIndexAfter * STAGE_BUFFER_SIZE;
+        int currentIndex = 0;
+        int currentIndexAfter = 0;
+        uint64_t offset = 0;
+        do {
+            offset = atomic_fetch_add(&currentOffset, size);
 
-        startOffset = currentOffset % STAGE_BUFFER_SIZE;
-        bufferIndex = currentIndexAfter;
+            currentIndex = ( offset ) / STAGE_BUFFER_SIZE;
+            currentIndexAfter = (offset + size) / STAGE_BUFFER_SIZE;
 
-        if (currentIndexAfter >= vec.size()) {
-            vec.emplace_back().staging = std::make_shared<BufferStagingVLK>(m_device, STAGE_BUFFER_SIZE);
-        }
+            if (currentIndexAfter >= vec.size()) {
+                std::unique_lock l(m_mutex);
+                while (currentIndexAfter >= vec.size()) {
+                    vec.emplace_back().staging = std::make_shared<BufferStagingVLK>(m_device, STAGE_BUFFER_SIZE);
+                }
+            }
 
-        currentOffset += size;
-    }
+        } while(currentIndex != currentIndexAfter);
+
+    bufferIndex = currentIndex;
+    startOffset = offset % STAGE_BUFFER_SIZE;
 
     auto &staging = vec[bufferIndex];
     auto allocatedPtr = ((uint8_t *)staging.cpuBuffer.data()) + startOffset;
+    if ((startOffset + size) > staging.cpuBuffer.size()) {
+        size++;
+    }
     o_staging = staging.staging->getBuffer();
     o_offset = startOffset;
 
@@ -45,7 +52,7 @@ void GStagingRingBuffer::flushBuffers() {
     auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
-    uint32_t &currentOffset = offsets[frame];
+    uint64_t currentOffset = offsets[frame];
 
     uint32_t maxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;
 
@@ -59,7 +66,7 @@ void GStagingRingBuffer::flushBuffers() {
     }
 
     uint32_t prevMaxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;
-    currentOffset = 0;
+    offsets[frame] = 0;
 
     vec.resize(std::min<int>(prevMaxIndex+1, vec.size()));
 }

@@ -75,34 +75,6 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     );
 }
 
-void CmdBufRecorder::bindDescriptorSet(VkPipelineBindPoint bindPoint, uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet) {
-    //TODO: bindpoints: VK_PIPELINE_BIND_POINT_GRAPHICS and others
-    //Which leads to three separate states for:
-    // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
-    // Also, implement "Pipeline Layout Compatibility" thing from spec
-
-//    if (m_currentDescriptorSet[bindIndex] == descriptorSet) return;
-
-    auto pDescriptorSet = descriptorSet.get();
-
-    if (m_currentDescriptorSet[bindIndex] != pDescriptorSet) {
-        auto vkDescSet = pDescriptorSet->getDescSet();
-        constexpr uint32_t vkDescCnt = 1;
-
-
-        std::array<uint32_t, 16> dynamicOffsets;
-        uint32_t dynamicOffsetsSize;
-        pDescriptorSet->getDynamicOffsets(dynamicOffsets, dynamicOffsetsSize);
-
-        vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, bindPoint,
-                                m_currentPipeline->getLayout(),
-                                bindIndex,
-                                vkDescCnt, &vkDescSet,
-                                dynamicOffsetsSize, dynamicOffsetsSize > 0 ? dynamicOffsets.data() : nullptr);
-
-        m_currentDescriptorSet[bindIndex] = pDescriptorSet;
-    }
-}
 
 CommandBufferDebugLabel CmdBufRecorder::beginDebugLabel(const std::string &labelName, const std::array<float, 4> &colors) {
     return CommandBufferDebugLabel(
@@ -159,13 +131,7 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
     vkCmdBindVertexBuffers(m_gCmdBuffer.m_cmdBuffer, firstBinding, bindingCount, vbos.data(), offsets.data());
 }
 
-void CmdBufRecorder::bindPipeline(const std::shared_ptr<GPipelineVLK> &pipeline) {
-    if (m_currentPipeline == pipeline) return;
 
-    vkCmdBindPipeline(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipeline());
-
-    m_currentPipeline = pipeline;
-}
 
 void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance) {
     vkCmdDrawIndexed(m_gCmdBuffer.m_cmdBuffer,
@@ -216,7 +182,7 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
     if (submitRecords.get().empty())
         return;
 
-    auto &submits = submitRecords.get();
+    const auto &submits = submitRecords.get();
     for (int i = 0; i < submits.size(); i++) {
         auto &submit = submits[i];
         if (submit.needsBarrier && !submit.copyRegions.empty()) {

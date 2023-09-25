@@ -7,6 +7,7 @@
 
 #include <memory>
 #include <atomic>
+#include "tbb/tbb.h"
 
 class GDeviceVLK;
 typedef std::shared_ptr<GDeviceVLK> HGDeviceVLK;
@@ -74,7 +75,7 @@ private:
     int m_alignment;
 
     //Buffers
-    std::array<std::unordered_map<VkBuffer, std::vector<VkBufferCopy>>, IDevice::MAX_FRAMES_IN_FLIGHT> uploadRegionsPerStaging;
+    std::array<tbb::concurrent_unordered_map<VkBuffer, tbb::concurrent_vector<VkBufferCopy>>, IDevice::MAX_FRAMES_IN_FLIGHT> uploadRegionsPerStaging;
     std::mutex dataToBeUploadedMtx;
     std::vector<VulkanCopyCommands> dataToBeUploaded;
 

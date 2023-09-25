@@ -7,7 +7,7 @@
 
 #include "IMesh.h"
 
-class ISortableMesh : virtual public IMesh {
+class ISortableMesh : public IMesh {
     friend class IDevice;
 protected:
     float m_sortDistance = 0;

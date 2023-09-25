@@ -7,7 +7,7 @@
 
 #include "ISortableMesh.h"
 
-class IM2Mesh : virtual public ISortableMesh {
+class IM2Mesh : public ISortableMesh {
 protected:
     int m_layer = 0;
 public:

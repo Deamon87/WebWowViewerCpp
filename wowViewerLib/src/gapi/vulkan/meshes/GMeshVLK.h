@@ -11,18 +11,20 @@
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../materials/ISimpleMaterialVLK.h"
 
-class GMeshVLK : virtual public IMesh {
+class GMeshVLK : public IM2Mesh {
     friend class GDeviceVLK;
 public:
     explicit GMeshVLK(const gMeshTemplate &meshTemplate,
-                      const HMaterialVLK &material);
+                      const HMaterialVLK &material, int layer, int priority);
 
 public:
     ~GMeshVLK() override;
 
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
-
+    EGxBlendEnum getGxBlendMode() override {
+        return material()->getBlendMode();
+    }
 public:
     auto material() const -> const HMaterialVLK& { return m_material; }
     auto scissorOffset() const -> const  std::array<int, 2>& { return m_scissorOffset; }

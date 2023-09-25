@@ -4,7 +4,3 @@
 
 #include "GSortableMeshVLK.h"
 
-GSortableMeshVLK::GSortableMeshVLK(const gMeshTemplate &meshTemplate, const HMaterialVLK &material,
-                                   int priorityPlane) : GMeshVLK(meshTemplate, material), ISortableMesh(priorityPlane) {
-
-}

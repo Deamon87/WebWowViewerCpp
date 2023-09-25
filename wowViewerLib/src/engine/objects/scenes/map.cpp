@@ -331,7 +331,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     mathfu::mat4 &frustumMat = frameInputParams.frameParameters->matricesForCulling->perspectiveMat;
     mathfu::mat4 &lookAtMat4 = frameInputParams.frameParameters->matricesForCulling->lookAtMat;
 
-    mapRenderPlan->renderingMatrices = frameInputParams.frameParameters->cameraMatricesForRendering;
+    mapRenderPlan->renderingMatrices = frameInputParams.frameParameters->renderTargets[0].cameraMatricesForRendering;
     mapRenderPlan->deltaTime = frameInputParams.delta;
 
     size_t adtRenderedThisFramePrev = mapRenderPlan->adtArray.size();
@@ -1097,25 +1097,29 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         if (candidates.size() > 0) {
             results = std::vector<uint32_t>(candidates.size(), 0xFFFFFFFF);
 
-            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 2000),
-                                      [&](tbb::blocked_range<size_t> &r) {
-//            for (size_t i = r.begin(); i != r.end(); ++i) {
-//                auto &m2ObjectCandidate = tmpVector[i];
-//                if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
-//                    exteriorView->drawnM2s.insert(m2ObjectCandidate);
-//                    cullStage->m2Array.insert(m2ObjectCandidate);
-//                }
+            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+            arena.execute([&] {
+
+                oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 2000),
+                                          [&](tbb::blocked_range<size_t> &r) {
+    //            for (size_t i = r.begin(); i != r.end(); ++i) {
+    //                auto &m2ObjectCandidate = tmpVector[i];
+    //                if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
+    //                    exteriorView->drawnM2s.insert(m2ObjectCandidate);
+    //                    cullStage->m2Array.insert(m2ObjectCandidate);
+    //                }
 #if (__AVX__ && __SSE2__)
-                  ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(frustumData,
-                                                                    r.begin(), r.end(), candidates,
-                                                                    results);
+                      ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(frustumData,
+                                                                        r.begin(), r.end(), candidates,
+                                                                        results);
 #else
-                  ObjectCulling<std::shared_ptr<M2Object>>::cull(frustumData,
-                                                                 r.begin(), r.end(), candidates,
-                                                                 results);
+                      ObjectCulling<std::shared_ptr<M2Object>>::cull(frustumData,
+                                                                     r.begin(), r.end(), candidates,
+                                                                     results);
 #endif
-//            }
-            }, tbb::auto_partitioner());
+    //            }
+                }, tbb::auto_partitioner());
+            });
         }
 
         for (int i = 0; i < candidates.size(); i++) {
@@ -1442,13 +1446,17 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         if (granSize == 0) granSize = m2ToDraw.size();
 
         if (granSize > 0) {
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-                              [&](tbb::blocked_range<size_t> r) {
-                                  for (size_t i = r.begin(); i != r.end(); ++i) {
-                                      auto &m2Object = m2ToDraw[i];
-                                      m2Object->update(deltaTime, cameraVec3, lookAtMat);
-                                  }
-                              }, tbb::simple_partitioner());
+            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+            arena.execute([&] {
+                tbb::affinity_partitioner ap;
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                                  [&](tbb::blocked_range<size_t> r) {
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+                                          auto &m2Object = m2ToDraw[i];
+                                          m2Object->update(deltaTime, cameraVec3, lookAtMat);
+                                      }
+                                  }, ap);
+            });
         }
 
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
@@ -1490,15 +1498,20 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
 
     //2. Calc distance every 100 ms
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
-          [&](tbb::blocked_range<size_t> r) {
-              for (size_t i = r.begin(); i != r.end(); ++i) {
-                  auto &m2Object = m2ToDraw[i];
-                  if (m2Object == nullptr) continue;
-                  m2Object->calcDistance(cameraVec3);
-              }
-          }, tbb::auto_partitioner()
-    );
+    {
+        oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+        arena.execute([&] {
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
+                              [&](tbb::blocked_range<size_t> r) {
+                                  for (size_t i = r.begin(); i != r.end(); ++i) {
+                                      auto &m2Object = m2ToDraw[i];
+                                      if (m2Object == nullptr) continue;
+                                      m2Object->calcDistance(cameraVec3);
+                                  }
+                              }, tbb::auto_partitioner()
+            );
+        });
+    }
 
     //Cleanup ADT every 10 seconds
      if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
@@ -1571,28 +1584,32 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         }
 
 
-        //if (granSize > 0) {
-        //    auto l_device = m_api->hDevice;
-        //    auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
-        //    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-        //    [&](tbb::blocked_range<size_t> r) {
-        //        l_device->setCurrentProcessingFrameNumber(processingFrame);
-        //        for (size_t i = r.begin(); i != r.end(); ++i) {
-        //            auto &m2Object = m2ToDraw[i];
-        //            if (m2Object != nullptr) {
-        //                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-        //                                               renderPlan->frameDependentData);
-        //            }
-        //        }
-        //    }, tbb::simple_partitioner());
-        //}
-
-        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
-            if (m2Object != nullptr) {
-                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                                 renderPlan->frameDependentData);
-            }
+        if (granSize > 0) {
+            auto l_device = m_api->hDevice;
+            auto processingFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+            arena.execute([&] {
+                tbb::affinity_partitioner ap;
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                                  [&](tbb::blocked_range<size_t> r) {
+                                      l_device->setCurrentProcessingFrameNumber(processingFrame);
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+                                          auto &m2Object = m2ToDraw[i];
+                                          if (m2Object != nullptr) {
+                                              m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                                               renderPlan->frameDependentData);
+                                          }
+                                      }
+                                  }, ap);
+            });
         }
+
+//        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+//            if (m2Object != nullptr) {
+//                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+//                                                 renderPlan->frameDependentData);
+//            }
+//        }
     }
     {
         ZoneScopedN("m2SkyboxBuffersUpdate");

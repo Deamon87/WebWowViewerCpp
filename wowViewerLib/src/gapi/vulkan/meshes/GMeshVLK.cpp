@@ -10,8 +10,9 @@
 #include "../GPipelineVLK.h"
 
 GMeshVLK::GMeshVLK(const gMeshTemplate &meshTemplate,
-                   const HMaterialVLK &material
-) : m_meshType(meshTemplate.meshType), m_material(material) {
+                   const HMaterialVLK &material, int layer, int priority) :
+                   IM2Mesh(layer, priority), m_meshType(meshTemplate.meshType),
+                                                   m_material(material) {
 
     m_bindings = meshTemplate.bindings;
 

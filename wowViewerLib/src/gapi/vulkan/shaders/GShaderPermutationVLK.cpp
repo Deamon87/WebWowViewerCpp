@@ -200,6 +200,9 @@ void GShaderPermutationVLK::createPipelineLayout() {
     if (vkCreatePipelineLayout(m_device->getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
+
+    auto combinedName = this->getShaderCombinedName();
+    m_device->setObjectName(reinterpret_cast<uint64_t>(pipelineLayout), VK_OBJECT_TYPE_PIPELINE_LAYOUT, combinedName.c_str());
 }
 
 const std::shared_ptr<GDescriptorSetLayout>

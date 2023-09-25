@@ -29,7 +29,26 @@ public:
     const std::shared_ptr<GDescriptorSetLayout> &getDescSetLayout() const { return m_hDescriptorSetLayout;};
 
     VkDescriptorSet getDescSet() const {return m_descriptorSet;}
-    void getDynamicOffsets(std::array<uint32_t,16> &dynamicOffsets, uint32_t &dynamicOffsetsSize);
+    inline void getDynamicOffsets(uint32_t *dynamicOffsets, uint32_t& dynamicOffsetsSize) {
+        const auto dynBufSize = m_dynamicBuffers.size();
+        dynamicOffsetsSize = dynBufSize;
+//
+//        auto pDynamicOffsets = dynamicOffsets.data();
+//
+//        assert(dynamicOffsetsSize <= 16);
+//        for (int i = 0; i < dynBufSize; i++) {
+//
+//            auto& descriptor = boundDescriptors[m_dynamicBufferIndexes[i]];
+//            assert(descriptor->descType == DescriptorRecord::DescriptorRecordType::UBODynamic);
+//
+//            pDynamicOffsets[i] = (descriptor->buffer->getOffset());
+//        }
+
+//        auto pDynamicOffsets = dynamicOffsets.data();
+        for (int i = 0; i < dynBufSize; i++) {
+            dynamicOffsets[i] = m_dynamicBuffers[i]->getOffset();
+        }
+    }
 
 
 
@@ -105,6 +124,7 @@ private:
 
     const std::shared_ptr<GDescriptorSetLayout> m_hDescriptorSetLayout;
     std::vector<int> m_dynamicBufferIndexes;
+    std::vector<IBufferVLK *> m_dynamicBuffers;
 
     bool m_firstUpdate = true;
 

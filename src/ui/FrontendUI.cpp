@@ -1635,11 +1635,15 @@ mathfu::mat4 getInfZMatrix(float f, float aspect) {
         0.0f, 0.0f, 1,  0.0f);
 }
 
+struct RenderTargetParameters {
+    std::shared_ptr<ICamera> camera;
+    ViewPortDimensions dimensions;
+    std::shared_ptr<IRenderView> target;
+};
+
 HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
-                                                     int width, int height,
                                                      float fov,
-                                                     bool produceDoubleCamera,
-                                                     bool swapDebugCamera,
+                                                     const std::vector<RenderTargetParameters> &renderTargetParams,
                                                      const std::shared_ptr<IScene> &currentScene) {
 
     auto result = std::make_shared<MapSceneParams>();
@@ -1651,32 +1655,28 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
     float nearPlane = 1.0;
     float fovR = toRadian(fov);
 
+    auto width = renderTargetParams[0].dimensions.maxs[0];
+    auto height = renderTargetParams[0].dimensions.maxs[1];
     float canvasAspect = (float)width / (float)height;
 
     result->matricesForCulling = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
-    result->cameraMatricesForRendering = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
-    result->cameraMatricesForDebugCamera = nullptr;
-
-    if (produceDoubleCamera && apiContainer.debugCamera != nullptr)
-        result->cameraMatricesForDebugCamera = apiContainer.debugCamera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneRendering);
 
 
-    //Frustum matrix with reversed Z
     bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    if (isInfZSupported)
-    {
+    auto assignInfiniteZ = [&](auto renderTarget) {
         float f = 1.0f / tan(fovR / 2.0f);
-        result->cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
-        if (result->cameraMatricesForDebugCamera != nullptr) {
-            result->cameraMatricesForDebugCamera->perspectiveMat = result->cameraMatricesForRendering->perspectiveMat;
-        }
+        renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
+    };
+
+    for (auto &targetParam : renderTargetParams) {
+        auto &renderTarget = result->renderTargets.emplace_back();
+        renderTarget.cameraMatricesForRendering = targetParam.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);;
+        renderTarget.viewPortDimensions = targetParam.dimensions;
+        renderTarget.target = targetParam.target;
+        if (isInfZSupported) assignInfiniteZ(renderTarget);
     }
 
     result->clearColor = apiContainer.getConfig()->clearColor;
-
-    if (result->cameraMatricesForDebugCamera && swapDebugCamera) {
-        std::swap(result->cameraMatricesForDebugCamera, result->cameraMatricesForRendering);
-    }
 
     return result;
 }
@@ -1701,49 +1701,73 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         if (m_sceneRenderer != nullptr) {
             auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
             wowSceneFrameInput->delta = deltaTime * (1000.0f);
-            wowSceneFrameInput->viewPortDimensions = dimension;
-            wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
-                                                                       canvWidth, canvHeight,
-                                                                       fov,
-                                                                       m_api->getConfig()->doubleCameraDebug,
-                                                                       m_api->getConfig()->swapMainAndDebug,
-                                                                       m_currentScene);
 
-            if (needToMakeScreenshot) {
-                wowSceneFrameInput->screenShotParameters = createMapSceneParams(*m_api,
-                                                                                screenShotWidth, screenShotHeight,
-                                                                                fov,
-                                                                           false,
-                                                                           false,
-                                                                           m_currentScene);
+            std::shared_ptr<IRenderView> target = nullptr;
+            std::shared_ptr<IRenderView> debugTarget = nullptr;
+            if (m_api->debugCamera && m_api->getConfig()->doubleCameraDebug) {
+                if (!m_debugRenderView) m_debugRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight);
+                debugTarget = m_debugRenderView;
+
+                if (m_api->getConfig()->swapMainAndDebug) {
+                    std::swap(target, debugTarget);
+                }
             }
-//    {
-//        HCullStage tempCullStage = nullptr;
-//        auto drawStage = createSceneDrawStage(sceneScenario, screenShotWidth, screenShotHeight, deltaTime, true,
-//                                              false, false, *m_api,
-//                                              currentScene,tempCullStage);
-//        if (drawStage != nullptr) {
-//            uiDependecies.push_back(drawStage);
-//            screenshotDS = drawStage;
-//            screenshotFrame = m_api->hDevice->getFrameNumber();
-//        }
-//        needToMakeScreenshot = false;
-//    }
 
+            std::vector<RenderTargetParameters> renderTargetParams = {
+                {
+                    .camera = m_api->camera,
+                    .dimensions = dimension,
+                    .target = target
+                }
+            };
+            if (m_api->getConfig()->doubleCameraDebug) {
+                auto &debugParams = renderTargetParams.emplace_back();
+                debugParams.camera = m_api->debugCamera;
+                debugParams.dimensions = dimension;
+                debugParams.target = debugTarget;
+            }
+
+            wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
+                                                                       fov,
+                                                                       renderTargetParams,
+                                                                       m_currentScene);
             scenario->cullFunctions.push_back(
                 m_sceneRenderer->createCullUpdateRenderChain(wowSceneFrameInput, processingFrame, updateFrameNumberLambda));
+
+            //----------------------
+            // Screenshot part
+            //----------------------
+
+            if (needToMakeScreenshot) {
+                auto screenShotRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight);
+                auto wowSceneScreenshotFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
+                wowSceneScreenshotFrameInput->delta = 0;
+
+                wowSceneScreenshotFrameInput->frameParameters = createMapSceneParams(
+                    *m_api,
+                    fov,
+                    {{
+                         .camera = m_api->camera,
+                         .dimensions = {
+                             {0, 0},
+                             {static_cast<unsigned int>(screenShotWidth), static_cast<unsigned int>(screenShotHeight)}
+                         },
+                         .target = screenShotRenderView
+                    }},
+                    m_currentScene
+                );
+                needToMakeScreenshot = false;
+            }
         }
 
         auto uiFrameInput = std::make_shared<FrameInputParams<ImGuiFramePlan::ImGUIParam>>();
         uiFrameInput->delta = deltaTime * (1000.0f);
-        uiFrameInput->viewPortDimensions = dimension;
-        uiFrameInput->frameParameters = std::make_shared<ImGuiFramePlan::ImGUIParam>( ImGui::GetDrawData());
+        uiFrameInput->frameParameters = std::make_shared<ImGuiFramePlan::ImGUIParam>( ImGui::GetDrawData(), dimension);
 
         auto clearColor = m_api->getConfig()->clearColor;
 
         scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput, processingFrame, updateFrameNumberLambda));
     }
-
 
     return scenario;
 }

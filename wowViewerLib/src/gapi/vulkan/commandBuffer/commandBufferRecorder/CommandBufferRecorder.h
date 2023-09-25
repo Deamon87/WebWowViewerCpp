@@ -21,6 +21,7 @@ class CommandBufferDebugLabel;
 #include "RenderPassHelper.h"
 #include "CommandBufferDebugLabel.h"
 #include "../../descriptorSets/GDescriptorSet.h"
+#include "../../GPipelineVLK.h"
 
 #ifdef LINK_TRACY
 #define VkZone(buffRecorder,a) TracyVkZone(buffRecorder.getTracyContext(), buffRecorder.getNativeCmdBuffer(), a)
@@ -51,8 +52,10 @@ public:
 
     void bindIndexBuffer(const std::shared_ptr<IBuffer> &bufferVlk);
     void bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer>> &bufferVlk);
-    void bindPipeline(const std::shared_ptr<GPipelineVLK> &pipeline);
-    void bindDescriptorSet(VkPipelineBindPoint bindPoint, uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
+
+    inline void bindPipeline(const std::shared_ptr<GPipelineVLK> &pipeline);
+    inline void bindDescriptorSet(VkPipelineBindPoint bindPoint, uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet);
+
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
 
     void setScissors(const std::array<int32_t, 2> &areaOffset,
@@ -80,7 +83,8 @@ private:
 
     //States
     std::shared_ptr<GRenderPassVLK> m_currentRenderPass = nullptr;
-    std::shared_ptr<GPipelineVLK> m_currentPipeline = nullptr;
+    GPipelineVLK *m_currentPipeline = nullptr;
+    VkPipelineLayout m_currentPipelineLayout = nullptr;
     std::shared_ptr<IBufferVLK> m_currentIndexBuffer = nullptr;
     std::array<std::shared_ptr<IBufferVLK>, MAX_VERTEX_BUFFERS_PER_DRAWCALL> m_currentVertexBuffers;
     std::array<GDescriptorSet *, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};

@@ -9,17 +9,7 @@
 #include "GMeshVLK.h"
 #include "../../interface/meshes/ISortableMesh.h"
 
-class GSortableMeshVLK : public GMeshVLK, public virtual ISortableMesh {
-public:
-    GSortableMeshVLK(const gMeshTemplate &meshTemplate, const HMaterialVLK &material,
-                     int priorityPlane);
 
-    ~GSortableMeshVLK() override = default;
-
-    EGxBlendEnum getGxBlendMode() override {
-        return material()->getBlendMode();
-    }
-};
 
 
 #endif //AWEBWOWVIEWERCPP_GSORTABLEMESHVLK_H
