@@ -6,24 +6,17 @@
 #include "GTextureVLK.h"
 #include "../../interface/IDevice.h"
 
-GTextureVLK::GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
+GTextureVLK::GTextureVLK(IDeviceVulkan &device, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
     : m_device(device), m_onDataUpdate(onUpdateCallback), IDSBindable(false) {
-    this->m_wrapX = xWrapTex;
-    this->m_wrapY = yWrapTex;
 
-    createBuffer();
 }
 GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          int width, int height,
-                         bool xWrapTex, bool yWrapTex,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
                          VkSampleCountFlagBits numSamples,
                          int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device), IDSBindable(false) {
     //For use in frameBuffer
-
-    this->m_wrapX = xWrapTex;
-    this->m_wrapY = yWrapTex;
 
     m_width = width;
     m_height = height;
@@ -62,9 +55,6 @@ GTextureVLK::~GTextureVLK() {
     destroyBuffer();
 }
 
-void GTextureVLK::createBuffer() {
-}
-
 void GTextureVLK::destroyBuffer() {
     if (!m_uploaded) return;
 
@@ -83,13 +73,6 @@ void GTextureVLK::destroyBuffer() {
 //                vkDestroyImage(l_device->getVkDevice(), l_texture.image, nullptr);
             }
     });
-}
-
-void GTextureVLK::bind() {
-
-}
-
-void GTextureVLK::unbind() {
 }
 
 bool GTextureVLK::getIsLoaded() {

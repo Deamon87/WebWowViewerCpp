@@ -12,7 +12,7 @@
 
 class BLPViewer {
 public:
-    BLPViewer(HApiContainer &api, std::shared_ptr<FrontendUIRenderer> uiRenderer);
+    BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer);
 
     bool draw();
 private:

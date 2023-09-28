@@ -252,24 +252,8 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
         auto& stagingRecords = uploadRegionsPerStaging[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
         for (auto &stagingRecord : stagingRecords) {
             auto &intervals = stagingRecord.second;
-            std::sort(intervals.begin(), intervals.end(), [](auto &a, auto &b) -> bool {
-                return
-                    a.srcOffset != b.srcOffset
-                    ? a.srcOffset < b.srcOffset
-                    : a.size < b.size;
-            });
 
             if (!intervals.empty()) {
-                auto currInterval = intervals[0];
-                const static auto calcIntervalEnd = [](decltype(currInterval) interval, int aligment) -> size_t {
-//                    return aligment > 0 ?
-//                           ((interval.srcOffset + interval.size + aligment - 1) / aligment) * aligment :
-//                           interval.srcOffset + interval.size;
-                    return interval.srcOffset + interval.size;
-                };
-
-                size_t currIntervalEnd = calcIntervalEnd(currInterval, m_alignment);
-
                 auto &uploadData = dataToBeUploaded.emplace_back();
                 uploadData.src = stagingRecord.first;
                 uploadData.dst = m_gpuBuffer->getBuffer();

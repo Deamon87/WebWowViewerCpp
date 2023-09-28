@@ -25,6 +25,9 @@ public:
     void bindFrameBuffer() override;
     void copyRenderBufferToTexture() override;
 
+    int getWidth() {return m_width;}
+    int getHeight() {return m_height;}
+
     static void iterateOverAttachments(const std::vector<ITextureFormat> &textureAttachments, std::function<void(int i, VkFormat textureFormat)> callback);
 
     VkFramebuffer getFrameBuffer() {return m_frameBuffer;};

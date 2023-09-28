@@ -27,7 +27,7 @@ public:
         return {device, materialVlk->getShader(),
                         materialVlk->getPipeline(),
                         materialVlk->getPipelineTemplate(),
-                        materialVlk->getDescriptorSets()
+                        toArray(materialVlk->getDescriptorSets())
                 };
     }
 
@@ -49,6 +49,13 @@ public:
 
     ~MaterialBuilderVLK() = default;
 private:
+    static inline std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> toArray(const std::vector<std::shared_ptr<GDescriptorSet>> &input) {
+        std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> res;
+        for (int i = 0; i < input.size(); i++) {
+            res[i] = input[i];
+        }
+        return res;
+    }
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
                        const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig);
 

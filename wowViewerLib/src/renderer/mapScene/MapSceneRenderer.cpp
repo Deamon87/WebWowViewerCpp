@@ -88,7 +88,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
 }
 
 void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
-                                            const HCameraMatrices &renderingMatrices,
+                                            const std::vector<HCameraMatrices> &renderingMatricess,
                                             const HFrameDependantData &fdd,
                                             bool isVulkan,
                                             animTime_t sceneTime
@@ -102,11 +102,13 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
 
     const static mathfu::vec4 zUp = {0,0,1.0,0};
 
+for (int i = 0; i < renderingMatricess.size(); i++) {
+    auto const &renderingMatrices = renderingMatricess[i];
 
-    auto &blockPSVS = sceneWideChunk->getObject(0);
+    auto &blockPSVS = sceneWideChunk->getObject(i);
     blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
     if (isVulkan) {
-        blockPSVS.uPMatrix = vulkanMatrixFix*renderingMatrices->perspectiveMat;
+        blockPSVS.uPMatrix = vulkanMatrixFix * renderingMatrices->perspectiveMat;
     } else {
         blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
     }
@@ -120,8 +122,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
     blockPSVS.extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
     blockPSVS.extLight.uAdtSpecMult_FogCount = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
 
-    for (int i = 0; i < std::min<int>(fdd->fogResults.size(), FOG_MAX_SHADER_COUNT); i++)
-    {
+    for (int i = 0; i < std::min<int>(fdd->fogResults.size(), FOG_MAX_SHADER_COUNT); i++) {
         auto &fogResult = fdd->fogResults[i];
 
         auto &fogData = blockPSVS.fogData;
@@ -140,7 +141,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             fogResult.FogHeightDensity = 0;
         }
 
-        const float densityMultFix =  0.00050000002 * std::pow(10, m_config->fogDensityIncreaser);
+        const float densityMultFix = 0.00050000002 * std::pow(10, m_config->fogDensityIncreaser);
         float fogScaler = fogResult.FogScaler;
         if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
         float fogStart = std::min<float>(m_config->farPlane, 3000) * fogScaler;
@@ -171,8 +172,8 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         fogData.heightColor_and_endFogDistance = mathfu::vec4(
             fogResult.FogHeightColor,
             (fogResult.EndFogColorDistance > 0) ?
-                fogResult.EndFogColorDistance :
-                1000.0f
+            fogResult.EndFogColorDistance :
+            1000.0f
         );
         fogData.sunPercentage = mathfu::vec4(
             fogResult.SunFogAngle * fogResult.SunFogStrength,
@@ -197,5 +198,6 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             fogResult.FogStartOffset
         );
     }
-    sceneWideChunk->saveVersion(0);
+    sceneWideChunk->saveVersion(i);
+}
 }

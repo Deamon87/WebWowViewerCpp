@@ -19,6 +19,7 @@ public:
 
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool wrapX, bool wrapY);
     HGSamplableTexture createTexture(bool wrapX, bool wrapY);
+    HGSamplableTexture createSampledTexture(bool wrapX, bool wrapY, const HGTexture &textureVlk);
 
     MutexLockedVector<std::weak_ptr<GTextureVLK>> getReadyToUploadTextures() {
 
@@ -94,6 +95,7 @@ private:
     std::list<std::weak_ptr<GBlpTextureVLK>> m_blpTextLoadQueue;
 
     std::array<std::shared_ptr<ITextureSampler>, 4> m_textureSamplers;
+
 };
 
 

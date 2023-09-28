@@ -13,8 +13,17 @@ ISimpleMaterialVLK::ISimpleMaterialVLK(const HGShaderPermutation &shader,
                                        const HPipelineVLK &pipeline,
                                        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets) :
                                        m_shader(shader), m_pipelineTemplate(pipelineTemplate),
-                                       m_pipeline(pipeline), descriptors(descriptorSets) {
+                                       m_pipeline(pipeline) {
+    for (int i = descriptorSets.size()-1; i < descriptorSets.size(); i--) {
+        if (descriptorSets[i] != nullptr) {
+            this->descriptors.resize(i+1);
 
+            for (int j = 0; j <= i; j++) {
+                this->descriptors[j] = descriptorSets[j];
+            }
+            break;
+        }
+    }
 }
 
 //Works under assumption that meshes do not change the renderpass, on which they are rendered, too often

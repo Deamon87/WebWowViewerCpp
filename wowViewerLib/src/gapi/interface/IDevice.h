@@ -187,6 +187,7 @@ class IDevice {
 
         virtual HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) = 0;
+        virtual HGSamplableTexture createSampledTexture(HGTexture texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGSamplableTexture getWhiteTexturePixel() = 0;
         virtual HGSamplableTexture getBlackTexturePixel() = 0;
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;

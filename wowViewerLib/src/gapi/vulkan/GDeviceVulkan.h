@@ -110,6 +110,7 @@ public:
 
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) override;
+    HGSamplableTexture createSampledTexture(HGTexture texture, bool xWrapTex, bool yWrapTex) override;
     HGSamplableTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGSamplableTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
     std::shared_ptr<GDescriptorSetUpdater> getDescriptorSetUpdater() override { return m_descriptorSetUpdater;};

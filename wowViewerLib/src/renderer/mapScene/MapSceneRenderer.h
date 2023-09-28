@@ -102,12 +102,12 @@ public:
                        const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                        const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes);
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
-                              const HCameraMatrices &renderingMatrices,
+                              const std::vector<HCameraMatrices> &renderingMatrices,
                               const HFrameDependantData &fdd,
                               bool isVulkan,
                               animTime_t sceneTime);
 
-    virtual std::shared_ptr<IRenderView> createRenderView(int width, int height) = 0;
+    virtual std::shared_ptr<IRenderView> createRenderView(int width, int height, bool createOutput) = 0;
 private:
     Config *m_config;
 };

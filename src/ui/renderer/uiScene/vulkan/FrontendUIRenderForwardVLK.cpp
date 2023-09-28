@@ -135,11 +135,8 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
 
                     //4. Bind Descriptor sets
                     auto const &descSets = material->getDescriptorSets();
-                    for (int i = 0; i < descSets.size(); i++) {
-                        if (descSets[i] != nullptr) {
-                            swapChainCmd.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
-                        }
-                    }
+                    swapChainCmd.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, descSets);
+
 
                     //5. Set view port
                     swapChainCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);

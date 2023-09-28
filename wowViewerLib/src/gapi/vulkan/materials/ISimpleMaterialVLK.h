@@ -25,7 +25,7 @@ public:
         return m_shader;
     }
 
-    const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &getDescriptorSets() {
+    const std::vector<std::shared_ptr<GDescriptorSet>> &getDescriptorSets() {
         return descriptors;
     }
     const HPipelineVLK &getPipeline() const {
@@ -38,7 +38,7 @@ public:
     EGxBlendEnum getBlendMode();
 
 private:
-    std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> descriptors;
+    std::vector<std::shared_ptr<GDescriptorSet>> descriptors;
 
     HGShaderPermutation m_shader;
     HPipelineVLK m_pipeline;

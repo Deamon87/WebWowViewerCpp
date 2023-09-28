@@ -27,6 +27,7 @@
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
 #include "childWindow/BLPViewer.h"
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
+#include "childWindow/textureRenderer/DebugRendererWindow.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -191,6 +192,7 @@ private:
 
     std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
+    std::shared_ptr<DebugRendererWindow> m_debugRenderWindow;
 
 
 //Test export

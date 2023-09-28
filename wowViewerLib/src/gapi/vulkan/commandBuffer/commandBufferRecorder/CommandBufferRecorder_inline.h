@@ -17,34 +17,45 @@ inline void CmdBufRecorder::bindPipeline(const std::shared_ptr<GPipelineVLK> &pi
     m_currentPipelineLayout = pipeline->getLayout();
 }
 
-inline void CmdBufRecorder::bindDescriptorSet(VkPipelineBindPoint bindPoint, uint32_t bindIndex, const std::shared_ptr<GDescriptorSet> &descriptorSet) {
-    {
+inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, const std::vector<std::shared_ptr<GDescriptorSet>> &descriptorSets) {
+
         //TODO: bindpoints: VK_PIPELINE_BIND_POINT_GRAPHICS and others
         //Which leads to three separate states for:
         // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
         // Also, implement "Pipeline Layout Compatibility" thing from spec
+    uint32_t dynamicOffsets[16];
+    uint32_t dynamicOffsetsSize = 0;
+    uint32_t *p_dynamicOffset;
+    p_dynamicOffset = &dynamicOffsets[0];
 
-//    if (m_currentDescriptorSet[bindIndex] == descriptorSet) return;
+    std::vector<VkDescriptorSet> descs;
+    descs.reserve(descriptorSets.size());
 
-        auto pDescriptorSet = descriptorSet.get();
+    uint32_t bindIndexStart = -1;
+    for (int i = 0; i < descriptorSets.size(); i++) {
+        auto const pDescriptorSet = descriptorSets[i].get();
 
-        if (m_currentDescriptorSet[bindIndex] != pDescriptorSet) {
+        if (m_currentDescriptorSet[i] != pDescriptorSet) {
+            bindIndexStart = bindIndexStart==-1 ? i : bindIndexStart;
+
             auto vkDescSet = pDescriptorSet->getDescSet();
-            constexpr uint32_t vkDescCnt = 1;
+            descs.push_back(vkDescSet);
 
+            uint32_t thisSize = 0;
+            pDescriptorSet->getDynamicOffsets(p_dynamicOffset, thisSize);
+            p_dynamicOffset+=thisSize;
+            dynamicOffsetsSize+=thisSize;
 
-            uint32_t dynamicOffsets[16];
-            uint32_t dynamicOffsetsSize;
-            pDescriptorSet->getDynamicOffsets(dynamicOffsets, dynamicOffsetsSize);
-
-            vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, bindPoint,
-                                    m_currentPipelineLayout,
-                                    bindIndex,
-                                    vkDescCnt, &vkDescSet,
-                                    dynamicOffsetsSize, dynamicOffsetsSize > 0 ? dynamicOffsets : nullptr);
-
-            m_currentDescriptorSet[bindIndex] = pDescriptorSet;
+            m_currentDescriptorSet[i] = pDescriptorSet;
         }
+    }
+
+    if (descs.size() > 0) {
+        vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, bindPoint,
+                                m_currentPipelineLayout,
+                                bindIndexStart,
+                                descs.size(), descs.data(),
+                                dynamicOffsetsSize, dynamicOffsetsSize > 0 ? dynamicOffsets : nullptr);
     }
 }
 

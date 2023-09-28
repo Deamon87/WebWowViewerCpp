@@ -6,7 +6,9 @@
 #include "imgui.h"
 #include <string>
 
-BLPViewer::BLPViewer(HApiContainer &api, std::shared_ptr<FrontendUIRenderer> uiRenderer) : m_api(api), m_uiRenderer(uiRenderer) {
+BLPViewer::BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer) :
+    m_api(api), m_uiRenderer(uiRenderer)
+{
 
 }
 

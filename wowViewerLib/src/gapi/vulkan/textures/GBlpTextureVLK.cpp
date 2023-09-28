@@ -17,9 +17,8 @@ std::atomic<int> blpTexturesVulkanSizeLoaded = 0;
 
 GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
                                const HBlpTexture &texture,
-                               bool xWrapTex, bool yWrapTex,
                                const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
-    : GTextureVLK(device,xWrapTex,yWrapTex, onUpdateCallback), m_texture(texture) {
+    : GTextureVLK(device, onUpdateCallback), m_texture(texture) {
 
     std::string blpAddress_str = addrToStr(texture.get());
     std::string selfAddr_str = addrToStr(this);

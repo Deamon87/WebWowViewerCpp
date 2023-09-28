@@ -97,7 +97,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
                                           sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
                                           true, false);
 
-    defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao);
+    defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, false);
 
     sceneWideChunk = std::make_shared<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>>(hDevice, 3, uboBuffer);
     MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig)
@@ -537,7 +537,7 @@ std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bon
 inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType ) {
     if (mesh == nullptr) return;
 
-    const auto &meshVlk = std::dynamic_pointer_cast<GMeshVLK>(mesh);
+    const auto &meshVlk = (GMeshVLK*) mesh.get();
     auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
 
     //1. Bind VBOs
@@ -552,11 +552,7 @@ inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGM
 
     //4. Bind Descriptor sets
     auto const &descSets = material->getDescriptorSets();
-    for (int i = 0; i < descSets.size(); i++) {
-        if (descSets[i] != nullptr) {
-            cmdBuf.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
-        }
-    }
+    cmdBuf.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, descSets);
 
     //5. Set view port
     cmdBuf.setViewPort(viewportType);
@@ -584,17 +580,6 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     auto l_this = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
     auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
 
-    for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
-        auto updatingTarget = std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
-        if (!updatingTarget) updatingTarget = defaultView;
-
-        updatingTarget->update(
-            renderTarget.viewPortDimensions.maxs[0],
-            renderTarget.viewPortDimensions.maxs[1],
-            framePlan->frameDependentData->currentGlow
-        );
-    }
-
 
     //Create meshes
     auto opaqueMeshes = std::make_shared<std::vector<HGMesh>>();
@@ -621,8 +606,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     mapScene->update(framePlan);
     mapScene->updateBuffers(l_this, framePlan);
 
+    std::vector<HCameraMatrices> renderingMatricess;
+    for (auto &rt : frameInputParams->frameParameters->renderTargets) {
+        renderingMatricess.push_back(rt.cameraMatricesForRendering);
+    }
+
     updateSceneWideChunk(sceneWideChunk,
-                         framePlan->renderingMatrices,
+                         renderingMatricess,
                          framePlan->frameDependentData,
                          true,
                          mapScene->getCurrentSceneTime());
@@ -636,11 +626,22 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     bool renderSky = framePlan->renderSky;
     auto skyMesh = framePlan->skyMesh;
     auto skyMesh0x4 = framePlan->skyMesh0x4;
-    return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes](CmdBufRecorder &uploadCmd) -> void {
+    return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes, frameInputParams](CmdBufRecorder &uploadCmd) -> void {
         {
             ZoneScopedN("Post Load");
             //Do postLoad here. So creation of stuff is done from main thread
+
             mapScene->doPostLoad(l_this, framePlan);
+            for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
+                auto updatingTarget = std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
+                if (!updatingTarget) updatingTarget = l_this->defaultView;
+
+                updatingTarget->update(
+                    renderTarget.viewPortDimensions.maxs[0],
+                    renderTarget.viewPortDimensions.maxs[1],
+                    framePlan->frameDependentData->currentGlow
+                );
+            }
         }
         {
             ZoneScopedN("Collect Portal Meshes");
@@ -703,34 +704,44 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         // ----------------------
         // Draw meshes
         // ----------------------
-        l_this->sceneWideChunk->setCurrentVersion(0);
         {
-            auto passHelper = l_this->defaultView->beginPass(frameBufCmd, l_this->m_renderPass,
+            uint8_t wideChunkVersion = 0;
+            for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
+                l_this->sceneWideChunk->setCurrentVersion(wideChunkVersion++);
+
+                auto currentView = renderTarget.target == nullptr ?
+                    l_this->defaultView :
+                    std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
+                {
+                    auto passHelper = currentView->beginPass(frameBufCmd, l_this->m_renderPass,
                                                              false,
                                                              frameInputParams->frameParameters->clearColor);
 
-            {
-                ZoneScopedN("submit opaque");
-                VkZone(frameBufCmd, "render opaque")
-                auto const &pOpaqueMeshes = *opaqueMeshes;
-                auto const pOpaqueMeshesSize = pOpaqueMeshes.size();
-                for (int i = 0; i < pOpaqueMeshesSize; i++) {
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, pOpaqueMeshes[i], CmdBufRecorder::ViewportType::vp_usual);
-                }
-            }
-            {
-                //Sky opaque
-                if (renderSky && skyMesh)
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh, CmdBufRecorder::ViewportType::vp_skyBox);
+                    {
+                        ZoneScopedN("submit opaque");
+                        VkZone(frameBufCmd, "render opaque")
+                        auto const &pOpaqueMeshes = *opaqueMeshes;
+                        auto const pOpaqueMeshesSize = pOpaqueMeshes.size();
+                        for (int i = 0; i < pOpaqueMeshesSize; i++) {
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, pOpaqueMeshes[i],
+                                                               CmdBufRecorder::ViewportType::vp_usual);
+                        }
+                    }
+                    {
+                        //Sky opaque
+                        if (renderSky && skyMesh)
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh,
+                                                               CmdBufRecorder::ViewportType::vp_skyBox);
 
-                for (auto const &mesh: *skyOpaqueMeshes) {
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
-                }
-            }
-            {
-                //Sky transparent
-                for (int i = 0; i < skyTransparentMeshes->size(); i++) {
-                    auto const &mesh = skyTransparentMeshes->at(i);
+                        for (auto const &mesh: *skyOpaqueMeshes) {
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh,
+                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                        }
+                    }
+                    {
+                        //Sky transparent
+                        for (int i = 0; i < skyTransparentMeshes->size(); i++) {
+                            auto const &mesh = skyTransparentMeshes->at(i);
 
 //                    std::string debugMess =
 //                        "Drawing mesh "
@@ -741,22 +752,25 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //
 //                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_skyBox);
-                }
-                if (renderSky && skyMesh0x4)
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4, CmdBufRecorder::ViewportType::vp_skyBox);
-            }
-            {
-                //Render liquids
-                for (auto const &mesh: *liquidMeshes) {
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
-                }
-            }
-            {
-                VkZone(frameBufCmd, "render transparent")
-                ZoneScopedN("submit transparent");
-                for (int i = 0; i < transparentMeshes->size(); i++) {
-                    auto const &mesh = transparentMeshes->at(i);
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh,
+                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                        }
+                        if (renderSky && skyMesh0x4)
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4,
+                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                    }
+                    {
+                        //Render liquids
+                        for (auto const &mesh: *liquidMeshes) {
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh,
+                                                               CmdBufRecorder::ViewportType::vp_usual);
+                        }
+                    }
+                    {
+                        VkZone(frameBufCmd, "render transparent")
+                        ZoneScopedN("submit transparent");
+                        for (int i = 0; i < transparentMeshes->size(); i++) {
+                            auto const &mesh = transparentMeshes->at(i);
 //
 //                    std::string debugMess =
 //                        "Drawing mesh "
@@ -767,17 +781,20 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //
 //                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
-                    MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh, CmdBufRecorder::ViewportType::vp_usual);
+                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh,
+                                                               CmdBufRecorder::ViewportType::vp_usual);
+                        }
+                    }
+                }
+                {
+                    currentView->doPostGlow(frameBufCmd);
+                    if (currentView == l_this->defaultView) {
+                        currentView->doPostFinal(swapChainCmd);
+                    } else {
+                        currentView->doOutputPass(frameBufCmd);
+                    }
                 }
             }
-        }
-
-        {
-//            VkZone(frameBufCmd, "glowPassFrameBuf");
-//            VkZone(swapChainCmd, "glowPassSwapBuf");
-
-            l_this->defaultView->doPostGlow(frameBufCmd);
-            l_this->defaultView->doPostFinal(swapChainCmd);
         }
     });
 }
@@ -809,15 +826,18 @@ HGM2Mesh MapSceneRenderForwardVLK::createM2WaterfallMesh(gMeshTemplate &meshTemp
     return mesh;
 }
 
-std::shared_ptr<IRenderView> MapSceneRenderForwardVLK::createRenderView(int width, int height) {
-    return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao);
+std::shared_ptr<IRenderView> MapSceneRenderForwardVLK::createRenderView(int width, int height, bool createOutput) {
+    return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
 }
 
 /*
  * RenderViewForwardVLK
  */
 
-MapSceneRenderForwardVLK::RenderViewForwardVLK::RenderViewForwardVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device) {
+MapSceneRenderForwardVLK::RenderViewForwardVLK::RenderViewForwardVLK(const HGDeviceVLK &device,
+                                                                     const HGBufferVLK &uboBuffer,
+                                                                     const HGVertexBufferBindings &quadVAO,
+                                                                     bool createOutputFBO) : m_device(device), m_createOutputFBO(createOutputFBO) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
 
     createFrameBuffers();
@@ -838,6 +858,26 @@ void MapSceneRenderForwardVLK::RenderViewForwardVLK::createFrameBuffers() {
             );
         }
     }
+    if (m_createOutputFBO) {
+        auto const dataFormat = {ITextureFormat::itRGBA};
+        bool invertZ = false;
+
+        m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itNone,
+                                               VK_SAMPLE_COUNT_1_BIT,
+                                               invertZ, false);
+
+        for (auto &outputFrameBuffer: m_outputFrameBuffers) {
+            outputFrameBuffer = std::make_shared<GFrameBufferVLK>(
+                *m_device,
+                dataFormat,
+                ITextureFormat::itNone,
+                1,
+                invertZ,
+                m_width, m_height
+            );
+        }
+    }
+
 }
 
 void MapSceneRenderForwardVLK::RenderViewForwardVLK::update(int width, int height, float glow) {
@@ -855,8 +895,10 @@ void MapSceneRenderForwardVLK::RenderViewForwardVLK::update(int width, int heigh
 
             glowPass->updateDimensions(m_width, m_height,
                                        inputColorTextures,
-                                       m_device->getSwapChainRenderPass());
+                                       !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_renderPass);
         }
+
+        this->executeOnChange();
     }
     glowPass->assignFFXGlowUBOConsts(glow);
 }
@@ -874,10 +916,40 @@ RenderPassHelper MapSceneRenderForwardVLK::RenderViewForwardVLK::beginPass(CmdBu
                                        true);
 }
 
+void MapSceneRenderForwardVLK::RenderViewForwardVLK::doOutputPass(CmdBufRecorder &frameBufCmd) {
+    auto frameBuff = m_outputFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+
+    glowPass->doFinalPass(frameBufCmd, frameBuff);
+}
+
 void MapSceneRenderForwardVLK::RenderViewForwardVLK::doPostGlow(CmdBufRecorder &frameBufCmd) {
     glowPass->doPass(frameBufCmd);
 }
 
 void MapSceneRenderForwardVLK::RenderViewForwardVLK::doPostFinal(CmdBufRecorder &bufCmd) {
-    glowPass->doFinalPass(bufCmd);
+    glowPass->doFinalDraw(bufCmd);
+}
+
+void MapSceneRenderForwardVLK::RenderViewForwardVLK::iterateOverOutputTextures(
+    std::function<void(const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &,
+                       const std::string &, ITextureFormat)> callback) {
+
+    //1. Color output
+    if (m_createOutputFBO) {
+        std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> colorTextures;
+        for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)
+            colorTextures[i] = m_outputFrameBuffers[i]->getAttachment(0);
+
+        callback(colorTextures, "Color Texture", ITextureFormat::itRGBA);
+    }
+
+    //2. Depth buffer
+    {
+        std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> depthTextures;
+        for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)
+            depthTextures[i] = m_device->createSampledTexture(m_colorFrameBuffers[i]->getDepthTexture(), false, false);
+
+        callback(depthTextures, "Depth buffer", ITextureFormat::itDepth32);
+    }
+
 }

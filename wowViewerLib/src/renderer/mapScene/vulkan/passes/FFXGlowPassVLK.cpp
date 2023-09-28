@@ -118,11 +118,7 @@ void FFXGlowPassVLK::drawMaterial (CmdBufRecorder& cmdBuf, const std::shared_ptr
 
     //4. Bind Descriptor sets
     auto const &descSets = material->getDescriptorSets();
-    for (int i = 0; i < descSets.size(); i++) {
-        if (descSets[i] != nullptr) {
-            cmdBuf.bindDescriptorSet(VK_PIPELINE_BIND_POINT_GRAPHICS, i, descSets[i]);
-        }
-    }
+    cmdBuf.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, descSets);
 
     //7. Draw the mesh
     cmdBuf.drawIndexed(6, 1, 0, 0);
@@ -149,7 +145,7 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd) {
         }
     }
 }
-void FFXGlowPassVLK::doFinalPass(CmdBufRecorder &finalBufCmd) {
+void FFXGlowPassVLK::doFinalDraw(CmdBufRecorder &finalBufCmd) {
     auto currentFrame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
     {
@@ -157,6 +153,19 @@ void FFXGlowPassVLK::doFinalPass(CmdBufRecorder &finalBufCmd) {
         finalBufCmd.setDefaultScissors();
         drawMaterial(finalBufCmd, ffxGlowMat[currentFrame]);
     }
+}
+void FFXGlowPassVLK::doFinalPass(CmdBufRecorder &finalBufCmd, const std::shared_ptr<GFrameBufferVLK> &frameBuff) {
+    auto passHelper = finalBufCmd.beginRenderPass(
+        false,
+        m_renderPass,
+        frameBuff,
+        {0,0},
+        {static_cast<unsigned int>(frameBuff->getWidth()), static_cast<unsigned int>(frameBuff->getHeight())},
+        {0, 0, 0},//todo
+        true
+    );
+
+    doFinalDraw(finalBufCmd);
 }
 
 void FFXGlowPassVLK::assignFFXGlowUBOConsts(float glow) {
@@ -251,3 +260,5 @@ FFXGlowPassVLK::createFFXGlowMat(
 
     return material;
 }
+
+

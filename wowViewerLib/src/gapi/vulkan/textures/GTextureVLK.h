@@ -19,7 +19,6 @@ public:
     //Used for rendering to texture in framebuffer
     explicit GTextureVLK(IDeviceVulkan &device,
                          int width, int height,
-                         bool xWrapTex, bool yWrapTex,
                          bool isDepthTexture,
                          const VkFormat textureFormatGPU,
                          VkSampleCountFlagBits numSamples,
@@ -35,7 +34,7 @@ public:
     GTextureVLK(const GTextureVLK&&) = delete;
 
 
-    explicit GTextureVLK(IDeviceVulkan &device, bool xWrapTex, bool yWrapTex, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
+    explicit GTextureVLK(IDeviceVulkan &device, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 
     void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer);
 private:
@@ -88,14 +87,9 @@ public:
         VkImageView view;
     } texture;
 private:
-    void createBuffer();
     void destroyBuffer();
-    virtual void bind(); //Should be called only by GDevice
-    void unbind();
-
 
     std::unique_ptr<updateData> m_tempUpdateData = nullptr;
-
 
     VmaAllocation imageAllocation = VK_NULL_HANDLE;
     VmaAllocationInfo imageAllocationInfo = {};
@@ -109,8 +103,6 @@ protected:
 
     bool m_uploaded = false;
     bool m_loaded = false;
-    bool m_wrapX = true;
-    bool m_wrapY = true;
 
     int m_width = 0;
     int m_height = 0;

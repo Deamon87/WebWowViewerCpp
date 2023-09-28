@@ -22,7 +22,8 @@ public:
 
     void doPass(CmdBufRecorder &frameBufCmd);
 
-    void doFinalPass(CmdBufRecorder &finalBufCmds);
+    void doFinalDraw(CmdBufRecorder &finalBufCmd);
+    void doFinalPass(CmdBufRecorder &finalBufCmd, const std::shared_ptr<GFrameBufferVLK> &frameBuff);
 
 private:
     static constexpr int GAUSS_PASS_COUNT = 3;

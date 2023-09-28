@@ -134,6 +134,8 @@ void FrontendUI::composeUI() {
     showCurrentStatsDialog();
     showMinimapGenerationSettingsDialog();
     showBlpViewer();
+    if (m_debugRenderWindow)
+        m_debugRenderWindow->draw();
 
     // Rendering
     ImGui::Render();
@@ -1409,6 +1411,13 @@ void FrontendUI::showSettingsDialog() {
             bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
             if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
                 m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;
+                if (!useDoubleCameraDebug) {
+                    m_debugRenderWindow = nullptr;
+                    m_debugRenderView = nullptr;
+                } else if (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) {
+                    m_debugRenderView = m_sceneRenderer->createRenderView(640, 480, true);
+                    m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
+                }
             }
 
             if (useDoubleCameraDebug) {
@@ -1704,8 +1713,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
             std::shared_ptr<IRenderView> target = nullptr;
             std::shared_ptr<IRenderView> debugTarget = nullptr;
-            if (m_api->debugCamera && m_api->getConfig()->doubleCameraDebug) {
-                if (!m_debugRenderView) m_debugRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight);
+            if (m_api->debugCamera && m_api->getConfig()->doubleCameraDebug && m_debugRenderView) {
                 debugTarget = m_debugRenderView;
 
                 if (m_api->getConfig()->swapMainAndDebug) {
@@ -1715,15 +1723,21 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
             std::vector<RenderTargetParameters> renderTargetParams = {
                 {
-                    .camera = m_api->camera,
-                    .dimensions = dimension,
-                    .target = target
+                    m_api->camera,
+                    dimension,
+                    target
                 }
             };
             if (m_api->getConfig()->doubleCameraDebug) {
+                ViewPortDimensions debugViewDimension = {
+                    {0,     0},
+                    {static_cast<unsigned int>(m_debugRenderWindow->getWidth()),
+                     static_cast<unsigned int>(m_debugRenderWindow->getHeight())}
+                };
+
                 auto &debugParams = renderTargetParams.emplace_back();
                 debugParams.camera = m_api->debugCamera;
-                debugParams.dimensions = dimension;
+                debugParams.dimensions = debugViewDimension;
                 debugParams.target = debugTarget;
             }
 
@@ -1739,7 +1753,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             //----------------------
 
             if (needToMakeScreenshot) {
-                auto screenShotRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight);
+                auto screenShotRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight, true);
                 auto wowSceneScreenshotFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
                 wowSceneScreenshotFrameInput->delta = 0;
 
@@ -1747,12 +1761,12 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
                     *m_api,
                     fov,
                     {{
-                         .camera = m_api->camera,
-                         .dimensions = {
+                         m_api->camera,
+                         {
                              {0, 0},
                              {static_cast<unsigned int>(screenShotWidth), static_cast<unsigned int>(screenShotHeight)}
                          },
-                         .target = screenShotRenderView
+                         screenShotRenderView
                     }},
                     m_currentScene
                 );
