@@ -837,7 +837,8 @@ void MinimapGenerator::saveDrawStageToFile(std::string folderToSave, const HFram
     ) + ".png";
 
     std::vector<uint8_t> buffer = std::vector<uint8_t>(m_width * m_height * 4 + 1);
-    saveDataFromDrawStage(lastFrameBuffer, fileName, m_width, m_height, buffer);
+//TODO:
+//    saveDataFromDrawStage(lastFrameBuffer, fileName, m_width, m_height, buffer);
 }
 
 void MinimapGenerator::createSceneDrawStage(HFrameScenario sceneScenario) {

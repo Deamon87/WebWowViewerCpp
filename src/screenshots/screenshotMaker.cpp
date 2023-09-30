@@ -172,17 +172,14 @@ static bool endsWith3(std::string_view str, std::string_view suffix)
     return str.size() >= suffix.size() && 0 == str.compare(str.size()-suffix.size(), suffix.size(), suffix);
 }
 
-void saveDataFromDrawStage(const HFrameBuffer& fb,
+void saveDataFromDrawStage(std::function<void(int, int, int, int, uint8_t* data)> readRGBAPixels,
                            const std::string& screenshotFileName,
-                           int screenshotWidth, int screenshotHeight,
-                           std::vector <uint8_t> &buffer) {
-    if (fb == nullptr)
-        return;
-
+                           int screenshotWidth, int screenshotHeight) {
     std::vector <uint8_t> internalBuffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4);
-    fb->readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, internalBuffer.data());
+    std::vector <uint8_t> buffer = std::vector<uint8_t>(screenshotWidth*screenshotHeight*4+1);
+    readRGBAPixels( 0, 0, screenshotWidth, screenshotHeight, internalBuffer.data());
 
-    //In internalbuffer rn image is in bgra format. Let's turn it into RGBA and make alpha 256
+    //In internalbuffer rn image is in bgra format. Let's turn it into RGBA and make alpha 1.0f
     for (int j = 0; j < screenshotHeight; j++) {
         for (int i = 0; i < screenshotWidth; i++) {
             std::array<int,4> ind =
@@ -199,7 +196,6 @@ void saveDataFromDrawStage(const HFrameBuffer& fb,
                     screenshotWidth * 4 * (j) + (i * 4) + 2,
                     screenshotWidth * 4 * (j) + (i * 4) + 3,
                 };
-
 
             auto b = internalBuffer[ind[0]];
             auto g = internalBuffer[ind[1]];

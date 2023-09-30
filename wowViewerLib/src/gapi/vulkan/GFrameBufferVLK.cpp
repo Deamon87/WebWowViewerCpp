@@ -244,7 +244,7 @@ void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *
     }
 
     // Source for the copy is the last rendered swapchain image
-    VkImage srcImage = ((GTextureVLK *)(getAttachment(attachmentIndex).get()))->texture.image;
+    VkImage srcImage = std::dynamic_pointer_cast<GTextureVLK>(getAttachment(attachmentIndex)->getTexture())->texture.image;
 
     // Create the linear tiled destination image to copy to and to read the memory from
     VkImageCreateInfo imageCreateCI = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO};

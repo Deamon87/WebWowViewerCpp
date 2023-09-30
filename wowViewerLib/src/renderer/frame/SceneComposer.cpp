@@ -75,13 +75,14 @@ SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiCon
                     continue;
 
                 //Do the culling and make function for further pipeline
-                std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>> renderFuncs = std::make_shared<decltype(renderFuncs)::element_type>();
+                std::shared_ptr<FrameRenderFuncs> frameRenderFuncs = std::make_shared<decltype(frameRenderFuncs)::element_type>();
                 if (frameScenario != nullptr) {
-                    consumeUpdate(frameScenario, *renderFuncs);
+                    consumeUpdate(frameScenario, *frameRenderFuncs);
+                    frameRenderFuncs->onFinish = frameScenario->onFinish;
                 }
 
                 //Pass the culling result down the pipeline
-                drawInput.pushInput(renderFuncs);
+                drawInput.pushInput(frameRenderFuncs);
             }
         }));
     }
@@ -105,18 +106,19 @@ void SceneComposer::consumeCulling(const HFrameScenario &frameScenario) {
 }
 
 
-void SceneComposer::consumeUpdate(const HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions) {
+void SceneComposer::consumeUpdate(const HFrameScenario &frameScenario, FrameRenderFuncs &frameRenderFunctions) {
     ZoneScoped ;
 
     if (frameScenario == nullptr)
         return;
 
+    auto &renderFuncs = frameRenderFunctions.renderFuncs;
     for (int i = 0; i < frameScenario->drawUpdateFunction.size(); i++) {
-        renderFunctions.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
+        renderFuncs.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
     }
 }
 
-void SceneComposer::consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) {
+void SceneComposer::consumeDraw(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) {
     ZoneScoped ;
     m_apiContainer->hDevice->drawFrame(renderFuncs, windowSizeChanged);
 }
@@ -133,9 +135,9 @@ void SceneComposer::draw(const HFrameScenario &frameScenario, bool windowSizeCha
 
     if (!m_supportThreads) {
         consumeCulling(frameScenario);
-        std::vector<std::unique_ptr<IRenderFunction>> renderFuncs = {};
+        FrameRenderFuncs renderFuncs = {};
         m_apiContainer->requestProcessor->processRequests(10);
-        consumeUpdate(frameScenario,renderFuncs);
+        consumeUpdate(frameScenario, renderFuncs);
         consumeDraw(renderFuncs, windowSizeChanged);
     } else {
         cullingInput.pushInput(frameScenario);

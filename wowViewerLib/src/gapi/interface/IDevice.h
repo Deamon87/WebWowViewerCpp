@@ -65,6 +65,11 @@ typedef std::shared_ptr<IFrameBuffer> HFrameBuffer;
 #include "IFrameBuffer.h"
 #include "../../renderer/IRenderParameters.h"
 
+struct FrameRenderFuncs {
+    std::vector<std::unique_ptr<IRenderFunction>> renderFuncs;
+    std::vector<std::function<void()>> onFinish;
+};
+
 struct M2ShaderCacheRecord {
     int vertexShader;
     int pixelShader;
@@ -170,7 +175,8 @@ class IDevice {
 //        virtual void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData)= 0;
         virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
 
-        virtual void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) = 0;
+
+        virtual void drawFrame(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) = 0;
 //        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
         virtual bool getIsAnisFiltrationSupported();

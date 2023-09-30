@@ -41,6 +41,8 @@ public:
 struct FrameScenario {
     std::vector<CullLambda> cullFunctions;
     std::vector<SceneUpdateLambda> drawUpdateFunction;
+
+    std::vector<std::function<void()>> onFinish;
 };
 typedef std::shared_ptr<FrameScenario> HFrameScenario;
 

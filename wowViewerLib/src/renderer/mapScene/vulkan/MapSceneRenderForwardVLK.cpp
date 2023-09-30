@@ -947,3 +947,10 @@ void MapSceneRenderForwardVLK::RenderViewForwardVLK::iterateOverOutputTextures(
     }
 
 }
+
+void
+MapSceneRenderForwardVLK::RenderViewForwardVLK::readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata) {
+    if (m_createOutputFBO) {
+        m_outputFrameBuffers[frameNumber % IDevice::MAX_FRAMES_IN_FLIGHT]->readRGBAPixels(x,y,width,height,outputdata);
+    }
+}

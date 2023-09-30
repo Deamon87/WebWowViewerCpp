@@ -1780,7 +1780,15 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
                     }},
                     m_currentScene
                 );
+                scenario->onFinish.push_back([screenShotRenderView, this, processingFrame]() {
+                    saveDataFromDrawStage([screenShotRenderView, processingFrame](int x, int y, int width, int height, uint8_t* data){
+                        screenShotRenderView->readRGBAPixels(processingFrame, x, y, width, height, data);
+                    }, screenshotFilename, screenShotWidth, screenShotHeight);
+                });
                 needToMakeScreenshot = false;
+
+                scenario->cullFunctions.push_back(
+                    m_sceneRenderer->createCullUpdateRenderChain(wowSceneScreenshotFrameInput, processingFrame, updateFrameNumberLambda));
             }
         }
 

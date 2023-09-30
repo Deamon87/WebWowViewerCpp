@@ -938,7 +938,7 @@ void GDeviceVLK::flushRingBuffer() {
     m_ringBuffer->flushBuffers();
 }
 
-void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) {
+void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool windowSizeChanged) {
     ZoneScoped;
 
     int currentDrawFrame = getProcessingFrameNumber();
@@ -966,6 +966,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         {
             auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
             {
+                auto const &renderFuncs = frameRenderFuncs.renderFuncs;
                 for (int i = 0; i < renderFuncs.size(); i++) {
                     dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeUpload(*this, uploadCmd);
                 }
@@ -1019,6 +1020,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
             this->getNextSwapImageIndex(imageIndex);
             auto swapChainRenderPass = this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
 
+            auto const &renderFuncs = frameRenderFuncs.renderFuncs;
             for (int i = 0; i < renderFuncs.size(); i++) {
                 dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeRender(*this, frameBufCmd, swapChainCmd);
             }
@@ -1046,11 +1048,14 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
         graphicsQueue,
         waitSemaphores,
         {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
-
         {swapChainCmdBuf->getNativeCmdBuffer()},
         signalSemaphores,
         inFlightFences[currentDrawFrame]->getNativeFence()
     );
+
+    for (auto const &callback : frameRenderFuncs.onFinish) {
+        inFlightFences[currentDrawFrame]->addOnFinish(callback);
+    }
 
     if (swapChain != VK_NULL_HANDLE) {
         presentQueue(
@@ -1500,7 +1505,6 @@ void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callb
     ERR_GUARD_VULKAN(vkBeginCommandBuffer(copyCmd, &beginInfo));
 
     callback(copyCmd);
-
 
     if (copyCmd == VK_NULL_HANDLE)
     {

@@ -30,6 +30,12 @@ constexpr int FENCES_COUNT = 1;
 void GFenceVLK::wait(uint64_t maxWaitTime) {
     auto result = vkWaitForFences(m_device->getVkDevice(), FENCES_COUNT, &m_fence, VK_TRUE, maxWaitTime);
 
+    if (result == VK_SUCCESS) {
+        for (auto const &callback : onFinish) {
+            callback();
+        }
+        onFinish.clear();
+    }
     ERR_GUARD_VULKAN(result);
 }
 

@@ -84,7 +84,7 @@ public:
     void startUpdateForNextFrame() override {};
     void endUpdateForNextFrame() override {};
 
-    void drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) override;
+    void drawFrame(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) override;
 
     void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;

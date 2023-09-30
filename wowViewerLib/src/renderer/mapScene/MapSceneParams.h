@@ -13,7 +13,7 @@ class IRenderView {
 public:
     virtual ~IRenderView() = default;
     virtual void iterateOverOutputTextures(std::function<void (const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures, const std::string &name, ITextureFormat textureFormat)> callback) = 0;
-
+    virtual void readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata) = 0;
 
     std::unique_ptr<std::list<std::function<void()>>::const_iterator> addOnUpdate(std::function<void ()> callback) {
         m_onHandleChangeList.push_back(callback);

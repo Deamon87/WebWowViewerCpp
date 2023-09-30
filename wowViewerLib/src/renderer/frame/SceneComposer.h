@@ -28,8 +28,8 @@ private:
     bool m_firstFrame = true;
 
     void consumeCulling(const HFrameScenario &frameScenario);
-    void consumeUpdate(const HFrameScenario &frameScenario, std::vector<std::unique_ptr<IRenderFunction>> &renderFunctions);
-    void consumeDraw(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged);
+    void consumeUpdate(const HFrameScenario &frameScenario, FrameRenderFuncs &frameRenderFunctions);
+    void consumeDraw(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged);
 
     //Flip-flop delta promises
     int frameMod = 0;
@@ -37,7 +37,7 @@ private:
 
     ProdConsumerIOConnector<HFrameScenario> cullingInput = {m_isTerminating};
     ProdConsumerIOConnector<HFrameScenario> updateInput = {m_isTerminating};
-    ProdConsumerIOConnector<std::shared_ptr<std::vector<std::unique_ptr<IRenderFunction>>>> drawInput = {m_isTerminating};
+    ProdConsumerIOConnector<std::shared_ptr<FrameRenderFuncs>> drawInput = {m_isTerminating};
 public:
     SceneComposer(HApiContainer apiContainer);
     ~SceneComposer() {

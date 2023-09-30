@@ -16,12 +16,13 @@ public:
 
     void wait(uint64_t maxWaitTime);
     void reset();
+    void addOnFinish(const std::function<void()>& callback) {onFinish.push_back(callback);};
 
     VkFence getNativeFence() {return m_fence;};
 private:
     std::shared_ptr<IDeviceVulkan> m_device;
     VkFence m_fence;
-
+    std::vector<std::function<void()>> onFinish;
 };
 
 
