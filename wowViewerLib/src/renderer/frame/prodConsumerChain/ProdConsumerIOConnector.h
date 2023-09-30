@@ -42,9 +42,13 @@ public:
     void blockProcessWithoutWait(int limit, const std::function<void (T& input)> &callback) {
         ZoneScoped;
         int processed;
+        std::unique_lock<std::mutex> lock{m_queueMutex, std::defer_lock};
         while ((processed < limit) && (!m_queue.empty())) {
+            lock.lock();
             auto result = std::move(m_queue.front());
             m_queue.pop();
+            lock.unlock();
+
             callback(result);
             processed++;
         }
@@ -60,10 +64,10 @@ public:
             {
                 return !l_queue.empty() || l_terminated;
             });
+            lock.unlock();
         }
 
         blockProcessWithoutWait(INT_MAX, callback);
-        lock.unlock();
     };
 
     bool empty() {return m_queue.empty(); }
