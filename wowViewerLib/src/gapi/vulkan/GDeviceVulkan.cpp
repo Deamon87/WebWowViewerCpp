@@ -204,7 +204,7 @@ std::set<std::string> get_supported_extensions() {
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
-    enableValidationLayers = true;
+    enableValidationLayers = false;
 
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
@@ -364,7 +364,6 @@ void GDeviceVLK::initialize() {
 
     m_textureManager->initialize();
 //---------------
-
     createSwapChainAndFramebuffer();
 
     createCommandPool();
@@ -384,6 +383,7 @@ void GDeviceVLK::initialize() {
     unsigned int ff = 0xffffffff;
     m_whitePixelTexture->getTexture()->loadData(1,1,&ff, ITextureFormat::itRGBA);
 
+    m_ringBuffer = std::make_shared<GStagingRingBuffer>(shared_from_this());
 }
 
 void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const char *name)
@@ -934,10 +934,12 @@ bool GDeviceVLK::getIsBCCompressedTexturesSupported() {
 float GDeviceVLK::getAnisLevel() {
     return deviceProperties.limits.maxSamplerAnisotropy;
 }
+void GDeviceVLK::flushRingBuffer() {
+    m_ringBuffer->flushBuffers();
+}
 
 void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &renderFuncs, bool windowSizeChanged) {
     ZoneScoped;
-    this->waitInDrawStageAndDeps.beginMeasurement();
 
     int currentDrawFrame = getProcessingFrameNumber();
 
@@ -983,6 +985,7 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
                 }
             }
         }
+        flushRingBuffer();
         {
             submitQueue(
                 uploadQueue,
@@ -1058,7 +1061,6 @@ void GDeviceVLK::drawFrame(const std::vector<std::unique_ptr<IRenderFunction>> &
     }
 
     executeDeallocators();
-    this->waitInDrawStageAndDeps.endMeasurement();
 }
 
 RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd) {
@@ -1226,24 +1228,24 @@ std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName
     return sharedPtr;
 }
 
-HGBufferVLK GDeviceVLK::createUniformBuffer(const char * objName, size_t initialSize, const std::shared_ptr<GStagingRingBuffer> &ringBuff) {
-    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, ringBuff, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize, uniformBufferOffsetAlign);
+HGBufferVLK GDeviceVLK::createUniformBuffer(const char * objName, size_t initialSize) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, initialSize, uniformBufferOffsetAlign);
     return h_uniformBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createSSBOBuffer(const char * objName, size_t initialSize, int recordSize, const std::shared_ptr<GStagingRingBuffer> &ringBuff) {
-    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, ringBuff, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, initialSize, recordSize);
+HGBufferVLK GDeviceVLK::createSSBOBuffer(const char * objName, size_t initialSize, int recordSize) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, initialSize, recordSize);
     return h_uniformBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createVertexBuffer(const char * objName, size_t initialSize, const std::shared_ptr<GStagingRingBuffer> &ringBuff) {
-    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, ringBuff, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize);
+HGBufferVLK GDeviceVLK::createVertexBuffer(const char * objName, size_t initialSize) {
+    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize);
 
     return h_vertexBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createIndexBuffer(const char * objName, size_t initialSize, const std::shared_ptr<GStagingRingBuffer> &ringBuff) {
-    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, ringBuff, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize);
+HGBufferVLK GDeviceVLK::createIndexBuffer(const char * objName, size_t initialSize) {
+    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize);
     return h_indexBuffer;
 }
 
@@ -1475,10 +1477,6 @@ GDeviceVLK::createDescriptorSet(std::shared_ptr<GDescriptorSetLayout> &hDescript
 
     return result;
 }
-
-void GDeviceVLK::initUploadThread() {
-}
-
 void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callback) {
     //Allocate temporary command buffer
     VkCommandBufferAllocateInfo allocInfo = {};

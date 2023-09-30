@@ -73,26 +73,26 @@ void MinimapGenerationWindow::render() {
                 ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0,0,0,1.0));
 
                 const int imageSize = 512;
-
-                if (ImGui::ImageButton2(m_renderer->createUIMaterial({texture}), "previewImage",
-                                        ImVec2(imageSize, imageSize),
-                                        ImVec2(0,1),
-                                        ImVec2(1,0)))
-                {
-                    auto mousePos = ImGui::GetMousePos();
-                    ImGuiStyle &style = ImGui::GetStyle();
-
-                    mousePos.x += -ImGui::GetWindowPos().x - style.WindowPadding.x;
-                    mousePos.y += -ImGui::GetWindowPos().y - style.WindowPadding.y;
-
-
-                    previewX = ((0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewX;
-                    previewY = ((0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewY;
-
-
-
-                    minimapGenerator->setLookAtPoint(previewX, previewY);
-                };
+//TODO:
+//                if (ImGui::ImageButton2(m_renderer->createUIMaterial({texture}), "previewImage",
+//                                        ImVec2(imageSize, imageSize),
+//                                        ImVec2(0,1),
+//                                        ImVec2(1,0)))
+//                {
+//                    auto mousePos = ImGui::GetMousePos();
+//                    ImGuiStyle &style = ImGui::GetStyle();
+//
+//                    mousePos.x += -ImGui::GetWindowPos().x - style.WindowPadding.x;
+//                    mousePos.y += -ImGui::GetWindowPos().y - style.WindowPadding.y;
+//
+//
+//                    previewX = ((0.5f - (mousePos.y / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewX;
+//                    previewY = ((0.5f - (mousePos.x / (float)imageSize)) * minimapGenerator->GetOrthoDimension()) + previewY;
+//
+//
+//
+//                    minimapGenerator->setLookAtPoint(previewX, previewY);
+//                };
 
                 ImGui::PopStyleColor(3);
                 ImGui::PopStyleVar(3);

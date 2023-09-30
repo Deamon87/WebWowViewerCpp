@@ -45,6 +45,7 @@ protected:
     HGSamplableTexture fontTexture;
 
     UiMaterialCache m_materialCache;
+    UiMaterialCacheMap m_materialCacheIdMap;
     std::shared_ptr<CBufferChunkVLK<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 
     void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, std::vector<HGMesh> &meshes);

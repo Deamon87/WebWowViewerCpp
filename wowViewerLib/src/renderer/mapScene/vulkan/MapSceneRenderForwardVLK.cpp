@@ -38,19 +38,18 @@ static const ShaderConfig m2ForwardShaderConfig = {
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
-    m_stagingRingBuffer = std::make_shared<GStagingRingBuffer>(m_device);
 
-    iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024, m_stagingRingBuffer);
+    iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
-    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024, m_stagingRingBuffer);
-    vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024, m_stagingRingBuffer);
-    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024, m_stagingRingBuffer);
-    vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024, m_stagingRingBuffer);
-    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024, m_stagingRingBuffer);
-    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024, m_stagingRingBuffer);
-    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024, m_stagingRingBuffer);
-    vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024, m_stagingRingBuffer);
-    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200, m_stagingRingBuffer);
+    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024);
+    vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024);
+    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024);
+    vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024);
+    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024);
+    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
+    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
+    vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
+    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200);
 
     {
         const float epsilon = 0.f;
@@ -64,8 +63,8 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
             0, 1, 2,
             2, 1, 3
         };
-        m_vboQuad = m_device->createVertexBuffer("Scene_VBO_Quad", vertexBuffer.size() * sizeof(mathfu::vec2_packed), m_stagingRingBuffer);
-        m_iboQuad = m_device->createIndexBuffer("Scene_IBO_Quad", indexBuffer.size() * sizeof(uint16_t), m_stagingRingBuffer);
+        m_vboQuad = m_device->createVertexBuffer("Scene_VBO_Quad", vertexBuffer.size() * sizeof(mathfu::vec2_packed));
+        m_iboQuad = m_device->createIndexBuffer("Scene_IBO_Quad", indexBuffer.size() * sizeof(uint16_t));
         m_vboQuad->uploadData(vertexBuffer.data(), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
         m_iboQuad->uploadData(indexBuffer.data(), indexBuffer.size() * sizeof(uint16_t));
 
@@ -75,10 +74,10 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
         m_drawQuadVao->save();
     }
 
-    uboBuffer = m_device->createUniformBuffer("Scene_UBO", 1024*1024, m_stagingRingBuffer);
-    uboStaticBuffer = m_device->createUniformBuffer("Scene_UBOStatic", 1024*1024, m_stagingRingBuffer);
+    uboBuffer = m_device->createUniformBuffer("Scene_UBO", 1024*1024);
+    uboStaticBuffer = m_device->createUniformBuffer("Scene_UBOStatic", 1024*1024);
 
-    uboM2BoneMatrixBuffer = m_device->createUniformBuffer("Scene_UBO_M2BoneMats", 5000*64, m_stagingRingBuffer);
+    uboM2BoneMatrixBuffer = m_device->createUniformBuffer("Scene_UBO_M2BoneMats", 5000*64);
 
     m_emptyADTVAO = createADTVAO(nullptr, nullptr);
     m_emptyM2VAO = createM2VAO(nullptr, nullptr);
@@ -661,43 +660,38 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             //Needs to be executed only after lock
             l_this->m_lastCreatedPlan = framePlan;
         }
+        // ---------------------
+        // Upload stuff
+        // ---------------------
         {
-            ZoneScopedN("Flush Staging Buffer");
-            l_this->m_stagingRingBuffer->flushBuffers();
+           ZoneScopedN("submit buffers");
+           VkZone(uploadCmd, "submit buffers")
+           uploadCmd.submitBufferUploads(l_this->uboBuffer);
+           uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
+
+           uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
+
+           uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
+           uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
+           uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
+           uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
+           uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
+           uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
+           uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
+           uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
+           uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
+
+           uploadCmd.submitBufferUploads(l_this->iboBuffer);
+           uploadCmd.submitBufferUploads(l_this->m_vboQuad);
+           uploadCmd.submitBufferUploads(l_this->m_iboQuad);
         }
-
-            // ---------------------
-            // Upload stuff
-            // ---------------------
-            {
-               ZoneScopedN("submit buffers");
-               VkZone(uploadCmd, "submit buffers")
-               uploadCmd.submitBufferUploads(l_this->uboBuffer);
-               uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
-
-               uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
-
-               uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
-               uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
-               uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
-               uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
-               uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
-               uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
-               uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
-               uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
-               uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
-
-               uploadCmd.submitBufferUploads(l_this->iboBuffer);
-               uploadCmd.submitBufferUploads(l_this->m_vboQuad);
-               uploadCmd.submitBufferUploads(l_this->m_iboQuad);
-            }
-       }, [opaqueMeshes, transparentMeshes, liquidMeshes,
-        skyOpaqueMeshes, skyTransparentMeshes,
-        renderSky,
-        skyMesh,
-        skyMesh0x4,
-        mapScene, framePlan,
-        l_this, frameInputParams](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
+   }, [opaqueMeshes, transparentMeshes, liquidMeshes,
+    skyOpaqueMeshes, skyTransparentMeshes,
+    renderSky,
+    skyMesh,
+    skyMesh0x4,
+    mapScene, framePlan,
+    l_this, frameInputParams](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
 
         TracyMessageStr(("Draw stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
 

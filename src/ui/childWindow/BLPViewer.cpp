@@ -46,7 +46,7 @@ bool BLPViewer::draw() {
             sizeX = windowSize.x;
             sizeY = windowSize.y;
 
-            ImGui::ImageButton(material, ImVec2(sizeX, sizeY));
+            ImGui::ImageButton(material->uniqueId, ImVec2(sizeX, sizeY));
         }
     }
     ImGui::End();

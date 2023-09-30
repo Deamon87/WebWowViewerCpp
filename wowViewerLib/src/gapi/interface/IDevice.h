@@ -143,7 +143,7 @@ enum class GDeviceType {
 
 class IDevice {
     public:
-        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 3;
+        static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 2;
 
         virtual ~IDevice() {};
 
@@ -178,7 +178,6 @@ class IDevice {
         virtual bool getIsVulkanAxisSystem() {return false;}
         virtual bool getIsRenderbufferSupported() {return false;}
 
-        virtual void initUploadThread(){}
         virtual double getWaitForUpdate() {return 0;}
 
     public:

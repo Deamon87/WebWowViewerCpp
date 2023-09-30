@@ -26,7 +26,7 @@ private:
 
     struct SelectionRecord {
         std::string name;
-        std::array<std::shared_ptr<IMaterial>, IDevice::MAX_FRAMES_IN_FLIGHT> materials;
+        std::array<std::shared_ptr<IUIMaterial>, IDevice::MAX_FRAMES_IN_FLIGHT> materials;
     };
 
     int currentSelectionIndex = 0;

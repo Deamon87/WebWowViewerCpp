@@ -144,9 +144,6 @@ private:
     HGVertexBufferBindings m_emptySkyVAO = nullptr;
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
-
-    std::shared_ptr<GStagingRingBuffer> m_stagingRingBuffer;
-
 private:
     class RenderViewForwardVLK : public IRenderView {
     public:

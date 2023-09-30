@@ -90,22 +90,18 @@ public:
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     bool getIsVulkanAxisSystem() override {return true;}
 
-    void initUploadThread() override;
+    void flushRingBuffer();
 
     const QueueFamilyIndices &getQueueFamilyIndices() override {
         return indices;
     }
 public:
-    double getWaitForUpdate() override {
-        return this->waitInDrawStageAndDeps.getTimePerFrame();
-    }
-
     std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConf);
 
-    HGBufferVLK createUniformBuffer(const char * objName, size_t size, const std::shared_ptr<GStagingRingBuffer> &ringBuff);
-    HGBufferVLK createSSBOBuffer(const char * objName, size_t size, int recordSize, const std::shared_ptr<GStagingRingBuffer> &ringBuff);
-    HGBufferVLK createVertexBuffer(const char * objName, size_t size, const std::shared_ptr<GStagingRingBuffer> &ringBuff);
-    HGBufferVLK createIndexBuffer(const char * objName, size_t size, const std::shared_ptr<GStagingRingBuffer> &ringBuff);
+    HGBufferVLK createUniformBuffer(const char * objName, size_t size);
+    HGBufferVLK createSSBOBuffer(const char * objName, size_t size, int recordSize);
+    HGBufferVLK createVertexBuffer(const char * objName, size_t size);
+    HGBufferVLK createIndexBuffer(const char * objName, size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
@@ -262,7 +258,6 @@ protected:
     VkDebugUtilsMessengerEXT debugMessenger;
 
     int threadCount = 1;
-    FrameCounter waitInDrawStageAndDeps;
 
     QueueFamilyIndices indices;
     VkInstance vkInstance;
@@ -327,7 +322,7 @@ protected:
     HGVertexBufferBindings m_lineBBBindings;
     HGVertexBufferBindings m_defaultVao;
 
-
+    std::shared_ptr<GStagingRingBuffer> m_ringBuffer;
 
     HGSamplableTexture m_blackPixelTexture = nullptr;
     HGSamplableTexture m_whitePixelTexture = nullptr;

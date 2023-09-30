@@ -39,4 +39,5 @@ public:
 
 typedef std::shared_ptr<IMaterial> HMaterial;
 
+
 #endif //AWEBWOWVIEWERCPP_IMATERIAL_H

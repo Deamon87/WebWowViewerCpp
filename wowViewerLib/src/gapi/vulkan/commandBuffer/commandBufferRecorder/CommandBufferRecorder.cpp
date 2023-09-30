@@ -68,11 +68,13 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     createDefaultScissors(areaOffset, areaSize);
 
     m_currentRenderPass = renderPassVlk;
-    return RenderPassHelper(
+    auto renderPass = RenderPassHelper(
         *this,
         isAboutToExecSecondaryCMD,
         renderPassVlk, frameBuffer, areaOffset, areaSize, colorClearColor, depthClear
     );
+    setDefaultScissors();
+    return renderPass;
 }
 
 
@@ -307,12 +309,23 @@ void CmdBufRecorder::createViewPortTypes(const std::array<int32_t, 2> &areaOffse
 
 void CmdBufRecorder::createDefaultScissors(const std::array<int32_t, 2> &areaOffset,
                                            const std::array<uint32_t, 2> &areaSize) {
-    defaultScissor = {};
-    defaultScissor.offset = {areaOffset[0], areaOffset[1]};
-    defaultScissor.extent = {
+
+    VkOffset2D offset2D = {areaOffset[0], areaOffset[1]};
+    VkExtent2D extent2D = {
         static_cast<uint32_t>(areaSize[0]),
         static_cast<uint32_t>(areaSize[1])
     };
+
+    if (
+        defaultScissor.offset.x != offset2D.x || defaultScissor.offset.y != offset2D.y ||
+        defaultScissor.extent.width != extent2D.width || defaultScissor.extent.height != extent2D.height
+    ) {
+        defaultScissor = {};
+        defaultScissor.offset = offset2D;
+        defaultScissor.extent = extent2D;
+
+        m_currentScissorsIsDefault = false;
+    }
 }
 
 #ifdef LINK_TRACY

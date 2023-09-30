@@ -66,6 +66,7 @@ private:
     ImGuiContext* imguiContext = nullptr;
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
 
+    std::shared_ptr<IUIMaterial> fontMat;
 
 //    HCullStage m_lastCullstage = {};
 
@@ -97,7 +98,7 @@ private:
     void resetAnimationCallback();
 
     std::array<std::array<HGSamplableTexture, 64>, 64> adtSelectionMinimapTextures;
-    std::array<std::array<HMaterial, 64>, 64> adtSelectionMinimapMaterials;
+    std::array<std::array<std::shared_ptr<IUIMaterial>, 64>, 64> adtSelectionMinimapMaterials;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {

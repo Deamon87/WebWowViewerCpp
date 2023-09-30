@@ -22,7 +22,7 @@ private:
     HApiContainer m_api;
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
     std::shared_ptr<BlpTexture> m_blpTexture;
-    HMaterial material = nullptr;
+    std::shared_ptr<IUIMaterial> material = nullptr;
 };
 
 

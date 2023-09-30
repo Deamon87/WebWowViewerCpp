@@ -99,6 +99,7 @@ private:
 protected:
     IDeviceVulkan &m_device;
 
+    bool m_isFrameBufferImage = false;
     bool stagingBufferCreated = false;
 
     bool m_uploaded = false;

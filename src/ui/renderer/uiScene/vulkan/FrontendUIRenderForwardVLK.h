@@ -7,6 +7,7 @@
 
 
 #include <queue>
+#include <random>
 #include "../FrontendUIRenderer.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/GDeviceVulkan.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/GBufferVLK.h"
@@ -26,14 +27,16 @@ public:
 
     HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;;
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
-    HMaterial createUIMaterial(const HGSamplableTexture &hgtexture) override;
+    std::shared_ptr<IUIMaterial> createUIMaterial(const HGSamplableTexture &hgtexture) override;
 
-
+    uint32_t generateUniqueMatId();
 private:
     HGDeviceVLK m_device;
 
-    //Frame counter
-    int m_frame = 0;
+
+    std::mt19937_64 eng; //Use the 64-bit Mersenne Twister 19937 generator
+    //and seed it with entropy.
+    std::uniform_int_distribution<unsigned long long> idDistr;
 
     //Rendering pipelining
     std::mutex m_inputParamsMtx;
@@ -41,8 +44,6 @@ private:
     HGBufferVLK vboBuffer;
     HGBufferVLK iboBuffer;
     HGBufferVLK uboBuffer;
-
-    std::shared_ptr<GStagingRingBuffer> m_ringBuffer;
 
     void createBuffers();
 

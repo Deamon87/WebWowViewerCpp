@@ -45,7 +45,7 @@ void DebugRendererWindow::draw() {
         if (currentSelectionIndex < m_selections.size()) {
             auto const &currentMaterial = m_selections[currentSelectionIndex].materials[currentFrame];
             if (currentMaterial) {
-                ImGui::Image(currentMaterial, {sizeX, sizeY});
+                ImGui::Image(currentMaterial->uniqueId, {sizeX, sizeY});
             }
         }
     }

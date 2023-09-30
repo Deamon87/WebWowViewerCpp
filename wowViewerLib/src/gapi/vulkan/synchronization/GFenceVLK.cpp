@@ -28,7 +28,9 @@ GFenceVLK::~GFenceVLK() {
 constexpr int FENCES_COUNT = 1;
 
 void GFenceVLK::wait(uint64_t maxWaitTime) {
-    ERR_GUARD_VULKAN(vkWaitForFences(m_device->getVkDevice(), FENCES_COUNT, &m_fence, VK_TRUE, maxWaitTime));
+    auto result = vkWaitForFences(m_device->getVkDevice(), FENCES_COUNT, &m_fence, VK_TRUE, maxWaitTime);
+
+    ERR_GUARD_VULKAN(result);
 }
 
 void GFenceVLK::reset() {

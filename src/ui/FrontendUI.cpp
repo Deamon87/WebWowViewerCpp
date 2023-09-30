@@ -457,7 +457,7 @@ void FrontendUI::showAdtSelectionMinimap() {
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
             if (adtSelectionMinimapMaterials[i][j] != nullptr) {
-                if (ImGui::ImageButton(adtSelectionMinimapMaterials[i][j],
+                if (ImGui::ImageButton(adtSelectionMinimapMaterials[i][j]->uniqueId,
                                        ImVec2(prevZoomedSize, prevZoomedSize))) {
                     auto mousePos = ImGui::GetMousePos();
                     const ImGuiStyle &style = ImGui::GetStyle();
@@ -1414,11 +1414,13 @@ void FrontendUI::showSettingsDialog() {
                 if (!useDoubleCameraDebug) {
                     m_debugRenderWindow = nullptr;
                     m_debugRenderView = nullptr;
-                } else if (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) {
-                    m_debugRenderView = m_sceneRenderer->createRenderView(640, 480, true);
-                    m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
                 }
             }
+            if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && m_sceneRenderer != nullptr) {
+                m_debugRenderView = m_sceneRenderer->createRenderView(640, 480, true);
+                m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
+            }
+
 
             if (useDoubleCameraDebug) {
                 if (m_api->debugCamera == nullptr) {
@@ -1664,25 +1666,31 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
     float nearPlane = 1.0;
     float fovR = toRadian(fov);
 
-    auto width = renderTargetParams[0].dimensions.maxs[0];
-    auto height = renderTargetParams[0].dimensions.maxs[1];
-    float canvasAspect = (float)width / (float)height;
+    {
+        auto width = renderTargetParams[0].dimensions.maxs[0];
+        auto height = renderTargetParams[0].dimensions.maxs[1];
+        float canvasAspect = (float) width / (float) height;
 
-    result->matricesForCulling = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
-
+        result->matricesForCulling = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane,
+                                                                            farPlaneCulling);
+    }
 
     bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    auto assignInfiniteZ = [&](auto renderTarget) {
+    auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
         float f = 1.0f / tan(fovR / 2.0f);
         renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
     };
 
     for (auto &targetParam : renderTargetParams) {
+        auto width = targetParam.dimensions.maxs[0];
+        auto height = targetParam.dimensions.maxs[1];
+        float canvasAspect = (float)width / (float)height;
+
         auto &renderTarget = result->renderTargets.emplace_back();
         renderTarget.cameraMatricesForRendering = targetParam.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);;
         renderTarget.viewPortDimensions = targetParam.dimensions;
         renderTarget.target = targetParam.target;
-        if (isInfZSupported) assignInfiniteZ(renderTarget);
+        if (isInfZSupported) assignInfiniteZ(renderTarget, canvasAspect);
     }
 
     result->clearColor = apiContainer.getConfig()->clearColor;
@@ -1706,6 +1714,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             {0,     0},
             {static_cast<unsigned int>(canvWidth), static_cast<unsigned int>(canvHeight)}
         };
+        ViewPortDimensions debugViewDimension = dimension;
 
         if (m_sceneRenderer != nullptr) {
             auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
@@ -1716,8 +1725,15 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             if (m_api->debugCamera && m_api->getConfig()->doubleCameraDebug && m_debugRenderView) {
                 debugTarget = m_debugRenderView;
 
+                debugViewDimension = {
+                    {0,     0},
+                    {static_cast<unsigned int>(m_debugRenderWindow->getWidth()),
+                     static_cast<unsigned int>(m_debugRenderWindow->getHeight())}
+                };
+
                 if (m_api->getConfig()->swapMainAndDebug) {
                     std::swap(target, debugTarget);
+                    std::swap(dimension, debugViewDimension);
                 }
             }
 
@@ -1729,12 +1745,6 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
                 }
             };
             if (m_api->getConfig()->doubleCameraDebug) {
-                ViewPortDimensions debugViewDimension = {
-                    {0,     0},
-                    {static_cast<unsigned int>(m_debugRenderWindow->getWidth()),
-                     static_cast<unsigned int>(m_debugRenderWindow->getHeight())}
-                };
-
                 auto &debugParams = renderTargetParams.emplace_back();
                 debugParams.camera = m_api->debugCamera;
                 debugParams.dimensions = debugViewDimension;
@@ -1994,6 +2004,7 @@ void FrontendUI::createFontTexture() {
     // Upload texture to graphics system
 
     // Store our identifier
-    io.Fonts->TexID = this->m_uiRenderer->createUIMaterial({this->m_uiRenderer->uploadFontTexture(pixels, width, height)});
+    fontMat = this->m_uiRenderer->createUIMaterial({this->m_uiRenderer->uploadFontTexture(pixels, width, height)});
+    io.Fonts->TexID = fontMat->uniqueId;
 }
 

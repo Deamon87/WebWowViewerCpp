@@ -12,8 +12,8 @@
 #include "../../../../../wowViewerLib/src/gapi/vulkan/materials/MaterialBuilderVLK.h"
 
 
-FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) : FrontendUIRenderer(
-    hDevice), m_device(hDevice) {
+FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) :
+    FrontendUIRenderer(hDevice), m_device(hDevice) {
 
     m_lastRenderPass = m_device->getSwapChainRenderPass();
     m_emptyImguiVAO = createVAO(nullptr,nullptr);
@@ -22,11 +22,9 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
-    m_ringBuffer = std::make_shared<GStagingRingBuffer>(m_device);
-
-    iboBuffer = m_device->createIndexBuffer("UI_Ibo_Buffer", 1024*1024, m_ringBuffer);
-    vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024, m_ringBuffer);
-    uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT, m_ringBuffer);
+    iboBuffer = m_device->createIndexBuffer("UI_Ibo_Buffer", 1024*1024);
+    vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024);
+    uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
     m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
 }
@@ -48,7 +46,7 @@ HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vert
     return imguiVAO;
 }
 
-HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture &hgtexture) {
+std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture &hgtexture) {
     auto weakTexture = std::weak_ptr(hgtexture);
     auto i = m_materialCache.find(weakTexture);
     if (i != m_materialCache.end()) {
@@ -70,10 +68,13 @@ HMaterial FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture 
             ds->beginUpdate()
                 .texture(5, hgtexture);
         })
-        .toMaterial();
+        .toMaterial<IUIMaterial>([&] (IUIMaterial *uiMat){
+            uiMat->uniqueId = this->generateUniqueMatId();
+        });
 
-    std::weak_ptr<ISimpleMaterialVLK> weakPtr = material;
+    auto weakPtr = material;
     m_materialCache[weakTexture] = weakPtr;
+    m_materialCacheIdMap[material->uniqueId] = std::dynamic_pointer_cast<IMaterial>(material);
 
     return material;
 }
@@ -106,7 +107,6 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             // ---------------------
             // Upload stuff
             // ---------------------
-            l_this->m_ringBuffer->flushBuffers();
 
             uploadCmd.submitBufferUploads(l_this->uboBuffer);
             uploadCmd.submitBufferUploads(l_this->vboBuffer);
@@ -153,4 +153,13 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
                 }
             })
     );
+}
+
+uint32_t FrontendUIRenderForwardVLK::generateUniqueMatId() {
+    uint32_t random;
+    do {
+        random = idDistr(eng);
+    } while (!m_materialCacheIdMap[random].expired());
+
+    return random;
 }

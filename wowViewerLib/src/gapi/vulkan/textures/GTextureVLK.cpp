@@ -17,6 +17,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
                          VkSampleCountFlagBits numSamples,
                          int vulkanMipMapCount, VkImageUsageFlags imageUsageFlags) : m_device(device), IDSBindable(false) {
     //For use in frameBuffer
+    m_isFrameBufferImage = true;
 
     m_width = width;
     m_height = height;
@@ -220,6 +221,9 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
     VmaAllocationCreateInfo allocImageCreateInfo = {};
     allocImageCreateInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 //    allocImageCreateInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT; //this bit forces to create per one texture per memory
+    if (m_isFrameBufferImage) {
+        allocImageCreateInfo.flags = VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
+    }
 
 
     vmaCreateImage(m_device.getVMAAllocator(), &imageCreateInfo, &allocImageCreateInfo, &texture.image,
