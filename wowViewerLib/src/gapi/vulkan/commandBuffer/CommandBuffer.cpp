@@ -33,19 +33,19 @@ CmdBufRecorder GCommandBuffer::beginRecord(const std::shared_ptr<GRenderPassVLK>
 void GCommandBuffer::createCommandBufVLK() {
     if (m_cmdBufWasCreated) {
 //        //Dispose of previous buffer
-//        auto l_cmdBuf = m_cmdBuffer;
 //
 //        auto l_deviceVlk = m_device.getVkDevice();
 //        auto l_commandPool = m_commandPool;
-//        auto l_tracyContext = tracyContext;
 //
-//        m_device.addDeallocationRecord([l_cmdBuf, l_deviceVlk, l_tracyContext, l_commandPool]() -> void {
-//#ifdef LINK_TRACY
-//            TracyVkCollect(l_tracyContext, l_cmdBuf);
-//#endif
-//            vkFreeCommandBuffers(l_deviceVlk, l_commandPool, 1, &l_cmdBuf);
-//        });
+
+        auto l_cmdBuf = m_cmdBuffer;
+        auto l_tracyContext = tracyContext;
+
+#ifdef LINK_TRACY
+        TracyVkCollect(l_tracyContext, l_cmdBuf);
+#endif
         vkResetCommandBuffer(m_cmdBuffer, 0);
+
     } else {
 
         VkCommandBufferAllocateInfo allocInfo = {};
@@ -62,7 +62,7 @@ void GCommandBuffer::createCommandBufVLK() {
     if (!m_cmdBufWasCreated) {
 #ifdef LINK_TRACY
         tracyContext = TracyVkContext(m_device.getVkPhysicalDevice(), m_device.getVkDevice(), m_vkQueue, m_cmdBuffer);
-#endif LINK_TRACY
+#endif
     }
     m_cmdBufWasCreated = true;
 }

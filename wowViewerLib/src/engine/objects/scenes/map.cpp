@@ -1496,9 +1496,9 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         }
     }
 
-
     //2. Calc distance every 100 ms
     {
+        ZoneScopedN("Calc m2 distance");
         oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
         arena.execute([&] {
             tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
@@ -1514,20 +1514,23 @@ void Map::update(const HMapRenderPlan &renderPlan) {
     }
 
     //Cleanup ADT every 10 seconds
-     if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                auto adtObj = mapTiles[i][j];
-                //Free obj, if it was unused for 10 secs
-                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
+    {
+        ZoneScopedN("Cleanup ADT");
+        if (adtFreeLambda != nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    auto adtObj = mapTiles[i][j];
+                    //Free obj, if it was unused for 10 secs
+                    if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
 //                    std::cout << "try to free adtObj" << std::endl;
 
-                    mapTiles[i][j] = nullptr;
+                        mapTiles[i][j] = nullptr;
+                    }
                 }
             }
-        }
 
-        adtFreeLambda(false, true, this->m_currentTime + deltaTime);
+            adtFreeLambda(false, true, this->m_currentTime + deltaTime);
+        }
     }
 
     this->m_currentTime += deltaTime;

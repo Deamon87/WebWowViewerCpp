@@ -457,7 +457,8 @@ void FrontendUI::showAdtSelectionMinimap() {
     for (int i = 0; i < 64; i++) {
         for (int j = 0; j < 64; j++) {
             if (adtSelectionMinimapMaterials[i][j] != nullptr) {
-                if (ImGui::ImageButton(adtSelectionMinimapMaterials[i][j]->uniqueId,
+                if (ImGui::ImageButton(std::to_string(i*64+j).c_str(),
+                                       adtSelectionMinimapMaterials[i][j]->uniqueId,
                                        ImVec2(prevZoomedSize, prevZoomedSize))) {
                     auto mousePos = ImGui::GetMousePos();
                     const ImGuiStyle &style = ImGui::GetStyle();

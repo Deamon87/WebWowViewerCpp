@@ -15,9 +15,10 @@
 #include "tbb/parallel_for.h"
 #include "tbb/blocked_range2d.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
-
+#include "../../../renderer/frame/FrameProfile.h"
 
 void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
 //    std::cout << "AdtObject::loadingFinished finished called";
 
 //    texturesPerMCNK = std::vector<AnimTextures>(m_adtFile->mcnkRead+1);
@@ -39,6 +40,7 @@ void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer) {
 }
 
 void AdtObject::loadM2s() {
+    ZoneScoped;
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->doodadDef_len;
     //1. Load non-lod
@@ -81,6 +83,8 @@ void AdtObject::loadM2s() {
     }
 }
 void AdtObject::loadWmos() {
+    ZoneScoped;
+
     uint32_t offset = 0;
     int32_t length = m_adtFileObj->mapObjDef_len;
 
@@ -127,6 +131,7 @@ void AdtObject::loadWmos() {
 }
 
 void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
+    ZoneScoped;
     if (m_adtFile->mH2OHeader == nullptr) return;
 
     m_waterPlacementChunk = sceneRenderer->createWMOWideChunk();
@@ -176,7 +181,7 @@ void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
 
 void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
     /* 1. help index + Heights + texCoords +  */
-
+    ZoneScoped;
     std::vector<AdtVertex> vboArray ;
 
     //DEBUG
@@ -335,6 +340,7 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
     HGDevice device = m_api->hDevice;
 
     auto adtFileTex = m_adtFileTex;
@@ -469,6 +475,7 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
 }
 
 void AdtObject::loadAlphaTextures() {
+    ZoneScoped;
     int chunkCount = m_adtFileTex->mcnkRead+1;
     int maxAlphaTexPerChunk = 4;
     int alphaTexSize = 64;
@@ -1199,6 +1206,8 @@ int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {
 }
 
 void AdtObject::createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
+
     auto const &strips = !m_api->getConfig()->ignoreADTHoles ?
          m_adtFile->strips :
          m_adtFile->stripsNoHoles;
