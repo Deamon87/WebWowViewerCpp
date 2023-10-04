@@ -454,7 +454,7 @@ int main(){
     frontendUI->setUIScale(uiScale);
 
 //    auto native_me = std::this_thread::get_id().native_handle();
-#if WIN32
+#ifdef WIN32
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
 #endif
     //This has to be called after setting all callbacks specific to this app.

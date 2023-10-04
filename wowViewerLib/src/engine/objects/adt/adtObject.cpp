@@ -952,19 +952,54 @@ bool AdtObject::checkReferences(
     if (m_freeStrategy != nullptr)
         m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
+//    checkWmoM2ByRef(lodLevel, m2ObjectsCandidates, wmoCandidates, x, y, x_len, y_len);
+    checkWmoGlobally(lodLevel, m2ObjectsCandidates, wmoCandidates, x, y, x_len, y_len);
+
+    return true;
+}
+
+void
+AdtObject::checkWmoGlobally(int lodLevel, M2ObjectListContainer &m2ObjectsCandidates, WMOListContainer &wmoCandidates, int x,
+                 int y,
+                 int x_len, int y_len) {
+
+    if (lodLevel >= 4) {
+        for (auto const &m2Object : objectLods[0].m2Objects)
+            m2ObjectsCandidates.addCandidate(m2Object);
+    } else {
+        for (auto const &m2Object: objectLods[1].m2Objects) {
+            m2ObjectsCandidates.addCandidate(m2Object);
+        }
+    }
+
+    if (lodLevel >= 4) {
+        for (auto const &wmoObject : objectLods[0].wmoObjects)
+            wmoCandidates.addCand(wmoObject);
+    } else {
+        for (auto const &wmoObject: objectLods[1].wmoObjects) {
+            wmoCandidates.addCand(wmoObject);
+        }
+    }
+}
+
+void
+AdtObject::checkWmoM2ByRef(int lodLevel, M2ObjectListContainer &m2ObjectsCandidates, WMOListContainer &wmoCandidates,
+                           int x, int y, int x_len,
+                           int y_len) {
+
 //    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
 //        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
 //            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
 //    {
-        for (size_t k = x; k < x+x_len; k++) {
-            for (size_t l = y; l < y+y_len; ++l) {
-                int i = this->m_adtFile->mcnkMap[k][l];
+    for (size_t k = x; k < x+x_len; k++) {
+        for (size_t l = y; l < y+y_len; ++l) {
+            int i = m_adtFile->mcnkMap[k][l];
 
-                if (i < 0) continue;
+            if (i < 0) continue;
 
-                bool wotlk = false;
-                float chunkDist = 1.0;
-                if (wotlk) {
+            bool wotlk = false;
+            float chunkDist = 1.0;
+            if (wotlk) {
 //                SMChunk *mapTile = &m_adtFile->mapTile[i];
 //                mcnkStruct_t *mcnkContent = &m_adtFile->mcnkStructs[i];
 //
@@ -988,40 +1023,39 @@ bool AdtObject::checkReferences(
 //                uint32_t wmoRef = mcnkContent->mcrf.object_refs[j];
 //                wmoCandidates.insert(this->wmoObjects[j]);
 //            }
-                } else {
-                    SMChunk *mapTile = &m_adtFile->mapTile[i];
-                    mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
-                    if (lodLevel >= 4) {
-                        if (mcnkContent->mcrd_doodad_refs_len > 0) {
-                            for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
-                                uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
-                                m2ObjectsCandidates.addCandidate(this->objectLods[0].m2Objects[m2Ref]);
-                            }
-                        }
-                    } else {
-                        for (auto &m2Object: this->objectLods[1].m2Objects) {
-                            m2ObjectsCandidates.addCandidate(m2Object);
+            } else {
+                SMChunk *mapTile = &m_adtFile->mapTile[i];
+                mcnkStruct_t *mcnkContent = &m_adtFileObj->mcnkStructs[i];
+                if (lodLevel >= 4) {
+                    if (mcnkContent->mcrd_doodad_refs_len > 0) {
+                        for (int j = 0; j < mcnkContent->mcrd_doodad_refs_len; j++) {
+                            uint32_t m2Ref = mcnkContent->mcrd_doodad_refs[j];
+                            m2ObjectsCandidates.addCandidate(objectLods[0].m2Objects[m2Ref]);
                         }
                     }
+                } else {
+                    for (auto &m2Object: objectLods[1].m2Objects) {
+                        m2ObjectsCandidates.addCandidate(m2Object);
+                    }
+                }
 
-                    if (lodLevel >= 4) {
-                        if (mcnkContent->mcrw_object_refs_len > 0) {
-                            for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
-                                uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
-                                wmoCandidates.addCand(this->objectLods[0].wmoObjects[wmoRef]);
-                            }
+                if (lodLevel >= 4) {
+                    if (mcnkContent->mcrw_object_refs_len > 0) {
+                        for (int j = 0; j < mcnkContent->mcrw_object_refs_len; j++) {
+                            uint32_t wmoRef = mcnkContent->mcrw_object_refs[j];
+                            wmoCandidates.addCand(objectLods[0].wmoObjects[wmoRef]);
                         }
-                    } else {
-                        for (auto &wmoObject: this->objectLods[1].wmoObjects) {
-                            wmoCandidates.addCand(wmoObject);
-                        }
+                    }
+                } else {
+                    for (auto const &wmoObject: objectLods[1].wmoObjects) {
+                        wmoCandidates.addCand(wmoObject);
                     }
                 }
             }
         }
+    }
 //    },tbb::auto_partitioner());
 
-	return true;
 }
 
 bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,

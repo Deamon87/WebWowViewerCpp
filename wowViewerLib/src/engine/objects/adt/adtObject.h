@@ -200,6 +200,15 @@ private:
     void fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMaterialTemplate &adtMaterialTemplate);
 
 
+    void
+    checkWmoM2ByRef(int lodLevel, M2ObjectListContainer &m2ObjectsCandidates, WMOListContainer &wmoCandidates, int x,
+                    int y,
+                    int x_len, int y_len);
+
+    void
+    checkWmoGlobally(int lodLevel, M2ObjectListContainer &m2ObjectsCandidates, WMOListContainer &wmoCandidates, int x,
+                    int y,
+                    int x_len, int y_len);
 };
 
 
