@@ -10,14 +10,16 @@
 
 //Per DescSet -> per binding point
 struct DescTypeConfig {
-    VkDescriptorType type;
+    VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
     bool isBindless = false;
     int descriptorCount = 1;
+    uint32_t stageMask;
 
     bool operator==(const DescTypeConfig &other) const {
         return
             (type == other.type) &&
             (isBindless == other.isBindless) &&
+            (stageMask == other.stageMask) &&
             (descriptorCount == other.descriptorCount);
     };
 };

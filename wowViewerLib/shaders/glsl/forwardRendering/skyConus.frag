@@ -7,9 +7,6 @@ precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
-#include "../common/commonUboSceneData.glsl"
-
-
 
 layout(location = 0) in vec4 vColor;
 layout(location = 0) out vec4 outputColor;

@@ -37,6 +37,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
             if (uboBinding.set != setIndex) continue;
 
             auto uniformType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            uint32_t stageOverride = 0;
             {
                 if (typeOverrides.find(uboBinding.set) != typeOverrides.end()) {
                     auto &setTypeOverrides = typeOverrides.at(uboBinding.set);
@@ -44,6 +45,9 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                         auto const &overrideStruct = setTypeOverrides.at(uboBinding.binding);
                         assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                         uniformType = overrideStruct.type;
+                        if (overrideStruct.stageMask != 0) {
+                            stageOverride = overrideStruct.stageMask;
+                        }
                     }
                 }
             }
@@ -61,7 +65,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                 uboLayoutBinding.descriptorCount = 1;
                 uboLayoutBinding.descriptorType = uniformType;
                 uboLayoutBinding.pImmutableSamplers = nullptr;
-                uboLayoutBinding.stageFlags = vkStageFlag;
+                uboLayoutBinding.stageFlags = stageOverride == 0 ? vkStageFlag : stageOverride;
 
                 shaderLayoutBindings.insert({uboBinding.binding, uboLayoutBinding});
                 if (uboBinding.size > 0) {
