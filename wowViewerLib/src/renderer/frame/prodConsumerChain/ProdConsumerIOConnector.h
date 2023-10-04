@@ -41,7 +41,7 @@ public:
 
     void blockProcessWithoutWait(int limit, const std::function<void (T& input)> &callback) {
         ZoneScoped;
-        int processed;
+        int processed = 0;
         std::unique_lock<std::mutex> lock{m_queueMutex, std::defer_lock};
         while ((processed < limit) && (!m_queue.empty())) {
             lock.lock();

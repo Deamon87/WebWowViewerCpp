@@ -12,6 +12,9 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
     int bufferIndex = 0;
     auto &currentOffset = offsets[frame];
 
+    //Add alignment
+    size += 16;
+
     if (size > STAGE_BUFFER_SIZE)
         throw std::runtime_error(("size > STAGE_BUFFER_SIZE; size = " + std::to_string(size)));
 
@@ -26,9 +29,12 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
             currentIndexAfter = (offset + size) / STAGE_BUFFER_SIZE;
 
             if (currentIndexAfter >= vec.size()) {
-                std::unique_lock l(m_mutex);
+                std::unique_lock l(m_mutex);//
+
                 while (currentIndexAfter >= vec.size()) {
-                    vec.emplace_back().staging = std::make_shared<BufferStagingVLK>(m_device, STAGE_BUFFER_SIZE);
+                    auto &bufferAndCPU = vec.emplace_back();
+                    bufferAndCPU = std::make_shared<BufferAndCPU>();
+                    bufferAndCPU->staging = std::make_shared<BufferStagingVLK>(m_device, STAGE_BUFFER_SIZE);
                 }
             }
 
@@ -36,13 +42,28 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
 
     bufferIndex = currentIndex;
     startOffset = offset % STAGE_BUFFER_SIZE;
-
-    auto &staging = vec[bufferIndex];
-    auto allocatedPtr = ((uint8_t *)staging.cpuBuffer.data()) + startOffset;
-    if ((startOffset + size) > staging.cpuBuffer.size()) {
-        size++;
+    if (bufferIndex >= vec.size()) {
+        throw "OOOOSP";
     }
-    o_staging = staging.staging->getBuffer();
+    auto &bufferAndCPU = vec[bufferIndex];
+    auto buffPtr = reinterpret_cast<intptr_t>(bufferAndCPU->cpuBuffer.data());
+
+    uint32_t buffPtrAlign = buffPtr % 16;
+    uint32_t offsetAlign = startOffset % 16;
+    uint32_t alignAdd = 0;
+    if (buffPtrAlign > offsetAlign) {
+        alignAdd = (16-buffPtrAlign) + (buffPtrAlign - offsetAlign);
+    } else {
+        alignAdd = (16-buffPtrAlign) + ((16 - offsetAlign) + buffPtrAlign);
+    }
+    alignAdd %= 16;
+    startOffset += alignAdd;
+
+    auto allocatedPtr = ((uint8_t *)bufferAndCPU->cpuBuffer.data()) + startOffset;
+    if ((startOffset + size) > bufferAndCPU->cpuBuffer.size()) {
+        throw "OOOOSP";
+    }
+    o_staging = bufferAndCPU->staging->getBuffer();
     o_offset = startOffset;
 
     return allocatedPtr;
@@ -58,11 +79,11 @@ void GStagingRingBuffer::flushBuffers() {
 
     for (int i = 0; i < maxIndex; i++) {
         auto &stagingRec = vec[i];
-        memcpy(stagingRec.staging->getPointer(), stagingRec.cpuBuffer.data(), STAGE_BUFFER_SIZE);
+        memcpy(stagingRec->staging->getPointer(), stagingRec->cpuBuffer.data(), STAGE_BUFFER_SIZE);
     }
     if (currentOffset > 0) {
         auto &stagingRec = vec[maxIndex];
-        memcpy(stagingRec.staging->getPointer(), stagingRec.cpuBuffer.data(), currentOffset % STAGE_BUFFER_SIZE);
+        memcpy(stagingRec->staging->getPointer(), stagingRec->cpuBuffer.data(), currentOffset % STAGE_BUFFER_SIZE);
     }
 
     uint32_t prevMaxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;

@@ -816,7 +816,9 @@ void FrontendUI::initImgui(
                         std::string s = std::string(&lastCascDir[0]);
 //                        std::cout << " read string s = " << s << std::endl;
 
-                        fileDialog.SetPwd(s);
+                        if (ghc::filesystem::exists(s)) {
+                            fileDialog.SetPwd(s);
+                        }
                     }
                    int lastWidth = 0;
                    if (sscanf(line, "windowWidth=%d", &lastWidth) == 1) {

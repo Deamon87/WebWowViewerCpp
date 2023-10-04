@@ -33,7 +33,7 @@ namespace ImGuiFramePlan {
                     m_imData.CmdLists[i]->~ImDrawList();
                     IM_FREE(m_imData.CmdLists[i]);
                 }
-                delete m_imData.CmdLists;
+                delete[] m_imData.CmdLists;
             }
         }
 

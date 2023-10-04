@@ -515,11 +515,13 @@ void GDeviceVLK::createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSu
     VkPresentModeKHR presentMode = chooseSwapPresentMode(swapChainSupport.presentModes);
 
     uint32_t imageCount = MAX_FRAMES_IN_FLIGHT;
-    if ((imageCount > swapChainSupport.capabilities.maxImageCount && (swapChainSupport.capabilities.maxImageCount != 0))
-    || (imageCount < swapChainSupport.capabilities.minImageCount)) {
-        std::cerr << "Your GPU doesnt support " << MAX_FRAMES_IN_FLIGHT << " images for swapchain, which is required by this application" << std::endl << std::flush;
-        throw new std::runtime_error("Boo!");
+    if (swapChainSupport.capabilities.minImageCount < 2) {
+        std::cerr << "Your GPU doesnt support 2 swapchain images inFlight, which is required by app" << std::endl << std::flush;
     }
+    imageCount = swapChainSupport.capabilities.minImageCount;
+
+
+
 //    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount) {
 //        imageCount = swapChainSupport.capabilities.maxImageCount;
 //    }
@@ -683,6 +685,11 @@ void GDeviceVLK::pickPhysicalDevice() {
     for (const auto& device : devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
+
+            VkPhysicalDeviceProperties props;
+            vkGetPhysicalDeviceProperties(device, &props);
+            std::cout << "Selected " << props.deviceName << " -- " <<  (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU ? "suitable GPU" : "integrated GPU") << std::endl;
+
             break;
         }
     }
@@ -986,7 +993,9 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
                 }
             }
         }
-        flushRingBuffer();
+        if (!frameRenderFuncs.renderFuncs.empty()) {
+            flushRingBuffer();
+        }
         {
             submitQueue(
                 uploadQueue,
@@ -1102,10 +1111,6 @@ void GDeviceVLK::getNextSwapImageIndex(uint32_t &imageIndex) {
     } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         std::cout << "error happened " << result << std::endl << std::flush;
 //        throw std::runtime_error("failed to acquire swap chain image!");
-    }
-
-    if (imageIndex >= inFlightFences.size()) {
-        std::cout << "imageIndex >= inFlightFences.size()" << std::endl;
     }
 
 //    std::cout << "imageIndex = " << imageIndex << " currentDrawFrame = " << currentDrawFrame << std::endl << std::flush;

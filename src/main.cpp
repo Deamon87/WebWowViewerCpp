@@ -454,8 +454,9 @@ int main(){
     frontendUI->setUIScale(uiScale);
 
 //    auto native_me = std::this_thread::get_id().native_handle();
+#if WIN32
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-
+#endif
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
     //Otherwise keys like backspace, delete etc wont work
@@ -501,11 +502,11 @@ int main(){
         sceneComposer.draw(sceneScenario, windowSizeChanged);
         windowSizeChanged = false;
 
-        double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
+        double currentDeltaAfterDraw = (glfwGetTime() - currentFrame)*(1000.0f);
         lastFrame = currentFrame;
         if (currentDeltaAfterDraw < 5.0) {
             using namespace std::chrono_literals;
-            std::this_thread::sleep_for(std::chrono::milliseconds((int)(1.0)));
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(4.0)));
         }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {

@@ -30,7 +30,7 @@ private:
         std::array<uint8_t, STAGE_BUFFER_SIZE> cpuBuffer;
     };
 
-    std::array<std::vector<BufferAndCPU>, IDevice::MAX_FRAMES_IN_FLIGHT> m_stagingBuffers;
+    std::array<std::vector<std::shared_ptr<BufferAndCPU>>, IDevice::MAX_FRAMES_IN_FLIGHT> m_stagingBuffers;
 };
 
 
