@@ -111,20 +111,21 @@ add_compile_definitions(HAVE_LIMITS_H)
 SET(CMAKE_USE_LIBSSH2 0)
 SET(CPR_BUILD_TESTS 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
-FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/whoshuu/cpr.git GIT_TAG db351ffbbadc6c4e9239daaa26e9aefa9f0ec82d) # the commit hash for 1.8.3
+FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git GIT_TAG 2553fc41450301cd09a9271c8d2c3e0cf3546b73) # the commit hash for 1.8.3
 
-FetchContent_GetProperties(cpr)
-message("cpr_POPULATED = ${cpr_POPULATED}")
-if(NOT cpr_POPULATED)
+FetchContent_MakeAvailable(cpr)
+#FetchContent_GetProperties(cpr)
+#message("cpr_POPULATED = ${cpr_POPULATED}")
+#if(NOT cpr_POPULATED)
 	# Fetch the content using previously declared details
-	FetchContent_Populate(cpr)
-	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
-	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
+	#FetchContent_Populate(cpr)
+	#message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
+	#message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
 	# Bring the populated content into the build
-	set(BUILD_SHARED_LIBS ON CACHE BOOL "")
-	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
-	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-endif()
+	#set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+	#add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+	#set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+#endif()
 
 #StormLib
 #add_subdirectory(3rdparty/stormlib)

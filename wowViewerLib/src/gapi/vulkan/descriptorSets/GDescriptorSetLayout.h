@@ -34,10 +34,10 @@ public:
     const std::unordered_map<int, int>& getRequiredSSBOSize() const {return m_requiredSSBOSize;} ;
     const std::vector<uint32_t >& getBindlessDescSizes() const {return m_bindlessDescSizes;} ;
 
-    int getTotalUbos() { return m_totalUbos; };
-    int getTotalDynUbos() { return m_totalDynUbos; };
-    int getTotalImages() { return m_totalImages; };
-    bool getIsBindless() { return m_isBindless; };
+    int getTotalUbos() const { return m_totalUbos; };
+    int getTotalDynUbos() const { return m_totalDynUbos; };
+    int getTotalImages() const { return m_totalImages; };
+    bool getIsBindless() const { return m_isBindless; };
     std::bitset<MAX_BINDPOINT_NUMBER> getRequiredBindPoints() {return m_requiredBindPoints;};
 private:
     std::unordered_map<int,VkDescriptorSetLayoutBinding> m_shaderLayoutBindings;

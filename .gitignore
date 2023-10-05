@@ -4,3 +4,6 @@ cache__
 cache_old
 cmake-build-*
 venv
+/.vs
+/out/build
+/CMakeSettings.json

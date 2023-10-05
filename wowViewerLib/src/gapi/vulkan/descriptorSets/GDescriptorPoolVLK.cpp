@@ -9,7 +9,7 @@
 GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless) : m_device(device) {
     uniformsAvailable = 4*4096;
     dynUniformsAvailable = 4*1024;
-    ssboAvailable = 4*1024;
+    ssboAvailable = 0;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096 * 4;
 
@@ -20,8 +20,8 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless) :
     poolSizes[1].descriptorCount = static_cast<uint32_t>(imageAvailable);
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
     poolSizes[2].descriptorCount = static_cast<uint32_t>(dynUniformsAvailable);
-    poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    poolSizes[3].descriptorCount = static_cast<uint32_t>(ssboAvailable);
+    //poolSizes[3].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    //poolSizes[3].descriptorCount = static_cast<uint32_t>(ssboAvailable);
 
     VkDescriptorPoolCreateInfo poolInfo = {};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -33,7 +33,8 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless) :
     if (isBindless)
         poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
 
-    if (vkCreateDescriptorPool(m_device.getVkDevice(), &poolInfo, nullptr, &m_descriptorPool) != VK_SUCCESS) {
+    auto result = vkCreateDescriptorPool(m_device.getVkDevice(), &poolInfo, nullptr, &m_descriptorPool);
+    if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor pool!");
     }
 }
@@ -67,9 +68,10 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
 
     VkDescriptorSet descriptorSet;
 
-    if (vkAllocateDescriptorSets(m_device.getVkDevice(), &allocInfo, &descriptorSet) != VK_SUCCESS) {
-//        throw std::runtime_error("failed to allocate descriptor sets!");
-        return 0;
+    auto result = vkAllocateDescriptorSets(m_device.getVkDevice(), &allocInfo, &descriptorSet);
+    if (result != VK_SUCCESS) {
+        throw std::runtime_error("failed to allocate descriptor sets!");
+//        return 0;
     }
 
     if (descriptorSet != nullptr) {

@@ -39,9 +39,9 @@ void GCommandBuffer::createCommandBufVLK() {
 //
 
         auto l_cmdBuf = m_cmdBuffer;
-        auto l_tracyContext = tracyContext;
 
 #ifdef LINK_TRACY
+        auto l_tracyContext = tracyContext
         TracyVkCollect(l_tracyContext, l_cmdBuf);
 #endif
         vkResetCommandBuffer(m_cmdBuffer, 0);

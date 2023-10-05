@@ -78,11 +78,6 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                         }
                     }
                 }
-                if (uniformType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-                    m_totalUbos++;
-                } else if (uniformType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
-                    m_totalDynUbos++;
-                }
 
                 m_requiredBindPoints[uboBinding.binding] = true;
             }
@@ -136,6 +131,18 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
     std::sort(layouts.begin(), layouts.end(), [](VkDescriptorSetLayoutBinding &a, VkDescriptorSetLayoutBinding &b) -> bool {
         return a.binding < b.binding;
     });
+
+    m_totalUbos = 0; m_totalDynUbos = 0; m_totalImages = 0;
+    for (auto& layout : layouts) {
+        if (layout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+            m_totalUbos++;
+        } else if (layout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
+            m_totalDynUbos++;
+        } else if (layout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
+            m_totalImages++;
+        }
+    }
+
 
     VkDescriptorSetLayoutBindingFlagsCreateInfo binding_flags{};
     binding_flags.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO;
