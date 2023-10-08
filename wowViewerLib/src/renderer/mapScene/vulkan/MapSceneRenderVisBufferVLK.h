@@ -12,6 +12,8 @@
 #include "../materials/IMaterialStructs.h"
 #include "passes/FFXGlowPassVLK.h"
 #include "../../../gapi/vulkan/materials/ISimpleMaterialVLK.h"
+#include "view/RenderViewForwardVLK.h"
+#include "../../../gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h"
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
 public:
@@ -97,6 +99,13 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
+
+//--------------------------------------
+// RenderView
+//--------------------------------------
+
+    std::shared_ptr<IRenderView> createRenderView(int width, int height, bool createOutput) override;
+
 private:
     std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
 
@@ -160,11 +169,12 @@ private:
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
 
     std::shared_ptr<GDescriptorSet> m2TextureDS = nullptr;
+    std::unique_ptr<BindlessTextureHolder> m2TextureHolder = nullptr;
+
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
     std::shared_ptr<GDescriptorSet> m2BufferTwoDS = nullptr;
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
-    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
 
     std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
 
@@ -177,7 +187,7 @@ private:
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
-    void createFrameBuffers();
+    std::shared_ptr<RenderViewForwardVLK> defaultView;
 };
 
 class IM2ModelDataVisVLK : public IM2ModelData {

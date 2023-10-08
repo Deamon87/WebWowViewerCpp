@@ -198,17 +198,17 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
 GDescriptorSet::SetUpdateHelper &
 GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBufferVLK> &buffer) {
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
-    auto &uboSizes = m_set.m_hDescriptorSetLayout->getRequiredUBOSize();
+    auto &ssboSizes = m_set.m_hDescriptorSetLayout->getRequiredSSBOSize();
 
 #if (!defined(NDEBUG))
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
-        std::cerr << "descriptor mismatch for UBO" << std::endl;
+        std::cerr << "descriptor mismatch for SSBO" << std::endl;
         throw std::runtime_error("descriptor mismatch for UBO");
     }
-    if (uboSizes.find(bindIndex) != uboSizes.end() && buffer->getSize() != uboSizes.at(bindIndex)) {
+    if (ssboSizes.find(bindIndex) != ssboSizes.end() && buffer->getSize() != ssboSizes.at(bindIndex)) {
         std::cout << "buffers missmatch! for"
                   << " binding = " << bindIndex
-                  << " expected size " << uboSizes.at(bindIndex)
+                  << " expected size " << ssboSizes.at(bindIndex)
                   << ", provided size = " << (buffer->getSize())
                   << std::endl;
     }

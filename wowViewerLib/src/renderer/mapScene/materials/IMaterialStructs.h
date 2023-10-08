@@ -7,6 +7,7 @@
 
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "BindlessTexture.h"
 //----------------------------
 // Material Templates
 //----------------------------
@@ -78,6 +79,7 @@ public:
 class IM2MaterialVis : public IM2Material {
 public:
     size_t instanceIndex;
+    std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
 };
 
 class IM2WaterFallMaterial : public IMaterial {

@@ -9,7 +9,7 @@
 GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless) : m_device(device) {
     uniformsAvailable = 4*4096;
     dynUniformsAvailable = 4*1024;
-    ssboAvailable = 0;
+    ssboAvailable = 4*1024;
     imageAvailable = 4096 * 4;
     setsAvailable = 4096 * 4;
 
@@ -70,11 +70,12 @@ VkDescriptorSet GDescriptorPoolVLK::allocate(const std::shared_ptr<GDescriptorSe
 
     auto result = vkAllocateDescriptorSets(m_device.getVkDevice(), &allocInfo, &descriptorSet);
     if (result != VK_SUCCESS) {
+        std::cerr << "Counting of descriptor sets went wrong" << std::endl;
         throw std::runtime_error("failed to allocate descriptor sets!");
 //        return 0;
     }
 
-    if (descriptorSet != nullptr) {
+    if (descriptorSet != VK_NULL_HANDLE) {
         uniformsAvailable -= hDescriptorSetLayout->getTotalUbos();
         dynUniformsAvailable -= hDescriptorSetLayout->getTotalDynUbos();
         imageAvailable -= hDescriptorSetLayout->getTotalImages();

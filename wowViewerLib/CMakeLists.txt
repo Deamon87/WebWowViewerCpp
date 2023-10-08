@@ -356,7 +356,8 @@ set(SOURCE_FILES
         src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h
         src/engine/objects/liquid/LiquidInstance.cpp
         src/engine/objects/liquid/LiquidInstance.h
-        src/engine/objects/liquid/LiquidDataGetters.h src/renderer/frame/FrameProfile.h src/gapi/interface/buffers/IBufferVersioned.h)
+        src/engine/objects/liquid/LiquidDataGetters.h src/renderer/frame/FrameProfile.h src/gapi/interface/buffers/IBufferVersioned.h
+        src/renderer/mapScene/materials/BindlessTexture.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -510,8 +511,8 @@ if (LINK_VULKAN)
             src/gapi/vulkan/GRenderPassVLK.h
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.cpp
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
-#            src/renderer/mapScene/vulkan/MapSceneRenderVisBufferVLK.cpp
-#            src/renderer/mapScene/vulkan/MapSceneRenderVisBufferVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderVisBufferVLK.cpp
+            src/renderer/mapScene/vulkan/MapSceneRenderVisBufferVLK.h
             src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.h
             src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.cpp
@@ -567,7 +568,11 @@ if (LINK_VULKAN)
             src/gapi/vulkan/buffers/gpu/BufferStagingVLK.h
             src/gapi/vulkan/buffers/gpu/BufferGpuVLK.cpp
             src/gapi/vulkan/buffers/gpu/BufferGpuVLK.h
-            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h)
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h
+            src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.cpp
+            src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.h
+            src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.cpp
+            src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
