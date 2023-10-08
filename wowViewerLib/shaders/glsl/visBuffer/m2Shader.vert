@@ -20,19 +20,8 @@ layout(location=3) in vec4 boneWeights;
 layout(location=4) in vec2 aTexCoord;
 layout(location=5) in vec2 aTexCoord2;
 
-//Whole scene
-
-
 //Whole model
-#include "../common/commonM2DescriptorSet.glsl"
-
-//Individual meshes
-layout(std140, set=2, binding=7) uniform meshWideBlockVSPS {
-    ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
-    ivec4 PixelShader_UnFogged_blendMode;
-    ivec4 textureWeightIndexes;
-    ivec4 colorIndex_applyWeight;
-};
+#include "../common/commonM2IndirectDescriptorSet.glsl"
 
 //Shader output
 layout(location=0) out vec2 vTexCoord;
@@ -49,18 +38,23 @@ void main() {
     vec4 aPositionVec4 = vec4(aPosition, 1);
     mat4 boneTransformMat =  mat4(0.0);
 
+    meshWideBlockVSPSBindless meshWideBindless = meshWideBindleses[gl_InstanceIndex];
+    meshWideBlockVSPS meshWide = meshWides[meshWideBindless.instanceIndex_meshIndex.y];
+    int instanceIndex = meshWideBindless.instanceIndex_meshIndex.x;
+
     if (dot(boneWeights, boneWeights) > 0) {
-        //
-        boneTransformMat += (boneWeights.x) * uBoneMatrixes[bones.x];
-        boneTransformMat += (boneWeights.y) * uBoneMatrixes[bones.y];
-        boneTransformMat += (boneWeights.z) * uBoneMatrixes[bones.z];
-        boneTransformMat += (boneWeights.w) * uBoneMatrixes[bones.w];
+        int boneIndex = instances[instanceIndex].placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.y;
+
+        boneTransformMat += (boneWeights.x) * uBoneMatrixes[boneIndex + bones.x];
+        boneTransformMat += (boneWeights.y) * uBoneMatrixes[boneIndex + bones.y];
+        boneTransformMat += (boneWeights.z) * uBoneMatrixes[boneIndex + bones.z];
+        boneTransformMat += (boneWeights.w) * uBoneMatrixes[boneIndex + bones.w];
     } else {
         boneTransformMat = mat4(1.0);
     }
 
-    mat4 placementMat;
-    placementMat = uPlacementMat;
+    int placementIndex = instances[instanceIndex].placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.x;
+    mat4 placementMat = uPlacementMats[placementIndex];
 
     mat4 viewModelMat = scene.uLookAtMat * placementMat  * boneTransformMat ;
     vec4 vertexPosInView = viewModelMat * aPositionVec4;

@@ -112,19 +112,10 @@ namespace M2 {
     };
 
     struct meshWideBlockVSPS_Bindless {
-        int VertexShader;
-        int IsAffectedByLight;
-        int textureMatIndex1;
-        int textureMatIndex2;
-        int PixelShader;
-        int UnFogged;
-        int BlendMode;
-        int unused;
-        int textureWeightIndexes[4];
-        int colorIndex;
-        int applyWeight;
         int instanceIndex;
-        int unused3;
+        int meshIndex;
+        int notUsed3;
+        int notUsed4;
         int textureIndicies[4];
     };
 

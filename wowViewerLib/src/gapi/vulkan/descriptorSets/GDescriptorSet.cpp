@@ -201,7 +201,7 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
     auto &ssboSizes = m_set.m_hDescriptorSetLayout->getRequiredSSBOSize();
 
 #if (!defined(NDEBUG))
-    if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+    if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         std::cerr << "descriptor mismatch for SSBO" << std::endl;
         throw std::runtime_error("descriptor mismatch for UBO");
     }

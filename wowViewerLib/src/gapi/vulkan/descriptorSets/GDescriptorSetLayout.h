@@ -36,6 +36,7 @@ public:
 
     int getTotalUbos() const { return m_totalUbos; };
     int getTotalDynUbos() const { return m_totalDynUbos; };
+    int getTotalSsbos() const { return m_totalSSBOs; };
     int getTotalImages() const { return m_totalImages; };
     bool getIsBindless() const { return m_isBindless; };
     std::bitset<MAX_BINDPOINT_NUMBER> getRequiredBindPoints() {return m_requiredBindPoints;};
@@ -51,10 +52,19 @@ private:
     int m_totalImages = 0;
     int m_totalUbos = 0;
     int m_totalDynUbos = 0;
+    int m_totalSSBOs = 0;
 
     bool m_isBindless = false;
 
     std::shared_ptr<IDeviceVulkan> m_device;
+
+    void fillUbo(int setIndex, const DescTypeOverride &typeOverrides,
+                 std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                 const shaderMetaData *p_metaData, const VkShaderStageFlagBits &vkStageFlag);
+
+    void fillSSBO(int setIndex, const DescTypeOverride &typeOverrides,
+                 std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                 const shaderMetaData *p_metaData, const VkShaderStageFlagBits &vkStageFlag);
 };
 
 

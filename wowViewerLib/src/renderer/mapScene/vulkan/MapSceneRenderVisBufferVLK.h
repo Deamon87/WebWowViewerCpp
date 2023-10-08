@@ -2,8 +2,8 @@
 // Created by Deamon on 12/1/2022.
 //
 
-#ifndef AWEBWOWVIEWERCPP_MAPSCENERENDERFORWARDVLK_H
-#define AWEBWOWVIEWERCPP_MAPSCENERENDERFORWARDVLK_H
+#ifndef AWEBWOWVIEWERCPP_MAPSCENERENDERVISVLK_H
+#define AWEBWOWVIEWERCPP_MAPSCENERENDERVISVLK_H
 
 
 #include "../MapSceneRenderer.h"
@@ -150,15 +150,14 @@ private:
         HGBufferVLK m2Colors;
         HGBufferVLK textureWeights;
         HGBufferVLK textureMatrices;
-        HGBufferVLK modelVertexDatas;
         HGBufferVLK modelFragmentDatas;
 
         HGBufferVLK m2InstanceData;
         HGBufferVLK meshWideBlocks;
+        HGBufferVLK meshWideBlocksBindless;
     } m2Buffers;
 
     HGBufferVLK uboBuffer;
-    HGBufferVLK uboM2BoneMatrixBuffer;
 
     HGBufferVLK m_vboQuad;
     HGBufferVLK m_iboQuad;
@@ -172,7 +171,6 @@ private:
     std::unique_ptr<BindlessTextureHolder> m2TextureHolder = nullptr;
 
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
-    std::shared_ptr<GDescriptorSet> m2BufferTwoDS = nullptr;
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
 
@@ -198,4 +196,4 @@ public:
 
 
 
-#endif //AWEBWOWVIEWERCPP_MAPSCENERENDERFORWARDVLK_H
+#endif //AWEBWOWVIEWERCPP_MAPSCENERENDERVISVLK_H

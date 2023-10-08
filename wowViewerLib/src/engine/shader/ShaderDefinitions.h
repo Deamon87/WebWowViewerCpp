@@ -302,14 +302,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Vertex,
     {
-      {1,3,16384},
-      {1,1,64},
       {0,0,480},
     },
     {
       {
         {0,0,1},
-        {1,3,3},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -319,6 +317,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
+      {1,9,0},
+      {1,7,0},
+      {1,3,0},
+      {1,1,0},
     },
     {
     },
@@ -992,7 +994,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {2,8,0},
+      {1,9,0},
+      {1,8,0},
       {1,5,0},
       {1,4,0},
       {1,2,0},
@@ -1001,14 +1004,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,6,0},
     },
     {
-      {3,0, "s_Textures"},
+      {2,0, "s_Textures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {0,0,0},
         {0,0,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1994,6 +1997,14 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"m2Shader",  {
     {
+      7, {
+      }
+    },
+    {
+      9, {
+      }
+    },
+    {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
         {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
@@ -2023,12 +2034,12 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       1, {
-        {"_1_1_uPlacementMat", true, 0, 4, 4, 0},
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
       }
     },
     {
       3, {
-        {"_1_3_uBoneMatrixes[0]", true, 0, 4, 4, 256},
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
       }
     },
   }},
@@ -2416,6 +2427,10 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"m2Shader",  {
     {
       8, {
+      }
+    },
+    {
+      9, {
       }
     },
     {

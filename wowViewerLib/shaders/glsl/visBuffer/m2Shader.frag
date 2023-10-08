@@ -24,21 +24,7 @@ layout(location=0) out vec4 outputColor;
 //Whole model
 #include "../common/commonM2IndirectDescriptorSet.glsl"
 
-//Individual meshes
-struct meshWideBlockVSPSBindless {
-    ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
-    ivec4 PixelShader_UnFogged_blendMode;
-    ivec4 textureWeightIndexes;
-    ivec4 colorIndex_applyWeight_instanceIndex;
-    ivec4 textureIndicies;
-};
-
-layout(std430, set=2, binding=8) buffer meshWideBlockVSPS {
-    meshWideBlockVSPSBindless meshWides[];
-};
-
-
-layout (set = 3, binding = 0) uniform sampler2D s_Textures[];
+layout (set = 2, binding = 0) uniform sampler2D s_Textures[];
 
 void main() {
     /* Animation support */
@@ -48,8 +34,9 @@ void main() {
 
     vec4 finalColor = vec4(0);
 
-    meshWideBlockVSPSBindless meshWide = meshWides[meshIndex];
-    int instanceIndex = meshWide.colorIndex_applyWeight_instanceIndex.y;
+    meshWideBlockVSPSBindless meshWideBindless = meshWideBindleses[meshIndex];
+    meshWideBlockVSPS meshWide = meshWides[meshWideBindless.instanceIndex_meshIndex.y];
+    int instanceIndex = meshWideBindless.instanceIndex_meshIndex.x;
 
     vec3 uTexSampleAlpha = vec3(
         meshWide.textureWeightIndexes.x < 0 ? 1.0 : textureWeight[meshWide.textureWeightIndexes.x / 4][meshWide.textureWeightIndexes.x % 4],
@@ -58,11 +45,11 @@ void main() {
     );
 
     vec4 vMeshColorAlpha = vec4(
-        meshWide.colorIndex_applyWeight_instanceIndex.x < 0 ?
+        meshWide.colorIndex_applyWeight.x < 0 ?
             vec4(1.0,1.0,1.0,1.0) :
-            colors[meshWide.colorIndex_applyWeight_instanceIndex.x]
+            colors[meshWide.colorIndex_applyWeight.x]
     );
-    if (meshWide.colorIndex_applyWeight_instanceIndex.y > 0)
+    if (meshWide.colorIndex_applyWeight.y > 0)
         vMeshColorAlpha.a *=
             meshWide.textureWeightIndexes.x < 0 ?
                 1.0 :
@@ -140,8 +127,8 @@ void main() {
 
 
     calcM2FragMaterial(uPixelShader,
-        s_Textures[meshWide.textureIndicies.x], s_Textures[meshWide.textureIndicies.y],
-        s_Textures[meshWide.textureIndicies.z], s_Textures[meshWide.textureIndicies.w],
+        s_Textures[meshWideBindless.textureIndicies.x], s_Textures[meshWideBindless.textureIndicies.y],
+        s_Textures[meshWideBindless.textureIndicies.z], s_Textures[meshWideBindless.textureIndicies.w],
         texCoord, texCoord2, texCoord3,
         vMeshColorAlpha.rgb, vMeshColorAlpha.a,
         uTexSampleAlpha.rgb,

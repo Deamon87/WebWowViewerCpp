@@ -78,8 +78,9 @@ public:
 
 class IM2MaterialVis : public IM2Material {
 public:
-    size_t instanceIndex;
+    std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS_Bindless>> m_vertexFragmentDataBindless = nullptr;
     std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
+    int instanceIndex = 0;
 };
 
 class IM2WaterFallMaterial : public IMaterial {

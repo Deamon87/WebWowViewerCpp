@@ -11,6 +11,7 @@
 #include "../../../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
 #include "../../../../include/custom_container_key.h"
 #include "../GDescriptorSet.h"
+#include "../../../../renderer/mapScene/materials/BindlessTexture.h"
 
 class BindlessTextureHolder : public std::enable_shared_from_this<BindlessTextureHolder> {
 public:

@@ -100,7 +100,7 @@ if (EMSCRIPTEN)
 else()
     set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msse3;-mavx2;-ftree-vectorize")
 
-    if (NOT MSVC)
+    if (NOT MSVC AND NOT MSVC_VERSION)
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar")
 
