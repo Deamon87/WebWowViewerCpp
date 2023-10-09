@@ -13,6 +13,12 @@ GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, con
 
     //Gets DS and gets pool it was allocated from into m_parentPool
     m_descriptorSet = m_device->allocateDescriptorSetPrimitive(m_hDescriptorSetLayout, m_parentPool);
+
+    auto &arraySizes = hDescriptorSetLayout->getArraySizes();
+    for (int i = 0; i < arraySizes.size(); i++) {
+        boundDescriptors[i].resize(arraySizes[i]);
+    };
+
     assert(m_descriptorSet != nullptr);
 }
 GDescriptorSet::~GDescriptorSet() {
@@ -51,7 +57,7 @@ void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &de
     m_dynamicBufferIndexes = dynamicBufferIndexes;
     m_dynamicBuffers.resize(m_dynamicBufferIndexes.size());
     for (int i = 0; i < m_dynamicBufferIndexes.size(); i++) {
-        m_dynamicBuffers[i] = boundDescriptors[m_dynamicBufferIndexes[i]]->buffer.get();
+        m_dynamicBuffers[i] = boundDescriptors[m_dynamicBufferIndexes[i]][0]->buffer.get();
     }
 }
 
@@ -75,7 +81,7 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
     auto textureVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureVLK>(samplableTextureVlk->getTexture()) : nullptr;
     auto samplerVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureSamplerVLK>(samplableTextureVlk->getSampler()) : nullptr;
 
-    assignBoundDescriptors(bindIndex, samplableTextureVlk, DescriptorRecord::DescriptorRecordType::Texture);
+    assignBoundDescriptors(bindIndex, samplableTextureVlk, index, DescriptorRecord::DescriptorRecordType::Texture);
 
     auto texture = textureVlk;
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
@@ -125,7 +131,7 @@ GDescriptorSet::SetUpdateHelper::ubo_dynamic(int bindIndex, const std::shared_pt
     }
 #endif
 
-    assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::UBODynamic);
+    assignBoundDescriptors(bindIndex, buffer, 0, DescriptorRecord::DescriptorRecordType::UBODynamic);
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
@@ -171,7 +177,7 @@ GDescriptorSet::SetUpdateHelper::ubo(int bindIndex, const std::shared_ptr<IBuffe
 #endif
 
 
-    assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::UBO);
+    assignBoundDescriptors(bindIndex, buffer, 0, DescriptorRecord::DescriptorRecordType::UBO);
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
@@ -215,7 +221,7 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
 #endif
 
 
-    assignBoundDescriptors(bindIndex, buffer, DescriptorRecord::DescriptorRecordType::SSBO);
+    assignBoundDescriptors(bindIndex, buffer, 0, DescriptorRecord::DescriptorRecordType::SSBO);
     m_updateBindPoints[bindIndex] = true;
 
     VkDescriptorBufferInfo &bufferInfo = bufferInfos.emplace_back();
@@ -256,19 +262,26 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     }
 
     //FOR DEBUG AND STABILITY
-    if (!m_set.m_hDescriptorSetLayout->getIsBindless()) {
+    if (/*!m_set.m_hDescriptorSetLayout->getIsBindless()*/ true) {
         //Fill the rest of Descriptor with already bound values
         //This is needed, cause In this implementation of descriptor set, the descriptor set is getting free'd on update
         //and new one is created
         for (int bindPoint = 0; bindPoint < m_updateBindPoints.size(); bindPoint++) {
-            if (m_updateBindPoints[bindPoint] || m_boundDescriptors[bindPoint] == nullptr) continue;
+            if (m_updateBindPoints[bindPoint]) continue;
 
-            if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
-                ubo(bindPoint, m_boundDescriptors[bindPoint]->buffer);
-            } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::UBODynamic) {
-                ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint]->buffer);
-            } else if (m_boundDescriptors[bindPoint]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
-                texture(bindPoint, m_boundDescriptors[bindPoint]->texture);
+            for (int bindIndex = 0; bindIndex < m_boundDescriptors[bindPoint].size(); bindIndex++) {
+                if (m_boundDescriptors[bindPoint][bindIndex] == nullptr) continue;
+
+                if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
+                    ubo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
+                } else if (m_boundDescriptors[bindPoint][bindIndex]->descType ==
+                           DescriptorRecord::DescriptorRecordType::UBODynamic) {
+                    ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
+                } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::SSBO) {
+                    ssbo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
+                } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
+                    texture(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->texture, bindIndex);
+                }
             }
         }
 

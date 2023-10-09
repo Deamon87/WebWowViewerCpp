@@ -15,6 +15,7 @@
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h"
 #include "../../frame/FrameProfile.h"
 #include "view/RenderViewForwardVLK.h"
+#include "../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
 #include <future>
 
 static const ShaderConfig forwardShaderConfig = {
@@ -379,6 +380,8 @@ MapSceneRenderVisBufferVLK::createM2Material(const std::shared_ptr<IM2ModelData>
         vertexFragmentDataBindless->save();
     }
 
+    material->instanceIndex = vertexFragmentDataBindless->getSubBuffer()->getIndex();
+
     material->blendMode = pipelineTemplate.blendMode;
     material->depthWrite = pipelineTemplate.depthWrite;
     material->depthCulling = pipelineTemplate.depthCulling;
@@ -639,7 +642,11 @@ inline void MapSceneRenderVisBufferVLK::drawMesh(CmdBufRecorder &cmdBuf, const H
     }
 
     //7. Draw the mesh
-    cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
+    if (meshVlk->instanceIndex != -1) {
+        cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, meshVlk->instanceIndex);
+    } else {
+        cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, 0);
+    }
 }
 
 static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
@@ -753,6 +760,16 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
             uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
             uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
             uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
+
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.placementMatrix);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.boneMatrix);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.m2Colors);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.textureWeights);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.textureMatrices);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.modelFragmentDatas);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.m2InstanceData);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.meshWideBlocks);
+            uploadCmd.submitBufferUploads(l_this->m2Buffers.meshWideBlocksBindless);
 
             uploadCmd.submitBufferUploads(l_this->iboBuffer);
             uploadCmd.submitBufferUploads(l_this->m_vboQuad);
@@ -884,6 +901,7 @@ MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std:
                                        int layer, int priorityPlane) {
 
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
+    mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialVis>(material)->instanceIndex;
     return mesh;
 }
 HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,

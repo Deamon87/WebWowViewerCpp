@@ -25,6 +25,8 @@ public:
     EGxBlendEnum getGxBlendMode() override {
         return material()->getBlendMode();
     }
+
+    int instanceIndex = -1;
 public:
     auto material() const -> const HMaterialVLK& { return m_material; }
     auto scissorOffset() const -> const  std::array<int, 2>& { return m_scissorOffset; }
@@ -40,12 +42,6 @@ protected:
     std::array<uint32_t, 2> m_scissorSize = {0,0};
 
 
-
-//Vulkan specific
-    std::vector<bool> descriptorSetsUpdated;
-
-    std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
-    std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
 private:
     HMaterialVLK m_material;
 };

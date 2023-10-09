@@ -54,12 +54,12 @@ public:
 
     class SetUpdateHelper {
     public:
-        explicit SetUpdateHelper(GDescriptorSet &set, std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &boundDescriptors,
+        explicit SetUpdateHelper(GDescriptorSet &set, std::array<std::vector<std::unique_ptr<DescriptorRecord>>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &boundDescriptors,
                                  std::shared_ptr<GDescriptorSetUpdater> descriptorSetUpdater) :
             m_set(set), m_boundDescriptors(boundDescriptors), m_descriptorSetUpdater(descriptorSetUpdater) {
             //So that the resize of these vectors would not lead to pointer invalidation in updates vector
             bufferInfos.reserve(32);
-            imageInfos.reserve(32);
+            imageInfos.reserve(2500);
             updates.reserve(64);
         }
         ~SetUpdateHelper();
@@ -78,20 +78,22 @@ public:
         void cancelUpdate();
 
         template <typename T>
-        void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, DescriptorRecord::DescriptorRecordType descType) {
+        void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, int index, DescriptorRecord::DescriptorRecordType descType) {
 //            static_assert(std::is_base_of<IDSBindable, T>::value, "T should inherit from B");
 
-            bool createDescRecord = !m_boundDescriptors[bindPoint];
+            assert(index < m_boundDescriptors[bindPoint].size());
+
+            bool createDescRecord = !m_boundDescriptors[bindPoint][index];
             if (!createDescRecord) {
                 if constexpr (std::is_base_of<IBufferVLK, T>::value) {
-                    createDescRecord = (m_boundDescriptors[bindPoint]->buffer != object);
+                    createDescRecord = (m_boundDescriptors[bindPoint][index]->buffer != object);
                 } else if constexpr (std::is_base_of<HGSamplableTexture::element_type, T>::value) {
-                    createDescRecord = (m_boundDescriptors[bindPoint]->texture != object);
+                    createDescRecord = (m_boundDescriptors[bindPoint][index]->texture != object);
                 }
             }
             if (createDescRecord) {
                 std::function<void()> callback = createCallback();
-                m_boundDescriptors[bindPoint] = std::make_unique<DescriptorRecord>(descType, object, callback);
+                m_boundDescriptors[bindPoint][index] = std::make_unique<DescriptorRecord>(descType, object, callback);
             }
         }
         std::unordered_map<int, VkDescriptorType> &getAccumulatedTypeOverrides() {
@@ -100,7 +102,7 @@ public:
     private:
         bool updateCancelled = false;
         GDescriptorSet &m_set;
-        std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
+        std::array<std::vector<std::unique_ptr<DescriptorRecord>>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
 
         std::vector<VkDescriptorImageInfo> imageInfos;
         std::vector<VkDescriptorBufferInfo> bufferInfos;
@@ -128,7 +130,7 @@ private:
 
     bool m_firstUpdate = true;
 
-    std::array<std::unique_ptr<DescriptorRecord>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> boundDescriptors;
+    std::array<std::vector<std::unique_ptr<DescriptorRecord>>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> boundDescriptors;
 
 // Scrapped idea. The VkCopyDescriptorSet can cause copy GPU -> CPU -> GPU. So it's scrapped idea
 //    //Defines amount of frames that the updates has to be copied from previous frame

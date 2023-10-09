@@ -11,6 +11,8 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                                            const std::vector<const shaderMetaData*> &metaDatas,
                                            int setIndex,
                                            const DescTypeOverride &typeOverrides) : m_device(device) {
+    for (auto &size : m_arraySizes) size = 0;
+
     //Create Layout
     auto &shaderLayoutBindings = m_shaderLayoutBindings;
     std::unordered_set<int> bindlessBindPoints;
@@ -68,6 +70,8 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
                         }
                     }
                 }
+
+                m_arraySizes[imageLayoutBinding.binding] = imageLayoutBinding.descriptorCount;
 
                 shaderLayoutBindings.insert({imageBinding.binding, imageLayoutBinding});
                 m_totalImages += imageLayoutBinding.descriptorCount;
@@ -161,6 +165,7 @@ void GDescriptorSetLayout::fillUbo(int setIndex, const DescTypeOverride &typeOve
             }
         }
 
+
         auto it = shaderLayoutBindings.find(uboBinding.binding);
         if (it != std::end( shaderLayoutBindings )) {
             it->second.stageFlags |= vkStageFlag;
@@ -188,6 +193,7 @@ void GDescriptorSetLayout::fillUbo(int setIndex, const DescTypeOverride &typeOve
                 }
             }
 
+            m_arraySizes[uboLayoutBinding.binding] = uboLayoutBinding.descriptorCount;
             m_requiredBindPoints[uboBinding.binding] = true;
         }
     }
@@ -244,6 +250,7 @@ void GDescriptorSetLayout::fillSSBO(int setIndex, const DescTypeOverride &typeOv
                 }
             }
 
+            m_arraySizes[ssboLayoutBinding.binding] = ssboLayoutBinding.descriptorCount;
             m_requiredBindPoints[ssboBinding.binding] = true;
         }
     }

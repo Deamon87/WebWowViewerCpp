@@ -12,10 +12,9 @@ precision highp int;
 
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
-layout(location=2) in vec2 vTexCoord3;
-layout(location=3) in vec3 vNormal;
-layout(location=4) in vec4 vPosition_EdgeFade;
-layout(location=5) in flat int meshIndex;
+layout(location=2) in vec3 vNormal;
+layout(location=3) in vec4 vPosition_EdgeFade;
+layout(location=4) in flat int meshIndex;
 
 layout(location=0) out vec4 outputColor;
 
@@ -30,7 +29,7 @@ void main() {
     /* Animation support */
     vec2 texCoord = vTexCoord.xy;
     vec2 texCoord2 = vTexCoord2.xy;
-    vec2 texCoord3 = vTexCoord3.xy;
+    vec2 texCoord3 = vTexCoord2.xy;
 
     vec4 finalColor = vec4(0);
 
@@ -127,8 +126,8 @@ void main() {
 
 
     calcM2FragMaterial(uPixelShader,
-        s_Textures[meshWideBindless.textureIndicies.x], s_Textures[meshWideBindless.textureIndicies.y],
-        s_Textures[meshWideBindless.textureIndicies.z], s_Textures[meshWideBindless.textureIndicies.w],
+        s_Textures[nonuniformEXT(meshWideBindless.textureIndicies.x)], s_Textures[nonuniformEXT(meshWideBindless.textureIndicies.y)],
+        s_Textures[nonuniformEXT(meshWideBindless.textureIndicies.z)], s_Textures[nonuniformEXT(meshWideBindless.textureIndicies.w)],
         texCoord, texCoord2, texCoord3,
         vMeshColorAlpha.rgb, vMeshColorAlpha.a,
         uTexSampleAlpha.rgb,

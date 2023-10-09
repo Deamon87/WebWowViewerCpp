@@ -39,7 +39,8 @@ public:
     int getTotalSsbos() const { return m_totalSSBOs; };
     int getTotalImages() const { return m_totalImages; };
     bool getIsBindless() const { return m_isBindless; };
-    std::bitset<MAX_BINDPOINT_NUMBER> getRequiredBindPoints() {return m_requiredBindPoints;};
+    const std::bitset<MAX_BINDPOINT_NUMBER>& getRequiredBindPoints() const {return m_requiredBindPoints;};
+    const std::array<uint32_t, MAX_BINDPOINT_NUMBER>& getArraySizes() const {return m_arraySizes;};
 private:
     std::unordered_map<int,VkDescriptorSetLayoutBinding> m_shaderLayoutBindings;
     std::unordered_map<int, int> m_requiredUBOSize;
@@ -47,6 +48,7 @@ private:
 
     std::vector<uint32_t> m_bindlessDescSizes;
 
+    std::array<uint32_t, MAX_BINDPOINT_NUMBER> m_arraySizes;
     std::bitset<MAX_BINDPOINT_NUMBER> m_requiredBindPoints = 0;
     VkDescriptorSetLayout m_descriptorSetLayout;
     int m_totalImages = 0;

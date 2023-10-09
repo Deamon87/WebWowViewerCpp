@@ -109,6 +109,8 @@ namespace M2 {
         int textureWeightsInd;
         int textureMatricesInd;
         int modelFragmentDatasInd;
+        int unused0;
+        int unused1;
     };
 
     struct meshWideBlockVSPS_Bindless {
