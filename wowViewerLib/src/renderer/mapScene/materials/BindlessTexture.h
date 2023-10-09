@@ -11,13 +11,13 @@
 //Bindless stuff
 class BindlessTexture {
 public:
-    BindlessTexture(uint32_t index, const std::function<void()> &onDestroy): m_index(index){};
+    BindlessTexture(uint32_t index, const std::function<void()> &onDestroy): m_index(index), m_onDestroy(onDestroy){};
     ~BindlessTexture() {
-        if (onDestroy) onDestroy();
+        if (m_onDestroy) m_onDestroy();
     }
     uint32_t getIndex() const {return m_index;};
 private:
-    std::function<void()> onDestroy;
+    std::function<void()> m_onDestroy;
     uint32_t m_index;
 };
 

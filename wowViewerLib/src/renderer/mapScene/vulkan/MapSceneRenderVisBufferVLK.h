@@ -168,7 +168,7 @@ private:
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
 
     std::shared_ptr<GDescriptorSet> m2TextureDS = nullptr;
-    std::unique_ptr<BindlessTextureHolder> m2TextureHolder = nullptr;
+    std::shared_ptr<BindlessTextureHolder> m2TextureHolder = nullptr;
 
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
 

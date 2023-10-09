@@ -4,7 +4,7 @@
 
 #include "GStagingRingBuffer.h"
 
-void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_offset) {
+void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_offset) {
     auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
@@ -13,7 +13,7 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
     auto &currentOffset = offsets[frame];
 
     //Add alignment
-    size += 16;
+    auto size = o_size + 16;
 
     if (size > STAGE_BUFFER_SIZE)
         throw std::runtime_error(("size > STAGE_BUFFER_SIZE; size = " + std::to_string(size)));
@@ -28,7 +28,7 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
             currentIndex = ( offset ) / STAGE_BUFFER_SIZE;
             currentIndexAfter = (offset + size) / STAGE_BUFFER_SIZE;
 
-            if (currentIndexAfter >= vec.size()) {
+            if (currentIndexAfter >= vec.size() || vec[currentIndexAfter] == nullptr) {
                 std::unique_lock l(m_mutex);//
 
                 while (currentIndexAfter >= vec.size()) {
@@ -60,7 +60,8 @@ void * GStagingRingBuffer::allocateNext(int size, VkBuffer &o_staging, int &o_of
     startOffset += alignAdd;
 
     auto allocatedPtr = ((uint8_t *)bufferAndCPU->cpuBuffer.data()) + startOffset;
-    if ((startOffset + size) > bufferAndCPU->cpuBuffer.size()) {
+    if ((startOffset + o_size) > bufferAndCPU->cpuBuffer.size()) {
+        std::cerr << startOffset << " " << o_size << std::endl;
         throw "OOOOSP";
     }
     o_staging = bufferAndCPU->staging->getBuffer();

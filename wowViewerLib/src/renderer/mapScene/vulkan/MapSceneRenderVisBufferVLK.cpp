@@ -26,7 +26,7 @@ static const ShaderConfig forwardShaderConfig = {
         }}
     }
 };
-const int m2TexturesBindlessCount = 2048;
+const int m2TexturesBindlessCount = 4096;
 static const ShaderConfig m2VisShaderConfig = {
     "visBuffer",
     {
@@ -139,7 +139,7 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
         .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             m2TextureDS = ds;
         });
-    m2TextureHolder = std::make_unique<BindlessTextureHolder>(m2TexturesBindlessCount);
+    m2TextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
 }
 
 // ------------------
