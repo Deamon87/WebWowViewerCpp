@@ -14,7 +14,7 @@ layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
 layout(location=2) in vec3 vNormal;
 layout(location=3) in vec4 vPosition_EdgeFade;
-layout(location=4) in flat int meshIndex;
+layout(location=4) in flat int vMeshIndex;
 
 layout(location=0) out vec4 outputColor;
 
@@ -33,26 +33,36 @@ void main() {
 
     vec4 finalColor = vec4(0);
 
-    meshWideBlockVSPSBindless meshWideBindless = meshWideBindleses[meshIndex];
-    meshWideBlockVSPS meshWide = meshWides[meshWideBindless.instanceIndex_meshIndex.y];
+    meshWideBlockVSPSBindless meshWideBindless = meshWideBindleses[vMeshIndex];
+    meshWideBlockVSPS meshWide = meshWides[nonuniformEXT(meshWideBindless.instanceIndex_meshIndex.y)];
+
     int instanceIndex = meshWideBindless.instanceIndex_meshIndex.x;
+    M2InstanceRecordBindless m2Instance = instances[nonuniformEXT(instanceIndex)];
+
+    modelWideBlockPSStruct modelWide = modelWides[m2Instance.textureMatricesInd_modelFragmentDatasInd.y];
+
+
+    int placementMatrixInd = m2Instance.placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.x;
+    int textureWeightsInd = m2Instance.placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.w;
+    int m2ColorsInd = m2Instance.placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.z;
+    int textureMatricesInd = m2Instance.textureMatricesInd_modelFragmentDatasInd.x;
 
     vec3 uTexSampleAlpha = vec3(
-        meshWide.textureWeightIndexes.x < 0 ? 1.0 : textureWeight[meshWide.textureWeightIndexes.x / 4][meshWide.textureWeightIndexes.x % 4],
-        meshWide.textureWeightIndexes.y < 0 ? 1.0 : textureWeight[meshWide.textureWeightIndexes.y / 4][meshWide.textureWeightIndexes.y % 4],
-        meshWide.textureWeightIndexes.z < 0 ? 1.0 : textureWeight[meshWide.textureWeightIndexes.z / 4][meshWide.textureWeightIndexes.z % 4]
+        meshWide.textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightsInd+meshWide.textureWeightIndexes.x / 4][meshWide.textureWeightIndexes.x % 4],
+        meshWide.textureWeightIndexes.y < 0 ? 1.0 : textureWeight[textureWeightsInd+meshWide.textureWeightIndexes.y / 4][meshWide.textureWeightIndexes.y % 4],
+        meshWide.textureWeightIndexes.z < 0 ? 1.0 : textureWeight[textureWeightsInd+meshWide.textureWeightIndexes.z / 4][meshWide.textureWeightIndexes.z % 4]
     );
 
     vec4 vMeshColorAlpha = vec4(
         meshWide.colorIndex_applyWeight.x < 0 ?
             vec4(1.0,1.0,1.0,1.0) :
-            colors[meshWide.colorIndex_applyWeight.x]
+            colors[m2ColorsInd + meshWide.colorIndex_applyWeight.x]
     );
     if (meshWide.colorIndex_applyWeight.y > 0)
         vMeshColorAlpha.a *=
             meshWide.textureWeightIndexes.x < 0 ?
                 1.0 :
-                textureWeight[meshWide.textureWeightIndexes.x / 4][meshWide.textureWeightIndexes.x % 4];
+                textureWeight[textureWeightsInd + meshWide.textureWeightIndexes.x / 4][meshWide.textureWeightIndexes.x % 4];
 
     vec3 l_Normal = vNormal;
 
@@ -61,10 +71,9 @@ void main() {
     vec3 meshResColor = vMeshColorAlpha.rgb;
 
     vec3 accumLight = vec3(0.0);
-    modelWideBlockPSStruct modelWide = modelWides[instanceIndex];
+
     if ((meshWide.vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y == 1)) {
-        mat4 placementMat =
-            uPlacementMats[instances[instanceIndex].placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.x];
+        mat4 placementMat = uPlacementMats[placementMatrixInd];
 
         vec3 vPos3 = vPosition_EdgeFade.xyz;
         vec3 vNormal3 = normalize(l_Normal.xyz);
@@ -103,8 +112,8 @@ void main() {
     int textMatIndex1 = meshWide.vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.z;
     int textMatIndex2 = meshWide.vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.w;
 
-    textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textMatIndex1];
-    textMat[1] = textMatIndex2 < 0 ? mat4(1.0) : textureMatrix[textMatIndex2];
+    textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textureMatricesInd + textMatIndex1];
+    textMat[1] = textMatIndex2 < 0 ? mat4(1.0) : textureMatrix[textureMatricesInd + textMatIndex2];
     float edgeFade = 1.0;
 
     calcM2VertexMat(uVertexShader,
