@@ -97,6 +97,7 @@ public:
 
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
+    HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
 
@@ -157,6 +158,12 @@ private:
         HGBufferVLK meshWideBlocksBindless;
     } m2Buffers;
 
+    struct {
+        HGBufferVLK adtMeshWideVSPSes;
+        HGBufferVLK adtMeshWidePSes;
+        HGBufferVLK adtInstanceDatas;
+    } adtBuffers;
+
     HGBufferVLK uboBuffer;
 
     HGBufferVLK m_vboQuad;
@@ -171,6 +178,16 @@ private:
     std::shared_ptr<BindlessTextureHolder> m2TextureHolder = nullptr;
 
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
+
+    std::shared_ptr<ISimpleMaterialVLK> g_adtMaterial = nullptr;
+    std::shared_ptr<GDescriptorSet> adtLayerTextureDS = nullptr;
+    std::shared_ptr<BindlessTextureHolder> adtLayerTextureHolder = nullptr;
+    std::shared_ptr<GDescriptorSet> adtHeightLayerTextureDS = nullptr;
+    std::shared_ptr<BindlessTextureHolder> adtHeightLayerTextureHolder = nullptr;
+    std::shared_ptr<GDescriptorSet> adtAlphaTextureDS = nullptr;
+    std::shared_ptr<BindlessTextureHolder> adtAlphaTextureHolder = nullptr;
+
+
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
 

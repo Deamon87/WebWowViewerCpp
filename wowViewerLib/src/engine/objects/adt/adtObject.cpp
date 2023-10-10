@@ -381,7 +381,7 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             aTemplate.start = stripOffsets[i] * 2;
             aTemplate.end = stripOffsets[i + 1] - stripOffsets[i];
 
-            HGMesh hgMesh = sceneRenderer->createMesh(aTemplate, adtMaterial);
+            HGMesh hgMesh = sceneRenderer->createAdtMesh(aTemplate, adtMaterial);
             adtMeshes[i] = hgMesh;
             adtMaterials[i] = adtMaterial;
 
@@ -454,7 +454,7 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
     }
 
     if (!noLayers) {
-        adtMaterialTemplate.textures[4] = alphaTextures[i];
+        adtMaterialTemplate.textures[4] = alphaTexture;
     } else {
         adtMaterialTemplate.textures[4] = device->getBlackTexturePixel();
     }
@@ -474,25 +474,44 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
     }
 }
 
+inline uint8_t &getChannel(std::vector<uint8_t> &data, int x, int y, int width, int height, char channel) {
+
+    assert(((width * y + x ) * 4 + channel) < data.size());
+    return data[(width * y + x) * 4 + channel];
+};
+
 void AdtObject::loadAlphaTextures() {
     ZoneScoped;
     int chunkCount = m_adtFileTex->mcnkRead+1;
     int maxAlphaTexPerChunk = 4;
     int alphaTexSize = 64;
 
-    int texWidth = alphaTexSize;
-    int texHeight = alphaTexSize;
+    int texWidth = alphaTexSize * 16;
+    int texHeight = alphaTexSize * 16;
 
     int createdThisRun = 0;
+    alphaTexture = m_api->hDevice->createTexture(false, false);
+    std::vector<uint8_t> bigTexture = std::vector<uint8_t>(64*16 * 64*16 * 4, 0);
     for (int i = 0; i < chunkCount; i++) {
-        HGSamplableTexture alphaTexture = m_api->hDevice->createTexture(false, false);
+        auto const &mapTile = m_adtFile->mapTile[i];
+
         std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
-        alphaTexture->getTexture()->loadData(texWidth, texHeight, &alphaTextureData[0], ITextureFormat::itRGBA);
 
-        alphaTextures.push_back(alphaTexture);
+        for (int x = 0; x < 64; x++) {
+            for (int y = 0; y < 64; y++) {
+                for (char channel = 0; channel < 4; channel++) {
+                    getChannel(bigTexture,
+                               mapTile.IndexX * 64 + x, mapTile.IndexY * 64 + y,
+                               texWidth, texHeight, channel) =
+                        getChannel(alphaTextureData, x, y, alphaTexSize, alphaTexSize, channel);
+                }
+            }
+        }
     }
+    alphaTexture->getTexture()->loadData(texWidth, texHeight, &bigTexture[0], ITextureFormat::itRGBA);
+
     this->alphaTexturesLoaded += createdThisRun;
 }
 
@@ -1112,7 +1131,7 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : alphaTextures(), adt_x(adt_x), adt_y(adt_y){
+AdtObject::AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtFile) : adt_x(adt_x), adt_y(adt_y){
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
     waterTileAabb = std::vector<CAaBox>(256);

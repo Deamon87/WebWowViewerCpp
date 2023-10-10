@@ -5,7 +5,7 @@
 #include "BindlessTextureHolder.h"
 
 BindlessTextureHolder::BindlessTextureHolder(uint32_t textureCount) :
-    m_textureAllocator(OffsetAllocator::Allocator(textureCount)){
+    m_textureAllocator(OffsetAllocator::Allocator(textureCount, textureCount)){
 
 }
 

@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_FRAMEPROFILE_H
 
 #ifdef LINK_TRACY
+#include <limits>
 #include "Tracy.hpp"
 
 #ifdef LINK_VULKAN

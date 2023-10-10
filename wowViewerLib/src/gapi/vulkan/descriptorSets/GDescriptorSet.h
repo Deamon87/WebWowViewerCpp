@@ -59,7 +59,7 @@ public:
             m_set(set), m_boundDescriptors(boundDescriptors), m_descriptorSetUpdater(descriptorSetUpdater) {
             //So that the resize of these vectors would not lead to pointer invalidation in updates vector
             bufferInfos.reserve(32);
-            imageInfos.reserve(2500);
+            imageInfos.reserve(4096);
             updates.reserve(64);
         }
         ~SetUpdateHelper();

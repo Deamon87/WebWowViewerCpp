@@ -22,19 +22,37 @@ static const ShaderConfig forwardShaderConfig = {
     "forwardRendering",
     {
         {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
         }}
     }
 };
 const int m2TexturesBindlessCount = 4096;
+const int adtTexturesBindlessCount = 4096;
 static const ShaderConfig m2VisShaderConfig = {
     "visBuffer",
     {
         {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
         }},
         {2, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
+        }}
+    }};
+
+static const ShaderConfig adtVisShaderConfig = {
+    "visBuffer",
+    {
+        {0, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+        }},
+        {2, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, adtTexturesBindlessCount}}
+        }},
+        {3, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, adtTexturesBindlessCount}}
+        }},
+        {4, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, adtTexturesBindlessCount}}
         }}
     }};
 
@@ -87,6 +105,13 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
         m2Buffers.meshWideBlocks = m_device->createSSBOBuffer("M2 MeshWide", 1024*1024, sizeof(M2::meshWideBlockVSPS));
         m2Buffers.meshWideBlocksBindless = m_device->createSSBOBuffer("M2 MeshWide Bindless", 1024*1024, sizeof(M2::meshWideBlockVSPS_Bindless));
     }
+    //Create adt Shader buffs
+    {
+        adtBuffers.adtMeshWideVSPSes = m_device->createSSBOBuffer("ADT MeshVSPS", 1024*1024, sizeof(ADT::meshWideBlockVSPS));
+        adtBuffers.adtMeshWidePSes = m_device->createSSBOBuffer("ADT MeshPS", 1024*1024, sizeof(ADT::meshWideBlockPS));
+        adtBuffers.adtInstanceDatas = m_device->createSSBOBuffer("ADT InstanceData", 1024*1024, sizeof(ADT::AdtInstanceData));
+    }
+
 
     uboBuffer = m_device->createUniformBuffer("UBO Buffer", 1024*1024);
     uboStaticBuffer = m_device->createUniformBuffer("UBO Static", 1024*1024);
@@ -140,6 +165,39 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
             m2TextureDS = ds;
         });
     m2TextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
+
+    adtLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
+    adtHeightLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
+    adtAlphaTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
+
+    //Create global ADT descriptor for bindless textures
+    {
+        PipelineTemplate pipelineTemplate;
+        pipelineTemplate.element = DrawElementMode::TRIANGLES;
+        pipelineTemplate.depthWrite = true;
+        pipelineTemplate.depthCulling = true;
+        pipelineTemplate.backFaceCulling = true;
+        pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
+        g_adtMaterial = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, adtVisShaderConfig)
+            .createPipeline(m_emptyADTVAO, m_renderPass, pipelineTemplate)
+            .bindDescriptorSet(0, sceneWideDS)
+            .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                ds->beginUpdate()
+                    .ssbo(1, adtBuffers.adtMeshWideVSPSes)
+                    .ssbo(2, adtBuffers.adtMeshWidePSes)
+                    .ssbo(3, adtBuffers.adtInstanceDatas);
+            })
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                adtLayerTextureDS = ds;
+            })
+            .createDescriptorSet(3, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                adtAlphaTextureDS = ds;
+            })
+            .createDescriptorSet(4, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                adtHeightLayerTextureDS = ds;
+            }).toMaterial();
+    }
 }
 
 // ------------------
@@ -308,33 +366,57 @@ HGIndexBuffer  MapSceneRenderVisBufferVLK::createSkyIndexBuffer(int sizeInBytes)
 std::shared_ptr<IADTMaterial>
 MapSceneRenderVisBufferVLK::createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(uboStaticBuffer);
-    auto fragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockPS>>(uboBuffer);
+    auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(adtBuffers.adtMeshWideVSPSes);
+    auto fragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockPS>>(adtBuffers.adtMeshWidePSes);
+    auto instanceData = std::make_shared<CBufferChunkVLK<ADT::AdtInstanceData>>(adtBuffers.adtInstanceDatas);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig)
-        .createPipeline(m_emptyADTVAO, m_renderPass, pipelineTemplate)
-        .bindDescriptorSet(0, sceneWideDS)
-        .createDescriptorSet(1, [&vertexFragmentData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .ubo(1, *vertexFragmentData)
-                .ubo(2, *fragmentData);
-        })
-        .createDescriptorSet(2, [&adtMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .texture(5, adtMaterialTemplate.textures[0])
-                .texture(6, adtMaterialTemplate.textures[1])
-                .texture(7, adtMaterialTemplate.textures[2])
-                .texture(8, adtMaterialTemplate.textures[3])
-                .texture(9, adtMaterialTemplate.textures[4])
-                .texture(10, adtMaterialTemplate.textures[5])
-                .texture(11, adtMaterialTemplate.textures[6])
-                .texture(12, adtMaterialTemplate.textures[7])
-                .texture(13, adtMaterialTemplate.textures[8]);
-        })
-        .toMaterial<IADTMaterial>([&vertexFragmentData, &fragmentData](IADTMaterial *instance) -> void {
+    auto material = MaterialBuilderVLK::fromMaterial(m_device, g_adtMaterial)
+        .toMaterial<IADTMaterialVis>([&fragmentData, &vertexFragmentData, &instanceData](IADTMaterialVis *instance) -> void {
             instance->m_materialVSPS = vertexFragmentData;
             instance->m_materialPS = fragmentData;
+            instance->m_instanceData = instanceData;
         });
+
+    {
+        auto &adtInstanceData = instanceData->getObject();
+        adtInstanceData.meshIndexVSPS = vertexFragmentData->getSubBuffer()->getIndex();
+        adtInstanceData.meshIndexPS = fragmentData->getSubBuffer()->getIndex();
+        {
+            auto dsUpdate = adtLayerTextureDS->beginUpdate();
+
+            for (int i = 0; i < 4; i++) {
+                auto bindlessText = adtLayerTextureHolder->allocate(adtMaterialTemplate.textures[i]);
+                adtInstanceData.LayerIndexes[i] = bindlessText->getIndex();
+                material->m_bindlessText.push_back(bindlessText);
+                dsUpdate.texture(0, adtMaterialTemplate.textures[i], bindlessText->getIndex());
+            }
+        }
+
+        {
+            auto dsUpdate = adtAlphaTextureDS->beginUpdate();
+
+            for (int i = 4; i <= 4; i++) {
+                auto bindlessText = adtAlphaTextureHolder->allocate(adtMaterialTemplate.textures[i]);
+                adtInstanceData.AlphaTextureInd = bindlessText->getIndex();
+                material->m_bindlessText.push_back(bindlessText);
+                dsUpdate.texture(0, adtMaterialTemplate.textures[i], bindlessText->getIndex());
+            }
+        }
+
+        {
+            auto dsUpdate = adtHeightLayerTextureDS->beginUpdate();
+
+            for (int i = 5; i < 9; i++) {
+                auto bindlessText = adtHeightLayerTextureHolder->allocate(adtMaterialTemplate.textures[i]);
+                adtInstanceData.LayerHeight[i-5] = bindlessText->getIndex();
+                material->m_bindlessText.push_back(bindlessText);
+                dsUpdate.texture(0, adtMaterialTemplate.textures[i], bindlessText->getIndex());
+            }
+        }
+        instanceData->save();
+    }
+
+    material->instanceIndex = instanceData->getSubBuffer()->getIndex();
 
     return material;
 }
@@ -771,6 +853,10 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
             uploadCmd.submitBufferUploads(l_this->m2Buffers.meshWideBlocks);
             uploadCmd.submitBufferUploads(l_this->m2Buffers.meshWideBlocksBindless);
 
+            uploadCmd.submitBufferUploads(l_this->adtBuffers.adtMeshWidePSes);
+            uploadCmd.submitBufferUploads(l_this->adtBuffers.adtMeshWideVSPSes);
+            uploadCmd.submitBufferUploads(l_this->adtBuffers.adtInstanceDatas);
+
             uploadCmd.submitBufferUploads(l_this->iboBuffer);
             uploadCmd.submitBufferUploads(l_this->m_vboQuad);
             uploadCmd.submitBufferUploads(l_this->m_iboQuad);
@@ -895,7 +981,12 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createSortableMesh(gMeshTemplate &mes
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
     return mesh;
 }
-
+HGMesh
+MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) {
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
+    mesh->instanceIndex = std::dynamic_pointer_cast<IADTMaterialVis>(material)->instanceIndex;
+    return mesh;
+}
 HGM2Mesh
 MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
                                        int layer, int priorityPlane) {

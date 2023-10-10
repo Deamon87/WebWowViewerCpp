@@ -201,11 +201,19 @@ namespace ADT {
         float uHeightScale[4];
         float uHeightOffset[4];
     };
-    //This one needs to be updated every frame. The one above - doesn't
     struct meshWideBlockPS {
         float scaleFactorPerLayer[4];
         int animation_rotationPerLayer[4];
         int animation_speedPerLayer[4];
+    };
+
+    struct AdtInstanceData {
+        int meshIndexVSPS;
+        int meshIndexPS;
+        int AlphaTextureInd;
+        int unused;
+        int LayerIndexes[4];
+        int LayerHeight[4];
     };
 }
 

@@ -121,6 +121,14 @@ public:
     std::shared_ptr<IBufferChunk<ADT::meshWideBlockPS>> m_materialPS = nullptr;
 };
 
+class IADTMaterialVis : public IADTMaterial {
+public:
+    std::shared_ptr<IBufferChunk<ADT::AdtInstanceData>> m_instanceData = nullptr;
+    std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
+    int instanceIndex = 0;
+};
+
+
 class IWaterMaterial : public IMaterial {
 public:
     mathfu::vec3 color;

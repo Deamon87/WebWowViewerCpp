@@ -131,7 +131,7 @@ private:
     HGVertexBufferBindings lodVertexBindings;
 
 private:
-    std::vector<HGSamplableTexture> alphaTextures;
+    HGSamplableTexture alphaTexture;
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
 

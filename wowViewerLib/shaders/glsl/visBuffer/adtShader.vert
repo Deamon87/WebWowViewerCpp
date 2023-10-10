@@ -15,13 +15,8 @@ layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
 
 #include "../common/commonUboSceneData.glsl"
+#include "../common/commonAdtIndirectDescriptorSet.glsl"
 
-layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
-    vec4 uPos;
-    ivec4 uUseHeightMixFormula;
-    vec4 uHeightScale;
-    vec4 uHeightOffset;
-};
 
 mat3 blizzTranspose(mat4 value) {
     return mat3(
@@ -36,9 +31,12 @@ layout(location = 1) out vec3 vPosition;
 layout(location = 2) out vec4 vColor;
 layout(location = 3) out vec3 vNormal;
 layout(location = 4) out vec3 vVertexLighting;
+layout(location = 5) out flat int vMeshIndex;
+layout(location = 6) out vec2 vAlphaCoords;
 
-const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
-const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
+const float TILESIZE = (1600.0 / 3.0);
+const float UNITSIZE =  TILESIZE / 16.0 / 8.0;
+
 
 void main() {
 
@@ -59,10 +57,11 @@ void main() {
         iY = iY + 0.5;
         iX = iX - 8.5;
     }
+    //    vChunkCoords = vec2(iX, iY);
 
 //    vec4 worldPoint = vec4(
-//        uPos.x - iY * UNITSIZE_Y,
-//        uPos.y - iX * UNITSIZE_X,
+//        uPos.x - iY * UNITSIZE,
+//        uPos.y - iX * UNITSIZE,
 //        uPos.z + aHeight,
 //        1);
 
@@ -70,9 +69,14 @@ void main() {
 
     vChunkCoords = vec2(iX, iY);
 
+    vAlphaCoords = (aPos.yx - floor(aPos.yx / TILESIZE)*TILESIZE) / TILESIZE;
+    vAlphaCoords.x = 1.0 - vAlphaCoords.x;
+    vAlphaCoords.y = 1.0 - vAlphaCoords.y;
+
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;
     vVertexLighting = aVertexLighting.rgb;
+    vMeshIndex = gl_InstanceIndex;
     mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
     vec3 normal = normalize((viewMatForNormal * vec4(aNormal, 0.0)).xyz);
 

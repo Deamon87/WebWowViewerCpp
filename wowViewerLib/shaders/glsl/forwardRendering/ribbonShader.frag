@@ -38,7 +38,7 @@ void main() {
         texcoord = (vTexcoord0 * textCoordScale) + textureTranslate.xy;
     }
 
-    vec4 tex = texture(uTexture, vTexcoord0).rgba;
+    vec4 tex = texture(uTexture, texcoord).rgba;
 
     vec4 finalColor = vec4((vColor.rgb*tex.rgb), tex.a * vColor.a);
 

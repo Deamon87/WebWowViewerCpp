@@ -41,6 +41,9 @@
 #include "screenshots/screenshotMaker.h"
 #include "database/CEmptySqliteDB.h"
 #include <exception>
+#ifdef WIN32
+#include <timeapi.h>
+#endif
 #ifdef LINK_TRACY
 #include "Tracy.hpp"
 #endif
@@ -456,6 +459,7 @@ int main(){
 //    auto native_me = std::this_thread::get_id().native_handle();
 #ifdef WIN32
     SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+    timeBeginPeriod(3);
 #endif
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
@@ -506,7 +510,11 @@ int main(){
         lastFrame = currentFrame;
         if (currentDeltaAfterDraw < 5.0) {
             using namespace std::chrono_literals;
-            std::this_thread::sleep_for(std::chrono::milliseconds((int)(4.0)));
+#ifdef WIN32
+            sqlite3_sleep(5.0f-currentDeltaAfterDraw);
+#else
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0-currentDeltaAfterDraw)));
+#endif
         }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {
@@ -525,6 +533,9 @@ int main(){
 //}
 
     std::cout << "program ended" << std::endl;
+#ifdef WIN32
+    timeEndPeriod(3);
+#endif
     //        while (1) {
     //            mainLoop(&myapp);
     //        }

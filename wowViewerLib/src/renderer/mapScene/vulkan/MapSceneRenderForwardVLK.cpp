@@ -804,6 +804,11 @@ HGSortableMesh MapSceneRenderForwardVLK::createSortableMesh(gMeshTemplate &meshT
     return mesh;
 }
 
+HGMesh MapSceneRenderForwardVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) {
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
+    return mesh;
+};
+
 HGM2Mesh
 MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
                                        int layer, int priorityPlane) {
