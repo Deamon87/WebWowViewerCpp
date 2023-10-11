@@ -26,7 +26,6 @@ public:
         return material()->getBlendMode();
     }
 
-    int instanceIndex = -1;
 public:
     auto material() const -> const HMaterialVLK& { return m_material; }
     auto scissorOffset() const -> const  std::array<int, 2>& { return m_scissorOffset; }

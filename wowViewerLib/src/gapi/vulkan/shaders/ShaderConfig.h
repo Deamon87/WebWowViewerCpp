@@ -13,7 +13,7 @@ struct DescTypeConfig {
     VkDescriptorType type = VK_DESCRIPTOR_TYPE_MAX_ENUM;
     bool isBindless = false;
     int descriptorCount = 1;
-    uint32_t stageMask;
+    uint32_t stageMask = 0;
 
     bool operator==(const DescTypeConfig &other) const {
         return

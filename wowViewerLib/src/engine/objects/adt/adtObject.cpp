@@ -483,19 +483,21 @@ inline uint8_t &getChannel(std::vector<uint8_t> &data, int x, int y, int width, 
 void AdtObject::loadAlphaTextures() {
     ZoneScoped;
     int chunkCount = m_adtFileTex->mcnkRead+1;
-    int maxAlphaTexPerChunk = 4;
-    int alphaTexSize = 64;
+    constexpr int maxAlphaTexPerChunk = 4;
+    constexpr int alphaTexSize = 64;
 
-    int texWidth = alphaTexSize * 16;
-    int texHeight = alphaTexSize * 16;
+    constexpr int texWidth = alphaTexSize * 16;
+    constexpr int texHeight = alphaTexSize * 16;
 
     int createdThisRun = 0;
     alphaTexture = m_api->hDevice->createTexture(false, false);
-    std::vector<uint8_t> bigTexture = std::vector<uint8_t>(64*16 * 64*16 * 4, 0);
+    std::vector<uint8_t> bigTexture = std::vector<uint8_t>(texWidth * texHeight * 4, 0);
+    std::vector<uint8_t> alphaTextureData = std::vector<uint8_t>(alphaTexSize * alphaTexSize * 4);
     for (int i = 0; i < chunkCount; i++) {
         auto const &mapTile = m_adtFile->mapTile[i];
+        memset(alphaTextureData.data(), 0, alphaTextureData.size());
+//        std::fill(alphaTextureData.begin(), alphaTextureData.end(), 0);
 
-        std::vector<uint8_t> alphaTextureData;
         m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
 

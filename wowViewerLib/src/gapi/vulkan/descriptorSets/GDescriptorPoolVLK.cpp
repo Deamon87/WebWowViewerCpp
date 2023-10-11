@@ -31,7 +31,7 @@ GDescriptorPoolVLK::GDescriptorPoolVLK(IDeviceVulkan &device, bool isBindless) :
     poolInfo.pNext = nullptr;
     poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT ;
     if (isBindless)
-        poolInfo.flags |= VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT;
+        poolInfo.flags |= (VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT) ;
 
     auto result = vkCreateDescriptorPool(m_device.getVkDevice(), &poolInfo, nullptr, &m_descriptorPool);
     if (result != VK_SUCCESS) {

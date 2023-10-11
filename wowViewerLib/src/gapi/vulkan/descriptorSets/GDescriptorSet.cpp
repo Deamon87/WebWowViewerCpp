@@ -19,6 +19,10 @@ GDescriptorSet::GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, con
         boundDescriptors[i].resize(arraySizes[i]);
     };
 
+    if (m_hDescriptorSetLayout->getIsBindless()) {
+        m_bindlessAccum = std::make_unique<BindlessUpdateAccum>();
+    }
+
     assert(m_descriptorSet != nullptr);
 }
 GDescriptorSet::~GDescriptorSet() {
@@ -248,9 +252,9 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
 GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     if (updateCancelled) return;
 
+#if (!defined(NDEBUG))
     {
         int bufferIndex = 0;
-
         int imageIndex = 0;
         for (int i = 0; i < updates.size(); i++) {
             if (updates[i].pBufferInfo != nullptr) {
@@ -260,9 +264,10 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
             }
         }
     }
+#endif
 
     //FOR DEBUG AND STABILITY
-    if (/*!m_set.m_hDescriptorSetLayout->getIsBindless()*/ true) {
+    if (!m_set.m_hDescriptorSetLayout->getIsBindless()) {
         //Fill the rest of Descriptor with already bound values
         //This is needed, cause In this implementation of descriptor set, the descriptor set is getting free'd on update
         //and new one is created
@@ -272,16 +277,7 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
             for (int bindIndex = 0; bindIndex < m_boundDescriptors[bindPoint].size(); bindIndex++) {
                 if (m_boundDescriptors[bindPoint][bindIndex] == nullptr) continue;
 
-                if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
-                    ubo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
-                } else if (m_boundDescriptors[bindPoint][bindIndex]->descType ==
-                           DescriptorRecord::DescriptorRecordType::UBODynamic) {
-                    ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
-                } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::SSBO) {
-                    ssbo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
-                } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
-                    texture(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->texture, bindIndex);
-                }
+                reassignBinding(bindPoint, bindIndex);
             }
         }
 
@@ -299,6 +295,11 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
             std::cerr << "required descriptors " << notSetBits << " were not set during update" << std::endl;
             throw std::runtime_error("required descriptors were not set");
         }
+    } else {
+        auto updates = m_set.m_bindlessAccum->getUpdates();
+        for (auto const &update: updates.get()){
+            reassignBinding(update.bindIndex, update.arrayIndex);
+        }
     }
 
     std::sort(dynamicBufferIndexes.begin(), dynamicBufferIndexes.end());
@@ -306,9 +307,9 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
 
     m_set.writeToDescriptorSets(updates, imageInfos, dynamicBufferIndexes);
 
+#if (!defined(NDEBUG))
     {
         int bufferIndex = 0;
-
         int imageIndex = 0;
         for (int i = 0; i < updates.size(); i++) {
             if (updates[i].pBufferInfo != nullptr) {
@@ -318,21 +319,46 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
             }
         }
     }
+#endif
+}
+
+void GDescriptorSet::SetUpdateHelper::reassignBinding(int bindPoint, int bindIndex) {
+    if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::UBO) {
+        ubo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
+    } else if (m_boundDescriptors[bindPoint][bindIndex]->descType ==
+               DescriptorRecord::DescriptorRecordType::UBODynamic) {
+        ubo_dynamic(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
+    } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::SSBO) {
+        ssbo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
+    } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
+        texture(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->texture, bindIndex);
+    }
 }
 
 void GDescriptorSet::SetUpdateHelper::cancelUpdate() {
     updateCancelled = true;
 }
 
-std::function<void()> GDescriptorSet::SetUpdateHelper::createCallback() {
+std::function<void()> GDescriptorSet::SetUpdateHelper::createCallback(int bindPoint, int arrayIndex) {
     auto ds_weak = m_set.weak_from_this();
     auto l_descriptorSetUpdater = m_descriptorSetUpdater;
-    const std::function<void()> callback = ([ds_weak, l_descriptorSetUpdater]() -> void {
-        if (auto ds = ds_weak.lock()) {
-            l_descriptorSetUpdater->addToUpdate(ds);
-        }
-    });
+    if (!m_set.m_hDescriptorSetLayout->getIsBindless()) {
+        const std::function<void()> callback = ([ds_weak, l_descriptorSetUpdater]() -> void {
+            if (auto ds = ds_weak.lock()) {
+                l_descriptorSetUpdater->addToUpdate(ds);
+            }
+        });
 
-    return callback;
+        return callback;
+    } else {
+        const std::function<void()> callback = ([ds_weak, l_descriptorSetUpdater, bindPoint, arrayIndex]() -> void {
+            if (auto ds = ds_weak.lock()) {
+                ds->m_bindlessAccum->addUpdate(bindPoint, arrayIndex);
+                l_descriptorSetUpdater->addToUpdate(ds);
+            }
+        });
+
+        return callback;
+    }
 }
 

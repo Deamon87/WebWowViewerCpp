@@ -85,14 +85,11 @@ void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat tex
     std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
 
 
-    HMipmapsVector mipmapsVector = std::make_shared<std::vector<mipmapStruct_t>>();
-    mipmapStruct_t mipmap;
+    HMipmapsVector mipmapsVector = std::make_shared<std::vector<mipmapStruct_t>>(1);
+    mipmapStruct_t &mipmap = mipmapsVector->at(0);
     mipmap.height = height;
     mipmap.width = width;
     mipmap.texture = unifiedBuffer;
-
-    mipmapsVector->push_back(mipmap);
-
 
     createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
 }

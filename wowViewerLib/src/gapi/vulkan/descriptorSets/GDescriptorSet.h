@@ -17,7 +17,26 @@ class GDescriptorPoolVLK;
 #include "GDescriptorSetLayout.h"
 #include "DescriptorRecord.h"
 #include "../bindable/DSBindable.h"
+#include "../utils/MutexLockedVector.h"
 
+class BindlessUpdateAccum {
+public:
+    struct BindlesUpdate {
+        int bindIndex;
+        int arrayIndex;
+    };
+    void addUpdate(int bindIndex, int arrayIndex) {
+        std::unique_lock<std::mutex> m_lock(m_mutex);
+        m_bindlessUpdates.emplace_back() = {bindIndex, arrayIndex};
+    };
+    MutexLockedVector<BindlesUpdate> getUpdates() {
+        return MutexLockedVector<BindlesUpdate>(m_bindlessUpdates, m_mutex, true);
+    }
+
+private:
+    std::mutex m_mutex;
+    std::vector<BindlesUpdate> m_bindlessUpdates;
+};
 
 class GDescriptorSet : public std::enable_shared_from_this<GDescriptorSet> {
 public:
@@ -92,7 +111,7 @@ public:
                 }
             }
             if (createDescRecord) {
-                std::function<void()> callback = createCallback();
+                std::function<void()> callback = createCallback(bindPoint, index);
                 m_boundDescriptors[bindPoint][index] = std::make_unique<DescriptorRecord>(descType, object, callback);
             }
         }
@@ -114,7 +133,9 @@ public:
         std::vector<VkWriteDescriptorSet> updates;
         std::bitset<GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_updateBindPoints = 0;
 
-        std::function<void()> createCallback();
+        std::function<void()> createCallback(int bindPoint, int arrayIndex);
+
+        void reassignBinding(int bindPoint, int bindIndex);
     };
 
     SetUpdateHelper beginUpdate();
@@ -129,6 +150,8 @@ private:
     std::vector<IBufferVLK *> m_dynamicBuffers;
 
     bool m_firstUpdate = true;
+
+    std::unique_ptr<BindlessUpdateAccum> m_bindlessAccum = nullptr;
 
     std::array<std::vector<std::unique_ptr<DescriptorRecord>>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> boundDescriptors;
 

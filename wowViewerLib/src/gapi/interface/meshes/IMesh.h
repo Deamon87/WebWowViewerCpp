@@ -77,11 +77,13 @@ public:
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
 
 
-//    auto texture() const -> const HGVertexBufferBindings& { return m_bindings; }
+    int vertexStart = -1;
+    int instanceIndex = -1;
 protected:
     HGVertexBufferBindings m_bindings;
     int m_start;
     int m_end;
+
 
 
 public:
