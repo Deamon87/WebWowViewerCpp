@@ -380,7 +380,8 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     return indexVBO;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd, mathfu::vec4 localAmbient) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd,
+                                                       const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     if (vertexBufferBindings == nullptr) {
         //Do postLoading stuff here
         if (mohd) {
@@ -389,7 +390,7 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCrea
                 this->m_attenuateFunc(*this);
             }
         }
-        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer), localAmbient);
+        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer), ambientBuffer);
     }
 
     return vertexBufferBindings;

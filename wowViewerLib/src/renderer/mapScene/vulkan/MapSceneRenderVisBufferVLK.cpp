@@ -26,9 +26,32 @@ static const ShaderConfig forwardShaderConfig = {
         }}
     }
 };
+
+static const ShaderConfig m2ForwardShaderConfig = {
+    "forwardRendering",
+    {
+        {0, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
+        }},
+        {1, {
+            {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
+        }}
+    }};
+
 const int m2TexturesBindlessCount = 4096;
 const int adtTexturesBindlessCount = 4096;
 static const ShaderConfig m2VisShaderConfig = {
+    "visBuffer",
+    {
+        {0, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+        }},
+        {2, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
+        }}
+    }};
+
+static const ShaderConfig wmoVisShaderConfig = {
     "visBuffer",
     {
         {0, {
@@ -68,7 +91,7 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
     vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
     vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
-    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200);
+
 
     {
         const float epsilon = 0.f;
@@ -111,7 +134,15 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
         adtBuffers.adtMeshWidePSes = m_device->createSSBOBuffer("ADT MeshPS", 1024*1024, sizeof(ADT::meshWideBlockPS));
         adtBuffers.adtInstanceDatas = m_device->createSSBOBuffer("ADT InstanceData", 1024*1024, sizeof(ADT::AdtInstanceData));
     }
-
+    //Create wmo Shader buffs
+    {
+        wmoBuffers.wmoPlacementMats = m_device->createSSBOBuffer("WMO PlaceMat", 1024*1024, sizeof(mathfu::mat4));
+        wmoBuffers.wmoMeshWideVSes = m_device->createSSBOBuffer("WMO MeshWideVS", 1024*1024, sizeof(WMO::meshWideBlockVS));
+        wmoBuffers.wmoMeshWidePSes = m_device->createSSBOBuffer("WMO MeshWidePS", 1024*1024, sizeof(WMO::meshWideBlockPS));
+        wmoBuffers.wmoMeshWideBindless = m_device->createSSBOBuffer("WMO MeshWideBindless", 1024*1024, sizeof(WMO::meshWideBlockBindless));
+        wmoBuffers.wmoPerMeshData = m_device->createSSBOBuffer("WMO PerMeshData", 1024*1024, sizeof(WMO::perMeshData));
+        wmoBuffers.wmoGroupAmbient = m_device->createSSBOBuffer("Scene_VBO_WMOAmbient",16*200, sizeof(mathfu::vec4_packed));
+    }
 
     uboBuffer = m_device->createUniformBuffer("UBO Buffer", 1024*1024);
     uboStaticBuffer = m_device->createUniformBuffer("UBO Static", 1024*1024);
@@ -121,7 +152,7 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptyM2RibbonVAO = createM2RibbonVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
-    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, mathfu::vec4(0,0,0,0));
+    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, nullptr);
     m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
     m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
@@ -166,6 +197,24 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
         });
     m2TextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
 
+    //Create global wmo descriptor for bindless textures
+    MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
+        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ssbo(1, wmoBuffers.wmoPlacementMats)
+                .ssbo(2, wmoBuffers.wmoMeshWideVSes)
+                .ssbo(3, wmoBuffers.wmoMeshWidePSes)
+                .ssbo(4, wmoBuffers.wmoMeshWideBindless)
+                .ssbo(5, wmoBuffers.wmoGroupAmbient)
+                .ssbo(6, wmoBuffers.wmoPerMeshData);
+
+            wmoBufferOneDS = ds;
+        })
+        .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            wmoTexturesDS = ds;
+        });
+    wmoTextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
+
     adtLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
     adtHeightLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
     adtAlphaTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
@@ -200,9 +249,6 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     }
 }
 
-// ------------------
-
-
 std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMaterial(const PipelineTemplate &pipelineTemplate) {
     auto i = m_m2StaticMaterials.find(pipelineTemplate);
     if (i != m_m2StaticMaterials.end()) {
@@ -225,6 +271,31 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMater
 
     return staticMaterial;
 }
+
+std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate) {
+    auto i = m_wmoStaticMaterials.find(pipelineTemplate);
+    if (i != m_wmoStaticMaterials.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            m_wmoStaticMaterials.erase(i);
+        }
+    }
+
+    auto staticMaterial =
+        MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
+            .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
+            .bindDescriptorSet(0, sceneWideDS)
+            .bindDescriptorSet(1, wmoBufferOneDS)
+            .bindDescriptorSet(2, wmoTexturesDS)
+            .toMaterial();
+
+    m_wmoStaticMaterials[pipelineTemplate] = staticMaterial;
+
+    return staticMaterial;
+}
+
+// ------------------
 // Buffer creation
 // ------------------
 
@@ -237,20 +308,11 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createADTVAO(HGVertexBuffer v
     return adtVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) {
+HGVertexBufferBindings MapSceneRenderVisBufferVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto wmoVAO = m_device->createVertexBufferBindings();
 
-    HGVertexBuffer ambientBuffer = nullptr;
-    if (vertexBuffer != nullptr) {
-        ambientBuffer = vboWMOGroupAmbient->getSubBuffer(sizeof(mathfu::vec4_packed));
-        auto packedAmbient = mathfu::vec4_packed(localAmbient);
-        static_assert(sizeof(packedAmbient) == 16); static_assert(sizeof(mathfu::vec4_packed) == 16);
-
-        ambientBuffer->uploadData(&packedAmbient, sizeof(mathfu::vec4_packed));
-    }
     wmoVAO->addVertexBufferBinding(vertexBuffer, std::vector(staticWMOBindings.begin(), staticWMOBindings.end()));
-    wmoVAO->addVertexBufferBinding(ambientBuffer, std::vector(staticWmoGroupAmbient.begin(), staticWmoGroupAmbient.end()), true);
     wmoVAO->setIndexBuffer(indexBuffer);
 
     return wmoVAO;
@@ -484,7 +546,7 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderVisBufferVLK::createM2Waterf
     auto vertexData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockVS>>(uboStaticBuffer);
     auto fragmentData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockPS>>(uboStaticBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2VisShaderConfig)
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2ForwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVisVLK>(m2ModelData)->placementMatrixDS)
@@ -563,41 +625,57 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderVisBufferVLK::createM2RibbonMat
 };
 
 std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderVisBufferVLK::createWMOWideChunk() {
-    return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(uboBuffer);
+    return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(wmoBuffers.wmoPlacementMats);
+}
+std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> MapSceneRenderVisBufferVLK::createWMOGroupAmbientChunk() {
+    return std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(wmoBuffers.wmoGroupAmbient);
 }
 
 std::shared_ptr<IWMOMaterial> MapSceneRenderVisBufferVLK::createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                                           const PipelineTemplate &pipelineTemplate,
                                                                           const WMOMaterialTemplate &wmoMaterialTemplate) {
-    auto l_vertexData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockVS>>(uboStaticBuffer); ;
-    auto l_fragmentData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockPS>>(uboStaticBuffer); ;
+    auto l_vertexData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockVS>>(wmoBuffers.wmoMeshWideVSes); ;
+    auto l_fragmentData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockPS>>(wmoBuffers.wmoMeshWidePSes); ;
+    auto l_bindless = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockBindless>>(wmoBuffers.wmoMeshWideBindless);
 
-    auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, forwardShaderConfig)
-        .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
-        .bindDescriptorSet(0, sceneWideDS)
-        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .ubo(1, BufferChunkHelperVLK::cast(modelWide))
-                .ubo(2, *l_vertexData)
-                .ubo(4, *l_fragmentData);
-        })
-        .createDescriptorSet(2, [&wmoMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .texture(5, wmoMaterialTemplate.textures[0])
-                .texture(6, wmoMaterialTemplate.textures[1])
-                .texture(7, wmoMaterialTemplate.textures[2])
-                .texture(8, wmoMaterialTemplate.textures[3])
-                .texture(9, wmoMaterialTemplate.textures[4])
-                .texture(10, wmoMaterialTemplate.textures[5])
-                .texture(11, wmoMaterialTemplate.textures[6])
-                .texture(12, wmoMaterialTemplate.textures[7])
-                .texture(13, wmoMaterialTemplate.textures[8]);
-        })
-        .toMaterial<IWMOMaterial>([&l_vertexData, &l_fragmentData](IWMOMaterial *instance) -> void {
-            instance->m_materialVS = l_vertexData;
+    auto staticMaterial = getWMOStaticMaterial(pipelineTemplate);
+
+    auto material = MaterialBuilderVLK::fromMaterial(m_device, staticMaterial)
+        .toMaterial<IWMOMaterialVis>([&l_vertexData, &l_fragmentData, &l_bindless](IWMOMaterialVis *instance) -> void {
             instance->m_materialPS = l_fragmentData;
+            instance->m_materialVS = l_vertexData;
+            instance->m_meshBindless = l_bindless;
         });
+    {
+        auto dsUpdate = wmoTexturesDS->beginUpdate();
+
+        for (int i = 0; i < 9; i++) {
+            auto bindlessText = wmoTextureHolder->allocate(wmoMaterialTemplate.textures[i]);
+            material->m_bindlessText.push_back(bindlessText);
+            dsUpdate.texture(0, wmoMaterialTemplate.textures[i], bindlessText->getIndex());
+        }
+    }
+
+    {
+        auto &bindless = l_bindless->getObject();
+        bindless.blockVSIndex = l_vertexData->getIndex();
+        bindless.meshWideIndex = l_fragmentData->getIndex();
+        bindless.placementMat = BufferChunkHelperVLK::cast(modelWide)->getIndex();
+
+        bindless.texture1 = material->m_bindlessText[0]->getIndex();
+        bindless.texture2 = material->m_bindlessText[1]->getIndex();
+        bindless.texture3 = material->m_bindlessText[2]->getIndex();
+        bindless.texture4 = material->m_bindlessText[3]->getIndex();
+        bindless.texture5 = material->m_bindlessText[4]->getIndex();
+        bindless.texture6 = material->m_bindlessText[5]->getIndex();
+        bindless.texture7 = material->m_bindlessText[6]->getIndex();
+        bindless.texture8 = material->m_bindlessText[7]->getIndex();
+        bindless.texture9 = material->m_bindlessText[8]->getIndex();
+
+        l_bindless->save();
+    }
+
+    material->meshWideBindlessIndex = l_bindless->getIndex();
 
     return material;
 }
@@ -839,7 +917,6 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
             uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
             uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
             uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
             uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
             uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
 
@@ -856,6 +933,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
             uploadCmd.submitBufferUploads(l_this->adtBuffers.adtMeshWidePSes);
             uploadCmd.submitBufferUploads(l_this->adtBuffers.adtMeshWideVSPSes);
             uploadCmd.submitBufferUploads(l_this->adtBuffers.adtInstanceDatas);
+
+            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoPlacementMats);
+            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoMeshWideVSes);
+            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoMeshWidePSes);
+            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoMeshWideBindless);
+            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoGroupAmbient);
+            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoPerMeshData);
 
             uploadCmd.submitBufferUploads(l_this->iboBuffer);
             uploadCmd.submitBufferUploads(l_this->m_vboQuad);
@@ -993,6 +1077,27 @@ MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std:
 
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialVis>(material)->instanceIndex;
+    return mesh;
+}
+HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
+                                                 const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+    auto originalMat = std::dynamic_pointer_cast<IWMOMaterialVis>(material);
+    auto c_perMeshData = std::make_shared<CBufferChunkVLK<WMO::perMeshData>>(wmoBuffers.wmoPerMeshData);
+
+    auto newMat = MaterialBuilderVLK::fromMaterial(m_device, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material))
+    .toMaterial<IWMOMaterialVis>([&c_perMeshData](IWMOMaterialVis *instance) -> void {
+        instance->m_perMeshData = c_perMeshData;
+    });
+
+    {
+        auto &perMeshData = c_perMeshData->getObject();
+        perMeshData.meshWideBindlessIndex = originalMat->meshWideBindlessIndex;
+        perMeshData.wmoAmbientIndex = BufferChunkHelperVLK::castToChunk(ambientBuffer)->getIndex();
+        c_perMeshData->save();
+    }
+
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(newMat), 0, 0);
+    mesh->instanceIndex = c_perMeshData->getIndex();
     return mesh;
 }
 HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,

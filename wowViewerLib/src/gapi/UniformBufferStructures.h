@@ -193,6 +193,30 @@ namespace WMO {
         mathfu::vec4_packed uFogColor_AlphaTest;
 //    )}
     };
+
+    struct meshWideBlockBindless {
+//    PACK({struct
+        int placementMat;
+        int meshWideIndex;
+        int blockVSIndex;
+        int texture9;
+        int texture1;
+        int texture2;
+        int texture3;
+        int texture4;
+        int texture5;
+        int texture6;
+        int texture7;
+        int texture8;
+
+//    )}
+    };
+    struct perMeshData {
+        int meshWideBindlessIndex;
+        int wmoAmbientIndex;
+        int unused0;
+        int unused1;
+    };
 }
 namespace ADT {
     struct meshWideBlockVSPS {

@@ -130,11 +130,17 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     HGDevice device = m_api->hDevice;
 
-    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader(),
-                                                               mathfu::vec4(
-        this->getAmbientColor().xyz(),
-        ((this->m_geom->mogp->flags.INTERIOR > 0) && (!this->m_geom->mogp->flags.EXTERIOR_LIT)) ? 1.0f : 0.0f
-    ));
+    m_ambientChunk = sceneRenderer->createWMOGroupAmbientChunk();
+    {
+        auto &localAmbient = m_ambientChunk->getObject();
+        localAmbient = mathfu::vec4(
+            this->getAmbientColor().xyz(),
+            ((this->m_geom->mogp->flags.INTERIOR > 0) && (!this->m_geom->mogp->flags.EXTERIOR_LIT)) ? 1.0f : 0.0f
+        );
+        m_ambientChunk->save();
+    }
+
+    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader(), m_ambientChunk);
 
     MOGP *mogp = m_geom->mogp;
 
@@ -160,7 +166,7 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         meshTemplate.end = renderBatch.num_indices;
 
         //Make mesh
-        HGMesh hmesh = sceneRenderer->createMesh(meshTemplate, materialInstance);
+        HGMesh hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_ambientChunk);
         this->m_meshArray.push_back(hmesh);
     }
 }
@@ -225,6 +231,7 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     //Get Liquid with new method
     setLiquidType();
 
+    return;
     HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer, liquid_type, m_waterAaBB);
     if (binding == nullptr)
         return;

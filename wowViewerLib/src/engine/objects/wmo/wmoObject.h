@@ -81,7 +81,7 @@ private:
     std::unordered_map<int, HGSamplableTexture> specularTextures;
 
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWideChunk;
-    std::vector<std::weak_ptr<IWMOMaterial>> m_materialCache;
+    std::vector<std::shared_ptr<IWMOMaterial>> m_materialCache;
 
     HGMesh transformedAntiPortals;
 

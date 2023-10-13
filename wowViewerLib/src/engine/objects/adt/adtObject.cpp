@@ -492,26 +492,32 @@ void AdtObject::loadAlphaTextures() {
     int createdThisRun = 0;
     alphaTexture = m_api->hDevice->createTexture(false, false);
     std::vector<uint8_t> bigTexture = std::vector<uint8_t>(texWidth * texHeight * 4, 0);
-    std::vector<uint8_t> alphaTextureData = std::vector<uint8_t>(alphaTexSize * alphaTexSize * 4);
-    for (int i = 0; i < chunkCount; i++) {
-        auto const &mapTile = m_adtFile->mapTile[i];
-        memset(alphaTextureData.data(), 0, alphaTextureData.size());
-//        std::fill(alphaTextureData.begin(), alphaTextureData.end(), 0);
+    if (chunkCount > 0) {
+        oneapi::tbb::task_arena arena(std::min<int>(8, m_api->getConfig()->hardwareThreadCount()), 1);
+        arena.execute([&] {
+            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, chunkCount, 16), [&](tbb::blocked_range<size_t> &r) {
+                std::vector<uint8_t> alphaTextureData = std::vector<uint8_t>(alphaTexSize * alphaTexSize * 4);
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    auto const &mapTile = m_adtFile->mapTile[i];
+                    memset(alphaTextureData.data(), 0, alphaTextureData.size());
 
-        m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
+                    m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData);
 
-
-        for (int x = 0; x < 64; x++) {
-            for (int y = 0; y < 64; y++) {
-                for (char channel = 0; channel < 4; channel++) {
-                    getChannel(bigTexture,
-                               mapTile.IndexX * 64 + x, mapTile.IndexY * 64 + y,
-                               texWidth, texHeight, channel) =
-                        getChannel(alphaTextureData, x, y, alphaTexSize, alphaTexSize, channel);
+                    for (int x = 0; x < 64; x++) {
+                        for (int y = 0; y < 64; y++) {
+                            for (char channel = 0; channel < 4; channel++) {
+                                getChannel(bigTexture,
+                                           mapTile.IndexX * 64 + x, mapTile.IndexY * 64 + y,
+                                           texWidth, texHeight, channel) =
+                                    getChannel(alphaTextureData, x, y, alphaTexSize, alphaTexSize, channel);
+                            }
+                        }
+                    }
                 }
-            }
-        }
+            }, tbb::auto_partitioner());
+        });
     }
+
     alphaTexture->getTexture()->loadData(texWidth, texHeight, &bigTexture[0], ITextureFormat::itRGBA);
 
     this->alphaTexturesLoaded += createdThisRun;

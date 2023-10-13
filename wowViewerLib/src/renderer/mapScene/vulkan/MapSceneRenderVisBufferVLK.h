@@ -29,7 +29,7 @@ public:
 //  Buffer creation
 //-------------------------------------
     HGVertexBufferBindings createADTVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
-    HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) override;
+    HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) override;
     HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
     HGVertexBufferBindings createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;
@@ -79,6 +79,7 @@ public:
                                                               const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) override;
 
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() override;
+    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> createWMOGroupAmbientChunk() override;
 
     std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                     const PipelineTemplate &pipelineTemplate,
@@ -99,6 +100,7 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
+    HGMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
 
 //--------------------------------------
@@ -109,6 +111,7 @@ public:
 
 private:
     std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
+    std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
 
     struct PipelineTemplateHasher {
         std::size_t operator()(const PipelineTemplate& k) const {
@@ -123,6 +126,7 @@ private:
         };
     };
     std::unordered_map<PipelineTemplate, std::weak_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
+    std::unordered_map<PipelineTemplate, std::weak_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
 private:
     HGDeviceVLK m_device;
 
@@ -138,7 +142,6 @@ private:
 
     HGBufferVLK vboAdtBuffer;
     HGBufferVLK vboWMOBuffer;
-    HGBufferVLK vboWMOGroupAmbient;
     HGBufferVLK vboWaterBuffer;
     HGBufferVLK vboSkyBuffer;
 
@@ -164,6 +167,15 @@ private:
         HGBufferVLK adtInstanceDatas;
     } adtBuffers;
 
+    struct {
+        HGBufferVLK wmoPlacementMats;
+        HGBufferVLK wmoMeshWideVSes;
+        HGBufferVLK wmoMeshWidePSes;
+        HGBufferVLK wmoMeshWideBindless;
+        HGBufferVLK wmoPerMeshData;
+        HGBufferVLK wmoGroupAmbient;
+    } wmoBuffers;
+
     HGBufferVLK uboBuffer;
 
     HGBufferVLK m_vboQuad;
@@ -187,6 +199,10 @@ private:
     std::shared_ptr<GDescriptorSet> adtAlphaTextureDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> adtAlphaTextureHolder = nullptr;
 
+    std::shared_ptr<ISimpleMaterialVLK> g_wmoMaterial = nullptr;
+    std::shared_ptr<GDescriptorSet> wmoBufferOneDS = nullptr;
+    std::shared_ptr<GDescriptorSet> wmoTexturesDS = nullptr;
+    std::shared_ptr<BindlessTextureHolder> wmoTextureHolder = nullptr;
 
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;

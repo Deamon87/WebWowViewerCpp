@@ -114,6 +114,13 @@ public:
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockVS>> m_materialVS= nullptr;
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockPS>> m_materialPS = nullptr;
 };
+class IWMOMaterialVis : public IWMOMaterial {
+public:
+    std::shared_ptr<IBufferChunk<WMO::meshWideBlockBindless>> m_meshBindless = nullptr;
+    std::shared_ptr<IBufferChunk<WMO::perMeshData>> m_perMeshData = nullptr;
+    std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
+    int meshWideBindlessIndex = 0;
+};
 
 class IADTMaterial : public IMaterial {
 public:

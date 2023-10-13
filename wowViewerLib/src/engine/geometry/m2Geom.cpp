@@ -399,6 +399,7 @@ M2Geom::createDynamicVao(const HMapSceneBufferCreate &sceneRenderer,
 }
 
 HGVertexBufferBindings M2Geom::getVAO(const HMapSceneBufferCreate &sceneRenderer, SkinGeom *skinGeom) {
+    ZoneScoped;
     HGVertexBufferBindings bufferBindings = nullptr;
     if (vaoMap.find(skinGeom) != vaoMap.end()) {
         bufferBindings = vaoMap.at(skinGeom);

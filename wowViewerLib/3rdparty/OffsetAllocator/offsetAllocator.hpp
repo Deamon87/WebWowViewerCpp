@@ -2,6 +2,8 @@
 // MIT License (see file: LICENSE)
 
 //#define USE_16_BIT_OFFSETS
+#ifndef OFFSET_ALLOCATOR_HPP
+#define OFFSET_ALLOCATOR_HPP
 
 #include <utility>
 #include <vector>
@@ -110,3 +112,5 @@ namespace OffsetAllocator
         uint32 m_lastNode;
     };
 }
+
+#endif //OFFSET_ALLOCATOR_HPP

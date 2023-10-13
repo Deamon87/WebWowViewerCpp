@@ -1383,6 +1383,8 @@ float wfv_convert(float value, int16_t random) {
 }
 
 HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRenderer, const HGVertexBufferBindings &finalBufferBindings) {
+//    return nullptr;
+
     gMeshTemplate meshTemplate(bufferBindings);
 
     auto skinData = m_skinGeom->getSkinData();
@@ -1469,6 +1471,8 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
 
 
 void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
+
     /* 1. Free previous subMeshArray */
     this->m_meshArray.clear();
     this->m_meshForcedTranspArray.clear();
@@ -1570,7 +1574,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         }
 
     } else {
-        m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
+//        m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
     
@@ -1691,19 +1695,22 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
 }
 
 void M2Object::initAnimationManager() {
-
+    ZoneScoped;
     this->m_animationManager = std::make_unique<AnimationManager>(m_api, m_boneMasterData, m_m2Geom->exp2 != nullptr);
 }
 
 void M2Object::initBoneAnimMatrices() {
+    ZoneScoped;
     auto &bones = *m_boneMasterData->getSkelData()->m_m2CompBones;
     this->bonesMatrices = std::vector<mathfu::mat4>(bones.size, mathfu::mat4::Identity());;
 }
 void M2Object::initTextAnimMatrices() {
+    ZoneScoped;
     textAnimMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->texture_transforms.size, mathfu::mat4::Identity());;
 }
 
 void M2Object::initSubmeshColors() {
+    ZoneScoped;
     subMeshColors = std::vector<mathfu::vec4>(m_m2Geom->getM2Data()->colors.size);
 
 }
@@ -1712,9 +1719,12 @@ void M2Object::initTransparencies() {
 }
 
 void M2Object::initLights() {
+    ZoneScoped;
     lights = std::vector<M2LightResult>(m_m2Geom->getM2Data()->lights.size);
 }
 void M2Object::initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
+
     particleEmitters.clear();
     particleEmitters.reserve(m_m2Geom->getM2Data()->particle_emitters.size);
     for (int i = 0; i < m_m2Geom->getM2Data()->particle_emitters.size; i++) {
@@ -1738,6 +1748,8 @@ void M2Object::initParticleEmitters(const HMapSceneBufferCreate &sceneRenderer) 
 }
 
 void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
+
     ribbonEmitters = std::vector<std::unique_ptr<CRibbonEmitter>>();
 //    ribbonEmitters.reserve(m_m2Geom->getM2Data()->ribbon_emitters.size);
     auto m2Data = m_m2Geom->getM2Data();
@@ -1971,6 +1983,7 @@ HBlpTexture M2Object::getHardCodedTexture(int textureInd) {
 }
 
 void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) {
+    ZoneScoped;
     HGDevice device = m_api->hDevice;
 
     //2. Create buffer binding and fill it

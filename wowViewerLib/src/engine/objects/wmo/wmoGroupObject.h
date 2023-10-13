@@ -81,6 +81,8 @@ private:
     mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
+
+    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> m_ambientChunk;
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGSortableMesh> m_sortableMeshArray = {};
     std::vector<std::shared_ptr<LiquidInstance>> m_liquidInstances = {};

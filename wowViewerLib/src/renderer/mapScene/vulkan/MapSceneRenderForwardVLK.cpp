@@ -84,7 +84,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptyM2RibbonVAO = createM2RibbonVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
-    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, mathfu::vec4(0,0,0,0));
+    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, nullptr);
     m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
     m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
@@ -120,20 +120,13 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createADTVAO(HGVertexBuffer ver
     return adtVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, mathfu::vec4 localAmbient) {
+HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto wmoVAO = m_device->createVertexBufferBindings();
 
-    HGVertexBuffer ambientBuffer = nullptr;
-    if (vertexBuffer != nullptr) {
-        ambientBuffer = vboWMOGroupAmbient->getSubBuffer(sizeof(mathfu::vec4_packed));
-        auto packedAmbient = mathfu::vec4_packed(localAmbient);
-        static_assert(sizeof(packedAmbient) == 16); static_assert(sizeof(mathfu::vec4_packed) == 16);
-
-        ambientBuffer->uploadData(&packedAmbient, sizeof(mathfu::vec4_packed));
-    }
     wmoVAO->addVertexBufferBinding(vertexBuffer, std::vector(staticWMOBindings.begin(), staticWMOBindings.end()));
-    wmoVAO->addVertexBufferBinding(ambientBuffer, std::vector(staticWmoGroupAmbient.begin(), staticWmoGroupAmbient.end()), true);
+    wmoVAO->addVertexBufferBinding(ambientBuffer ? BufferChunkHelperVLK::cast(ambientBuffer) : nullptr,
+                                   std::vector(staticWmoGroupAmbient.begin(), staticWmoGroupAmbient.end()), true);
     wmoVAO->setIndexBuffer(indexBuffer);
 
     return wmoVAO;
@@ -419,7 +412,7 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
             ds->beginUpdate()
                 .ubo(1, BufferChunkHelperVLK::cast(modelWide))
                 .ubo(2, *l_vertexData)
-                .ubo(4, *l_fragmentData);
+                .ubo(3, *l_fragmentData);
         })
         .createDescriptorSet(2, [&wmoMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

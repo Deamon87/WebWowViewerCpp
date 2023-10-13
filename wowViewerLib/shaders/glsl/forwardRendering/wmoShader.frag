@@ -27,7 +27,7 @@ layout(location=9) in vec4 vWmoAmbient;
 
 
 
-layout(std140, set=1, binding=4) uniform meshWideBlockPS {
+layout(std140, set=1, binding=3) uniform meshWideBlockPS {
     ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
     vec4 FogColor_AlphaTest;
 };

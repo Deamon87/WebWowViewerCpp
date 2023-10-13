@@ -339,7 +339,7 @@ void WmoObject::update() {
 
     //Update Materials
     for (int matIndex = 0; matIndex < m_materialCache.size(); matIndex++) {
-        auto materialInstance = m_materialCache[matIndex].lock();
+        auto materialInstance = m_materialCache[matIndex];
         if (materialInstance == nullptr) continue;
 
         const SMOMaterial &material = getMaterials()[matIndex];
@@ -1290,7 +1290,7 @@ PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
 std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, const HMapSceneBufferCreate &sceneRenderer) {
     assert(materialIndex < m_materialCache.size());
 
-    auto materialInstance = m_materialCache[materialIndex].lock();
+    auto materialInstance = m_materialCache[materialIndex];
     if (materialInstance != nullptr)
         return materialInstance;
 
