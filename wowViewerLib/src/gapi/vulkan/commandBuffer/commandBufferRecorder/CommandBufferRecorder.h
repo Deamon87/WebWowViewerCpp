@@ -12,6 +12,7 @@
 
 
 
+class ISimpleMaterialVLK;
 class CmdBufRecorder;
 class RenderPassHelper;
 class GCommandBuffer;
@@ -22,6 +23,7 @@ class CommandBufferDebugLabel;
 #include "CommandBufferDebugLabel.h"
 #include "../../descriptorSets/GDescriptorSet.h"
 #include "../../GPipelineVLK.h"
+#include "../../materials/ISimpleMaterialVLK.h"
 
 #ifdef LINK_TRACY
 #define VkZone(buffRecorder,a) TracyVkZone(buffRecorder.getTracyContext(), buffRecorder.getNativeCmdBuffer(), a)
@@ -47,6 +49,9 @@ public:
         const std::array<int32_t, 2> &areaOffset,
         const std::array<uint32_t, 2> &areaSize,
         const std::array<float,3> &colorClearColor, float depthClear);
+
+    void bindMaterial(const std::shared_ptr<ISimpleMaterialVLK> &material);
+    void bindVertexBindings(const std::shared_ptr<IVertexBufferBindings> &vertexBufferBindings);
 
     CommandBufferDebugLabel beginDebugLabel(const std::string &labelName, const std::array<float, 4> &colors);
 
@@ -90,6 +95,9 @@ private:
     std::array<GDescriptorSet *, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
     bool m_currentScissorsIsDefault = false;
     ViewportType m_currentViewport = ViewportType::vp_none;
+
+    std::shared_ptr<ISimpleMaterialVLK> m_material = nullptr;
+    std::shared_ptr<IVertexBufferBindings> m_vertexBufferBindings = nullptr;
 
     //Viewports
     std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;

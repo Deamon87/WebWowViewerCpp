@@ -775,33 +775,24 @@ inline void MapSceneRenderVisBufferVLK::drawMesh(CmdBufRecorder &cmdBuf, const H
     if (mesh == nullptr) return;
 
     const auto &meshVlk = (GMeshVLK*) mesh.get();
-    auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
 
-    //1. Bind VBOs
-    cmdBuf.bindVertexBuffers(vulkanBindings->getVertexBuffers());
+    //1. Bind Vertex bindings
+    cmdBuf.bindVertexBindings(mesh->bindings());
 
-    //2. Bind IBOs
-    cmdBuf.bindIndexBuffer(vulkanBindings->getIndexBuffer());
+    //2. Bind Material
+    cmdBuf.bindMaterial(meshVlk->material());
 
-    //3. Bind pipeline
-    const auto &material = meshVlk->material();
-    cmdBuf.bindPipeline(material->getPipeline());
-
-    //4. Bind Descriptor sets
-    auto const &descSets = material->getDescriptorSets();
-    cmdBuf.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, descSets);
-
-    //5. Set view port
+    //3. Set view port
     cmdBuf.setViewPort(viewportType);
 
-    //6. Set scissors
+    //4. Set scissors
     if (meshVlk->scissorEnabled()) {
         cmdBuf.setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
     } else {
         cmdBuf.setDefaultScissors();
     }
 
-    //7. Draw the mesh
+    //5. Draw the mesh
     if (meshVlk->instanceIndex != -1) {
         cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, meshVlk->instanceIndex);
     } else {

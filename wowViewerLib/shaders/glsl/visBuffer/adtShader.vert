@@ -35,10 +35,25 @@ layout(location = 5) out flat int vMeshIndex;
 layout(location = 6) out vec2 vAlphaCoords;
 
 const float TILESIZE = (1600.0 / 3.0);
-const float UNITSIZE =  TILESIZE / 16.0 / 8.0;
+const float CHUNKSIZE = TILESIZE / 16.0;
+const float UNITSIZE =  CHUNKSIZE / 8.0;
 
+float fixUVBorder(float uvComp, float x) {
+    float alphaTextureSize_px = 1024.0;
+    float subPixel = -0.5 / alphaTextureSize_px;
 
+    float epsilon = 0.0001;
+
+    if (x < epsilon)
+        uvComp -= subPixel;
+    if ((1.0 - x) < epsilon)
+        uvComp += subPixel;
+
+    return uvComp ;
+}
 void main() {
+    AdtInstanceData adtInstanceData = adtInstanceDatas[gl_InstanceIndex];
+    AdtMeshWideVSPS adtMeshWideVSPS = adtMeshWideVSPSes[adtInstanceData.meshIndexVSPS_meshIndexPS_AlphaTextureInd.x];
 
 /*
      Y
@@ -69,9 +84,14 @@ void main() {
 
     vChunkCoords = vec2(iX, iY);
 
-    vAlphaCoords = (aPos.yx - floor(aPos.yx / TILESIZE)*TILESIZE) / TILESIZE;
-    vAlphaCoords.x = 1.0 - vAlphaCoords.x;
-    vAlphaCoords.y = 1.0 - vAlphaCoords.y;
+
+    vec2 coordsInAdtIndexSpace = 32.0f * TILESIZE - adtMeshWideVSPS.uPos.yx; //Top left point (17058 17063) becomes (0,0)
+    vec2 ADTIndex = floor(coordsInAdtIndexSpace / TILESIZE);
+
+    vAlphaCoords = ((vec2(32.0f) - ADTIndex) * TILESIZE - aPos.yx) / TILESIZE;
+
+    vAlphaCoords.x = fixUVBorder(vAlphaCoords.x, vChunkCoords.x/8.0);
+    vAlphaCoords.y = fixUVBorder(vAlphaCoords.y, vChunkCoords.y/8.0);
 
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;

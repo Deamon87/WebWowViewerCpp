@@ -3,6 +3,7 @@
 //
 
 #include "CommandBufferRecorder.h"
+#include "CommandBufferRecorder_inline.h"
 #include "../../GPipelineVLK.h"
 
 // ----------------------------------------
@@ -28,7 +29,7 @@ CmdBufRecorder::CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<
 
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
     beginInfo.pNext = NULL;
     beginInfo.pInheritanceInfo = (renderPass != nullptr) ? &bufferInheritanceInfo : nullptr;
 
@@ -87,9 +88,9 @@ CommandBufferDebugLabel CmdBufRecorder::beginDebugLabel(const std::string &label
 }
 
 void CmdBufRecorder::bindIndexBuffer(const std::shared_ptr<IBuffer> &buffer) {
+    if (m_currentIndexBuffer == buffer) return;
+
     auto bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffer);
-    if (m_currentIndexBuffer!= nullptr && m_currentIndexBuffer->getGPUBuffer() == bufferVlk->getGPUBuffer() &&
-        m_currentIndexBuffer->getOffset() == bufferVlk->getOffset()) return;
 
     VkDeviceSize offset = bufferVlk->getOffset();
     vkCmdBindIndexBuffer(m_gCmdBuffer.m_cmdBuffer, bufferVlk->getGPUBuffer(), offset, VK_INDEX_TYPE_UINT16);
@@ -110,16 +111,14 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
 
 
     for (int i = 0; i < buffers.size(); i++) {
-        auto const &bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
-        auto pbufferVlk = bufferVlk.get();
-
         //firstBinding == i <- means we can only skip the start of the list;
-        if (firstBinding == i && m_currentVertexBuffers[i] != nullptr &&
-                                 m_currentVertexBuffers[i]->getGPUBuffer() == pbufferVlk->getGPUBuffer() &&
-                                 m_currentVertexBuffers[i]->getOffset() == pbufferVlk->getOffset()) {
+        if (firstBinding == i && m_currentVertexBuffers[i] == buffers[i]) {
             firstBinding++;
             continue;
         }
+
+        auto const &bufferVlk = std::dynamic_pointer_cast<IBufferVLK>(buffers[i]);
+        auto pbufferVlk = bufferVlk.get();
 
         vbos[vboCnt++] = pbufferVlk->getGPUBuffer();
         offsets[offsetCnt++] = pbufferVlk->getOffset();
@@ -331,4 +330,32 @@ void CmdBufRecorder::createDefaultScissors(const std::array<int32_t, 2> &areaOff
 #ifdef LINK_TRACY
 VkCommandBuffer CmdBufRecorder::getNativeCmdBuffer() { return m_gCmdBuffer.getNativeCmdBuffer(); }
 TracyVkCtx const &CmdBufRecorder::getTracyContext() { return m_gCmdBuffer.tracyContext; }
+
+void CmdBufRecorder::bindMaterial(const std::shared_ptr<ISimpleMaterialVLK> &material) {
+    if (m_material == material) return;
+
+    //1. Bind pipeline
+    this->bindPipeline(material->getPipeline());
+
+    //2. Bind Descriptor sets
+    auto const &descSets = material->getDescriptorSets();
+    this->bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, descSets);
+
+    m_material = material;
+}
+
+void CmdBufRecorder::bindVertexBindings(const std::shared_ptr<IVertexBufferBindings> &vertexBufferBindings) {
+    if (m_vertexBufferBindings == vertexBufferBindings) return;
+
+    auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(vertexBufferBindings);
+
+    //1. Bind VBOs
+    this->bindVertexBuffers(vulkanBindings->getVertexBuffers());
+
+    //2. Bind IBOs
+    this->bindIndexBuffer(vulkanBindings->getIndexBuffer());
+
+    m_vertexBufferBindings = vertexBufferBindings;
+}
+
 #endif

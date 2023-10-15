@@ -1511,6 +1511,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
+      {1,3,0},
+      {1,1,0},
     },
     {
     },
@@ -1960,6 +1962,14 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
   }},
   {"adtShader",  {
+    {
+      1, {
+      }
+    },
+    {
+      3, {
+      }
+    },
     {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},

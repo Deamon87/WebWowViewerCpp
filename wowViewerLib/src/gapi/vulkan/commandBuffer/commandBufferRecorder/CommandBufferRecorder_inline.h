@@ -28,8 +28,8 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
     uint32_t *p_dynamicOffset;
     p_dynamicOffset = &dynamicOffsets[0];
 
-    std::vector<VkDescriptorSet> descs;
-    descs.reserve(descriptorSets.size());
+    std::array<VkDescriptorSet, 16> descs;
+    int descAmount = 0;
 
     uint32_t bindIndexStart = -1;
     for (int i = 0; i < descriptorSets.size(); i++) {
@@ -39,7 +39,7 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
             bindIndexStart = bindIndexStart==-1 ? i : bindIndexStart;
 
             auto vkDescSet = pDescriptorSet->getDescSet();
-            descs.push_back(vkDescSet);
+            descs[descAmount++] = vkDescSet;
 
             uint32_t thisSize = 0;
             pDescriptorSet->getDynamicOffsets(p_dynamicOffset, thisSize);
@@ -50,11 +50,11 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
         }
     }
 
-    if (descs.size() > 0) {
+    if (descAmount > 0) {
         vkCmdBindDescriptorSets(m_gCmdBuffer.m_cmdBuffer, bindPoint,
                                 m_currentPipelineLayout,
                                 bindIndexStart,
-                                descs.size(), descs.data(),
+                                descAmount, descs.data(),
                                 dynamicOffsetsSize, dynamicOffsetsSize > 0 ? dynamicOffsets : nullptr);
     }
 }
