@@ -16,8 +16,8 @@ layout(location = 1) in vec3 vPosition;
 layout(location = 2) in vec4 vColor;
 layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vVertexLighting;
-layout(location = 5) in flat int meshIndex;
-layout(location = 6) in vec2 vAlphaCoords;
+layout(location = 5) in vec2 vAlphaCoords;
+layout(location = 6) in flat int meshIndex;
 
 layout (set = 2, binding = 0) uniform sampler2D s_LayerTextures[];
 layout (set = 3, binding = 0) uniform sampler2D s_AlphaTextures[];

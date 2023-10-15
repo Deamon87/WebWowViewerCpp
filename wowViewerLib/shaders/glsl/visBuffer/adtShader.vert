@@ -31,23 +31,23 @@ layout(location = 1) out vec3 vPosition;
 layout(location = 2) out vec4 vColor;
 layout(location = 3) out vec3 vNormal;
 layout(location = 4) out vec3 vVertexLighting;
-layout(location = 5) out flat int vMeshIndex;
-layout(location = 6) out vec2 vAlphaCoords;
+layout(location = 5) out vec2 vAlphaCoords;
+layout(location = 6) out flat int vMeshIndex;
 
 const float TILESIZE = (1600.0 / 3.0);
 const float CHUNKSIZE = TILESIZE / 16.0;
 const float UNITSIZE =  CHUNKSIZE / 8.0;
 
 float fixUVBorder(float uvComp, float x) {
-    float alphaTextureSize_px = 1024.0;
-    float subPixel = -0.5 / alphaTextureSize_px;
+    const float alphaTextureSize_px = 1024.0;
+    const float subPixel = 0.5 / alphaTextureSize_px;
 
     float epsilon = 0.0001;
 
     if (x < epsilon)
-        uvComp -= subPixel;
-    if ((1.0 - x) < epsilon)
         uvComp += subPixel;
+    if ((1.0 - x) < epsilon)
+        uvComp -= subPixel;
 
     return uvComp ;
 }
