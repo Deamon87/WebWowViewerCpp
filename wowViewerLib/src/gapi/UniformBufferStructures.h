@@ -133,19 +133,28 @@ namespace M2 {
     };
 
     namespace WaterfallData {
-        struct meshWideBlockVS {
+        struct WaterfallCommon {
             float bumpScale;
             int textureMatIndex1;
             int textureMatIndex2;
             int unused;
-        };
-        struct meshWideBlockPS {
             mathfu::vec4_packed values0;
             mathfu::vec4_packed values1;
             mathfu::vec4_packed m_values2;
             mathfu::vec4_packed m_values3;
             mathfu::vec4_packed m_values4;
             mathfu::vec4_packed baseColor;
+        };
+        struct WaterfallBindless {
+            int instanceIndex;
+            int waterfallInd;
+
+            int bumpTextureInd;
+            int maskInd;
+            int whiteWaterInd;
+            int noiseInd;
+            int normalTexInd;
+            int unused;
         };
     }
 }

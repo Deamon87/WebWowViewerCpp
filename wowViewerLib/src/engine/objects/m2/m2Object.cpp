@@ -1383,8 +1383,6 @@ float wfv_convert(float value, int16_t random) {
 }
 
 HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRenderer, const HGVertexBufferBindings &finalBufferBindings) {
-//    return nullptr;
-
     gMeshTemplate meshTemplate(bufferBindings);
 
     auto skinData = m_skinGeom->getSkinData();
@@ -1417,53 +1415,47 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     auto waterfallMaterial = sceneRenderer->createM2WaterfallMaterial(m_modelWideDataBuff, pipelineTemplate, m2WaterfallMaterialTemplate);
 
     {
-        auto &meshblockVS = waterfallMaterial->m_vertexData->getObject();
-        meshblockVS.bumpScale = wfv3Data->bumpScale;
+        auto &waterfallCommon = waterfallMaterial->m_waterfallCommon->getObject();
+        waterfallCommon.bumpScale = wfv3Data->bumpScale;
 
         std::array<int, 2> textureMatrixIndexes = {-1, -1};
         M2MeshBufferUpdater::getTextureMatrixIndexes(*this, 0, m2Data, skinData, textureMatrixIndexes);
-        meshblockVS.textureMatIndex1 = textureMatrixIndexes[0];
-        meshblockVS.textureMatIndex2 = textureMatrixIndexes[1];
+        waterfallCommon.textureMatIndex1 = textureMatrixIndexes[0];
+        waterfallCommon.textureMatIndex2 = textureMatrixIndexes[1];
 
-        waterfallMaterial->m_vertexData->save();
-    }
-
-    {
-        auto &meshblockPS = waterfallMaterial->m_fragmentData->getObject();
-        meshblockPS.baseColor = mathfu::vec4(
+        waterfallCommon.baseColor = mathfu::vec4(
             wfv3Data->basecolor.a / 255.0f,
             wfv3Data->basecolor.r / 255.0f,
             wfv3Data->basecolor.g / 255.0f,
             wfv3Data->basecolor.b / 255.0f);
 
-        meshblockPS.values0.x = wfv3Data->values0_x;
-        meshblockPS.values0.y = wfv3Data->values0_y;
-        meshblockPS.values0.z = wfv3Data->values0_z;
-        meshblockPS.values0.w = wfv3Data->values0_w;
+        waterfallCommon.values0.x = wfv3Data->values0_x;
+        waterfallCommon.values0.y = wfv3Data->values0_y;
+        waterfallCommon.values0.z = wfv3Data->values0_z;
+        waterfallCommon.values0.w = wfv3Data->values0_w;
 
-        meshblockPS.values1.x = wfv3Data->value1_x;
-        meshblockPS.values1.y = wfv3Data->value1_y;
-        meshblockPS.values1.w = wfv3Data->value1_w;
+        waterfallCommon.values1.x = wfv3Data->value1_x;
+        waterfallCommon.values1.y = wfv3Data->value1_y;
+        waterfallCommon.values1.w = wfv3Data->value1_w;
 
-        meshblockPS.m_values3.x = wfv3Data->value3_x;
-        meshblockPS.m_values3.y = wfv3Data->value3_y;
+        waterfallCommon.m_values3.x = wfv3Data->value3_x;
+        waterfallCommon.m_values3.y = wfv3Data->value3_y;
 
-        meshblockPS.m_values2.x = wfv3Data->flags & 2;
-        meshblockPS.m_values2.y = wfv3Data->flags & 1;
+        waterfallCommon.m_values2.x = wfv3Data->flags & 2;
+        waterfallCommon.m_values2.y = wfv3Data->flags & 1;
 
-        meshblockPS.m_values2.w = wfv3Data->value2_w;
-        meshblockPS.m_values3.w = wfv3Data->values3_w;
-        meshblockPS.m_values4.y = wfv3Data->values4_y;
+        waterfallCommon.m_values2.w = wfv3Data->value2_w;
+        waterfallCommon.m_values3.w = wfv3Data->values3_w;
+        waterfallCommon.m_values4.y = wfv3Data->values4_y;
 
-        meshblockPS.values1.z =   wfv_convert(meshblockPS.values1.y, (int16_t)((uint64_t)this));
-        meshblockPS.m_values2.z = wfv_convert(meshblockPS.m_values2.w, (int16_t)((uint64_t)this));
-        meshblockPS.m_values3.z = wfv_convert(wfv3Data->values3_z, (int16_t)((uint64_t)this));
+        waterfallCommon.values1.z =   wfv_convert(waterfallCommon.values1.y, (int16_t)((uint64_t)this));
+        waterfallCommon.m_values2.z = wfv_convert(waterfallCommon.m_values2.w, (int16_t)((uint64_t)this));
+        waterfallCommon.m_values3.z = wfv_convert(wfv3Data->values3_z, (int16_t)((uint64_t)this));
 
-        waterfallMaterial->m_fragmentData->save();
+        waterfallMaterial->m_waterfallCommon->save();
     }
 
     //Make mesh
-    //TODO:
     auto hmesh = sceneRenderer->createM2WaterfallMesh(meshTemplate, waterfallMaterial, m2Batch->materialLayer, m2Batch->priorityPlane);
 
     return hmesh;
@@ -1574,7 +1566,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         }
 
     } else {
-//        m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
+        m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
     

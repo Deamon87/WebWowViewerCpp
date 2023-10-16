@@ -284,7 +284,7 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
     auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->placementMatrixDS)
+        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->m2CommonDS)
         .createDescriptorSet(2, [&m2ModelData, &vertexFragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(7, *vertexFragmentData);
@@ -313,29 +313,27 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2Waterfal
                                                                 const PipelineTemplate &pipelineTemplate,
                                                                 const M2WaterfallMaterialTemplate &m2MaterialTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto vertexData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockVS>>(uboStaticBuffer);
-    auto fragmentData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::meshWideBlockPS>>(uboStaticBuffer);
+    auto waterfallCommonData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::WaterfallCommon>>(uboStaticBuffer);
+
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2ForwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->placementMatrixDS)
-        .createDescriptorSet(2, [&m2ModelData, &vertexData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
+        .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->m2CommonDS)
+        .createDescriptorSet(2, [&m2ModelData, &waterfallCommonData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(4, *vertexData)
-                .ubo(5, *fragmentData);
+                .ubo(0, *waterfallCommonData);
         })
         .createDescriptorSet(3, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(6, m2MaterialTemplate.textures[0])
-                .texture(7, m2MaterialTemplate.textures[1])
-                .texture(8, m2MaterialTemplate.textures[2])
-                .texture(9, m2MaterialTemplate.textures[3])
-                .texture(10, m2MaterialTemplate.textures[4]);
+                .texture(0, m2MaterialTemplate.textures[0])
+                .texture(1, m2MaterialTemplate.textures[1])
+                .texture(2, m2MaterialTemplate.textures[2])
+                .texture(3, m2MaterialTemplate.textures[3])
+                .texture(4, m2MaterialTemplate.textures[4]);
         })
-        .toMaterial<IM2WaterFallMaterial>([&vertexData, fragmentData](IM2WaterFallMaterial *instance) -> void {
-            instance->m_vertexData = vertexData;
-            instance->m_fragmentData = fragmentData;
+        .toMaterial<IM2WaterFallMaterial>([&waterfallCommonData](IM2WaterFallMaterial *instance) -> void {
+            instance->m_waterfallCommon = waterfallCommonData;
         });
 
     return material;
@@ -520,7 +518,7 @@ std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bon
                 .ubo(4, BufferChunkHelperVLK::cast(result->m_colors))
                 .ubo(5, BufferChunkHelperVLK::cast(result->m_textureWeights))
                 .ubo(6, BufferChunkHelperVLK::cast(result->m_textureMatrices));
-            result->placementMatrixDS = ds;
+            result->m2CommonDS = ds;
         });
 
     return result;

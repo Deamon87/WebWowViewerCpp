@@ -89,8 +89,13 @@ public:
     int pixelShader;
     EGxBlendEnum blendMode;
 
-    std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockVS>> m_vertexData = nullptr;
-    std::shared_ptr<IBufferChunk<M2::WaterfallData::meshWideBlockPS>> m_fragmentData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::WaterfallData::WaterfallCommon>> m_waterfallCommon = nullptr;
+};
+class IM2WaterFallMaterialBindless : public IM2WaterFallMaterial {
+public:
+    int instanceIndex = 0;
+    std::shared_ptr<IBufferChunk<M2::WaterfallData::WaterfallBindless>> m_waterfallBindless = nullptr;
+    std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
 };
 
 

@@ -16,10 +16,10 @@ layout(location=2) in vec2 vTexCoord2_animated;
 layout(location=3) in vec3 vNormal;
 layout(location=4) in vec3 vPosition;
 
-layout(set=3,binding=6) uniform sampler2D uMask;
-layout(set=3,binding=7) uniform sampler2D uWhiteWater;
-layout(set=3,binding=8) uniform sampler2D uNoise;
-layout(set=3,binding=10) uniform sampler2D uNormalTex;
+layout(set=3,binding=0) uniform sampler2D uMask;
+layout(set=3,binding=1) uniform sampler2D uWhiteWater;
+layout(set=3,binding=2) uniform sampler2D uNoise;
+layout(set=3,binding=4) uniform sampler2D uNormalTex;
 
 layout(location=0) out vec4 outputColor;
 

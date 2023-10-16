@@ -28,11 +28,17 @@ layout(location=5) in vec2 aTexCoord2;
 #include "../common/commonM2DescriptorSet.glsl"
 
 //Individual meshes
-layout(std140, set=2, binding=4) uniform meshWideBlockVS {
-    vec4 bumpScaleTextIndexes;
+layout(std140, set=2, binding=0) uniform meshWideBlockVS {
+    vec4 bumpScale_textTransformInd1_textTransformInd2;
+    vec4 values0;
+    vec4 values1;
+    vec4 values2;
+    vec4 values3;
+    vec4 values4;
+    vec4 baseColor;
 };
 
-layout(set=3,binding=9) uniform sampler2D uBumpTexture;
+layout(set=3,binding=3) uniform sampler2D uBumpTexture;
 
 //Shader output
 layout(location=0) out vec2 vTexCoord;
@@ -42,9 +48,9 @@ layout(location=3) out vec3 vNormal;
 layout(location=4) out vec3 vPosition;
 
 void main() {
-    float bumpScale = bumpScaleTextIndexes.x;
-    int textMatIndex1 = floatBitsToInt(bumpScaleTextIndexes.y);
-    int textMatIndex2 = floatBitsToInt(bumpScaleTextIndexes.z);
+    float bumpScale = bumpScale_textTransformInd1_textTransformInd2.x;
+    int textMatIndex1 = floatBitsToInt(bumpScale_textTransformInd1_textTransformInd2.y);
+    int textMatIndex2 = floatBitsToInt(bumpScale_textTransformInd1_textTransformInd2.z);
 
     mat4 textMat[2];
     textMat[0] = textMatIndex1 < 0 ? mat4(1.0) : textureMatrix[textMatIndex1];
@@ -68,7 +74,7 @@ void main() {
     mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
     vec3 normal = normalize((viewModelMatForNormal * vec4(aNormal, 0.0)).xyz);
 
-    vNormal = (scene.uLookAtMat * uPlacementMat * vec4(aNormal, 0)).xyz;
+    vNormal = normal;
     vPosition = pos;
 
     vTexCoord = aTexCoord;

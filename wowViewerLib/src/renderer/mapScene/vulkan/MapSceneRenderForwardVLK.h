@@ -153,7 +153,7 @@ private:
 class IM2ModelDataVLK : public IM2ModelData {
 public:
     ~IM2ModelDataVLK() override = default;
-    std::shared_ptr<GDescriptorSet> placementMatrixDS;
+    std::shared_ptr<GDescriptorSet> m2CommonDS;
 };
 
 

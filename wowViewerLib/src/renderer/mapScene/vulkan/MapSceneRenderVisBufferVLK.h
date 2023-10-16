@@ -160,6 +160,10 @@ private:
         HGBufferVLK meshWideBlocks;
         HGBufferVLK meshWideBlocksBindless;
     } m2Buffers;
+    struct {
+        HGBufferVLK waterfallCommon;
+        HGBufferVLK waterfallBindless;
+    } m2WaterfallBuffer;
 
     struct {
         HGBufferVLK adtMeshWideVSPSes;
@@ -191,6 +195,10 @@ private:
 
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
 
+    std::shared_ptr<GDescriptorSet> m2WaterfallBufferDS = nullptr;
+    std::shared_ptr<GDescriptorSet> m2WaterfallTextureDS = nullptr;
+    std::shared_ptr<BindlessTextureHolder> m2WaterfallTextureHolder = nullptr;
+
     std::shared_ptr<ISimpleMaterialVLK> g_adtMaterial = nullptr;
     std::shared_ptr<GDescriptorSet> adtLayerTextureDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> adtLayerTextureHolder = nullptr;
@@ -219,6 +227,11 @@ private:
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
     std::shared_ptr<RenderViewForwardVLK> defaultView;
+
+    void createM2GlobalMaterialData();
+    void createWMOGlobalMaterialData();
+    void createADTGlobalMaterialData();
+    void createM2WaterfallGlobalMaterialData();
 };
 
 class IM2ModelDataVisVLK : public IM2ModelData {
