@@ -5,9 +5,12 @@
 #ifndef AWEBWOWVIEWERCPP_GPIPELINEVLK_H
 #define AWEBWOWVIEWERCPP_GPIPELINEVLK_H
 
-#include "../interface/IDevice.h"
-#include "GDeviceVulkan.h"
-#include "GVertexBufferBindingsVLK.h"
+class GPipelineLayoutVLK;
+
+#include "../../interface/IDevice.h"
+#include "../GDeviceVulkan.h"
+#include "../GVertexBufferBindingsVLK.h"
+#include "GPipelineLayoutVLK.h"
 
 class GPipelineVLK {
     friend class GDeviceVLK;
@@ -15,6 +18,7 @@ public:
     explicit GPipelineVLK(IDevice &m_device,
                           const HGVertexBufferBindings &m_bindings,
                           const std::shared_ptr<GRenderPassVLK> &renderPass,
+                          const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
                           const HGShaderPermutation &shader,
                           DrawElementMode element,
                           bool backFaceCulling,
@@ -37,7 +41,7 @@ public:
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
 
-    VkPipelineLayout getLayout() { return m_pipelineLayout; };
+    std::shared_ptr<GPipelineLayoutVLK> getLayout() { return m_pipelineLayout; };
     VkPipeline getPipeline() { return graphicsPipeline; };
     bool getIsTransparent() const {
         return m_isTransparent;
@@ -49,7 +53,7 @@ public:
 private:
     GDeviceVLK &m_device;
 
-    VkPipelineLayout m_pipelineLayout;
+    std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;
     VkPipeline graphicsPipeline;
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;

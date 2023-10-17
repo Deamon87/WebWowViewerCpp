@@ -27,17 +27,6 @@ static const ShaderConfig forwardShaderConfig = {
     }
 };
 
-static const ShaderConfig m2ForwardShaderConfig = {
-    "forwardRendering",
-    {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
-        }},
-        {1, {
-            {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
-        }}
-    }};
-
 const int m2TexturesBindlessCount = 4096;
 const int m2WaterfallTexturesBindlessCount = 128;
 const int adtTexturesBindlessCount = 4096;
@@ -51,6 +40,14 @@ static const ShaderConfig m2VisShaderConfig = {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
         }}
     }};
+static const ShaderConfig visShaderConfig = {
+    "visBuffer",
+    {
+        {0, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+        }},
+    }};
+
 static const ShaderConfig m2WaterfallVisShaderConfig = {
     "visBuffer",
     {
@@ -593,6 +590,7 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderVisBufferVLK::createM2Waterf
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"},
                                                    m2WaterfallVisShaderConfig)
+        .overridePipelineLayout({{1, m2BufferOneDS}})
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .bindDescriptorSet(1, m2BufferOneDS)
@@ -749,12 +747,12 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderVisBufferVLK::createWaterMaterial(
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(uboStaticBuffer); ;
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, forwardShaderConfig)
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, visShaderConfig)
         .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, l_fragmentData, this](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(1, BufferChunkHelperVLK::cast(modelWide))
+                .ssbo(1, wmoBuffers.wmoPlacementMats)
                 .ubo(4, *l_fragmentData);
         })
         .createDescriptorSet(2, [&waterMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {

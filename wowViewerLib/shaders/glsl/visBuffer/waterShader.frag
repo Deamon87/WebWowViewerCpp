@@ -42,7 +42,6 @@ void main() {
 //    18 - Azerithe
 //    8 - is probably debug material called Grid
 
-
     vec2 animatedUV = (textureMatrix*vec4(vTextCoords, 0.0, 1.0)).st;
 
     vec3 matDiffuse = color.rgb+texture(uTexture, animatedUV).rgb;

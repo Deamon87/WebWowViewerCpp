@@ -5,10 +5,10 @@
 #include "ISimpleMaterialVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"
 #include "../textures/GTextureVLK.h"
-#include "../GPipelineVLK.h"
+#include "../pipeline/GPipelineVLK.h"
 
 
-ISimpleMaterialVLK::ISimpleMaterialVLK(const HGShaderPermutation &shader,
+ISimpleMaterialVLK::ISimpleMaterialVLK(const std::shared_ptr<GShaderPermutationVLK> &shader,
                                        const PipelineTemplate &pipelineTemplate,
                                        const HPipelineVLK &pipeline,
                                        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets) :

@@ -4,7 +4,7 @@
 
 #include "CommandBufferRecorder.h"
 #include "CommandBufferRecorder_inline.h"
-#include "../../GPipelineVLK.h"
+#include "../../pipeline/GPipelineVLK.h"
 
 // ----------------------------------------
 //     CmdBufRecorder

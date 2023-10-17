@@ -7,7 +7,7 @@
 #include "GMeshVLK.h"
 #include "../textures/GTextureVLK.h"
 #include "../shaders/GShaderPermutationVLK.h"
-#include "../GPipelineVLK.h"
+#include "../pipeline/GPipelineVLK.h"
 
 GMeshVLK::GMeshVLK(const gMeshTemplate &meshTemplate,
                    const HMaterialVLK &material, int layer, int priority) :

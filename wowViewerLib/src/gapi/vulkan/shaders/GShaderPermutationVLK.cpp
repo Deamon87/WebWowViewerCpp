@@ -179,12 +179,17 @@ void GShaderPermutationVLK::createShaderLayout() {
         }
     }
 }
-
-void GShaderPermutationVLK::createPipelineLayout() {
+std::shared_ptr<GPipelineLayoutVLK>
+GShaderPermutationVLK::createPipelineLayoutOverrided(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses) {
     std::vector<VkDescriptorSetLayout> descLayouts;
     descLayouts.reserve(combinedShaderLayout.setLayouts.size());
     for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
-        descLayouts.push_back(this->getDescriptorLayout(i)->getSetLayout());
+
+        if (dses.find(i) != dses.end()) {
+            descLayouts.push_back(dses.at(i)->getDescSetLayout()->getSetLayout());
+        } else {
+            descLayouts.push_back(this->getDescriptorLayout(i)->getSetLayout());
+        }
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
@@ -197,12 +202,19 @@ void GShaderPermutationVLK::createPipelineLayout() {
 
     std::cout << "Pipeline layout for "+this->getShaderCombinedName() << std::endl;
 
+    VkPipelineLayout pipelineLayout;
     if (vkCreatePipelineLayout(m_device->getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
     auto combinedName = this->getShaderCombinedName();
     m_device->setObjectName(reinterpret_cast<uint64_t>(pipelineLayout), VK_OBJECT_TYPE_PIPELINE_LAYOUT, combinedName.c_str());
+
+    return std::make_shared<GPipelineLayoutVLK>(*m_device, pipelineLayout);
+}
+
+void GShaderPermutationVLK::createPipelineLayout() {
+    m_pipelineLayout = createPipelineLayoutOverrided({});
 }
 
 const std::shared_ptr<GDescriptorSetLayout>

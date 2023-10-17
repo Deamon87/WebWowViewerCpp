@@ -318,9 +318,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     },
     {
       {1,9,0},
+      {1,8,0},
       {1,7,0},
       {1,3,0},
       {1,1,0},
+      {1,2,0},
+      {1,4,0},
+      {1,5,0},
+      {1,6,0},
     },
     {
     },
@@ -427,6 +432,9 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,3,16384},
       {0,0,480},
       {1,1,64},
+      {1,2,256},
+      {1,4,4096},
+      {1,5,256},
     },
     {
       {
@@ -558,6 +566,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,6,0},
       {1,3,0},
       {1,1,0},
+      {1,2,0},
+      {1,4,0},
+      {1,5,0},
+      {1,8,0},
+      {1,9,0},
     },
     {
       {3,0, "s_Textures"},
@@ -743,6 +756,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,4,0},
       {1,1,0},
       {1,2,0},
+      {1,3,0},
+      {1,5,0},
     },
     {
     },
@@ -820,10 +835,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     },
     {
       {0,3, "u_sampler"},
+      {0,4, "u_depth"},
     },
     {
       {
-        {3,3,1},
+        {3,4,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -841,11 +857,17 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {2,5,96},
       {0,0,480},
+      {1,1,64},
+      {1,2,256},
+      {1,3,16384},
+      {1,4,4096},
+      {1,5,256},
+      {1,6,4096},
     },
     {
       {
         {0,0,1},
-        {0,0,0},
+        {1,6,6},
         {5,5,1},
         {0,0,0},
         {0,0,0},
@@ -880,10 +902,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
+      {0,1,12},
     },
     {
       {
-        {0,0,0},
+        {1,1,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1005,6 +1028,15 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {2,1,0},
       {2,0,0},
+      {1,1,0},
+      {1,2,0},
+      {1,3,0},
+      {1,4,0},
+      {1,5,0},
+      {1,6,0},
+      {1,7,0},
+      {1,8,0},
+      {1,9,0},
     },
     {
       {3,0, "s_Textures"},
@@ -1027,10 +1059,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
+      {0,2,12},
     },
     {
       {
-        {0,0,0},
+        {2,2,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1200,6 +1233,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,4,0},
       {1,3,0},
       {1,5,0},
+      {1,1,0},
+      {1,2,0},
     },
     {
       {2,0, "s_Textures"},
@@ -1223,12 +1258,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     ShaderStage::Vertex,
     {
       {0,0,480},
-      {1,1,64},
     },
     {
       {
         {0,0,1},
-        {1,1,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1238,6 +1272,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
+      {1,1,64},
     },
     {
     },
@@ -1282,6 +1317,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,4,0},
       {1,1,0},
       {1,6,0},
+      {1,3,0},
     },
     {
       {2,0, "s_Textures"},
@@ -1341,11 +1377,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     ShaderStage::Vertex,
     {
       {0,0,480},
+      {1,1,64},
     },
     {
       {
         {0,0,1},
-        {0,0,0},
+        {1,1,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1393,10 +1430,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
+      {0,4, "uDiffuseTexture"},
+      {0,5, "uNormalTexture"},
     },
     {
       {
-        {0,0,0},
+        {4,5,2},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1614,6 +1653,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {0,0,480},
       {1,1,64},
       {1,6,4096},
+      {1,3,16384},
     },
     {
       {
@@ -1670,6 +1710,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {1,3,0},
       {1,1,0},
+      {1,2,0},
     },
     {
     },
@@ -1950,12 +1991,17 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,3,16384},
       {1,1,64},
       {0,0,480},
+      {1,2,256},
+      {1,4,4096},
+      {1,5,256},
+      {1,6,4096},
+      {2,7,64},
     },
     {
       {
         {0,0,1},
-        {1,3,3},
-        {0,0,0},
+        {1,6,6},
+        {7,7,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2061,7 +2107,29 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
 const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameVert = {
   {"waterfallShader",  {
     {
+      9, {
+      }
+    },
+    {
+      8, {
+      }
+    },
+    {
       7, {
+      }
+    },
+    {
+      5, {
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      2, {
       }
     },
     {
@@ -2095,11 +2163,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"adtShader",  {
     {
-      1, {
+      2, {
       }
     },
     {
       3, {
+      }
+    },
+    {
+      1, {
       }
     },
     {
@@ -2299,11 +2371,34 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"m2Shader",  {
     {
-      7, {
+      8, {
       }
     },
     {
       9, {
+      }
+    },
+    {
+      7, {
+      }
+    },
+    {
+      6, {
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      5, {
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      2, {
       }
     },
     {
@@ -2378,6 +2473,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   {"renderFrameBufferShader",  {
   }},
   {"wmoShader",  {
+    {
+      5, {
+        {"_1_5_s_wmoAmbient", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+      }
+    },
     {
       4, {
       }
@@ -2475,7 +2579,39 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
 const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameFrag = {
   {"waterfallShader",  {
     {
+      9, {
+      }
+    },
+    {
+      8, {
+      }
+    },
+    {
+      7, {
+      }
+    },
+    {
+      6, {
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      2, {
+      }
+    },
+    {
       1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
       }
     },
     {
@@ -2484,12 +2620,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       5, {
-        {"_2_5_values0", true, 0, 1, 4, 0},
-        {"_2_5_values1", true, 16, 1, 4, 0},
-        {"_2_5_values2", true, 32, 1, 4, 0},
-        {"_2_5_values3", true, 48, 1, 4, 0},
-        {"_2_5_values4", true, 64, 1, 4, 0},
-        {"_2_5_baseColor", true, 80, 1, 4, 0},
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
       }
     },
   }},
@@ -2614,6 +2745,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
   }},
   {"drawLinesShader",  {
+    {
+      1, {
+        {"_0_1_uColor", true, 0, 1, 3, 0},
+      }
+    },
   }},
   {"waterShader",  {
     {
@@ -2705,6 +2841,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
   }},
   {"drawFrustumShader",  {
+    {
+      2, {
+        {"_0_2_uColor", true, 0, 1, 3, 0},
+      }
+    },
   }},
   {"ffxgauss4",  {
     {
@@ -2723,6 +2864,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       9, {
+      }
+    },
+    {
+      3, {
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
       }
     },
     {
@@ -2790,6 +2936,16 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
   }},
   {"wmoShader",  {
+    {
+      2, {
+        {"_1_2_VertexShader_UseLitColors", false, 0, 1, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
     {
       5, {
         {"_1_5_s_wmoAmbient", true, 0, 1, 4, 0},

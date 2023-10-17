@@ -18,6 +18,7 @@ class GShaderPermutationVLK;
 class GMeshVLK;
 class GM2MeshVLK;
 class GPipelineVLK;
+class GPipelineLayoutVLK;
 class GRenderPassVLK;
 class GDescriptorPoolVLK;
 class CmdBufRecorder;
@@ -119,6 +120,7 @@ public:
 
     HPipelineVLK createPipeline(const HGVertexBufferBindings &m_bindings,
                                 const HGShaderPermutation &shader,
+                                const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
                                 const std::shared_ptr<GRenderPassVLK> &renderPass,
                                 DrawElementMode element,
                                 bool backFaceCulling,
@@ -217,6 +219,7 @@ protected:
     struct PipelineCacheRecord {
         HGShaderPermutation shader;
         wtf::KeyContainer<std::weak_ptr<GRenderPassVLK>> renderPass;
+        wtf::KeyContainer<std::weak_ptr<GPipelineLayoutVLK>> pipelineLayout;
         DrawElementMode element;
         bool backFaceCulling;
         bool triCCW;

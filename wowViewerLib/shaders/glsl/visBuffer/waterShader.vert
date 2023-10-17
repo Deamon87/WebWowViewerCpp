@@ -12,10 +12,7 @@ precision highp int;
 layout(location=0) in vec4 aPositionTransp;
 layout(location=1) in vec2 aTexCoord;
 
-
-
-
-layout(std140, set=1, binding=1) uniform modelWideBlockVS {
+layout(std140, set=1, binding=1) buffer modelWideBlockVS {
     mat4 uPlacementMat;
 };
 

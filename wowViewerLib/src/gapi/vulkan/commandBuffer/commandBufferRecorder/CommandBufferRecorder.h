@@ -22,7 +22,7 @@ class CommandBufferDebugLabel;
 #include "RenderPassHelper.h"
 #include "CommandBufferDebugLabel.h"
 #include "../../descriptorSets/GDescriptorSet.h"
-#include "../../GPipelineVLK.h"
+#include "../../pipeline/GPipelineVLK.h"
 #include "../../materials/ISimpleMaterialVLK.h"
 
 #ifdef LINK_TRACY

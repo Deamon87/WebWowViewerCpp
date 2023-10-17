@@ -26,11 +26,12 @@ public:
                                            const std::shared_ptr<ISimpleMaterialVLK> &materialVlk) {
         return {device, materialVlk->getShader(),
                         materialVlk->getPipeline(),
+                        materialVlk->getPipeline()->getLayout(),
                         materialVlk->getPipelineTemplate(),
                         toArray(materialVlk->getDescriptorSets())
                 };
     }
-
+    MaterialBuilderVLK& overridePipelineLayout(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses);
     MaterialBuilderVLK& bindDescriptorSet(int bindPoint, std::shared_ptr<GDescriptorSet> &ds);
     MaterialBuilderVLK& createDescriptorSet(int bindPoint, const std::function<void(std::shared_ptr<GDescriptorSet> &ds)> &callback);
     MaterialBuilderVLK& createPipeline(const HGVertexBufferBindings &bindings,
@@ -60,8 +61,9 @@ private:
                        const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig);
 
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
-                       const HGShaderPermutation &shader,
+                       const std::shared_ptr<GShaderPermutationVLK> &shader,
                        const HPipelineVLK &pipeline,
+                       const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
                        const PipelineTemplate &pipelineTemplate,
                        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets);
 
@@ -70,8 +72,9 @@ private:
     //States
     const std::shared_ptr<IDeviceVulkan> &m_device;
 
-    HGShaderPermutation m_shader;
+    std::shared_ptr<GShaderPermutationVLK> m_shader;
     HPipelineVLK m_pipeline;
+    std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;
     PipelineTemplate m_pipelineTemplate;
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> m_descriptorSets;
 };

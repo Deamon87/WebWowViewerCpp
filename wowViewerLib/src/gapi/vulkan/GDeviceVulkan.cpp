@@ -15,7 +15,7 @@
 #include "textures/GTextureVLK.h"
 #include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
-#include "GPipelineVLK.h"
+#include "pipeline/GPipelineVLK.h"
 #include "../../engine/algorithms/hashString.h"
 #include "GFrameBufferVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
@@ -204,7 +204,7 @@ std::set<std::string> get_supported_extensions() {
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
@@ -1415,6 +1415,7 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getSwapChainRenderPass() {
 
 HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings,
                                         const HGShaderPermutation &shader,
+                                        const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
                                         const std::shared_ptr<GRenderPassVLK> &renderPass,
                                         DrawElementMode element,
                                         bool backFaceCulling,
@@ -1426,12 +1427,13 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
     PipelineCacheRecord pipelineCacheRecord = {
         .shader = shader,
         .renderPass = std::weak_ptr<GRenderPassVLK>(renderPass),
+        .pipelineLayout = std::weak_ptr<GPipelineLayoutVLK>(pipelineLayout),
         .element = element,
         .backFaceCulling = backFaceCulling,
         .triCCW = triCCW,
         .blendMode = blendMode,
         .depthCulling = depthCulling,
-        .depthWrite = depthWrite
+        .depthWrite = depthWrite,
     };
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
@@ -1444,7 +1446,7 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
     }
 
     std::shared_ptr<GPipelineVLK> hgPipeline = std::make_shared<GPipelineVLK>(*this,
-                                      m_bindings, renderPass,
+                                      m_bindings, renderPass, pipelineLayout,
                                       shader, element,
                                       backFaceCulling,
                                       triCCW,

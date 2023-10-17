@@ -4,9 +4,9 @@
 
 #include <iostream>
 #include "GPipelineVLK.h"
-#include "shaders/GShaderPermutationVLK.h"
+#include "../shaders/GShaderPermutationVLK.h"
 #include <array>
-#include "GRenderPassVLK.h"
+#include "../GRenderPassVLK.h"
 
 struct BlendModeDescVLK {
     bool blendModeEnable;
@@ -36,6 +36,7 @@ BlendModeDescVLK blendModesVLK[(int)EGxBlendEnum::GxBlend_MAX] = {
 GPipelineVLK::GPipelineVLK(IDevice &device,
     const HGVertexBufferBindings &m_bindings,
     const std::shared_ptr<GRenderPassVLK> &renderPass,
+    const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
     const HGShaderPermutation &shader,
     DrawElementMode element,
     bool backFaceCulling,
@@ -57,7 +58,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     }
     GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
 
-    m_pipelineLayout = shaderVLK->getPipelineLayout();
+    m_pipelineLayout = pipelineLayout;
 
     m_isTransparent = blendMode > EGxBlendEnum::GxBlend_AlphaKey || !depthWrite;
 
@@ -236,7 +237,7 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDepthStencilState = &depthStencil;
     pipelineInfo.pDynamicState = &dynamicState;
-    pipelineInfo.layout = shaderVLK->getPipelineLayout();
+    pipelineInfo.layout = m_pipelineLayout->getLayout();
     pipelineInfo.renderPass = renderPass->getRenderPass();
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;

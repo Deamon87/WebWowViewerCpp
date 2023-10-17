@@ -14,7 +14,7 @@ inline void CmdBufRecorder::bindPipeline(const std::shared_ptr<GPipelineVLK> &pi
     vkCmdBindPipeline(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipelineVlk->getPipeline());
 
     m_currentPipeline = pPipelineVlk;
-    m_currentPipelineLayout = pipeline->getLayout();
+    m_currentPipelineLayout = pipeline->getLayout()->getLayout();
 }
 
 inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, const std::vector<std::shared_ptr<GDescriptorSet>> &descriptorSets) {

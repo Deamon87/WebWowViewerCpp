@@ -14,7 +14,7 @@ class IMaterialInstance : public ISimpleMaterialVLK, public IMaterialClass {
 public:
     inline IMaterialInstance(
         const std::function<void(IMaterialClass *)> &initializer,
-        const HGShaderPermutation &shader,
+        const std::shared_ptr<GShaderPermutationVLK> &shader,
         const PipelineTemplate &pipelineTemplate,
         const HPipelineVLK &pipeline,
         const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets) :

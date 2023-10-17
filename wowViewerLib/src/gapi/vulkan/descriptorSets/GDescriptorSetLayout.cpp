@@ -257,5 +257,10 @@ void GDescriptorSetLayout::fillSSBO(int setIndex, const DescTypeOverride &typeOv
 }
 
 GDescriptorSetLayout::~GDescriptorSetLayout() {
-    vkDestroyDescriptorSetLayout(m_device->getVkDevice(), m_descriptorSetLayout, nullptr);
+    auto l_device = m_device->getVkDevice();
+    auto l_descriptorSetLayout = m_descriptorSetLayout;
+    m_device->addDeallocationRecord([l_device, l_descriptorSetLayout]{
+        vkDestroyDescriptorSetLayout(l_device, l_descriptorSetLayout, nullptr);
+
+    });
 }

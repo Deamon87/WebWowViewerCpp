@@ -3,6 +3,6 @@
 //
 
 #include "GM2MeshVLK.h"
-#include "../GPipelineVLK.h"
+#include "../pipeline/GPipelineVLK.h"
 
 

@@ -50,9 +50,11 @@ public:
         return combinedShaderLayout;
     };
 
-    VkPipelineLayout getPipelineLayout() {
-        return pipelineLayout;
+    std::shared_ptr<GPipelineLayoutVLK> getPipelineLayout() {
+        return m_pipelineLayout;
     }
+
+    std::shared_ptr<GPipelineLayoutVLK> createPipelineLayoutOverrided(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses);
 
 protected:
     VkShaderModule createShaderModule(const std::vector<char>& code);
@@ -63,7 +65,7 @@ protected:
     VkShaderModule vertShaderModule;
     VkShaderModule fragShaderModule;
 
-    VkPipelineLayout pipelineLayout;
+    std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;
 
     std::array<std::shared_ptr<GDescriptorSetLayout>, MAX_SHADER_DESC_SETS> descriptorSetLayouts = {};
 
@@ -84,6 +86,7 @@ private:
     std::vector<const shaderMetaData *> createMetaArray();
     void createShaderLayout();
     void createPipelineLayout();
+
 };
 
 
