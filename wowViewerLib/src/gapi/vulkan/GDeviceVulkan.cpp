@@ -1248,14 +1248,14 @@ HGBufferVLK GDeviceVLK::createSSBOBuffer(const char * objName, size_t initialSiz
     return h_uniformBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createVertexBuffer(const char * objName, size_t initialSize) {
-    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize);
+HGBufferVLK GDeviceVLK::createVertexBuffer(const char * objName, size_t initialSize, int recordSize) {
+    auto h_vertexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, initialSize, recordSize);
 
     return h_vertexBuffer;
 }
 
 HGBufferVLK GDeviceVLK::createIndexBuffer(const char * objName, size_t initialSize) {
-    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize);
+    auto h_indexBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, initialSize, 2);
     return h_indexBuffer;
 }
 

@@ -1,6 +1,8 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive: require
+#extension GL_ARB_shader_draw_parameters: require
+
 
 precision highp float;
 precision highp int;
@@ -64,7 +66,7 @@ void main() {
     //With current implementation ADT's VBO is combined buffer, which contains all vertexes from all MCNK of ADT
     //Thus, we first need to get vertexNumber within MCNK
 
-    int indexInMCNK = gl_VertexIndex % (9 * 9 + 8 * 8);
+    int indexInMCNK = (gl_VertexIndex - gl_BaseVertexARB) % (9 * 9 + 8 * 8);
     float iX = mod(indexInMCNK, 17.0);
     float iY = floor(indexInMCNK/17.0);
 

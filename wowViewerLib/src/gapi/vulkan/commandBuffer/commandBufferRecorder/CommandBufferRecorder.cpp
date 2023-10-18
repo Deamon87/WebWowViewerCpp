@@ -134,12 +134,12 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
 
 
 
-void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance) {
+void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance, uint32_t vertexOffset) {
     vkCmdDrawIndexed(m_gCmdBuffer.m_cmdBuffer,
                      indexCount,
                      instanceCount,
                      firstIndex,
-                     0, //m_currentVertexBuffer->getOffset(),
+                     vertexOffset,
                      firstInstance);
 }
 

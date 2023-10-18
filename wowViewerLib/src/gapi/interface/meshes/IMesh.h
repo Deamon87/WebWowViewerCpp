@@ -77,7 +77,7 @@ public:
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
 
 
-    int vertexStart = -1;
+    int vertexStart = 0;
     int instanceIndex = -1;
 protected:
     HGVertexBufferBindings m_bindings;

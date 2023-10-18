@@ -61,7 +61,7 @@ public:
     inline void bindPipeline(const std::shared_ptr<GPipelineVLK> &pipeline);
     inline void bindDescriptorSets(VkPipelineBindPoint bindPoint, const std::vector<std::shared_ptr<GDescriptorSet>> &descriptorSets);
 
-    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance);
+    void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance, uint32_t vertexOffset = 0);
 
     void setScissors(const std::array<int32_t, 2> &areaOffset,
                      const std::array<uint32_t, 2> &areaSize);

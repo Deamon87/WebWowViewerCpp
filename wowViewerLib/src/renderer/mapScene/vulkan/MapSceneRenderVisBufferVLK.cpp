@@ -104,13 +104,13 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     m_device(hDevice), MapSceneRenderer(config) {
     iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
-    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024);
+    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024, sizeof(M2Vertex));
     vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024);
     vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024);
     vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024);
-    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024);
-    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
-    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
+    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024, sizeof(AdtVertex));
+    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024, sizeof(WMOVertex));
+    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024, sizeof(LiquidVertexFormat));
     vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
 
 
@@ -176,13 +176,13 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     uboBuffer = m_device->createUniformBuffer("UBO Buffer", 1024*1024);
     uboStaticBuffer = m_device->createUniformBuffer("UBO Static", 1024*1024);
 
-    m_emptyADTVAO = createADTVAO(nullptr, nullptr);
-    m_emptyM2VAO = createM2VAO(nullptr, nullptr);
+    m_emptyADTVAO = createADTVAO(vboAdtBuffer, iboBuffer);
+    m_emptyM2VAO = createM2VAO(vboM2Buffer, iboBuffer);
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptyM2RibbonVAO = createM2RibbonVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
-    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, nullptr);
-    m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
+    m_emptyWMOVAO = createWmoVAO(vboWMOBuffer, iboBuffer, nullptr);
+    m_emptyWaterVAO = createWaterVAO(vboWaterBuffer, iboBuffer);
     m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
     //Framebuffers for rendering
@@ -909,7 +909,7 @@ inline void MapSceneRenderVisBufferVLK::drawMesh(CmdBufRecorder &cmdBuf, const H
 
     //5. Draw the mesh
     if (meshVlk->instanceIndex != -1) {
-        cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, meshVlk->instanceIndex);
+        cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, meshVlk->instanceIndex, meshVlk->vertexStart);
     } else {
         cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, 0);
     }
@@ -1179,30 +1179,50 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createSortableMesh(gMeshTemplate &mes
 }
 
 HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
+//    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
+//    meshTemplate.bindings = m_emptyWaterVAO;
+
     auto _material = std::dynamic_pointer_cast<IWaterMaterialBindless>(material);
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
 
     mesh->instanceIndex = _material->instanceIndex;
+//    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
+//    mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
+
     return mesh;
 }
 
 HGMesh
 MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) {
+    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
+    meshTemplate.bindings = m_emptyADTVAO;
+
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
     mesh->instanceIndex = std::dynamic_pointer_cast<IADTMaterialVis>(material)->instanceIndex;
+    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
+    mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
+
     return mesh;
 }
 HGM2Mesh
 MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
                                        int layer, int priorityPlane) {
 
+    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
+    meshTemplate.bindings = m_emptyM2VAO;
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialVis>(material)->instanceIndex;
+    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
+    mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
+
     return mesh;
 }
 
 HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
                                                  const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
+    meshTemplate.bindings = m_emptyWMOVAO;
+
     auto originalMat = std::dynamic_pointer_cast<IWMOMaterialVis>(material);
     auto c_perMeshData = std::make_shared<CBufferChunkVLK<WMO::perMeshData>>(wmoBuffers.wmoPerMeshData);
 
@@ -1220,6 +1240,8 @@ HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, co
 
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(newMat), 0, 0);
     mesh->instanceIndex = c_perMeshData->getIndex();
+    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
+    mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
     return mesh;
 }
 HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,

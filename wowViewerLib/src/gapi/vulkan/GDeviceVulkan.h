@@ -101,7 +101,7 @@ public:
 
     HGBufferVLK createUniformBuffer(const char * objName, size_t size);
     HGBufferVLK createSSBOBuffer(const char * objName, size_t size, int recordSize);
-    HGBufferVLK createVertexBuffer(const char * objName, size_t size);
+    HGBufferVLK createVertexBuffer(const char * objName, size_t size, int recordSize = -1);
     HGBufferVLK createIndexBuffer(const char * objName, size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 

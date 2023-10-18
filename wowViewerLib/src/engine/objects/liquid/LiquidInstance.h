@@ -32,6 +32,7 @@ private:
     const HApiContainer &m_api;
     const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_waterPlacementChunk;
     std::vector<std::shared_ptr<IWaterMaterial>> m_liquidMaterials;
+    std::vector<HGVertexBufferBindings> m_vertexWaterBufferBindings;
     std::vector<HGSortableMesh> m_liquidMeshes;
     CAaBox &m_waterBBox;
 

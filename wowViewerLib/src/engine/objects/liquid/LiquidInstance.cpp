@@ -94,6 +94,7 @@ void LiquidInstance::createMaterialAndMesh(const HMapSceneBufferCreate &sceneRen
     auto waterMaterial = sceneRenderer->createWaterMaterial(m_waterPlacementChunk, pipelineTemplate, waterMaterialTemplate);
 
     m_liquidMaterials.push_back(waterMaterial);
+    m_vertexWaterBufferBindings.push_back(vertexWaterBufferBindings);
 
     //Create mesh(es)
     for (int i = 0; i < m_liquidMaterials.size(); i++) {
