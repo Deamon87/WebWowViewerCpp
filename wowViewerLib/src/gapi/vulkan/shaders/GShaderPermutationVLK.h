@@ -16,7 +16,9 @@
 
 struct ShaderSetLayout {
     std::unordered_map<unsigned int, unsigned int> uboSizesPerBinding;
+    std::unordered_map<unsigned int, unsigned int> ssboSizesPerBinding;
     bindingAmountData uboBindings;
+    bindingAmountData ssboBindings;
     bindingAmountData imageBindings;
 };
 
@@ -27,9 +29,6 @@ struct CombinedShaderLayout {
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
 public:
-    static const constexpr int UBO_SET_INDEX = 0;
-    static const constexpr int IMAGE_SET_INDEX = 1;
-
     explicit GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device, const ShaderConfig &shaderConf);
     ~GShaderPermutationVLK() override {};
 
@@ -81,6 +80,8 @@ private:
     CombinedShaderLayout combinedShaderLayout;
     ShaderConfig m_shaderConf;
 
+    std::string vertShaderName = "";
+    std::string vertShaderFrag = "";
 
     void createSetDescriptorLayouts();
     std::vector<const shaderMetaData *> createMetaArray();

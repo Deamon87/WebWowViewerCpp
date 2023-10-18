@@ -147,6 +147,13 @@ public:
     int liquidFlags;
     int materialId;
     std::shared_ptr<IBufferChunk<Water::meshWideBlockPS>> m_materialPS = nullptr;
+    std::shared_ptr<IBufferChunk<Water::WaterBindless>> m_bindless = nullptr;
+};
+
+class IWaterMaterialBindless : public IWaterMaterial {
+public:
+    std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
+    int instanceIndex = 0;
 };
 
 class IPortalMaterial : public IMaterial {

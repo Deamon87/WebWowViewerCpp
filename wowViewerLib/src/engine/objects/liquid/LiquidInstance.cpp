@@ -103,7 +103,7 @@ void LiquidInstance::createMaterialAndMesh(const HMapSceneBufferCreate &sceneRen
         meshTemplate.start = 0;
         meshTemplate.end = indexBufferSize;
 
-        auto mesh = sceneRenderer->createSortableMesh(meshTemplate, waterMaterial, 99);
+        auto mesh = sceneRenderer->createWaterMesh(meshTemplate, waterMaterial, 99);
         m_liquidMeshes.push_back(mesh);
     }
 

@@ -58,15 +58,8 @@ namespace OffsetAllocator
     {
     public:
         Allocator(uint32 size, uint32 maxAllocs = 1024);
-        Allocator(Allocator &&other);
 
-        // user-defined copy assignment (copy-and-swap idiom)
-        Allocator& operator=(Allocator &&other) noexcept
-        {
-            Allocator(std::move(other));
-
-            return *this;
-        }
+        Allocator(Allocator &other);
 
         ~Allocator();
         void reset();

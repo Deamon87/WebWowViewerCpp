@@ -38,6 +38,12 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
         if (m_currentDescriptorSet[i] != pDescriptorSet) {
             bindIndexStart = bindIndexStart==-1 ? i : bindIndexStart;
 
+            if (m_currentDescriptorSet[i] != nullptr && m_currentDescriptorSet[i]->getDescSetLayout() != pDescriptorSet->getDescSetLayout()) {
+                //The DS was disturbed due to Pipeline Layout Compatibility
+                for (int j = i+1; j < 16; j++)
+                    m_currentDescriptorSet[j] = nullptr;
+            }
+
             auto vkDescSet = pDescriptorSet->getDescSet();
             descs[descAmount++] = vkDescSet;
 

@@ -14,7 +14,7 @@ set(LINK_EGL 1)
 option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
-set(LINK_TRACY 0)
+set(LINK_TRACY 1)
 set(COMPILE_SHADER_WITH_DEBUG 0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(COMPILE_SHADER_WITH_DEBUG 1)
@@ -100,7 +100,9 @@ if (EMSCRIPTEN)
 else()
     set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msse3;-mavx2;-ftree-vectorize")
 
-    if (NOT MSVC AND NOT MSVC_VERSION)
+    message(MSVC = "${MSVC}")
+    message(MSVC_VERSION = "${MSVC_VERSION}")
+    if (NOT DEFINED MSVC AND NOT DEFINED MSVC_VERSION)
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar")
 
@@ -500,7 +502,10 @@ if (LINK_VULKAN)
             src/gapi/vulkan/meshes/GMeshVLK.cpp
             src/gapi/vulkan/textures/GTextureVLK.cpp
             src/gapi/vulkan/textures/GBlpTextureVLK.cpp
-            src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h
+            src/gapi/vulkan/pipeline/GPipelineVLK.cpp
+            src/gapi/vulkan/pipeline/GPipelineVLK.h
+            src/gapi/vulkan/pipeline/GPipelineLayoutVLK.cpp
+            src/gapi/vulkan/pipeline/GPipelineLayoutVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
@@ -572,7 +577,8 @@ if (LINK_VULKAN)
             src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.cpp
             src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.h
             src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.cpp
-            src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h)
+            src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h
+)
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)

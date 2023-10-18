@@ -69,8 +69,8 @@ void GShaderPermutationVLK::createSetDescriptorLayouts() {
 }
 
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
-    std::string vertShaderName = m_shaderConf.shaderFolder +"/" + m_shaderNameVert;
-    std::string vertShaderFrag = m_shaderConf.shaderFolder +"/" + m_shaderNameFrag;
+    vertShaderName = m_shaderConf.shaderFolder +"/" + m_shaderNameVert;
+    vertShaderFrag = m_shaderConf.shaderFolder +"/" + m_shaderNameFrag;
 
     auto vertShaderCode = readFile("spirv/" + vertShaderName + ".vert.spv");
     auto fragShaderCode = readFile("spirv/" + vertShaderFrag + ".frag.spv");
@@ -97,68 +97,70 @@ inline void makeMax(unsigned int &a, const unsigned int b) {
 
 void GShaderPermutationVLK::createShaderLayout() {
     //UBO stuff
-    for (int i = 0; i < this->vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = this->vertShaderMeta->uboBindings[i];
+    auto metaArray = createMetaArray();
 
-        auto &setLayout = combinedShaderLayout.setLayouts[uboVertBinding.set];
+    for (auto const &shaderMeta : metaArray) {
 
-        setLayout.uboSizesPerBinding[uboVertBinding.binding] = uboVertBinding.size;
-        makeMin(setLayout.uboBindings.start, uboVertBinding.binding);
-        makeMax(setLayout.uboBindings.end, uboVertBinding.binding);
-    }
-    for (int i = 0; i < this->fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = this->fragShaderMeta->uboBindings[i];
+        for (int i = 0; i < shaderMeta->uboBindings.size(); i++) {
+            auto &uboBinding = shaderMeta->uboBindings[i];
 
-        auto &setLayout = combinedShaderLayout.setLayouts[uboFragBinding.set];
+            auto &setLayout = combinedShaderLayout.setLayouts[uboBinding.set];
 
-        auto it = setLayout.uboSizesPerBinding.find(uboFragBinding.binding);
-        if (it != std::end(setLayout.uboSizesPerBinding)) {
-            if (it->second != uboFragBinding.size) {
-                std::cerr << "sizes mismatch for set = " << uboFragBinding.set
-                          << " binding = " << uboFragBinding.binding
-                          << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
-                          << std::endl;
+            auto it = setLayout.uboSizesPerBinding.find(uboBinding.binding);
+            if (it != std::end(setLayout.uboSizesPerBinding)) {
+                if (it->second != uboBinding.size) {
+                    std::cerr << "UBO sizes mismatch for set = " << uboBinding.set
+                              << " binding = " << uboBinding.binding
+                              << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
+                              << std::endl;
+                }
+            } else {
+                setLayout.uboSizesPerBinding[uboBinding.binding] = uboBinding.size;
+
+                makeMin(setLayout.uboBindings.start, uboBinding.binding);
+                makeMax(setLayout.uboBindings.end, uboBinding.binding);
             }
-        } else {
-            setLayout.uboSizesPerBinding[uboFragBinding.binding] = uboFragBinding.size;
+        }
 
-            makeMin(setLayout.uboBindings.start, uboFragBinding.binding);
-            makeMax(setLayout.uboBindings.end, uboFragBinding.binding);
+        for (int i = 0; i < shaderMeta->ssboBindingData.size(); i++) {
+            auto &ssboBinding = shaderMeta->ssboBindingData[i];
+
+            auto &setLayout = combinedShaderLayout.setLayouts[ssboBinding.set];
+
+            auto it = setLayout.ssboSizesPerBinding.find(ssboBinding.binding);
+            if (it != std::end(setLayout.ssboSizesPerBinding)) {
+                if (it->second != ssboBinding.size) {
+                    std::cerr << "SSBO sizes mismatch for set = " << ssboBinding.set
+                              << " binding = " << ssboBinding.binding
+                              << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
+                              << std::endl;
+                }
+            } else {
+                setLayout.ssboSizesPerBinding[ssboBinding.binding] = ssboBinding.size;
+
+                makeMin(setLayout.ssboBindings.start, ssboBinding.binding);
+                makeMax(setLayout.ssboBindings.end, ssboBinding.binding);
+            }
+        }
+
+        for (int i = 0; i < shaderMeta->imageBindings.size(); i++) {
+            auto &imageBinding = shaderMeta->imageBindings[i];
+            auto &setLayout = combinedShaderLayout.setLayouts[imageBinding.set];
+
+            if (setLayout.uboSizesPerBinding.find(imageBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
+                std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageBinding.set
+                          << " binding = " << imageBinding.binding
+                          << " in " << m_shaderNameVert << " and " << m_shaderNameFrag
+                          << std::endl;
+                throw std::runtime_error("types mismatch");
+            }
+
+            makeMin(setLayout.imageBindings.start, imageBinding.binding);
+            makeMax(setLayout.imageBindings.end, imageBinding.binding);
         }
     }
 
-    //Image stuff
-    for (int i = 0; i < this->vertShaderMeta->imageBindings.size(); i++) {
-        auto &imageVertBinding = this->vertShaderMeta->imageBindings[i];
-        auto &setLayout = combinedShaderLayout.setLayouts[imageVertBinding.set];
 
-        if (setLayout.uboSizesPerBinding.find(imageVertBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
-            std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageVertBinding.set
-                      << " binding = " << imageVertBinding.binding
-                      << " in " << m_shaderNameVert << " and " << m_shaderNameFrag
-                      << std::endl;
-            throw std::runtime_error("types mismatch");
-        }
-
-        makeMin(setLayout.imageBindings.start, imageVertBinding.binding);
-        makeMax(setLayout.imageBindings.end, imageVertBinding.binding);
-    }
-    for (int i = 0; i < this->fragShaderMeta->imageBindings.size(); i++) {
-        auto &imageFragBinding = this->fragShaderMeta->imageBindings[i];
-
-        auto &setLayout = combinedShaderLayout.setLayouts[imageFragBinding.set];
-
-        if (setLayout.uboSizesPerBinding.find(imageFragBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
-            std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageFragBinding.set
-                      << " binding = " << imageFragBinding.binding
-                      << " in " << m_shaderNameVert << " and " << m_shaderNameFrag
-                      << std::endl;
-            throw std::runtime_error("types mismatch");
-        }
-
-        makeMin(setLayout.imageBindings.start, imageFragBinding.binding);
-        makeMax(setLayout.imageBindings.end, imageFragBinding.binding);
-    }
     //Cleanup
     for (auto &shaderLayout : combinedShaderLayout.setLayouts) {
         {

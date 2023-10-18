@@ -17,7 +17,7 @@ GBufferVLK::GBufferVLK(const HGDeviceVLK &device, const char *objName,
     m_objName = objName;
 
     //Create virtual buffer off this native buffer
-    auto allocator = OffsetAllocator::Allocator(m_bufferSize);
+    auto allocator =OffsetAllocator::Allocator(m_bufferSize);
     offsetAllocator = std::move(allocator);
 
     m_gpuBuffer = std::make_shared<BufferGpuVLK>(m_device, maxSize, m_usageFlags, m_objName.c_str());

@@ -259,6 +259,13 @@ namespace Water {
         mathfu::vec4_packed color;
         mathfu::mat4 textureMatrix;
     };
+
+    struct WaterBindless {
+        int waterDataInd;
+        int placementMatInd;
+        int textureInd;
+        int unused;
+    };
 }
 
 namespace ImgUI {

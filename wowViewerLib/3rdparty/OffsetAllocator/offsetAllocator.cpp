@@ -145,7 +145,7 @@ namespace OffsetAllocator
         reset();
     }
 
-    Allocator::Allocator(Allocator &&other) :
+    Allocator::Allocator(Allocator &other) :
         m_size(other.m_size),
         m_maxAllocs(other.m_maxAllocs),
         m_freeStorage(other.m_freeStorage),

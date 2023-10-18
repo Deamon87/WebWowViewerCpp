@@ -1,6 +1,7 @@
 #version 450
 
 #extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_nonuniform_qualifier: require
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
@@ -11,19 +12,12 @@ precision highp int;
 layout(location=0) in vec3 vPosition;
 layout(location=1) in vec2 vTextCoords;
 layout(location=2) in vec3 vNormal;
-
-layout(location=0) out vec4 outputColor;
-
-layout(set=2,binding=5) uniform sampler2D uTexture;
+layout(location=3) in flat int meshInd;
 
 #include "../common/commonUboSceneData.glsl"
+#include "../common/commonWaterIndirect.glsl"
 
-//Individual meshes
-layout(std140, set=1, binding=4) uniform meshWideBlockPS {
-    ivec4 materialId;
-    vec4 color;
-    mat4 textureMatrix;
-};
+layout(location=0) out vec4 outputColor;
 
 const InteriorLightParam intLight = {
     vec4(0,0,0,0),
@@ -31,6 +25,9 @@ const InteriorLightParam intLight = {
 };
 
 void main() {
+    WaterBindless waterBindless = waterBindlesses[meshInd];
+    WaterData waterData = waterDatas[waterBindless.waterDataInd_placementMatInd_textureInd.x];
+
 // MaterialId:
 //    1,3 - Water
 //    2,4 - Magma
@@ -42,9 +39,9 @@ void main() {
 //    18 - Azerithe
 //    8 - is probably debug material called Grid
 
-    vec2 animatedUV = (textureMatrix*vec4(vTextCoords, 0.0, 1.0)).st;
+    vec2 animatedUV = (waterData.textureMatrix*vec4(vTextCoords, 0.0, 1.0)).st;
 
-    vec3 matDiffuse = color.rgb+texture(uTexture, animatedUV).rgb;
+    vec3 matDiffuse = waterData.color.rgb+texture(s_Textures[waterBindless.waterDataInd_placementMatInd_textureInd.z], animatedUV).rgb;
 
     vec3 sunDir = scene.extLight.uExteriorDirectColorDir.xyz;
 
@@ -52,7 +49,7 @@ void main() {
     vec4 finalColor = vec4(matDiffuse, 1.0);
 
     //Magma is not affected by light
-    if (materialId.x != 2 && materialId.x != 4) {
+    if (waterData.materialId.x != 2 && waterData.materialId.x != 4) {
         finalColor = vec4(
             calcLight(
                 matDiffuse,

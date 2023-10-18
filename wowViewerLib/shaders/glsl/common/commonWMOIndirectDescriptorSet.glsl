@@ -1,11 +1,11 @@
 #ifndef COMMON_WMO_INDIRECT_DS
 #define COMMON_WMO_INDIRECT_DS
 
-layout(std140, set=1, binding=1) buffer modelWideBlockVS {
+layout(std430, set=1, binding=1) buffer readonly modelWideBlockVS {
     mat4 uPlacementMats[];
 };
 
-layout(std140, set=1, binding=2) buffer meshWideBlockVS {
+layout(std430, set=1, binding=2) buffer readonly meshWideBlockVS {
     ivec4 VertexShader_UseLitColors[];
 };
 
@@ -14,7 +14,7 @@ struct WmoMeshWide {
     vec4 FogColor_AlphaTest;
 };
 
-layout(std140, set=1, binding=3) buffer meshWideBlockPS {
+layout(std430, set=1, binding=3) buffer readonly meshWideBlockPS {
     WmoMeshWide wmoMeshWides[];
 };
 
@@ -24,11 +24,11 @@ struct WmoMeshWideBindless {
     ivec4 text5_text6_text7_text8;
 };
 
-layout(std140, set=1, binding=4) buffer meshWideBlockBindlessPS {
+layout(std430, set=1, binding=4) buffer readonly meshWideBlockBindlessPS {
     WmoMeshWideBindless wmoMeshWideBindlesses[];
 };
 
-layout(std140, set=1, binding=5) buffer wmoLocalAmbient {
+layout(std430, set=1, binding=5) buffer readonly wmoLocalAmbient {
     vec4 s_wmoAmbient[];
 };
 
@@ -36,7 +36,7 @@ struct WMOPerMeshData {
     ivec4 meshWideBindlessIndex_wmoAmbientIndex;
 };
 
-layout(std140, set=1, binding=6) buffer _wmoPerMeshData {
+layout(std430, set=1, binding=6) buffer readonly _wmoPerMeshData {
     WMOPerMeshData perMeshDatas[];
 };
 

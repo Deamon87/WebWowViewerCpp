@@ -11,7 +11,7 @@ struct WaterfallCommon {
     vec4 baseColor;
 };
 
-layout(std140, set=2, binding=0) buffer waterfallCommonData {
+layout(std430, set=2, binding=0) buffer readonly waterfallCommonData {
     WaterfallCommon waterfallCommons[];
 };
 
@@ -20,7 +20,7 @@ struct WaterfallBindless {
     ivec4 whiteWaterInd_noiseInd_normalTexInd;
 };
 
-layout(std140, set=2, binding=1) buffer waterfallBindless {
+layout(std430, set=2, binding=1) buffer readonly waterfallBindless {
     WaterfallBindless waterfallBindlesses[];
 };
 

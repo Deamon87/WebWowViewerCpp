@@ -100,6 +100,7 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
+    HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
 
@@ -166,6 +167,11 @@ private:
     } m2WaterfallBuffer;
 
     struct {
+        HGBufferVLK waterDataBuffer;
+        HGBufferVLK waterBindlessBuffer;
+    } waterBuffer;
+
+    struct {
         HGBufferVLK adtMeshWideVSPSes;
         HGBufferVLK adtMeshWidePSes;
         HGBufferVLK adtInstanceDatas;
@@ -212,6 +218,9 @@ private:
     std::shared_ptr<GDescriptorSet> wmoTexturesDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> wmoTextureHolder = nullptr;
 
+    std::shared_ptr<GDescriptorSet> waterDataDS = nullptr;
+    std::shared_ptr<GDescriptorSet> waterTexturesDS = nullptr;
+    std::shared_ptr<BindlessTextureHolder> waterTextureHolder = nullptr;
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
 
@@ -231,6 +240,7 @@ private:
     void createM2GlobalMaterialData();
     void createWMOGlobalMaterialData();
     void createADTGlobalMaterialData();
+    void createWaterGlobalMaterialData();
     void createM2WaterfallGlobalMaterialData();
 };
 

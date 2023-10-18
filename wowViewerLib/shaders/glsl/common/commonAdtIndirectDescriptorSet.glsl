@@ -8,7 +8,7 @@ struct AdtMeshWideVSPS {
     vec4 uHeightOffset;
 };
 
-layout(std140, set=1, binding=1) buffer readonly meshWideBlockVSPS {
+layout(std430, set=1, binding=1) buffer readonly meshWideBlockVSPS {
     AdtMeshWideVSPS adtMeshWideVSPSes[];
 };
 
@@ -18,7 +18,7 @@ struct AdtMeshWidePS {
     ivec4 animation_speedPerLayer;
 };
 
-layout(std140, set=1, binding=2) buffer readonly meshWideBlockPS {
+layout(std430, set=1, binding=2) buffer readonly meshWideBlockPS {
     AdtMeshWidePS adtMeshWidePSes[];
 };
 
@@ -29,7 +29,7 @@ struct AdtInstanceData {
     ivec4 LayerHeight0Ind_LayerHeight1Ind_LayerHeight2Ind_LayerHeight3Ind;
 };
 
-layout(std140, set=1, binding=3) buffer readonly instanceData {
+layout(std430, set=1, binding=3) buffer readonly instanceData {
     AdtInstanceData adtInstanceDatas[];
 };
 

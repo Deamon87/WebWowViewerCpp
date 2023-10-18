@@ -30,6 +30,8 @@ static const ShaderConfig forwardShaderConfig = {
 const int m2TexturesBindlessCount = 4096;
 const int m2WaterfallTexturesBindlessCount = 128;
 const int adtTexturesBindlessCount = 4096;
+const int waterTexturesBindlessCount = 1024;
+
 static const ShaderConfig m2VisShaderConfig = {
     "visBuffer",
     {
@@ -84,6 +86,17 @@ static const ShaderConfig adtVisShaderConfig = {
         }},
         {4, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, adtTexturesBindlessCount}}
+        }}
+    }};
+
+static const ShaderConfig waterVisShaderConfig = {
+    "visBuffer",
+    {
+        {0, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+        }},
+        {2, {
+            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, waterTexturesBindlessCount}}
         }}
     }};
 
@@ -151,6 +164,11 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
         wmoBuffers.wmoPerMeshData = m_device->createSSBOBuffer("WMO PerMeshData", 1024*1024, sizeof(WMO::perMeshData));
         wmoBuffers.wmoGroupAmbient = m_device->createSSBOBuffer("Scene_VBO_WMOAmbient",16*200, sizeof(mathfu::vec4_packed));
     }
+    //Create water buffs
+    {
+        waterBuffer.waterDataBuffer = m_device->createSSBOBuffer("Water data", 1024, sizeof(Water::meshWideBlockPS));
+        waterBuffer.waterBindlessBuffer = m_device->createSSBOBuffer("Water Bindless", 1024, sizeof(Water::WaterBindless));
+    }
 
     m2WaterfallBuffer.waterfallCommon = m_device->createSSBOBuffer("M2 Waterfall Common",200, sizeof(M2::WaterfallData::WaterfallCommon));
     m2WaterfallBuffer.waterfallBindless = m_device->createSSBOBuffer("M2 Waterfall Bindless",200, sizeof(M2::WaterfallData::WaterfallBindless));
@@ -194,6 +212,7 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     createWMOGlobalMaterialData();
     createADTGlobalMaterialData();
     createM2WaterfallGlobalMaterialData();
+    createWaterGlobalMaterialData();
 }
 
 void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
@@ -231,7 +250,26 @@ void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
     }
 }
 
-void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {//Create global wmo descriptor for bindless textures
+void MapSceneRenderVisBufferVLK::createWaterGlobalMaterialData() {
+    //Create global water descriptor for bindless textures
+    MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterVisShaderConfig)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [this](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ssbo(0, waterBuffer.waterDataBuffer)
+                .ssbo(1, wmoBuffers.wmoPlacementMats)
+                .ssbo(2, waterBuffer.waterBindlessBuffer);
+
+            waterDataDS = ds;
+        })
+        .createDescriptorSet(2, [this](std::shared_ptr<GDescriptorSet> &ds) {
+            waterTexturesDS = ds;
+        });
+
+    waterTextureHolder = std::make_shared<BindlessTextureHolder>(waterTexturesBindlessCount);
+}
+void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {
+    //Create global wmo descriptor for bindless textures
     MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
         .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -744,28 +782,44 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderVisBufferVLK::createWMOMaterial(cons
 std::shared_ptr<IWaterMaterial> MapSceneRenderVisBufferVLK::createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                                               const PipelineTemplate &pipelineTemplate,
                                                                               const WaterMaterialTemplate &waterMaterialTemplate) {
-    auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(uboStaticBuffer); ;
+    auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(waterBuffer.waterDataBuffer); ;
+    auto l_waterBindless = std::make_shared<CBufferChunkVLK<Water::WaterBindless>>(waterBuffer.waterBindlessBuffer); ;
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, visShaderConfig)
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterVisShaderConfig)
         .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, l_fragmentData, this](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .ssbo(1, wmoBuffers.wmoPlacementMats)
-                .ubo(4, *l_fragmentData);
-        })
-        .createDescriptorSet(2, [&waterMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .texture(5, waterMaterialTemplate.texture);
-        })
-        .toMaterial<IWaterMaterial>([&l_fragmentData](IWaterMaterial *instance) -> void {
+        .bindDescriptorSet(1, waterDataDS)
+        .bindDescriptorSet(2, waterTexturesDS)
+        .toMaterial<IWaterMaterialBindless>([&l_fragmentData, l_waterBindless](IWaterMaterialBindless *instance) -> void {
             instance->m_materialPS = l_fragmentData;
+            instance->m_bindless = l_waterBindless;
         });
 
     material->color = waterMaterialTemplate.color;
     material->liquidFlags = waterMaterialTemplate.liquidFlags;
     material->materialId = waterMaterialTemplate.liquidMaterialId;
+
+    {
+        auto dsUpdate = waterTexturesDS->beginUpdate();
+
+//        for (int i = 0; i < 9; i++) {
+            auto bindlessText = waterTextureHolder->allocate(waterMaterialTemplate.texture);
+            material->m_bindlessText.push_back(bindlessText);
+            dsUpdate.texture(0, waterMaterialTemplate.texture, bindlessText->getIndex());
+//        }
+    }
+
+    {
+        auto &bindless = l_waterBindless->getObject();
+        bindless.placementMatInd = BufferChunkHelperVLK::cast(modelWide)->getIndex();
+        bindless.textureInd = material->m_bindlessText[0]->getIndex();
+        bindless.waterDataInd = l_fragmentData->getIndex();
+
+        l_waterBindless->save();
+    }
+
+    material->instanceIndex = l_waterBindless->getIndex();
 
     return material;
 }
@@ -996,6 +1050,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
             uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoGroupAmbient);
             uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoPerMeshData);
 
+            uploadCmd.submitBufferUploads(l_this->waterBuffer.waterDataBuffer);
+            uploadCmd.submitBufferUploads(l_this->waterBuffer.waterBindlessBuffer);
+
             uploadCmd.submitBufferUploads(l_this->iboBuffer);
             uploadCmd.submitBufferUploads(l_this->m_vboQuad);
             uploadCmd.submitBufferUploads(l_this->m_iboQuad);
@@ -1120,6 +1177,15 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createSortableMesh(gMeshTemplate &mes
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
     return mesh;
 }
+
+HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
+    auto _material = std::dynamic_pointer_cast<IWaterMaterialBindless>(material);
+    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
+
+    mesh->instanceIndex = _material->instanceIndex;
+    return mesh;
+}
+
 HGMesh
 MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) {
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);

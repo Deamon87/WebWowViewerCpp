@@ -39,7 +39,6 @@ void main() {
     mat4 boneTransformMat =  mat4(0.0);
 
     meshWideBlockVSPSBindless meshWideBindless = meshWideBindleses[gl_InstanceIndex];
-    meshWideBlockVSPS meshWide = meshWides[nonuniformEXT(meshWideBindless.instanceIndex_meshIndex.y)];
     int instanceIndex = meshWideBindless.instanceIndex_meshIndex.x;
 
     if (dot(boneWeights, boneWeights) > 0) {
