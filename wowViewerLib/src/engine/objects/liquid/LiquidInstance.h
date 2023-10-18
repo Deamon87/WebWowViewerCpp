@@ -27,7 +27,9 @@ public:
                    CAaBox &waterAaBB);
 
     void updateLiquidMaterials(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector);
     void collectMeshes(std::vector<HGSortableMesh> &transparentMeshes);
+
 private:
     const HApiContainer &m_api;
     const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_waterPlacementChunk;

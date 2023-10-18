@@ -196,10 +196,10 @@ private:
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
 
+    std::shared_ptr<ISimpleMaterialVLK> g_m2Material = nullptr;
+    std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
     std::shared_ptr<GDescriptorSet> m2TextureDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> m2TextureHolder = nullptr;
-
-    std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;
 
     std::shared_ptr<GDescriptorSet> m2WaterfallBufferDS = nullptr;
     std::shared_ptr<GDescriptorSet> m2WaterfallTextureDS = nullptr;
@@ -218,6 +218,7 @@ private:
     std::shared_ptr<GDescriptorSet> wmoTexturesDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> wmoTextureHolder = nullptr;
 
+    std::shared_ptr<ISimpleMaterialVLK> g_waterMaterial = nullptr;
     std::shared_ptr<GDescriptorSet> waterDataDS = nullptr;
     std::shared_ptr<GDescriptorSet> waterTexturesDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> waterTextureHolder = nullptr;
@@ -242,6 +243,17 @@ private:
     void createADTGlobalMaterialData();
     void createWaterGlobalMaterialData();
     void createM2WaterfallGlobalMaterialData();
+public:
+    const std::shared_ptr<ISimpleMaterialVLK> &getGlobalADTMaterial() const {return g_adtMaterial;};
+    const std::shared_ptr<ISimpleMaterialVLK> &getGlobalM2Material() const {return g_m2Material;};
+    const std::shared_ptr<ISimpleMaterialVLK> &getGlobalWMOMaterial() const {return g_wmoMaterial;};
+    const std::shared_ptr<ISimpleMaterialVLK> &getGlobalWaterMaterial() const {return g_waterMaterial;};
+
+    const HGVertexBufferBindings getDefaultADTVao() {return m_emptyADTVAO;};
+    const HGVertexBufferBindings getDefaultM2Vao() {return m_emptyM2VAO;};
+    const HGVertexBufferBindings getDefaultWMOVao() {return m_emptyWMOVAO;};
+    const HGVertexBufferBindings getDefaultWaterVao() {return m_emptyWaterVAO;};
+
 };
 
 class IM2ModelDataVisVLK : public IM2ModelData {

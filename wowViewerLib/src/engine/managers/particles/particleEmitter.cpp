@@ -1114,7 +1114,7 @@ ParticleEmitter::BuildQuadT3(
 
 }
 
-void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
     auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
@@ -1125,7 +1125,7 @@ void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vect
     if (mesh->getIsTransparent()) {
         transparentMeshes.push_back(mesh);
     } else {
-        opaqueMeshes.push_back(mesh);
+        opaqueMeshCollector.addMesh(mesh);
     }
 }
 

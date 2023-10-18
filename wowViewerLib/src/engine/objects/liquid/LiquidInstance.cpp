@@ -327,6 +327,13 @@ void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDepen
     }
 }
 
+void LiquidInstance::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector) {
+    //TODO: Get time and right mesh instance for animation
+    if (m_api->getConfig()->renderLiquid) {
+        opaqueMeshCollector.addWaterMesh(m_liquidMeshes[0]);
+    }
+}
+
 void LiquidInstance::collectMeshes(std::vector<HGSortableMesh> &transparentMeshes) {
     //TODO: Get time and right mesh instance for animation
     if (m_api->getConfig()->renderLiquid) {

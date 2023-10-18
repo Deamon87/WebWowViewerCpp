@@ -30,15 +30,7 @@ public:
     std::array<bool, 256> checkRefs = {false};
 };
 
-class COpaqueMeshCollector {
-public:
-    virtual void addM2Mesh(const HGM2Mesh &mesh) = 0;
-    virtual void addWMOMesh(const HGMesh &mesh) = 0;
-    virtual void addWaterMesh(const HGMesh &mesh) = 0;
-    virtual void addADTMesh(const HGMesh &mesh) = 0;
 
-    virtual void addMesh(const HGMesh &mesh) = 0;
-};
 
 class GeneralView {
 public:
@@ -64,7 +56,7 @@ public:
 
     std::vector<HGSortableMesh> liquidMeshes = {};
 
-    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, std::vector<HGSortableMesh> &liquidMeshes);
+    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes);
     void collectPortalMeshes(std::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
@@ -85,7 +77,7 @@ public:
 	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
     std::vector<HGMesh> m_adtOpaqueMeshes = {};
 public:
-    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, std::vector<HGSortableMesh> &liquidMeshes) override;
+    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) override;
 };
 
 class FrameViewsHolder {

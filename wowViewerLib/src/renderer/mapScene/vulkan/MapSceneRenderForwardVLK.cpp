@@ -586,8 +586,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //    TracyMessageL("collect meshes created");
 //    std::future<void> collectMeshAsync = std::async(std::launch::async,
 //                                                    [&]() {
-                                                        collectMeshes(framePlan, opaqueMeshes, transparentMeshes,
-                                                            liquidMeshes, skyOpaqueMeshes, skyTransparentMeshes);
+                 //TODO:
+//                    collectMeshes(framePlan, opaqueMeshes, transparentMeshes,
+//                        liquidMeshes, skyOpaqueMeshes, skyTransparentMeshes);
 //                                                    }
 //    );
 

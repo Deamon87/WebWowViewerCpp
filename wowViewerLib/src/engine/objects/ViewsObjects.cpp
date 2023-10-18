@@ -12,25 +12,27 @@
 #endif
 
 
-void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, std::vector<HGSortableMesh> &liquidMeshes) {
+void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) {
     if (renderADT) {
-        auto inserter = std::back_inserter(opaqueMeshes);
-        std::copy(this->m_adtOpaqueMeshes.begin(), this->m_adtOpaqueMeshes.end(), inserter);
+        for (auto const &adtMesh : this->m_adtOpaqueMeshes ) {
+            opaqueMeshCollector.addADTMesh(adtMesh);
+        }
     }
 
     if (renderAdtLiquid) {
-        auto inserter = std::back_inserter(liquidMeshes);
-        std::copy(this->liquidMeshes.begin(), this->liquidMeshes.end(), inserter);
+        for (auto const &liquidMesh : this->liquidMeshes ) {
+            opaqueMeshCollector.addWaterMesh(liquidMesh);
+        }
     }
 
-    GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshes, transparentMeshes, liquidMeshes);
+    GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshCollector, transparentMeshes);
 }
 
 
-void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, std::vector<HGSortableMesh> &liquidMeshes) {
+void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) {
     if (renderWMO) {
         for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
-            wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, liquidMeshes, renderOrder);
+            wmoGroup->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
         }
     }
 }

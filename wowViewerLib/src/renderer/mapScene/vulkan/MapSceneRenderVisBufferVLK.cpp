@@ -251,8 +251,16 @@ void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
 }
 
 void MapSceneRenderVisBufferVLK::createWaterGlobalMaterialData() {
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = true;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = true;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
     //Create global water descriptor for bindless textures
-    MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterVisShaderConfig)
+    g_waterMaterial = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterVisShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [this](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -264,13 +272,22 @@ void MapSceneRenderVisBufferVLK::createWaterGlobalMaterialData() {
         })
         .createDescriptorSet(2, [this](std::shared_ptr<GDescriptorSet> &ds) {
             waterTexturesDS = ds;
-        });
+        }).toMaterial();;
 
     waterTextureHolder = std::make_shared<BindlessTextureHolder>(waterTexturesBindlessCount);
 }
 void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = true;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = true;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
     //Create global wmo descriptor for bindless textures
-    MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
+    g_wmoMaterial = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
+        .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ssbo(1, wmoBuffers.wmoPlacementMats)
@@ -284,12 +301,22 @@ void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {
         })
         .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             wmoTexturesDS = ds;
-        });
+        }).toMaterial();
     wmoTextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
 }
 
-void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {//Create global m2 descriptor for bindless textures
-    MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
+void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = true;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = true;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+
+    //Create global m2 descriptor for bindless textures
+    g_m2Material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
+        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ssbo(1, m2Buffers.placementMatrix)
@@ -306,7 +333,7 @@ void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {//Create global m
         })
         .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             m2TextureDS = ds;
-        });
+        }).toMaterial();
     m2TextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
 }
 void MapSceneRenderVisBufferVLK::createM2WaterfallGlobalMaterialData() {
@@ -919,6 +946,144 @@ static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
     return {vec[0], vec[1], vec[2]};
 }
 
+class COpaqueMeshCollectorBindlessVLK : public COpaqueMeshCollector{
+public:
+    COpaqueMeshCollectorBindlessVLK(MapSceneRenderVisBufferVLK &rendererVlk) : m_renderer(rendererVlk) {
+        commonMeshes.reserve(1000);
+    }
+private:
+    MapSceneRenderVisBufferVLK &m_renderer;
+    struct DrawCommand {
+        uint32_t indexCount;
+        uint32_t instanceCount;
+        uint32_t firstIndex;
+        uint32_t firstInstance;
+        uint32_t vertexOffset;
+    };
+
+    typedef std::unordered_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
+
+    MeshMap m2MeshMap;
+    MeshMap wmoMeshMap;
+    MeshMap waterMeshMap;
+    MeshMap adtMeshMap;
+    std::vector<HGMesh> commonMeshes;
+
+    inline void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
+        const auto &meshVlk = (GMeshVLK*) mesh.get();
+        auto const &pipeline = meshVlk->material()->getPipeline();
+
+        if (meshMap.find(pipeline) == meshMap.end()) {
+            meshMap.reserve(3000);
+        }
+
+        auto &drawCommand = meshMap[pipeline].emplace_back();
+        drawCommand.indexCount = meshVlk->end();
+        drawCommand.instanceCount = 1;
+        drawCommand.firstIndex = meshVlk->start() / 2;
+
+        if (meshVlk->instanceIndex != -1) {
+            drawCommand.firstInstance = meshVlk->instanceIndex;
+            drawCommand.vertexOffset = meshVlk->vertexStart;
+        } else {
+            drawCommand.firstInstance = 0;
+            drawCommand.vertexOffset = 0;
+        }
+    }
+public:
+    void addM2Mesh(const HGM2Mesh &mesh) override {
+        fillMapWithMesh(m2MeshMap, mesh);
+    };
+    void addWMOMesh(const HGMesh &mesh) override {
+        fillMapWithMesh(wmoMeshMap, mesh);
+    } ;
+    void addWaterMesh(const HGMesh &mesh) override {
+        fillMapWithMesh(waterMeshMap, mesh);
+    } ;
+    void addADTMesh(const HGMesh &mesh) override {
+        fillMapWithMesh(adtMeshMap, mesh);
+    } ;
+
+    void addMesh(const HGMesh &mesh) override {
+        commonMeshes.push_back(mesh);
+    };
+
+    void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
+        cmdBuf.setDefaultScissors();
+        cmdBuf.setViewPort(viewPortType);
+
+        if (!adtMeshMap.empty())
+        {
+            //1. Render ADT
+            cmdBuf.bindVertexBindings(m_renderer.getDefaultADTVao());
+            cmdBuf.bindMaterial(m_renderer.getGlobalADTMaterial());
+
+            for (auto const &record : adtMeshMap) {
+                cmdBuf.bindPipeline(record.first);
+
+                for (auto const & drawCmd : record.second) {
+                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
+                }
+            }
+        }
+
+        if (!wmoMeshMap.empty())
+        {
+            //2. Render WMO
+            cmdBuf.bindVertexBindings(m_renderer.getDefaultWMOVao());
+            cmdBuf.bindMaterial(m_renderer.getGlobalWMOMaterial());
+
+            for (auto const &record : wmoMeshMap) {
+                cmdBuf.bindPipeline(record.first);
+
+                for (auto const & drawCmd : record.second) {
+                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
+                }
+            }
+        }
+
+        if (!m2MeshMap.empty())
+        {
+            //3. Render m2
+            cmdBuf.bindVertexBindings(m_renderer.getDefaultM2Vao());
+            cmdBuf.bindMaterial(m_renderer.getGlobalM2Material());
+
+            for (auto const &record : m2MeshMap) {
+                cmdBuf.bindPipeline(record.first);
+
+                for (auto const & drawCmd : record.second) {
+                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
+                }
+            }
+        }
+
+        //Render commonMeshes
+        for (auto const &mesh : commonMeshes ) {
+            MapSceneRenderVisBufferVLK::drawMesh(cmdBuf, mesh, viewPortType);
+        }
+    }
+    void renderWater(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
+        cmdBuf.setDefaultScissors();
+        cmdBuf.setViewPort(viewPortType);
+
+        if (!waterMeshMap.empty())
+        {
+            //4. Render water
+            cmdBuf.bindVertexBindings(m_renderer.getDefaultWaterVao());
+            cmdBuf.bindMaterial(m_renderer.getGlobalWaterMaterial());
+
+            for (auto const &record : waterMeshMap) {
+                cmdBuf.bindPipeline(record.first);
+
+                for (auto const & drawCmd : record.second) {
+                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
+                }
+            }
+        }
+    }
+
+};
+
 std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                                                   const std::shared_ptr<MapRenderPlan> &framePlan) {
     TracyMessageStr(("Update stage frame = " + std::to_string(m_device->getCurrentProcessingFrameNumber())));
@@ -929,11 +1094,10 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 
 
     //Create meshes
-    auto opaqueMeshes = std::make_shared<std::vector<HGMesh>>();
+    std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_collector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this);
+    std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_skyCollector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this);
     auto transparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
-    auto liquidMeshes = std::make_shared<std::vector<HGSortableMesh>>();
 
-    auto skyOpaqueMeshes = std::make_shared<std::vector<HGMesh>>();
     auto skyTransparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
     framePlan->m2Array.lock();
     framePlan->wmoArray.lock();
@@ -945,35 +1109,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 //    TracyMessageL("collect meshes created");
 //    std::future<void> collectMeshAsync = std::async(std::launch::async,
 //                                                    [&]() {
-    collectMeshes(framePlan, opaqueMeshes, transparentMeshes,
-                  liquidMeshes, skyOpaqueMeshes, skyTransparentMeshes);
+    collectMeshes(framePlan, *u_collector, *u_skyCollector, transparentMeshes, skyTransparentMeshes);
 
-    {
-        ZoneScopedN("sort opaque");
-        std::sort(opaqueMeshes->begin(), opaqueMeshes->end(), [](const HGMesh &a, const HGMesh &b) -> bool {
-            const auto &mesh_a = (GMeshVLK*) a.get();
-            const auto &mesh_b = (GMeshVLK*) b.get();
-
-            auto const &material_a = mesh_a->material();
-            auto const &material_b = mesh_b->material();
-
-            const auto &shader_a = material_a->getShader();
-            const auto &shader_b = material_b->getShader();
-
-            if (shader_a != shader_b) {
-                return shader_a < shader_b;
-            }
-
-            const auto &pipeline_a = material_a->getPipeline();
-            const auto &pipeline_b = material_b->getPipeline();
-
-            if (pipeline_a != pipeline_b) {
-                return pipeline_a < pipeline_b;
-            }
-
-            return a->start() < b->start();
-        });
-    }
 //                                                    }
 //    );
 
@@ -1084,8 +1221,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
             uploadCmd.submitBufferUploads(l_this->m_vboQuad);
             uploadCmd.submitBufferUploads(l_this->m_iboQuad);
         }
-    }, [opaqueMeshes, transparentMeshes, liquidMeshes,
-                                   skyOpaqueMeshes, skyTransparentMeshes,
+    }, [transparentMeshes, l_opaqueMeshes = std::move(u_collector),
+                           l_skyOpaqueMeshes = std::move(u_skyCollector),
+                           skyTransparentMeshes,
                                    renderSky,
                                    skyMesh,
                                    skyMesh0x4,
@@ -1114,13 +1252,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
                     {
                         ZoneScopedN("submit opaque");
                         VkZone(frameBufCmd, "render opaque")
-                        auto const &pOpaqueMeshes = *opaqueMeshes;
-                        auto const pOpaqueMeshesSize = pOpaqueMeshes.size();
-
-                        for (int i = 0; i < pOpaqueMeshesSize; i++) {
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, pOpaqueMeshes[i],
-                                                               CmdBufRecorder::ViewportType::vp_usual);
-                        }
+                        l_opaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_usual);
                     }
                     {
                         //Sky opaque
@@ -1128,10 +1260,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
                             MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, skyMesh,
                                                                CmdBufRecorder::ViewportType::vp_skyBox);
 
-                        for (auto const &mesh: *skyOpaqueMeshes) {
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, mesh,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
-                        }
+                        l_skyOpaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_skyBox);
                     }
                     {
                         //Sky transparent
@@ -1156,10 +1285,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
                     }
                     {
                         //Render liquids
-                        for (auto const &mesh: *liquidMeshes) {
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, mesh,
-                                                               CmdBufRecorder::ViewportType::vp_usual);
-                        }
+                        l_opaqueMeshes->renderWater(frameBufCmd, CmdBufRecorder::ViewportType::vp_usual);
                     }
                     {
                         VkZone(frameBufCmd, "render transparent")

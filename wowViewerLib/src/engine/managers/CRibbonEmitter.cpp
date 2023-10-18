@@ -839,7 +839,7 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void CRibbonEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     auto &currFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
     if (currFrame.isDead) return;
 
@@ -848,7 +848,7 @@ void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vecto
         if (mesh->getIsTransparent()) {
             transparentMeshes.push_back(mesh);
         } else {
-            opaqueMeshes.push_back(mesh);
+            opaqueMeshCollector.addMesh(mesh);
         }
     }
 }

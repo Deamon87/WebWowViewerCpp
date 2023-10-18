@@ -96,10 +96,9 @@ public:
     std::shared_ptr<MapRenderPlan> processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) override;
 
     void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
-                       const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
+                       COpaqueMeshCollector &opaqueMeshCollector,
+                       COpaqueMeshCollector &skyOpaqueMeshCollector,
                        const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
-                       const std::shared_ptr<std::vector<HGSortableMesh>> &hliquidMeshes,
-                       const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                        const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes);
 
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,

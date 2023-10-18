@@ -1630,7 +1630,7 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int index
     return m2Mesh;
 }
 
-void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;
@@ -1655,7 +1655,11 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
-                opaqueMeshes.push_back(mesh);
+                if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+                    opaqueMeshCollector.addM2Mesh(mesh);
+                } else {
+                    opaqueMeshCollector.addMesh(mesh);
+                }
             }
         }
 
@@ -1675,7 +1679,11 @@ void M2Object::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
-                opaqueMeshes.push_back(mesh);
+                if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+                    opaqueMeshCollector.addM2Mesh(mesh);
+                } else {
+                    opaqueMeshCollector.addMesh(mesh);
+                }
             }
         }
     }
@@ -1896,7 +1904,7 @@ int32_t M2Object::getTextureTransformIndexByLookup(int textureTrasformlookup) {
     return -1;
 }
 
-void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
 //    return;
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->minParticle;
@@ -1916,11 +1924,11 @@ void M2Object::drawParticles(std::vector<HGMesh> &opaqueMeshes, std::vector<HGSo
             }
         }
 
-        particleEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
+        particleEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
     }
 
     for (int i = 0; i < ribbonEmitters.size(); i++) {
-        ribbonEmitters[i]->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
+        ribbonEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
     }
 }
 

@@ -19,24 +19,17 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
 }
 
 void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
-                                     const std::shared_ptr<std::vector<HGMesh>> &hopaqueMeshes,
+                                     COpaqueMeshCollector &opaqueMeshCollector,
+                                     COpaqueMeshCollector &skyOpaqueMeshCollector,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
-                                     const std::shared_ptr<std::vector<HGSortableMesh>> &hliquidMeshes,
-                                     const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                                      const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
     ZoneScoped;
 
-    auto &opaqueMeshes = *hopaqueMeshes;
     auto &transparentMeshes = *htransparentMeshes;
 
-    auto &skyOpaqueMeshes = *hSkyOpaqueMeshes;
     auto &skyTransparentMeshes = *hSkyTransparentMeshes;
-    auto &liquidMeshes = *hliquidMeshes;
 
-    opaqueMeshes.reserve(30000);
     transparentMeshes.reserve(30000);
-
-    skyOpaqueMeshes.reserve(1000);
     skyTransparentMeshes.reserve(1000);
 
     const auto& cullStage = renderPlan;
@@ -51,29 +44,29 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     bool renderWMO = m_config->renderWMO;
 
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
-        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes, liquidMeshes);
+        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
     }
 
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
-            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshes, transparentMeshes, liquidMeshes);
+            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
         }
     }
 
     if (m_config->renderM2) {
         for (auto &m2Object : cullStage->m2Array.getDrawn()) {
             if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
-            m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
+            m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
+            m2Object->drawParticles(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
         }
 
         auto skyBoxView = cullStage->viewsHolder.getSkybox();
         if (skyBoxView) {
             for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
                 if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(skyOpaqueMeshes, skyTransparentMeshes, m_viewRenderOrder);
-                m2Object->drawParticles(skyOpaqueMeshes, skyTransparentMeshes, m_viewRenderOrder);
+                m2Object->collectMeshes(skyOpaqueMeshCollector, skyTransparentMeshes, m_viewRenderOrder);
+                m2Object->drawParticles(skyOpaqueMeshCollector, skyTransparentMeshes, m_viewRenderOrder);
             }
         }
     }
