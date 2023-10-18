@@ -30,6 +30,16 @@ public:
     std::array<bool, 256> checkRefs = {false};
 };
 
+class COpaqueMeshCollector {
+public:
+    virtual void addM2Mesh(const HGM2Mesh &mesh) = 0;
+    virtual void addWMOMesh(const HGMesh &mesh) = 0;
+    virtual void addWaterMesh(const HGMesh &mesh) = 0;
+    virtual void addADTMesh(const HGMesh &mesh) = 0;
+
+    virtual void addMesh(const HGMesh &mesh) = 0;
+};
+
 class GeneralView {
 public:
     WMOGroupListContainer wmoGroupArray;

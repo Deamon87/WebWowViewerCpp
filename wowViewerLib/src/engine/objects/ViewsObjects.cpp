@@ -10,8 +10,7 @@
 #if (__AVX__ && __SSE2__)
 #include "../algorithms/mathHelper_culling_sse.h"
 #endif
-#include "../algorithms/mathHelper_culling.h"
-#include "../../gapi/interface/materials/IMaterial.h"
+
 
 void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, std::vector<HGSortableMesh> &liquidMeshes) {
     if (renderADT) {

@@ -101,6 +101,7 @@ public:
                        const std::shared_ptr<std::vector<HGSortableMesh>> &hliquidMeshes,
                        const std::shared_ptr<std::vector<HGMesh>> &hSkyOpaqueMeshes,
                        const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes);
+
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
                               const std::vector<HCameraMatrices> &renderingMatrices,
                               const HFrameDependantData &fdd,

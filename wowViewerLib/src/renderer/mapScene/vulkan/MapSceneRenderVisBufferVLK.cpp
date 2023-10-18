@@ -947,6 +947,33 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 //                                                    [&]() {
     collectMeshes(framePlan, opaqueMeshes, transparentMeshes,
                   liquidMeshes, skyOpaqueMeshes, skyTransparentMeshes);
+
+    {
+        ZoneScopedN("sort opaque");
+        std::sort(opaqueMeshes->begin(), opaqueMeshes->end(), [](const HGMesh &a, const HGMesh &b) -> bool {
+            const auto &mesh_a = (GMeshVLK*) a.get();
+            const auto &mesh_b = (GMeshVLK*) b.get();
+
+            auto const &material_a = mesh_a->material();
+            auto const &material_b = mesh_b->material();
+
+            const auto &shader_a = material_a->getShader();
+            const auto &shader_b = material_b->getShader();
+
+            if (shader_a != shader_b) {
+                return shader_a < shader_b;
+            }
+
+            const auto &pipeline_a = material_a->getPipeline();
+            const auto &pipeline_b = material_b->getPipeline();
+
+            if (pipeline_a != pipeline_b) {
+                return pipeline_a < pipeline_b;
+            }
+
+            return a->start() < b->start();
+        });
+    }
 //                                                    }
 //    );
 
@@ -1083,11 +1110,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
                                                              false,
                                                              frameInputParams->frameParameters->clearColor);
 
+
                     {
                         ZoneScopedN("submit opaque");
                         VkZone(frameBufCmd, "render opaque")
                         auto const &pOpaqueMeshes = *opaqueMeshes;
                         auto const pOpaqueMeshesSize = pOpaqueMeshes.size();
+
                         for (int i = 0; i < pOpaqueMeshesSize; i++) {
                             MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, pOpaqueMeshes[i],
                                                                CmdBufRecorder::ViewportType::vp_usual);
@@ -1179,15 +1208,15 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createSortableMesh(gMeshTemplate &mes
 }
 
 HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
-//    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
-//    meshTemplate.bindings = m_emptyWaterVAO;
+    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
+    meshTemplate.bindings = m_emptyWaterVAO;
 
     auto _material = std::dynamic_pointer_cast<IWaterMaterialBindless>(material);
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
 
     mesh->instanceIndex = _material->instanceIndex;
-//    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
-//    mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
+    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
+    mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
 
     return mesh;
 }
