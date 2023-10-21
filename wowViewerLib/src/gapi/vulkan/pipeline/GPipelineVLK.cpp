@@ -242,8 +242,11 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    if (vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                  &graphicsPipeline) != VK_SUCCESS) {
+    auto res = vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+        &graphicsPipeline);
+
+    if (res != VK_SUCCESS) {
+        std::cerr << "failed to create graphics pipeline!" << std::endl;
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 

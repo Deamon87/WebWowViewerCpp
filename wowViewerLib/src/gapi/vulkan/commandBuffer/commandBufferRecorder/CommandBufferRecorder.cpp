@@ -327,10 +327,6 @@ void CmdBufRecorder::createDefaultScissors(const std::array<int32_t, 2> &areaOff
     }
 }
 
-#ifdef LINK_TRACY
-VkCommandBuffer CmdBufRecorder::getNativeCmdBuffer() { return m_gCmdBuffer.getNativeCmdBuffer(); }
-TracyVkCtx const &CmdBufRecorder::getTracyContext() { return m_gCmdBuffer.tracyContext; }
-
 void CmdBufRecorder::bindMaterial(const std::shared_ptr<ISimpleMaterialVLK> &material) {
     if (m_material == material) return;
 
@@ -358,4 +354,7 @@ void CmdBufRecorder::bindVertexBindings(const std::shared_ptr<IVertexBufferBindi
     m_vertexBufferBindings = vertexBufferBindings;
 }
 
+#ifdef LINK_TRACY
+VkCommandBuffer CmdBufRecorder::getNativeCmdBuffer() { return m_gCmdBuffer.getNativeCmdBuffer(); }
+TracyVkCtx const& CmdBufRecorder::getTracyContext() { return m_gCmdBuffer.tracyContext; }
 #endif

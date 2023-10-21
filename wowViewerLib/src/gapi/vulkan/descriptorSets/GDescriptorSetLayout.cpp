@@ -96,7 +96,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
         } else if (layout.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC) {
             m_totalDynUbos++;
         } else if (layout.descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-            m_totalImages++;
+            m_totalImages+= layout.descriptorCount;
         }
     }
 
