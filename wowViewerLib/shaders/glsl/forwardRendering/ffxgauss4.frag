@@ -6,12 +6,13 @@ precision highp int;
 layout(location = 0) in vec2 texCoord;
 layout(location = 0) out vec4 out_result;
 
-layout(set=1,binding=5) uniform sampler2D texture0;
 
-layout(std140, binding=4) uniform meshWideBlockPS {
-    vec4 texOffsetX;
-    vec4 texOffsetY;
+layout(std140, set=0, binding=1) uniform meshWideBlockPS {
+vec4 texOffsetX;
+vec4 texOffsetY;
 };
+
+layout(set=1,binding=0) uniform sampler2D texture0;
 
 //const float weight[5] = float[] (0.227027, 0.1945946, 0.1216216, 0.054054, 0.016216);
 const float weight[5] = float[] (0,  0.125, 0.375, 0.375, 0.125);

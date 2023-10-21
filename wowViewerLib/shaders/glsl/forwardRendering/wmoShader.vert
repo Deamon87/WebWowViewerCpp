@@ -24,11 +24,11 @@ layout (location = 9) in vec4 wmoAmbient;
 
 #include "../common/commonUboSceneData.glsl"
 
-layout(std140, set=1, binding=1) uniform modelWideBlockVS {
+layout(std140, set=1, binding=0) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 
-layout(std140, set=1, binding=2) uniform meshWideBlockVS {
+layout(std140, set=1, binding=1) uniform meshWideBlockVS {
     ivec4 VertexShader_UseLitColor;
 };
 

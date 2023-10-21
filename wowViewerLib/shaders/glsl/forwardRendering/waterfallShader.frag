@@ -28,7 +28,8 @@ layout(location=0) out vec4 outputColor;
 //Whole model
 #include "../common/commonM2DescriptorSet.glsl"
 
-layout(std140, set=2, binding=5) uniform meshWideBlockPS {
+layout(std140, set=2, binding=0) uniform meshWideBlockVS {
+    vec4 bumpScale_textTransformInd1_textTransformInd2;
     vec4 values0;
     vec4 values1;
     vec4 values2;

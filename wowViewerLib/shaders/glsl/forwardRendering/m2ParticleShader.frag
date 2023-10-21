@@ -19,14 +19,14 @@ layout(location = 5) in float alphaCutoff;
 
 
 //Individual meshes
-layout(std140, set=1, binding=4) uniform meshWideBlockPS {
+layout(std140, set=1, binding=0) uniform meshWideBlockPS {
     vec4 uAlphaTest_alphaMult_colorMult;
     ivec4 uPixelShaderBlendModev;
 };
 
-layout(set=2,binding=5) uniform sampler2D uTexture;
-layout(set=2,binding=6) uniform sampler2D uTexture2;
-layout(set=2,binding=7) uniform sampler2D uTexture3;
+layout(set=2,binding=0) uniform sampler2D uTexture;
+layout(set=2,binding=1) uniform sampler2D uTexture2;
+layout(set=2,binding=2) uniform sampler2D uTexture3;
 
 layout(location = 0) out vec4 outputColor;
 

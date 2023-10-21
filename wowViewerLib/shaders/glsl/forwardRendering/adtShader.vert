@@ -16,7 +16,7 @@ layout(location = 3) in vec3 aNormal;
 
 #include "../common/commonUboSceneData.glsl"
 
-layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
+layout(std140, set=1, binding=0) uniform meshWideBlockVSPS {
     vec4 uPos;
     ivec4 uUseHeightMixFormula;
     vec4 uHeightScale;
@@ -36,9 +36,25 @@ layout(location = 1) out vec3 vPosition;
 layout(location = 2) out vec4 vColor;
 layout(location = 3) out vec3 vNormal;
 layout(location = 4) out vec3 vVertexLighting;
+layout(location = 5) out vec2 vAlphaCoords;
 
-const float UNITSIZE_X =  (1600.0 / 3.0) / 16.0 / 8.0;
-const float UNITSIZE_Y =  (1600.0 / 3.0) / 16.0 / 8.0;
+const float TILESIZE = (1600.0 / 3.0);
+const float CHUNKSIZE = TILESIZE / 16.0;
+const float UNITSIZE =  CHUNKSIZE / 8.0;
+
+float fixUVBorder(float uvComp, float x) {
+    const float alphaTextureSize_px = 1024.0;
+    const float subPixel = 0.5 / alphaTextureSize_px;
+
+    float epsilon = 0.0001;
+
+    if (x < epsilon)
+    uvComp += subPixel;
+    if ((1.0 - x) < epsilon)
+    uvComp -= subPixel;
+
+    return uvComp ;
+}
 
 void main() {
 
@@ -61,14 +77,26 @@ void main() {
     }
 
 //    vec4 worldPoint = vec4(
-//        uPos.x - iY * UNITSIZE_Y,
-//        uPos.y - iX * UNITSIZE_X,
+//        uPos.x - iY * UNITSIZE,
+//        uPos.y - iX * UNITSIZE,
 //        uPos.z + aHeight,
 //        1);
 
     vec4 worldPoint = vec4(aPos, 1);
 
     vChunkCoords = vec2(iX, iY);
+
+    // Top left point (17058 17063) becomes (0,0)
+    vec2 coordsInAdtIndexSpace = 32.0f * TILESIZE - uPos.yx;
+    // Add half chunk to do little offset before doing floor in next step
+    coordsInAdtIndexSpace += vec2(CHUNKSIZE/2.0);
+
+    vec2 ADTIndex = floor(coordsInAdtIndexSpace / TILESIZE);
+
+    vAlphaCoords = ((vec2(32.0f) - ADTIndex) * TILESIZE - aPos.yx) / TILESIZE;
+
+    vAlphaCoords.x = fixUVBorder(vAlphaCoords.x, vChunkCoords.x/8.0);
+    vAlphaCoords.y = fixUVBorder(vAlphaCoords.y, vChunkCoords.y/8.0);
 
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vColor = aColor;

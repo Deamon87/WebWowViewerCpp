@@ -94,7 +94,7 @@ public:
 
         //TODO: add version of this array texture case (aka bindless)
         SetUpdateHelper& texture(int bindIndex, const HGSamplableTexture &textureVlk, int index = 0);
-        void cancelUpdate();
+        void delayUpdate();
 
         template <typename T>
         void assignBoundDescriptors(int bindPoint, const std::shared_ptr<T> &object, int index, DescriptorRecord::DescriptorRecordType descType) {

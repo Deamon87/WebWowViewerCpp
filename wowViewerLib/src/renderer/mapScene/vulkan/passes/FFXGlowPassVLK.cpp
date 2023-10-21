@@ -223,12 +223,12 @@ FFXGlowPassVLK::createFFXGaussMat(
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGaussVs, &ffxGaussPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(2, BufferChunkHelperVLK::cast(ffxGaussVs))
-                .ubo(4, BufferChunkHelperVLK::cast(ffxGaussPS));
+                .ubo(0, BufferChunkHelperVLK::cast(ffxGaussVs))
+                .ubo(1, BufferChunkHelperVLK::cast(ffxGaussPS)).delayUpdate();
         })
         .createDescriptorSet(1, [texture](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, texture);
+                .texture(0, texture);
         })
         .toMaterial();
 
@@ -248,13 +248,13 @@ FFXGlowPassVLK::createFFXGlowMat(
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGlowVs, &ffxGlowPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(2, BufferChunkHelperVLK::cast(ffxGlowVs))
-                .ubo(4, BufferChunkHelperVLK::cast(ffxGlowPS));
+                .ubo(0, BufferChunkHelperVLK::cast(ffxGlowVs))
+                .ubo(1, BufferChunkHelperVLK::cast(ffxGlowPS)).delayUpdate();
         })
         .createDescriptorSet(1, [screenTex, blurTex](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, screenTex)
-                .texture(6, blurTex);
+                .texture(0, screenTex)
+                .texture(1, blurTex);
         })
         .toMaterial();
 

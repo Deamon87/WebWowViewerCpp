@@ -25,22 +25,20 @@ layout(location=7) in vec4 vPosition;
 layout(location=8) in vec3 vNormal;
 layout(location=9) in vec4 vWmoAmbient;
 
-
-
-layout(std140, set=1, binding=3) uniform meshWideBlockPS {
+layout(std140, set=1, binding=2) uniform meshWideBlockPS {
     ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
     vec4 FogColor_AlphaTest;
 };
 
-layout(set=2, binding=5) uniform sampler2D uTexture;
-layout(set=2, binding=6) uniform sampler2D uTexture2;
-layout(set=2, binding=7) uniform sampler2D uTexture3;
-layout(set=2, binding=8) uniform sampler2D uTexture4;
-layout(set=2, binding=9) uniform sampler2D uTexture5;
-layout(set=2, binding=10) uniform sampler2D uTexture6;
-layout(set=2, binding=11) uniform sampler2D uTexture7;
-layout(set=2, binding=12) uniform sampler2D uTexture8;
-layout(set=2, binding=13) uniform sampler2D uTexture9;
+layout(set=2, binding=0) uniform sampler2D uTexture;
+layout(set=2, binding=1) uniform sampler2D uTexture2;
+layout(set=2, binding=2) uniform sampler2D uTexture3;
+layout(set=2, binding=3) uniform sampler2D uTexture4;
+layout(set=2, binding=4) uniform sampler2D uTexture5;
+layout(set=2, binding=5) uniform sampler2D uTexture6;
+layout(set=2, binding=6) uniform sampler2D uTexture7;
+layout(set=2, binding=7) uniform sampler2D uTexture8;
+layout(set=2, binding=8) uniform sampler2D uTexture9;
 
 layout (location = 0) out vec4 outputColor;
 

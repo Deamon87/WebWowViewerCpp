@@ -13,27 +13,28 @@ layout(location = 1) in vec3 vPosition;
 layout(location = 2) in vec4 vColor;
 layout(location = 3) in vec3 vNormal;
 layout(location = 4) in vec3 vVertexLighting;
+layout(location = 5) in vec2 vAlphaCoords;
 
-layout(set=2, binding=5) uniform sampler2D uLayer0;
-layout(set=2, binding=6) uniform sampler2D uLayer1;
-layout(set=2, binding=7) uniform sampler2D uLayer2;
-layout(set=2, binding=8) uniform sampler2D uLayer3;
-layout(set=2, binding=9) uniform sampler2D uAlphaTexture;
-layout(set=2, binding=10) uniform sampler2D uLayerHeight0;
-layout(set=2, binding=11) uniform sampler2D uLayerHeight1;
-layout(set=2, binding=12) uniform sampler2D uLayerHeight2;
-layout(set=2, binding=13) uniform sampler2D uLayerHeight3;
+layout(set=2, binding=0) uniform sampler2D uLayer0;
+layout(set=2, binding=1) uniform sampler2D uLayer1;
+layout(set=2, binding=2) uniform sampler2D uLayer2;
+layout(set=2, binding=3) uniform sampler2D uLayer3;
+layout(set=2, binding=4) uniform sampler2D uAlphaTexture;
+layout(set=2, binding=5) uniform sampler2D uLayerHeight0;
+layout(set=2, binding=6) uniform sampler2D uLayerHeight1;
+layout(set=2, binding=7) uniform sampler2D uLayerHeight2;
+layout(set=2, binding=8) uniform sampler2D uLayerHeight3;
 
 #include "../common/commonUboSceneData.glsl"
 
-layout(std140, set=1, binding=1) uniform meshWideBlockVSPS {
+layout(std140, set=1, binding=0) uniform meshWideBlockVSPS {
     vec4 uPos;
     ivec4 uUseHeightMixFormula;
     vec4 uHeightScale;
     vec4 uHeightOffset;
 };
 
-layout(std140, set=1, binding=2) uniform meshWideBlockPS {
+layout(std140, set=1, binding=1) uniform meshWideBlockPS {
     vec4 scaleFactorPerLayer;
     ivec4 animation_rotationPerLayer;
     ivec4 animation_speedPerLayer;
@@ -87,7 +88,7 @@ void main() {
     vec2 vTexCoord = vChunkCoords;
     const float threshold = 1.5;
 
-    vec2 alphaCoord = vec2(vChunkCoords.x/8.0, vChunkCoords.y/8.0 );
+    vec2 alphaCoord = vec2(vAlphaCoords);
     vec3 alphaBlend = texture( uAlphaTexture, alphaCoord).gba;
 
     vec2 tcLayer0 = transformUV(vTexCoord, 0);

@@ -5,12 +5,12 @@ precision highp int;
 
 layout(location = 0) in vec2 texCoord;
 
-layout(std140, binding=4) uniform meshWideBlockPS {
+layout(std140, binding=1) uniform meshWideBlockPS {
     vec4 blurAmount;
 };
 
-layout(set=1,binding=5) uniform sampler2D screenTex;
-layout(set=1,binding=6) uniform sampler2D blurTex;
+layout(set=1,binding=0) uniform sampler2D screenTex;
+layout(set=1,binding=1) uniform sampler2D blurTex;
 
 layout (location = 0) out vec4 Out_Color;
 

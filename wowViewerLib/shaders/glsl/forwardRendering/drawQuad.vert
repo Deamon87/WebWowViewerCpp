@@ -5,7 +5,7 @@ precision highp int;
 
 layout (location = 0) in vec2 position;
 
-layout(std140, set=0, binding=2) uniform meshWideBlockVS {
+layout(std140, set=0, binding=0) uniform meshWideBlockVS {
     vec4 uWidth_uHeight_uX_uY;
 };
 

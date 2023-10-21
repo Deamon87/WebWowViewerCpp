@@ -335,8 +335,10 @@ void GDescriptorSet::SetUpdateHelper::reassignBinding(int bindPoint, int bindInd
     }
 }
 
-void GDescriptorSet::SetUpdateHelper::cancelUpdate() {
+void GDescriptorSet::SetUpdateHelper::delayUpdate() {
     updateCancelled = true;
+
+    m_descriptorSetUpdater->addToUpdate(m_set.shared_from_this());
 }
 
 std::function<void()> GDescriptorSet::SetUpdateHelper::createCallback(int bindPoint, int arrayIndex) {

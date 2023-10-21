@@ -15,7 +15,7 @@ layout(location=1) in vec2 aTexCoord;
 
 
 
-layout(std140, set=1, binding=1) uniform modelWideBlockVS {
+layout(std140, set=1, binding=0) uniform modelWideBlockVS {
     mat4 uPlacementMat;
 };
 

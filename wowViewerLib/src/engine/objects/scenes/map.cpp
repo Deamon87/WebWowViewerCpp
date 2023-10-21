@@ -1298,8 +1298,6 @@ void Map::createAdtFreeLamdas() {
 
 }
 
-
-
 void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
     ZoneScoped;
     int processedThisFrame = 0;

@@ -16,14 +16,14 @@ layout(location = 2) in vec2 vTexcoord0;
 
 
 
-layout(std140, set=1, binding=3) uniform textureMatrices {
+layout(std140, set=1, binding=0) uniform textureMatrices {
     mat4 textureMatrix[64];
 };
-layout(std140, set=1, binding=4) uniform meshWideBlockPS {
+layout(std140, set=1, binding=1) uniform meshWideBlockPS {
     ivec4 uPixelShader_BlendMode_TextureTransformIndex;
 };
 
-layout(set=2, binding=5) uniform sampler2D uTexture;
+layout(set=2, binding=0) uniform sampler2D uTexture;
 
 layout(location = 0) out vec4 outputColor;
 

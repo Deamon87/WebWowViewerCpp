@@ -12,7 +12,7 @@ precision highp int;
 precision highp float;
 
 
-layout(std140, set=1, binding=1) uniform meshWideBlockVS {
+layout(std140, set=1, binding=0) uniform meshWideBlockVS {
     vec4 skyColor[6];
 };
 

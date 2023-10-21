@@ -27,7 +27,7 @@ layout(location=5) in vec2 aTexCoord2;
 #include "../common/commonM2DescriptorSet.glsl"
 
 //Individual meshes
-layout(std140, set=2, binding=7) uniform meshWideBlockVSPS {
+layout(std140, set=2, binding=0) uniform meshWideBlockVSPS {
     ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
     ivec4 PixelShader_UnFogged_blendMode;
     ivec4 textureWeightIndexes;

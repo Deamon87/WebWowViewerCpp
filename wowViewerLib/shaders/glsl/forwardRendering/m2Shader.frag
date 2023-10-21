@@ -23,17 +23,17 @@ layout(location=0) out vec4 outputColor;
 #include "../common/commonM2DescriptorSet.glsl"
 
 //Individual meshes
-layout(std140, set=2, binding=7) uniform meshWideBlockVSPS {
+layout(std140, set=2, binding=0) uniform meshWideBlockVSPS {
     ivec4 vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2;
     ivec4 PixelShader_UnFogged_blendMode;
     ivec4 textureWeightIndexes;
     ivec4 colorIndex_applyWeight;
 };
 
-layout(set=3,binding=6) uniform sampler2D uTexture;
-layout(set=3,binding=7) uniform sampler2D uTexture2;
-layout(set=3,binding=8) uniform sampler2D uTexture3;
-layout(set=3,binding=9) uniform sampler2D uTexture4;
+layout(set=3,binding=0) uniform sampler2D uTexture;
+layout(set=3,binding=1) uniform sampler2D uTexture2;
+layout(set=3,binding=2) uniform sampler2D uTexture3;
+layout(set=3,binding=3) uniform sampler2D uTexture4;
 
 void main() {
     /* Animation support */

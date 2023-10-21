@@ -62,11 +62,11 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(1, *l_imguiUbo);
+                .ubo(0, *l_imguiUbo);
         })
         .createDescriptorSet(1, [&hgtexture](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(5, hgtexture);
+                .texture(0, hgtexture);
         })
         .toMaterial<IUIMaterial>([&] (IUIMaterial *uiMat){
             uiMat->uniqueId = this->generateUniqueMatId();
