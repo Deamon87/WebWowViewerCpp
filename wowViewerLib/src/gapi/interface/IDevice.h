@@ -157,6 +157,7 @@ class IDevice {
         virtual void initialize() = 0;
 
         virtual bool getIsAsynBuffUploadSupported() = 0;
+        virtual bool supportsBindless() {return false;};
         virtual int getMaxSamplesCnt() = 0;
         virtual int getUploadSize() {return 0;};
 

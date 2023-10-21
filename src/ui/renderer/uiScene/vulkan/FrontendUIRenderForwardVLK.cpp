@@ -14,7 +14,7 @@
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) :
     FrontendUIRenderer(hDevice), m_device(hDevice) {
-
+    std::cout << "Create Bindless scene renderer " << std::endl;
     m_lastRenderPass = m_device->getSwapChainRenderPass();
     m_emptyImguiVAO = createVAO(nullptr,nullptr);
 

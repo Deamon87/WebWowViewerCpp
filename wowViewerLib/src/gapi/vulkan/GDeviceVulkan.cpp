@@ -803,6 +803,8 @@ void GDeviceVLK::createLogicalDevice() {
 
         createInfo.pEnabledFeatures = nullptr;
         createInfo.pNext = &physical_features2;
+
+        m_supportsBindless = true;
    } else {
         createInfo.pEnabledFeatures = &deviceFeatures;
     }

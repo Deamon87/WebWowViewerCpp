@@ -16,10 +16,10 @@ layout(location = 2) in vec2 vTexcoord0;
 
 
 
-layout(std140, set=1, binding=3) buffer readonly textureMatrices {
+layout(std140, set=1, binding=0) buffer readonly textureMatrices {
     mat4 textureMatrix[64];
 };
-layout(std140, set=1, binding=4) uniform meshWideBlockPS {
+layout(std140, set=1, binding=1) uniform meshWideBlockPS {
     ivec4 uPixelShader_BlendMode_TextureTransformIndex;
 };
 

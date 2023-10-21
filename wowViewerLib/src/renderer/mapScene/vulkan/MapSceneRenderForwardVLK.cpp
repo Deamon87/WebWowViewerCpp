@@ -36,6 +36,8 @@ static const ShaderConfig m2ForwardShaderConfig = {
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
 
+    std::cout << "Create Forward scene renderer " << std::endl;
+
     iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
     vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024);

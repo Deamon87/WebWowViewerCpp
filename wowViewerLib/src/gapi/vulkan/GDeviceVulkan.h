@@ -75,6 +75,9 @@ public:
     bool getIsAsynBuffUploadSupported() override {
         return true;
     }
+    bool supportsBindless() override {
+        return m_supportsBindless;
+    }
     int getMaxSamplesCnt() override;
     VkSampleCountFlagBits getMaxSamplesBit();
 
@@ -319,7 +322,7 @@ protected:
     int uniformBufferOffsetAlign = -1;
     int ssboBufferOffsetAlign = -1;
     int maxMultiSample = -1;
-    float m_anisotropicLevel = 0.0;
+    bool m_supportsBindless = false;
 
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
