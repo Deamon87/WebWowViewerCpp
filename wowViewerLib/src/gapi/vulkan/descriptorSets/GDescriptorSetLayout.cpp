@@ -214,7 +214,7 @@ void GDescriptorSetLayout::fillSSBO(int setIndex, const DescTypeOverride &typeOv
                 auto &setTypeOverrides = typeOverrides.at(ssboBinding.set);
                 if (setTypeOverrides.find(ssboBinding.binding) != setTypeOverrides.end()) {
                     auto const &overrideStruct = setTypeOverrides.at(ssboBinding.binding);
-                    assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC);
+                    assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || overrideStruct.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
                     uniformType = overrideStruct.type;
                     if (overrideStruct.stageMask != 0) {
                         stageOverride = overrideStruct.stageMask;

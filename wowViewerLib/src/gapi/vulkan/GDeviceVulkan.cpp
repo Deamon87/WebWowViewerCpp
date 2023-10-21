@@ -739,16 +739,31 @@ void GDeviceVLK::createLogicalDevice() {
     }
 
     VkPhysicalDeviceDescriptorIndexingFeatures indexing_features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT, nullptr };
+    VkPhysicalDeviceShaderDrawParametersFeatures ext_feature = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, nullptr};
     bool bindless_supported = false;
     bool hasDeviceFeatures2 = vkGetPhysicalDeviceFeatures2 != nullptr;
     if (hasDeviceFeatures2) {
-        VkPhysicalDeviceFeatures2 device_features{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexing_features};
-        vkGetPhysicalDeviceFeatures2(physicalDevice, &device_features);
+        //Check Indexing features
+        VkPhysicalDeviceFeatures2 physical_features2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, &indexing_features};
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &physical_features2);
+
+        //Check DrawParameters features
+
+        physical_features2.pNext = &ext_feature;
+        vkGetPhysicalDeviceFeatures2(physicalDevice, &physical_features2);
+        if (ext_feature.shaderDrawParameters == VK_FALSE) {
+            std::cout << "Draw parameters are not supported on this device" << std::endl;
+        }
+
 
         bindless_supported = indexing_features.shaderSampledImageArrayNonUniformIndexing  &&
             indexing_features.runtimeDescriptorArray &&
             indexing_features.descriptorBindingVariableDescriptorCount &&
-            indexing_features.descriptorBindingPartiallyBound ;
+            indexing_features.descriptorBindingPartiallyBound &&
+            ext_feature.shaderDrawParameters == VK_TRUE;
+
+        if (!bindless_supported)
+            std::cout << "Bindless is not supported on this device" << std::endl;
     }
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
@@ -778,6 +793,9 @@ void GDeviceVLK::createLogicalDevice() {
         // This should be already set to VK_TRUE, as we queried before.
         indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
         indexing_features.runtimeDescriptorArray = VK_TRUE;
+
+        ext_feature.shaderDrawParameters = VK_TRUE;
+        indexing_features.pNext = &ext_feature;
 
         vkGetPhysicalDeviceFeatures2( physicalDevice, &physical_features2 );
         physical_features2.pNext = &indexing_features;

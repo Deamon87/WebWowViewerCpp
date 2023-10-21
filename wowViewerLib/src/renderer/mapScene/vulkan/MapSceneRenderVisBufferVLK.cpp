@@ -38,6 +38,9 @@ static const ShaderConfig m2VisShaderConfig = {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
         }},
+        {1, {
+            {6, {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+        }},
         {2, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
         }}
@@ -338,6 +341,7 @@ void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {
 }
 void MapSceneRenderVisBufferVLK::createM2WaterfallGlobalMaterialData() {
     MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2WaterfallVisShaderConfig)
+        .overridePipelineLayout({{1, m2BufferOneDS}})
         .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ssbo(0, m2WaterfallBuffer.waterfallCommon)
@@ -530,6 +534,7 @@ HGIndexBuffer  MapSceneRenderVisBufferVLK::createSkyIndexBuffer(int sizeInBytes)
 
 std::shared_ptr<IADTMaterial>
 MapSceneRenderVisBufferVLK::createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) {
+    ZoneScoped;
     auto &l_sceneWideChunk = sceneWideChunk;
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(adtBuffers.adtMeshWideVSPSes);
     auto fragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockPS>>(adtBuffers.adtMeshWidePSes);
@@ -590,6 +595,7 @@ std::shared_ptr<IM2Material>
 MapSceneRenderVisBufferVLK::createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                            const PipelineTemplate &pipelineTemplate,
                                            const M2MaterialTemplate &m2MaterialTemplate) {
+    ZoneScoped;
 
     auto m2ModelDataVisVLK = std::dynamic_pointer_cast<IM2ModelDataVisVLK>(m2ModelData);
 
@@ -731,12 +737,12 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderVisBufferVLK::createM2RibbonMat
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Ribbon::meshRibbonWideBlockPS>>(uboBuffer); ;
     auto &l_m2ModelData = m2ModelData;
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, forwardShaderConfig)
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, visShaderConfig)
         .createPipeline(m_emptyM2RibbonVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&l_sceneWideChunk, &l_fragmentData, &l_m2ModelData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(3, BufferChunkHelperVLK::cast(l_m2ModelData->m_textureMatrices))
+                .ssbo(3, BufferChunkHelperVLK::cast(l_m2ModelData->m_textureMatrices))
                 .ubo(4, *l_fragmentData);
         })
         .createDescriptorSet(2, [&m2RibbonMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
@@ -973,9 +979,9 @@ private:
         const auto &meshVlk = (GMeshVLK*) mesh.get();
         auto const &pipeline = meshVlk->material()->getPipeline();
 
-        if (meshMap.find(pipeline) == meshMap.end()) {
-            meshMap.reserve(3000);
-        }
+        auto &vec = meshMap[pipeline];
+        if (vec.empty())
+            vec.reserve(3000);
 
         auto &drawCommand = meshMap[pipeline].emplace_back();
         drawCommand.indexCount = meshVlk->end();
@@ -1349,6 +1355,8 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTe
 
 HGMesh
 MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) {
+    ZoneScoped;
+
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyADTVAO;
 
@@ -1362,7 +1370,7 @@ MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const st
 HGM2Mesh
 MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
                                        int layer, int priorityPlane) {
-
+    ZoneScoped;
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyM2VAO;
     auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);

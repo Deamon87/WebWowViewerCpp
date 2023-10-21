@@ -10,7 +10,7 @@
 #if (__AVX__ && __SSE2__)
 #include "../algorithms/mathHelper_culling_sse.h"
 #endif
-
+#include "../algorithms/mathHelper_culling.h"
 
 void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) {
     if (renderADT) {

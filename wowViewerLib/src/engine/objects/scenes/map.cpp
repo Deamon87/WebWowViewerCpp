@@ -1309,47 +1309,57 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
 
     {
         ZoneScopedN("Load m2 main");
-        for (auto &m2Object: renderPlan->m2Array.getToLoadMain()) {
-            if (m2Object == nullptr) continue;
-            m2Object->doLoadMainFile();
+        if (m_api->getConfig()->renderM2) {
+            for (auto &m2Object: renderPlan->m2Array.getToLoadMain()) {
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadMainFile();
+            }
         }
     }
     {
         ZoneScopedN("Load m2 geom");
-        for (auto &m2Object: renderPlan->m2Array.getToLoadGeom()) {
-            if (m2Object == nullptr) continue;
-            m2Object->doLoadGeom(sceneRenderer);
-            m2ProcessedThisFrame++;
+        if (m_api->getConfig()->renderM2) {
+            for (auto &m2Object: renderPlan->m2Array.getToLoadGeom()) {
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadGeom(sceneRenderer);
+                m2ProcessedThisFrame++;
 //        if (m2ProcessedThisFrame > 100) break;
+            }
         }
     }
 
-    if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
-        for (auto &m2Object : skyboxView->m2List.getToLoadMain()) {
-            if (m2Object == nullptr) continue;
-            m2Object->doLoadMainFile();
-        }
-        for (auto &m2Object: skyboxView->m2List.getToLoadGeom()) {
-            if (m2Object == nullptr) continue;
-            m2Object->doLoadGeom(sceneRenderer);
+    if (m_api->getConfig()->renderSkyDom) {
+        if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2Object: skyboxView->m2List.getToLoadMain()) {
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadMainFile();
+            }
+            for (auto &m2Object: skyboxView->m2List.getToLoadGeom()) {
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadGeom(sceneRenderer);
+            }
         }
     }
 //    }
 
     {
         ZoneScopedN("Load wmoObject");
-        for (auto &wmoObject: renderPlan->wmoArray.getToLoad()) {
-            if (wmoObject == nullptr) continue;
-            wmoObject->doPostLoad(sceneRenderer);
+        if (m_api->getConfig()->renderWMO) {
+            for (auto &wmoObject: renderPlan->wmoArray.getToLoad()) {
+                if (wmoObject == nullptr) continue;
+                wmoObject->doPostLoad(sceneRenderer);
+            }
         }
     }
     {
         ZoneScopedN("Load wmo group");
-        for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToLoad()) {
-            if (wmoGroupObject == nullptr) continue;
-            wmoGroupObject->doPostLoad(sceneRenderer);
-            wmoGroupsProcessedThisFrame++;
-            if (wmoGroupsProcessedThisFrame > 20) break;
+        if (m_api->getConfig()->renderWMO) {
+            for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToLoad()) {
+                if (wmoGroupObject == nullptr) continue;
+                wmoGroupObject->doPostLoad(sceneRenderer);
+                wmoGroupsProcessedThisFrame++;
+                if (wmoGroupsProcessedThisFrame > 20) break;
+            }
         }
     }
 
@@ -1360,48 +1370,6 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         }
     }
 
-    if (quadBindings == nullptr)
-    {
-        const float epsilon = 0.f;
-
-        std::array<mathfu::vec2_packed, 4> vertexBuffer = {
-            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon, -1.0f + epsilon)),
-            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon,  1.0f - epsilon)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  -1.0f+ epsilon)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  1.f  - epsilon))
-        };
-        std::vector<uint16_t > indexBuffer = {
-            0, 1, 2,
-            2, 1, 3
-        };
-
-//        std::cout << "indexBuffer.size = " << indexBuffer.size() << std::endl;
-
-//TODO:
-/*
-        auto quadIBO = m_api->hDevice->createIndexBuffer();
-        quadIBO->uploadData(
-            indexBuffer.data(),
-            indexBuffer.size() * sizeof(uint16_t));
-
-        auto quadVBO = m_api->hDevice->createVertexBuffer();
-        quadVBO->uploadData(
-            vertexBuffer.data(),
-            vertexBuffer.size() * sizeof(mathfu::vec2_packed)
-        );
-
-        quadBindings = m_api->hDevice->createVertexBufferBindings();
-        quadBindings->setIndexBuffer(quadIBO);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = quadVBO;
-
-        vertexBinding.bindings = std::vector<GBufferBinding>(fullScreen.begin(), fullScreen.end());
-
-        quadBindings->addVertexBufferBinding(vertexBinding);
-        quadBindings->save();
-        */
-    }
     if (skyMesh == nullptr) {
         auto skyMeshBinding = createSkyBindings(sceneRenderer);
         std::tie(skyMesh, skyMeshMat) = createSkyMesh(sceneRenderer, skyMeshBinding, false);

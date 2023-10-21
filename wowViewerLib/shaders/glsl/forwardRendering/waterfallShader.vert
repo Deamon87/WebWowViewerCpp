@@ -75,7 +75,7 @@ void main() {
     vec3 normal = normalize((viewModelMatForNormal * vec4(aNormal, 0.0)).xyz);
 
     vNormal = normal;
-    vPosition = pos;
+    vPosition = cameraPoint.xyz;
 
     vTexCoord = aTexCoord;
     vTexCoord2_animated = texCoord2;

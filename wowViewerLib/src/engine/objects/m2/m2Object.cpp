@@ -1636,6 +1636,8 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vec
     int minBatch = m_api->getConfig()->m2MinBatch;
     int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshArray.size());
 
+    bool isWaterFallMesh = m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr;
+
     if (m_api->getConfig()->renderM2) {
         for (int i = 0; i < this->m_meshArray.size(); i++) {
             int currentM2BatchIndex = std::get<1>(this->m_meshArray[i]);
@@ -1655,7 +1657,7 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vec
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
-                if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+                if (isWaterFallMesh) {
                     opaqueMeshCollector.addM2Mesh(mesh);
                 } else {
                     opaqueMeshCollector.addMesh(mesh);
@@ -1679,7 +1681,7 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vec
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
-                if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+                if (!isWaterFallMesh) {
                     opaqueMeshCollector.addM2Mesh(mesh);
                 } else {
                     opaqueMeshCollector.addMesh(mesh);

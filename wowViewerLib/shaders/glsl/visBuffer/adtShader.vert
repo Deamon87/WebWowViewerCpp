@@ -86,8 +86,11 @@ void main() {
 
     vChunkCoords = vec2(iX, iY);
 
+    // Top left point (17058 17063) becomes (0,0)
+    vec2 coordsInAdtIndexSpace = 32.0f * TILESIZE - adtMeshWideVSPS.uPos.yx;
+    // Add half chunk to do little offset before doing floor in next step
+    coordsInAdtIndexSpace += vec2(CHUNKSIZE/2.0);
 
-    vec2 coordsInAdtIndexSpace = 32.0f * TILESIZE - adtMeshWideVSPS.uPos.yx; //Top left point (17058 17063) becomes (0,0)
     vec2 ADTIndex = floor(coordsInAdtIndexSpace / TILESIZE);
 
     vAlphaCoords = ((vec2(32.0f) - ADTIndex) * TILESIZE - aPos.yx) / TILESIZE;

@@ -231,7 +231,6 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     //Get Liquid with new method
     setLiquidType();
 
-    return;
     HGVertexBufferBindings binding = m_geom->getWaterVertexBindings(sceneRenderer, liquid_type, m_waterAaBB);
     if (binding == nullptr)
         return;

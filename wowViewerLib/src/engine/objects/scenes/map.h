@@ -60,7 +60,6 @@ protected:
 
     int m_viewRenderOrder = 0;
 
-    HGVertexBufferBindings quadBindings;
     float m_skyConeAlpha = 0.0;
     HGMesh skyMesh = nullptr;
     std::shared_ptr<ISkyMeshMaterial> skyMeshMat = nullptr;
