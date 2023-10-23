@@ -2,9 +2,9 @@
 #define COMMON_WATER_INDIRECT
 
 struct WaterData {
-    ivec4 materialId;
-    vec4 color;
-    mat4 textureMatrix;
+    ivec4 materialId_liquidFlags;
+    vec4 matColor;
+    vec4 float0_float1;
 };
 
 //Individual meshes

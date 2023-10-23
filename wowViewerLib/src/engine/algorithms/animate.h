@@ -8,7 +8,18 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "../../include/iostuff.h"
 #include <vector>
+#include <array>
 #include <algorithm>
+
+enum class EAnimDataType : uint8_t {
+    bonesMatrices = 0, textAnimMatrices = 1, subMeshColors = 2, transparencies = 3, lights = 4,
+    particles = 5, ribbons = 6, MAX_ANIM_DATA_TYPE = 7
+};
+template <typename E>
+constexpr typename std::underlying_type<E>::type EAnimDataTypeToInt(E e) noexcept {
+    return static_cast<typename std::underlying_type<E>::type>(e);
+}
+
 
 struct AnimationStruct {
     int animationIndex;
@@ -20,6 +31,17 @@ struct AnimationStruct {
 
     int mainVariationIndex;
     M2Sequence* mainVariationRecord;
+
+    bool firstUpdate = false;
+    std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> changedData = {true, true, true, true};
+
+    inline void resetChangedData() {
+        for (auto &val : changedData) val = firstUpdate;
+    }
+
+    inline void setDataChange(EAnimDataType dataType) {
+        changedData[EAnimDataTypeToInt(dataType)] = true;
+    }
 };
 
 struct FullAnimationInfo {
@@ -266,10 +288,11 @@ inline R interpolateHermite(M2SplineKey<T> &value1, M2SplineKey<T> &value2, floa
 
 template<typename T, typename R>
 R animateTrack(
-        const AnimationStruct &animationStruct,
+        AnimationStruct &animationStruct,
         M2Track<T> &animationBlock,
         M2Array<M2Loop> &global_loops,
         std::vector<animTime_t> &globalSequenceTimes,
+        EAnimDataType animType,
         R &defaultValue) {
 
     animTime_t currTime = animationStruct.animationTime;
@@ -309,6 +332,11 @@ R animateTrack(
     } else {
         timeIndex = 0;
     }
+
+    if (times->size > 1) {
+        animationStruct.setDataChange(animType);
+    }
+
     if (timeIndex == times->size-1) {
         return convertHelper<T, R>(*values->getElement(timeIndex));
     } else if (timeIndex >= 0) {
@@ -333,10 +361,11 @@ R animateTrack(
 
 template<typename T, typename R>
 R animateTrackWithBlend(
-    const FullAnimationInfo &animationInfo,
+    FullAnimationInfo &animationInfo,
     M2Track<T> &animationBlock,
     M2Array<M2Loop> &global_loops,
     std::vector<animTime_t> &globalSequenceTimes,
+    EAnimDataType animType,
     R &defaultValue) {
 
     R result = animateTrack<T,R>(
@@ -344,6 +373,7 @@ R animateTrackWithBlend(
         animationBlock,
         global_loops,
         globalSequenceTimes,
+        animType,
         defaultValue
     );
     if (animationInfo.nextSubAnimation.animationIndex > -1 && animationInfo.blendFactor < 0.999f) {
@@ -352,6 +382,7 @@ R animateTrackWithBlend(
             animationBlock,
             global_loops,
             globalSequenceTimes,
+            animType,
             defaultValue
         );
         result = lerpHelper<R>(result1, result, animationInfo.blendFactor);

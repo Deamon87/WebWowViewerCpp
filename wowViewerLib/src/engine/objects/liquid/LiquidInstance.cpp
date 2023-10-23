@@ -96,6 +96,17 @@ void LiquidInstance::createMaterialAndMesh(const HMapSceneBufferCreate &sceneRen
     m_liquidMaterials.push_back(waterMaterial);
     m_vertexWaterBufferBindings.push_back(vertexWaterBufferBindings);
 
+    {
+        auto &waterChunk = waterMaterial->m_materialPS->getObject();
+        waterChunk.materialId = waterMaterial->materialId;
+        waterChunk.liquidFlags = waterMaterial->liquidFlags;
+        waterChunk.float0_float1.x = m_liqMatAndType.m_floats[0];
+        waterChunk.float0_float1.y = m_liqMatAndType.m_floats[1];
+        waterChunk.matColor = mathfu::vec4(waterMaterial->color, 0.7f);
+        waterMaterial->m_materialPS->save();
+    }
+
+
     //Create mesh(es)
     for (int i = 0; i < m_liquidMaterials.size(); i++) {
         gMeshTemplate meshTemplate(vertexWaterBufferBindings);
@@ -273,61 +284,6 @@ void LiquidInstance::createAdtVertexData(const SMLiquidInstance &liquidInstance,
 }
 
 void LiquidInstance::updateLiquidMaterials(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime) {
-    for (auto &waterMaterial : m_liquidMaterials) {
-        auto &waterChunk = waterMaterial->m_materialPS->getObject();
-        waterChunk.materialId = waterMaterial->materialId;
-
-        if ((waterMaterial->liquidFlags & 1024) > 0) {// Ocean
-            waterChunk.color = frameDependantData->closeOceanColor;
-        } else if (waterMaterial->liquidFlags == 15) { //River/Lake
-            //Query river color
-            mathfu::vec3 closeRiverColor = frameDependantData->closeRiverColor.xyz();
-            if (m_api->getConfig()->useCloseRiverColorForDB) {
-
-                mathfu::vec3 waterPos = (mathfu::vec3(m_waterBBox.max) + mathfu::vec3(m_waterBBox.min)) / 2.0f;
-                bool waterColorFound = true;
-                if (m_api->getConfig()->colorOverrideHolder != nullptr) {
-                    waterColorFound = false;
-
-                    for (auto &riverOverride : *m_api->getConfig()->colorOverrideHolder) {
-                        if (riverOverride.liquidObjectId == liquid_object || riverOverride.liquidType == liquidType) {
-                            closeRiverColor = riverOverride.color.xyz();
-                            waterColorFound = true;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            waterChunk.color = mathfu::vec4(closeRiverColor, 0.7);;
-        } else {
-            waterChunk.color = mathfu::vec4(waterMaterial->color, 0.7);
-        }
-
-        if (m_liqMatAndType.materialID == 1 || m_liqMatAndType.materialID == 3) {
-            waterChunk.textureMatrix = mathfu::mat4::Identity();
-            MathHelper::RotationZ(m_liqMatAndType.m_floats[1] * (M_PI / 180.0f)) *
-            mathfu::mat4::FromScaleVector(
-                mathfu::vec3(m_liqMatAndType.m_floats[0],m_liqMatAndType.m_floats[0],m_liqMatAndType.m_floats[0])
-            );
-        } else if (m_liqMatAndType.materialID == 2 || m_liqMatAndType.materialID == 4) {
-            waterChunk.textureMatrix =
-//                MathHelper::RotationZ(m_liqMatAndType.m_floats[7] * (M_PI / 180.0f)) *
-//                mathfu::mat4::FromScaleVector(
-//                    mathfu::vec3(m_liqMatAndType.m_floats[4],m_liqMatAndType.m_floats[4],m_liqMatAndType.m_floats[4])
-//                ) *
-                GetTexScrollMtx(mapCurrentTime, mathfu::vec2(
-                    m_liqMatAndType.m_floats[0],
-                    m_liqMatAndType.m_floats[1]
-                ))
-            ;
-
-        } else {
-            waterChunk.textureMatrix = mathfu::mat4::Identity();
-        }
-
-        waterMaterial->m_materialPS->save();
-    }
 }
 
 void LiquidInstance::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector) {

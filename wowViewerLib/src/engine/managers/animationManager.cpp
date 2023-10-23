@@ -21,6 +21,7 @@ AnimationManager::AnimationManager(HApiContainer api, std::shared_ptr<CBoneMaste
     this->animationInfo.currentAnimation.animationFoundInParent = false;
     this->animationInfo.currentAnimation.mainVariationIndex = 0;
     this->animationInfo.currentAnimation.mainVariationRecord = this->animationInfo.currentAnimation.animationRecord;
+    this->animationInfo.currentAnimation.firstUpdate = true;
     calcAnimRepetition(this->animationInfo.currentAnimation);
 
     this->animationInfo.nextSubAnimation.animationIndex = -1;
@@ -102,7 +103,7 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
                                         boneMasterData->getSkelData()->m_sequence_lookups,
                                         boneMasterData->getSkelData()->m_sequences);
 
-    auto sequences = boneMasterData->getSkelData()->m_sequences;
+    auto *sequences = boneMasterData->getSkelData()->m_sequences;
 
     if (animationIndex <= -1 && boneMasterData->getParentSkelData() != nullptr) {
         bool animationIsBanned = false;
@@ -145,6 +146,7 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
         this->animationInfo.currentAnimation.animationFoundInParent = animationFoundInParent;
         this->animationInfo.currentAnimation.mainVariationIndex = animationIndex;
         this->animationInfo.currentAnimation.mainVariationRecord = (*sequences)[animationIndex];
+        this->animationInfo.currentAnimation.firstUpdate = true;
 
         calcAnimRepetition(this->animationInfo.currentAnimation);
 
@@ -172,7 +174,7 @@ inline void calcAnimationTransform(
         M2Track<C3Vector> &translationTrack,
         M2Track<T> &rotationTrack,
         M2Track<C3Vector> &scaleTrack,
-        const FullAnimationInfo &animationInfo
+        FullAnimationInfo &animationInfo
         ) {
     tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
 //
@@ -183,6 +185,7 @@ inline void calcAnimationTransform(
             translationTrack,
             global_loops,
             globalSequenceTimes,
+            EAnimDataType::bonesMatrices,
             defaultValue
         );
 
@@ -196,6 +199,7 @@ inline void calcAnimationTransform(
             rotationTrack,
             global_loops,
             globalSequenceTimes,
+            EAnimDataType::bonesMatrices,
             defaultValue);
 
         tranformMat = tranformMat * quaternionResult.ToMatrix4();
@@ -208,6 +212,7 @@ inline void calcAnimationTransform(
             scaleTrack,
             global_loops,
             globalSequenceTimes,
+            EAnimDataType::bonesMatrices,
             defaultValue);
 
         tranformMat = tranformMat * mathfu::mat4::FromScaleVector(scaleResult.xyz());
@@ -225,7 +230,7 @@ inline void calcTextureAnimationTransform(
     M2Track<C3Vector> &translationTrack,
     M2Track<T> &rotationTrack,
     M2Track<C3Vector> &scaleTrack,
-    const FullAnimationInfo &animationInfo
+    FullAnimationInfo &animationInfo
 ) {
 
     if (rotationTrack.values.size > 0) {
@@ -235,6 +240,7 @@ inline void calcTextureAnimationTransform(
             rotationTrack,
             global_loops,
             globalSequenceTimes,
+            EAnimDataType::textAnimMatrices,
             defaultValue);
 
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
@@ -249,6 +255,7 @@ inline void calcTextureAnimationTransform(
             scaleTrack,
             global_loops,
             globalSequenceTimes,
+            EAnimDataType::textAnimMatrices,
             defaultValue);
 
         tranformMat = tranformMat * mathfu::mat4::FromTranslationVector(pivotPoint.xyz());
@@ -264,6 +271,7 @@ inline void calcTextureAnimationTransform(
             translationTrack,
             global_loops,
             globalSequenceTimes,
+            EAnimDataType::textAnimMatrices,
             defaultValue
         );
 
@@ -452,6 +460,8 @@ AnimationManager::calcBoneMatrix(
 
 
             parentBoneMat = modifiedMatrixUnder0x7;
+            animationInfo.currentAnimation.setDataChange(EAnimDataType::bonesMatrices);
+            animationInfo.nextSubAnimation.setDataChange(EAnimDataType::bonesMatrices);
         }
     }
 
@@ -483,6 +493,9 @@ AnimationManager::calcBoneMatrix(
 
     int boneBillboardFlags = boneDefinition->flags_raw & 0x4000078;
     if (boneBillboardFlags) {
+        animationInfo.currentAnimation.setDataChange(EAnimDataType::bonesMatrices);
+        animationInfo.nextSubAnimation.setDataChange(EAnimDataType::bonesMatrices);
+
         mathfu::mat4 &currentBoneMat = boneMatrices[boneIndex];
         mathfu::mat4 currentBoneMatCopy = currentBoneMat;
         mathfu::vec3 scaleVector = mathfu::vec3(
@@ -792,6 +805,7 @@ void AnimationManager::update(
         this->animationInfo.nextSubAnimation.animationFoundInParent = this->animationInfo.currentAnimation.animationFoundInParent;
         this->animationInfo.nextSubAnimation.mainVariationIndex = this->animationInfo.currentAnimation.mainVariationIndex;
         this->animationInfo.nextSubAnimation.mainVariationRecord = this->animationInfo.currentAnimation.mainVariationRecord;
+        this->animationInfo.nextSubAnimation.firstUpdate = true;
         calcAnimRepetition(this->animationInfo.nextSubAnimation);
     } else {
         //This is done to trigger blending in transition start and end of same variation when it's repeated for whatever reason
@@ -800,6 +814,9 @@ void AnimationManager::update(
             this->animationInfo.nextSubAnimation.repeatTimes--;
         }
     }
+
+    animationInfo.currentAnimation.resetChangedData();
+    animationInfo.nextSubAnimation.resetChangedData();
 
     animTime_t currAnimLeft = currentAnimationRecord->duration - this->animationInfo.currentAnimation.animationTime;
 
@@ -919,6 +936,11 @@ void AnimationManager::update(
     this->calcLights(lights, bonesMatrices);
     this->calcParticleEmitters(particleEmitters, bonesMatrices);
     this->calcRibbonEmitters(ribbonEmitters);
+
+    if (this->animationInfo.blendFactor < 1.0)
+        this->animationInfo.nextSubAnimation.firstUpdate = false;
+
+    this->animationInfo.currentAnimation.firstUpdate = false;
 }
 
 void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors) {
@@ -934,6 +956,7 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
             colors[i]->color,
             global_loops,
             this->globalSequenceTimes,
+            EAnimDataType::subMeshColors,
             defaultVector
         );
 
@@ -946,6 +969,7 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColor
             colors[i]->alpha,
             global_loops,
             this->globalSequenceTimes,
+            EAnimDataType::subMeshColors,
             defaultAlpha
         );
 
@@ -965,6 +989,7 @@ void AnimationManager::calcTransparencies(std::vector<float> &transparencies) {
             transparencyRecords[i]->weight,
             global_loops,
             this->globalSequenceTimes,
+            EAnimDataType::transparencies,
             defaultAlpha
         );
 
@@ -991,6 +1016,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 lightRecord->ambient_color,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::lights,
                 defaultVector
             ), 1.0);
 
@@ -1000,6 +1026,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 lightRecord->ambient_intensity,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::lights,
                 defaultFloat
             );
         mathfu::vec4 diffuse_color =
@@ -1008,6 +1035,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 lightRecord->diffuse_color,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::lights,
                 defaultVector
             ), 1.0);
 
@@ -1047,6 +1075,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 lightRecord->diffuse_intensity,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::lights,
                 defaultFloat
             );
 
@@ -1056,6 +1085,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                 lightRecord->attenuation_start,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::lights,
                 defaultFloat
             );
         float attenuation_end =
@@ -1064,6 +1094,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                     lightRecord->attenuation_end,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::lights,
                     defaultFloat
                 );
 
@@ -1074,6 +1105,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                         lightRecord->visibility,
                         global_loops,
                         this->globalSequenceTimes,
+                        EAnimDataType::lights,
                         defaultChar
                 );
 
@@ -1205,6 +1237,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                 peRecord.old.enabledIn,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::particles,
                 defaultChar
             );
         }
@@ -1218,6 +1251,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.emissionSpeed,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             aniProp->speedVariation =
@@ -1226,6 +1260,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.speedVariation,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             aniProp->verticalRange =
@@ -1234,6 +1269,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.verticalRange,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             aniProp->horizontalRange =
@@ -1242,6 +1278,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.horizontalRange,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             if (peRecord.old.flags & 0x800000) {
@@ -1250,6 +1287,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.gravityCompr,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultVector
                 );
             } else {
@@ -1261,6 +1299,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                         peRecord.old.gravity,
                         global_loops,
                         this->globalSequenceTimes,
+                        EAnimDataType::particles,
                         defaultFloat
                     ));
             }
@@ -1272,6 +1311,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.lifespan,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             aniProp->emissionRate =
@@ -1280,6 +1320,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.emissionRate,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             aniProp->emissionAreaY =
@@ -1288,6 +1329,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.emissionAreaWidth,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             aniProp->emissionAreaX =
@@ -1296,6 +1338,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                     peRecord.old.emissionAreaLength,
                     global_loops,
                     this->globalSequenceTimes,
+                    EAnimDataType::particles,
                     defaultFloat
                 );
             if (!m_hasExp2) {
@@ -1305,6 +1348,7 @@ void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<Pa
                         peRecord.old.zSource,
                         global_loops,
                         this->globalSequenceTimes,
+                        EAnimDataType::particles,
                         defaultFloat
                     );
             }
@@ -1335,6 +1379,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmi
                 ribbonRecord->colorTrack,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::ribbons,
                 defaultVector4
             );
         ribbonEmitter->SetColor(colorRGBA.x, colorRGBA.y, colorRGBA.z);
@@ -1345,6 +1390,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmi
                 ribbonRecord->alphaTrack,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::ribbons,
                 defaultFloat
             );
 
@@ -1356,6 +1402,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmi
                 ribbonRecord->heightAboveTrack,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::ribbons,
                 defaultFloat
             );
         ribbonEmitter->SetAbove(above);
@@ -1366,6 +1413,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmi
                 ribbonRecord->heightBelowTrack,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::ribbons,
                 defaultFloat
             );
         ribbonEmitter->SetBelow(below);
@@ -1376,6 +1424,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmi
             ribbonRecord->texSlotTrack,
             global_loops,
             this->globalSequenceTimes,
+            EAnimDataType::ribbons,
             defaultInt
         );
 
@@ -1387,6 +1436,7 @@ void AnimationManager::calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmi
                 ribbonRecord->visibilityTrack,
                 global_loops,
                 this->globalSequenceTimes,
+                EAnimDataType::ribbons,
                 defaultChar
             );
         ribbonEmitter->SetDataEnabled(dataEnabled);

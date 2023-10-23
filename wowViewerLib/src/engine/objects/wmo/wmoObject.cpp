@@ -337,42 +337,6 @@ void WmoObject::update() {
     modelWide.uPlacementMat = m_placementMatrix;
     m_modelWideChunk->save();
 
-    //Update Materials
-    for (int matIndex = 0; matIndex < m_materialCache.size(); matIndex++) {
-        auto materialInstance = m_materialCache[matIndex];
-        if (materialInstance == nullptr) continue;
-
-        const SMOMaterial &material = getMaterials()[matIndex];
-        assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
-        auto shaderId = material.shader;
-        if (shaderId >= MAX_WMO_SHADERS) {
-            shaderId = 0;
-        }
-        int pixelShader = wmoMaterialShader[shaderId].pixelShader;
-        int vertexShader = wmoMaterialShader[shaderId].vertexShader;
-        auto blendMode = material.blendMode;
-
-        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
-
-
-        //Update VS block
-        auto &blockVS = materialInstance->m_materialVS->getObject();
-        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockVS.VertexShader = vertexShader;
-        materialInstance->m_materialVS->save();
-
-        //Update PS block
-        auto &blockPS = materialInstance->m_materialPS->getObject();
-        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
-        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
-        blockPS.PixelShader = pixelShader;
-        blockPS.BlendMode = blendMode;
-        blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
-            mathfu::vec4(0,0,0, alphaTest));
-        materialInstance->m_materialPS->save();
-    }
-
-
     for (int i= 0; i < groupObjects.size(); i++) {
         if(groupObjects[i] != nullptr) {
             groupObjects[i]->update();
@@ -1341,11 +1305,31 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, 
         materialTemplate.textures[8] = getTexture(material.runTimeData[3], false);
     }
 
-    auto wmoMaterialInstance = sceneRenderer->createWMOMaterial(m_modelWideChunk,
+    materialInstance = sceneRenderer->createWMOMaterial(m_modelWideChunk,
                                                                   pipelineTemplate, materialTemplate);
-    m_materialCache[materialIndex] = wmoMaterialInstance;
+    m_materialCache[materialIndex] = materialInstance;
 
-    return wmoMaterialInstance;
+    {
+        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+
+        //Update VS block
+        auto &blockVS = materialInstance->m_materialVS->getObject();
+        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockVS.VertexShader = vertexShader;
+        materialInstance->m_materialVS->save();
+
+        //Update PS block
+        auto &blockPS = materialInstance->m_materialPS->getObject();
+        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
+        blockPS.PixelShader = pixelShader;
+        blockPS.BlendMode = blendMode;
+        blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
+            mathfu::vec4(0,0,0, alphaTest));
+        materialInstance->m_materialPS->save();
+    }
+
+    return materialInstance;
 };
 
 std::shared_ptr<M2Object> WmoObject::getSkyBoxForGroup(int groupNum) {

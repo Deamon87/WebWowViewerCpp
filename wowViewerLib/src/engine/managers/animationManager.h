@@ -43,6 +43,9 @@ private:
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
 
     void calcAnimRepetition(AnimationStruct &animationStruct);
+
+
+
 public:
     AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2);
 
@@ -90,6 +93,22 @@ public:
     void calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters);
 
     void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
+
+    inline const std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> getCombinedChangedData() {
+        if (animationInfo.blendFactor < 1.0) {
+            std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> result;
+
+            for (int i = 0; i < EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE); i++) {
+
+                auto const &currentChangedData = animationInfo.currentAnimation.changedData;
+                auto const &nextSubChangedData = animationInfo.nextSubAnimation.changedData;
+                result[i] = currentChangedData[i] || nextSubChangedData[i] ;
+            }
+            return result;
+        }
+
+        return animationInfo.currentAnimation.changedData;
+    }
 };
 
 

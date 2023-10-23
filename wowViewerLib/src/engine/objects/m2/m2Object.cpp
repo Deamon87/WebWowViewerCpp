@@ -480,7 +480,6 @@ void M2Object::createAABB() {
         auto min = mathfu::vec3(9999, 9999, 9999);
         auto max = mathfu::vec3(-9999, -9999, -9999);
 
-//        auto indexBuffer = m_skinGeom->generateIndexBuffer();
 //        auto m2SkinProfile = m_skinGeom->getSkinData();
 //        for (int batchIndex = 0; batchIndex < m2SkinProfile->batches.size; batchIndex++) {
 //            M2Batch *textMaterial = m2SkinProfile->batches.getElement(batchIndex);
@@ -1042,6 +1041,8 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
+    auto const dataIsChanged = m_animationManager->getCombinedChangedData();
+
     //Update materials`
     if (m_placementMatrixChanged) {
         auto &placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
@@ -1049,14 +1050,14 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_placementMatrix->save();
         m_placementMatrixChanged = false;
     }
-    if (bonesMatrices.size() > 0) {
+    if (bonesMatrices.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)]) {
         auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
         m_modelWideDataBuff->m_bonesData->save();
     }
-    if (subMeshColors.size() > 0) {
+    if (subMeshColors.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)]) {
         auto &m2Colors = m_modelWideDataBuff->m_colors->getObject();
         int m2ColorsCnt = (int) std::min(subMeshColors.size(), (size_t) MAX_M2COLORS_NUM);
 
@@ -1064,7 +1065,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_colors->save();
     }
 
-    if (transparencies.size() > 0) {
+    if (transparencies.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::transparencies)]) {
         auto &textureWeights = m_modelWideDataBuff->m_textureWeights->getObject();
         int textureWeightsCnt = (int) std::min(transparencies.size(), (size_t) MAX_TEXTURE_WEIGHT_NUM);
 
@@ -1072,7 +1073,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_textureWeights->save();
     }
 
-    if (textAnimMatrices.size() > 0) {
+    if (textAnimMatrices.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::textAnimMatrices)]) {
         auto &textureMatrices = m_modelWideDataBuff->m_textureMatrices->getObject();
         int textureMatricesCnt = (int) std::min(textAnimMatrices.size(), (size_t) MAX_TEXTURE_MATRIX_NUM);
 

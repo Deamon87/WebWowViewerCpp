@@ -21,6 +21,11 @@ struct SceneWideParams {
     mat4 uPMatrix;
     vec4 uViewUpSceneTime;
     vec4 uInteriorSunDir;
+
+    vec4 closeRiverColor;
+    vec4 farRiverColor;
+    vec4 closeOceanColor;
+    vec4 farOceanColor;
     SceneExteriorLight extLight;
 };
 
