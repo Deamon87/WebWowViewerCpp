@@ -33,6 +33,8 @@ public:
     GTextureVLK(const GTextureVLK&) = delete;
     GTextureVLK(const GTextureVLK&&) = delete;
 
+    uint32_t getWidth() override {return m_width;};
+    uint32_t getHeight() override {return m_height;};
 
     explicit GTextureVLK(IDeviceVulkan &device, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 

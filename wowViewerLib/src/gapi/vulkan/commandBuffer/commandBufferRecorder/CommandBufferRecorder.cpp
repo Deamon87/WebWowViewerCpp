@@ -69,6 +69,15 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     createDefaultScissors(areaOffset, areaSize);
 
     m_currentRenderPass = renderPassVlk;
+
+    m_currentPipeline = nullptr;
+    m_currentPipelineLayout = nullptr;
+    m_currentIndexBuffer = nullptr;
+    m_currentVertexBuffers = {};
+    m_currentDescriptorSet = {};
+    m_material = nullptr;
+    m_vertexBufferBindings = nullptr;
+
     auto renderPass = RenderPassHelper(
         *this,
         isAboutToExecSecondaryCMD,

@@ -29,12 +29,12 @@ bool BLPViewer::draw() {
 
             if (fileDataId > 0) {
                 m_blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataId);
-                auto textureObj = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
-                material = m_uiRenderer->createUIMaterial({textureObj});
+                m_texture = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
+                material = m_uiRenderer->createUIMaterial({m_texture}, true);
             } else {
                 m_blpTexture = m_api->cacheStorage->getTextureCache()->get(blpName.data());
-                auto textureObj = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
-                material = m_uiRenderer->createUIMaterial({textureObj});
+                m_texture = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
+                material = m_uiRenderer->createUIMaterial({m_texture}, true);
             }
         }
         if (m_blpTexture && m_blpTexture->getStatus() == FileStatus::FSRejected) {
@@ -42,11 +42,29 @@ bool BLPViewer::draw() {
         } else
         if (m_blpTexture && m_blpTexture->getStatus() == FileStatus::FSLoaded && material) {
             float sizeX = 0, sizeY = 0;
-            auto windowSize = ImGui::GetContentRegionAvail();
-            sizeX = windowSize.x;
-            sizeY = windowSize.y;
 
-            ImGui::ImageButton(material->uniqueId, ImVec2(sizeX, sizeY));
+            sizeX = (m_texture && m_texture->getTexture()) ? m_texture->getTexture()->getWidth() : 0;
+            sizeY = (m_texture && m_texture->getTexture()) ? m_texture->getTexture()->getHeight() : 0;
+
+            ImGui::Text("Width = %0.0f, Height = %0.0f", sizeX, sizeY);
+            ImGui::Checkbox("Stretch image", &stretchImage);
+
+
+            if (sizeX > 0 && sizeY > 0 && stretchImage) {
+                auto windowSize = ImGui::GetContentRegionAvail();
+
+                // Calculate resize ratios for resizing
+                float ratioW = windowSize.x / sizeX;
+                float ratioH = windowSize.y / sizeY;
+
+                // smaller ratio will ensure that the image fits in the view
+                float ratio = ratioW < ratioH ? ratioW : ratioH;
+
+                sizeX = sizeX * ratio;
+                sizeY = sizeY * ratio;
+            }
+
+            ImGui::Image(material->uniqueId, ImVec2(sizeX, sizeY));
         }
     }
     ImGui::End();

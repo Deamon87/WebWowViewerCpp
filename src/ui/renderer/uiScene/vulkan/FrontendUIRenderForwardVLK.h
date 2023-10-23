@@ -27,7 +27,7 @@ public:
 
     HGVertexBufferBindings createVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) override;;
     HGMesh createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) override;
-    std::shared_ptr<IUIMaterial> createUIMaterial(const HGSamplableTexture &hgtexture) override;
+    std::shared_ptr<IUIMaterial> createUIMaterial(const HGSamplableTexture &hgtexture, bool opaque = false) override;
 
     uint32_t generateUniqueMatId();
 private:

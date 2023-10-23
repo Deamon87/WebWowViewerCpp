@@ -19,9 +19,12 @@ private:
     bool m_showWindow = true;
     std::array<char, 128> blpName = {0};\
 
+    bool stretchImage = false;
+
     HApiContainer m_api;
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
     std::shared_ptr<BlpTexture> m_blpTexture;
+    HGSamplableTexture m_texture;
     std::shared_ptr<IUIMaterial> material = nullptr;
 };
 

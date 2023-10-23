@@ -119,7 +119,7 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, size_
                 uint8_t b = blpFile->palette[colIndex * 4 + 0];
                 uint8_t g = blpFile->palette[colIndex * 4 + 1];
                 uint8_t r = blpFile->palette[colIndex * 4 + 2];
-                uint8_t a = paleteData[width * height + j];
+                uint8_t a = blpFile->palette[colIndex * 4 + 3];
 
                 mipmapStruct.texture[j * 4 + 0] = r;
                 mipmapStruct.texture[j * 4 + 1] = g;

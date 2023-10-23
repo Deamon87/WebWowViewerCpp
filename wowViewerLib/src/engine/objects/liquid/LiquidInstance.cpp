@@ -246,16 +246,19 @@ void LiquidInstance::createAdtVertexData(const SMLiquidInstance &liquidInstance,
     for (int y = y_begin; y < y_end; y++) {
         for (int x = x_begin; x < x_end; x++) {
 
-            int maskIndex = (y - y_begin) * (x_end - x_begin) + (x - x_begin);
+            auto x_local = x - x_begin;
+            auto y_local = y - y_begin;
+
+            int maskIndex = (y_local) * (x_end - x_begin) + (x_local);
             bool exists = (existsTable[maskIndex >> 3] >> ((maskIndex & 7))) & 1;
 
             if (!exists) continue;
 
             const int16_t vertIndexes[4] = {
-                (int16_t) (y * (liquidInstance.width + 1 ) + x),
-                (int16_t) (y * (liquidInstance.width + 1) + x + 1),
-                (int16_t) ((y + 1) * (liquidInstance.width + 1) + x),
-                (int16_t) ((y + 1) * (liquidInstance.width + 1) + x + 1),
+                (int16_t) (y_local * (liquidInstance.width + 1 ) + x_local),
+                (int16_t) (y_local * (liquidInstance.width + 1) + x_local + 1),
+                (int16_t) ((y_local + 1) * (liquidInstance.width + 1) + x_local),
+                (int16_t) ((y_local + 1) * (liquidInstance.width + 1) + x_local + 1),
             };
 
             indexBuffer.push_back (vertIndexes[0]);

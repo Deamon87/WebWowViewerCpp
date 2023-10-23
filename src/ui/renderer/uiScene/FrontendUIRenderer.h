@@ -45,6 +45,7 @@ protected:
     HGSamplableTexture fontTexture;
 
     UiMaterialCache m_materialCache;
+    UiMaterialCache m_materialCacheOpaque;
     UiMaterialCacheMap m_materialCacheIdMap;
     std::shared_ptr<CBufferChunkVLK<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 

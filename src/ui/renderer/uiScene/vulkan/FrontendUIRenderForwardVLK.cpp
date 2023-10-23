@@ -46,19 +46,20 @@ HGVertexBufferBindings FrontendUIRenderForwardVLK::createVAO(HGVertexBuffer vert
     return imguiVAO;
 }
 
-std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture &hgtexture) {
+std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const HGSamplableTexture &hgtexture, bool opaque) {
     auto weakTexture = std::weak_ptr(hgtexture);
-    auto i = m_materialCache.find(weakTexture);
-    if (i != m_materialCache.end()) {
+    auto &materialCache = !opaque ? m_materialCache : m_materialCacheOpaque;
+    auto i = materialCache.find(weakTexture);
+    if (i != materialCache.end()) {
         if (!i->second.expired()) {
             return i->second.lock();
         } else {
-            m_materialCache.erase(i);
+            materialCache.erase(i);
         }
     }
 
     auto &l_imguiUbo = m_imguiUbo;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShader"}, {"forwardRendering"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", !opaque?"imguiShader":"imguiShader_opaque"}, {"forwardRendering"})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -73,7 +74,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
         });
 
     auto weakPtr = material;
-    m_materialCache[weakTexture] = weakPtr;
+    materialCache[weakTexture] = weakPtr;
     m_materialCacheIdMap[material->uniqueId] = std::dynamic_pointer_cast<IMaterial>(material);
 
     return material;
