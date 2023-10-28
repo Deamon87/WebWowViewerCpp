@@ -17,8 +17,9 @@ public:
         const std::shared_ptr<GShaderPermutationVLK> &shader,
         const PipelineTemplate &pipelineTemplate,
         const HPipelineVLK &pipeline,
-        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets) :
-        ISimpleMaterialVLK(shader, pipelineTemplate, pipeline, descriptorSets) {
+        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
+        uint32_t materialId) :
+        ISimpleMaterialVLK(shader, pipelineTemplate, pipeline, descriptorSets, materialId) {
 
         initializer(this);
     }

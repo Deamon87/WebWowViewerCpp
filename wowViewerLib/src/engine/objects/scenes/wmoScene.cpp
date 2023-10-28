@@ -32,16 +32,25 @@ void WmoScene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, Mat
 
     Map::updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
 
-    mathfu::vec4 ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
+    mathfu::vec4 exteriorAmbient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
     auto frameDependantData = mapRenderPlan->frameDependentData;
-
-    frameDependantData->colors.exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDependantData->colors.exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDependantData->colors.exteriorDirectColor = mathfu::vec4(0.3, 0.30, 0.3, 0.3);
     frameDependantData->exteriorDirectColorDir = MathHelper::calcExteriorColorDir(
         mapRenderPlan->renderingMatrices->lookAtMat,
         m_api->getConfig()->currentTime
     );
+
+    if (m_api->getConfig()->globalLighting == EParameterSource::eDatabase) {
+        frameDependantData->colors.exteriorAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
+        frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
+        frameDependantData->colors.exteriorGroundAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
+        frameDependantData->colors.exteriorDirectColor = mathfu::vec4(0.5, 0.5, 0.5, 0.5);
+    } else if (config->globalLighting == EParameterSource::eConfig) {
+        auto fdd = mapRenderPlan->frameDependentData;
+
+        fdd->colors.exteriorAmbientColor = config->exteriorColors.exteriorAmbientColor;
+        fdd->colors.exteriorGroundAmbientColor = config->exteriorColors.exteriorGroundAmbientColor;
+        fdd->colors.exteriorHorizontAmbientColor = config->exteriorColors.exteriorHorizontAmbientColor;
+        fdd->colors.exteriorDirectColor = config->exteriorColors.exteriorDirectColor;
+    }
 }

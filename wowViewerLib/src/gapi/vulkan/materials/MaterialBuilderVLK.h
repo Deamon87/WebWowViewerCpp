@@ -28,7 +28,8 @@ public:
                         materialVlk->getPipeline(),
                         materialVlk->getPipeline()->getLayout(),
                         materialVlk->getPipelineTemplate(),
-                        toArray(materialVlk->getDescriptorSets())
+                        toArray(materialVlk->getDescriptorSets()),
+                        materialVlk->getMaterialId()
                 };
     }
     MaterialBuilderVLK& overridePipelineLayout(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses);
@@ -37,6 +38,7 @@ public:
     MaterialBuilderVLK& createPipeline(const HGVertexBufferBindings &bindings,
                                        const std::shared_ptr<GRenderPassVLK> &renderPass,
                                        const PipelineTemplate &pipelineTemplate);
+    MaterialBuilderVLK& setMaterialId(uint32_t matId);
     std::shared_ptr<ISimpleMaterialVLK> toMaterial();
 
     template<typename T>
@@ -45,7 +47,8 @@ public:
                                    m_shader,
                                    m_pipelineTemplate,
                                    m_pipeline,
-                                   m_descriptorSets);
+                                   m_descriptorSets,
+                                   m_materialId);
     }
 
     ~MaterialBuilderVLK() = default;
@@ -65,13 +68,15 @@ private:
                        const HPipelineVLK &pipeline,
                        const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
                        const PipelineTemplate &pipelineTemplate,
-                       const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets);
+                       const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
+                       uint32_t materialId);
 
 
 private:
     //States
     const std::shared_ptr<IDeviceVulkan> &m_device;
 
+    uint32_t m_materialId;
     std::shared_ptr<GShaderPermutationVLK> m_shader;
     HPipelineVLK m_pipeline;
     std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;

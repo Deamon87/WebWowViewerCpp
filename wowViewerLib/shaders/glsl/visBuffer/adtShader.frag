@@ -145,7 +145,7 @@ void main() {
         vec4 tex3 = texture(s_LayerTextures[nonuniformEXT(txLayer2)], tcLayer2).rgba;
         vec4 tex4 = texture(s_LayerTextures[nonuniformEXT(txLayer3)], tcLayer3).rgba;
 
-        final = mixTextures(mixTextures(mixTextures(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b);
+        final = mix(mix(mix(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b);
     }
 
     vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;

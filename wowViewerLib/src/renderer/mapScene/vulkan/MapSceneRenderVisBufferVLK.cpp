@@ -361,15 +361,12 @@ void MapSceneRenderVisBufferVLK::createM2WaterfallGlobalMaterialData() {
 std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMaterial(const PipelineTemplate &pipelineTemplate) {
     auto i = m_m2StaticMaterials.find(pipelineTemplate);
     if (i != m_m2StaticMaterials.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
-        } else {
-            m_m2StaticMaterials.erase(i);
-        }
+        return i->second;
     }
 
     auto staticMaterial =
         MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
+            .setMaterialId(generateUniqueM2MatId())
             .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
             .bindDescriptorSet(0, sceneWideDS)
             .bindDescriptorSet(1, m2BufferOneDS)
@@ -377,6 +374,7 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMater
             .toMaterial();
 
     m_m2StaticMaterials[pipelineTemplate] = staticMaterial;
+    m_m2MatCacheId[staticMaterial->getMaterialId()] = staticMaterial;
 
     return staticMaterial;
 }
@@ -384,15 +382,12 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMater
 std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate) {
     auto i = m_wmoStaticMaterials.find(pipelineTemplate);
     if (i != m_wmoStaticMaterials.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
-        } else {
-            m_wmoStaticMaterials.erase(i);
-        }
+        return i->second;
     }
 
     auto staticMaterial =
         MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
+            .setMaterialId(generateUniqueWMOMatId())
             .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
             .bindDescriptorSet(0, sceneWideDS)
             .bindDescriptorSet(1, wmoBufferOneDS)
@@ -400,6 +395,7 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getWMOStaticMate
             .toMaterial();
 
     m_wmoStaticMaterials[pipelineTemplate] = staticMaterial;
+    m_wmoMatCacheId[staticMaterial->getMaterialId()] = staticMaterial;
 
     return staticMaterial;
 }
@@ -958,10 +954,13 @@ class COpaqueMeshCollectorBindlessVLK : public COpaqueMeshCollector{
 public:
     COpaqueMeshCollectorBindlessVLK(MapSceneRenderVisBufferVLK &rendererVlk) : m_renderer(rendererVlk) {
         commonMeshes.reserve(1000);
+        m2DrawVec.reserve(5000);
+        wmoDrawVec.reserve(5000);
     }
 private:
     MapSceneRenderVisBufferVLK &m_renderer;
     struct DrawCommand {
+        uint32_t matId;
         uint32_t indexCount;
         uint32_t instanceCount;
         uint32_t firstIndex;
@@ -971,13 +970,13 @@ private:
 
     typedef std::unordered_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
 
-    MeshMap m2MeshMap;
-    MeshMap wmoMeshMap;
+    std::vector<DrawCommand> m2DrawVec;
+    std::vector<DrawCommand> wmoDrawVec;
     MeshMap waterMeshMap;
-    MeshMap adtMeshMap;
+    std::vector<DrawCommand> adtDrawVec;
     std::vector<HGMesh> commonMeshes;
 
-    inline void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
+    inline static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
         const auto &meshVlk = (GMeshVLK*) mesh.get();
         auto const &pipeline = meshVlk->material()->getPipeline();
 
@@ -998,18 +997,36 @@ private:
             drawCommand.vertexOffset = 0;
         }
     }
+    inline static void addDrawCommand(std::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
+        const auto &meshVlk = (GMeshVLK*) mesh.get();
+        auto const matId = meshVlk->material()->getMaterialId();
+
+        auto &drawCommand = drawVec.emplace_back();
+        drawCommand.matId = matId;
+        drawCommand.indexCount = meshVlk->end();
+        drawCommand.instanceCount = 1;
+        drawCommand.firstIndex = meshVlk->start() / 2;
+
+        if (meshVlk->instanceIndex != -1) {
+            drawCommand.firstInstance = meshVlk->instanceIndex;
+            drawCommand.vertexOffset = meshVlk->vertexStart;
+        } else {
+            drawCommand.firstInstance = 0;
+            drawCommand.vertexOffset = 0;
+        }
+    }
 public:
     void addM2Mesh(const HGM2Mesh &mesh) override {
-        fillMapWithMesh(m2MeshMap, mesh);
+        addDrawCommand(m2DrawVec, mesh);
     };
     void addWMOMesh(const HGMesh &mesh) override {
-        fillMapWithMesh(wmoMeshMap, mesh);
+        addDrawCommand(wmoDrawVec, mesh);
     } ;
     void addWaterMesh(const HGMesh &mesh) override {
         fillMapWithMesh(waterMeshMap, mesh);
     } ;
     void addADTMesh(const HGMesh &mesh) override {
-        fillMapWithMesh(adtMeshMap, mesh);
+        addDrawCommand(adtDrawVec, mesh);
     } ;
 
     void addMesh(const HGMesh &mesh) override {
@@ -1017,51 +1034,68 @@ public:
     };
 
     void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
+        std::sort(m2DrawVec.begin(), m2DrawVec.end(), [](DrawCommand const &a, DrawCommand const &b) {
+            return a.matId < b.matId;
+        });
+        std::sort(wmoDrawVec.begin(), wmoDrawVec.end(), [](DrawCommand const &a, DrawCommand const &b) {
+            return a.matId < b.matId;
+        });
+
         cmdBuf.setDefaultScissors();
         cmdBuf.setViewPort(viewPortType);
 
-        if (!adtMeshMap.empty())
+        if (!adtDrawVec.empty())
         {
             //1. Render ADT
             cmdBuf.bindVertexBindings(m_renderer.getDefaultADTVao());
             cmdBuf.bindMaterial(m_renderer.getGlobalADTMaterial());
 
-            for (auto const &record : adtMeshMap) {
-                cmdBuf.bindPipeline(record.first);
-
-                for (auto const & drawCmd : record.second) {
-                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
-                }
+            for (auto const & drawCmd : adtDrawVec) {
+                cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
             }
         }
 
-        if (!wmoMeshMap.empty())
+        if (!wmoDrawVec.empty())
         {
             //2. Render WMO
             cmdBuf.bindVertexBindings(m_renderer.getDefaultWMOVao());
             cmdBuf.bindMaterial(m_renderer.getGlobalWMOMaterial());
 
-            for (auto const &record : wmoMeshMap) {
-                cmdBuf.bindPipeline(record.first);
+            uint32_t currentMatId = 0xFFFFFFFF;
+            for (auto const &drawCmd : wmoDrawVec) {
+                if (currentMatId != drawCmd.matId) {
+                    auto material = m_renderer.m_wmoMatCacheId[drawCmd.matId].lock();
+                    if (!material)
+                        continue;
 
-                for (auto const & drawCmd : record.second) {
-                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
+                    cmdBuf.bindPipeline(material->getPipeline());
+
+                    currentMatId = drawCmd.matId;
                 }
+
+                cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
             }
         }
 
-        if (!m2MeshMap.empty())
+        if (!m2DrawVec.empty())
         {
             //3. Render m2
             cmdBuf.bindVertexBindings(m_renderer.getDefaultM2Vao());
             cmdBuf.bindMaterial(m_renderer.getGlobalM2Material());
 
-            for (auto const &record : m2MeshMap) {
-                cmdBuf.bindPipeline(record.first);
+            uint32_t currentMatId = 0xFFFFFFFF;
+            for (auto const &drawCmd : m2DrawVec) {
+                if (currentMatId != drawCmd.matId) {
+                    auto material = m_renderer.m_m2MatCacheId[drawCmd.matId].lock();
+                    if (!material)
+                        continue;
 
-                for (auto const & drawCmd : record.second) {
-                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
+                    cmdBuf.bindPipeline(material->getPipeline());
+
+                    currentMatId = drawCmd.matId;
                 }
+
+                cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
             }
         }
 

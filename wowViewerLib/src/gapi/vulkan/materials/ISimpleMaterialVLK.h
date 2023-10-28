@@ -18,7 +18,8 @@ public:
     explicit ISimpleMaterialVLK(const std::shared_ptr<GShaderPermutationVLK> &shader,
                                 const PipelineTemplate &pipelineTemplate,
                                 const HPipelineVLK &pipeline,
-                                const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets);
+                                const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
+                                uint32_t materialId);
     ~ISimpleMaterialVLK() override = default;
 
     const std::shared_ptr<GShaderPermutationVLK> &getShader() const {
@@ -34,12 +35,14 @@ public:
     const PipelineTemplate &getPipelineTemplate() const {
         return m_pipelineTemplate;
     }
+    const uint32_t getMaterialId() {return m_materialId;}
     std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass);
     EGxBlendEnum getBlendMode();
 
 private:
     std::vector<std::shared_ptr<GDescriptorSet>> descriptors;
 
+    uint32_t m_materialId;
     std::shared_ptr<GShaderPermutationVLK> m_shader;
     HPipelineVLK m_pipeline;
     PipelineTemplate m_pipelineTemplate;

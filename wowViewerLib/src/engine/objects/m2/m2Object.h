@@ -139,6 +139,7 @@ private:
     //Tuple of Mesh and batch index
     std::vector<std::tuple<HGM2Mesh, int>> m_meshForcedTranspArray;
     std::vector<std::tuple<HGM2Mesh, int>> m_meshArray;
+    std::vector<float> m_finalTransparencies;
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, IDevice::MAX_FRAMES_IN_FLIGHT>> dynamicMeshes;

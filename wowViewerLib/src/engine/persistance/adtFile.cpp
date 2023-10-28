@@ -486,15 +486,18 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer) {
+void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t currentLayerSize) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
     uint8_t* alphaArray = mcnkObj.mcal;
     PointerChecker<SMLayer> &layers = mcnkObj.mcly;
 
-    assert(currentLayer.size() >= (64*4) * 64);
+    assert(currentLayerSize >= (64*4) * 64);
+    assert(mcnkObj.mclyCnt <= 4);
     if (layers == nullptr || alphaArray == nullptr) return;
 
-    for (int j = 0; j <mcnkObj.mclyCnt; j++ ) {
+
+
+    for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
         int alphaOffs = layers[j].offsetInMCAL;
         int offO = j;
         int readForThisLayer = 0;

@@ -128,7 +128,7 @@ void FrontendUI::composeUI() {
 
     showSettingsDialog();
     showQuickLinksDialog();
-
+    showFileList();
     showMapSelectionDialog();
     showMakeScreenshotDialog();
     showCurrentStatsDialog();
@@ -359,6 +359,15 @@ void FrontendUI::showBlpViewer() {
         m_blpViewerWindow = nullptr;
     }
 }
+
+void FrontendUI::showFileList() {
+    if (!m_fileListWindow) return;
+
+    if (!m_fileListWindow->draw()) {
+        m_fileListWindow = nullptr;
+    }
+}
+
 
 // templated version of my_equal so it could work with both char and wchar_t
 template<typename charT>
@@ -754,7 +763,10 @@ void FrontendUI::showMainMenu() {
             ImGui::EndMenu();
         }
         if (ImGui::BeginMenu("View")) {
-            if (ImGui::MenuItem("Open minimap")) {}
+            if (ImGui::MenuItem("Open File List", "", false, cascOpened)) {
+                if (!m_fileListWindow)
+                    m_fileListWindow = std::make_shared<FileListWindow>(m_api);
+            }
             if (ImGui::MenuItem("Open current stats")) { showCurrentStats = true; }
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
@@ -767,6 +779,7 @@ void FrontendUI::showMainMenu() {
                 if (!m_blpViewerWindow)
                     m_blpViewerWindow = std::make_shared<BLPViewer>(m_api, m_uiRenderer);
             }
+
             if (ImGui::MenuItem("Test export")) {
                 if (m_currentScene != nullptr) {
                     exporter = std::make_shared<GLTFExporter>("./gltf/");
@@ -959,6 +972,9 @@ void FrontendUI::showQuickLinksDialog() {
     }
     if (ImGui::Button("8du_zuldazarraid_antiportal01.wmo", ImVec2(-1, 0))) {
         openWMOSceneByfdid(2574165);
+    }
+    if (ImGui::Button("someShip.wmo", ImVec2(-1, 0))) {
+        openWMOSceneByfdid(4638404);
     }
     if (ImGui::Button("Vanilla karazhan", ImVec2(-1, 0))) {
         m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());

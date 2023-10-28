@@ -14,6 +14,8 @@ MaterialBuilderVLK::MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &dev
         shaderFiles[0],
         shaderFiles[1], shaderConfig));
 
+    m_materialId = 0;
+
     m_pipelineLayout = m_shader->getPipelineLayout();
 }
 
@@ -23,9 +25,10 @@ MaterialBuilderVLK::MaterialBuilderVLK(
         const HPipelineVLK &pipeline,
         const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
         const PipelineTemplate &pipelineTemplate,
-        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets) :
+        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
+        uint32_t materialId) :
         m_device(device), m_shader(shader), m_pipeline(pipeline), m_pipelineTemplate(pipelineTemplate),
-        m_descriptorSets(descriptorSets), m_pipelineLayout(pipelineLayout) {
+        m_descriptorSets(descriptorSets), m_pipelineLayout(pipelineLayout), m_materialId(materialId) {
 
 }
 
@@ -77,11 +80,18 @@ MaterialBuilderVLK &MaterialBuilderVLK::createPipeline(const HGVertexBufferBindi
     return *this;
 }
 
+MaterialBuilderVLK &MaterialBuilderVLK::setMaterialId(uint32_t matId) {
+    m_materialId = matId;
+
+    return *this;
+}
+
 std::shared_ptr<ISimpleMaterialVLK> MaterialBuilderVLK::toMaterial() {
     return std::make_shared<ISimpleMaterialVLK>(
         m_shader,
         m_pipelineTemplate,
         m_pipeline,
-        m_descriptorSets
+        m_descriptorSets,
+        m_materialId
       );
 }

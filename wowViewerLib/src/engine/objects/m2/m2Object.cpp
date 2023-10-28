@@ -1019,6 +1019,14 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         ribbonEmitters[i]->SetPos(transformMat, nullPos, nullptr);
         ribbonEmitters[i]->Update(deltaTime * 0.001f, 0);
     }
+
+    M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
+    for (int i = 0; i < this->m_meshArray.size(); i++) {
+        int currentM2BatchIndex = std::get<1>(this->m_meshArray[i]);
+
+        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+        m_finalTransparencies[i] = finalTransparency;
+    }
 }
 
 void M2Object::fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
@@ -1570,7 +1578,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
-    
+    m_finalTransparencies.resize(m_meshArray.size(), 1.0);
 }
 
 EGxBlendEnum M2Object::getBlendMode(int batchIndex) {
@@ -1637,14 +1645,15 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vec
     int minBatch = m_api->getConfig()->m2MinBatch;
     int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshArray.size());
 
-    bool isWaterFallMesh = m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr;
+    bool isWaterFallMesh = m_m2Geom->m_wfv3 != nullptr && m_m2Geom->m_wfv1 != nullptr;
 
     if (m_api->getConfig()->renderM2) {
         for (int i = 0; i < this->m_meshArray.size(); i++) {
             int currentM2BatchIndex = std::get<1>(this->m_meshArray[i]);
             if (currentM2BatchIndex < minBatch || currentM2BatchIndex > maxBatch ) continue;
 
-            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+//            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+            float finalTransparency = m_finalTransparencies[i];
             bool meshIsInvisible = finalTransparency < 0.0001;
             if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
                 continue;
@@ -1658,7 +1667,7 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vec
             if (mesh->getIsTransparent()) {
                 transparentMeshes.push_back(mesh);
             } else {
-                if (isWaterFallMesh) {
+                if (!isWaterFallMesh) {
                     opaqueMeshCollector.addM2Mesh(mesh);
                 } else {
                     opaqueMeshCollector.addMesh(mesh);

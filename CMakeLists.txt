@@ -240,7 +240,9 @@ set(SOURCE_FILES
 		src/ui/imguiLib/wheelCapture/wheelCapture.cpp
 		src/ui/imguiLib/wheelCapture/wheelCapture.h src/ui/childWindow/BLPViewer.cpp src/ui/childWindow/BLPViewer.h src/ui/childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.cpp src/ui/childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h
 		src/ui/childWindow/textureRenderer/DebugRendererWindow.cpp
-		src/ui/childWindow/textureRenderer/DebugRendererWindow.h)
+		src/ui/childWindow/textureRenderer/DebugRendererWindow.h
+        src/ui/childWindow/fileListWindow/FileListWindow.cpp
+        src/ui/childWindow/fileListWindow/FileListWindow.h)
 
 
 set(SOURCE_FILES_VULKAN

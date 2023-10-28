@@ -16,6 +16,7 @@
 #include "../../../gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h"
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
+    friend class COpaqueMeshCollectorBindlessVLK;
 public:
     explicit MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevice, Config *config);
     ~MapSceneRenderVisBufferVLK() override = default;
@@ -126,8 +127,8 @@ private:
                    (hash<uint8_t>{}(k.colorMask) << 18);
         };
     };
-    std::unordered_map<PipelineTemplate, std::weak_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
-    std::unordered_map<PipelineTemplate, std::weak_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
+    std::unordered_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
+    std::unordered_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
 private:
     HGDeviceVLK m_device;
 
@@ -243,6 +244,32 @@ private:
     void createADTGlobalMaterialData();
     void createWaterGlobalMaterialData();
     void createM2WaterfallGlobalMaterialData();
+
+
+    std::mt19937_64 eng; //Use the 64-bit Mersenne Twister 19937 generator
+    //and seed it with entropy.
+    std::uniform_int_distribution<unsigned long long> idDistr;
+    std::unordered_map<uint32_t, std::weak_ptr<ISimpleMaterialVLK>> m_m2MatCacheId;
+    std::unordered_map<uint32_t, std::weak_ptr<ISimpleMaterialVLK>> m_wmoMatCacheId;
+
+    uint32_t generateUniqueWMOMatId() {
+        uint32_t random;
+        do {
+            random = idDistr(eng);
+        } while (!m_wmoMatCacheId[random].expired());
+
+        return random;
+    }
+
+    uint32_t generateUniqueM2MatId() {
+        uint32_t random;
+        do {
+            random = idDistr(eng);
+        } while (!m_m2MatCacheId[random].expired());
+
+        return random;
+    }
+
 public:
     const std::shared_ptr<ISimpleMaterialVLK> &getGlobalADTMaterial() const {return g_adtMaterial;};
     const std::shared_ptr<ISimpleMaterialVLK> &getGlobalM2Material() const {return g_m2Material;};
