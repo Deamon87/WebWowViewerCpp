@@ -51,7 +51,7 @@ namespace CMinimapDataDB {
         using namespace sqlite_orm;
         return make_storage(dataBaseFile,
             make_table("scenarios",
-                make_column("id", &ScenarioDef::id, autoincrement(), primary_key()),
+                make_column("id", &ScenarioDef::id, primary_key().autoincrement()),
                 make_column("name", &ScenarioDef::name), make_column("orientation", &ScenarioDef::getOrientation, &ScenarioDef::setOrientation),
                 make_column("close_ocean_color_r", &ScenarioDef::getCloseOceanColor_R, &ScenarioDef::setCloseOceanColor_R),
                 make_column("close_ocean_color_g", &ScenarioDef::getCloseOceanColor_G, &ScenarioDef::setCloseOceanColor_G),
@@ -66,7 +66,7 @@ namespace CMinimapDataDB {
                 make_column("folder_to_save", &ScenarioDef::folderToSave)
             ),
             make_table("scenario_map_def",
-                make_column("id", &MapRenderDefDB::id, autoincrement(), primary_key()),
+                make_column("id", &MapRenderDefDB::id, primary_key().autoincrement()),
                 make_column("map_id", &MapRenderDefDB::mapId),
                 make_column("scenario_id", &MapRenderDefDB::scenarioId),
                 make_column("delta_x", &MapRenderDefDB::deltaX),

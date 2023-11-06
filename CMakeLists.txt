@@ -93,6 +93,7 @@ if (TRUE)
 endif()
 
 
+add_definitions(-DSQLITE_ENABLE_FTS5)
 include_directories(${CMAKE_SOURCE_DIR}/3rdparty/SQLiteCpp/sqlite3)
 
 if (NOT CMAKE_NDK_BUILD MATCHES 1)

@@ -108,7 +108,7 @@ namespace DataExporter {
         using namespace sqlite_orm;
         return make_storage(dataBaseFile,
                 make_table("M2",
-                   make_column("id", &DBM2::m2Id, autoincrement(), primary_key()),
+                   make_column("id", &DBM2::m2Id, primary_key().autoincrement()),
                    make_column("fileDataId", &DBM2::fileDataId),
                    make_column("fileName", &DBM2::fileName),
                    make_column("version", &DBM2::version),
