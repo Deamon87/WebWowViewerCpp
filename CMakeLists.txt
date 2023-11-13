@@ -243,7 +243,8 @@ set(SOURCE_FILES
 		src/ui/childWindow/textureRenderer/DebugRendererWindow.cpp
 		src/ui/childWindow/textureRenderer/DebugRendererWindow.h
         src/ui/childWindow/fileListWindow/FileListWindow.cpp
-        src/ui/childWindow/fileListWindow/FileListWindow.h)
+        src/ui/childWindow/fileListWindow/FileListWindow.h
+)
 
 
 set(SOURCE_FILES_VULKAN
