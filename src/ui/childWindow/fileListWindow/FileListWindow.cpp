@@ -133,7 +133,7 @@ public:
                 return storage.execute(statement);
             };
         } else if constexpr (order == 3) {
-            return [statement =
+            return [&searchClause, statement =
             storage.prepare(get_all<FileListDB::FileRecord>(
                 whereClause,
                 !sortAsc ?
@@ -177,8 +177,6 @@ public:
 };
 
 
-
-
 std::unique_ptr<StatementHolderAbstract>
 statementFactory(decltype(FileListDB::makeStorage("")) &storage, const std::string &searchClause, int order) {
     switch(abs(order)) {
@@ -191,6 +189,59 @@ statementFactory(decltype(FileListDB::makeStorage("")) &storage, const std::stri
             return std::make_unique<StatementHolder<1>>(storage, searchClause, order > 0);
     }
 }
+
+namespace std {
+
+// partial specialization for reference_wrapper
+// is this really necessary?
+    template<typename T>
+    class hash<std::reference_wrapper<T>> {
+    public:
+        std::size_t operator()(std::reference_wrapper<T> x) const { return std::hash<T>()(x.get()); }
+    };
+}
+
+template <typename T>
+class my_container {
+    // important: this really needs to be a deque and only front
+    // insertion/deletion is allowed to not get dangling references
+    typedef std::deque<T> storage;
+    typedef std::reference_wrapper<const T> c_ref_w;
+    typedef std::reference_wrapper<T> ref_w;
+public:
+    typedef typename storage::value_type value_type;
+    typedef typename storage::reference reference;
+    typedef typename storage::const_reference const_reference;
+    typedef typename storage::size_type size_type;
+
+    my_container<T>(){}
+
+    // no move semantics
+    void push_back(const T& t) {
+        auto it = lookup_.find(std::cref(t));
+        if(it != end(lookup_)) {
+            // is already inserted report error
+            return;
+        }
+        store_.push_back(t);
+        // this is important to not have dangling references
+        lookup_.insert(store_.back());
+    }
+
+    // trivial functions
+
+    bool empty() const { return store_.empty(); }
+    const T& front() const { return store_.front(); }
+    T& front() { return store_.front(); }
+
+    void pop_front() { lookup_.erase(store_.front()); store_.pop_front();  }
+private:
+    // look-up mechanism
+    std::unordered_set<c_ref_w> lookup_ = std::unordered_set<c_ref_w>();
+    // underlying storage
+    storage store_;
+};
+
 
 
 enum class EnumParamsChanged {
@@ -214,39 +265,37 @@ public:
             //stateChangeAwaiter.pushInput(EnumParamsChanged::OFFSET_LIMIT);
 
             while (!this->m_isTerminating) {
-                auto stateWasChanged = stateChangeAwaiter.waitForNewInput();
-                if (m_isTerminating)
-                    continue;
+                stateChangeAwaiter.waitAndProcess([&](auto & stateWasChanged) {
+                    switch (stateWasChanged) {
+                        case EnumParamsChanged::OFFSET_LIMIT:
+                            break;
 
-                switch (stateWasChanged) {
-                    case EnumParamsChanged::OFFSET_LIMIT:
-                        break;
+                        case EnumParamsChanged::SEARCH_STRING:
+                            statement = statementFactory(storage, searchClause, 1);
+                            m_recordsTotal = statement->getTotal();
+                            break;
 
-                    case EnumParamsChanged::SEARCH_STRING:
-                        m_recordsTotal = statement->getTotal();
-                        break;
+                        case EnumParamsChanged::SORTING:
+                            statement = statementFactory(storage, searchClause, 1);
+                            break;
+                    }
 
-                    case EnumParamsChanged::SORTING:
-                        statement = statementFactory(storage, searchClause, 1);
-                        m_recordsTotal = statement->getTotal();
-                        break;
-                }
-
-                std::vector<DBResults> results;
-                {
-                    std::vector<DbRequest> l_requests = {};
+                    std::vector<DBResults> results;
                     {
-                        std::unique_lock lock(paramsChange);
-                        l_requests = m_requests; //make local copy
-                    }
+                        std::vector<DbRequest> l_requests = {};
+                        {
+                            std::unique_lock lock(paramsChange);
+                            l_requests = m_requests; //make local copy
+                        }
 
-                    for (auto const & request : l_requests) {
-                        auto &result1 = results.emplace_back();
-                        result1.offset = request.offset;
-                        result1.records = statement->execute(storage, request.limit, request.offset);
+                        for (auto const & request : l_requests) {
+                            auto &result1 = results.emplace_back();
+                            result1.offset = request.offset;
+                            result1.records = statement->execute(storage, request.limit, request.offset);
+                        }
                     }
-                }
-                setResults(results);
+                    setResults(results);
+                });
             }
         });
     }
@@ -265,6 +314,12 @@ public:
         {
             std::unique_lock lock(paramsChange);
             m_requests = newRequest;
+            for (auto &request : m_requests) {
+                if (request.limit > 1) {
+                    request.offset = std::max<int>(request.offset - request.limit, 0);
+                    request.limit = request.limit * 3;
+                }
+            }
         }
         stateChangeAwaiter.pushInput(EnumParamsChanged::OFFSET_LIMIT);
     };
@@ -296,7 +351,7 @@ private:
     std::vector<DBResults> m_results;
     std::vector<DbRequest> m_requests;
 
-    ProdConsumerIOConnector<EnumParamsChanged> stateChangeAwaiter = {m_isTerminating};
+    ProdConsumerIOConnector<EnumParamsChanged, my_container<EnumParamsChanged>> stateChangeAwaiter = {m_isTerminating};
 };
 
 //--------------------------------------
@@ -330,14 +385,15 @@ bool FileListWindow::draw() {
         if (ImGui::BeginTable("FileListTable", 3, ImGuiTableFlags_Resizable |
                                               ImGuiTableFlags_Reorderable |
                                               ImGuiTableFlags_Sortable |
+                                              ImGuiTableFlags_ScrollY |
                                               ImGuiTableFlags_NoHostExtendX |
                                               ImGuiTableFlags_NoHostExtendY |
                                               ImGuiTableFlags_ScrollX, ImVec2(-1, -1))) {
+            ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
 
             ImGui::TableSetupColumn("FileDataId", ImGuiTableColumnFlags_None);
             ImGui::TableSetupColumn("FileName", ImGuiTableColumnFlags_None);
             ImGui::TableSetupColumn("FileType", ImGuiTableColumnFlags_None);
-            ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
             ImGui::TableHeadersRow();
 
             auto dbResults = selectStatement->getResults();
@@ -354,50 +410,70 @@ bool FileListWindow::draw() {
                     request.offset = f_offset;
                     request.limit = f_amount;
 
-                    int post = f_amount;
-                    for (auto &dbResult : dbResults) {
-                        if (abs(dbResult.offset - f_offset) <= f_amount) {
-                            int pre = std::max<int>(dbResult.offset - f_offset, 0);
-                            int db_start = std::max<int>(f_offset-dbResult.offset, 0);
-                            int db_end = db_start + std::min<int>(dbResult.records.size() - db_start, f_amount);
-                            post = std::max<int>(f_amount - (db_end-db_start), 0);
+                    int maxIndex = -1;
+                    int maxRecordsOverlapped = 0;
+                    for (int i = 0; i < dbResults.size(); i++) {
+                        auto const &dbResult = dbResults[i];
 
-                            for (int i = 0; i < pre; i++) {
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-                                ImGui::Text("");
-                                ImGui::TableNextColumn();
-                                ImGui::Text("LOADING...");
-                                ImGui::TableNextColumn();
-                                ImGui::Text("");
-                            }
+                        int db_start = std::max<int>(f_offset-dbResult.offset, 0);
+                        int recordsOverlapped = std::min<int>(dbResult.records.size() - db_start, f_amount);
 
-                            for (int i = db_start; i < db_end; i++) {
-                                auto const &fileItem = dbResult.records[i];
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-                                ImGui::Text("%d", fileItem.fileDataId);
-                                ImGui::TableNextColumn();
-                                ImGui::Text(fileItem.fileName.c_str());
-                                ImGui::TableNextColumn();
-                                ImGui::Text(fileItem.fileType.c_str());
-                            }
-                            for (int i = 0; i < post; i++) {
-                                ImGui::TableNextRow();
-                                ImGui::TableNextColumn();
-                                ImGui::Text("");
-                                ImGui::TableNextColumn();
-                                ImGui::Text("LOADING...");
-                                ImGui::TableNextColumn();
-                                ImGui::Text("");
-                            }
-
-                            if (pre > 0 || post > 0) needRequest = true;
-
-                            post = 0;
-                            break;
+                        if (recordsOverlapped > maxRecordsOverlapped) {
+                            maxRecordsOverlapped = recordsOverlapped;
+                            maxIndex = i;
                         }
                     }
+
+                    int post = f_amount;
+                    if ( maxIndex >= 0 ) {
+                        auto const &dbResult = dbResults[maxIndex];
+                        int pre = std::max<int>(dbResult.offset - f_offset, 0);
+                        int db_start = std::max<int>(f_offset-dbResult.offset, 0);
+                        int db_end = db_start + std::min<int>(dbResult.records.size() - db_start, f_amount);
+                        post = std::max<int>(f_amount - (db_end-db_start), 0);
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5,0.5,0.5,1.0));
+                        for (int i = 0; i < pre; i++) {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::Text("");
+                            ImGui::TableNextColumn();
+                            ImGui::Text("LOADING...");
+                            ImGui::TableNextColumn();
+                            ImGui::Text("");
+                        }
+                        ImGui::PopStyleColor();
+
+                        for (int i = db_start; i < db_end; i++) {
+                            auto const &fileItem = dbResult.records[i];
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::Text("%d", fileItem.fileDataId);
+                            ImGui::TableNextColumn();
+                            ImGui::Text(fileItem.fileName.c_str());
+                            ImGui::TableNextColumn();
+                            ImGui::Text(fileItem.fileType.c_str());
+                        }
+
+                        ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5,0.5,0.5,1.0));
+                        for (int i = 0; i < post; i++) {
+                            ImGui::TableNextRow();
+                            ImGui::TableNextColumn();
+                            ImGui::Text("");
+                            ImGui::TableNextColumn();
+                            ImGui::Text("LOADING...");
+                            ImGui::TableNextColumn();
+                            ImGui::Text("");
+                        }
+                        ImGui::PopStyleColor();
+
+                        if ((pre > 0) || (post > 0))
+                            needRequest = true;
+
+                        post = 0;
+                    }
+
+                    ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5,0.5,0.5,1.0));
                     for (int i = 0; i < post; i++) {
                         ImGui::TableNextRow();
                         ImGui::TableNextColumn();
@@ -407,6 +483,8 @@ bool FileListWindow::draw() {
                         ImGui::TableNextColumn();
                         ImGui::Text("");
                     }
+                    ImGui::PopStyleColor();
+
                     needRequest = needRequest || post > 0;
                 }
             }

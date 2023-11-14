@@ -11,7 +11,7 @@
 #include <functional>
 #include "../FrameProfile.h"
 
-template<typename T>
+template<typename T, typename Container = std::deque<T>>
 class ProdConsumerIOConnector {
 public:
     typedef T value_type;
@@ -84,7 +84,7 @@ private:
     bool &m_terminating;
     std::mutex m_queueMutex;
     std::condition_variable m_condVar;
-    std::queue<T> m_queue;
+    std::queue<T, Container> m_queue = std::queue<T, Container>();
 };
 
 
