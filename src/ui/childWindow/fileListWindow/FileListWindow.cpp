@@ -121,8 +121,8 @@ public:
             storage.prepare(get_all<FileListDB::FileRecord>(
                 whereClause,
                 !sortAsc ?
-                order_by(&FileListDB::FileRecord::fileDataId).desc() :
-                order_by(&FileListDB::FileRecord::fileDataId).asc(),
+                order_by(&FileListDB::FileRecord::fileName).desc() :
+                order_by(&FileListDB::FileRecord::fileName).asc(),
                 limit(2, offset(3))
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
@@ -137,8 +137,8 @@ public:
             storage.prepare(get_all<FileListDB::FileRecord>(
                 whereClause,
                 !sortAsc ?
-                order_by(&FileListDB::FileRecord::fileDataId).desc() :
-                order_by(&FileListDB::FileRecord::fileDataId).asc(),
+                order_by(&FileListDB::FileRecord::fileType).desc() :
+                order_by(&FileListDB::FileRecord::fileType).asc(),
                 limit(2, offset(3))
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
@@ -271,12 +271,12 @@ public:
                             break;
 
                         case EnumParamsChanged::SEARCH_STRING:
-                            statement = statementFactory(storage, searchClause, 1);
+                            statement = statementFactory(storage, searchClause, m_order);
                             m_recordsTotal = statement->getTotal();
                             break;
 
                         case EnumParamsChanged::SORTING:
-                            statement = statementFactory(storage, searchClause, 1);
+                            statement = statementFactory(storage, searchClause, m_order);
                             break;
                     }
 
@@ -330,6 +330,10 @@ public:
 
         stateChangeAwaiter.pushInput(EnumParamsChanged::SEARCH_STRING);
     }
+    void setOrder(int order) override {
+        m_order = order;
+        stateChangeAwaiter.pushInput(EnumParamsChanged::SORTING);
+    }
 private:
 
     void setResults(const std::vector<DBResults> &results) {
@@ -346,7 +350,7 @@ private:
     bool m_isTerminating = false;
 
     int &m_recordsTotal;
-    int m_order;
+    int m_order = 1;
 
     std::vector<DBResults> m_results;
     std::vector<DbRequest> m_requests;
@@ -391,10 +395,28 @@ bool FileListWindow::draw() {
                                               ImGuiTableFlags_ScrollX, ImVec2(-1, -1))) {
             ImGui::TableSetupScrollFreeze(0, 1); // Make top row always visible
 
-            ImGui::TableSetupColumn("FileDataId", ImGuiTableColumnFlags_None);
-            ImGui::TableSetupColumn("FileName", ImGuiTableColumnFlags_None);
-            ImGui::TableSetupColumn("FileType", ImGuiTableColumnFlags_None);
+            ImGui::TableSetupColumn("FileDataId", ImGuiTableColumnFlags_None,0,1);
+            ImGui::TableSetupColumn("FileName", ImGuiTableColumnFlags_None,0,2);
+            ImGui::TableSetupColumn("FileType", ImGuiTableColumnFlags_None,0,3);
             ImGui::TableHeadersRow();
+
+            ImGuiTableSortSpecs *sorts_specs = ImGui::TableGetSortSpecs();
+            if (sorts_specs && sorts_specs->SpecsDirty && selectStatement) {
+                int order = 1;
+                for (int i = 0; i < sorts_specs->SpecsCount; i++) {
+                    auto const &sort_spec = sorts_specs->Specs[i];
+                    if (sort_spec.SortDirection != ImGuiSortDirection_None ) {
+                        order = sort_spec.ColumnUserID * (
+                            sort_spec.SortDirection == ImGuiSortDirection_Descending ? -1 : 1
+                        );
+                        break;
+                    }
+                }
+
+                selectStatement->setOrder(order);
+                sorts_specs->SpecsDirty = false;
+            }
+
 
             auto dbResults = selectStatement->getResults();
             bool needRequest = false;

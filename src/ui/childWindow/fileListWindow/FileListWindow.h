@@ -34,6 +34,7 @@ public:
     virtual ~FileListLamda() {}
     virtual void makeRequest(const std::vector<DbRequest> &paramsChange) = 0;
     virtual void searchChanged() = 0;
+    virtual void setOrder(int order) = 0;
     virtual const std::vector<DBResults> getResults() = 0;
 };
 
