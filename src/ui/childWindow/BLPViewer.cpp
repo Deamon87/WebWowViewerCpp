@@ -6,8 +6,8 @@
 #include "imgui.h"
 #include <string>
 
-BLPViewer::BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer) :
-    m_api(api), m_uiRenderer(uiRenderer)
+BLPViewer::BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer, bool noSearch) :
+    m_api(api), m_uiRenderer(uiRenderer), m_noSearch(noSearch)
 {
 
 }
@@ -16,27 +16,17 @@ bool BLPViewer::draw() {
 
     ImGui::Begin("BLP Viewer", &m_showWindow);
     {
-        if (ImGui::InputText("BlpName/FileDataId: ", blpName.data(), blpName.size()-1)) {
-            blpName[blpName.size()-1] = 0;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Load")) {
-            int fileDataId = 0;
-
-            try{
-                fileDataId = std::stoi(blpName.data());
-            } catch (...) {}
-
-            if (fileDataId > 0) {
-                m_blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataId);
-                m_texture = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
-                material = m_uiRenderer->createUIMaterial({m_texture}, true);
-            } else {
-                m_blpTexture = m_api->cacheStorage->getTextureCache()->get(blpName.data());
-                m_texture = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
-                material = m_uiRenderer->createUIMaterial({m_texture}, true);
+        if (!m_noSearch) {
+            if (ImGui::InputText("BlpName/FileDataId: ", blpName.data(), blpName.size() - 1)) {
+                blpName[blpName.size() - 1] = 0;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Load")) {
+                std::string blpNameStr = blpName.data();
+                loadBlp(blpNameStr);
             }
         }
+
         if (m_blpTexture && m_blpTexture->getStatus() == FileStatus::FSRejected) {
             ImGui::Text("Failed to load BLP file");
         } else
@@ -70,4 +60,22 @@ bool BLPViewer::draw() {
     ImGui::End();
 
     return m_showWindow;
+}
+
+void BLPViewer::loadBlp(const std::string &p_blpName) {
+    int fileDataId = 0;
+
+    try{
+        fileDataId = std::stoi(p_blpName);
+    } catch (...) {}
+
+    if (fileDataId > 0) {
+        m_blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(fileDataId);
+        m_texture = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
+        material = m_uiRenderer->createUIMaterial({m_texture}, true);
+    } else {
+        m_blpTexture = m_api->cacheStorage->getTextureCache()->get(blpName.data());
+        m_texture = m_api->hDevice->createBlpTexture(m_blpTexture, false, false);
+        material = m_uiRenderer->createUIMaterial({m_texture}, true);
+    }
 }

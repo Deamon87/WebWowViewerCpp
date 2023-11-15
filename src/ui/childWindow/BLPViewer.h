@@ -12,8 +12,9 @@
 
 class BLPViewer {
 public:
-    BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer);
+    BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer, bool noSearch = false);
 
+    void loadBlp(const std::string &p_blpName);
     bool draw();
 private:
     bool m_showWindow = true;
@@ -26,6 +27,8 @@ private:
     std::shared_ptr<BlpTexture> m_blpTexture;
     HGSamplableTexture m_texture;
     std::shared_ptr<IUIMaterial> material = nullptr;
+
+    bool m_noSearch;
 };
 
 

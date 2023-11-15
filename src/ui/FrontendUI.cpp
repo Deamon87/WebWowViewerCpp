@@ -765,7 +765,12 @@ void FrontendUI::showMainMenu() {
         if (ImGui::BeginMenu("View")) {
             if (ImGui::MenuItem("Open File List", "", false, cascOpened)) {
                 if (!m_fileListWindow)
-                    m_fileListWindow = std::make_shared<FileListWindow>(m_api);
+                    m_fileListWindow = std::make_shared<FileListWindow>([&](int fileId, const std::string &fileType){
+                        if (fileType == "blp") {
+                            m_blpViewerWindow = std::make_shared<BLPViewer>(m_api, m_uiRenderer, true);
+                            m_blpViewerWindow->loadBlp(std::to_string(fileId));
+                        }
+                    });
             }
             if (ImGui::MenuItem("Open current stats")) { showCurrentStats = true; }
             ImGui::Separator();

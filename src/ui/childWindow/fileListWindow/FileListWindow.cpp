@@ -4,6 +4,7 @@
 
 #include "FileListWindow.h"
 #include "../../../database/csvtest/csv.h"
+#include "../../../../wowViewerLib/src/include/string_utils.h"
 
 namespace FileListDB {
     struct FileRecord_FT5 {
@@ -362,7 +363,7 @@ private:
 // FileListWindow
 // -------------------------------------
 
-FileListWindow::FileListWindow(const HApiContainer &api) : m_api(api) {
+FileListWindow::FileListWindow(const std::function<void(int fileId, const std::string &fileType)> &fileOpenCallback) : m_fileOpenCallback(fileOpenCallback) {
     m_filesTotal = 0;
     m_showWindow = true;
 
@@ -470,7 +471,15 @@ bool FileListWindow::draw() {
                             auto const &fileItem = dbResult.records[i];
                             ImGui::TableNextRow();
                             ImGui::TableNextColumn();
-                            ImGui::Text("%d", fileItem.fileDataId);
+                            if (ImGui::Selectable(std::to_string(fileItem.fileDataId).c_str(), false,
+                                                  ImGuiSelectableFlags_SpanAllColumns |
+                                                  ImGuiSelectableFlags_AllowItemOverlap)) {
+                                if (m_fileOpenCallback) {
+                                    if (endsWith(fileItem.fileName, ".blp")) {
+                                        m_fileOpenCallback(fileItem.fileDataId, "blp");
+                                    }
+                                }
+                            }
                             ImGui::TableNextColumn();
                             ImGui::Text(fileItem.fileName.c_str());
                             ImGui::TableNextColumn();

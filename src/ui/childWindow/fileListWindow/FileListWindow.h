@@ -40,13 +40,13 @@ public:
 
 class FileListWindow {
 public:
-    FileListWindow(const HApiContainer &api);
+    FileListWindow(const std::function<void(int fileId, const std::string &fileType)> &fileOpenCallback);
 
     bool draw();
 private:
-    HApiContainer m_api;
-
     bool m_showWindow;
+
+    std::function<void(int fileId, const std::string &fileType)> m_fileOpenCallback;
 
     int m_filesTotal;
     std::unique_ptr<FileListLamda> selectStatement;
