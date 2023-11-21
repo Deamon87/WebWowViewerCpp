@@ -340,7 +340,7 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
-    ZoneScoped;
+    //ZoneScoped;
     HGDevice device = m_api->hDevice;
 
     auto adtFileTex = m_adtFileTex;
@@ -460,10 +460,16 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
     }
 
     if (!noLayers) {
+//        auto mclyIndexes = std::vector<int> (m_adtFileTex->mcnkStructs[i].mclyCnt);
+//        std::generate(mclyIndexes.begin(), mclyIndexes.end(), [n = 0] () mutable { return n++; });
+//        std::sort(mclyIndexes.begin(), mclyIndexes.end(),  [mcnk = m_adtFileTex->mcnkStructs[i]](const auto& a, const auto& b) {
+//            return mcnk.mcly[a].textureId > mcnk.mcly[b].textureId;
+//        });
+
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             auto &layerDef = m_adtFileTex->mcnkStructs[i].mcly[j];
 
-            HGSamplableTexture layer_x = getAdtTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
+            HGSamplableTexture layer_x = getAdtTexture(layerDef.textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
             adtMaterialTemplate.textures[j] = layer_x;
         }
@@ -480,19 +486,22 @@ inline uint8_t &getChannel(uint8_t *data, int x, int y, int width, int height, c
     return data[(width * y + x) * 4 + channel];
 };
 
+constexpr int maxAlphaTexPerChunk = 4;
+constexpr int alphaTexSize = 64;
+
+constexpr int texWidth = alphaTexSize * 16;
+constexpr int texHeight = alphaTexSize * 16;
+
+std::vector<uint8_t> bigTexture = std::vector<uint8_t>(texWidth * texHeight * 4, 0);
+
 void AdtObject::loadAlphaTextures() {
     ZoneScoped;
     int chunkCount = m_adtFileTex->mcnkRead+1;
-    constexpr int maxAlphaTexPerChunk = 4;
-    constexpr int alphaTexSize = 64;
-
-    constexpr int texWidth = alphaTexSize * 16;
-    constexpr int texHeight = alphaTexSize * 16;
 
     int createdThisRun = 0;
     alphaTexture = m_api->hDevice->createTexture(false, false);
-    std::vector<uint8_t> bigTexture = std::vector<uint8_t>(texWidth * texHeight * 4, 0);
-    memset(bigTexture.data(), 0, bigTexture.size());
+
+        memset(bigTexture.data(), 0, bigTexture.size());
     std::array<uint8_t, alphaTexSize * alphaTexSize * 4> alphaTextureData;
 
     if (chunkCount > 0)
@@ -506,11 +515,11 @@ void AdtObject::loadAlphaTextures() {
                     const auto indexY = mapTile.IndexY;
                     memset(alphaTextureData.data(), 0, alphaTextureData.size());
 
-                    m_adtFileTex->processTexture(m_wdtFile->mphd->flags, i, alphaTextureData.data(), alphaTextureData.size());
+                    m_adtFileTex->processTexture(m_wdtFile->mphd->flags, indexY*16+indexX, alphaTextureData.data(), alphaTextureData.size());
 
-                    for (int x = 0; x < 64; x++) {
-                        for (int y = 0; y < 64; y++) {
-                            for (char channel = 0; channel < 4; channel++) {
+                    for (int y = 0; y < 64; y++) {
+                        for (int x = 0; x < 64; x++) {
+                            for (uint8_t channel = 0; channel < 4; channel++) {
                                 getChannel(bigTexture.data(),
                                            indexX * 64 + x, indexY * 64 + y,
                                            texWidth, texHeight, channel) =

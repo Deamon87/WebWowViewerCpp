@@ -98,8 +98,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                 [](AdtFile& file, ChunkData& chunkData){
                     debuglog("Entered MAMP");
 //                    std::cout << "Found MAMP" << std::endl;
-                    file.mamp_len = chunkData.chunkLen / sizeof(char);
-                    chunkData.readValues(file.mamp, file.mamp_len);
+//                    std::cout << "mamp chunkData.chunkLen = " << chunkData.chunkLen << std::endl;
+
+                    chunkData.readValue(file.mamp_val);
+//                    std::cout << "mamp value = " << (int)file.mamp_val << std::endl;
                 }
             }
         },
@@ -395,7 +397,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         {
                             [](AdtFile& file, ChunkData& chunkData){
                                 debuglog("Entered MCAL");
-                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
+                                chunkData.readValues(file.mcnkStructs[file.mcnkRead].mcal, chunkData.chunkLen);
                             }
                         }
                     },
@@ -495,35 +497,56 @@ void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *curre
     assert(mcnkObj.mclyCnt <= 4);
     if (layers == nullptr || alphaArray == nullptr) return;
 
-
-
+    int uncompressedIndex = 0;
     for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
-        int alphaOffs = layers[j].offsetInMCAL;
-        int offO = j;
+        if (layers[j].flags.use_alpha_map == 0) {
+            uncompressedIndex = j;
+        }
+    }
+
+
+//    auto mclyIndexes = std::vector<int> (mcnkStructs[i].mclyCnt);
+//    std::generate(mclyIndexes.begin(), mclyIndexes.end(), [n = 0] () mutable { return n++; });
+//    std::sort(mclyIndexes.begin(), mclyIndexes.end(),  [mcnk = mcnkStructs[i]](const auto& a, const auto& b) {
+//        return mcnk.mcly[a].textureId > mcnk.mcly[b].textureId;
+//    });
+
+    for (int j = 1; j < mcnkObj.mclyCnt; j++ ) {
+        auto &layerDef = layers[j];
+        int alphaOffs = layerDef.offsetInMCAL;
+        int offO = j-1;
         int readForThisLayer = 0;
 
-        if (!layers[j].flags.use_alpha_map) {
+        if (!layerDef.flags.use_alpha_map) {
             for (int k = 0; k < 4096; k++) {
-                currentLayer[offO+k*4] = 255;
+                currentLayer[offO+k*4] = 0;
             }
-        } else if (layers[j].flags.alpha_map_compressed) {
+        } else if (layerDef.flags.alpha_map_compressed) {
             //Compressed
             //http://www.pxr.dk/wowdev/wiki/index.php?title=ADT/v18
+            int readThisRow = 0;
             while( readForThisLayer < 4096 )
             {
                 // fill or copy mode
-                bool fill = (alphaArray[alphaOffs] & 0x80 ) > 0;
-                int n = alphaArray[alphaOffs] & 0x7F;
-                alphaOffs++;
+                uint8_t codeVal = alphaArray[alphaOffs++];
+                bool fill = (codeVal & 0x80 ) != 0;
+                int n = fill ?
+                    codeVal & 0x7F :
+                    codeVal;
 
-                for ( int k = 0; k < n && readForThisLayer < 4096; k++ )
+
+                for ( int k = 0; k < n && readForThisLayer < 4096; k++)
                 {
                     currentLayer[offO] = alphaArray[alphaOffs];
                     readForThisLayer++;
                     offO += 4;
 
-
                     if( !fill ) alphaOffs++;
+
+                    if (++readThisRow >= 64) {
+                        readThisRow = 0;
+                        break;
+                    }
                 }
                 if( fill ) alphaOffs++;
             }
@@ -554,7 +577,6 @@ void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *curre
                 }
             }
         }
-
         //Fix alpha depending on flag
 //        if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
 //            int offO = j;
@@ -562,6 +584,17 @@ void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *curre
 //                currentLayer[offO+k*4] = (unsigned char) (178 * currentLayer[offO + k * 4] >> 8);
 //            }
 //        }
+    }
+
+    if (uncompressedIndex) {
+        for ( int i = 0; i < 64*64; i++ ) {
+            uint8_t layer0 = currentLayer[i * 4 + 0];
+            uint8_t layer1 = currentLayer[i * 4 + 1];
+            uint8_t layer2 = currentLayer[i * 4 + 2];
+            uint8_t layer3 = currentLayer[i * 4 + 3];
+
+            currentLayer[i*4 + uncompressedIndex] = 255 - layer0 - layer1 - layer2 - layer3;
+        }
     }
 }
 

@@ -571,6 +571,28 @@ bool WmoObject::startTraversingWMOGroup(
     std::vector<HInteriorView> ivPerWMOGroup = std::vector<HInteriorView>(mainGeom->groupsLen);
 
     uint32_t portalCount = (uint32_t) std::max(0, this->mainGeom->portalsLen);
+
+    if (portalCount == 0) {
+        auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
+        bool result = false;
+        for (int i = 0; i< mainGeom->groupsLen; i++) {
+            if ((mainGeom->groups[i].flags.EXTERIOR) > 0 || !m_api->getConfig()->usePortalCulling) { //exterior
+                if (this->groupObjects[i] != nullptr) {
+                    bool drawDoodads, drawGroup;
+                    this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumDataGlobal);
+                    if (drawDoodads) {
+                        exteriorView->wmoGroupArray.addToCheckM2(this->groupObjects[i]);
+                    }
+                    if (drawGroup) {
+                        exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
+                    }
+                    result |= drawGroup;
+                }
+            }
+        }
+        return result;
+    }
+
     std::vector<bool> transverseVisitedPortals = std::vector<bool>(portalCount, false);
 
     //CurrentVisibleM2 and visibleWmo is array of global m2 objects, that are visible after frustum
@@ -661,13 +683,15 @@ bool WmoObject::startTraversingWMOGroup(
                     if (drawGroup) {
                         exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
                         traverseTempData.atLeastOneGroupIsDrawn = true;
-                        this->traverseGroupWmo(
-                            i,
-                            false,
-                            traverseTempData,
-                            frustumPlanesLocal,
-                            globalLevel,
-                            0);
+                        if (m_api->getConfig()->usePortalCulling && portalCount > 0) {
+                            this->traverseGroupWmo(
+                                i,
+                                false,
+                                traverseTempData,
+                                frustumPlanesLocal,
+                                globalLevel,
+                                0);
+                        }
                     }
                 }
             }

@@ -1136,6 +1136,7 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
                                 const HMapRenderPlan &mapRenderPlan,
                                 M2ObjectListContainer &m2ObjectsCandidates,
                                 WMOListContainer &wmoCandidates) {
+    ZoneScoped;
     if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         //Get visible area that should be checked
         float minx = 99999, maxx = -99999;

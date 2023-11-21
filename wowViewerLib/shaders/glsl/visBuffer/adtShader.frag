@@ -90,7 +90,7 @@ void main() {
     const float threshold = 1.5;
 
     vec2 alphaCoord = vec2(vAlphaCoords);
-    vec3 alphaBlend = texture( s_AlphaTextures[nonuniformEXT(adtInstanceData.meshIndexVSPS_meshIndexPS_AlphaTextureInd.z)], alphaCoord).gba;
+    vec3 alphaBlend = texture( s_AlphaTextures[nonuniformEXT(adtInstanceData.meshIndexVSPS_meshIndexPS_AlphaTextureInd.z)], alphaCoord).rgb;
 
     vec2 tcLayer0 = transformUV(vTexCoord, 0, adtMeshWidePS);
     vec2 tcLayer1 = transformUV(vTexCoord, 1, adtMeshWidePS);

@@ -68,8 +68,7 @@ public:
     PointerChecker<SMTextureFlags> mtxf = mtxf_len;
     int mtxf_len = 0;
 
-    PointerChecker<char> mamp = mamp_len;
-    int mamp_len = 0;
+    uint8_t mamp_val = 0;
 
     PointerChecker<SMDoodadDef> doodadDef = doodadDef_len;
     int doodadDef_len = 0;
