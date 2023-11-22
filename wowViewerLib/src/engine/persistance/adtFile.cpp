@@ -488,93 +488,91 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t currentLayerSize) {
-    mcnkStruct_t &mcnkObj = mcnkStructs[i];
-    uint8_t* alphaArray = mcnkObj.mcal;
-    PointerChecker<SMLayer> &layers = mcnkObj.mcly;
+MCAL_Offsets_Runtime AdtFile::createAlphaTextureRuntime(int mcnkChunkIndex) {
+    mcnkStruct_t &mcnkObj = mcnkStructs[mcnkChunkIndex];
+    uint8_t* mcal = mcnkObj.mcal;
+    auto &layers = mcnkObj.mcly;
 
-    assert(currentLayerSize >= (64*4) * 64);
-    assert(mcnkObj.mclyCnt <= 4);
-    if (layers == nullptr || alphaArray == nullptr) return;
-
-    int uncompressedIndex = 0;
-    for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
-        if (layers[j].flags.use_alpha_map == 0) {
-            uncompressedIndex = j;
-        }
-    }
-
-
-//    auto mclyIndexes = std::vector<int> (mcnkStructs[i].mclyCnt);
-//    std::generate(mclyIndexes.begin(), mclyIndexes.end(), [n = 0] () mutable { return n++; });
-//    std::sort(mclyIndexes.begin(), mclyIndexes.end(),  [mcnk = mcnkStructs[i]](const auto& a, const auto& b) {
-//        return mcnk.mcly[a].textureId > mcnk.mcly[b].textureId;
-//    });
-
+    MCAL_Offsets_Runtime result;
     for (int j = 1; j < mcnkObj.mclyCnt; j++ ) {
         auto &layerDef = layers[j];
         int alphaOffs = layerDef.offsetInMCAL;
-        int offO = j-1;
+
+        result.alphaOffsets[j-1] = &mcal[alphaOffs];
+    }
+
+    result.uncompressedIndex = 0;
+    for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
+        if (layers[j].flags.use_alpha_map == 0) {
+            result.uncompressedIndex = j;
+        }
+    }
+
+    return result;
+}
+
+void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t textureSize) {
+    mcnkStruct_t &mcnkObj = mcnkStructs[i];
+    uint8_t* mcal = mcnkObj.mcal;
+    auto &layers = mcnkObj.mcly;
+
+    assert(mcnkObj.mclyCnt <= 4);
+    if (layers == nullptr || mcal == nullptr) return;
+
+
+    for (int j = 1; j < mcnkObj.mclyCnt; j++ ) {
+        auto &layerDef = layers[j];
+
+        auto &alphaArray = mcalRuntime.alphaOffsets[j-1];
+
         int readForThisLayer = 0;
 
         if (!layerDef.flags.use_alpha_map) {
-            for (int k = 0; k < 4096; k++) {
-                currentLayer[offO+k*4] = 0;
-            }
+//            for (int k = 0; k < 4096; k++) {
+//                *currentLayer++ = 0;
+//            }
         } else if (layerDef.flags.alpha_map_compressed) {
             //Compressed
             //http://www.pxr.dk/wowdev/wiki/index.php?title=ADT/v18
-            int readThisRow = 0;
-            while( readForThisLayer < 4096 )
+            while( readForThisLayer < 64 )
             {
                 // fill or copy mode
-                uint8_t codeVal = alphaArray[alphaOffs++];
+                uint8_t codeVal = *alphaArray++;
                 bool fill = (codeVal & 0x80 ) != 0;
                 int n = fill ?
                     codeVal & 0x7F :
                     codeVal;
 
+                if (fill) {
+                    uint8_t alphaVal = *alphaArray++;
 
-                for ( int k = 0; k < n && readForThisLayer < 4096; k++)
-                {
-                    currentLayer[offO] = alphaArray[alphaOffs];
-                    readForThisLayer++;
-                    offO += 4;
-
-                    if( !fill ) alphaOffs++;
-
-                    if (++readThisRow >= 64) {
-                        readThisRow = 0;
-                        break;
+                    for (int k = 0; k < n && readForThisLayer < 64; k++) {
+                        *currentLayer++ = alphaVal;
+                        readForThisLayer++;
+                    }
+                } else {
+                    for (int k = 0; k < n && readForThisLayer < 64; k++) {
+                        *currentLayer++ = *alphaArray++;
+                        readForThisLayer++;
                     }
                 }
-                if( fill ) alphaOffs++;
             }
         } else {
             //Uncompressed
             if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
                 //Uncompressed (4096)
-                for (int iX =0; iX < 64; iX++) {
                     for (int iY = 0; iY < 64; iY++){
-                        currentLayer[offO] = alphaArray[alphaOffs];
-
-                        offO += 4;
-                        readForThisLayer+=1;
-                        alphaOffs++;
+                        *currentLayer++ = *alphaArray++;
                     }
-                }
+
             } else {
                 //Uncompressed (2048)
-                for (int iX =0; iX < 64; iX++) {
                     for (int iY = 0; iY < 32; iY++){
                         //Old world
-                        currentLayer[offO] = (alphaArray[alphaOffs] & 0x0f ) * 17;
-                        offO += 4;
-                        currentLayer[offO] =  ((alphaArray[alphaOffs] & 0xf0 ) >> 4) * 17;
-                        offO += 4;
-                        readForThisLayer+=2; alphaOffs++;
+                        uint8_t alphaVal = *alphaArray++;
+                        *currentLayer++ = (alphaVal & 0x0f ) * 17;
+                        *currentLayer++ =  ((alphaVal & 0xf0 ) >> 4) * 17;
                     }
-                }
             }
         }
         //Fix alpha depending on flag
@@ -586,14 +584,16 @@ void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *curre
 //        }
     }
 
-    if (uncompressedIndex) {
-        for ( int i = 0; i < 64*64; i++ ) {
-            uint8_t layer0 = currentLayer[i * 4 + 0];
-            uint8_t layer1 = currentLayer[i * 4 + 1];
-            uint8_t layer2 = currentLayer[i * 4 + 2];
-            uint8_t layer3 = currentLayer[i * 4 + 3];
+    if (mcalRuntime.uncompressedIndex) {
+        auto pCurrentLayer = currentLayer;
+        auto pCurrentLayerInt = (uint32_t *)currentLayer;
+        for ( int i = 0; i < 64; i++ ) {
+            uint8_t layer0 = *pCurrentLayer++;
+            uint8_t layer1 = *pCurrentLayer++;
+            uint8_t layer2 = *pCurrentLayer++;
+            uint8_t layer3 = *pCurrentLayer++;
 
-            currentLayer[i*4 + uncompressedIndex] = 255 - layer0 - layer1 - layer2 - layer3;
+            *pCurrentLayerInt++ = 255 - layer0 - layer1 - layer2 - layer3;
         }
     }
 }

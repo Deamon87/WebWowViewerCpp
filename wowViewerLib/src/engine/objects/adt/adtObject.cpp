@@ -480,10 +480,18 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
     }
 }
 
+template<int channelNum>
 inline uint8_t &getChannel(uint8_t *data, int x, int y, int width, int height, char channel) {
 
 //    assert(((width * y + x ) * 4 + channel) < data.size());
-    return data[(width * y + x) * 4 + channel];
+    return data[(width * y + x) * channelNum + channel];
+};
+
+template<int channelNum>
+inline void *getRowPtr(uint8_t *data, int x, int y, int width, int height, char channel) {
+
+//    assert(((width * y + x ) * 4 + channel) < data.size());
+    return (void *) &data[(width * y + x) * channelNum + channel];
 };
 
 constexpr int maxAlphaTexPerChunk = 4;
@@ -502,34 +510,64 @@ void AdtObject::loadAlphaTextures() {
     alphaTexture = m_api->hDevice->createTexture(false, false);
 
         memset(bigTexture.data(), 0, bigTexture.size());
-    std::array<uint8_t, alphaTexSize * alphaTexSize * 4> alphaTextureData;
 
-    if (chunkCount > 0)
-        for (int i = 0; i < chunkCount; i++){
-//        oneapi::tbb::task_arena arena(std::min<int>(8, m_api->getConfig()->hardwareThreadCount()), 1);
-//        arena.execute([&] {
-//            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, chunkCount, 16), [&](tbb::blocked_range<size_t> &r) {
-//                for (size_t i = r.begin(); i != r.end(); ++i) {
+    if (chunkCount > 0) {
+//        for (int i = 0; i < chunkCount; i++){
+        oneapi::tbb::task_arena arena(std::min<int>(8, m_api->getConfig()->hardwareThreadCount()), 1);
+        arena.execute([&] {
+            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, chunkCount, 16), [&](tbb::blocked_range<size_t> &r) {
+                for (size_t i = r.begin(); i != r.end(); ++i) {
+                    ALIGNED_(16) std::array<uint8_t, alphaTexSize * 4> alphaTextureData;
+
                     auto const &mapTile = m_adtFile->mapTile[i];
                     const auto indexX = mapTile.IndexX;
                     const auto indexY = mapTile.IndexY;
                     memset(alphaTextureData.data(), 0, alphaTextureData.size());
 
-                    m_adtFileTex->processTexture(m_wdtFile->mphd->flags, indexY*16+indexX, alphaTextureData.data(), alphaTextureData.size());
+                    auto chunkMcalRuntime = m_adtFileTex->createAlphaTextureRuntime(i);
 
                     for (int y = 0; y < 64; y++) {
-                        for (int x = 0; x < 64; x++) {
-                            for (uint8_t channel = 0; channel < 4; channel++) {
-                                getChannel(bigTexture.data(),
-                                           indexX * 64 + x, indexY * 64 + y,
-                                           texWidth, texHeight, channel) =
-                                    getChannel(alphaTextureData.data(), x, y, alphaTexSize, alphaTexSize, channel);
-                            }
+                        m_adtFileTex->processAlphaTextureRow(chunkMcalRuntime,m_wdtFile->mphd->flags, i, alphaTextureData.data(), alphaTextureData.size());
+
+                        __m128i *alpha[4] = {
+                            (__m128i *)(alphaTextureData.data() + (0)),
+                            (__m128i *)(alphaTextureData.data() + (64)),
+                            (__m128i *)(alphaTextureData.data() + (64 * 2)),
+                            (__m128i *)(alphaTextureData.data() + (64 * 3)),
+                        };
+
+                        auto texturePtr = (__m128i*)getRowPtr<4>(bigTexture.data(),
+                                                                indexX * 64 + 0, indexY * 64 + y,
+                                                                texWidth, texHeight, 0);
+
+                        for (int x = 0; x < 64/16; x++) {
+                            //Interleave
+                            __m128i alpha0 = _mm_load_si128(alpha[0]++); //a_1 a_2 a_3 a_4 a_5 a_6 a_7 a_8 a_9 a_10 a_11 a_12 a_13 a_14 a_15 a_16
+                            __m128i alpha1 = _mm_load_si128(alpha[1]++); //b_1 b_2 b_3 b_4 b_5 b_6 b_7 b_8 b_9 b_10 b_11 b_12 b_13 b_14 b_15 b_16
+                            __m128i alpha2 = _mm_load_si128(alpha[2]++); //c_1 c_2 c_3 c_4 c_5 c_6 c_7 c_8 c_9 c_10 c_11 c_12 c_13 c_14 c_15 c_16
+                            __m128i alpha3 = _mm_load_si128(alpha[3]++); //d_1 d_2 d_3 d_4 d_5 d_6 d_7 d_8 d_9 d_10 d_11 d_12 d_13 d_14 d_15 d_16
+
+                            __m128i a_b_low = _mm_unpacklo_epi8(alpha0, alpha1); //a_1 b_1 a_2 b_2 a_3 b_3 a_4 b_4 a_5 b_5 a_6 b_6 a_7 b_7
+                            __m128i a_b_high = _mm_unpackhi_epi8(alpha0, alpha1); //a_8 b_8 a_9 b_9 a_10 b_10 a_11 b_11 a_12 b_12 a_13 b_13 a_14 b_14
+
+                            __m128i c_d_low = _mm_unpacklo_epi8(alpha2, alpha3); //c_1 d_1 c_2 d_2 c_3 d_3 c_4 d_4 c_5 d_5 c_6 d_6 c_7 d_7
+                            __m128i c_d_high = _mm_unpackhi_epi8(alpha2, alpha3);//c_8 d_8 c_9 d_9 c_10 d_10 c_11 d_11 c_12 d_12 c_13 d_13 c_14 d_14
+
+                            __m128i a_b_c_d_low_low = _mm_unpacklo_epi16(a_b_low, c_d_low); //a_1 b_1 c_1 d_1 a_2 b_2 c_2 d_2...
+                            __m128i a_b_c_d_low_high = _mm_unpackhi_epi16(a_b_low, c_d_low);//a_4 b_4 c_4 d_4 a_5 b_5 c_5 d_5...
+
+                            __m128i a_b_c_d_high_low = _mm_unpacklo_epi16(a_b_high, c_d_high);//a_8 b_8 c_8 d_8 a_9 b_9 c_9 d_9...
+                            __m128i a_b_c_d_high_high = _mm_unpackhi_epi16(a_b_high, c_d_high);//a_11 b_11 c_11 d_11 a_12 b_12 c_12 d_12...
+
+                            _mm_store_si128(texturePtr++, a_b_c_d_low_low);
+                            _mm_store_si128(texturePtr++, a_b_c_d_low_high);
+                            _mm_store_si128(texturePtr++, a_b_c_d_high_low);
+                            _mm_store_si128(texturePtr++, a_b_c_d_high_high);
                         }
                     }
-//                }
-//            }, tbb::auto_partitioner());
-//        });
+                }
+            }, tbb::auto_partitioner());
+        });
     }
 
     alphaTexture->getTexture()->loadData(texWidth, texHeight, &bigTexture[0], ITextureFormat::itRGBA);

@@ -33,12 +33,18 @@ struct mcnkStruct_t {
     int mcqlLen = 0;
 };
 
+struct MCAL_Offsets_Runtime {
+    int uncompressedIndex = 0;
+    std::array<uint8_t*, 3> alphaOffsets = {nullptr,nullptr,nullptr};
+};
+
 class AdtFile: public PersistentFile {
 public:
     AdtFile(std::string fileName){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
     AdtFile(int fileDataId){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
 
-    void processTexture(const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t currentLayerSize);
+    MCAL_Offsets_Runtime createAlphaTextureRuntime(int i);
+    void processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t currentLayerSize);
     void process(HFileContent adtFile, const std::string &fileName) override;
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:
