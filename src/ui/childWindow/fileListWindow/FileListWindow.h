@@ -35,12 +35,13 @@ public:
     virtual void makeRequest(const std::vector<DbRequest> &paramsChange) = 0;
     virtual void searchChanged() = 0;
     virtual void setOrder(int order) = 0;
+    virtual void scanFiles() = 0;
     virtual const std::vector<DBResults> getResults() = 0;
 };
 
 class FileListWindow {
 public:
-    FileListWindow(const std::function<void(int fileId, const std::string &fileType)> &fileOpenCallback);
+    FileListWindow(const HApiContainer &api, const std::function<void(int fileId, const std::string &fileType)> &fileOpenCallback);
 
     bool draw();
 private:
@@ -49,6 +50,7 @@ private:
     std::function<void(int fileId, const std::string &fileType)> m_fileOpenCallback;
 
     int m_filesTotal;
+    const HApiContainer m_api;
     std::unique_ptr<FileListLamda> selectStatement;
     std::array<char, 128> filterText = {0};
     std::string filterTextStr = "%%";

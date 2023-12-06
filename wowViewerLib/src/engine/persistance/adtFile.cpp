@@ -546,14 +546,12 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
                 if (fill) {
                     uint8_t alphaVal = *alphaArray++;
 
-                    for (int k = 0; k < n && readForThisLayer < 64; k++) {
+                    for (int k = 0; k < n && readForThisLayer < 64; k++, readForThisLayer++) {
                         *currentLayer++ = alphaVal;
-                        readForThisLayer++;
                     }
                 } else {
-                    for (int k = 0; k < n && readForThisLayer < 64; k++) {
+                    for (int k = 0; k < n && readForThisLayer < 64; k++, readForThisLayer++) {
                         *currentLayer++ = *alphaArray++;
-                        readForThisLayer++;
                     }
                 }
             }

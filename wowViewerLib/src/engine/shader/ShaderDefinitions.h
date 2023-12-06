@@ -475,9 +475,9 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,2,0},
     },
     {
-      {3,0, "s_AlphaTextures"},
-      {4,0, "s_LayerHeightTextures"},
       {2,0, "s_LayerTextures"},
+      {4,0, "s_LayerHeightTextures"},
+      {3,0, "s_AlphaTextures"},
     },
     {
       {
@@ -1245,8 +1245,8 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
-      {1,1,48},
       {0,0,544},
+      {1,1,48},
       {1,0,64},
     },
     {
@@ -1264,15 +1264,15 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
-      {2,4, "uAlphaTexture"},
-      {2,5, "uLayerHeight0"},
-      {2,6, "uLayerHeight1"},
-      {2,7, "uLayerHeight2"},
-      {2,8, "uLayerHeight3"},
       {2,0, "uLayer0"},
       {2,1, "uLayer1"},
       {2,2, "uLayer2"},
       {2,3, "uLayer3"},
+      {2,5, "uLayerHeight0"},
+      {2,6, "uLayerHeight1"},
+      {2,7, "uLayerHeight2"},
+      {2,8, "uLayerHeight3"},
+      {2,4, "uAlphaTexture"},
     },
     {
       {
@@ -2735,6 +2735,10 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
+      1, {
+      }
+    },
+    {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
         {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
@@ -2764,10 +2768,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
         {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
         {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-    {
-      1, {
       }
     },
   }},

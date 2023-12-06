@@ -68,14 +68,6 @@ public:
 
 decltype(FileListDB::makeStorage("")) *u_storage;
 
-template<class T, std::enable_if_t<
-    std::is_arithmetic_v<T>
->...>
-constexpr auto const_abs(T const& x) noexcept
-{
-    return x < 0 ? -x : x;
-}
-
 template<int order>
 class StatementHolderA {
 public:
@@ -184,23 +176,28 @@ statementFactory(decltype(FileListDB::makeStorage("")) &storage, const std::stri
         case 2:
             return std::make_unique<StatementHolder<2>>(storage, searchClause, order > 0);
         case 3:
-            return std::make_unique<StatementHolder<2>>(storage, searchClause, order > 0);
+            return std::make_unique<StatementHolder<3>>(storage, searchClause, order > 0);
         case 1:
         default:
             return std::make_unique<StatementHolder<1>>(storage, searchClause, order > 0);
     }
 }
 
+enum class EnumParamsChanged {
+    OFFSET_LIMIT = 0, SEARCH_STRING = 1, SORTING = 2, SCAN_REPOSITORY = 3
+};
+
 namespace std {
 
 // partial specialization for reference_wrapper
 // is this really necessary?
-    template<typename T>
-    class hash<std::reference_wrapper<T>> {
+    template<typename EnumParamsChanged>
+    struct hash<std::reference_wrapper<EnumParamsChanged>> {
     public:
-        std::size_t operator()(std::reference_wrapper<T> x) const { return std::hash<T>()(x.get()); }
+        std::size_t operator()(const std::reference_wrapper<EnumParamsChanged> &x) const { return std::hash<EnumParamsChanged>()(x.get()); }
     };
 }
+
 
 template <typename T>
 class my_container {
@@ -245,13 +242,11 @@ private:
 
 
 
-enum class EnumParamsChanged {
-    OFFSET_LIMIT = 0, SEARCH_STRING = 1, SORTING
-};
+
 
 class FileListLambdaInst : public FileListLamda {
 public:
-    FileListLambdaInst(std::string &searchClause, int &recordsTotal) : m_recordsTotal(recordsTotal)
+    FileListLambdaInst(const HApiContainer &api, std::string &searchClause, int &recordsTotal) : m_recordsTotal(recordsTotal), m_api(api)
     {
         dbThread = std::thread([&]() {
             decltype(FileListDB::makeStorage("")) storage = FileListDB::makeStorage("fileList.db3");
@@ -278,6 +273,10 @@ public:
 
                         case EnumParamsChanged::SORTING:
                             statement = statementFactory(storage, searchClause, m_order);
+                            break;
+
+                        case EnumParamsChanged::SCAN_REPOSITORY:
+                            scanRepository();
                             break;
                     }
 
@@ -335,12 +334,19 @@ public:
         m_order = order;
         stateChangeAwaiter.pushInput(EnumParamsChanged::SORTING);
     }
+    void scanFiles() override {
+        stateChangeAwaiter.pushInput(EnumParamsChanged::SCAN_REPOSITORY);
+    }
+    int getCurrentScanningProgress() { return m_currentScanningProgress;}
+    int getAmountOfFilesInRep() { return m_filesInRepository;}
 private:
-
     void setResults(const std::vector<DBResults> &results) {
         std::unique_lock lock(resultsChange);
 
         m_results = results;
+    }
+    void scanRepository() {
+//        m_api->requestProcessor
     }
 
 private:
@@ -350,8 +356,13 @@ private:
     std::thread dbThread;
     bool m_isTerminating = false;
 
+    const HApiContainer m_api;
+
     int &m_recordsTotal;
     int m_order = 1;
+
+    int m_currentScanningProgress = -1;
+    int m_filesInRepository = -1;
 
     std::vector<DBResults> m_results;
     std::vector<DbRequest> m_requests;
@@ -363,11 +374,11 @@ private:
 // FileListWindow
 // -------------------------------------
 
-FileListWindow::FileListWindow(const std::function<void(int fileId, const std::string &fileType)> &fileOpenCallback) : m_fileOpenCallback(fileOpenCallback) {
+FileListWindow::FileListWindow(const HApiContainer &api, const std::function<void(int fileId, const std::string &fileType)> &fileOpenCallback) : m_api(api), m_fileOpenCallback(fileOpenCallback) {
     m_filesTotal = 0;
     m_showWindow = true;
 
-    selectStatement = std::make_unique<FileListLambdaInst>(filterTextStr, m_filesTotal);
+    selectStatement = std::make_unique<FileListLambdaInst>(api, filterTextStr, m_filesTotal);
 }
 
 bool FileListWindow::draw() {

@@ -7,6 +7,7 @@ precision highp int;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
+#include "../common/commonADTMaterial.glsl"
 
 /* vertex shader code */
 layout(location = 0) in vec3 aPos;
@@ -38,24 +39,6 @@ layout(location = 3) out vec3 vNormal;
 layout(location = 4) out vec3 vVertexLighting;
 layout(location = 5) out vec2 vAlphaCoords;
 
-const float TILESIZE = (1600.0 / 3.0);
-const float CHUNKSIZE = TILESIZE / 16.0;
-const float UNITSIZE =  CHUNKSIZE / 8.0;
-
-float fixUVBorder(float uvComp, float x) {
-    const float alphaTextureSize_px = 1024.0;
-    const float subPixel = 0.5 / alphaTextureSize_px;
-
-    float epsilon = 0.0001;
-
-    if (x < epsilon)
-    uvComp += subPixel;
-    if ((1.0 - x) < epsilon)
-    uvComp -= subPixel;
-
-    return uvComp ;
-}
-
 void main() {
 
 /*
@@ -68,44 +51,17 @@ void main() {
     //Thus, we first need to get vertexNumber within MCNK
 
     int indexInMCNK = gl_VertexIndex % (9 * 9 + 8 * 8);
-    float iX = mod(indexInMCNK, 17.0);
-    float iY = floor(indexInMCNK/17.0);
 
-    if (iX > 8.01) {
-        iY = iY + 0.5;
-        iX = iX - 8.5;
-    }
+    calcAdtAlphaUV(indexInMCNK, uPos.xyz, vAlphaCoords, vChunkCoords);
 
-//    vec4 worldPoint = vec4(
-//        uPos.x - iY * UNITSIZE,
-//        uPos.y - iX * UNITSIZE,
-//        uPos.z + aHeight,
-//        1);
-
-    vec4 worldPoint = vec4(aPos, 1);
-
-    vChunkCoords = vec2(iX, iY);
-
-    // Top left point (17058 17063) becomes (0,0)
-    vec2 coordsInAdtIndexSpace = 32.0f * TILESIZE - uPos.yx;
-    // Add half chunk to do little offset before doing floor in next step
-    coordsInAdtIndexSpace += vec2(CHUNKSIZE/2.0);
-
-    vec2 ADTIndex = floor(coordsInAdtIndexSpace / TILESIZE);
-
-    vAlphaCoords = ((vec2(32.0f) - ADTIndex) * TILESIZE - aPos.yx) / TILESIZE;
-
-    vAlphaCoords.x = fixUVBorder(vAlphaCoords.x, vChunkCoords.x/8.0);
-    vAlphaCoords.y = fixUVBorder(vAlphaCoords.y, vChunkCoords.y/8.0);
-
-    vPosition = (scene.uLookAtMat * worldPoint).xyz;
-    vColor = aColor;
-    vVertexLighting = aVertexLighting.rgb;
     mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
     vec3 normal = normalize((viewMatForNormal * vec4(aNormal, 0.0)).xyz);
+    vec4 worldPoint = vec4(aPos, 1);
 
+    vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vNormal = normal;
+    vColor = aColor;
+    vVertexLighting = aVertexLighting.rgb;
 
     gl_Position = scene.uPMatrix * scene.uLookAtMat * worldPoint;
-
 }
