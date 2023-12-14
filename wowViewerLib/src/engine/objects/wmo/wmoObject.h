@@ -22,11 +22,12 @@ class WmoGroupObject;
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"
 #include "../../../include/database/dbStructs.h"
+#include "../SceneObjectWithID.h"
 
-class WmoObject : public IWmoApi {
+class WmoObject : public IWmoApi/*, public SceneObjectWithId*/ {
 
 public:
-    WmoObject(HApiContainer &api) : m_api(api) {
+    WmoObject(HApiContainer &api/*, int id*/) : /*SceneObjectWithId(id),*/ m_api(api) {
     }
 
 	~WmoObject();
@@ -73,12 +74,12 @@ private:
 
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
-    std::unordered_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
+    robin_hood::unordered_flat_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
 
     std::shared_ptr<M2Object> skyBox = nullptr;
 
-    std::unordered_map<int, HGSamplableTexture> diffuseTextures;
-    std::unordered_map<int, HGSamplableTexture> specularTextures;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> diffuseTextures;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> specularTextures;
 
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWideChunk;
     std::vector<std::shared_ptr<IWMOMaterial>> m_materialCache;
@@ -185,20 +186,12 @@ public:
     void createWorldPortals();
 };
 
-struct WMOObjectHasher
-{
-    size_t operator()(const std::shared_ptr<WmoObject>& val)const
-    {
-        return std::hash<std::shared_ptr<WmoObject>>()(val);
-    }
-};
-
-//typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
 class WMOListContainer {
+    using wmoContainer = std::vector<std::shared_ptr<WmoObject>>;
 private:
-    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
-    std::vector<std::shared_ptr<WmoObject>> wmoToLoad;
-    std::vector<std::shared_ptr<WmoObject>> wmoToDrawn;
+    wmoContainer wmoCandidates;
+    wmoContainer wmoToLoad;
+    wmoContainer wmoToDrawn;
 
     bool candCanHaveDuplicates = false;
     bool toLoadCanHaveDuplicates = false;
@@ -206,7 +199,7 @@ private:
 
     bool m_locked = false;
 
-    void inline removeDuplicates(std::vector<std::shared_ptr<WmoObject>> &array) {
+    void inline removeDuplicates(wmoContainer &array) {
         if (array.size() < 1000) {
             std::sort(array.begin(), array.end());
         } else {
@@ -260,7 +253,7 @@ public:
         }
     }
 
-    const std::vector<std::shared_ptr<WmoObject>> &getCandidates() {
+    const wmoContainer &getCandidates() {
         if (this->candCanHaveDuplicates) {
             removeDuplicates(wmoCandidates);
             candCanHaveDuplicates = false;
@@ -269,7 +262,7 @@ public:
         return wmoCandidates;
     }
 
-    const std::vector<std::shared_ptr<WmoObject>> &getToLoad() {
+    const wmoContainer &getToLoad() {
         if (this->toLoadCanHaveDuplicates) {
             removeDuplicates(wmoToLoad);
             toLoadCanHaveDuplicates = false;
@@ -279,7 +272,7 @@ public:
     }
 
 
-    const std::vector<std::shared_ptr<WmoObject>> &getToDrawn() {
+    const wmoContainer &getToDrawn() {
         if (this->toDrawmCanHaveDuplicates) {
             removeDuplicates(wmoToDrawn);
             toDrawmCanHaveDuplicates = false;

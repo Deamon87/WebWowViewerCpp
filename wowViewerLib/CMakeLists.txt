@@ -358,8 +358,18 @@ set(SOURCE_FILES
         src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h
         src/engine/objects/liquid/LiquidInstance.cpp
         src/engine/objects/liquid/LiquidInstance.h
-        src/engine/objects/liquid/LiquidDataGetters.h src/renderer/frame/FrameProfile.h src/gapi/interface/buffers/IBufferVersioned.h
-        src/renderer/mapScene/materials/BindlessTexture.h)
+        src/engine/objects/liquid/LiquidDataGetters.h
+        src/renderer/frame/FrameProfile.h src/gapi/interface/buffers/IBufferVersioned.h
+        src/renderer/mapScene/materials/BindlessTexture.h
+        src/engine/objects/scenes/EntityActorsFactory.cpp
+        src/engine/objects/scenes/EntityActorsFactory.cpp
+        src/engine/objects/scenes/EntityActorsFactory.h
+        3rdparty/arena-allocator/arena_alloc.cc
+        src/engine/objects/SceneObjectWithID.h
+        src/engine/custom_allocators/FrameBasedStackAllocator.cpp
+        src/engine/custom_allocators/FrameBasedStackAllocator.h
+        src/engine/custom_allocators/FrameBasedHeapAllocator.cpp
+        src/engine/custom_allocators/FrameBasedHeapAllocator.h)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION

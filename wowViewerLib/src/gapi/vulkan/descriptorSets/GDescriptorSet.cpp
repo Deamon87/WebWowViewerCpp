@@ -53,12 +53,12 @@ void GDescriptorSet::update() {
 // The operations described by pDescriptorWrites are performed first, followed by the operations described by pDescriptorCopies.
 //
 // So, writes first, copies second. T_T
-void GDescriptorSet::writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo, std::vector<int> &dynamicBufferIndexes) {
+void GDescriptorSet::writeToDescriptorSets(framebased::vector<VkWriteDescriptorSet> &descriptorWrites, framebased::vector<VkDescriptorImageInfo> &imageInfo, framebased::vector<int> &dynamicBufferIndexes) {
     vkUpdateDescriptorSets(m_device->getVkDevice(), static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
 
     m_firstUpdate = false;
 
-    m_dynamicBufferIndexes = dynamicBufferIndexes;
+    m_dynamicBufferIndexes = decltype(m_dynamicBufferIndexes)(dynamicBufferIndexes.begin(), dynamicBufferIndexes.end());
     m_dynamicBuffers.resize(m_dynamicBufferIndexes.size());
     for (int i = 0; i < m_dynamicBufferIndexes.size(); i++) {
         m_dynamicBuffers[i] = boundDescriptors[m_dynamicBufferIndexes[i]][0]->buffer.get();
@@ -82,8 +82,8 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
     }
 #endif
 
-    auto textureVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureVLK>(samplableTextureVlk->getTexture()) : nullptr;
-    auto samplerVlk = samplableTextureVlk != nullptr ? std::dynamic_pointer_cast<GTextureSamplerVLK>(samplableTextureVlk->getSampler()) : nullptr;
+    auto textureVlk = samplableTextureVlk != nullptr ? ((GTextureVLK *)samplableTextureVlk->getTexture().get()) : nullptr;
+    auto samplerVlk = samplableTextureVlk != nullptr ? ((GTextureSamplerVLK *)samplableTextureVlk->getSampler().get()) : nullptr;
 
     assignBoundDescriptors(bindIndex, samplableTextureVlk, index, DescriptorRecord::DescriptorRecordType::Texture);
 
@@ -95,8 +95,8 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
     if (textureVlk == nullptr || !textureVlk->getIsLoaded()) {
         auto blackTextureVlk = m_set.m_device->getBlackTexturePixel();
 
-        texture = std::dynamic_pointer_cast<GTextureVLK>(blackTextureVlk->getTexture());
-        samplerVlk = std::dynamic_pointer_cast<GTextureSamplerVLK>(blackTextureVlk->getSampler());
+        texture = (GTextureVLK *) blackTextureVlk->getTexture().get();
+        samplerVlk = (GTextureSamplerVLK *) blackTextureVlk->getSampler().get();
     }
 
     imageInfo.imageView = texture->texture.view;

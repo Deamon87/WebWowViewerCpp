@@ -452,10 +452,8 @@ HGSamplableTexture WmoObject::getTexture(int textureId, bool isSpec) {
         return nullptr;
     };
 
-    std::unordered_map<int, HGSamplableTexture> &textureCache = diffuseTextures;
-    if (isSpec) {
-        textureCache = specularTextures;
-    }
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> &textureCache =
+        !isSpec ? diffuseTextures : specularTextures;
 
     auto i = textureCache.find(textureId);
     if (i != textureCache.end()) {
@@ -568,8 +566,6 @@ bool WmoObject::startTraversingWMOGroup(
     if (!m_loaded)
         return false;
 
-    std::vector<HInteriorView> ivPerWMOGroup = std::vector<HInteriorView>(mainGeom->groupsLen);
-
     uint32_t portalCount = (uint32_t) std::max(0, this->mainGeom->portalsLen);
 
     if (portalCount == 0) {
@@ -592,6 +588,7 @@ bool WmoObject::startTraversingWMOGroup(
         }
         return result;
     }
+    std::vector<HInteriorView> ivPerWMOGroup = std::vector<HInteriorView>(mainGeom->groupsLen);
 
     std::vector<bool> transverseVisitedPortals = std::vector<bool>(portalCount, false);
 

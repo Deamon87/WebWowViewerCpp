@@ -87,6 +87,12 @@ static std::vector<GBufferBinding> drawPortalBindings = {{
      {+drawPortalShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0}, // 0
  }};
 
+struct MeshCount {
+    int commonMesh = 0;
+    int m2Mesh = 0;
+    int wmoMesh = 0;
+    int adtMesh = 0;
+};
 
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:

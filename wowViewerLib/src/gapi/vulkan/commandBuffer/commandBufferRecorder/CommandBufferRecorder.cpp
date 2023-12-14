@@ -192,23 +192,24 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
     if (submitRecords.get().empty())
         return;
 
+    std::vector<VkBufferMemoryBarrier> barrierVec = {{}};
+
     const auto &submits = submitRecords.get();
     for (int i = 0; i < submits.size(); i++) {
         auto &submit = submits[i];
         if (submit.needsBarrier && !submit.copyRegions.empty()) {
-            this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, {
-                {
-                    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                    nullptr,
-                    0,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_QUEUE_FAMILY_IGNORED,
-                    VK_QUEUE_FAMILY_IGNORED,
-                    submit.src,
-                    submit.copyRegions[0].srcOffset,
-                    submit.copyRegions[0].size
-                }
-            });
+            barrierVec[0] = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                nullptr,
+                0,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_QUEUE_FAMILY_IGNORED,
+                VK_QUEUE_FAMILY_IGNORED,
+                submit.src,
+                submit.copyRegions[0].srcOffset,
+                submit.copyRegions[0].size
+            };
+            this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, barrierVec);
         }
 
         vkCmdCopyBuffer(m_gCmdBuffer.m_cmdBuffer,
@@ -218,19 +219,18 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
                         submit.copyRegions.data());
 
         if (submit.needsBarrier && !submit.copyRegions.empty()) {
-            this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, {
-                {
-                    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
-                    nullptr,
-                    0,
-                    VK_PIPELINE_STAGE_TRANSFER_BIT,
-                    VK_QUEUE_FAMILY_IGNORED,
-                    VK_QUEUE_FAMILY_IGNORED,
-                    submit.dst,
-                    submit.copyRegions[0].dstOffset,
-                    submit.copyRegions[0].size
-                }
-            });
+            barrierVec[0] =  {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                nullptr,
+                0,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_QUEUE_FAMILY_IGNORED,
+                VK_QUEUE_FAMILY_IGNORED,
+                submit.dst,
+                submit.copyRegions[0].dstOffset,
+                submit.copyRegions[0].size
+            };
+            this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, barrierVec);
         }
     }
 }

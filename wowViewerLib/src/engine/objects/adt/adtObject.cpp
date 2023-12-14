@@ -340,7 +340,7 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
-    //ZoneScoped;
+    ZoneScoped;
     HGDevice device = m_api->hDevice;
 
     auto adtFileTex = m_adtFileTex;
@@ -516,9 +516,9 @@ void AdtObject::loadAlphaTextures() {
         oneapi::tbb::task_arena arena(std::min<int>(8, m_api->getConfig()->hardwareThreadCount()), 1);
         arena.execute([&] {
             oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, chunkCount, 16), [&](tbb::blocked_range<size_t> &r) {
-                for (size_t i = r.begin(); i != r.end(); ++i) {
-                    ALIGNED_(16) std::array<uint8_t, alphaTexSize * 4> alphaTextureData;
+                ALIGNED_(16) std::array<uint8_t, alphaTexSize * 4> alphaTextureData;
 
+                for (size_t i = r.begin(); i != r.end(); ++i) {
                     auto const &mapTile = m_adtFile->mapTile[i];
                     const auto indexX = mapTile.IndexX;
                     const auto indexY = mapTile.IndexY;
@@ -536,7 +536,7 @@ void AdtObject::loadAlphaTextures() {
                             (__m128i *)(alphaTextureData.data() + (64 * 3)),
                         };
 
-                        auto texturePtr = (__m128i*)getRowPtr<4>(bigTexture.data(),
+                        __m128i* __restrict texturePtr = (__m128i*)getRowPtr<4>(bigTexture.data(),
                                                                 indexX * 64 + 0, indexY * 64 + y,
                                                                 texWidth, texHeight, 0);
 
@@ -663,11 +663,12 @@ FileStatus AdtObject::getLoadedStatus() {
 }
 
 
-void AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
+bool AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (!m_loaded) {
         if (getLoadedStatus() == FileStatus::FSLoaded) {
             this->loadingFinished(sceneRenderer);
             m_loaded = true;
+            return true;
         }
     }
 
@@ -675,6 +676,7 @@ void AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
         createIBOAndBinding(sceneRenderer);
         createMeshes(sceneRenderer);
     }
+    return false;
 }
 void AdtObject::update(animTime_t deltaTime ) {
     m_lastDeltaTime = deltaTime;

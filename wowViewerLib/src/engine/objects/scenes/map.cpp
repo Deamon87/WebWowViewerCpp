@@ -1322,7 +1322,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadGeom(sceneRenderer);
                 m2ProcessedThisFrame++;
-//        if (m2ProcessedThisFrame > 100) break;
+                if (m2ProcessedThisFrame > 100) break;
             }
         }
     }
@@ -1364,8 +1364,10 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
 
     {
         ZoneScopedN("Load adt");
+        int adtProcessed = 0;
         for (auto &adtObject: renderPlan->adtArray) {
-            adtObject->adtObject->doPostLoad(sceneRenderer);
+            adtProcessed += (adtObject->adtObject->doPostLoad(sceneRenderer)) ? 1 : 0;
+            if (adtProcessed >= 2) break;
         }
     }
 

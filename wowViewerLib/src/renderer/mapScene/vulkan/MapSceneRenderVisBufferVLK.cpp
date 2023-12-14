@@ -532,6 +532,7 @@ HGIndexBuffer  MapSceneRenderVisBufferVLK::createSkyIndexBuffer(int sizeInBytes)
 
 std::shared_ptr<IADTMaterial>
 MapSceneRenderVisBufferVLK::createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) {
+    ZoneScoped;
     auto &l_sceneWideChunk = sceneWideChunk;
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(adtBuffers.adtMeshWideVSPSes);
     auto fragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockPS>>(adtBuffers.adtMeshWidePSes);
@@ -955,6 +956,13 @@ public:
         commonMeshes.reserve(1000);
         m2DrawVec.reserve(5000);
         wmoDrawVec.reserve(5000);
+        adtDrawVec.reserve(1000);
+    }
+    COpaqueMeshCollectorBindlessVLK(MapSceneRenderVisBufferVLK &rendererVlk, MeshCount &lastMeshCount) : m_renderer(rendererVlk) {
+        commonMeshes.reserve(lastMeshCount.commonMesh);
+        m2DrawVec.reserve(lastMeshCount.m2Mesh);
+        wmoDrawVec.reserve(lastMeshCount.wmoMesh);
+        adtDrawVec.reserve(lastMeshCount.adtMesh);
     }
 private:
     MapSceneRenderVisBufferVLK &m_renderer;
@@ -967,7 +975,7 @@ private:
         uint32_t vertexOffset;
     };
 
-    typedef std::unordered_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
+    typedef robin_hood::unordered_flat_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
 
     std::vector<DrawCommand> m2DrawVec;
     std::vector<DrawCommand> wmoDrawVec;
@@ -1122,6 +1130,12 @@ public:
             }
         }
     }
+    void fillMeshCount(MeshCount &meshCount) {
+        meshCount.adtMesh = adtDrawVec.size();
+        meshCount.m2Mesh = m2DrawVec.size();
+        meshCount.wmoMesh = wmoDrawVec.size();
+        meshCount.commonMesh = commonMeshes.size();
+    }
 
 };
 
@@ -1135,9 +1149,11 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 
 
     //Create meshes
-    std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_collector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this);
+    std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_collector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this, lastMeshCount);
     std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_skyCollector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this);
     auto transparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
+
+
 
     auto skyTransparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
     framePlan->m2Array.lock();
@@ -1152,6 +1168,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 //                                                    [&]() {
     collectMeshes(framePlan, *u_collector, *u_skyCollector, transparentMeshes, skyTransparentMeshes);
 
+    u_collector->fillMeshCount(lastMeshCount);
 //                                                    }
 //    );
 

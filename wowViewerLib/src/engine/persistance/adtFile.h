@@ -44,7 +44,7 @@ public:
     AdtFile(int fileDataId){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
 
     MCAL_Offsets_Runtime createAlphaTextureRuntime(int i);
-    void processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t currentLayerSize);
+    void processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t* __restrict currentLayer, uint32_t currentLayerSize);
     void process(HFileContent adtFile, const std::string &fileName) override;
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:

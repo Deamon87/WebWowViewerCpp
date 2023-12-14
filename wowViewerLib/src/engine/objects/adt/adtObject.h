@@ -49,7 +49,7 @@ public:
 
     void update(animTime_t deltaTime);
     void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData);
-    void doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
 
     int getAreaId(int mcnk_x, int mcnk_y);
 
@@ -114,9 +114,9 @@ private:
     int mostDetailedLod = 0; // 0 = most detailed LOD, 5 = least detailed lod
     int leastDetiledLod = 0;
 
-    std::unordered_map<int, HGSamplableTexture> m_requestedTextures;
-    std::unordered_map<int, HGSamplableTexture> m_requestedTexturesHeight;
-    std::unordered_map<int, HGSamplableTexture> m_requestedTexturesSpec;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> m_requestedTextures;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> m_requestedTexturesHeight;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> m_requestedTexturesSpec;
 
     std::vector<LodCommand> lodCommands;
 
@@ -167,16 +167,6 @@ private:
     HGSamplableTexture getAdtTexture(int textureId);
     HGSamplableTexture getAdtHeightTexture(int textureId);
     HGSamplableTexture getAdtSpecularTexture(int textureId);
-
-//    struct AnimTextures {
-//        std::array<mathfu::mat4, 4> animTexture;
-//    };
-//    struct AnimTrans {
-//        std::array<mathfu::vec2, 4> transVectors;
-//    };
-//    std::vector<AnimTextures> texturesPerMCNK;
-//
-//    std::vector<AnimTrans> animationTranslationPerMCNK;
 
     void calcBoundingBoxes();
     void loadM2s();

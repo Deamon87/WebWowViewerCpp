@@ -163,13 +163,13 @@ union{
 /*0x020*/  uint32_t ofsRefs;
 /*0x024*/  uint32_t ofsAlpha;
 /*0x028*/  uint32_t sizeAlpha;
-/*0x02C*/  uint32_t ofsShadow;                            // only with flags.has_mcsh
+/*0x02C*/  uint32_t ofsShadow;                           // only with flags.has_mcsh
 /*0x030*/  uint32_t sizeShadow;
 /*0x034*/  uint32_t areaid;                              // in alpha: both zone id and sub zone id, as uint16s.
 /*0x038*/  uint32_t nMapObjRefs;
 /*0x03C*/  uint16_t holes_low_res;
 /*0x03E*/  uint16_t unknown_but_used;                    // in alpha: padding
-/*0x040*/  uint16_t ReallyLowQualityTextureingMap[8];  // "predTex", It is used to determine which detail doodads to show. Values are an array of two bit unsigned integers, naming the layer.
+/*0x040*/  uint16_t ReallyLowQualityTextureingMap[8];    // "predTex", It is used to determine which detail doodads to show. Values are an array of two bit unsigned integers, naming the layer.
 /*0x050*/  uint64_t noEffectDoodad;                      // WoD: may be an explicit MCDD chunk
 /*0x058*/  uint32_t ofsSndEmitters;
 /*0x05C*/  uint32_t nSndEmitters;                        // will be set to 0 in the client if ofsSndEmitters doesn't point to MCSE!

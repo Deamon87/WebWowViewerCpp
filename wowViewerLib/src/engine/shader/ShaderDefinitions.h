@@ -72,9 +72,15 @@ struct attributeDefine {
 
     extern const std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameFrag;
 
-struct waterfallShader {
+struct drawBBShader {
     enum class Attribute {
-        aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, waterfallShaderAttributeEnd
+        aPosition = 0, drawBBShaderAttributeEnd
+    };
+};
+
+struct drawFrustumShader {
+    enum class Attribute {
+        aPosition = 0, drawFrustumShaderAttributeEnd
     };
 };
 
@@ -90,27 +96,9 @@ struct adtShader {
     };
 };
 
-struct drawBBShader {
+struct drawLinesShader {
     enum class Attribute {
-        aPosition = 0, drawBBShaderAttributeEnd
-    };
-};
-
-struct waterShader {
-    enum class Attribute {
-        aPositionTransp = 0, aTexCoord = 1, waterShaderAttributeEnd
-    };
-};
-
-struct m2ParticleShader {
-    enum class Attribute {
-        aPosition = 0, aColor = 1, aTexcoord0 = 2, aTexcoord1 = 3, aTexcoord2 = 4, aAlphaCutoff = 5, m2ParticleShaderAttributeEnd
-    };
-};
-
-struct drawFrustumShader {
-    enum class Attribute {
-        aPosition = 0, drawFrustumShaderAttributeEnd
+        aPosition = 0, drawLinesShaderAttributeEnd
     };
 };
 
@@ -126,9 +114,9 @@ struct drawQuad {
     };
 };
 
-struct skyConus {
+struct drawPortalShader {
     enum class Attribute {
-        aPosition = 0, skyConusAttributeEnd
+        aPosition = 0, drawPortalShaderAttributeEnd
     };
 };
 
@@ -138,9 +126,21 @@ struct m2Shader {
     };
 };
 
-struct drawPortalShader {
+struct imguiShader {
     enum class Attribute {
-        aPosition = 0, drawPortalShaderAttributeEnd
+        Position = 0, UV = 1, Color = 2, imguiShaderAttributeEnd
+    };
+};
+
+struct waterShader {
+    enum class Attribute {
+        aPositionTransp = 0, aTexCoord = 1, waterShaderAttributeEnd
+    };
+};
+
+struct m2ParticleShader {
+    enum class Attribute {
+        aPosition = 0, aColor = 1, aTexcoord0 = 2, aTexcoord1 = 3, aTexcoord2 = 4, aAlphaCutoff = 5, m2ParticleShaderAttributeEnd
     };
 };
 
@@ -150,41 +150,41 @@ struct renderFrameBufferShader {
     };
 };
 
-struct wmoShader {
-    enum class Attribute {
-        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aTexCoord4 = 5, aColor = 6, aColor2 = 7, aColorSecond = 8, wmoAmbient = 9, wmoShaderAttributeEnd
-    };
-};
-
-struct imguiShader {
-    enum class Attribute {
-        Position = 0, UV = 1, Color = 2, imguiShaderAttributeEnd
-    };
-};
-
-struct drawLinesShader {
-    enum class Attribute {
-        aPosition = 0, drawLinesShaderAttributeEnd
-    };
-};
-
 struct ribbonShader {
     enum class Attribute {
         aPosition = 0, aColor = 1, aTexcoord0 = 2, ribbonShaderAttributeEnd
     };
 };
 
+struct skyConus {
+    enum class Attribute {
+        aPosition = 0, skyConusAttributeEnd
+    };
+};
+
+struct waterfallShader {
+    enum class Attribute {
+        aPosition = 0, aNormal = 1, bones = 2, boneWeights = 3, aTexCoord = 4, aTexCoord2 = 5, waterfallShaderAttributeEnd
+    };
+};
+
+struct wmoShader {
+    enum class Attribute {
+        aPosition = 0, aNormal = 1, aTexCoord = 2, aTexCoord2 = 3, aTexCoord3 = 4, aTexCoord4 = 5, aColor = 6, aColor2 = 7, aColorSecond = 8, wmoAmbient = 9, wmoShaderAttributeEnd
+    };
+};
+
 std::string loadShader(std::string shaderName);
 #ifdef SHADERDATACPP
 const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPerShaderName = {
-{ "waterfallShader",
+{ "drawBBShader",
   {
     { "aPosition", 0},
-    { "aNormal", 1},
-    { "bones", 2},
-    { "boneWeights", 3},
-    { "aTexCoord", 4},
-    { "aTexCoord2", 5},
+  }
+},
+{ "drawFrustumShader",
+  {
+    { "aPosition", 0},
   }
 },
 { "adtLodShader",
@@ -201,9 +201,41 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "aNormal", 3},
   }
 },
-{ "drawBBShader",
+{ "drawLinesShader",
   {
     { "aPosition", 0},
+  }
+},
+{ "drawPoints",
+  {
+    { "aPosition", 0},
+  }
+},
+{ "drawQuad",
+  {
+    { "position", 0},
+  }
+},
+{ "drawPortalShader",
+  {
+    { "aPosition", 0},
+  }
+},
+{ "m2Shader",
+  {
+    { "aPosition", 0},
+    { "aNormal", 1},
+    { "bones", 2},
+    { "boneWeights", 3},
+    { "aTexCoord", 4},
+    { "aTexCoord2", 5},
+  }
+},
+{ "imguiShader",
+  {
+    { "Position", 0},
+    { "UV", 1},
+    { "Color", 2},
   }
 },
 { "waterShader",
@@ -222,19 +254,16 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "aAlphaCutoff", 5},
   }
 },
-{ "drawFrustumShader",
+{ "renderFrameBufferShader",
   {
-    { "aPosition", 0},
+    { "a_position", 0},
   }
 },
-{ "drawPoints",
+{ "ribbonShader",
   {
     { "aPosition", 0},
-  }
-},
-{ "drawQuad",
-  {
-    { "position", 0},
+    { "aColor", 1},
+    { "aTexcoord0", 2},
   }
 },
 { "skyConus",
@@ -242,7 +271,7 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "aPosition", 0},
   }
 },
-{ "m2Shader",
+{ "waterfallShader",
   {
     { "aPosition", 0},
     { "aNormal", 1},
@@ -250,16 +279,6 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "boneWeights", 3},
     { "aTexCoord", 4},
     { "aTexCoord2", 5},
-  }
-},
-{ "drawPortalShader",
-  {
-    { "aPosition", 0},
-  }
-},
-{ "renderFrameBufferShader",
-  {
-    { "a_position", 0},
   }
 },
 { "wmoShader",
@@ -276,75 +295,19 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
     { "wmoAmbient", 9},
   }
 },
-{ "imguiShader",
-  {
-    { "Position", 0},
-    { "UV", 1},
-    { "Color", 2},
-  }
-},
-{ "drawLinesShader",
-  {
-    { "aPosition", 0},
-  }
-},
-{ "ribbonShader",
-  {
-    { "aPosition", 0},
-    { "aColor", 1},
-    { "aTexcoord0", 2},
-  }
-},
 };
 
 const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = { 
-{ "visBuffer/ribbonShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/ribbonShader.frag.spv", 
+{ "forwardRendering/adtLodShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
-      {1,1,16},
-      {0,0,544},
+      {0,0,84},
     },
     {
       {
         {0,0,1},
-        {1,1,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -354,16 +317,16 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,0,4096},
     },
     {
-      {2,0, "uTexture"},
+      {0,4, "uDiffuseTexture"},
+      {0,5, "uNormalTexture"},
     },
     {
       {
+        {4,5,2},
         {0,0,0},
         {0,0,0},
-        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -373,11 +336,11 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/m2Shader.vert.spv", 
+{ "forwardRendering/adtLodShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
-      {0,0,544},
+      {0,0,144},
     },
     {
       {
@@ -392,10 +355,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,9,0},
-      {1,7,0},
-      {1,3,0},
-      {1,1,0},
     },
     {
     },
@@ -413,13 +372,50 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "forwardRendering/wmoShader.vert.spv", 
+{ "forwardRendering/drawDepthShader.frag.spv", 
   {
-    ShaderStage::Vertex,
+    ShaderStage::Fragment,
     {
+      {0,2,12},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {0,3, "diffuse"},
+    },
+    {
+      {
+        {3,3,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/adtShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+      {1,1,48},
       {1,0,64},
-      {0,0,544},
-      {1,1,16},
     },
     {
       {
@@ -436,248 +432,22 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
+      {2,0, "uLayer0"},
+      {2,1, "uLayer1"},
+      {2,2, "uLayer2"},
+      {2,3, "uLayer3"},
+      {2,5, "uLayerHeight0"},
+      {2,6, "uLayerHeight1"},
+      {2,7, "uLayerHeight2"},
+      {2,8, "uLayerHeight3"},
+      {2,4, "uAlphaTexture"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
+        {0,8,9},
         {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/adtShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,3,0},
-      {1,1,0},
-      {1,2,0},
-    },
-    {
-      {2,0, "s_LayerTextures"},
-      {4,0, "s_LayerHeightTextures"},
-      {3,0, "s_AlphaTextures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,1},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/waterfallShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {2,0,112},
-      {1,5,4096},
-      {1,2,16384},
-      {0,0,544},
-      {1,0,64},
-    },
-    {
-      {
-        {0,0,1},
-        {0,5,6},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {3,3, "uBumpTexture"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {3,3,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/waterShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-      {1,0,64},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/skyConus.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-      {1,0,96},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/skyConus.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/waterfallShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {2,1,0},
-      {1,7,0},
-      {2,0,0},
-      {1,6,0},
-      {1,3,0},
-      {1,1,0},
-    },
-    {
-      {3,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -722,7 +492,159 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "forwardRendering/drawPortalShader.vert.spv", 
+{ "forwardRendering/adtShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {1,0,64},
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/wmoShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,6,0},
+      {1,4,0},
+      {1,3,0},
+      {1,5,0},
+      {1,1,0},
+      {1,2,0},
+    },
+    {
+      {2,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawBBShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,1,112},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawFrustumShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,2,12},
+    },
+    {
+      {
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/wmoShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
@@ -731,6 +653,121 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,6,0},
+      {1,4,0},
+      {1,1,0},
+      {1,2,0},
+      {1,3,0},
+      {1,5,0},
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawFrustumShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,128},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawBBShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,1,112},
+      {0,0,544},
+    },
+    {
+      {
+        {0,1,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/drawLinesShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,1,12},
+    },
+    {
+      {
+        {1,1,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -794,240 +831,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "forwardRendering/imguiShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {1,0, "Texture"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/wmoShader.vert.spv", 
+{ "forwardRendering/drawPoints.vert.spv", 
   {
     ShaderStage::Vertex,
     {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,6,0},
-      {1,4,0},
-      {1,1,0},
-      {1,2,0},
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/waterShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,2,0},
-      {1,0,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/renderFrameBufferShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,2,168},
-    },
-    {
-      {
-        {2,2,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {0,3, "u_sampler"},
-    },
-    {
-      {
-        {3,3,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/waterfallShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {2,0,112},
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {3,4, "uNormalTex"},
-      {3,2, "uNoise"},
-      {3,1, "uWhiteWater"},
-      {3,0, "uMask"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,4,5},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/drawLinesShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/drawBBShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,1,112},
-      {0,0,544},
+      {0,0,128},
+      {0,1,64},
     },
     {
       {
@@ -1095,245 +904,50 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/waterfallShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {2,1,0},
-      {2,0,0},
-    },
-    {
-      {3,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/drawFrustumShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/imguiShader.vert.spv", 
+{ "forwardRendering/drawPortalShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
-      {0,0,80},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/adtLodShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,144},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/adtShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-      {1,1,48},
-      {1,0,64},
-    },
-    {
-      {
-        {0,0,1},
-        {0,1,2},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {2,0, "uLayer0"},
-      {2,1, "uLayer1"},
-      {2,2, "uLayer2"},
-      {2,3, "uLayer3"},
-      {2,5, "uLayerHeight0"},
-      {2,6, "uLayerHeight1"},
-      {2,7, "uLayerHeight2"},
-      {2,8, "uLayerHeight3"},
-      {2,4, "uAlphaTexture"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,8,9},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/adtLodShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,84},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/wmoShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {1,2,32},
       {0,0,544},
     },
     {
       {
         {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/renderFrameBufferShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,2,168},
+    },
+    {
+      {
         {2,2,1},
         {0,0,0},
         {0,0,0},
@@ -1341,62 +955,19 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
         {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {2,0, "uTexture"},
-      {2,1, "uTexture2"},
-      {2,2, "uTexture3"},
-      {2,3, "uTexture4"},
-      {2,4, "uTexture5"},
-      {2,5, "uTexture6"},
-      {2,6, "uTexture7"},
-      {2,7, "uTexture8"},
-      {2,8, "uTexture9"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,8,9},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/ffxgauss4.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,1,32},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
         {0,0,0},
       }
     },
     {
     },
     {
-      {1,0, "texture0"},
+      {0,3, "u_sampler"},
+      {0,4, "u_depth"},
     },
     {
       {
+        {3,4,2},
         {0,0,0},
-        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1433,6 +1004,43 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {
         {0,0,0},
         {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/ffxgauss4.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,1,32},
+    },
+    {
+      {
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {1,0, "texture0"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1481,17 +1089,15 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "forwardRendering/waterShader.frag.spv", 
+{ "forwardRendering/imguiShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
-      {1,1,48},
-      {0,0,544},
     },
     {
       {
-        {0,0,1},
-        {1,1,1},
+        {0,0,0},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1503,13 +1109,13 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
     },
     {
-      {2,0, "uTexture"},
+      {1,0, "Texture"},
     },
     {
       {
         {0,0,0},
-        {0,0,0},
         {0,0,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1519,223 +1125,16 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "forwardRendering/m2Shader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {2,0,64},
-      {1,4,256},
-      {1,3,4096},
-      {1,1,256},
-      {0,0,544},
-      {1,0,64},
-      {1,5,4096},
-    },
-    {
-      {
-        {0,0,1},
-        {0,5,6},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {3,0, "uTexture"},
-      {3,1, "uTexture2"},
-      {3,2, "uTexture3"},
-      {3,3, "uTexture4"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,3,4},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/wmoShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,6,0},
-      {1,4,0},
-      {1,3,0},
-      {1,5,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/waterShader.vert.spv", 
+{ "forwardRendering/imguiShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
-      {0,0,544},
+      {0,0,80},
     },
     {
       {
         {0,0,1},
         {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,2,0},
-      {1,1,0},
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/m2Shader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,9,0},
-      {1,8,0},
-      {1,7,0},
-      {1,2,0},
-      {1,5,0},
-      {1,4,0},
-      {1,1,0},
-      {1,6,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/drawFrustumShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,128},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/adtShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {1,0,64},
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1788,117 +1187,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {
         {0,0,0},
         {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/adtShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,3,0},
-      {1,1,0},
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/drawPoints.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,128},
-      {0,1,64},
-    },
-    {
-      {
-        {0,1,2},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/drawBBShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,1,112},
-    },
-    {
-      {
-        {1,1,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1985,6 +1273,133 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
+{ "forwardRendering/skyConus.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+      {1,0,96},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/m2Shader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {2,0,64},
+      {1,4,256},
+      {1,3,4096},
+      {1,1,256},
+      {0,0,544},
+      {1,0,64},
+      {1,5,4096},
+      {1,2,16384},
+    },
+    {
+      {
+        {0,0,1},
+        {0,5,6},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {3,0, "uTexture"},
+      {3,1, "uTexture2"},
+      {3,2, "uTexture3"},
+      {3,3, "uTexture4"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,3,4},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/m2Shader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {1,2,16384},
+      {1,0,64},
+      {0,0,544},
+      {1,1,256},
+      {1,3,4096},
+      {1,4,256},
+      {1,5,4096},
+      {2,0,64},
+    },
+    {
+      {
+        {0,0,1},
+        {0,5,6},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
 { "forwardRendering/renderFrameBufferShader.vert.spv", 
   {
     ShaderStage::Vertex,
@@ -2020,55 +1435,16 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "forwardRendering/drawDepthShader.frag.spv", 
+{ "visBuffer/waterShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
-      {0,2,12},
-    },
-    {
-      {
-        {2,2,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-      {0,3, "diffuse"},
-    },
-    {
-      {
-        {3,3,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "forwardRendering/m2Shader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {1,2,16384},
-      {1,0,64},
       {0,0,544},
     },
     {
       {
         {0,0,1},
-        {0,2,3},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2078,14 +1454,18 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
+      {1,2,0},
+      {1,0,0},
+      {1,1,0},
     },
     {
+      {2,0, "s_Textures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {0,0,0},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2119,6 +1499,46 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     },
     {
       {2,0, "uTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/waterShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,2,0},
+      {1,1,0},
+      {1,0,0},
+    },
+    {
+      {2,0, "s_Textures"},
     },
     {
       {
@@ -2170,41 +1590,684 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
+{ "forwardRendering/skyConus.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,1,48},
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {2,0, "uTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+      {1,0,64},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/adtShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,3,0},
+      {1,1,0},
+      {1,2,0},
+    },
+    {
+      {2,0, "s_LayerTextures"},
+      {4,0, "s_LayerHeightTextures"},
+      {3,0, "s_AlphaTextures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,1},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterfallShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {2,0,112},
+      {0,0,544},
+      {1,0,64},
+      {1,1,256},
+      {1,2,16384},
+      {1,3,4096},
+      {1,4,256},
+      {1,5,4096},
+    },
+    {
+      {
+        {0,0,1},
+        {0,5,6},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {3,4, "uNormalTex"},
+      {3,2, "uNoise"},
+      {3,1, "uWhiteWater"},
+      {3,0, "uMask"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,4,5},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/adtShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,3,0},
+      {1,1,0},
+      {1,2,0},
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/waterfallShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {2,0,112},
+      {1,5,4096},
+      {1,2,16384},
+      {0,0,544},
+      {1,0,64},
+      {1,1,256},
+      {1,3,4096},
+      {1,4,256},
+    },
+    {
+      {
+        {0,0,1},
+        {0,5,6},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {3,3, "uBumpTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {3,3,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/ribbonShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,1,16},
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,0,4096},
+    },
+    {
+      {2,0, "uTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/wmoShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,2,32},
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {2,2,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+      {2,0, "uTexture"},
+      {2,1, "uTexture2"},
+      {2,2, "uTexture3"},
+      {2,3, "uTexture4"},
+      {2,4, "uTexture5"},
+      {2,5, "uTexture6"},
+      {2,6, "uTexture7"},
+      {2,7, "uTexture8"},
+      {2,8, "uTexture9"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,8,9},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/ribbonShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "forwardRendering/wmoShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {1,0,64},
+      {0,0,544},
+      {1,1,16},
+    },
+    {
+      {
+        {0,0,1},
+        {0,1,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/waterfallShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {2,1,0},
+      {1,7,0},
+      {2,0,0},
+      {1,6,0},
+      {1,3,0},
+      {1,1,0},
+      {1,2,0},
+      {1,4,0},
+      {1,5,0},
+      {1,8,0},
+      {1,9,0},
+    },
+    {
+      {3,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/m2Shader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,9,0},
+      {1,8,0},
+      {1,7,0},
+      {1,2,0},
+      {1,5,0},
+      {1,4,0},
+      {1,1,0},
+      {1,6,0},
+      {1,3,0},
+    },
+    {
+      {2,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/waterfallShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {2,1,0},
+      {2,0,0},
+      {1,1,0},
+      {1,2,0},
+      {1,3,0},
+      {1,4,0},
+      {1,5,0},
+      {1,6,0},
+      {1,7,0},
+      {1,8,0},
+      {1,9,0},
+    },
+    {
+      {3,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "visBuffer/m2Shader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,9,0},
+      {1,7,0},
+      {1,3,0},
+      {1,1,0},
+      {1,2,0},
+      {1,4,0},
+      {1,5,0},
+      {1,6,0},
+      {1,8,0},
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
 };
 
 const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameVert = {
-  {"waterfallShader",  {
+  {"drawFrustumShader",  {
     {
-      3, {
-        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
+      0, {
+        {"_0_0_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_uPMatrix", true, 64, 4, 4, 0},
       }
     },
-    {
-      6, {
-        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      7, {
-      }
-    },
+  }},
+  {"drawBBShader",  {
     {
       1, {
-        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      2, {
-        {"_1_2_uBoneMatrixes[0]", true, 0, 4, 4, 256},
-      }
-    },
-    {
-      5, {
-        {"_1_5_textureMatrix[0]", true, 0, 4, 4, 64},
+        {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
+        {"_0_1_uBBScale", true, 64, 1, 4, 0},
+        {"_0_1_uBBCenter", true, 80, 1, 4, 0},
+        {"_0_1_uColor", true, 96, 1, 4, 0},
       }
     },
     {
       0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
       }
     },
   }},
@@ -2219,7 +2282,35 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"adtShader",  {
     {
-      1, {
+      0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
       }
     },
     {
@@ -2227,158 +2318,15 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-  }},
-  {"drawBBShader",  {
-    {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-    {
       1, {
-        {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
-        {"_0_1_uBBScale", true, 64, 1, 4, 0},
-        {"_0_1_uBBCenter", true, 80, 1, 4, 0},
-        {"_0_1_uColor", true, 96, 1, 4, 0},
-      }
-    },
-  }},
-  {"waterShader",  {
-    {
-      1, {
-        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
       }
     },
     {
       2, {
       }
     },
-    {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
   }},
-  {"m2ParticleShader",  {
-    {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-  }},
-  {"drawFrustumShader",  {
+  {"drawLinesShader",  {
     {
       0, {
         {"_0_0_uLookAtMat", true, 0, 4, 4, 0},
@@ -2388,14 +2336,14 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"drawPoints",  {
     {
-      1, {
-        {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
-      }
-    },
-    {
       0, {
         {"_0_0_uLookAtMat", true, 0, 4, 4, 0},
         {"_0_0_uPMatrix", true, 64, 4, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
       }
     },
   }},
@@ -2406,125 +2354,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
   }},
-  {"skyConus",  {
-    {
-      0, {
-        {"_1_0_skyColor[0]", true, 0, 1, 4, 6},
-      }
-    },
-  }},
-  {"m2Shader",  {
-    {
-      1, {
-        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      3, {
-        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      7, {
-      }
-    },
-    {
-      9, {
-      }
-    },
-    {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-    {
-      2, {
-        {"_1_2_uBoneMatrixes[0]", true, 0, 4, 4, 256},
-      }
-    },
-  }},
   {"drawPortalShader",  {
-    {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-  }},
-  {"renderFrameBufferShader",  {
-  }},
-  {"wmoShader",  {
-    {
-      2, {
-        {"_1_2_VertexShader_UseLitColors", false, 0, 1, 4, 0},
-      }
-    },
-    {
-      4, {
-      }
-    },
-    {
-      6, {
-      }
-    },
-    {
-      1, {
-        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
-      }
-    },
     {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
@@ -2566,15 +2396,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
   }},
-  {"drawLinesShader",  {
+  {"m2Shader",  {
     {
-      0, {
-        {"_0_0_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_uPMatrix", true, 64, 4, 4, 0},
+      2, {
       }
     },
-  }},
-  {"ribbonShader",  {
     {
       0, {
         {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
@@ -2607,46 +2433,8 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
       }
     },
-  }},
-};
-const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameFrag = {
-  {"waterfallShader",  {
-    {
-      1, {
-      }
-    },
-    {
-      0, {
-      }
-    },
-  }},
-  {"skyConus",  {
-  }},
-  {"m2Shader",  {
-    {
-      6, {
-        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      2, {
-      }
-    },
-    {
-      7, {
-      }
-    },
-    {
-      8, {
-      }
-    },
     {
       9, {
-      }
-    },
-    {
-      5, {
-        {"_1_5_textureWeight", true, 0, 1, 4, 0},
       }
     },
     {
@@ -2656,7 +2444,7 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     },
     {
       3, {
-        {"_1_3_colors[0]", true, 0, 1, 4, 256},
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
       }
     },
     {
@@ -2665,152 +2453,21 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-  }},
-  {"adtLodShader",  {
-    {
-      0, {
-        {"_0_0_uViewUp", true, 0, 1, 4, 0},
-        {"_0_0_uSunDir_FogStart", true, 16, 1, 4, 0},
-        {"_0_0_uSunColor_uFogEnd", true, 32, 1, 4, 0},
-        {"_0_0_uAmbientLight", true, 48, 1, 4, 0},
-        {"_0_0_FogColor", true, 64, 1, 4, 0},
-        {"_0_0_uNewFormula", false, 80, 1, 1, 0},
-      }
-    },
-  }},
-  {"renderFrameBufferShader",  {
-    {
-      2, {
-        {"_0_2_gauss_offsets[0]", true, 0, 1, 1, 5},
-        {"_0_2_gauss_weights[0]", true, 80, 1, 1, 5},
-        {"_0_2_uResolution", true, 160, 1, 2, 0},
-      }
-    },
-  }},
-  {"drawPortalShader",  {
-    {
-      0, {
-        {"_1_0_uColor", true, 0, 1, 4, 0},
-      }
-    },
-  }},
-  {"adtShader",  {
-    {
-      2, {
+      5, {
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
       }
     },
     {
-      3, {
+      7, {
       }
     },
     {
-      1, {
+      6, {
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
       }
     },
     {
-      0, {
-        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
-        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
-        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
-        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
-        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
-        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
-        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
-        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
-        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
-        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
-        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
-        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
-        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
-        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
-        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
-        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
-        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
-        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
-        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
-        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
-        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
-        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
-        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
-        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-  }},
-  {"drawBBShader",  {
-    {
-      1, {
-        {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
-        {"_0_1_uBBScale", true, 64, 1, 4, 0},
-        {"_0_1_uBBCenter", true, 80, 1, 4, 0},
-        {"_0_1_uColor", true, 96, 1, 4, 0},
-      }
-    },
-  }},
-  {"ribbonShader",  {
-    {
-      0, {
-        {"_1_0_textureMatrix[0]", true, 0, 4, 4, 64},
-      }
-    },
-    {
-      1, {
-        {"_1_1_uPixelShader_BlendMode_TextureTransformIndex", false, 0, 1, 4, 0},
-      }
-    },
-  }},
-  {"drawLinesShader",  {
-  }},
-  {"imguiShader_opaque",  {
-  }},
-  {"waterShader",  {
-    {
-      2, {
-      }
-    },
-    {
-      0, {
-      }
-    },
-    {
-      1, {
-        {"_1_1_materialId_liquidFlags", false, 0, 1, 4, 0},
-        {"_1_1_matColor", true, 16, 1, 4, 0},
-        {"_1_1_float0_float1", true, 32, 1, 4, 0},
+      8, {
       }
     },
   }},
@@ -2848,12 +2505,262 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
   }},
+  {"waterShader",  {
+    {
+      0, {
+      }
+    },
+    {
+      2, {
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
+  }},
+  {"renderFrameBufferShader",  {
+  }},
+  {"ribbonShader",  {
+    {
+      0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
+      }
+    },
+  }},
+  {"skyConus",  {
+    {
+      0, {
+        {"_1_0_skyColor[0]", true, 0, 1, 4, 6},
+      }
+    },
+  }},
+  {"waterfallShader",  {
+    {
+      0, {
+      }
+    },
+    {
+      5, {
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      2, {
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      3, {
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      7, {
+      }
+    },
+    {
+      6, {
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      8, {
+      }
+    },
+    {
+      9, {
+      }
+    },
+  }},
+  {"wmoShader",  {
+    {
+      0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      6, {
+      }
+    },
+    {
+      4, {
+      }
+    },
+    {
+      2, {
+        {"_1_2_VertexShader_UseLitColors", false, 0, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+      }
+    },
+    {
+      5, {
+        {"_1_5_s_wmoAmbient", true, 0, 1, 4, 0},
+      }
+    },
+  }},
+};
+const  std::unordered_map<std::string, std::unordered_map<int, std::vector<fieldDefine>>> fieldDefMapPerShaderNameFrag = {
+  {"drawFrustumShader",  {
+    {
+      2, {
+        {"_0_2_uColor", true, 0, 1, 3, 0},
+      }
+    },
+  }},
+  {"drawBBShader",  {
+    {
+      1, {
+        {"_0_1_uPlacementMat", true, 0, 4, 4, 0},
+        {"_0_1_uBBScale", true, 64, 1, 4, 0},
+        {"_0_1_uBBCenter", true, 80, 1, 4, 0},
+        {"_0_1_uColor", true, 96, 1, 4, 0},
+      }
+    },
+  }},
+  {"adtLodShader",  {
+    {
+      0, {
+        {"_0_0_uViewUp", true, 0, 1, 4, 0},
+        {"_0_0_uSunDir_FogStart", true, 16, 1, 4, 0},
+        {"_0_0_uSunColor_uFogEnd", true, 32, 1, 4, 0},
+        {"_0_0_uAmbientLight", true, 48, 1, 4, 0},
+        {"_0_0_FogColor", true, 64, 1, 4, 0},
+        {"_0_0_uNewFormula", false, 80, 1, 1, 0},
+      }
+    },
+  }},
   {"drawDepthShader",  {
     {
       2, {
         {"_0_2_drawDepth", false, 0, 1, 1, 0},
         {"_0_2_uFarPlane", true, 4, 1, 1, 0},
         {"_0_2_uNearPlane", true, 8, 1, 1, 0},
+      }
+    },
+  }},
+  {"adtShader",  {
+    {
+      0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
+      }
+    },
+    {
+      1, {
+      }
+    },
+    {
+      3, {
+      }
+    },
+    {
+      2, {
+      }
+    },
+  }},
+  {"drawLinesShader",  {
+    {
+      1, {
+        {"_0_1_uColor", true, 0, 1, 3, 0},
       }
     },
   }},
@@ -2864,7 +2771,12 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
   }},
-  {"drawFrustumShader",  {
+  {"drawPortalShader",  {
+    {
+      0, {
+        {"_1_0_uColor", true, 0, 1, 4, 0},
+      }
+    },
   }},
   {"ffxgauss4",  {
     {
@@ -2881,22 +2793,13 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
   }},
-  {"wmoShader",  {
+  {"skyConus",  {
+  }},
+  {"imguiShader",  {
+  }},
+  {"m2Shader",  {
     {
-      5, {
-        {"_1_5_s_wmoAmbient", true, 0, 1, 4, 0},
-      }
-    },
-    {
-      3, {
-      }
-    },
-    {
-      4, {
-      }
-    },
-    {
-      6, {
+      8, {
       }
     },
     {
@@ -2932,13 +2835,222 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      9, {
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      5, {
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
+      }
+    },
+    {
       2, {
-        {"_1_2_UseLitColor_EnableAlpha_PixelShader_BlendMode", false, 0, 1, 4, 0},
-        {"_1_2_FogColor_AlphaTest", true, 16, 1, 4, 0},
+      }
+    },
+    {
+      7, {
+      }
+    },
+    {
+      6, {
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
       }
     },
   }},
-  {"imguiShader",  {
+  {"imguiShader_opaque",  {
+  }},
+  {"m2ParticleShader",  {
+    {
+      0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
+      }
+    },
+  }},
+  {"waterShader",  {
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      0, {
+      }
+    },
+    {
+      2, {
+      }
+    },
+  }},
+  {"renderFrameBufferShader",  {
+    {
+      2, {
+        {"_0_2_gauss_offsets[0]", true, 0, 1, 1, 5},
+        {"_0_2_gauss_weights[0]", true, 80, 1, 1, 5},
+        {"_0_2_uResolution", true, 160, 1, 2, 0},
+      }
+    },
+  }},
+  {"ribbonShader",  {
+    {
+      1, {
+        {"_1_1_uPixelShader_BlendMode_TextureTransformIndex", false, 0, 1, 4, 0},
+      }
+    },
+    {
+      0, {
+        {"_1_0_textureMatrix[0]", true, 0, 4, 4, 64},
+      }
+    },
+  }},
+  {"waterfallShader",  {
+    {
+      0, {
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      2, {
+      }
+    },
+    {
+      3, {
+        {"_1_3_uBoneMatrixes", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      5, {
+        {"_1_5_textureWeight", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      6, {
+        {"_1_6_textureMatrix", true, 0, 4, 4, 0},
+      }
+    },
+    {
+      7, {
+      }
+    },
+    {
+      8, {
+      }
+    },
+    {
+      9, {
+      }
+    },
+  }},
+  {"wmoShader",  {
+    {
+      2, {
+        {"_1_2_VertexShader_UseLitColors", false, 0, 1, 4, 0},
+      }
+    },
+    {
+      0, {
+        {"_0_0_scene_uLookAtMat", true, 0, 4, 4, 0},
+        {"_0_0_scene_uPMatrix", true, 64, 4, 4, 0},
+        {"_0_0_scene_uViewUpSceneTime", true, 128, 1, 4, 0},
+        {"_0_0_scene_uInteriorSunDir", true, 144, 1, 4, 0},
+        {"_0_0_scene_closeRiverColor", true, 160, 1, 4, 0},
+        {"_0_0_scene_farRiverColor", true, 176, 1, 4, 0},
+        {"_0_0_scene_closeOceanColor", true, 192, 1, 4, 0},
+        {"_0_0_scene_farOceanColor", true, 208, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorAmbientColor", true, 224, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorHorizontAmbientColor", true, 240, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorGroundAmbientColor", true, 256, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColor", true, 272, 1, 4, 0},
+        {"_0_0_scene_extLight_uExteriorDirectColorDir", true, 288, 1, 4, 0},
+        {"_0_0_scene_extLight_adtSpecMult_fogCount", true, 304, 1, 4, 0},
+        {"_0_0_fogData_densityParams", true, 320, 1, 4, 0},
+        {"_0_0_fogData_classicFogParams", true, 336, 1, 4, 0},
+        {"_0_0_fogData_heightPlane", true, 352, 1, 4, 0},
+        {"_0_0_fogData_color_and_heightRate", true, 368, 1, 4, 0},
+        {"_0_0_fogData_heightDensity_and_endColor", true, 384, 1, 4, 0},
+        {"_0_0_fogData_sunAngle_and_sunColor", true, 400, 1, 4, 0},
+        {"_0_0_fogData_heightColor_and_endFogDistance", true, 416, 1, 4, 0},
+        {"_0_0_fogData_sunPercentage", true, 432, 1, 4, 0},
+        {"_0_0_fogData_sunDirection_and_fogZScalar", true, 448, 1, 4, 0},
+        {"_0_0_fogData_heightFogCoeff", true, 464, 1, 4, 0},
+        {"_0_0_fogData_mainFogCoeff", true, 480, 1, 4, 0},
+        {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
+        {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
+        {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
+      }
+    },
+    {
+      6, {
+      }
+    },
+    {
+      4, {
+      }
+    },
+    {
+      3, {
+      }
+    },
+    {
+      5, {
+        {"_1_5_s_wmoAmbient", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      1, {
+        {"_1_1_uPlacementMats", true, 0, 4, 4, 0},
+      }
+    },
   }},
 };
 #endif

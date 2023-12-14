@@ -264,7 +264,8 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
         stagingRecords.clear();
     }
 
-    return MutexLockedVector<VulkanCopyCommands>(dataToBeUploaded, dataToBeUploadedMtx, true);
+
+    return {dataToBeUploaded, dataToBeUploadedMtx, true};
 }
 
 VkBuffer GBufferVLK::getGPUBuffer() {

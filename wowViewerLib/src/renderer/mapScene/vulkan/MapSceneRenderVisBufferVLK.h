@@ -127,8 +127,8 @@ private:
                    (hash<uint8_t>{}(k.colorMask) << 18);
         };
     };
-    std::unordered_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
-    std::unordered_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
+    robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
+    robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
 private:
     HGDeviceVLK m_device;
 
@@ -239,6 +239,8 @@ private:
 
     std::shared_ptr<RenderViewForwardVLK> defaultView;
 
+    MeshCount lastMeshCount;
+
     void createM2GlobalMaterialData();
     void createWMOGlobalMaterialData();
     void createADTGlobalMaterialData();
@@ -249,8 +251,8 @@ private:
     std::mt19937_64 eng; //Use the 64-bit Mersenne Twister 19937 generator
     //and seed it with entropy.
     std::uniform_int_distribution<unsigned long long> idDistr;
-    std::unordered_map<uint32_t, std::weak_ptr<ISimpleMaterialVLK>> m_m2MatCacheId;
-    std::unordered_map<uint32_t, std::weak_ptr<ISimpleMaterialVLK>> m_wmoMatCacheId;
+    robin_hood::unordered_flat_map<uint32_t, std::weak_ptr<ISimpleMaterialVLK>> m_m2MatCacheId;
+    robin_hood::unordered_flat_map<uint32_t, std::weak_ptr<ISimpleMaterialVLK>> m_wmoMatCacheId;
 
     uint32_t generateUniqueWMOMatId() {
         uint32_t random;

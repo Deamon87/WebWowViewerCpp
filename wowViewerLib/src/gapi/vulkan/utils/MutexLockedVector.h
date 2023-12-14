@@ -8,10 +8,10 @@
 #include <vector>
 #include <mutex>
 
-template <typename T>
+template <typename T, typename Vec = std::vector<T>>
 class MutexLockedVector {
 public:
-    MutexLockedVector(std::vector<T> &vec, std::mutex &m, bool clearOnDestroy) : m_vec(vec), m_lockGuard(std::lock_guard(m)), m_clearOnDestroy(clearOnDestroy) {
+    MutexLockedVector(Vec &vec, std::mutex &m, bool clearOnDestroy) : m_vec(vec), m_lockGuard(std::lock_guard(m)), m_clearOnDestroy(clearOnDestroy) {
 
     }
     ~MutexLockedVector() {
@@ -23,7 +23,7 @@ public:
     }
 private:
     bool m_clearOnDestroy;
-    std::vector<T> &m_vec;
+    Vec &m_vec;
     std::lock_guard<std::mutex> m_lockGuard;
 };
 

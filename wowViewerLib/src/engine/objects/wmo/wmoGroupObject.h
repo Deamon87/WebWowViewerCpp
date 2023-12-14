@@ -13,6 +13,7 @@ class WMOGroupListContainer;
 #include "../m2/m2Object.h"
 #include "../liquid/LiquidInstance.h"
 #include "../../../gapi/interface/meshes/IMesh.h"
+#include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
 
 
 class WmoGroupObject {
@@ -149,10 +150,11 @@ enum liquid_basic_types
 
 
 class WMOGroupListContainer {
+using wmoGroupContainer = std::vector<std::shared_ptr<WmoGroupObject>>;
 private:
-    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToDraw;
-    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToCheckM2;
-    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToLoad;
+    wmoGroupContainer wmoGroupToDraw;
+    wmoGroupContainer wmoGroupToCheckM2;
+    wmoGroupContainer wmoGroupToLoad;
 
     bool toDrawCanHaveDuplicates = false;
     bool toCheckM2CanHaveDuplicates = false;
@@ -160,7 +162,7 @@ private:
 
     bool m_locked = false;
 
-    void inline removeDuplicates(std::vector<std::shared_ptr<WmoGroupObject>> &array) {
+    void inline removeDuplicates(wmoGroupContainer &array) {
         if (array.size() < 1000) {
             std::sort(array.begin(), array.end());
         } else {
@@ -229,7 +231,7 @@ public:
         toLoadCanHaveDuplicates = true;
     }
 
-    const std::vector<std::shared_ptr<WmoGroupObject>> &getToDraw() {
+    const wmoGroupContainer &getToDraw() {
         if (this->toDrawCanHaveDuplicates) {
             removeDuplicates(wmoGroupToDraw);
             toDrawCanHaveDuplicates = false;
@@ -238,7 +240,7 @@ public:
         return wmoGroupToDraw;
     }
 
-    const std::vector<std::shared_ptr<WmoGroupObject>> &getToCheckM2() {
+    const wmoGroupContainer &getToCheckM2() {
         if (this->toCheckM2CanHaveDuplicates) {
             removeDuplicates(wmoGroupToCheckM2);
             toCheckM2CanHaveDuplicates = false;
@@ -247,7 +249,7 @@ public:
         return wmoGroupToCheckM2;
     }
 
-    const std::vector<std::shared_ptr<WmoGroupObject>> &getToLoad() {
+    const wmoGroupContainer &getToLoad() {
         if (this->toLoadCanHaveDuplicates) {
             removeDuplicates(wmoGroupToLoad);
             toLoadCanHaveDuplicates = false;

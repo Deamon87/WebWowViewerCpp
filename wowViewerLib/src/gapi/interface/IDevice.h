@@ -165,8 +165,8 @@ class IDevice {
         virtual unsigned int getProcessingFrameNumber() = 0;
         virtual void increaseFrameNumber() = 0;
 
-        unsigned int getCurrentProcessingFrameNumber();
-        void setCurrentProcessingFrameNumber(unsigned int frameNumber);
+        static unsigned int getCurrentProcessingFrameNumber();
+        static void setCurrentProcessingFrameNumber(unsigned int frameNumber);
 
         virtual void submitDrawCommands() {};
 

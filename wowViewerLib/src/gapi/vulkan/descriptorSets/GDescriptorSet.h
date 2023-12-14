@@ -18,6 +18,7 @@ class GDescriptorPoolVLK;
 #include "DescriptorRecord.h"
 #include "../bindable/DSBindable.h"
 #include "../utils/MutexLockedVector.h"
+#include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
 
 class BindlessUpdateAccum {
 public:
@@ -44,7 +45,7 @@ public:
     ~GDescriptorSet();
 
     void update();
-    void writeToDescriptorSets(std::vector<VkWriteDescriptorSet> &descriptorWrites, std::vector<VkDescriptorImageInfo> &imageInfo, std::vector<int> &dynamicBufferIndexes);
+    void writeToDescriptorSets(framebased::vector<VkWriteDescriptorSet> &descriptorWrites, framebased::vector<VkDescriptorImageInfo> &imageInfo, framebased::vector<int> &dynamicBufferIndexes);
     const std::shared_ptr<GDescriptorSetLayout> &getDescSetLayout() const { return m_hDescriptorSetLayout;};
 
     VkDescriptorSet getDescSet() const {return m_descriptorSet;}
@@ -115,7 +116,7 @@ public:
                 m_boundDescriptors[bindPoint][index] = std::make_unique<DescriptorRecord>(descType, object, callback);
             }
         }
-        std::unordered_map<int, VkDescriptorType> &getAccumulatedTypeOverrides() {
+        framebased::unordered_map<int, VkDescriptorType> &getAccumulatedTypeOverrides() {
             return typeOverrides;
         }
     private:
@@ -123,14 +124,14 @@ public:
         GDescriptorSet &m_set;
         std::array<std::vector<std::unique_ptr<DescriptorRecord>>, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> &m_boundDescriptors;
 
-        std::vector<VkDescriptorImageInfo> imageInfos;
-        std::vector<VkDescriptorBufferInfo> bufferInfos;
-        std::vector<int> dynamicBufferIndexes;
-        std::unordered_map<int, VkDescriptorType> typeOverrides;
+        framebased::vector<VkDescriptorImageInfo> imageInfos;
+        framebased::vector<VkDescriptorBufferInfo> bufferInfos;
+        framebased::vector<int> dynamicBufferIndexes;
+        framebased::unordered_map<int, VkDescriptorType> typeOverrides;
 
         std::shared_ptr<GDescriptorSetUpdater> m_descriptorSetUpdater;
 
-        std::vector<VkWriteDescriptorSet> updates;
+        framebased::vector<VkWriteDescriptorSet> updates;
         std::bitset<GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_updateBindPoints = 0;
 
         std::function<void()> createCallback(int bindPoint, int arrayIndex);

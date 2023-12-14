@@ -187,16 +187,16 @@ enum class EnumParamsChanged {
     OFFSET_LIMIT = 0, SEARCH_STRING = 1, SORTING = 2, SCAN_REPOSITORY = 3
 };
 
-namespace std {
-
-// partial specialization for reference_wrapper
-// is this really necessary?
-    template<typename EnumParamsChanged>
-    struct hash<std::reference_wrapper<EnumParamsChanged>> {
-    public:
-        std::size_t operator()(const std::reference_wrapper<EnumParamsChanged> &x) const { return std::hash<EnumParamsChanged>()(x.get()); }
-    };
-}
+//namespace std {
+//
+//// partial specialization for reference_wrapper
+//// is this really necessary?
+//    template<typename EnumParamsChanged>
+//    struct hash<std::reference_wrapper<EnumParamsChanged>> {
+//    public:
+//        std::size_t operator()(const std::reference_wrapper<EnumParamsChanged> &x) const { return std::hash<EnumParamsChanged>()(x.get()); }
+//    };
+//}
 
 
 template <typename T>
@@ -204,8 +204,6 @@ class my_container {
     // important: this really needs to be a deque and only front
     // insertion/deletion is allowed to not get dangling references
     typedef std::deque<T> storage;
-    typedef std::reference_wrapper<const T> c_ref_w;
-    typedef std::reference_wrapper<T> ref_w;
 public:
     typedef typename storage::value_type value_type;
     typedef typename storage::reference reference;
@@ -216,7 +214,7 @@ public:
 
     // no move semantics
     void push_back(const T& t) {
-        auto it = lookup_.find(std::cref(t));
+        auto it = lookup_.find(t);
         if(it != end(lookup_)) {
             // is already inserted report error
             return;
@@ -235,7 +233,7 @@ public:
     void pop_front() { lookup_.erase(store_.front()); store_.pop_front();  }
 private:
     // look-up mechanism
-    std::unordered_set<c_ref_w> lookup_ = std::unordered_set<c_ref_w>();
+    std::unordered_set<T> lookup_ = std::unordered_set<T>();
     // underlying storage
     storage store_;
 };

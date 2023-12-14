@@ -511,7 +511,7 @@ MCAL_Offsets_Runtime AdtFile::createAlphaTextureRuntime(int mcnkChunkIndex) {
     return result;
 }
 
-void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t *currentLayer, uint32_t textureSize) {
+void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t* __restrict currentLayer, uint32_t textureSize) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
     uint8_t* mcal = mcnkObj.mcal;
     auto &layers = mcnkObj.mcly;

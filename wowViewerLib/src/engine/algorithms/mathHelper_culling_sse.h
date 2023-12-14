@@ -6,6 +6,8 @@
 #define AWEBWOWVIEWERCPP_MATHHELPER_CULLING_SSE_H
 
 #include "mathHelper.h"
+#include "../custom_allocators/FrameBasedStackAllocator.h"
+
 #if (__AVX__ && __SSE2__)
 #include <functional>
 #include <emmintrin.h>

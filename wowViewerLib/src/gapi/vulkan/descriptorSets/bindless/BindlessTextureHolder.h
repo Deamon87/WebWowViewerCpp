@@ -12,6 +12,7 @@
 #include "../../../../include/custom_container_key.h"
 #include "../GDescriptorSet.h"
 #include "../../../../renderer/mapScene/materials/BindlessTexture.h"
+#include "../../../../robin_hood.h"
 
 class BindlessTextureHolder : public std::enable_shared_from_this<BindlessTextureHolder> {
 public:
@@ -23,7 +24,7 @@ private:
     OffsetAllocator::Allocator m_textureAllocator;
 
     //Texture -> Bindless in array
-    std::unordered_map<wtf::KeyContainer<std::weak_ptr<HGSamplableTexture::element_type>>, std::weak_ptr<BindlessTexture>> m_textureMap;
+    robin_hood::unordered_flat_map<wtf::KeyContainer<std::weak_ptr<HGSamplableTexture::element_type>>, std::weak_ptr<BindlessTexture>> m_textureMap;
 };
 
 

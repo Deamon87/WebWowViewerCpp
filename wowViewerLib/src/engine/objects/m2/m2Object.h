@@ -312,6 +312,7 @@ public:
 };
 
 #include "../../algorithms/mathHelper.h"
+#include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
 
 template<>
 inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
@@ -319,11 +320,13 @@ inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
 }
 
 class M2ObjectListContainer {
+//using vectorContainer = framebased::vector<std::shared_ptr<M2Object>>
+using m2Container = std::vector<std::shared_ptr<M2Object>>;
 private:
-    std::vector<std::shared_ptr<M2Object>> candidates;
-    std::vector<std::shared_ptr<M2Object>> drawn;
-    std::vector<std::shared_ptr<M2Object>> toLoadMain;
-    std::vector<std::shared_ptr<M2Object>> toLoadGeom;
+    m2Container candidates;
+    m2Container drawn;
+    m2Container toLoadMain;
+    m2Container toLoadGeom;
 
     bool m_locked = false;
 
@@ -332,7 +335,7 @@ private:
     bool toLoadMainCanHaveDuplicates = false;
     bool toLoadGeomCanHaveDuplicates = false;
 
-    void inline removeDuplicates(std::vector<std::shared_ptr<M2Object>> &array) {
+    void inline removeDuplicates(m2Container &array) {
         if (array.size() < 1000) {
             std::sort(array.begin(), array.end());
         } else {
@@ -402,7 +405,7 @@ public:
     }
 
 
-    const std::vector<std::shared_ptr<M2Object>> &getCandidates() {
+    const m2Container &getCandidates() {
         if (this->candCanHaveDuplicates) {
             removeDuplicates(candidates);
             candCanHaveDuplicates = false;
@@ -411,7 +414,7 @@ public:
         return candidates;
     }
 
-    const std::vector<std::shared_ptr<M2Object>> &getDrawn() {
+    const m2Container &getDrawn() {
         if (this->drawnCanHaveDuplicates) {
             removeDuplicates(drawn);
             drawnCanHaveDuplicates = false;
@@ -420,7 +423,7 @@ public:
         return drawn;
     }
 
-    const std::vector<std::shared_ptr<M2Object>> &getToLoadMain() {
+    const m2Container &getToLoadMain() {
         if (this->toLoadMainCanHaveDuplicates) {
             removeDuplicates(toLoadMain);
             toLoadMainCanHaveDuplicates = false;
@@ -429,7 +432,7 @@ public:
         return toLoadMain;
     }
 
-    const std::vector<std::shared_ptr<M2Object>> &getToLoadGeom() {
+    const m2Container &getToLoadGeom() {
         if (this->toLoadGeomCanHaveDuplicates) {
             removeDuplicates(toLoadGeom);
             toLoadGeomCanHaveDuplicates = false;

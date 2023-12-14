@@ -19,6 +19,7 @@
 #include "../stringTrim.h"
 #include "../../include/iostuff.h"
 #include "../../include/sharedFile.h"
+#include "../../robin_hood.h"
 
 struct FileCacheRecord {
     std::string fileName;
@@ -35,8 +36,8 @@ public:
     std::mutex cacheMapMutex;
     std::mutex getFileMutex;
 
-    std::unordered_map<std::string, std::weak_ptr<T>> m_cache;
-    std::unordered_map<int, std::weak_ptr<T>> m_cacheFdid;
+    robin_hood::unordered_flat_map<std::string, std::weak_ptr<T>> m_cache;
+    robin_hood::unordered_flat_map<int, std::weak_ptr<T>> m_cacheFdid;
 public:
     Cache(IFileRequest *fileRequestProcessor, CacheHolderType holderType) : m_fileRequestProcessor(fileRequestProcessor), holderType(holderType){
     }

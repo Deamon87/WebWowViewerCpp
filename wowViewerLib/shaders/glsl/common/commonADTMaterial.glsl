@@ -52,7 +52,6 @@ void calcAdtAlphaUV(in int indexInMCNK, in vec3 adtMCNKPos, out vec2 alphaCoords
     alphaCoords.y = fixADTUVBorder(alphaCoords.y, chunkCoords.y/8.0);
 }
 
-
 //-------------------
 //   Fragment part
 //-------------------
