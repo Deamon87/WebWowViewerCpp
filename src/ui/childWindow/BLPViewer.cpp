@@ -7,14 +7,14 @@
 #include <string>
 
 BLPViewer::BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer, bool noSearch) :
-    m_api(api), m_uiRenderer(uiRenderer), m_noSearch(noSearch)
+    m_api(api), m_uiRenderer(uiRenderer), m_noSearch(noSearch), windowName(std::string("BLP Viewer")+(noSearch ? "_no_search" : ""))
 {
 
 }
 
 bool BLPViewer::draw() {
 
-    ImGui::Begin("BLP Viewer", &m_showWindow);
+    ImGui::Begin(windowName.c_str(), &m_showWindow);
     {
         if (!m_noSearch) {
             if (ImGui::InputText("BlpName/FileDataId: ", blpName.data(), blpName.size() - 1)) {

@@ -5,15 +5,19 @@
 #ifndef AWEBWOWVIEWERCPP_SCENEOBJECTWITHID_H
 #define AWEBWOWVIEWERCPP_SCENEOBJECTWITHID_H
 
-class SceneObjectWithId {
+class ObjectWithId {
+    template<class T> friend class EntityFactory;
 public:
-    SceneObjectWithId(int id) : m_id(id) {
+    ObjectWithId() {
 
     }
+    virtual ~ObjectWithId() = default;
 
     int getObjectId() { return m_id;}
 private:
-    int m_id;
+    void setId(int id) {m_id = id;};
+
+    int m_id = -1;
 };
 
 #endif //AWEBWOWVIEWERCPP_SCENEOBJECTWITHID_H

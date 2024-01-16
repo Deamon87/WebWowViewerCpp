@@ -35,7 +35,7 @@ private:
     static const void culling_aabb_see_template(const MathHelper::PlanesUndPoints &frustum,
                                    const int start,
                                    const int end,
-                                   const std::vector<T> &objects,
+                                   const framebased::vector<T> &objects,
                                    std::vector<uint32_t> &culling_res)
     {
         __m128 frustum_planes_x[N];
@@ -131,12 +131,12 @@ public:
     static void cull(const MathHelper::FrustumCullingData &cullingData,
                      const int start,
                      const int end,
-                     const std::vector<T> &objects,
+                     const framebased::vector<T> &objects,
                      std::vector<uint32_t> &culling_res) {
         static const auto lut2 = make_lut<15, std::function<void(const MathHelper::PlanesUndPoints &frustum,
                                                                      const int start,
                                                                      const int end,
-                                                                     const std::vector<T> &objects,
+                                                                     const framebased::vector<T> &objects,
                                                                      std::vector<uint32_t> &culling_res)>>();
         //Culling res: 0xFFFFFFFF - do not render
         //        res: 0          - render

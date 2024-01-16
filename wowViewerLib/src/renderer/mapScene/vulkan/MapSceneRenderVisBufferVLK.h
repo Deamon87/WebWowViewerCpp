@@ -14,6 +14,7 @@
 #include "../../../gapi/vulkan/materials/ISimpleMaterialVLK.h"
 #include "view/RenderViewForwardVLK.h"
 #include "../../../gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h"
+#include "../../../engine/objects/scenes/EntityActorsFactory.h"
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
     friend class COpaqueMeshCollectorBindlessVLK;
@@ -111,6 +112,7 @@ public:
 
     std::shared_ptr<IRenderView> createRenderView(int width, int height, bool createOutput) override;
 
+    std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::make_shared<EntityFactory<GMeshVLK>>();
 private:
     std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
     std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
@@ -136,6 +138,7 @@ private:
     int m_height = 480;
 
     std::unique_ptr<FFXGlowPassVLK> glowPass;
+
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;

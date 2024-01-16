@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "../IDevice.h"
+#include "../../../engine/objects/SceneObjectWithID.h"
 
 enum class MeshType {
     eGeneralMesh = 0,
@@ -66,7 +67,7 @@ public:
 };
 
 
-class IMesh {
+class IMesh : public ObjectWithId {
     friend class IDevice;
 
 public:
@@ -87,7 +88,9 @@ protected:
 
 
 public:
-    virtual ~IMesh() = default;
+    ~IMesh() override {
+        1 + 1;
+    };
 
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;

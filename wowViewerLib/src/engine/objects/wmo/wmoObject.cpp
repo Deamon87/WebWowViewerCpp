@@ -267,12 +267,12 @@ void WmoObject::createWorldPortals() {
         );
         mathfu::mat4 viewMatInv = viewMat.Inverse();
 
-        std::vector <mathfu::vec3> portalTransformed(portalVecs.size());
+        framebased::vector <mathfu::vec3> portalTransformed(portalVecs.size());
         for (int k = 0; k < portalVecs.size(); k++) {
             portalTransformed[k] = (viewMat * mathfu::vec4(portalVecs[k], 1.0)).xyz();
         }
 
-        std::vector<mathfu::vec3> hulled = MathHelper::getHullPoints(portalTransformed);
+        framebased::vector<mathfu::vec3> hulled = MathHelper::getHullPoints(portalTransformed);
 
         portalVecs.clear();
         for (int k = 0; k < hulled.size(); k++) {
@@ -588,9 +588,9 @@ bool WmoObject::startTraversingWMOGroup(
         }
         return result;
     }
-    std::vector<HInteriorView> ivPerWMOGroup = std::vector<HInteriorView>(mainGeom->groupsLen);
+    framebased::vector<HInteriorView> ivPerWMOGroup = framebased::vector<HInteriorView>(mainGeom->groupsLen);
 
-    std::vector<bool> transverseVisitedPortals = std::vector<bool>(portalCount, false);
+    framebased::vector<bool> transverseVisitedPortals = framebased::vector<bool>(portalCount, false);
 
     //CurrentVisibleM2 and visibleWmo is array of global m2 objects, that are visible after frustum
     mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4;
@@ -602,8 +602,8 @@ bool WmoObject::startTraversingWMOGroup(
     mathfu::mat4 MVPMat = frustumDataGlobal.perspectiveMat*frustumDataGlobal.viewMat*this->m_placementMatrix;
     mathfu::mat4 MVPMatInv = MVPMat.Inverse();
 
-    std::vector<mathfu::vec3> frustumPointsLocal = MathHelper::calculateFrustumPointsFromMat(MVPMat);
-    std::vector<mathfu::vec4> frustumPlanesLocal = MathHelper::getFrustumClipsFromMatrix(MVPMat);
+    framebased::vector<mathfu::vec3> frustumPointsLocal = MathHelper::calculateFrustumPointsFromMat(MVPMat);
+    framebased::vector<mathfu::vec4> frustumPlanesLocal = MathHelper::getFrustumClipsFromMatrix(MVPMat);
 //    mathfu::vec4 headOfPyramidLocal = mathfu::vec4(MathHelper::getIntersection(
 //        frustumPointsLocal[4], frustumPointsLocal[7],
 //        frustumPointsLocal[3], frustumPointsLocal[0]
@@ -777,7 +777,7 @@ void WmoObject::traverseGroupWmo(
     int groupId,
     bool traversingStartedFromInterior,
     PortalTraverseTempData &traverseTempData,
-    std::vector<mathfu::vec4> &localFrustumPlanes,
+    framebased::vector<mathfu::vec4> &localFrustumPlanes,
     int globalLevel,
     int localLevel
 ) {
@@ -873,7 +873,7 @@ void WmoObject::traverseGroupWmo(
         if (portalInfo->index_count < 4) continue;
 
         //2.2 Check if Portal BB made from portal vertexes intersects frustum
-        std::vector<mathfu::vec3> portalVerticesVec;
+        framebased::vector<mathfu::vec3> portalVerticesVec;
         std::transform(
             geometryPerPortal[relation->portal_index].sortedVericles.begin(),
             geometryPerPortal[relation->portal_index].sortedVericles.end(),
@@ -890,13 +890,13 @@ void WmoObject::traverseGroupWmo(
         int lastFrustumPlanesLen = localFrustumPlanes.size();
 
         //3. Construct frustum planes for this portal
-        std::vector<mathfu::vec4> thisPortalPlanes;
+        framebased::vector<mathfu::vec4> thisPortalPlanes;
         thisPortalPlanes.reserve(lastFrustumPlanesLen);
 
         if (hackCondition) {
             //Transform portal vertexes into clip space (this code should allow to use this logic with both Perspective and Ortho)
-            std::vector<mathfu::vec4> portalVerticesClip(portalVerticesVec.size());
-            std::vector<mathfu::vec4> portalVerticesClipNearPlane(portalVerticesVec.size());
+            framebased::vector<mathfu::vec4> portalVerticesClip(portalVerticesVec.size());
+            framebased::vector<mathfu::vec4> portalVerticesClipNearPlane(portalVerticesVec.size());
 
             for (int i = 0; i < portalVerticesVec.size(); i++) {
                 portalVerticesClip[i] = traverseTempData.MVPMat * mathfu::vec4(portalVerticesVec[i], 1.0f);
@@ -948,8 +948,8 @@ void WmoObject::traverseGroupWmo(
 
         //Transform local planes into world planes to use with frustum culling of M2Objects
         MathHelper::PlanesUndPoints worldSpaceFrustum;
-        worldSpaceFrustum.planes = std::vector<mathfu::vec4>(thisPortalPlanes.size());
-        worldSpaceFrustum.points = std::vector<mathfu::vec3>();
+        worldSpaceFrustum.planes = framebased::vector<mathfu::vec4>(thisPortalPlanes.size());
+        worldSpaceFrustum.points = framebased::vector<mathfu::vec3>();
         worldSpaceFrustum.points.reserve(thisPortalPlanes.size());
 
         for (int x = 0; x < thisPortalPlanes.size(); x++) {

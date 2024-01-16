@@ -36,13 +36,13 @@ private:
         FrameViewsHolder &viewsHolder;
         bool exteriorWasCreatedBeforeTraversing;
         mathfu::vec4 farPlane;
-        std::vector<HInteriorView> &ivPerWMOGroup;
+        framebased::vector<HInteriorView> &ivPerWMOGroup;
         mathfu::vec4 &cameraVec4;
         mathfu::vec4 &cameraLocal;
         mathfu::mat4 &transposeInverseModelMat;
         mathfu::mat4 &MVPMat;
         mathfu::mat4 &MVPMatInv;
-        std::vector<bool> &transverseVisitedPortals;
+        framebased::vector<bool> &transverseVisitedPortals;
 
         bool atLeastOneGroupIsDrawn = false;
     };
@@ -170,7 +170,7 @@ public:
         int groupId,
         bool traversingStartedFromInterior,
         PortalTraverseTempData &traverseTempData,
-        std::vector<mathfu::vec4> &localFrustumPlanes,
+        framebased::vector<mathfu::vec4> &localFrustumPlanes,
         int globalLevel,
         int localLevel
     );
@@ -187,7 +187,8 @@ public:
 };
 
 class WMOListContainer {
-    using wmoContainer = std::vector<std::shared_ptr<WmoObject>>;
+    using wmoContainer = framebased::vector<std::shared_ptr<WmoObject>>;
+//    using wmoContainer = std::vector<std::shared_ptr<WmoObject>>;
 private:
     wmoContainer wmoCandidates;
     wmoContainer wmoToLoad;
@@ -215,6 +216,7 @@ public:
     WMOListContainer() {
         wmoCandidates.reserve(3000);
         wmoToLoad.reserve(3000);
+        wmoToDrawn.reserve(3000);
     }
 
     void addCand(const std::shared_ptr<WmoObject> &toDraw) {

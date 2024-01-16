@@ -7,6 +7,7 @@
 #include "../../algorithms/mathHelper.h"
 #include "../iMapApi.h"
 
+
 LiquidInstance::LiquidInstance(const HApiContainer &api,
                                const HMapSceneBufferCreate &sceneRenderer,
                                const SMLiquidInstance &liquidInstance,
@@ -293,7 +294,7 @@ void LiquidInstance::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector) {
     }
 }
 
-void LiquidInstance::collectMeshes(std::vector<HGSortableMesh> &transparentMeshes) {
+void LiquidInstance::collectMeshes(framebased::vector<HGSortableMesh> &transparentMeshes) {
     //TODO: Get time and right mesh instance for animation
     if (m_api->getConfig()->renderLiquid) {
         transparentMeshes.push_back(m_liquidMeshes[0]);

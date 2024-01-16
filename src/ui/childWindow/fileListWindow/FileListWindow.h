@@ -54,6 +54,8 @@ private:
     std::unique_ptr<FileListLamda> selectStatement;
     std::array<char, 128> filterText = {0};
     std::string filterTextStr = "%%";
+
+    int lastSelectedFiledataId = -1;
 private:
     void importCSV();
 };

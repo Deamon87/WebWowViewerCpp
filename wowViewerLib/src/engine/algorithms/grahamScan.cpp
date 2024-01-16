@@ -68,7 +68,7 @@ Point nextToTop(stack<Point> &S)
     return res;
 }
 
-stack<Point> grahamScan(std::vector<Point> &points)    {
+stack<Point> grahamScan(framebased::vector<Point> &points)    {
     stack<Point> hull;
     // Find the bottommost point
     float ymin = points[0].y;

@@ -368,8 +368,7 @@ set(SOURCE_FILES
         src/engine/objects/SceneObjectWithID.h
         src/engine/custom_allocators/FrameBasedStackAllocator.cpp
         src/engine/custom_allocators/FrameBasedStackAllocator.h
-        src/engine/custom_allocators/FrameBasedHeapAllocator.cpp
-        src/engine/custom_allocators/FrameBasedHeapAllocator.h)
+)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -720,6 +719,7 @@ endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 target_link_libraries(WoWViewerLib TBB::tbb )
+target_link_libraries(WoWViewerLib TBB::tbbmalloc )
 if (UNIX AND NOT EMSCRIPTEN)
 target_link_libraries(WoWViewerLib Threads::Threads)
 endif()

@@ -63,8 +63,8 @@ CAaBox MathHelper::transformAABBWithMat4(const mathfu::mat4 &mat4, const mathfu:
     return CAaBox(bb_min_packed, bb_max_packed);
 }
 
-std::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const std::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat) {
-    auto newPlanes = std::vector<mathfu::vec4>(planes.size());
+framebased::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const framebased::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat) {
+    auto newPlanes = framebased::vector<mathfu::vec4>(planes.size());
     for (int i = 0; i < planes.size(); i++) {
         newPlanes[i] = (mat) * planes[i];
     }
@@ -72,13 +72,13 @@ std::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const std::vector<m
     return newPlanes;
 }
 
-std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::mat4 &mat) {
+framebased::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::mat4 &mat) {
 
 #define el(x, y) (((y)-1) + 4*((x) - 1))
 
     //The order of planes is changed to make it easier to get intersections in getIntersectionPointsFromPlanes
     //And to be in line of how planes are created for portal verticies in portal culling
-    std::vector<mathfu::vec4> planes(6);
+    framebased::vector<mathfu::vec4> planes(6);
     // Right clipping plane.
     planes[0] = mathfu::vec4(mat[el(1,4)] + mat[el(1,1)],
                              mat[el(2,4)] + mat[el(2,1)],
@@ -119,7 +119,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::ma
     return planes;
 }
 
-std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat) {
+framebased::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat) {
         mathfu::mat4 perspectiveViewMatInv = perspectiveViewMat.Inverse();
 
         static mathfu::vec4 vertices[] = {
@@ -133,7 +133,7 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
                 {1,  -1,  1, 1}, //7
         };
 
-        std::vector<mathfu::vec3> points(8);
+        framebased::vector<mathfu::vec3> points(8);
         
         for (int i = 0; i < 8; i++) {
             mathfu::vec4 &vert = vertices[i];
@@ -173,17 +173,17 @@ bool hullSort(mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec2 &center) {
     return d1 > d2;
 }
 
-std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &points){
+framebased::vector<mathfu::vec3> MathHelper::getHullPoints(framebased::vector<mathfu::vec3> &points){
     if (points.empty())
         return {};
     std::stack<Point> hullPoints = grahamScan(points);
     if (hullPoints.size() <= 2) {
-        return std::vector<mathfu::vec3>(0);
+        return framebased::vector<mathfu::vec3>(0);
     }
 
 //    mathfu::vec3* end   = &hullPoints.top() + 1;
 //    mathfu::vec3* begin = end - hullPoints.size();
-    std::vector<mathfu::vec3> hullPointsArr;
+    framebased::vector<mathfu::vec3> hullPointsArr;
     hullPointsArr.reserve(hullPoints.size());
     while(!hullPoints.empty()) {
         hullPointsArr.push_back(hullPoints.top());
@@ -226,10 +226,10 @@ std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &p
     return hullPointsArr;
 }
 
-std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
-    std::vector<mathfu::vec3> hullPointsArr = MathHelper::getHullPoints(points);
+framebased::vector<mathfu::vec3> MathHelper::getHullLines(framebased::vector<Point> &points){
+    framebased::vector<mathfu::vec3> hullPointsArr = MathHelper::getHullPoints(points);
 
-    std::vector<mathfu::vec3> hullLines;
+    framebased::vector<mathfu::vec3> hullLines;
     hullLines.reserve(hullPointsArr.size());
     
     if (hullPointsArr.size() > 2) {
@@ -420,9 +420,6 @@ bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, cons
 }
 
 bool MathHelper::checkFrustum2D(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box) {
-
-    //var maxLines = window.lines != null ? window.lines : 1;
-    //for (var i = 0; i < Math.min(num_planes, maxLines); i++) {
     for (auto &planeUndPoints : frustums) {
         auto const &planes = planeUndPoints.hullLines;
 
@@ -463,9 +460,9 @@ mathfu::vec4 MathHelper::planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4
 }
 
 //Points should be sorted against center by this point
-bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu::vec4> &planes) {
+bool MathHelper::planeCull(framebased::vector<mathfu::vec3> &points, framebased::vector<mathfu::vec4> &planes) {
     // check box outside/inside of frustum
-    std::vector<mathfu::vec4> vec4Points(points.size());
+    framebased::vector<mathfu::vec4> vec4Points(points.size());
 
     const float epsilon = 0.0001;
 
@@ -488,7 +485,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
         // Cull by points by current plane
         //---------------------------------
 
-        std::vector<mathfu::vec4> resultPoints;
+        framebased::vector<mathfu::vec4> resultPoints;
         resultPoints.reserve(vec4Points.size() + (vec4Points.size() >> 1));
 
         for (int j = 0; j < vec4Points.size(); j++) {
@@ -515,10 +512,10 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             }
         }
 
-        vec4Points = std::vector<mathfu::vec4>(resultPoints.begin(), resultPoints.end());
+        vec4Points = framebased::vector<mathfu::vec4>(resultPoints.begin(), resultPoints.end());
     }
 
-    points = std::vector<mathfu::vec3>(vec4Points.size());
+    points = framebased::vector<mathfu::vec3>(vec4Points.size());
     for (int j = 0; j < vec4Points.size(); j++) {
         points[j] = vec4Points[j].xyz();
     }
@@ -527,7 +524,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
 
 }
 
-void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortalVertices,
+void MathHelper::sortVec3ArrayAgainstPlane(framebased::vector<mathfu::vec3> &thisPortalVertices,
                                                   const mathfu::vec4 &plane) {
     mathfu::vec3 center(0, 0, 0);
     for (int j = 0; j < thisPortalVertices.size(); j++) {
@@ -1004,9 +1001,9 @@ MathHelper::hsv MathHelper::rgb2hsv(const mathfu::vec3 &in) {
     return out;
 }
 
-std::vector<mathfu::vec3>
-MathHelper::getIntersectionPointsFromPlanes(const std::vector<mathfu::vec4> &planes) {
-    std::vector<mathfu::vec3> points;
+framebased::vector<mathfu::vec3>
+MathHelper::getIntersectionPointsFromPlanes(const framebased::vector<mathfu::vec4> &planes) {
+    framebased::vector<mathfu::vec3> points;
     //For far and near plane
     for (int x = planes.size()-2; x < planes.size(); x++) {
         //Look for intersection for of any two planes other planes with two planes above

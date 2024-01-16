@@ -68,7 +68,7 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
     void updateBuffers();
 
     void fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);

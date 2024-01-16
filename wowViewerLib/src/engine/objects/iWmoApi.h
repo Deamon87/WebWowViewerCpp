@@ -299,6 +299,7 @@ static const struct {
         +WmoVertexShader::MapObjParallax,
         +WmoPixelShader::MapObjParallax,
     },
+    //23
     {
         +WmoVertexShader::MapObjDiffuse_T1,
         +WmoPixelShader::MapObjDFShader,

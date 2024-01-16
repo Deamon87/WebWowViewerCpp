@@ -577,7 +577,7 @@ void AdtObject::loadAlphaTextures() {
 
 
 
-void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (m_freeStrategy != nullptr) m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
     if (!m_loaded) return;

@@ -12,7 +12,7 @@
 #endif
 #include "../algorithms/mathHelper_culling.h"
 
-void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) {
+void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
     if (renderADT) {
         for (auto const &adtMesh : this->m_adtOpaqueMeshes ) {
             opaqueMeshCollector.addADTMesh(adtMesh);
@@ -29,7 +29,7 @@ void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool rend
 }
 
 
-void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) {
+void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
     if (renderWMO) {
         for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
             wmoGroup->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
@@ -162,7 +162,7 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
     }
 }
 
-void GeneralView::collectPortalMeshes(std::vector<HGSortableMesh> &transparentMeshes) {
+void GeneralView::collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes) {
     for (auto const &mesh : m_portalMeshes) {
         transparentMeshes.push_back(mesh);
     }

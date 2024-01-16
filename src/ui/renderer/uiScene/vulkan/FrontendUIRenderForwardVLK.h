@@ -14,6 +14,7 @@
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "../../../../../wowViewerLib/src/gapi/interface/materials/IMaterial.h"
 #include "../../../../../wowViewerLib/src/renderer/vulkan/IRenderFunctionVLK.h"
+#include "../../../../../wowViewerLib/src/engine/objects/scenes/EntityActorsFactory.h"
 
 class FrontendUIRenderForwardVLK : public FrontendUIRenderer {
 public:
@@ -33,6 +34,7 @@ public:
 private:
     HGDeviceVLK m_device;
 
+    std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::make_shared<EntityFactory<GMeshVLK>>();
 
     std::mt19937_64 eng; //Use the 64-bit Mersenne Twister 19937 generator
     //and seed it with entropy.

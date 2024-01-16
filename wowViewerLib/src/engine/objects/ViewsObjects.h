@@ -50,14 +50,14 @@ public:
 
         HGVertexBufferBindings m_bindings;
     };
-    std::vector<HGSortableMesh> m_portalMeshes = {};
+    framebased::vector<HGSortableMesh> m_portalMeshes = {};
 
     std::vector<PortalPointsFrame> portals;
 
-    std::vector<HGSortableMesh> liquidMeshes = {};
+    framebased::vector<HGSortableMesh> liquidMeshes = {};
 
-    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes);
-    void collectPortalMeshes(std::vector<HGSortableMesh> &transparentMeshes);
+    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
+    void collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
 
     void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
@@ -77,7 +77,7 @@ public:
 	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
     std::vector<HGMesh> m_adtOpaqueMeshes = {};
 public:
-    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes) override;
+    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) override;
 };
 
 class FrameViewsHolder {

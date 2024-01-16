@@ -194,6 +194,7 @@ private:
 
     std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
+    std::shared_ptr<BLPViewer> m_blpFileViewerWindow = nullptr;
     std::shared_ptr<FileListWindow> m_fileListWindow = nullptr;
     std::shared_ptr<DebugRendererWindow> m_debugRenderWindow;
 

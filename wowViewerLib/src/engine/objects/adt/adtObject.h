@@ -44,7 +44,7 @@ public:
 
     FileStatus getLoadedStatus();
 
-    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
     void update(animTime_t deltaTime);

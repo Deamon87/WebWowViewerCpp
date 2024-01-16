@@ -81,7 +81,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
 }
 
 HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
-    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
+    return meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }
 
 std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(

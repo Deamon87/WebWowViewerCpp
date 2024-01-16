@@ -21,8 +21,8 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
 void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                                      COpaqueMeshCollector &opaqueMeshCollector,
                                      COpaqueMeshCollector &skyOpaqueMeshCollector,
-                                     const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
-                                     const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
+                                     const std::shared_ptr<framebased::vector<HGSortableMesh>> &htransparentMeshes,
+                                     const std::shared_ptr<framebased::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
     ZoneScoped;
 
     auto &transparentMeshes = *htransparentMeshes;

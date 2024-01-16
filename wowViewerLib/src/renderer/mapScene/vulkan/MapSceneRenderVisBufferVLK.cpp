@@ -977,11 +977,11 @@ private:
 
     typedef robin_hood::unordered_flat_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
 
-    std::vector<DrawCommand> m2DrawVec;
-    std::vector<DrawCommand> wmoDrawVec;
+    framebased::vector<DrawCommand> m2DrawVec;
+    framebased::vector<DrawCommand> wmoDrawVec;
     MeshMap waterMeshMap;
-    std::vector<DrawCommand> adtDrawVec;
-    std::vector<HGMesh> commonMeshes;
+    framebased::vector<DrawCommand> adtDrawVec;
+    framebased::vector<HGMesh> commonMeshes;
 
     inline static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
         const auto &meshVlk = (GMeshVLK*) mesh.get();
@@ -1004,8 +1004,10 @@ private:
             drawCommand.vertexOffset = 0;
         }
     }
-    inline static void addDrawCommand(std::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
-        const auto &meshVlk = (GMeshVLK*) mesh.get();
+    inline void addDrawCommand(framebased::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
+        auto meshId = mesh->getObjectId();
+        auto meshVlk = m_renderer.meshFactory->getObjectById(meshId);
+//        const auto &meshVlk = (GMeshVLK*) mesh->getObjectId();
         auto const matId = meshVlk->material()->getMaterialId();
 
         auto &drawCommand = drawVec.emplace_back();
@@ -1151,24 +1153,20 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
     //Create meshes
     std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_collector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this, lastMeshCount);
     std::unique_ptr<COpaqueMeshCollectorBindlessVLK> u_skyCollector = std::make_unique<COpaqueMeshCollectorBindlessVLK>(*this);
-    auto transparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
+    auto transparentMeshes = std::make_shared<framebased::vector<HGSortableMesh>>();
 
 
 
-    auto skyTransparentMeshes = std::make_shared<std::vector<HGSortableMesh>>();
+    auto skyTransparentMeshes = std::make_shared<framebased::vector<HGSortableMesh>>();
     framePlan->m2Array.lock();
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
 
-    //The portal meshes are created here. Need to call doPostLoad before CollectMeshes
-//    mapScene->doPostLoad(l_this, framePlan);
 
 //    TracyMessageL("collect meshes created");
 //    std::future<void> collectMeshAsync = std::async(std::launch::async,
 //                                                    [&]() {
-    collectMeshes(framePlan, *u_collector, *u_skyCollector, transparentMeshes, skyTransparentMeshes);
 
-    u_collector->fillMeshCount(lastMeshCount);
 //                                                    }
 //    );
 
@@ -1186,6 +1184,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
                          true,
                          mapScene->getCurrentSceneTime());
 
+
+    collectMeshes(framePlan, *u_collector, *u_skyCollector, transparentMeshes, skyTransparentMeshes);
+    u_collector->fillMeshCount(lastMeshCount);
 
 //    {
 //        ZoneScopedN("collect meshes wait");
@@ -1383,11 +1384,11 @@ std::shared_ptr<MapRenderPlan> MapSceneRenderVisBufferVLK::getLastCreatedPlan() 
 }
 
 HGMesh MapSceneRenderVisBufferVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
-    return std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
+    return meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }
 
 HGSortableMesh MapSceneRenderVisBufferVLK::createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
-    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
     return mesh;
 }
 
@@ -1396,7 +1397,7 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTe
     meshTemplate.bindings = m_emptyWaterVAO;
 
     auto _material = std::dynamic_pointer_cast<IWaterMaterialBindless>(material);
-    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, 0);
 
     mesh->instanceIndex = _material->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
@@ -1412,7 +1413,7 @@ MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const st
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyADTVAO;
 
-    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
     mesh->instanceIndex = std::dynamic_pointer_cast<IADTMaterialVis>(material)->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
@@ -1425,7 +1426,7 @@ MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std:
     ZoneScoped;
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyM2VAO;
-    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialVis>(material)->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
@@ -1453,7 +1454,7 @@ HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, co
         c_perMeshData->save();
     }
 
-    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(newMat), 0, 0);
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(newMat), 0, 0);
     mesh->instanceIndex = c_perMeshData->getIndex();
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
@@ -1462,7 +1463,7 @@ HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, co
 HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,
                                                          const std::shared_ptr<IM2WaterFallMaterial> &material,
                                                          int layer, int priorityPlane) {
-    auto mesh = std::make_shared<GMeshVLK>(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), priorityPlane, layer);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2WaterFallMaterialBindless>(material)->instanceIndex;
     return mesh;
 }

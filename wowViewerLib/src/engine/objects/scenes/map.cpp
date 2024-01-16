@@ -1177,8 +1177,6 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
         int adt_y_min = std::max<int>(std::floor(worldCoordinateToAdtIndexF(maxx)), 0);
         int adt_y_max = std::min<int>(std::ceil(worldCoordinateToAdtIndexF(minx)), 63);
 
-
-
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             for (int i = adt_x_min; i <= adt_x_max; i++) {
                 for (int j = adt_y_min; j <= adt_y_max; j++) {
@@ -1222,7 +1220,7 @@ void Map::checkADTCulling(int i, int j,
             return;
     }
 
-    auto adtObject = mapTiles[i][j];
+    auto &adtObject = mapTiles[i][j];
     if (adtObject != nullptr) {
 
         std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();

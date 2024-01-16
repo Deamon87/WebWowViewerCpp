@@ -10,6 +10,7 @@
 #include "../GDeviceVulkan.h"
 #include "../descriptorSets/GDescriptorSet.h"
 #include "../materials/ISimpleMaterialVLK.h"
+#include "../../../engine/objects/SceneObjectWithID.h"
 
 class GMeshVLK : public IM2Mesh {
     friend class GDeviceVLK;

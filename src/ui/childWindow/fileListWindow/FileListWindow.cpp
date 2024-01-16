@@ -247,9 +247,13 @@ public:
     FileListLambdaInst(const HApiContainer &api, std::string &searchClause, int &recordsTotal) : m_recordsTotal(recordsTotal), m_api(api)
     {
         dbThread = std::thread([&]() {
-            decltype(FileListDB::makeStorage("")) storage = FileListDB::makeStorage("fileList.db3");
+            decltype(FileListDB::makeStorage("")) storage = FileListDB::makeStorage(":memory:");
+
             storage.pragma.synchronous(0);
             storage.pragma.journal_mode(sqlite_orm::journal_mode::MEMORY);
+
+            const std::string fileListDB = "fileList.db3";
+            storage.backup_from(fileListDB);
 
             storage.sync_schema();
 
@@ -295,6 +299,8 @@ public:
                     setResults(results);
                 });
             }
+
+            storage.backup_to(fileListDB);
         });
     }
     ~FileListLambdaInst() {
@@ -480,9 +486,10 @@ bool FileListWindow::draw() {
                             auto const &fileItem = dbResult.records[i];
                             ImGui::TableNextRow();
                             ImGui::TableNextColumn();
-                            if (ImGui::Selectable(std::to_string(fileItem.fileDataId).c_str(), false,
+                            if (ImGui::Selectable(std::to_string(fileItem.fileDataId).c_str(), lastSelectedFiledataId == fileItem.fileDataId,
                                                   ImGuiSelectableFlags_SpanAllColumns |
                                                   ImGuiSelectableFlags_AllowItemOverlap)) {
+                                lastSelectedFiledataId = fileItem.fileDataId;
                                 if (m_fileOpenCallback) {
                                     if (endsWith(fileItem.fileName, ".blp")) {
                                         m_fileOpenCallback(fileItem.fileDataId, "blp");

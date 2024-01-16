@@ -8,6 +8,7 @@
 class IMapApi;
 
 #include "../../ApiContainer.h"
+#include "../../custom_allocators/FrameBasedStackAllocator.h"
 
 class LiquidInstance {
 public:
@@ -28,7 +29,7 @@ public:
 
     void updateLiquidMaterials(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime);
     void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector);
-    void collectMeshes(std::vector<HGSortableMesh> &transparentMeshes);
+    void collectMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
 
 private:
     const HApiContainer &m_api;

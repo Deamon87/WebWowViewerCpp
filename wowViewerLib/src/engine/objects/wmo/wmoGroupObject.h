@@ -46,7 +46,7 @@ public:
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
 
 
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
@@ -150,7 +150,8 @@ enum liquid_basic_types
 
 
 class WMOGroupListContainer {
-using wmoGroupContainer = std::vector<std::shared_ptr<WmoGroupObject>>;
+using wmoGroupContainer = framebased::vector<std::shared_ptr<WmoGroupObject>>;
+//using wmoGroupContainer = std::vector<std::shared_ptr<WmoGroupObject>>;
 private:
     wmoGroupContainer wmoGroupToDraw;
     wmoGroupContainer wmoGroupToCheckM2;

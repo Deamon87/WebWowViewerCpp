@@ -6,26 +6,63 @@
 #define AWEBWOWVIEWERCPP_ENTITYACTORSFACTORY_H
 
 #include <memory>
-#include "../m2/m2Object.h"
-#include "../wmo/wmoObject.h"
+#include <mutex>
+#include "../../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
 
-class EntityActorsFactory {
+template<typename T>
+class EntityFactory : public std::enable_shared_from_this<EntityFactory<T>>{
+static constexpr int initSize = 1000;
 public:
-    EntityActorsFactory(const HApiContainer &api) : m_api(api){};
+    explicit EntityFactory() {
+        objectCache.resize(initSize);
+    };
 
-    std::shared_ptr<M2Object> createM2Object() {
-        return std::make_shared<M2Object>(m_api);
+    template<typename... _Args>
+    std::shared_ptr<T> createObject(_Args&&... __args) {
+        OffsetAllocator::Allocation offsetData;
+        T * entity = nullptr;
+
+        {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            offsetData = allocator.allocate(1);
+            if (offsetData.offset == OffsetAllocator::Allocation::NO_SPACE) {
+                constexpr int growSize = 1000;
+
+                allocator.growSize(growSize);
+                offsetData = allocator.allocate(1);
+                objectCache.resize(objectCache.size() + growSize);
+            }
+
+            entity = new T(std::forward<decltype(__args)>(__args)...);
+            entity->setId(offsetData.offset);
+            objectCache[offsetData.offset] = entity;
+        }
+
+        auto weakPtr = this->weak_from_this();
+        return std::shared_ptr<T>(entity, [offsetData, weakPtr](T *ls) -> void {
+            auto shared = weakPtr.lock();
+            if (shared != nullptr)
+                shared->deallocate(offsetData);
+        });
     }
-    M2Object * getM2ObjectById(int id) {
-        return m2ObjectCache[id];
+    T * getObjectById(int id) {
+        return objectCache[id];
+    }
+
+    void deallocate(const OffsetAllocator::Allocation &alloc) {
+        std::unique_lock<std::mutex> lock(m_mutex);
+
+        delete objectCache[alloc.offset];
+
+        objectCache[alloc.offset] = nullptr;
+        allocator.free(alloc);
     }
 
 private:
-    HApiContainer m_api;
+    std::mutex m_mutex;
 
-    std::vector<M2Object *> m2ObjectCache;
-    std::vector<WmoObject *> wmoObjectCache;
-    std::vector<WmoGroupObject *> wmoGroupObjectCache;
+    OffsetAllocator::Allocator allocator = OffsetAllocator::Allocator(initSize);
+    std::vector<T *> objectCache;
 };
 
 

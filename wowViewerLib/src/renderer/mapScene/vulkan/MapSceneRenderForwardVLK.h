@@ -12,6 +12,7 @@
 #include "../materials/IMaterialStructs.h"
 #include "passes/FFXGlowPassVLK.h"
 #include "view/RenderViewForwardVLK.h"
+#include "../../../engine/objects/scenes/EntityActorsFactory.h"
 
 class MapSceneRenderForwardVLK : public MapSceneRenderer {
 public:
@@ -109,6 +110,8 @@ public:
 
 private:
     HGDeviceVLK m_device;
+
+    std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::shared_ptr<EntityFactory<GMeshVLK>>();
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;

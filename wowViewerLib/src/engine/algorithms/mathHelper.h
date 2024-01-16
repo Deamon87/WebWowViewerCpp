@@ -8,6 +8,7 @@
 #include "../persistance/header/commonFileStructs.h"
 #include "mathfu/glsl_mappings.h"
 #include <vector>
+#include "../custom_allocators/FrameBasedStackAllocator.h"
 #include <thread>
 
 template<typename T>
@@ -26,9 +27,9 @@ public:
     static const constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
 
     struct PlanesUndPoints {
-        std::vector<mathfu::vec4> planes;
-        std::vector<mathfu::vec3> points;
-        std::vector<mathfu::vec3> hullLines;
+        framebased::vector<mathfu::vec4> planes;
+        framebased::vector<mathfu::vec3> points;
+        framebased::vector<mathfu::vec3> hullLines;
     };
 
     typedef struct {
@@ -53,22 +54,22 @@ public:
     static mathfu::vec2 convertV69ToV2(vector_2fp_6_9 &fp69);
 
     static CAaBox transformAABBWithMat4(const mathfu::mat4 &matrix, const mathfu::vec4 &min, const mathfu::vec4 &max);
-    static std::vector<mathfu::vec4> transformPlanesWithMat(const std::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat);
-    static std::vector<mathfu::vec3> getIntersectionPointsFromPlanes(const std::vector<mathfu::vec4> &planes);
-    static std::vector<mathfu::vec4> getFrustumClipsFromMatrix(const mathfu::mat4 &mat);
-    static void fixNearPlane(std::vector<mathfu::vec4> &planes, mathfu::vec4 &camera) {
+    static framebased::vector<mathfu::vec4> transformPlanesWithMat(const framebased::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat);
+    static framebased::vector<mathfu::vec3> getIntersectionPointsFromPlanes(const framebased::vector<mathfu::vec4> &planes);
+    static framebased::vector<mathfu::vec4> getFrustumClipsFromMatrix(const mathfu::mat4 &mat);
+    static void fixNearPlane(framebased::vector<mathfu::vec4> &planes, mathfu::vec4 &camera) {
         mathfu::vec4 &nearPlane = planes[5];
         mathfu::vec4 cameraVec4 = mathfu::vec4(camera[0], camera[1], camera[2], 1);
         float dist = mathfu::dot(nearPlane, cameraVec4);
         nearPlane[3] -= dist;
     }
-    static std::vector<mathfu::vec3> calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat);
+    static framebased::vector<mathfu::vec3> calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat);
 
     static bool checkFrustum(const MathHelper::FrustumCullingData &frustumData, const CAaBox &box);
     static bool checkFrustum(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box);
     static bool checkFrustum2D(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box);
-    static std::vector<mathfu::vec3> getHullPoints(std::vector<mathfu::vec3> &points);
-    static std::vector<mathfu::vec3> getHullLines(std::vector<mathfu::vec3> &points);
+    static framebased::vector<mathfu::vec3> getHullPoints(framebased::vector<mathfu::vec3> &points);
+    static framebased::vector<mathfu::vec3> getHullLines(framebased::vector<mathfu::vec3> &points);
 
 
 
@@ -107,9 +108,9 @@ public:
     }
 //
 
-    static bool planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu::vec4> &planes);
+    static bool planeCull(framebased::vector<mathfu::vec3> &points, framebased::vector<mathfu::vec4> &planes);
 
-    static void sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortalVertices, const mathfu::vec4 &plane);
+    static void sortVec3ArrayAgainstPlane(framebased::vector<mathfu::vec3> &thisPortalVertices, const mathfu::vec4 &plane);
     static mathfu::vec4 createPlaneFromEyeAndVertexes(
         const mathfu::vec3 &eye,
         const mathfu::vec3 &vertex1,

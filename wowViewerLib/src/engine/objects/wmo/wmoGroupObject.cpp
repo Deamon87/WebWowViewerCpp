@@ -746,7 +746,7 @@ void WmoGroupObject::setModelFileId(int fileId) {
     m_modelFileId = fileId;
 }
 
-void WmoGroupObject::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, std::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void WmoGroupObject::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (!m_loaded) return;
     for (auto const &i : this->m_meshArray) {
         opaqueMeshCollector.addWMOMesh(i);

@@ -104,8 +104,8 @@ public:
     void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                        COpaqueMeshCollector &opaqueMeshCollector,
                        COpaqueMeshCollector &skyOpaqueMeshCollector,
-                       const std::shared_ptr<std::vector<HGSortableMesh>> &htransparentMeshes,
-                       const std::shared_ptr<std::vector<HGSortableMesh>> &hSkyTransparentMeshes);
+                       const std::shared_ptr<framebased::vector<HGSortableMesh>> &htransparentMeshes,
+                       const std::shared_ptr<framebased::vector<HGSortableMesh>> &hSkyTransparentMeshes);
 
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
                               const std::vector<HCameraMatrices> &renderingMatrices,

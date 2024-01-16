@@ -29,6 +29,7 @@ private:
     std::shared_ptr<IUIMaterial> material = nullptr;
 
     bool m_noSearch;
+    std::string windowName;
 };
 
 
