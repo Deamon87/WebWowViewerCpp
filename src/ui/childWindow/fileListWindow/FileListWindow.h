@@ -11,9 +11,9 @@
 
 namespace FileListDB {
     struct FileRecord {
-        int fileDataId;
-        std::string fileName;
-        std::string fileType;
+        int fileDataId = 0;
+        std::string fileName = "";
+        std::string fileType = "";
     };
 
 
@@ -36,6 +36,7 @@ public:
     virtual void searchChanged() = 0;
     virtual void setOrder(int order) = 0;
     virtual void scanFiles() = 0;
+    virtual void importCSV() = 0;
     virtual const std::vector<DBResults> getResults() = 0;
 };
 
@@ -51,7 +52,7 @@ private:
 
     int m_filesTotal;
     const HApiContainer m_api;
-    std::unique_ptr<FileListLamda> selectStatement;
+    std::unique_ptr<FileListLamda> flInterface;
     std::array<char, 128> filterText = {0};
     std::string filterTextStr = "%%";
 

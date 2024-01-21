@@ -15,6 +15,19 @@
 #include <forward_list>
 #include <unordered_set>
 
+struct IterateFilesRequest {
+    IterateFilesRequest(std::unique_lock <std::mutex> &a,
+                        std::function<bool (int fileDataId, const std::string &fileName)> b,
+                        std::function<void (int fileDataId, const HFileContent &fileData)> c) : m(std::move(a)){
+        process = b;
+        callback = c;
+    }
+
+    std::unique_lock <std::mutex> m;
+    std::function<bool (int fileDataId, const std::string &fileName)> process;
+    std::function<void (int fileDataId, const HFileContent &fileData)> callback;
+};
+
 class RequestProcessor : public IFileRequest {
 protected:
     RequestProcessor() : toBeProcessed(0){
@@ -65,15 +78,22 @@ private:
 
     bool m_threaded = false;
     bool dumb_boolean_always_false = false;
+
+    std::unique_ptr<IterateFilesRequest> m_iterateFilesRequest;
 public:
     void processRequests(int limit);
 
     bool completedAllJobs() {
         return (m_requestQueue->empty()) && (m_resultQueue.empty()) && (toBeProcessed == 0);
     };
+    void iterateAllFiles( std::unique_ptr<IterateFilesRequest> &iterateFilesRequest );
+
 protected:
     std::atomic<int> toBeProcessed;
     void processResult(const std::shared_ptr<PersistentFile> &s_file, const HFileContent &content, const std::string &fileName);
+    virtual void iterateFilesInternal(
+        std::function<bool (int fileDataId, const std::string &fileName)> &process,
+        std::function<void (int fileDataId, const HFileContent &fileData)> &callback) {};
 };
 
 typedef std::shared_ptr<RequestProcessor> HRequestProcessor;

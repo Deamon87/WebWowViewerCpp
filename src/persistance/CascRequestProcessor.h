@@ -25,9 +25,14 @@ private:
     void* m_storageOnline = nullptr;
 protected:
     void processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) override;
+    void iterateFilesInternal(
+        std::function<bool (int fileDataId, const std::string &fileName)> &process,
+        std::function<void (int fileDataId, const HFileContent &fileData)> &callback) override;
 private:
     HFileContent tryGetFile(void *cascStorage, void *fileNameToPass, uint32_t openFlags);
     HFileContent tryGetFileFromOverrides(int fileDataId);
+
+    HFileContent readFileContent(const std::string &fileName, uint32_t fileDataId);
 };
 
 

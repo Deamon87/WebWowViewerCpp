@@ -35,14 +35,31 @@ RequestProcessor::requestFile(std::string &fileName, CacheHolderType holderType,
     m_requestQueue->pushInput({fileName, holderType, s_file});
     toBeProcessed++;
 }
+void RequestProcessor::iterateAllFiles( std::unique_ptr<IterateFilesRequest> &iterateFilesRequest ) {
+    m_iterateFilesRequest = std::move(iterateFilesRequest);
+
+    m_requestQueue->pushInput({});
+}
 
 void RequestProcessor::processRequests (int limit) {
     using namespace std::chrono_literals;
     // critical section (exclusive access to std::cout signaled by locking lck):
     std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
 
+    if (m_iterateFilesRequest != nullptr) {
+//        std::cout << "m_iterateFilesRequest lol " << std::endl;
+//        std::this_thread::sleep_for(10000ms);
+
+        iterateFilesInternal(m_iterateFilesRequest->process, m_iterateFilesRequest->callback);
+
+        m_iterateFilesRequest = nullptr;
+//        std::cout << "m_iterateFilesRequest destroyed" << std::endl;
+    }
+
     if (m_threaded) {
         m_requestQueue->waitAndProcess([&](const RequestStruct &it) {
+            if (it.fileName == "") return;
+
             this->processFileRequest(it.fileName, it.holderType, it.s_file);
 
             setLck.lock();
@@ -51,6 +68,8 @@ void RequestProcessor::processRequests (int limit) {
         });
     } else {
         m_requestQueue->blockProcessWithoutWait(limit, [&](const RequestStruct &it) {
+            if (it.fileName == "") return;
+
             this->processFileRequest(it.fileName, it.holderType, it.s_file);
 
             setLck.lock();

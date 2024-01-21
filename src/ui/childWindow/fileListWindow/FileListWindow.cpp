@@ -63,6 +63,8 @@ class StatementHolderAbstract {
 public:
     virtual ~StatementHolderAbstract() {};
     virtual std::vector<FileListDB::FileRecord> execute(decltype(FileListDB::makeStorage("")) &storage, int limit, int offset) = 0;
+    virtual FileListDB::FileRecord getOrCreateFile(decltype(FileListDB::makeStorage("")) &storage, int fileDataId, const std::string &fileName) = 0;
+    virtual void setFileType(decltype(FileListDB::makeStorage("")) &storage, int fileDataId, const std::string &filetype) = 0;
     virtual int getTotal() = 0;
 };
 
@@ -70,6 +72,10 @@ decltype(FileListDB::makeStorage("")) *u_storage;
 
 template<int order>
 class StatementHolderA {
+private:
+    int refFileDataId = 0;
+    std::string refFileName = "";
+    std::string refFileType = "";
 public:
     std::function<int()> calcTotal;
 
@@ -90,8 +96,6 @@ public:
         };
 
         calcTotal();
-
-
 
         if constexpr (order == 1) {
             return [statement =
@@ -149,23 +153,79 @@ public:
 //    std::cout << get<2>(statement) << std::endl;
 //    std::cout << get<3>(statement) << std::endl;
     }
+    auto createCheckFileOrCreate(decltype(FileListDB::makeStorage("")) &storage) {
+        using namespace sqlite_orm;
+
+        return [&, statement = storage.prepare(select(
+            columns(&FileListDB::FileRecord::fileDataId, &FileListDB::FileRecord::fileName, &FileListDB::FileRecord::fileType),
+            where(
+                (c(&FileListDB::FileRecord::fileDataId) == std::ref(refFileDataId)) ||
+                (c(&FileListDB::FileRecord::fileName) == std::ref(refFileName))
+            )
+        ))
+        ](decltype(storage) &storage, int fileDataId, const std::string &fileName) {
+            this->refFileDataId = fileDataId;
+            this->refFileName = fileName;
+            auto records = storage.execute(statement);
+            if (!records.empty()) {
+                auto &record = records[0];
+                return FileListDB::FileRecord({get<0>(record), get<1>(record), get<2>(record)});
+            };
+
+            FileListDB::FileRecord newFile;
+            newFile.fileDataId = fileDataId;
+            newFile.fileName = fileName;
+
+            storage.replace(newFile);
+
+            return newFile;
+        };
+    }
+
+    auto createSetFileType(decltype(FileListDB::makeStorage("")) &storage) {
+        using namespace sqlite_orm;
+
+        return [&, statement = storage.prepare(update_all(
+            set(assign(&FileListDB::FileRecord::fileType, std::ref(refFileType))),
+            where(
+                (c(&FileListDB::FileRecord::fileDataId) == std::ref(refFileDataId))
+            )
+        ))
+        ](decltype(storage) &storage, int fileDataId, const std::string &fileType) {
+            this->refFileDataId = fileDataId;
+            this->refFileType = fileType;
+
+            storage.execute(statement);
+        };
+    }
 };
 
 template<int order>
 class StatementHolder: public StatementHolderAbstract, public StatementHolderA<order> {
 private:
     decltype(((StatementHolderA<order> *)(nullptr))->createStatement(*u_storage,"", false)) m_statementLambda;
+    decltype(((StatementHolderA<order> *)(nullptr))->createCheckFileOrCreate(*u_storage)) m_checkFileOrCreate;
+    decltype(((StatementHolderA<order> *)(nullptr))->createSetFileType(*u_storage)) m_setFileType;
 public:
     StatementHolder(decltype(FileListDB::makeStorage("")) &storage,const std::string &searchClause, bool sortAsc) :
-        m_statementLambda(StatementHolderA<order>::createStatement(storage, searchClause, sortAsc)) {
+        m_statementLambda(StatementHolderA<order>::createStatement(storage, searchClause, sortAsc)),
+        m_checkFileOrCreate(StatementHolderA<order>::createCheckFileOrCreate(storage)),
+        m_setFileType(StatementHolderA<order>::createSetFileType(storage)) {
 
     }
 
     std::vector<FileListDB::FileRecord> execute(decltype(FileListDB::makeStorage("")) &storage, int limit, int offset) override {
         return m_statementLambda(storage, limit, offset);
     }
+
     int getTotal() override {
         return StatementHolderA<order>::calcTotal();
+    };
+    FileListDB::FileRecord getOrCreateFile(decltype(FileListDB::makeStorage("")) &storage, int fileDataId, const std::string &fileName) override {
+        return m_checkFileOrCreate(storage, fileDataId, fileName);
+    }
+    void setFileType(decltype(FileListDB::makeStorage("")) &storage, int fileDataId, const std::string &filetype) override {
+        m_setFileType(storage, fileDataId, filetype);
     };
 };
 
@@ -184,7 +244,7 @@ statementFactory(decltype(FileListDB::makeStorage("")) &storage, const std::stri
 }
 
 enum class EnumParamsChanged {
-    OFFSET_LIMIT = 0, SEARCH_STRING = 1, SORTING = 2, SCAN_REPOSITORY = 3
+    OFFSET_LIMIT = 0, SEARCH_STRING = 1, SORTING = 2, SCAN_REPOSITORY = 3, LOAD_CSV_FILE = 4
 };
 
 //namespace std {
@@ -277,8 +337,35 @@ public:
                             statement = statementFactory(storage, searchClause, m_order);
                             break;
 
-                        case EnumParamsChanged::SCAN_REPOSITORY:
-                            scanRepository();
+                        case EnumParamsChanged::SCAN_REPOSITORY: {
+                            std::mutex scanMutex;
+
+                            {
+                                auto lock = std::unique_lock<std::mutex>(scanMutex);
+                                auto r_unq = std::make_unique<IterateFilesRequest>(
+                                    lock,
+                                    [&statement, &storage](int fileDataId, const std::string &fileName) -> bool {
+                                        auto fileRecord = statement->getOrCreateFile(storage, fileDataId, fileName);
+
+                                        return fileRecord.fileType.empty();
+                                    },
+                                    [&statement, &storage](int fileDataId, const HFileContent &fileData) -> void {
+                                        statement->setFileType(storage, fileDataId, "unk");
+                                    }
+                                );
+
+                                m_api->requestProcessor->iterateAllFiles(r_unq);
+                            }
+                            std::unique_lock <std::mutex> waitLock(scanMutex);
+
+                            std::cout << "code after wait lock " << std::endl;
+
+                            break;
+                        }
+
+
+                        case EnumParamsChanged::LOAD_CSV_FILE:
+                            importCSVInternal(storage);
                             break;
                     }
 
@@ -341,6 +428,10 @@ public:
     void scanFiles() override {
         stateChangeAwaiter.pushInput(EnumParamsChanged::SCAN_REPOSITORY);
     }
+    void importCSV() override {
+        stateChangeAwaiter.pushInput(EnumParamsChanged::LOAD_CSV_FILE);
+    }
+
     int getCurrentScanningProgress() { return m_currentScanningProgress;}
     int getAmountOfFilesInRep() { return m_filesInRepository;}
 private:
@@ -349,8 +440,32 @@ private:
 
         m_results = results;
     }
-    void scanRepository() {
-//        m_api->requestProcessor
+    void importCSVInternal(decltype(FileListDB::makeStorage("")) &storage) {
+        auto csv = new io::CSVReader<2, io::trim_chars<' '>, io::no_quote_escape<';'>>("listfile.csv");
+
+        int currentFileDataId;
+        std::string currentFileName;
+
+        using namespace sqlite_orm;
+        auto statement = storage.prepare(
+            select(
+                columns(&FileListDB::FileRecord::fileType), from<FileListDB::FileRecord>(),
+                where(is_equal(&FileListDB::FileRecord::fileDataId, std::ref(currentFileDataId)))
+            )
+        );
+
+        while (csv->read_row(currentFileDataId, currentFileName)) {
+            auto typeFromDB = storage.execute(statement);
+
+            std::string fileType = "";
+            if (!typeFromDB.empty()) {
+                fileType = get<0>(typeFromDB[0]);
+            }
+
+            storage.replace(FileListDB::FileRecord({currentFileDataId, currentFileName, fileType}));
+        }
+
+        delete csv;
     }
 
 private:
@@ -382,7 +497,7 @@ FileListWindow::FileListWindow(const HApiContainer &api, const std::function<voi
     m_filesTotal = 0;
     m_showWindow = true;
 
-    selectStatement = std::make_unique<FileListLambdaInst>(api, filterTextStr, m_filesTotal);
+    flInterface = std::make_unique<FileListLambdaInst>(api, filterTextStr, m_filesTotal);
 }
 
 bool FileListWindow::draw() {
@@ -393,13 +508,13 @@ bool FileListWindow::draw() {
         }
         ImGui::SameLine();
         if (ImGui::Button("Scan repository...")) {
-
+            flInterface->scanFiles();
         }
         if (ImGui::InputText("Filter: ", filterText.data(), filterText.size()-1)) {
             filterText[filterText.size()-1] = 0;
             filterTextStr = filterText.data();
             filterTextStr = "%"+filterTextStr+"%";
-            selectStatement->searchChanged();
+            flInterface->searchChanged();
         }
 
         if (ImGui::BeginTable("FileListTable", 3, ImGuiTableFlags_Resizable |
@@ -417,7 +532,7 @@ bool FileListWindow::draw() {
             ImGui::TableHeadersRow();
 
             ImGuiTableSortSpecs *sorts_specs = ImGui::TableGetSortSpecs();
-            if (sorts_specs && sorts_specs->SpecsDirty && selectStatement) {
+            if (sorts_specs && sorts_specs->SpecsDirty && flInterface) {
                 int order = 1;
                 for (int i = 0; i < sorts_specs->SpecsCount; i++) {
                     auto const &sort_spec = sorts_specs->Specs[i];
@@ -429,12 +544,12 @@ bool FileListWindow::draw() {
                     }
                 }
 
-                selectStatement->setOrder(order);
+                flInterface->setOrder(order);
                 sorts_specs->SpecsDirty = false;
             }
 
 
-            auto dbResults = selectStatement->getResults();
+            auto dbResults = flInterface->getResults();
             bool needRequest = false;
             std::vector<DbRequest> newRequests = {};
             {
@@ -536,7 +651,7 @@ bool FileListWindow::draw() {
                 }
             }
             if (needRequest)
-                selectStatement->makeRequest(newRequests);
+                flInterface->makeRequest(newRequests);
 
             ImGui::EndTable();
         }
@@ -547,32 +662,6 @@ bool FileListWindow::draw() {
 }
 
 void FileListWindow::importCSV() {
-//    auto csv = new io::CSVReader<2, io::trim_chars<' '>, io::no_quote_escape<';'>>("listfile.csv");
-//
-//    int currentFileDataId;
-//    std::string currentFileName;
-//
-//    using namespace sqlite_orm;
-//    auto statement = m_storage.prepare(
-//        select(
-//            columns(&FileListDB::FileRecord::fileType), from<FileListDB::FileRecord>(),
-//            where(is_equal(&FileListDB::FileRecord::fileDataId, std::ref(currentFileDataId)))
-//        )
-//    );
-//
-//    while (csv->read_row(currentFileDataId, currentFileName)) {
-//        auto typeFromDB = m_storage.execute(statement);
-//
-//        std::string fileType = "";
-//        if (!typeFromDB.empty()) {
-//            fileType = get<0>(typeFromDB[0]);
-//        }
-//
-//        m_storage.replace(FileListDB::FileRecord({currentFileDataId, currentFileName, fileType}));
-//    }
-//
-//    m_filesTotal = m_storage.count<FileListDB::FileRecord>();
-//
-//    delete csv;
+    flInterface->importCSV();
 }
 
