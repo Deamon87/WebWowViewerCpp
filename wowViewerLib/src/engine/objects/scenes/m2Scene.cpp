@@ -54,7 +54,7 @@ extern "C" {
     extern void offerFileAsDownload(std::string filename, std::string mime);
 }
 
-void M2Scene::setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer, std::vector<int> &replaceTextureArray) {
+void M2Scene::setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<int> &replaceTextureArray) {
     //std::cout << "replaceTextureArray.size == " << replaceTextureArray.size() << std::endl;
     //std::cout << "m_m2Object == " << m_m2Object << std::endl;
     if (m_m2Object == nullptr) return;
@@ -76,7 +76,7 @@ void M2Scene::setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer,
     m_m2Object->setReplaceTextures(sceneRenderer, replaceTextures);
 }
 
-void M2Scene::setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds) {
+void M2Scene::setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds) {
     m_m2Object->setMeshIds(sceneRenderer, meshIds);
 }
 

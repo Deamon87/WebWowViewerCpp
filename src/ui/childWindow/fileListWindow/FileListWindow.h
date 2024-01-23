@@ -37,6 +37,8 @@ public:
     virtual void setOrder(int order) = 0;
     virtual void scanFiles() = 0;
     virtual void importCSV() = 0;
+
+    virtual int getCurrentScanningProgress() = 0;
     virtual const std::vector<DBResults> getResults() = 0;
 };
 
@@ -55,6 +57,7 @@ private:
     std::unique_ptr<FileListLamda> flInterface;
     std::array<char, 128> filterText = {0};
     std::string filterTextStr = "%%";
+    std::string fileType = "";
 
     int lastSelectedFiledataId = -1;
 private:

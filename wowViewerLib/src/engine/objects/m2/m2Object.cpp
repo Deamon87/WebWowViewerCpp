@@ -2056,14 +2056,14 @@ void M2Object::updateDynamicMeshes() {
 //        std::cout << "Saved " << skinSection->vertexCount << " vertices " << "at update frame =" << frameNum << std::endl;
     }
 }
-void M2Object::setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, std::vector<HBlpTexture> &replaceTextures) {
+void M2Object::setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, const std::vector<HBlpTexture> &replaceTextures) {
     m_replaceTextures = replaceTextures;
 
     if (m_loaded) {
         createMeshes(sceneRenderer); // recreate meshes
     }
 }
-void M2Object::setMeshIds(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds) {
+void M2Object::setMeshIds(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds) {
     m_meshIds = meshIds;
 
     if (m_loaded) {

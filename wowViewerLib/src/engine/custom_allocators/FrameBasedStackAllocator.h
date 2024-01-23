@@ -20,7 +20,7 @@ namespace framebased {
       || defined (_VECTOR_)))
 #define ARENA_HAS_VECTOR_DEF
     template <class T>
-    using vector = std::vector<T>;
+    using vector = std::vector<T, tbb::cache_aligned_allocator<T>>;
 #endif
 
 #if ((defined (_GLIBCXX_UNORDERED_MAP) \
@@ -29,7 +29,7 @@ namespace framebased {
      && !defined (ARENA_HAS_UNORDERED_MAP_DEF))
 #define ARENA_HAS_UNORDERED_MAP_DEF
     template <class Key, class Value, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
-    using unordered_map = std::unordered_map<Key, Value, Hash, KeyEqual>;
+    using unordered_map = std::unordered_map<Key, Value, Hash, KeyEqual, tbb::cache_aligned_allocator<std::pair<const Key, Value>>>;
 #endif
 }
 

@@ -7,48 +7,9 @@
 #include "../../../../wowViewerLib/src/include/string_utils.h"
 
 namespace FileListDB {
-    struct FileRecord_FT5 {
-        int fileDataId;
-        std::string fileName;
-        std::string fileType;
-    };
-
     inline static auto makeStorage(const std::string &dataBaseFile) {
         using namespace sqlite_orm;
         return make_storage(dataBaseFile,
-                            make_trigger("files_after_insert",
-                                         after()
-                                             .insert()
-                                             .on<FileRecord>()
-                                             .begin(
-                                                 insert(into<FileRecord_FT5>(),
-                                                        columns(&FileRecord_FT5::fileDataId,
-                                                                &FileRecord_FT5::fileName),
-                                                        values(std::make_tuple(new_(&FileRecord::fileDataId),
-                                                                               new_(&FileRecord::fileName)
-                                                               )
-                                                        )
-                                                 )
-                                             )
-                                             .end()),
-                            make_trigger("files_after_delete",
-                                         after()
-                                             .delete_()
-                                             .on<FileRecord>()
-                                             .begin(
-                                                 remove_all<FileRecord_FT5>(where(is_equal(old(&FileRecord::fileDataId), &FileRecord_FT5::fileDataId)))
-                                             )
-                                             .end()),
-                            make_trigger("files_after_update",
-                                         after()
-                                             .delete_()
-                                             .on<FileRecord>()
-                                             .begin(
-                                                 update_all(set(assign(&FileRecord_FT5::fileName, &FileRecord::fileName)),
-                                                            where(is_equal(old(&FileRecord::fileDataId), &FileRecord_FT5::fileDataId)))
-                                             )
-                                             .end()),
-                            make_virtual_table("files_FT5", using_fts5(make_column("fileName", &FileRecord_FT5::fileName), make_column("fileDataId", &FileRecord_FT5::fileDataId))),
                             make_index("idx_files_name", &FileRecord::fileName),
                             make_index("idx_files_type", &FileRecord::fileType),
                             make_table("files",
@@ -81,14 +42,13 @@ public:
 
 public:
     auto createStatement(decltype(FileListDB::makeStorage("")) &storage,
-                                       const std::string &searchClause, bool sortAsc) {
+                                       const std::string &searchClause, const std::string &fileType, bool sortAsc) {
         using namespace sqlite_orm;
 
         auto whereClause = where(
-            or_(
-                like(&FileListDB::FileRecord::fileName, searchClause),
-                like(&FileListDB::FileRecord::fileDataId, searchClause)
-            )
+            (like(&FileListDB::FileRecord::fileName, searchClause) ||
+            like(&FileListDB::FileRecord::fileDataId, searchClause)) ||
+            like(&FileListDB::FileRecord::fileType, fileType)
         );
 
         calcTotal = [whereClause, &storage]() {
@@ -108,8 +68,8 @@ public:
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
 
-                get<2>(statement) = limit;
-                get<3>(statement) = offset;
+                get<3>(statement) = limit;
+                get<4>(statement) = offset;
 
                 return storage.execute(statement);
             };
@@ -124,8 +84,8 @@ public:
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
 
-                get<2>(statement) = limit;
-                get<3>(statement) = offset;
+                get<3>(statement) = limit;
+                get<4>(statement) = offset;
 
                 return storage.execute(statement);
             };
@@ -140,8 +100,8 @@ public:
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
 
-                get<2>(statement) = limit;
-                get<3>(statement) = offset;
+                get<3>(statement) = limit;
+                get<4>(statement) = offset;
 
                 return storage.execute(statement);
             };
@@ -203,12 +163,12 @@ public:
 template<int order>
 class StatementHolder: public StatementHolderAbstract, public StatementHolderA<order> {
 private:
-    decltype(((StatementHolderA<order> *)(nullptr))->createStatement(*u_storage,"", false)) m_statementLambda;
+    decltype(((StatementHolderA<order> *)(nullptr))->createStatement(*u_storage,"", "", false)) m_statementLambda;
     decltype(((StatementHolderA<order> *)(nullptr))->createCheckFileOrCreate(*u_storage)) m_checkFileOrCreate;
     decltype(((StatementHolderA<order> *)(nullptr))->createSetFileType(*u_storage)) m_setFileType;
 public:
-    StatementHolder(decltype(FileListDB::makeStorage("")) &storage,const std::string &searchClause, bool sortAsc) :
-        m_statementLambda(StatementHolderA<order>::createStatement(storage, searchClause, sortAsc)),
+    StatementHolder(decltype(FileListDB::makeStorage("")) &storage,const std::string &searchClause, const std::string &fileType, bool sortAsc) :
+        m_statementLambda(StatementHolderA<order>::createStatement(storage, searchClause, fileType, sortAsc)),
         m_checkFileOrCreate(StatementHolderA<order>::createCheckFileOrCreate(storage)),
         m_setFileType(StatementHolderA<order>::createSetFileType(storage)) {
 
@@ -231,15 +191,15 @@ public:
 
 
 std::unique_ptr<StatementHolderAbstract>
-statementFactory(decltype(FileListDB::makeStorage("")) &storage, const std::string &searchClause, int order) {
+statementFactory(decltype(FileListDB::makeStorage("")) &storage, const std::string &searchClause, const std::string &fileType, int order) {
     switch(abs(order)) {
         case 2:
-            return std::make_unique<StatementHolder<2>>(storage, searchClause, order > 0);
+            return std::make_unique<StatementHolder<2>>(storage, searchClause, fileType, order > 0);
         case 3:
-            return std::make_unique<StatementHolder<3>>(storage, searchClause, order > 0);
+            return std::make_unique<StatementHolder<3>>(storage, searchClause, fileType, order > 0);
         case 1:
         default:
-            return std::make_unique<StatementHolder<1>>(storage, searchClause, order > 0);
+            return std::make_unique<StatementHolder<1>>(storage, searchClause, fileType, order > 0);
     }
 }
 
@@ -299,12 +259,130 @@ private:
 };
 
 
+std::string detectFileType(const HFileContent &fileContent) {
+    std::string fileType = "unk";
+    
+    if (fileContent == nullptr) return fileType;
+    
+    if (fileContent->size() < 4)
+        return fileType;
 
+    uint32_t magic = *(uint32_t *)fileContent->data();
+    magic = ntohl(magic);
+//    if (magic[0] == 0 || magic[0] == 4)
+//    {
+//        if (bin.BaseStream.Length >= 8)
+//        {
+//            var wwfMagic = bin.ReadUInt32();
+//            switch (wwfMagic)
+//            {
+//                case 0x932C64B4: // WWFParticulateGroup
+//                    type = "wwf";
+//                    break;
+//            }
+//        }
+//
+//        bin.BaseStream.Position = 4;
+//    }
+
+    switch (magic)
+    {
+        case 'MD21':
+        case 'MD20':
+            fileType = "m2";
+            break;
+        case 'SKIN':
+            fileType = "skin";
+            break;
+        case 'OggS':
+            fileType = "ogg";
+            break;
+        case 'BLP2':
+            fileType = "blp";
+            break;
+        case 'REVM': {
+            uint8_t *fptr = fileContent->data();
+            fptr += 4;
+
+            uint32_t length = *(uint32_t *) fptr; fptr += 4;
+            if ((fptr - fileContent->data()) + length >= fileContent->size()) return fileType;
+
+            fptr += length;
+
+            uint32_t subChunkMagic = *(uint32_t *) fptr; fptr += 4;
+            subChunkMagic = ntohl(subChunkMagic);
+            switch (subChunkMagic) {
+                case 'RDHM': // ADT root
+                case 'FDDM': // ADT OBJ
+                case 'DDLM': // ADT OBJ
+                case 'DFLM': // ADT OBJ
+                case 'XDMM': // ADT OBJ (old)
+                case 'DHLM': // ADT LOD
+                case 'PMAM': // ADT TEX
+                    fileType = "adt";
+                    break;
+                case 'DHOM': // WMO root
+                    fileType = "wmo";
+                    break;
+                case 'PGOM': // WMO GROUP
+                    fileType = "gwmo";
+                    break;
+                case 'DHPM': // WDT root
+                    fileType = "wdt";
+                    break;
+                case 'IOAM': // WDT OCC/LGT
+                    fileType = "wdt_sec";
+                    break;
+                default:
+                    fileType = "chUNK";
+                    break;
+            }
+            break;
+        }
+        case 'RVXT':
+            fileType = "tex";
+            break;
+        case 'AFM2':
+        case 'AFSA':
+        case 'AFSB':
+            fileType = "anim";
+            break;
+        case 'WDC5':
+        case 'WDC4':
+        case 'WDC3':
+            fileType = "db2";
+            break;
+        case 'RIFF':
+            fileType = "avi";
+            break;
+        case 'HSXG':
+            fileType = "bls";
+            break;
+        case 'SKL1':
+            fileType = "skel";
+            break;
+        case 'SYHP':
+            fileType = "phys";
+            break;
+        case 'TAFG':
+            fileType = "gfat";
+            break;
+        default:
+            break;
+    }
+
+/*
+    if (magicString.StartsWith("ID3"))
+        fileType = "mp3";
+*/
+
+    return fileType;
+}
 
 
 class FileListLambdaInst : public FileListLamda {
 public:
-    FileListLambdaInst(const HApiContainer &api, std::string &searchClause, int &recordsTotal) : m_recordsTotal(recordsTotal), m_api(api)
+    FileListLambdaInst(const HApiContainer &api, std::string &searchClause, std::string &fileType, int &recordsTotal) : m_recordsTotal(recordsTotal), m_api(api)
     {
         dbThread = std::thread([&]() {
             decltype(FileListDB::makeStorage("")) storage = FileListDB::makeStorage(":memory:");
@@ -317,7 +395,7 @@ public:
 
             storage.sync_schema();
 
-            std::unique_ptr<StatementHolderAbstract> statement = statementFactory(storage, searchClause, 1);
+            std::unique_ptr<StatementHolderAbstract> statement = statementFactory(storage, searchClause, fileType, 1);
             m_recordsTotal = statement->getTotal();
 
             //stateChangeAwaiter.pushInput(EnumParamsChanged::OFFSET_LIMIT);
@@ -329,28 +407,32 @@ public:
                             break;
 
                         case EnumParamsChanged::SEARCH_STRING:
-                            statement = statementFactory(storage, searchClause, m_order);
+                            statement = statementFactory(storage, searchClause, fileType, m_order);
                             m_recordsTotal = statement->getTotal();
                             break;
 
                         case EnumParamsChanged::SORTING:
-                            statement = statementFactory(storage, searchClause, m_order);
+                            statement = statementFactory(storage, searchClause, fileType, m_order);
                             break;
 
                         case EnumParamsChanged::SCAN_REPOSITORY: {
                             std::mutex scanMutex;
 
+                            m_currentScanningProgress = 0;
                             {
+                                auto &l_currentScanningProgress = m_currentScanningProgress;
                                 auto lock = std::unique_lock<std::mutex>(scanMutex);
                                 auto r_unq = std::make_unique<IterateFilesRequest>(
                                     lock,
-                                    [&statement, &storage](int fileDataId, const std::string &fileName) -> bool {
+                                    [&statement, &storage, &l_currentScanningProgress](int fileDataId, const std::string &fileName) -> bool {
+                                        l_currentScanningProgress++;
                                         auto fileRecord = statement->getOrCreateFile(storage, fileDataId, fileName);
 
                                         return fileRecord.fileType.empty();
                                     },
                                     [&statement, &storage](int fileDataId, const HFileContent &fileData) -> void {
-                                        statement->setFileType(storage, fileDataId, "unk");
+                                        auto fileType = detectFileType(fileData);
+                                        statement->setFileType(storage, fileDataId, fileType);
                                     }
                                 );
 
@@ -358,7 +440,7 @@ public:
                             }
                             std::unique_lock <std::mutex> waitLock(scanMutex);
 
-                            std::cout << "code after wait lock " << std::endl;
+                            m_currentScanningProgress = -1;
 
                             break;
                         }
@@ -432,7 +514,7 @@ public:
         stateChangeAwaiter.pushInput(EnumParamsChanged::LOAD_CSV_FILE);
     }
 
-    int getCurrentScanningProgress() { return m_currentScanningProgress;}
+    int getCurrentScanningProgress() override { return m_currentScanningProgress;}
     int getAmountOfFilesInRep() { return m_filesInRepository;}
 private:
     void setResults(const std::vector<DBResults> &results) {
@@ -497,12 +579,22 @@ FileListWindow::FileListWindow(const HApiContainer &api, const std::function<voi
     m_filesTotal = 0;
     m_showWindow = true;
 
-    flInterface = std::make_unique<FileListLambdaInst>(api, filterTextStr, m_filesTotal);
+    flInterface = std::make_unique<FileListLambdaInst>(api, filterTextStr, fileType, m_filesTotal);
 }
 
 bool FileListWindow::draw() {
+    auto fileScanned = flInterface->getCurrentScanningProgress();
+
     ImGui::Begin("File list", &m_showWindow);
     {
+        bool disableUI = fileScanned >= 0;
+
+        if (disableUI)
+        {
+            ImGui::BeginDisabled();
+//            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        }
+
         if (ImGui::Button("Import filelist.csv...")) {
             importCSV();
         }
@@ -513,10 +605,20 @@ bool FileListWindow::draw() {
         if (ImGui::InputText("Filter: ", filterText.data(), filterText.size()-1)) {
             filterText[filterText.size()-1] = 0;
             filterTextStr = filterText.data();
+            fileType = filterTextStr;
             filterTextStr = "%"+filterTextStr+"%";
             flInterface->searchChanged();
         }
 
+        if (disableUI) {
+//            ImGui::PopStyleVar(ImGuiStyleVar_Alpha);
+
+            ImGui::BeginChild("Scanning Region", ImVec2(-1, -1));
+            ImGui::Text("Scanning Files %d", fileScanned);
+            ImGui::EndChild();
+
+//            ImGui::PushStyleVar(ImGuiStyleVar_Alpha, ImGui::GetStyle().Alpha * 0.5f);
+        } else
         if (ImGui::BeginTable("FileListTable", 3, ImGuiTableFlags_Resizable |
                                               ImGuiTableFlags_Reorderable |
                                               ImGuiTableFlags_Sortable |
@@ -606,8 +708,13 @@ bool FileListWindow::draw() {
                                                   ImGuiSelectableFlags_AllowItemOverlap)) {
                                 lastSelectedFiledataId = fileItem.fileDataId;
                                 if (m_fileOpenCallback) {
-                                    if (endsWith(fileItem.fileName, ".blp")) {
-                                        m_fileOpenCallback(fileItem.fileDataId, "blp");
+                                    std::string fileType =
+                                        (fileItem.fileType != "" && fileItem.fileType != "unk") ? fileItem.fileType :
+                                        endsWith(fileItem.fileName, ".blp") ? "blp" :
+                                        "unk";
+
+                                    if (fileType != "unk") {
+                                        m_fileOpenCallback(fileItem.fileDataId, fileType);
                                     }
                                 }
                             }
@@ -655,10 +762,15 @@ bool FileListWindow::draw() {
 
             ImGui::EndTable();
         }
+
+        if (disableUI) {
+//            ImGui::PopStyleVar(ImGuiStyleVar_Alpha);
+            ImGui::EndDisabled();
+        }
     }
     ImGui::End();
 
-    return m_showWindow;
+    return m_showWindow || fileScanned >= 0;
 }
 
 void FileListWindow::importCSV() {

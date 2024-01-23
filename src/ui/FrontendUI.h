@@ -79,7 +79,7 @@ private:
     bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
     void openWMOSceneByfdid(int WMOFdid);
-    void openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds);
+    void openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds);
     void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
 
     void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);

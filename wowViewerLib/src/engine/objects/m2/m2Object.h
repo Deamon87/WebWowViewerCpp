@@ -200,8 +200,8 @@ public:
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<HBlpTexture> replaceTextures);
 
-    void setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, std::vector<HBlpTexture> &replaceTextures);
-    void setMeshIds(const HMapSceneBufferCreate &sceneRenderer, std::vector<uint8_t> &meshIds);
+    void setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, const std::vector<HBlpTexture> &replaceTextures);
+    void setMeshIds(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds);
     void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);
     void resetReplaceParticleColor();
     bool getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement);

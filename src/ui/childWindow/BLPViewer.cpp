@@ -7,7 +7,7 @@
 #include <string>
 
 BLPViewer::BLPViewer(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer, bool noSearch) :
-    m_api(api), m_uiRenderer(uiRenderer), m_noSearch(noSearch), windowName(std::string("BLP Viewer")+(noSearch ? "_no_search" : ""))
+    m_api(api), m_uiRenderer(uiRenderer), m_noSearch(noSearch), windowName(std::string("BLP Viewer")+(noSearch ? "##no_search" : ""))
 {
 
 }

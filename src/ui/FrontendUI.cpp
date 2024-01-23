@@ -774,6 +774,12 @@ void FrontendUI::showMainMenu() {
                                 m_blpFileViewerWindow = std::make_shared<BLPViewer>(m_api, m_uiRenderer, true);
 
                             m_blpFileViewerWindow->loadBlp(std::to_string(fileId));
+                        } else if (fileType == "m2") {
+                            openM2SceneByfdid(fileId, {});
+                        } else if (fileType == "wmo") {
+                            openWMOSceneByfdid(fileId);
+                        } else if (fileType == "wdt") {
+                            openMapByIdAndWDTId(0, fileId, 0,0,0);
                         }
                     });
             }
@@ -1872,7 +1878,7 @@ void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y,
     m_api->camera->setCameraPos(x,y,z);
     m_api->camera->setMovementSpeed(movementSpeed);
 }
-void FrontendUI::openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds) {
+void FrontendUI::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
     m_currentScene = m2Scene;

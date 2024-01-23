@@ -245,13 +245,19 @@ void CascRequestProcessor::iterateFilesInternal(
     auto searchHandle = CascFindFirstFile(m_storage, nullptr, &findData, nullptr);
     if (searchHandle != INVALID_HANDLE_VALUE ) {
         do {
+            if (findData.dwFileDataId == CASC_INVALID_ID) continue;
+            if (findData.dwContentFlags == CASC_INVALID_ID) continue;
+
             if (!process(findData.dwFileDataId, findData.szFileName)) continue;
 
-            auto fileContent = readFileContent(findData.szFileName, findData.dwFileDataId);
-            if (fileContent) {
-                callback(findData.dwFileDataId, fileContent);
+            if (findData.bFileAvailable) {
+                auto fileContent = readFileContent(findData.szFileName, findData.dwFileDataId);
+                if (fileContent) {
+                    callback(findData.dwFileDataId, fileContent);
+                }
             }
         } while(CascFindNextFile(searchHandle, &findData));
+
         CascFindClose(searchHandle);
     }
 }
