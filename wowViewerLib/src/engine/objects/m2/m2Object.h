@@ -28,7 +28,7 @@ class M2ObjectListContainer;
 #include "../../../gapi/UniformBufferStructures.h"
 
 
-class M2Object {
+class M2Object : public ObjectWithId {
 public:
     friend class IExporter;
 

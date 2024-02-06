@@ -36,6 +36,7 @@
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRendererFactory.h"
 #include "wheelCapture/wheelCapture.h"
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
+#include "imgui_notify.h"
 
 FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
     m_api = api;
@@ -121,9 +122,8 @@ void FrontendUI::composeUI() {
             m_databaseUpdateWorkflow->render();
         }
     }
-    if (m_keyUpdateWorkFlow != nullptr) {
-        if (!m_keyUpdateWorkFlow->render())
-            m_keyUpdateWorkFlow = nullptr;
+    if (m_keyUpdateWorkFlow != nullptr && !m_keyUpdateWorkFlow->render()) {
+        m_keyUpdateWorkFlow = nullptr;
     }
 
     showSettingsDialog();
@@ -134,6 +134,8 @@ void FrontendUI::composeUI() {
     showCurrentStatsDialog();
     showMinimapGenerationSettingsDialog();
     showBlpViewer();
+
+    ImGui::RenderNotifications();
 
     if (m_debugRenderWindow)
         m_debugRenderWindow->draw();
@@ -784,6 +786,9 @@ void FrontendUI::showMainMenu() {
                     });
             }
             if (ImGui::MenuItem("Open current stats")) { showCurrentStats = true; }
+            if (ImGui::MenuItem("Test notification")) {
+                ImGui::InsertNotification({ ImGuiToastType_Info, 3000, "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation" });
+            }
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
             if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
@@ -796,13 +801,15 @@ void FrontendUI::showMainMenu() {
                     m_blpViewerWindow = std::make_shared<BLPViewer>(m_api, m_uiRenderer);
             }
 
+            /*
             if (ImGui::MenuItem("Test export")) {
                 if (m_currentScene != nullptr) {
                     exporter = std::make_shared<GLTFExporter>("./gltf/");
-//                    currentScene->exportScene(exporter.get());
+//                    m_currentScene->exportScene(exporter.get());
                     exporterFramesReady = 0;
                 }
             }
+             */
             if (ImGui::MenuItem("Test data export")) {
                 m_dataExporter = std::make_shared<DataExporter::DataExporterClass>(m_api);
             }
@@ -1915,9 +1922,9 @@ void FrontendUI::unloadScene() {
 
 
 int FrontendUI::getCameraNumCallback() {
-//    if (currentScene != nullptr) {
-//        return currentScene->getCameraNum();
-//    }
+    if (m_currentScene != nullptr) {
+//        return m_currentScene->getCameraNum();
+    }
 
     return 0;
 }

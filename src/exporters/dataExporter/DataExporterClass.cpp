@@ -5,7 +5,7 @@
 #include "DataExporterClass.h"
 #include "../../../wowViewerLib/src/include/string_utils.h"
 
-DataExporter::DataExporterClass::DataExporterClass(HApiContainer apiContainer) : m_storage(DataExporter::makeStorage("dataExport.db3")) {
+DataExporter::DataExporterClass::DataExporterClass(HApiContainer apiContainer) : m_storage(DataExporter::makeStorage(":memory:")) {
     m_apiContainer = apiContainer;
     processedFiles = 0;
     outputLog.open ("m2Log.txt");
@@ -241,4 +241,8 @@ void DataExporter::DataExporterClass::exportDBSkin(int id) {
 
         m_storage.insert(dbm2SkinSection);
     }
+}
+
+DataExporter::DataExporterClass::~DataExporterClass() {
+    m_storage.backup_to("dataExport.db3");
 }

@@ -227,6 +227,7 @@ namespace DataExporter {
     class DataExporterClass {
     public:
         DataExporterClass(HApiContainer apiContainer);
+        ~DataExporterClass();
         void process();
         bool isDone() {
             return finished;

@@ -50,3 +50,6 @@
 [submodule "wowViewerLib/3rdparty/tracy"]
 	path = wowViewerLib/3rdparty/tracy
 	url = https://github.com/wolfpld/tracy.git
+[submodule "3rdparty/imgui-notify"]
+	path = 3rdparty/imgui-notify
+	url = https://github.com/patrickcjk/imgui-notify.git

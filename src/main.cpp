@@ -481,9 +481,6 @@ int main(){
         frontendUI->newFrame();
         stopMouse = frontendUI->getStopMouse();
         stopKeyboard = frontendUI->getStopKeyboard();
-//        if (stopMouse || stopKeyboard) {
-//            apiContainer->camera->stopAllMovement();
-//        }
 
         glfwPollEvents();
 

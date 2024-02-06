@@ -244,6 +244,8 @@ set(SOURCE_FILES
 		src/ui/childWindow/textureRenderer/DebugRendererWindow.h
         src/ui/childWindow/fileListWindow/FileListWindow.cpp
         src/ui/childWindow/fileListWindow/FileListWindow.h
+		src/ui/childWindow/sceneWindow/SceneWindow.cpp
+		src/ui/childWindow/sceneWindow/SceneWindow.h
 )
 
 
@@ -304,6 +306,7 @@ target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWView
 #target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
 target_compile_definitions(AWebWoWViewerCpp PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
 target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
+target_include_directories(AWebWoWViewerCpp PUBLIC 3rdparty/imgui-notify/example/src)
 
 add_dependencies(AWebWoWViewerCpp WoWViewerLib)
 #add_dependencies(AWebWoWViewerCpp storm)
