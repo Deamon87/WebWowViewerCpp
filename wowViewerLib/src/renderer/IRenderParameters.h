@@ -35,19 +35,18 @@ public:
     virtual std::shared_ptr<FramePlan> getLastCreatedPlan() = 0;
 
     CullLambda createCullUpdateRenderChain(const std::shared_ptr<FrameInputParams<PlanParams>> &frameInputParams,
-                                           int currentFrame, std::function<void(unsigned int frame)> updateProcessingFrame) {
+                                           std::function<uint32_t()> updateProcessingFrame) {
         auto this_s = this->shared_from_this();
-        auto l_currentFrame = currentFrame;
         auto l_updateProcessingFrame = std::move(updateProcessingFrame);
 
-        return [frameInputParams, this_s, l_currentFrame, l_updateProcessingFrame]() -> SceneUpdateLambda {
-            l_updateProcessingFrame(l_currentFrame);
+        return [frameInputParams, this_s, l_updateProcessingFrame]() -> SceneUpdateLambda {
+            auto l_currentFrame = l_updateProcessingFrame();
             TracyMessageStr(("Culling stage frame = " + std::to_string(l_currentFrame)));
 
             std::shared_ptr<FramePlan> framePlan = this_s->processCulling(frameInputParams);
 
-            return [framePlan, frameInputParams, this_s, l_currentFrame, l_updateProcessingFrame]() -> std::unique_ptr<IRenderFunction> {
-                l_updateProcessingFrame(l_currentFrame);
+            return [framePlan, frameInputParams, this_s, l_updateProcessingFrame]() -> std::unique_ptr<IRenderFunction> {
+                auto l_currentFrame = l_updateProcessingFrame();
 
                 auto renderFunc = this_s->update(frameInputParams, framePlan);
                 renderFunc->setProcessingFrame(l_currentFrame);

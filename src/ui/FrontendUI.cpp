@@ -38,7 +38,7 @@
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 #include "imgui_notify.h"
 
-FrontendUI::FrontendUI(HApiContainer api, HRequestProcessor processor) {
+FrontendUI::FrontendUI(HApiContainer api) : SceneWindow(api) {
     m_api = api;
 
     this->createDatabaseHandler();
@@ -223,8 +223,8 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
         }
 
-        if (m_sceneRenderer) {
-            auto mapPlan = m_sceneRenderer->getLastCreatedPlan();
+        if (SceneWindow::hasRenderer()) {
+            auto mapPlan = SceneWindow::getLastPlan();
             if (mapPlan) {
                 auto &cullStageData = mapPlan;
 
@@ -920,47 +920,6 @@ bool FrontendUI::getStopKeyboard() {
     return io.WantCaptureKeyboard;
 }
 
-std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneType, const std::string& name, int cameraNum) {
-    apiContainer->camera = std::make_shared<FirstPersonCamera>();
-    if (sceneType == -1) {
-        return std::make_shared<NullScene>();
-    } else if (sceneType == 0) {
-//        m_usePlanarCamera = cameraNum == -1;
-
-
-        return std::make_shared<M2Scene>(apiContainer, name);
-    } else if (sceneType == 1) {
-        return std::make_shared<WmoScene>(apiContainer, name);
-    } else if (sceneType == 2) {
-        auto &adtFileName = name;
-
-        size_t lastSlashPos = adtFileName.find_last_of("/");
-        size_t underscorePosFirst = adtFileName.find_last_of("_");
-        size_t underscorePosSecond = adtFileName.find_last_of("_", underscorePosFirst-1);
-        std::string mapName = adtFileName.substr(lastSlashPos+1, underscorePosSecond-lastSlashPos-1);
-
-        int i = std::stoi(adtFileName.substr(underscorePosSecond+1, underscorePosFirst-underscorePosSecond-1));
-        int j = std::stoi(adtFileName.substr(underscorePosFirst+1, adtFileName.size()-underscorePosFirst-5));
-
-        float adt_x_min = AdtIndexToWorldCoordinate(j);
-        float adt_x_max = AdtIndexToWorldCoordinate(j+1);
-
-        float adt_y_min = AdtIndexToWorldCoordinate(i);
-        float adt_y_max = AdtIndexToWorldCoordinate(i+1);
-
-        apiContainer->camera = std::make_shared<FirstPersonCamera>();
-        apiContainer->camera->setCameraPos(
-            (adt_x_min+adt_x_max) / 2.0,
-            (adt_y_min+adt_y_max) / 2.0,
-            200
-        );
-
-        return std::make_shared<Map>(apiContainer, adtFileName, i, j, mapName);
-    }
-
-    return nullptr;
-}
-
 void FrontendUI::showQuickLinksDialog() {
     if (!showQuickLinks) return;
     std::vector<int> replacementTextureFDids = {};
@@ -1000,9 +959,7 @@ void FrontendUI::showQuickLinksDialog() {
         openWMOSceneByfdid(4638404);
     }
     if (ImGui::Button("Vanilla karazhan", ImVec2(-1, 0))) {
-        m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
-        m_currentScene = std::make_shared<WmoScene>(m_api, "world/wmo/dungeon/az_karazahn/karazhan.wmo");
-        m_api->camera->setCameraPos(0, 0, 0);
+        openWMOSceneByFilename("world/wmo/dungeon/az_karazahn/karazhan.wmo");
     }
     if (ImGui::Button("10xt_exterior_glacialspike01.wmo (parallax)", ImVec2(-1, 0))) {
         openWMOSceneByfdid(4419436);
@@ -1263,7 +1220,7 @@ void FrontendUI::showQuickLinksDialog() {
             openM2SceneByfdid(3732303, replacementTextureFDids);
     }
     if (ImGui::Button("Bugged ADT (SL)", ImVec2(-1, 0))) {
-        m_currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
+//        m_currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
     }
     ImGui::Separator();
     ImGui::Text("Models for billboard checking");
@@ -1458,8 +1415,8 @@ void FrontendUI::showSettingsDialog() {
                     m_debugRenderView = nullptr;
                 }
             }
-            if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && m_sceneRenderer != nullptr) {
-                m_debugRenderView = m_sceneRenderer->createRenderView(640, 480, true);
+            if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && SceneWindow::hasRenderer()) {
+                m_debugRenderView = SceneWindow::createRenderView();
                 m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
             }
 
@@ -1501,9 +1458,7 @@ void FrontendUI::showSettingsDialog() {
         }
 
         if (ImGui::CollapsingHeader("Light options")) {
-            auto mapPlan = (m_sceneRenderer != nullptr) ?
-                m_sceneRenderer->getLastCreatedPlan() :
-                nullptr;
+            auto mapPlan = SceneWindow::getLastPlan();
 
             switch(m_api->getConfig()->globalLighting) {
                 case EParameterSource::eDatabase: {
@@ -1680,65 +1635,6 @@ void FrontendUI::showMakeScreenshotDialog() {
    }
 }
 
-mathfu::mat4 getInfZMatrix(float f, float aspect) {
-    return mathfu::mat4(
-        f / aspect, 0.0f,  0.0f,  0.0f,
-        0.0f,    f,  0.0f,  0.0f,
-        0.0f, 0.0f,  1, -1.0f,
-        0.0f, 0.0f, 1,  0.0f);
-}
-
-struct RenderTargetParameters {
-    std::shared_ptr<ICamera> camera;
-    ViewPortDimensions dimensions;
-    std::shared_ptr<IRenderView> target;
-};
-
-HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
-                                                     float fov,
-                                                     const std::vector<RenderTargetParameters> &renderTargetParams,
-                                                     const std::shared_ptr<IScene> &currentScene) {
-
-    auto result = std::make_shared<MapSceneParams>();
-    result->scene = currentScene;
-
-    float farPlaneRendering = apiContainer.getConfig()->farPlane;
-    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
-
-    float nearPlane = 1.0;
-    float fovR = toRadian(fov);
-
-    {
-        auto width = renderTargetParams[0].dimensions.maxs[0];
-        auto height = renderTargetParams[0].dimensions.maxs[1];
-        float canvasAspect = (float) width / (float) height;
-
-        result->matricesForCulling = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane,
-                                                                            farPlaneCulling);
-    }
-
-    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
-    auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
-        float f = 1.0f / tan(fovR / 2.0f);
-        renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
-    };
-
-    for (auto &targetParam : renderTargetParams) {
-        auto width = targetParam.dimensions.maxs[0];
-        auto height = targetParam.dimensions.maxs[1];
-        float canvasAspect = (float)width / (float)height;
-
-        auto &renderTarget = result->renderTargets.emplace_back();
-        renderTarget.cameraMatricesForRendering = targetParam.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);;
-        renderTarget.viewPortDimensions = targetParam.dimensions;
-        renderTarget.target = targetParam.target;
-        if (isInfZSupported) assignInfiniteZ(renderTarget, canvasAspect);
-    }
-
-    result->clearColor = apiContainer.getConfig()->clearColor;
-
-    return result;
-}
 
 HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, double deltaTime) {
     ZoneScoped ;
@@ -1747,7 +1643,10 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     }
     auto l_device = m_api->hDevice;
     auto processingFrame = l_device->getFrameNumber();
-    auto updateFrameNumberLambda = [l_device](unsigned int frame) -> void {l_device->setCurrentProcessingFrameNumber(frame);};
+    std::function<uint32_t()> updateFrameNumberLambda = [l_device, frame = processingFrame]() -> uint32_t {
+        l_device->setCurrentProcessingFrameNumber(frame);
+        return frame;
+    };
 
 
     HFrameScenario scenario = std::make_shared<HFrameScenario::element_type>();
@@ -1756,82 +1655,32 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             {0,     0},
             {static_cast<unsigned int>(canvWidth), static_cast<unsigned int>(canvHeight)}
         };
-        ViewPortDimensions debugViewDimension = dimension;
 
-        if (m_sceneRenderer != nullptr) {
-            auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
-            wowSceneFrameInput->delta = deltaTime * (1000.0f);
+        uint32_t debugWidth = 0; uint32_t debugHeight = 0;
+        if (m_debugRenderWindow) {
+            debugWidth = m_debugRenderWindow->getWidth();
+            debugHeight = m_debugRenderWindow->getHeight();
+        }
 
-            std::shared_ptr<IRenderView> target = nullptr;
-            std::shared_ptr<IRenderView> debugTarget = nullptr;
-            if (m_api->debugCamera && m_api->getConfig()->doubleCameraDebug && m_debugRenderView) {
-                debugTarget = m_debugRenderView;
+        SceneWindow::render(deltaTime, fov, scenario, dimension,
+                            updateFrameNumberLambda,
+                            m_debugRenderView,
+                            debugWidth,
+                            debugHeight
+        );
 
-                debugViewDimension = {
-                    {0,     0},
-                    {static_cast<unsigned int>(m_debugRenderWindow->getWidth()),
-                     static_cast<unsigned int>(m_debugRenderWindow->getHeight())}
-                };
+        //----------------------
+        // Screenshot part
+        //----------------------
 
-                if (m_api->getConfig()->swapMainAndDebug) {
-                    std::swap(target, debugTarget);
-                    std::swap(dimension, debugViewDimension);
-                }
-            }
+        if (needToMakeScreenshot) {
+            SceneWindow::makeScreenshot(fov,
+                                        screenShotWidth, screenShotHeight,
+                                        screenshotFilename,
+                                        scenario,
+                                        updateFrameNumberLambda);
 
-            std::vector<RenderTargetParameters> renderTargetParams = {
-                {
-                    m_api->camera,
-                    dimension,
-                    target
-                }
-            };
-            if (m_api->getConfig()->doubleCameraDebug) {
-                auto &debugParams = renderTargetParams.emplace_back();
-                debugParams.camera = m_api->debugCamera;
-                debugParams.dimensions = debugViewDimension;
-                debugParams.target = debugTarget;
-            }
-
-            wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
-                                                                       fov,
-                                                                       renderTargetParams,
-                                                                       m_currentScene);
-            scenario->cullFunctions.push_back(
-                m_sceneRenderer->createCullUpdateRenderChain(wowSceneFrameInput, processingFrame, updateFrameNumberLambda));
-
-            //----------------------
-            // Screenshot part
-            //----------------------
-
-            if (needToMakeScreenshot) {
-                auto screenShotRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight, true);
-                auto wowSceneScreenshotFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
-                wowSceneScreenshotFrameInput->delta = 0;
-
-                wowSceneScreenshotFrameInput->frameParameters = createMapSceneParams(
-                    *m_api,
-                    fov,
-                    {{
-                         m_api->camera,
-                         {
-                             {0, 0},
-                             {static_cast<unsigned int>(screenShotWidth), static_cast<unsigned int>(screenShotHeight)}
-                         },
-                         screenShotRenderView
-                    }},
-                    m_currentScene
-                );
-                scenario->onFinish.push_back([screenShotRenderView, this, processingFrame]() {
-                    saveDataFromDrawStage([screenShotRenderView, processingFrame](int x, int y, int width, int height, uint8_t* data){
-                        screenShotRenderView->readRGBAPixels(processingFrame, x, y, width, height, data);
-                    }, screenshotFilename, screenShotWidth, screenShotHeight);
-                });
-                needToMakeScreenshot = false;
-
-                scenario->cullFunctions.push_back(
-                    m_sceneRenderer->createCullUpdateRenderChain(wowSceneScreenshotFrameInput, processingFrame, updateFrameNumberLambda));
-            }
+            needToMakeScreenshot = false;
         }
 
         auto uiFrameInput = std::make_shared<FrameInputParams<ImGuiFramePlan::ImGUIParam>>();
@@ -1840,7 +1689,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
 
         auto clearColor = m_api->getConfig()->clearColor;
 
-        scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput, processingFrame, updateFrameNumberLambda));
+        scenario->cullFunctions.push_back(m_uiRenderer->createCullUpdateRenderChain(uiFrameInput, updateFrameNumberLambda));
     }
 
     return scenario;
@@ -1864,67 +1713,22 @@ bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     return true;
 }
 
-void FrontendUI::openWMOSceneByfdid(int WMOFdid) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
-    m_currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
-    m_api->camera->setCameraPos(0, 0, 0);
-}
-void FrontendUI::openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
-    m_currentScene = std::make_shared<Map>(m_api, mapId, mapName);
 
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(x,y,z);
-    m_api->camera->setMovementSpeed(movementSpeed);
-}
-void FrontendUI::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
-    m_currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
-
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(x,y,z);
-    m_api->camera->setMovementSpeed(movementSpeed);
-}
-void FrontendUI::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
-    auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
-    m_currentScene = m2Scene;
-    m2Scene->setReplaceTextureArray(m_sceneRenderer, replacementTextureIds);
-
-
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setMovementSpeed(movementSpeed);
-    m_api->getConfig()->BCLightHack = false;
-//
-    m_api->camera->setCameraPos(0, 0, 0);
-}
-
-void FrontendUI::openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds) {
-    m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
-
-    auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
-    m_currentScene = m2Scene;
-    m2Scene->setReplaceTextureArray(m_sceneRenderer, replacementTextureIds);
-
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(0, 0, 0);
-    m_api->camera->setMovementSpeed(movementSpeed);
-}
 
 void FrontendUI::unloadScene() {
     if (m_api->cacheStorage) {
         m_api->cacheStorage->actuallDropCache();
     }
-    m_sceneRenderer = nullptr;
-    m_currentScene = std::make_shared<NullScene>();
+
+    SceneWindow::unload();
 }
 
 
 
 int FrontendUI::getCameraNumCallback() {
-    if (m_currentScene != nullptr) {
-//        return m_currentScene->getCameraNum();
-    }
+//    if (m_currentScene != nullptr) {
+////        return m_currentScene->getCameraNum();
+//    }
 
     return 0;
 }

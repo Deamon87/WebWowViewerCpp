@@ -246,6 +246,8 @@ set(SOURCE_FILES
         src/ui/childWindow/fileListWindow/FileListWindow.h
 		src/ui/childWindow/sceneWindow/SceneWindow.cpp
 		src/ui/childWindow/sceneWindow/SceneWindow.h
+		src/ui/childWindow/m2Window/M2Window.cpp
+		src/ui/childWindow/m2Window/M2Window.h
 )
 
 

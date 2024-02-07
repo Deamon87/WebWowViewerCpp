@@ -418,7 +418,7 @@ int main(){
 
     SceneComposer sceneComposer = SceneComposer(apiContainer);
 
-    frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
+    frontendUI = std::make_shared<FrontendUI>(apiContainer);
 
     glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);

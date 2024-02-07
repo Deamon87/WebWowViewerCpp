@@ -810,7 +810,7 @@ void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint
     }
 }
 
-void WmoGroupObject::assignInteriorParams(std::shared_ptr<M2Object> m2Object) {
+void WmoGroupObject::assignInteriorParams(const std::shared_ptr<M2Object> &m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
     if (!m2Object->setUseLocalLighting(true)) return;

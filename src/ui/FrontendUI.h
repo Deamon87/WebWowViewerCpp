@@ -29,14 +29,15 @@
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 #include "childWindow/textureRenderer/DebugRendererWindow.h"
 #include "childWindow/fileListWindow/FileListWindow.h"
+#include "childWindow/sceneWindow/SceneWindow.h"
 
 
-class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
+class FrontendUI : public IScene, public SceneWindow, public std::enable_shared_from_this<FrontendUI> {
 public:
     void createDefaultprocessor();
     void createDatabaseHandler();
 
-    FrontendUI(HApiContainer api, HRequestProcessor processor);
+    FrontendUI(HApiContainer api);
     ~FrontendUI() override {
         fileDialog.Close();
         createFileDialog.Close();
@@ -73,14 +74,11 @@ private:
 
     float uiScale = 1;
 
-    std::shared_ptr<MapSceneRenderer> m_sceneRenderer = nullptr;
-    std::shared_ptr<IScene> m_currentScene = nullptr;
+
 
     bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
-    void openWMOSceneByfdid(int WMOFdid);
-    void openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds);
-    void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
+
 
     void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
@@ -143,7 +141,7 @@ private:
     float minimapZoom = 1;
     float farPlane = 200;
     int currentTime = 0;
-    float movementSpeed = 1;
+
     int  threadCount = 4;
     int  quickSortCutoff = 100;
     float prevMinimapZoom = 1;
@@ -246,8 +244,7 @@ public:
     void restartMinimapGenPreview();
     void showMinimapGenerationSettingsDialog();
 
-    void openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z);
-    void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
+
 
     void editComponentsForConfig(Config *config);
 
