@@ -64,12 +64,8 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
     return result;
 }
 
-SceneWindow::SceneWindow(HApiContainer api) : m_api(api) {
+SceneWindow::SceneWindow(HApiContainer api, bool renderToSwapChain) : m_api(api), m_renderToSwapChain(renderToSwapChain){
 }
-
-bool SceneWindow::draw() {
-    return false;
-};
 
 std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneType, const std::string& name, int cameraNum) {
     apiContainer->camera = std::make_shared<FirstPersonCamera>();
@@ -199,12 +195,17 @@ SceneWindow::render(double deltaTime,
                     uint32_t debugViewWidth,
                     uint32_t debugViewHeight)
 {
-    if (!hasRenderer())  return;
+    if (!hasRenderer()) return;
+    if (!m_renderToSwapChain && !m_renderView) {
+        m_renderView = m_sceneRenderer->createRenderView(
+            dimension.maxs[0] - dimension.mins[0],
+            dimension.maxs[1] - dimension.mins[1], true);
+    }
 
     auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
     wowSceneFrameInput->delta = deltaTime * (1000.0f);
 
-    std::shared_ptr<IRenderView> target = nullptr;
+    std::shared_ptr<IRenderView> target = m_renderView;
     std::shared_ptr<IRenderView> debugTarget = nullptr;
 
     ViewPortDimensions l_dimension = dimension;

@@ -32,6 +32,8 @@ void DebugRendererWindow::draw() {
 
     ImGui::Begin("Debug Render Window");
     {
+//        drawSelection();
+
         float sizeX = 0, sizeY = 0;
         auto windowSize = ImGui::GetContentRegionAvail();
         sizeX = windowSize.x;
@@ -64,7 +66,37 @@ void DebugRendererWindow::createMaterials() {
                 record.materials[i] = this->m_renderer->createUIMaterial(textures[i]);
             }
         }
+//        else if (textureFormat == ITextureFormat::itDepth32) {
+//            for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
+//                if (textures[i]->getTexture()->getIsSamplable()) {
+//                    record.materials[i] = this->m_renderer->createUIMaterial(textures[i], true);
+//                }
+//            }
+//        }
     });
     if (currentSelectionIndex > m_selections.size())
         currentSelectionIndex = 0;
+}
+
+void DebugRendererWindow::drawSelection() {
+    std::string comboName =
+        (currentSelectionIndex < m_selections.size()) ?
+        m_selections[currentSelectionIndex].name :
+        "";
+
+    if (ImGui::BeginCombo("##combo", comboName.c_str())) // The second parameter is the label previewed before opening the combo.
+    {
+        for (int n = 0; n < m_selections.size(); n++)
+        {
+            bool is_selected = (currentSelectionIndex == n); // You can store your selection however you want, outside or inside your objects
+            std::string selectionName =  m_selections[n].name;
+            if (ImGui::Selectable(selectionName.c_str(), is_selected)) {
+                currentSelectionIndex = n;
+            }
+
+            if (is_selected)
+                ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+        }
+        ImGui::EndCombo();
+    }
 }

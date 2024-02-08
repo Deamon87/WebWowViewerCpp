@@ -21,8 +21,7 @@ struct RenderTargetParameters {
 
 class SceneWindow {
 public:
-    SceneWindow(HApiContainer api);
-    bool draw();
+    SceneWindow(HApiContainer api, bool renderToSwapChain);
 
     void openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z);
     void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
@@ -54,10 +53,12 @@ public:
 private:
     std::shared_ptr<MapSceneRenderer> m_sceneRenderer = nullptr;
     std::shared_ptr<IScene> m_currentScene = nullptr;
-    HApiContainer m_api;
+    bool m_renderToSwapChain = true;
+
 protected:
     float movementSpeed = 1;
-
+    HApiContainer m_api;
+    std::shared_ptr<IRenderView> m_renderView = nullptr;
 };
 
 

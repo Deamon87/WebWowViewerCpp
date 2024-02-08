@@ -35,6 +35,7 @@ public:
 
     uint32_t getWidth() override {return m_width;};
     uint32_t getHeight() override {return m_height;};
+    bool getIsSamplable() override {return m_samplable;};
 
     explicit GTextureVLK(IDeviceVulkan &device, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 
@@ -106,6 +107,8 @@ protected:
 
     bool m_uploaded = false;
     bool m_loaded = false;
+
+    bool m_samplable = true;
 
     int m_width = 0;
     int m_height = 0;

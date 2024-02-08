@@ -22,6 +22,8 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
     m_width = width;
     m_height = height;
 
+    m_samplable = (imageUsageFlags & VK_IMAGE_USAGE_SAMPLED_BIT) > 0;
+
     createVulkanImageObject(
         isDepthTexture,
         textureFormatGPU,
@@ -45,6 +47,7 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
     //This image is used as holder for framebuffer data (swapchain framebuffer one)
     texture.image = image;
     texture.view = imageView;
+    m_samplable = false;
 
     //this is texture for use in framebuffer, that's why it is set as initialized
     m_loaded = true;

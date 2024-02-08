@@ -30,6 +30,7 @@
 #include "childWindow/textureRenderer/DebugRendererWindow.h"
 #include "childWindow/fileListWindow/FileListWindow.h"
 #include "childWindow/sceneWindow/SceneWindow.h"
+#include "childWindow/m2Window/M2Window.h"
 
 
 class FrontendUI : public IScene, public SceneWindow, public std::enable_shared_from_this<FrontendUI> {
@@ -193,6 +194,7 @@ private:
     std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpFileViewerWindow = nullptr;
+    std::shared_ptr<M2Window> m_m2Window = nullptr;
     std::shared_ptr<FileListWindow> m_fileListWindow = nullptr;
     std::shared_ptr<DebugRendererWindow> m_debugRenderWindow;
 
@@ -239,6 +241,7 @@ public:
 
     void showCurrentStatsDialog();
     void showBlpViewer();
+    void showM2Viewer();
     void showFileList();
 
     void restartMinimapGenPreview();

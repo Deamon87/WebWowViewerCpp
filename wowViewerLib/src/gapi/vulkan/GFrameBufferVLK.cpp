@@ -169,7 +169,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
             fbDepthFormat,
             sampleCountToVkSampleCountFlagBits(multiSampleCnt),
             1,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
         ));
 
         m_depthTexture = h_depthTexture;

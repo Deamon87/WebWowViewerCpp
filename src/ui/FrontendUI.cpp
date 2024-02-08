@@ -38,7 +38,7 @@
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 #include "imgui_notify.h"
 
-FrontendUI::FrontendUI(HApiContainer api) : SceneWindow(api) {
+FrontendUI::FrontendUI(HApiContainer api) : SceneWindow(api, true) {
     m_api = api;
 
     this->createDatabaseHandler();
@@ -49,6 +49,11 @@ FrontendUI::FrontendUI(HApiContainer api) : SceneWindow(api) {
 
 void FrontendUI::composeUI() {
     ZoneScoped;
+
+    {
+        auto processingFrame = m_api->hDevice->getFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+        m_api->hDevice->setCurrentProcessingFrameNumber(processingFrame);
+    }
 
     if (m_dataExporter != nullptr) {
         m_dataExporter->process();
@@ -134,11 +139,18 @@ void FrontendUI::composeUI() {
     showCurrentStatsDialog();
     showMinimapGenerationSettingsDialog();
     showBlpViewer();
+    showM2Viewer();
 
     ImGui::RenderNotifications();
 
     if (m_debugRenderWindow)
         m_debugRenderWindow->draw();
+
+    //Test hack
+    if (cascOpened && m_m2Window == nullptr) {
+        m_m2Window = std::make_shared<M2Window>(m_api, m_uiRenderer);
+        m_m2Window->openWMOSceneByfdid(113992);
+    };
 
     // Rendering
     ImGui::Render();
@@ -360,6 +372,14 @@ void FrontendUI::showBlpViewer() {
 
     if (!m_blpViewerWindow->draw()) {
         m_blpViewerWindow = nullptr;
+    }
+}
+
+void FrontendUI::showM2Viewer() {
+    if (!m_m2Window) return;
+
+    if (!m_m2Window->draw()) {
+        m_m2Window = nullptr;
     }
 }
 
@@ -1270,7 +1290,7 @@ void FrontendUI::showSettingsDialog() {
                 int cameraNum = getCameraNumCallback();
 
                 {
-                    std::string caption = "First person";
+                    const std::string caption = "First person";
                     if (ImGui::Selectable(caption.c_str(), currentCameraNum == -1)) {
                         setNewCameraCallback(-1);
                         currentCameraNum = -1;
@@ -1642,7 +1662,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         m_minimapGenerationWindow->process();
     }
     auto l_device = m_api->hDevice;
-    auto processingFrame = l_device->getFrameNumber();
+    auto processingFrame = l_device->getFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     std::function<uint32_t()> updateFrameNumberLambda = [l_device, frame = processingFrame]() -> uint32_t {
         l_device->setCurrentProcessingFrameNumber(frame);
         return frame;
@@ -1668,6 +1688,9 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
                             debugWidth,
                             debugHeight
         );
+
+        if (m_m2Window)
+            m_m2Window->render(deltaTime, scenario, updateFrameNumberLambda);
 
         //----------------------
         // Screenshot part

@@ -80,6 +80,40 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
     return material;
 }
 
+std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterialDepth(const HGSamplableTexture &hgtexture) {
+    auto weakTexture = std::weak_ptr(hgtexture);
+    auto &materialCache = m_materialDepthCache ;
+    auto i = materialCache.find(weakTexture);
+    if (i != materialCache.end()) {
+        if (!i->second.expired()) {
+            return i->second.lock();
+        } else {
+            materialCache.erase(i);
+        }
+    }
+
+    auto &l_imguiUbo = m_imguiUbo;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShaderDepth"}, {"forwardRendering"})
+        .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
+        .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, *l_imguiUbo);
+        })
+        .createDescriptorSet(1, [&hgtexture](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(0, hgtexture);
+        })
+        .toMaterial<IUIMaterial>([&] (IUIMaterial *uiMat){
+            uiMat->uniqueId = this->generateUniqueMatId();
+        });
+
+    auto weakPtr = material;
+    materialCache[weakTexture] = weakPtr;
+    m_materialCacheIdMap[material->uniqueId] = std::dynamic_pointer_cast<IMaterial>(material);
+
+    return material;
+}
+
 HGMesh FrontendUIRenderForwardVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
     return meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }

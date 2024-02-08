@@ -38,6 +38,8 @@ private:
 
     uint16_t m_width = 640;
     uint16_t m_height = 480;
+
+    void drawSelection();
 };
 
 
