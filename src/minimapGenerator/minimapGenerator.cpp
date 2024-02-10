@@ -19,7 +19,8 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGD
 
     m_apiContainer->hDevice = hDevice;
     m_apiContainer->cacheStorage = cacheStorage;
-    m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
+    //TODO:
+//    m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
     m_apiContainer->databaseHandler = dbhandler;
 
     m_processor = processor;
@@ -256,10 +257,11 @@ void MinimapGenerator::setupScenarioData() {
     m_height = currentScenario.imageHeight;
 
 
+    //TODO:
     if (currentScenario.orientation == ScenarioOrientation::soTopDownOrtho) {
-        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
+//        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticTopDownCamera>();
     } else {
-        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
+//        m_apiContainer->camera = std::make_shared<FirstPersonOrthoStaticCamera>();
     }
 
     if (!loadMaps())
@@ -534,9 +536,10 @@ void MinimapGenerator::setZoom(float zoom) {
 void MinimapGenerator::setLookAtPoint(float x, float y) {
     mathfu::vec3 lookAtPoint2D = mathfu::vec3(x, y, 0);
 
-    setupCamera(lookAtPoint2D, m_apiContainer->camera);
+    //TODO:
+//    setupCamera(lookAtPoint2D, m_apiContainer->camera);
 
-    m_apiContainer->camera->tick(0);
+//    m_apiContainer->camera->tick(0);
 }
 
 void

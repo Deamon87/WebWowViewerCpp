@@ -106,7 +106,7 @@ public:
 // RenderView
 //--------------------------------------
 
-    std::shared_ptr<IRenderView> createRenderView(int width, int height, bool createOutput) override;
+    std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
 
 private:
     HGDeviceVLK m_device;

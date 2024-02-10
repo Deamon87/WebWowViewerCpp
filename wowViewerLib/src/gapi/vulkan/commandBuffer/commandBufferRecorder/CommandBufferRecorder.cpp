@@ -65,8 +65,13 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
         throw std::runtime_error("tried to start render pass with another pass being active already");
     }
 
-    createViewPortTypes(areaOffset, areaSize, renderPassVlk->getInvertZ());
-    createDefaultScissors(areaOffset, areaSize);
+    std::array<uint32_t, 2> fixedAreasSize = {
+        std::max<uint32_t>(1, areaSize[0]),
+        std::max<uint32_t>(1, areaSize[1])
+    };
+
+    createViewPortTypes(areaOffset, fixedAreasSize, renderPassVlk->getInvertZ());
+    createDefaultScissors(areaOffset, fixedAreasSize);
 
     m_currentRenderPass = renderPassVlk;
 
@@ -81,7 +86,7 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     auto renderPass = RenderPassHelper(
         *this,
         isAboutToExecSecondaryCMD,
-        renderPassVlk, frameBuffer, areaOffset, areaSize, colorClearColor, depthClear
+        renderPassVlk, frameBuffer, areaOffset, fixedAreasSize, colorClearColor, depthClear
     );
     setDefaultScissors();
     return renderPass;

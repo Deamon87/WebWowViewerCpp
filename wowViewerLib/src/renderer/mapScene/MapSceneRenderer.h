@@ -113,7 +113,7 @@ public:
                               bool isVulkan,
                               animTime_t sceneTime);
 
-    virtual std::shared_ptr<IRenderView> createRenderView(int width, int height, bool createOutput) = 0;
+    virtual std::shared_ptr<IRenderView> createRenderView(bool createOutput) = 0;
 private:
     Config *m_config;
 };

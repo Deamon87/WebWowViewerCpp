@@ -4,8 +4,10 @@
 
 #include "M2Window.h"
 #include "imgui.h"
+#include "imgui_internal.h"
 
-M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer) : SceneWindow(api, false), m_uiRenderer(renderer) {
+M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix) : SceneWindow(api, false), m_uiRenderer(renderer) {
+    m_windowName = "M2Window##" + nameSuffix;
 
     openWMOSceneByfdid(113992);
 }
@@ -17,18 +19,27 @@ M2Window::~M2Window() {
 }
 
 bool M2Window::draw() {
+    this->m_isActive = false;
+
     if (iteratorUnique == nullptr && m_renderView ) {
         auto l_weak = this->weak_from_this();
         iteratorUnique = m_renderView->addOnUpdate([l_weak] {
             auto shared = l_weak.lock();
             if (shared) {
-                shared->createMaterials();
+                shared->m_needToUpdateMaterials = true;
             }
         });
     }
 
-    if (ImGui::Begin("M2Window", &m_showWindow))
+    if (m_needToUpdateMaterials) {
+        this->createMaterials();
+        m_needToUpdateMaterials = false;
+    }
+
+    if (ImGui::Begin(m_windowName.c_str(), &m_showWindow))
     {
+        ImGui::Button("Just a test Button");
+
         auto currentFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
         float sizeX = 0, sizeY = 0;
@@ -41,10 +52,30 @@ bool M2Window::draw() {
             m_height = sizeY > 0 ? sizeY : 1;
         }
 
+
+
         auto const &currentMaterial = materials[currentFrame];
         if (currentMaterial) {
-            ImGui::Image(currentMaterial->uniqueId, {sizeX, sizeY});
+            ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+            ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
+            ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+            ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0,0,0,1.0));
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(0,0,0,1.0));
+            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(0,0,0,1.0));
+
+            ImGui::ImageButton("ModelScene", currentMaterial->uniqueId, {sizeX, sizeY});
+
+            if (ImGui::GetCurrentWindow()->GetID("ModelScene") == ImGui::GetFocusID()) {
+                ImGui::SetNextFrameWantCaptureKeyboard(false);
+                ImGui::SetNextFrameWantCaptureMouse(false);
+//                static uint32_t itsActive = 0;
+//                std::cout << "it's active" << itsActive++ << std::endl;
+                this->m_isActive = true;
+            }
+            ImGui::PopStyleColor(3);
+            ImGui::PopStyleVar(3);
         }
+
 
         ImGui::End();
     }
@@ -66,10 +97,10 @@ void M2Window::createMaterials() {
 void M2Window::render(double deltaTime, const HFrameScenario &scenario,
                       const std::function<uint32_t()> &updateFrameNumberLambda) {
 
-    ViewPortDimensions dimensions = {
+    m_dimension = {
         {0,0},
         {m_width, m_height}
     };
 
-    SceneWindow::render(deltaTime, 60, scenario, dimensions, updateFrameNumberLambda, nullptr, 0,0);
+    SceneWindow::render(deltaTime, 60, scenario, nullptr, updateFrameNumberLambda);
 }

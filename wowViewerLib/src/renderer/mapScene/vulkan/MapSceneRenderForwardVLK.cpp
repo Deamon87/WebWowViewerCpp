@@ -853,7 +853,7 @@ HGMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, cons
     return mesh;
 }
 
-std::shared_ptr<IRenderView> MapSceneRenderForwardVLK::createRenderView(int width, int height, bool createOutput) {
+std::shared_ptr<IRenderView> MapSceneRenderForwardVLK::createRenderView(bool createOutput) {
     return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
 }
 

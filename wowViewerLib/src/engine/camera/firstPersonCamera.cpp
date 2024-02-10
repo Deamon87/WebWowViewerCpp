@@ -67,7 +67,9 @@ void FirstPersonCamera::stopAllMovement() {
     MDVerticalMinus = 0;
 }
 
-
+float FirstPersonCamera::getMovementSpeed() {
+    return this->m_moveSpeed;
+}
 void FirstPersonCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };

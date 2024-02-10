@@ -1235,8 +1235,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
         // Upload stuff
         // ---------------------
         {
-            ZoneScopedN("submit buffers");
-            VkZone(uploadCmd, "submit buffers")
+//            ZoneScopedN("submit buffers");
+//            VkZone(uploadCmd, "submit buffers")
             uploadCmd.submitBufferUploads(l_this->uboBuffer);
             uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
 
@@ -1468,6 +1468,6 @@ HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTe
     return mesh;
 }
 
-std::shared_ptr<IRenderView> MapSceneRenderVisBufferVLK::createRenderView(int width, int height, bool createOutput) {
+std::shared_ptr<IRenderView> MapSceneRenderVisBufferVLK::createRenderView(bool createOutput) {
     return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
 }

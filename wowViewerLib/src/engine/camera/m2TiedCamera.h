@@ -56,6 +56,7 @@ public:
                                               float farPlane) override;
 
     void tick(animTime_t timeDelta) override ;
+    float getMovementSpeed() override {return 0.0f;} ;
     void setMovementSpeed(float value) override {};
     void setCameraOffset(float x, float y, float z) override {};
 

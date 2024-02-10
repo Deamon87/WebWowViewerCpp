@@ -61,12 +61,10 @@ std::shared_ptr<FrontendUI> frontendUI = nullptr;
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
     if (stopMouse) return;
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
-    auto controllable = apiContainer->camera;
-    if (apiContainer->getConfig()->doubleCameraDebug &&
-        apiContainer->getConfig()->controlSecondCamera &&
-        apiContainer->debugCamera != nullptr) {
-        controllable = apiContainer->debugCamera;
-    }
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) return;
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -114,12 +112,10 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
-    auto controllable = apiContainer->camera;
-    if (apiContainer->getConfig()->doubleCameraDebug &&
-        apiContainer->getConfig()->controlSecondCamera &&
-        apiContainer->debugCamera != nullptr) {
-        controllable = apiContainer->debugCamera;
-    }
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) return;
 
     if ( action == GLFW_PRESS) {
         if (stopKeyboard) return;
@@ -174,15 +170,12 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    if (stopMouse) return;
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) return;
 
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
-    auto controllable = apiContainer->camera;
-    if (apiContainer->getConfig()->doubleCameraDebug &&
-        apiContainer->getConfig()->controlSecondCamera &&
-        apiContainer->debugCamera != nullptr) {
-        controllable = apiContainer->debugCamera;
-    }
 
     controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
@@ -414,7 +407,6 @@ int main(){
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
     apiContainer->databaseHandler = std::make_shared<CEmptySqliteDB>() ;
     apiContainer->hDevice = hdevice;
-    apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
     SceneComposer sceneComposer = SceneComposer(apiContainer);
 
@@ -487,15 +479,6 @@ int main(){
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-
-        apiContainer->camera->tick(deltaTime*(1000.0f));
-        if (apiContainer->debugCamera != nullptr) {
-            apiContainer->debugCamera->tick(deltaTime * (1000.0f));
-        }
-
-        if (apiContainer->getConfig()->pauseAnimation) {
-            deltaTime = 0.0;
-        }
 
         frontendUI->composeUI();
         auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);

@@ -65,9 +65,12 @@ void RenderViewForwardVLK::createFrameBuffers() {
 }
 
 void RenderViewForwardVLK::update(int width, int height, float glow) {
+    width = std::max<int>(1, width);
+    height = std::max<int>(1, height);
+
     if (width != m_width || height != m_height) {
-        m_width = width;
-        m_height = height;
+        m_width = std::max<int>(1, width);
+        m_height = std::max<int>(1, height);
 
         this->createFrameBuffers();
 

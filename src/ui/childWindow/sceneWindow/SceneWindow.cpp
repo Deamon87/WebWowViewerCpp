@@ -10,6 +10,51 @@
 #include "../../../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
 #include "../../../screenshots/screenshotMaker.h"
 
+
+void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std::shared_ptr<ICamera> &camera) {
+    if (m2Object->isMainDataLoaded()) {
+        CAaBox aabb = m2Object->getColissionAABB();
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
+            aabb = m2Object->getAABB();
+        }
+
+        auto max = aabb.max;
+        auto min = aabb.min;
+
+        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 20000) {
+
+            mathfu::vec3 modelCenter = mathfu::vec3(
+                ((max.x + min.x) / 2.0f),
+                ((max.y + min.y) / 2.0f),
+                ((max.z + min.z) / 2.0f)
+            );
+
+            if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
+                camera->setCameraPos((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+
+            } else {
+                camera->setCameraPos((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
+            }
+            camera->setCameraLookAt(0,0,0);
+            camera->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
+        } else {
+            camera->setCameraPos(1.0,0,0);
+            camera->setCameraOffset(0,0,0);
+        }
+#ifdef __EMSCRIPTEN__
+        std::vector <int> availableAnimations;
+        m2Object->getAvailableAnimation(availableAnimations);
+
+        supplyAnimationList(&availableAnimations[0], availableAnimations.size());
+
+        std::vector<int> meshIds;
+        m2Object->getMeshIds(meshIds);
+
+        supplyMeshIds(&meshIds[0], meshIds.size());
+#endif
+    }
+}
+
 mathfu::mat4 getInfZMatrix(float f, float aspect) {
     return mathfu::mat4(
         f / aspect, 0.0f,  0.0f,  0.0f,
@@ -18,7 +63,8 @@ mathfu::mat4 getInfZMatrix(float f, float aspect) {
         0.0f, 0.0f, 1,  0.0f);
 }
 
-HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
+inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
+                                     const std::shared_ptr<ICamera> &camera,
                                      float fov,
                                      const std::vector<RenderTargetParameters> &renderTargetParams,
                                      const std::shared_ptr<IScene> &currentScene) {
@@ -26,8 +72,8 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
     auto result = std::make_shared<MapSceneParams>();
     result->scene = currentScene;
 
-    float farPlaneRendering = apiContainer.getConfig()->farPlane;
-    float farPlaneCulling = apiContainer.getConfig()->farPlaneForCulling;
+    float farPlaneRendering = apiContainer->getConfig()->farPlane;
+    float farPlaneCulling = apiContainer->getConfig()->farPlaneForCulling;
 
     float nearPlane = 1.0;
     float fovR = toRadian(fov);
@@ -37,11 +83,11 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
         auto height = renderTargetParams[0].dimensions.maxs[1];
         float canvasAspect = (float) width / (float) height;
 
-        result->matricesForCulling = apiContainer.camera->getCameraMatrices(fovR, canvasAspect, nearPlane,
+        result->matricesForCulling = camera->getCameraMatrices(fovR, canvasAspect, nearPlane,
                                                                             farPlaneCulling);
     }
 
-    bool isInfZSupported = apiContainer.camera->isCompatibleWithInfiniteZ();
+    bool isInfZSupported = camera->isCompatibleWithInfiniteZ();
     auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
         float f = 1.0f / tan(fovR / 2.0f);
         renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
@@ -53,20 +99,21 @@ HMapSceneParams createMapSceneParams(ApiContainer &apiContainer,
         float canvasAspect = (float)width / (float)height;
 
         auto &renderTarget = result->renderTargets.emplace_back();
-        renderTarget.cameraMatricesForRendering = targetParam.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);;
+        renderTarget.cameraMatricesForRendering = targetParam.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
         renderTarget.viewPortDimensions = targetParam.dimensions;
         renderTarget.target = targetParam.target;
         if (isInfZSupported) assignInfiniteZ(renderTarget, canvasAspect);
     }
 
-    result->clearColor = apiContainer.getConfig()->clearColor;
+    result->clearColor = apiContainer->getConfig()->clearColor;
 
     return result;
 }
 
-SceneWindow::SceneWindow(HApiContainer api, bool renderToSwapChain) : m_api(api), m_renderToSwapChain(renderToSwapChain){
+SceneWindow::SceneWindow(const HApiContainer &api, bool renderToSwapChain) : m_api(api), m_renderToSwapChain(renderToSwapChain){
 }
 
+/*
 std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneType, const std::string& name, int cameraNum) {
     apiContainer->camera = std::make_shared<FirstPersonCamera>();
     if (sceneType == -1) {
@@ -107,14 +154,15 @@ std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneTyp
 
     return nullptr;
 }
+*/
 
 void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
 
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(x,y,z);
-    m_api->camera->setMovementSpeed(movementSpeed);
+    m_camera = std::make_shared<FirstPersonCamera>();
+    m_camera->setCameraPos(x,y,z);
+    m_camera->setMovementSpeed(movementSpeed);
 }
 void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
@@ -122,15 +170,20 @@ void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacem
     m_currentScene = m2Scene;
     m2Scene->setReplaceTextureArray(m_sceneRenderer, replacementTextureIds);
 
-
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setMovementSpeed(movementSpeed);
+    m_camera = std::make_shared<FirstPersonCamera>();
+    m_camera->setMovementSpeed(movementSpeed);
     m_api->getConfig()->BCLightHack = false;
 //
-    m_api->camera->setCameraPos(0, 0, 0);
+    m_camera->setCameraPos(0, 0, 0);
+
+    {
+        //Post load event for m2
+        auto m2Object = m2Scene->getSceneM2();
+        m2Object->addPostLoadEvent([m2Object, l_camera = m_camera]() {
+            updateCameraPosOnLoad(m2Object, l_camera);
+        });
+    }
 }
-
-
 
 void SceneWindow::openM2SceneByName(const std::string &m2FileName, const std::vector<int> &replacementTextureIds) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
@@ -139,29 +192,41 @@ void SceneWindow::openM2SceneByName(const std::string &m2FileName, const std::ve
     m_currentScene = m2Scene;
     m2Scene->setReplaceTextureArray(m_sceneRenderer, replacementTextureIds);
 
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(0, 0, 0);
-    m_api->camera->setMovementSpeed(movementSpeed);
+    m_camera = std::make_shared<FirstPersonCamera>();
+    m_camera->setCameraPos(0, 0, 0);
+    m_camera->setMovementSpeed(movementSpeed);
+
+    {
+        //Post load event for m2
+        auto m2Object = m2Scene->getSceneM2();
+        m2Object->addPostLoadEvent([m2Object, l_camera = m_camera]() {
+            updateCameraPosOnLoad(m2Object, l_camera);
+        });
+    }
 }
 
 void SceneWindow::openWMOSceneByfdid(int WMOFdid) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
-    m_api->camera->setCameraPos(0, 0, 0);
+
+    m_camera = std::make_shared<FirstPersonCamera>();
+    m_camera->setCameraPos(0, 0, 0);
 }
 void SceneWindow::openWMOSceneByFilename(const std::string &wmoFileName) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<WmoScene>(m_api, wmoFileName);
-    m_api->camera->setCameraPos(0, 0, 0);
+
+    m_camera = std::make_shared<FirstPersonCamera>();
+    m_camera->setCameraPos(0, 0, 0);
 }
 
 void SceneWindow::openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z) {
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<Map>(m_api, mapId, mapName);
 
-    m_api->camera = std::make_shared<FirstPersonCamera>();
-    m_api->camera->setCameraPos(x,y,z);
-    m_api->camera->setMovementSpeed(movementSpeed);
+    m_camera = std::make_shared<FirstPersonCamera>();
+    m_camera->setCameraPos(x,y,z);
+    m_camera->setMovementSpeed(movementSpeed);
 }
 
 
@@ -174,6 +239,9 @@ void SceneWindow::unload() {
 std::shared_ptr<MapRenderPlan> SceneWindow::getLastPlan() {
     return (m_sceneRenderer) ? m_sceneRenderer->getLastCreatedPlan() : nullptr;
 }
+const std::shared_ptr<ICamera> SceneWindow::getCamera() {
+    return m_camera;
+}
 
 bool SceneWindow::hasRenderer() {
     return m_sceneRenderer != nullptr;
@@ -182,24 +250,27 @@ bool SceneWindow::hasRenderer() {
 std::shared_ptr<IRenderView> SceneWindow::createRenderView() {
     if (m_sceneRenderer == nullptr) return nullptr;
 
-    return m_sceneRenderer->createRenderView(640, 480, true);
+    return m_sceneRenderer->createRenderView(true);
 }
 
 void
 SceneWindow::render(double deltaTime,
                     float fov,
                     const HFrameScenario &scenario,
-                    const ViewPortDimensions &dimension,
-                    const std::function<uint32_t()> &updateFrameNumberLambda,
-                    const std::shared_ptr<IRenderView> &debugRenderView,
-                    uint32_t debugViewWidth,
-                    uint32_t debugViewHeight)
+                    const std::shared_ptr<SceneWindow> &debugWindow,
+                    const std::function<uint32_t()> &updateFrameNumberLambda
+                    )
 {
     if (!hasRenderer()) return;
+    if (!m_camera) return;
     if (!m_renderToSwapChain && !m_renderView) {
-        m_renderView = m_sceneRenderer->createRenderView(
-            dimension.maxs[0] - dimension.mins[0],
-            dimension.maxs[1] - dimension.mins[1], true);
+        m_renderView = m_sceneRenderer->createRenderView(true);
+    }
+
+    m_camera->tick(deltaTime * 1000.0f);
+
+    if (m_api->getConfig()->pauseAnimation) {
+        deltaTime = 0.0;
     }
 
     auto wowSceneFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
@@ -208,16 +279,12 @@ SceneWindow::render(double deltaTime,
     std::shared_ptr<IRenderView> target = m_renderView;
     std::shared_ptr<IRenderView> debugTarget = nullptr;
 
-    ViewPortDimensions l_dimension = dimension;
-    ViewPortDimensions debugViewDimension = dimension;
-    if (debugRenderView) {
-        debugTarget = debugRenderView;
+    ViewPortDimensions l_dimension = m_dimension;
+    ViewPortDimensions debugViewDimension = m_dimension;
+    if (debugWindow && debugWindow->m_renderView) {
+        debugTarget = debugWindow->m_renderView;
 
-        ViewPortDimensions debugViewDimension = {
-            {0, 0},
-            {static_cast<unsigned int>(debugViewWidth),
-                static_cast<unsigned int>(debugViewHeight)}
-        };
+        debugViewDimension = debugWindow->m_dimension;
 
         if (m_api->getConfig()->swapMainAndDebug) {
             std::swap(target, debugTarget);
@@ -227,20 +294,21 @@ SceneWindow::render(double deltaTime,
 
     std::vector<RenderTargetParameters> renderTargetParams = {
         {
-            m_api->camera,
-            dimension,
+            m_camera,
+            l_dimension,
             target
         }
     };
 
     if (m_api->getConfig()->doubleCameraDebug) {
         auto &debugParams = renderTargetParams.emplace_back();
-        debugParams.camera = m_api->debugCamera;
+        debugParams.camera = debugWindow->m_camera;
         debugParams.dimensions = debugViewDimension;
         debugParams.target = debugTarget;
     }
 
-    wowSceneFrameInput->frameParameters = createMapSceneParams(*m_api,
+    wowSceneFrameInput->frameParameters = createMapSceneParams(m_api,
+                                                               m_camera,
                                                                fov,
                                                                renderTargetParams,
                                                                m_currentScene);
@@ -257,15 +325,16 @@ SceneWindow::makeScreenshot(float fov,
                             const HFrameScenario &scenario,
                             const std::function<uint32_t()> &updateFrameNumberLambda)
 {
-    auto screenShotRenderView = m_sceneRenderer->createRenderView(screenShotWidth, screenShotHeight, true);
+    auto screenShotRenderView = m_sceneRenderer->createRenderView(true);
     auto wowSceneScreenshotFrameInput = std::make_shared<FrameInputParams<MapSceneParams>>();
     wowSceneScreenshotFrameInput->delta = 0;
 
     wowSceneScreenshotFrameInput->frameParameters = createMapSceneParams(
-        *m_api,
+        m_api,
+        m_camera,
         fov,
         {{
-             m_api->camera,
+             m_camera,
              {
                  {0, 0},
                  {static_cast<unsigned int>(screenShotWidth), static_cast<unsigned int>(screenShotHeight)}

@@ -110,7 +110,7 @@ public:
 // RenderView
 //--------------------------------------
 
-    std::shared_ptr<IRenderView> createRenderView(int width, int height, bool createOutput) override;
+    std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
 
     std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::make_shared<EntityFactory<GMeshVLK>>();
 private:

@@ -21,7 +21,7 @@ struct RenderTargetParameters {
 
 class SceneWindow {
 public:
-    SceneWindow(HApiContainer api, bool renderToSwapChain);
+    SceneWindow(const HApiContainer &api, bool renderToSwapChain);
 
     void openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z);
     void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
@@ -34,15 +34,15 @@ public:
     void unload();
 
     std::shared_ptr<MapRenderPlan> getLastPlan();
+    const std::shared_ptr<ICamera> getCamera();
 
     bool hasRenderer();
     std::shared_ptr<IRenderView> createRenderView();
-    void render(double deltaTime, float fov, const HFrameScenario &scenario,
-                const ViewPortDimensions &dimension,
-                const std::function<uint32_t()> &updateFrameNumberLambda,
-                const std::shared_ptr<IRenderView> &debugRenderView,
-                uint32_t debugViewWidth,
-                uint32_t debugViewHeight);
+    void render(double deltaTime,
+                float fov,
+                const HFrameScenario &scenario,
+                const std::shared_ptr<SceneWindow> &debugWindow,
+                const std::function<uint32_t()> &updateFrameNumberLambda);
 
     void makeScreenshot(float fov,
                         uint32_t screenShotWidth, uint32_t screenShotHeight,
@@ -50,6 +50,9 @@ public:
                         const HFrameScenario &scenario,
                         const std::function<uint32_t()> &updateFrameNumberLambda);
 
+    void setViewPortDimensions(const ViewPortDimensions &dimensions) {
+        m_dimension = dimensions;
+    }
 private:
     std::shared_ptr<MapSceneRenderer> m_sceneRenderer = nullptr;
     std::shared_ptr<IScene> m_currentScene = nullptr;
@@ -58,6 +61,8 @@ private:
 protected:
     float movementSpeed = 1;
     HApiContainer m_api;
+    ViewPortDimensions m_dimension = {{0,0}, {0,0}};
+    std::shared_ptr<ICamera> m_camera = nullptr;
     std::shared_ptr<IRenderView> m_renderView = nullptr;
 };
 

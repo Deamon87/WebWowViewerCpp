@@ -33,7 +33,7 @@
 #include "childWindow/m2Window/M2Window.h"
 
 
-class FrontendUI : public IScene, public SceneWindow, public std::enable_shared_from_this<FrontendUI> {
+class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
 public:
     void createDefaultprocessor();
     void createDatabaseHandler();
@@ -44,12 +44,7 @@ public:
         createFileDialog.Close();
         ImGui::DestroyContext(this->imguiContext);
     };
-    std::shared_ptr<FrontendUI> getShared()
-    {
-        return shared_from_this();
-    }
 
-//    void produceDrawStage(HDrawStage &resultDrawStage);
     HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
 
     void setUIScale(float scale) {
@@ -65,17 +60,21 @@ public:
         windowWidth = width;
         windowHeight = height;
     }
+
+    std::shared_ptr<SceneWindow> getCurrentActiveScene() {
+        return m_currentActiveScene;
+    };
 private:
     ImGuiContext* imguiContext = nullptr;
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
 
     std::shared_ptr<IUIMaterial> fontMat;
 
-//    HCullStage m_lastCullstage = {};
+    std::shared_ptr<SceneWindow> m_backgroundScene = nullptr;
+    std::shared_ptr<SceneWindow> m_currentActiveScene = nullptr;
+
 
     float uiScale = 1;
-
-
 
     bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
@@ -195,6 +194,7 @@ private:
     std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpFileViewerWindow = nullptr;
     std::shared_ptr<M2Window> m_m2Window = nullptr;
+    std::shared_ptr<M2Window> m_m2Window2 = nullptr;
     std::shared_ptr<FileListWindow> m_fileListWindow = nullptr;
     std::shared_ptr<DebugRendererWindow> m_debugRenderWindow;
 

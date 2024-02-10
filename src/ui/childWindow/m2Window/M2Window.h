@@ -12,17 +12,23 @@
 
 class M2Window : public SceneWindow, public std::enable_shared_from_this<M2Window> {
 public:
-    M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer);
+    M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix = "");
     ~M2Window();
     bool draw();
 
     void render(double deltaTime,
                 const HFrameScenario &scenario,
                 const std::function<uint32_t()> &updateFrameNumberLambda);
+
+    bool isActive() const {return m_isActive;};
 private:
     void createMaterials();
 private:
+    std::string m_windowName = "";
     bool m_showWindow = true;
+    bool m_isActive = false;
+
+    bool m_needToUpdateMaterials = false;
 
     uint16_t m_width = 640;
     uint16_t m_height = 480;

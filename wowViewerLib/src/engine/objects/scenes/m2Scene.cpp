@@ -28,7 +28,7 @@ void M2Scene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustu
 void M2Scene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
                                        MathHelper::FrustumCullingData &frustumData,
                                        StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
-    Config* config = this->m_api->getConfig();
+    const Config* config = this->m_api->getConfig();
     Map::updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
     if (config->globalLighting == EParameterSource::eM2) {
         auto ambient = m_m2Object->getM2SceneAmbientLight();
@@ -36,13 +36,13 @@ void M2Scene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
         if (ambient.Length() < 0.0001)
             ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-        auto frameDepedantData = mapRenderPlan->frameDependentData;
+        auto frameDependantData = mapRenderPlan->frameDependentData;
 
-        frameDepedantData->colors.exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        frameDepedantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        frameDepedantData->colors.exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-        frameDepedantData->colors.exteriorDirectColor = mathfu::vec4(0.0,0.0,0.0,0.0);
-        frameDepedantData->exteriorDirectColorDir = mathfu::vec3(0.0,0.0,0.0);
+        frameDependantData->colors.exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDependantData->colors.exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
+        frameDependantData->colors.exteriorDirectColor = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
+        frameDependantData->exteriorDirectColorDir = mathfu::vec3(0.0, 0.0, 0.0);
     }
     auto frameDepedantData = mapRenderPlan->frameDependentData;
     frameDepedantData->FogDataFound = false;
@@ -92,51 +92,9 @@ std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
     return std::make_shared<m2TiedCamera>(m_m2Object, cameraNum);
 }
 
-void updateCameraPosOnLoad(const HApiContainer &m_api, const std::shared_ptr<M2Object> &m2Object) {
-    if (m2Object->isMainDataLoaded()) {
-        CAaBox aabb = m2Object->getColissionAABB();
-        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
-            aabb = m2Object->getAABB();
-        }
 
-        auto max = aabb.max;
-        auto min = aabb.min;
 
-        if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 20000) {
-
-            mathfu::vec3 modelCenter = mathfu::vec3(
-                ((max.x + min.x) / 2.0f),
-                ((max.y + min.y) / 2.0f),
-                ((max.z + min.z) / 2.0f)
-            );
-
-            if ((max.z - modelCenter.z) > (max.y - modelCenter.y)) {
-                m_api->camera->setCameraPos((max.z - modelCenter.z) / tan(M_PI * 19.0f / 180.0f), 0, 0);
-
-            } else {
-                m_api->camera->setCameraPos((max.y - modelCenter.y) / tan(M_PI * 19.0f / 180.0f), 0, 0);
-            }
-            m_api->camera->setCameraOffset(modelCenter.x, modelCenter.y, modelCenter.z);
-        } else {
-            m_api->camera->setCameraPos(1.0,0,0);
-            m_api->camera->setCameraOffset(0,0,0);
-        }
-#ifdef __EMSCRIPTEN__
-        std::vector <int> availableAnimations;
-        m2Object->getAvailableAnimation(availableAnimations);
-
-        supplyAnimationList(&availableAnimations[0], availableAnimations.size());
-
-        std::vector<int> meshIds;
-        m2Object->getMeshIds(meshIds);
-
-        supplyMeshIds(&meshIds[0], meshIds.size());
-
-#endif
-    }
-}
-
-M2Scene::M2Scene(HApiContainer api, std::string m2Model) {
+M2Scene::M2Scene(const HApiContainer &api, const std::string &m2Model) {
     m_api = api; m_m2Model = m2Model;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
@@ -151,15 +109,11 @@ M2Scene::M2Scene(HApiContainer api, std::string m2Model) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
-    auto l_api = m_api;
-    m_m2Object->addPostLoadEvent([m2Object, l_api]() {
-        updateCameraPosOnLoad(l_api, m2Object);
-    });
 
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
-M2Scene::M2Scene(HApiContainer api, int fileDataId) {
+M2Scene::M2Scene(const HApiContainer &api, int fileDataId) {
     m_api = api;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
@@ -173,10 +127,6 @@ M2Scene::M2Scene(HApiContainer api, int fileDataId) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
-    auto l_api = m_api;
-    m_m2Object->addPostLoadEvent([m2Object, l_api]() {
-        updateCameraPosOnLoad(l_api, m2Object);
-    });
 
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
@@ -191,4 +141,8 @@ void M2Scene::resetReplaceParticleColor() {
 
 void M2Scene::exportScene(IExporter* exporter) {
     exporter->addM2Object(m_m2Object);
+}
+
+std::shared_ptr<M2Object> M2Scene::getSceneM2() {
+    return m_m2Object;
 }

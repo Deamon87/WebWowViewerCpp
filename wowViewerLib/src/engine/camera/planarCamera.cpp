@@ -68,6 +68,9 @@ void PlanarCamera::stopAllMovement() {
     MDVerticalMinus = 0;
 }
 
+float PlanarCamera::getMovementSpeed() {
+    return this->m_moveSpeed;
+};
 void PlanarCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };

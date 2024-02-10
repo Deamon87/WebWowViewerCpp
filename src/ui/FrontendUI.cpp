@@ -38,13 +38,14 @@
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 #include "imgui_notify.h"
 
-FrontendUI::FrontendUI(HApiContainer api) : SceneWindow(api, true) {
+FrontendUI::FrontendUI(HApiContainer api) {
     m_api = api;
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
     //this->createDefaultprocessor();
 
+    m_backgroundScene = std::make_shared<SceneWindow>(api, true);
 }
 
 void FrontendUI::composeUI() {
@@ -150,6 +151,9 @@ void FrontendUI::composeUI() {
     if (cascOpened && m_m2Window == nullptr) {
         m_m2Window = std::make_shared<M2Window>(m_api, m_uiRenderer);
         m_m2Window->openWMOSceneByfdid(113992);
+
+        m_m2Window2 = std::make_shared<M2Window>(m_api, m_uiRenderer, "test");
+        m_m2Window2->openWMOSceneByfdid(1120838);
     };
 
     // Rendering
@@ -235,8 +239,8 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
         }
 
-        if (SceneWindow::hasRenderer()) {
-            auto mapPlan = SceneWindow::getLastPlan();
+        if (m_currentActiveScene && m_currentActiveScene->hasRenderer()) {
+            auto mapPlan = m_currentActiveScene->getLastPlan();
             if (mapPlan) {
                 auto &cullStageData = mapPlan;
 
@@ -376,10 +380,12 @@ void FrontendUI::showBlpViewer() {
 }
 
 void FrontendUI::showM2Viewer() {
-    if (!m_m2Window) return;
-
-    if (!m_m2Window->draw()) {
+    if (m_m2Window && !m_m2Window->draw()) {
         m_m2Window = nullptr;
+    }
+
+    if (m_m2Window2 && !m_m2Window2->draw()) {
+        m_m2Window2 = nullptr;
     }
 }
 
@@ -535,9 +541,9 @@ void FrontendUI::showAdtSelectionMinimap() {
         if (ImGui::Button("Go")) {
 
             if (prevMapRec.WdtFileID > 0) {
-                openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+                m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
             } else {
-                openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200);
+                m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200);
             }
             showSelectMap = false;
 
@@ -738,10 +744,10 @@ void FrontendUI::showMapSelectionDialog() {
                     worldPosY = 0;
                     if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
                         if (prevMapRec.WdtFileID > 0) {
-                            openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                            m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
                         } else {
                             //Try to open map by fileName
-                            openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f,
+                            m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f,
                                                    0);
                         }
                         showSelectMap = false;
@@ -797,11 +803,11 @@ void FrontendUI::showMainMenu() {
 
                             m_blpFileViewerWindow->loadBlp(std::to_string(fileId));
                         } else if (fileType == "m2") {
-                            openM2SceneByfdid(fileId, {});
+                            m_backgroundScene->openM2SceneByfdid(fileId, {});
                         } else if (fileType == "wmo") {
-                            openWMOSceneByfdid(fileId);
+                            m_backgroundScene->openWMOSceneByfdid(fileId);
                         } else if (fileType == "wdt") {
-                            openMapByIdAndWDTId(0, fileId, 0,0,0);
+                            m_backgroundScene->openMapByIdAndWDTId(0, fileId, 0,0,0);
                         }
                     });
             }
@@ -897,7 +903,7 @@ void FrontendUI::initImgui(
 
     ImGuiIO &io = ImGui::GetIO();
     (void) io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
+//    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // Enable Keyboard Controls
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
 
     // Setup Dear ImGui style
@@ -947,82 +953,82 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::Begin("Quick Links", &showQuickLinks);
     if (ImGui::Button("model without skin", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
-        openM2SceneByfdid(5099010, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(5099010, replacementTextureFDids);
     }
     if (ImGui::Button("crystal song bush", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
-        openM2SceneByfdid(194418, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(194418, replacementTextureFDids);
     }
     if (ImGui::Button("bugged decal", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
-        openM2SceneByfdid(946969, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(946969, replacementTextureFDids);
     }
     if (ImGui::Button("Some model", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
         replacementTextureFDids[11] = 4952373;
         replacementTextureFDids[12] = 4952379;
-        openM2SceneByfdid(4870631, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(4870631, replacementTextureFDids);
     }
     if (ImGui::Button("nightborne model", ImVec2(-1, 0))) {
-        openM2SceneByfdid(1810676, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(1810676, replacementTextureFDids);
     }
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
-        openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
+        m_backgroundScene->openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
     }
     if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(1120838);
+        m_backgroundScene->openWMOSceneByfdid(1120838);
     }
     if (ImGui::Button("8du_zuldazarraid_antiportal01.wmo", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(2574165);
+        m_backgroundScene->openWMOSceneByfdid(2574165);
     }
     if (ImGui::Button("someShip.wmo", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(4638404);
+        m_backgroundScene->openWMOSceneByfdid(4638404);
     }
     if (ImGui::Button("Vanilla karazhan", ImVec2(-1, 0))) {
-        openWMOSceneByFilename("world/wmo/dungeon/az_karazahn/karazhan.wmo");
+        m_backgroundScene->openWMOSceneByFilename("world/wmo/dungeon/az_karazahn/karazhan.wmo");
     }
     if (ImGui::Button("10xt_exterior_glacialspike01.wmo (parallax)", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(4419436);
+        m_backgroundScene->openWMOSceneByfdid(4419436);
     }
     if (ImGui::Button("14654.wmo (parallax)", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(4222547);
+        m_backgroundScene->openWMOSceneByfdid(4222547);
     }
     if (ImGui::Button("10.0 Raid WMO", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(4282557);
+        m_backgroundScene->openWMOSceneByfdid(4282557);
     }
     if (ImGui::Button("(WMO) Model with broken portal culling", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(4217818);
+        m_backgroundScene->openWMOSceneByfdid(4217818);
     }
     if (ImGui::Button("(WMO) NPE Ship with waterfall model", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(3314067);
+        m_backgroundScene->openWMOSceneByfdid(3314067);
     }
     if (ImGui::Button("(WMO) Gazebo 590182", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(590182);
+        m_backgroundScene->openWMOSceneByfdid(590182);
     }
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(2756726);
+        m_backgroundScene->openWMOSceneByfdid(2756726);
     }
     if (ImGui::Button("Original WVF1 model", ImVec2(-1, 0))) {
-        openM2SceneByfdid(2445860, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(2445860, replacementTextureFDids);
     }
     if (ImGui::Button("Stormwind mage portal", ImVec2(-1, 0))) {
-        openM2SceneByfdid(2394711, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(2394711, replacementTextureFDids);
     }
     if (ImGui::Button("kodobeasttame", ImVec2(-1, 0))) {
-        openM2SceneByfdid(124697, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(124697, replacementTextureFDids);
     }
 
 //    if (ImGui::Button("Azeroth map: Lion's Rest (Legion)", ImVec2(-1, 0))) {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
 //    }
     if (ImGui::Button("Nyalotha map", ImVec2(-1, 0))) {
-        openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260);
+        m_backgroundScene->openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260);
     }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(1247268);
+        m_backgroundScene->openWMOSceneByfdid(1247268);
     }
     if (ImGui::Button("Ironforge.wmo", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(113992);
+        m_backgroundScene->openWMOSceneByfdid(113992);
     }
 
     if (ImGui::Button("Some item", ImVec2(-1, 0))) {
@@ -1031,27 +1037,27 @@ void FrontendUI::showQuickLinksDialog() {
             for (auto &fdid: replacementTextureFDids) {
                 fdid = 1029337;
             }
-            openM2SceneByfdid(1029334, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(1029334, replacementTextureFDids);
     }
     if (ImGui::Button("IGC Anduin", ImVec2(-1, 0))) {
-        openM2SceneByfdid(3849312, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3849312, replacementTextureFDids);
     }
     if (ImGui::Button("Steamscale mount", ImVec2(-1, 0))) {
-        openM2SceneByfdid(2843110, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(2843110, replacementTextureFDids);
     }
     if (ImGui::Button("Spline emitter", ImVec2(-1, 0))) {
-        openM2SceneByfdid(1536145, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(1536145, replacementTextureFDids);
     }
     if (ImGui::Button("Nether collector top", ImVec2(-1, 0))) {
-        openM2SceneByfdid(193157, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(193157, replacementTextureFDids);
     }
     if (ImGui::Button("Сollector top", ImVec2(-1, 0))) {
-        openWMOSceneByfdid(113540);
+        m_backgroundScene->openWMOSceneByfdid(113540);
     }
     if (ImGui::Button("10.0 unk model", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
 
-        openM2SceneByfdid(4519090, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(4519090, replacementTextureFDids);
     }
     if (ImGui::Button("10.0 strange shoulders", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
@@ -1060,176 +1066,176 @@ void FrontendUI::showQuickLinksDialog() {
 
 
 
-        openM2SceneByfdid(4614814, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(4614814, replacementTextureFDids);
     }
     if (ImGui::Button("DF chicken", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
         replacementTextureFDids[11] = 4007136;
 
-        openM2SceneByfdid(4005446, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(4005446, replacementTextureFDids);
     }
     if (ImGui::Button("Fox", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
-            replacementTextureFDids[11] = 3071379;
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 3071379;
 
-            openM2SceneByfdid(3071370, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3071370, replacementTextureFDids);
     }
     if (ImGui::Button("COT hourglass", ImVec2(-1, 0))) {
-        openM2SceneByfdid(190850, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(190850, replacementTextureFDids);
     }
     if (ImGui::Button("Gryphon roost", ImVec2(-1, 0))) {
-        openM2SceneByfdid(198261, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(198261, replacementTextureFDids);
     }
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
-            openWMOSceneByfdid(114998);
+        m_backgroundScene->openWMOSceneByfdid(114998);
     }
     if (ImGui::Button("Strange WMO", ImVec2(-1, 0))) {
-            openWMOSceneByfdid(2342637);
+        m_backgroundScene->openWMOSceneByfdid(2342637);
     }
     if (ImGui::Button("Flyingsprite", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids = std::vector<int>(17);
 
-            replacementTextureFDids[11] = 3059000;
-            openM2SceneByfdid(3024835, replacementTextureFDids);
+        replacementTextureFDids[11] = 3059000;
+        m_backgroundScene->openM2SceneByfdid(3024835, replacementTextureFDids);
     }
     if (ImGui::Button("maldraxxusflyer", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
-            replacementTextureFDids[11] = 3196375;
-            openM2SceneByfdid(3196372, replacementTextureFDids);
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 3196375;
+        m_backgroundScene->openM2SceneByfdid(3196372, replacementTextureFDids);
     }
     if (ImGui::Button("ridingphoenix", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids = std::vector<int>(17);
 
-            openM2SceneByfdid(125644, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(125644, replacementTextureFDids);
     }
     if (ImGui::Button("Upright Orc", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
-            replacementTextureFDids[1] = 3844710;
-            openM2SceneByfdid(1968587, replacementTextureFDids);
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[1] = 3844710;
+        m_backgroundScene->openM2SceneByfdid(1968587, replacementTextureFDids);
     }
     if (ImGui::Button("quillboarbrute.m2", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
-            replacementTextureFDids[11] = 1786107;
-            openM2SceneByfdid(1784020, replacementTextureFDids);
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 1786107;
+        m_backgroundScene->openM2SceneByfdid(1784020, replacementTextureFDids);
     }
     if (ImGui::Button("WMO With Horde Symbol", ImVec2(-1, 0))) {
-            openWMOSceneByfdid(1846142);
+        m_backgroundScene->openWMOSceneByfdid(1846142);
     }
     if (ImGui::Button("WMO 3565693", ImVec2(-1, 0))) {
-            openWMOSceneByfdid(3565693);
+        m_backgroundScene->openWMOSceneByfdid(3565693);
     }
 
     if (ImGui::Button("Vanilla login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(131970, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(131970, replacementTextureFDids);
     }
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(131982, replacementTextureFDids);
-            //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-            m_api->getConfig()->BCLightHack = true;
+        m_backgroundScene->openM2SceneByfdid(131982, replacementTextureFDids);
+        //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
+        m_api->getConfig()->BCLightHack = true;
     }
     if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(236122, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(236122, replacementTextureFDids);
     }
 
     if (ImGui::Button("Cataclysm login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(466614, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(466614, replacementTextureFDids);
     }
     if (ImGui::Button("Panda login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(631713, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(631713, replacementTextureFDids);
     }
     if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
-            openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
+        m_backgroundScene->openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
     }
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(1396280, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(1396280, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
     }
     if (ImGui::Button("BfA login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(2021650, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(2021650, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
     }
     if (ImGui::Button("Shadowlands login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3846560, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3846560, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
     }
 
     if (ImGui::Button("DragonLands login screen", ImVec2(-1, 0))) {
-            openM2SceneByfdid(4684877, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(4684877, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
     }
 
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3445776, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3445776, replacementTextureFDids);
     }
 
     if (ImGui::Button("Pink serpent", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids = std::vector<int>(17);
 
-            replacementTextureFDids[11] = 2905480;
-            replacementTextureFDids[12] = 2905481;
-            replacementTextureFDids[13] = 577442;
-            openM2SceneByfdid(577443, replacementTextureFDids);
+        replacementTextureFDids[11] = 2905480;
+        replacementTextureFDids[12] = 2905481;
+        replacementTextureFDids[13] = 577442;
+        m_backgroundScene->openM2SceneByfdid(577443, replacementTextureFDids);
     }
     if (ImGui::Button("Wolf", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids = std::vector<int>(17);
 
-            replacementTextureFDids[11] = 126494;
-            replacementTextureFDids[12] = 126495;
-            replacementTextureFDids[13] = 0;
-            openM2SceneByfdid(126487, replacementTextureFDids);
+        replacementTextureFDids[11] = 126494;
+        replacementTextureFDids[12] = 126495;
+        replacementTextureFDids[13] = 0;
+        m_backgroundScene->openM2SceneByfdid(126487, replacementTextureFDids);
     }
 
     if (ImGui::Button("Aggramar", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
-            replacementTextureFDids[11] = 1599776;
-            openM2SceneByfdid(1599045, replacementTextureFDids);
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 1599776;
+        m_backgroundScene->openM2SceneByfdid(1599045, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3087468", ImVec2(-1, 0))) {
-            replacementTextureFDids = std::vector<int>(17);
-            replacementTextureFDids[11] = 3087540;
-            openM2SceneByfdid(3087468, replacementTextureFDids);
+        replacementTextureFDids = std::vector<int>(17);
+        replacementTextureFDids[11] = 3087540;
+        m_backgroundScene->openM2SceneByfdid(3087468, replacementTextureFDids);
     }
 
     if (ImGui::Button("Nagrand skybox", ImVec2(-1, 0))) {
 
-        openM2SceneByfdid(130575, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(130575, replacementTextureFDids);
 
     }
     if (ImGui::Button("Torghast raid skybox", ImVec2(-1, 0))) {
 
-        openM2SceneByfdid(4001212, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(4001212, replacementTextureFDids);
 
     }
     if (ImGui::Button("3445776 PBR cloud sky in Maw", ImVec2(-1, 0))) {
-        openM2SceneByfdid(3445776, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3445776, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3572296", ImVec2(-1, 0))) {
-        openM2SceneByfdid(3572296, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3572296, replacementTextureFDids);
     }
     if (ImGui::Button("M2 3487959", ImVec2(-1, 0))) {
-        openM2SceneByfdid(3487959, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(3487959, replacementTextureFDids);
     }
     if (ImGui::Button("M2 1729717 waterfall", ImVec2(-1, 0))) {
-        openM2SceneByfdid(1729717, replacementTextureFDids);
+        m_backgroundScene->openM2SceneByfdid(1729717, replacementTextureFDids);
     }
     if (ImGui::Button("Maw jailer", ImVec2(-1, 0))) {
 //        3096499,3096495
         replacementTextureFDids = std::vector<int>(17);
         replacementTextureFDids[11] = 3096499;
         replacementTextureFDids[12] = 3096495;
-            openM2SceneByfdid(3095966, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(3095966, replacementTextureFDids);
     }
     if (ImGui::Button("Creature with colors", ImVec2(-1, 0))) {
 //        3096499,3096495
-            openM2SceneByfdid(1612576, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(1612576, replacementTextureFDids);
     }
     if (ImGui::Button("IC new sky", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3159936, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(3159936, replacementTextureFDids);
     }
 
 
     if (ImGui::Button("vampire candle", ImVec2(-1, 0))) {
-            openM2SceneByfdid(3184581, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(3184581, replacementTextureFDids);
     }
     if (ImGui::Button("Bog Creature", ImVec2(-1, 0))) {
             replacementTextureFDids = std::vector<int>(17);
@@ -1237,7 +1243,7 @@ void FrontendUI::showQuickLinksDialog() {
             replacementTextureFDids[12] = 3732360;
             replacementTextureFDids[13] = 3732368;
 
-            openM2SceneByfdid(3732303, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(3732303, replacementTextureFDids);
     }
     if (ImGui::Button("Bugged ADT (SL)", ImVec2(-1, 0))) {
 //        m_currentScene = setScene(m_api, 2, "world/maps/2363/2363_31_31.adt", 0);
@@ -1246,16 +1252,16 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::Text("Models for billboard checking");
     ImGui::NewLine();
     if (ImGui::Button("Dalaran dome", ImVec2(-1, 0))) {
-            openM2SceneByfdid(203598, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(203598, replacementTextureFDids);
     }
     if (ImGui::Button("Gift of Nzoth", ImVec2(-1, 0))) {
-            openM2SceneByfdid(2432705, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(2432705, replacementTextureFDids);
     }
     if (ImGui::Button("Plagueheart Shoulderpad", ImVec2(-1, 0))) {
-            openM2SceneByfdid(143343, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(143343, replacementTextureFDids);
     }
     if (ImGui::Button("Dalaran eye", ImVec2(-1, 0))) {
-            openM2SceneByfdid(243044, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(243044, replacementTextureFDids);
     }
     if (ImGui::Button("Hand weapon", ImVec2(-1, 0))) {
             replacementTextureFDids = std::vector<int>(17);
@@ -1263,7 +1269,7 @@ void FrontendUI::showQuickLinksDialog() {
             for (auto &fdid: replacementTextureFDids) {
                 fdid = 528801;
             }
-            openM2SceneByfdid(528797, replacementTextureFDids);
+            m_backgroundScene->openM2SceneByfdid(528797, replacementTextureFDids);
     }
 
     ImGui::End();
@@ -1350,8 +1356,14 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->currentTime = currentTime;
         }
 
-        if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
-            m_api->camera->setMovementSpeed(movementSpeed);
+        {
+            auto camera = (m_currentActiveScene) ? m_currentActiveScene->getCamera() : nullptr;
+            float movementSpeed = (camera) ? camera->getMovementSpeed() : 1.0;
+            if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
+                if (camera) {
+                    camera->setMovementSpeed(movementSpeed);
+                }
+            }
         }
         auto fogDensityIncreaser = m_api->getConfig()->fogDensityIncreaser;
         if (ImGui::SliderFloat("Fog Density", &fogDensityIncreaser, -4, 4)) {
@@ -1435,12 +1447,12 @@ void FrontendUI::showSettingsDialog() {
                     m_debugRenderView = nullptr;
                 }
             }
-            if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && SceneWindow::hasRenderer()) {
-                m_debugRenderView = SceneWindow::createRenderView();
+            if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && m_backgroundScene->hasRenderer()) {
+                m_debugRenderView = m_backgroundScene->createRenderView();
                 m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
             }
 
-
+            /*
             if (useDoubleCameraDebug) {
                 if (m_api->debugCamera == nullptr) {
                     m_api->debugCamera = std::make_shared<FirstPersonCamera>();
@@ -1466,6 +1478,7 @@ void FrontendUI::showSettingsDialog() {
             } else {
                 m_api->debugCamera = nullptr;
             }
+            */
 
             pauseAnimation = m_api->getConfig()->pauseAnimation;
             if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
@@ -1478,7 +1491,7 @@ void FrontendUI::showSettingsDialog() {
         }
 
         if (ImGui::CollapsingHeader("Light options")) {
-            auto mapPlan = SceneWindow::getLastPlan();
+            auto mapPlan = m_currentActiveScene ? m_currentActiveScene->getLastPlan() : nullptr;
 
             switch(m_api->getConfig()->globalLighting) {
                 case EParameterSource::eDatabase: {
@@ -1675,6 +1688,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             {0,     0},
             {static_cast<unsigned int>(canvWidth), static_cast<unsigned int>(canvHeight)}
         };
+        m_backgroundScene->setViewPortDimensions(dimension);
 
         uint32_t debugWidth = 0; uint32_t debugHeight = 0;
         if (m_debugRenderWindow) {
@@ -1682,22 +1696,35 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
             debugHeight = m_debugRenderWindow->getHeight();
         }
 
-        SceneWindow::render(deltaTime, fov, scenario, dimension,
-                            updateFrameNumberLambda,
-                            m_debugRenderView,
-                            debugWidth,
-                            debugHeight
+        m_backgroundScene->render(
+            deltaTime, fov, scenario,
+            /*
+            m_debugRenderView,
+            debugWidth,
+            debugHeight
+             */ nullptr,
+            updateFrameNumberLambda
         );
+        m_currentActiveScene = m_backgroundScene;
 
-        if (m_m2Window)
+        if (m_m2Window) {
             m_m2Window->render(deltaTime, scenario, updateFrameNumberLambda);
+            m_currentActiveScene = m_m2Window->isActive() ? m_m2Window : m_currentActiveScene;
+        }
+
+        if (m_m2Window2) {
+            m_m2Window2->render(deltaTime, scenario, updateFrameNumberLambda);
+            m_currentActiveScene = m_m2Window2->isActive() ? m_m2Window2 : m_currentActiveScene;
+        }
+
+
 
         //----------------------
         // Screenshot part
         //----------------------
 
         if (needToMakeScreenshot) {
-            SceneWindow::makeScreenshot(fov,
+            m_backgroundScene->makeScreenshot(fov,
                                         screenShotWidth, screenShotHeight,
                                         screenshotFilename,
                                         scenario,
@@ -1743,7 +1770,7 @@ void FrontendUI::unloadScene() {
         m_api->cacheStorage->actuallDropCache();
     }
 
-    SceneWindow::unload();
+    m_backgroundScene->unload();
 }
 
 
@@ -1776,12 +1803,14 @@ void FrontendUI::resetAnimationCallback() {
 }
 
 void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
-    if (m_api->camera == nullptr) {
+    auto camera = m_currentActiveScene ? m_currentActiveScene->getCamera() : nullptr;
+
+    if (camera == nullptr) {
         cameraX = 0; cameraY = 0; cameraZ = 0;
         return;
     }
     float currentCameraPos[4] = {0,0,0,0};
-    m_api->camera->getCameraPosition(&currentCameraPos[0]);
+    camera->getCameraPosition(&currentCameraPos[0]);
     cameraX = currentCameraPos[0];
     cameraY = currentCameraPos[1];
     cameraZ = currentCameraPos[2];
@@ -1789,6 +1818,9 @@ void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
 
 
 void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
+    //TODO:
+    /*
+    auto camera = m_currentActiveScene ? m_currentActiveScene->getCamera() : nullptr;
     if (m_api->debugCamera == nullptr) {
         cameraX = 0; cameraY = 0; cameraZ = 0;
         return;
@@ -1798,6 +1830,7 @@ void FrontendUI::getDebugCameraPos(float &cameraX, float &cameraY, float &camera
     cameraX = currentCameraPos[0];
     cameraY = currentCameraPos[1];
     cameraZ = currentCameraPos[2];
+     */
 }
 
 inline bool fileExistsNotNull (const std::string& name) {

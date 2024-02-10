@@ -32,13 +32,11 @@ private:
                                   StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
 
 public:
-    explicit M2Scene(HApiContainer api, std::string m2Model);
-    explicit M2Scene(HApiContainer api, int fileDataId);
+    explicit M2Scene(const HApiContainer &api, const std::string &m2Model);
+    explicit M2Scene(const HApiContainer &api, int fileDataId);
 
 
-    ~M2Scene() override {
-
-    }
+    ~M2Scene() override {}
 
     void setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<int> &replaceTextureArray) ;
     void setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds) ;
@@ -49,6 +47,8 @@ public:
     int getCameraNum() ;
     std::shared_ptr<ICamera> createCamera(int cameraNum);
     void exportScene(IExporter* exporter);
+    std::shared_ptr<M2Object> getSceneM2();
+
 };
 
 

@@ -71,8 +71,8 @@ class IMesh : public ObjectWithId {
     friend class IDevice;
 
 public:
-    auto start()       -> int& { return m_start; }
-    auto end()       -> int& { return m_end; }
+    auto start()       -> uint32_t& { return m_start; }
+    auto end()       -> uint32_t& { return m_end; }
 //    auto textureCount()       -> int { return m_texture.size(); }
 
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
@@ -82,8 +82,8 @@ public:
     int instanceIndex = -1;
 protected:
     HGVertexBufferBindings m_bindings;
-    int m_start;
-    int m_end;
+    uint32_t m_start;
+    uint32_t  m_end;
 
 
 
