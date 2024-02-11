@@ -248,6 +248,8 @@ set(SOURCE_FILES
 		src/ui/childWindow/sceneWindow/SceneWindow.h
 		src/ui/childWindow/m2Window/M2Window.cpp
 		src/ui/childWindow/m2Window/M2Window.h
+		src/ui/imguiLib/hasFocus/imguiHasFocus.cpp
+		src/ui/imguiLib/hasFocus/imguiHasFocus.h
 )
 
 

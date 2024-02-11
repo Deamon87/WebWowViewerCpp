@@ -72,7 +72,7 @@ private:
 
     std::shared_ptr<SceneWindow> m_backgroundScene = nullptr;
     std::shared_ptr<SceneWindow> m_currentActiveScene = nullptr;
-
+    std::weak_ptr<SceneWindow> m_lastActiveScene;
 
     float uiScale = 1;
 

@@ -59,12 +59,20 @@ bool stopKeyboard = false;
 std::shared_ptr<FrontendUI> frontendUI = nullptr;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    if (stopMouse) return;
+    if (stopMouse) {
+        mleft_pressed = 0;
+        mright_pressed = 0;
+        return;
+    };
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
     auto currentActiveScene = frontendUI->getCurrentActiveScene();
     auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
 
-    if (!controllable) return;
+    if (!controllable) {
+        mleft_pressed = 0;
+        mright_pressed = 0;
+        return;
+    };
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -85,6 +93,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 //    addCameraViewOffset
     if (stopMouse) return;
+
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) {
+        mleft_pressed = 0;
+        mright_pressed = 0;
+        return;
+    };
 
     if (action == GLFW_PRESS) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {

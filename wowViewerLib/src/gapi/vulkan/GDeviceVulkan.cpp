@@ -791,6 +791,8 @@ void GDeviceVLK::createLogicalDevice() {
     VkPhysicalDeviceFeatures2 physical_features2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
     if ( bindless_supported ) {
         // This should be already set to VK_TRUE, as we queried before.
+        indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        indexing_features.descriptorBindingVariableDescriptorCount = VK_TRUE;
         indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
         indexing_features.runtimeDescriptorArray = VK_TRUE;
 

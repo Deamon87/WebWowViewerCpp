@@ -37,6 +37,7 @@
 #include "wheelCapture/wheelCapture.h"
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 #include "imgui_notify.h"
+#include "hasFocus/imguiHasFocus.h"
 
 FrontendUI::FrontendUI(HApiContainer api) {
     m_api = api;
@@ -117,8 +118,8 @@ void FrontendUI::composeUI() {
 
 
     static bool show_demo_window = true;
-//    if (show_demo_window)
-//        ImGui::ShowDemoWindow(&show_demo_window);
+    if (show_demo_window)
+        ImGui::ShowDemoWindow(&show_demo_window);
 
     if (m_databaseUpdateWorkflow != nullptr) {
         if (m_databaseUpdateWorkflow->isDatabaseUpdated()) {
@@ -152,9 +153,25 @@ void FrontendUI::composeUI() {
         m_m2Window = std::make_shared<M2Window>(m_api, m_uiRenderer);
         m_m2Window->openWMOSceneByfdid(113992);
 
-        m_m2Window2 = std::make_shared<M2Window>(m_api, m_uiRenderer, "test");
-        m_m2Window2->openWMOSceneByfdid(1120838);
+//        m_m2Window2 = std::make_shared<M2Window>(m_api, m_uiRenderer, "test");
+//        m_m2Window2->openWMOSceneByfdid(1120838);
     };
+
+    m_currentActiveScene = nullptr;
+    if (!ImGui::HasFocus())
+        m_currentActiveScene = m_backgroundScene;
+
+    if (m_m2Window) {
+        m_currentActiveScene = m_m2Window->isActive() ? m_m2Window : m_currentActiveScene;
+    }
+
+    if (m_m2Window2) {
+        m_currentActiveScene = m_m2Window2->isActive() ? m_m2Window2 : m_currentActiveScene;
+    }
+
+    if (m_currentActiveScene) {
+        m_lastActiveScene = m_currentActiveScene;
+    }
 
     // Rendering
     ImGui::Render();
@@ -239,8 +256,9 @@ void FrontendUI::showCurrentStatsDialog() {
             ImGui::Text("Current blp vulkan textures %f MB", l_blpTexturesVulkanSizeLoaded);
         }
 
-        if (m_currentActiveScene && m_currentActiveScene->hasRenderer()) {
-            auto mapPlan = m_currentActiveScene->getLastPlan();
+        auto activeScene = m_lastActiveScene.lock();
+        if (activeScene && activeScene->hasRenderer()) {
+            auto mapPlan = activeScene->getLastPlan();
             if (mapPlan) {
                 auto &cullStageData = mapPlan;
 
@@ -1357,7 +1375,8 @@ void FrontendUI::showSettingsDialog() {
         }
 
         {
-            auto camera = (m_currentActiveScene) ? m_currentActiveScene->getCamera() : nullptr;
+            auto activeScene = m_lastActiveScene.lock();
+            auto camera = (activeScene) ? activeScene->getCamera() : nullptr;
             float movementSpeed = (camera) ? camera->getMovementSpeed() : 1.0;
             if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
                 if (camera) {
@@ -1491,7 +1510,8 @@ void FrontendUI::showSettingsDialog() {
         }
 
         if (ImGui::CollapsingHeader("Light options")) {
-            auto mapPlan = m_currentActiveScene ? m_currentActiveScene->getLastPlan() : nullptr;
+            auto activeScene = m_lastActiveScene.lock();
+            auto mapPlan = activeScene ? activeScene->getLastPlan() : nullptr;
 
             switch(m_api->getConfig()->globalLighting) {
                 case EParameterSource::eDatabase: {
@@ -1705,18 +1725,14 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
              */ nullptr,
             updateFrameNumberLambda
         );
-        m_currentActiveScene = m_backgroundScene;
 
         if (m_m2Window) {
             m_m2Window->render(deltaTime, scenario, updateFrameNumberLambda);
-            m_currentActiveScene = m_m2Window->isActive() ? m_m2Window : m_currentActiveScene;
         }
 
         if (m_m2Window2) {
             m_m2Window2->render(deltaTime, scenario, updateFrameNumberLambda);
-            m_currentActiveScene = m_m2Window2->isActive() ? m_m2Window2 : m_currentActiveScene;
         }
-
 
 
         //----------------------
@@ -1803,7 +1819,8 @@ void FrontendUI::resetAnimationCallback() {
 }
 
 void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
-    auto camera = m_currentActiveScene ? m_currentActiveScene->getCamera() : nullptr;
+    auto activeScene = m_lastActiveScene.lock();
+    auto camera = activeScene ? activeScene->getCamera() : nullptr;
 
     if (camera == nullptr) {
         cameraX = 0; cameraY = 0; cameraZ = 0;
