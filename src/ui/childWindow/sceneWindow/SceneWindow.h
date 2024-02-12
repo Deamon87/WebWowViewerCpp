@@ -53,6 +53,15 @@ public:
     void setViewPortDimensions(const ViewPortDimensions &dimensions) {
         m_dimension = dimensions;
     }
+
+    int getCurrentCameraIndex() {return m_currentCameraIndex;}
+    int getCurrentCameraCount() {return m_cameraList.size();}
+    void setCurrentCameraIndex(int i) {
+        if (i < m_cameraList.size())
+            m_currentCameraIndex = i;
+        else
+            m_currentCameraIndex = -1;
+    }
 private:
     std::shared_ptr<MapSceneRenderer> m_sceneRenderer = nullptr;
     std::shared_ptr<IScene> m_currentScene = nullptr;
@@ -63,6 +72,10 @@ protected:
     HApiContainer m_api;
     ViewPortDimensions m_dimension = {{0,0}, {0,0}};
     std::shared_ptr<ICamera> m_camera = nullptr;
+
+    int m_currentCameraIndex = -1;
+    std::vector<std::shared_ptr<ICamera>> m_cameraList;
+
     std::shared_ptr<IRenderView> m_renderView = nullptr;
 };
 

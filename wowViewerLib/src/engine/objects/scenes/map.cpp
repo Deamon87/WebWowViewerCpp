@@ -422,7 +422,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     }
 
 
-    m_api->getConfig()->areaName = areaRecord.areaName;
+    mapRenderPlan->areaName = areaRecord.areaName;
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
 
@@ -573,6 +573,14 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             }
         }
 
+        bool drawDefaultSkybox = true;
+        for (auto &_light : lightResults) {
+            if (!_light.isDefault && _light.blendCoef > 0.99999f) {
+                drawDefaultSkybox = false;
+            }
+        }
+
+
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
         auto modelIt = m_exteriorSkyBoxes.begin();
@@ -580,6 +588,8 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             bool found = false;
             for (auto &_light : lightResults) {
                 if (_light.skyBoxFdid == (*modelIt)->getModelFileId()) {
+                    if (!drawDefaultSkybox && _light.isDefault) continue;
+
                     found = true;
                     break;
                 }
@@ -594,6 +604,9 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         }
 
         m_skyConeAlpha = 1.0;
+
+
+
         for (auto &_light : lightResults) {
             if (_light.skyBoxFdid == 0 || _light.lightSkyboxId == 0) continue;
 

@@ -98,7 +98,9 @@ public:
     void setLoadingParam( SMMapObjDef &mapObjDef);
     void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
 
+    std::string getModelFileName();
     void setModelFileName(std::string modelName);
+    int getModelFileId();
     void setModelFileId(int fileId);
 
     void startLoading();

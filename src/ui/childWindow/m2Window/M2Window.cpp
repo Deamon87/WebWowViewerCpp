@@ -8,8 +8,6 @@
 
 M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix) : SceneWindow(api, false), m_uiRenderer(renderer) {
     m_windowName = "M2Window##" + nameSuffix;
-
-    openWMOSceneByfdid(113992);
 }
 
 M2Window::~M2Window() {
@@ -41,15 +39,15 @@ bool M2Window::draw() {
         auto currentFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
         auto imguiContent = ImGui::GetCurrentContext();
-        ImGui::Text("FocusID == %d LastActiveId == %d GetActiveID == %d", ImGui::GetFocusID(), imguiContent->LastActiveId, ImGui::GetActiveID());
+        {
+//        auto imguiContent = ImGui::GetCurrentContext();
+//        ImGui::Text("FocusID == %d LastActiveId == %d GetActiveID == %d", ImGui::GetFocusID(), imguiContent->LastActiveId, ImGui::GetActiveID());
 //        std::cout
 //            << " FocusID == " << ImGui::GetFocusID()
 //            << " LastActiveId == " << imguiContent->LastActiveId
 //            << " GetActiveID == " << ImGui::GetActiveID()
 //            << std::endl;
-
-
-
+        }
 
         float sizeX = 0, sizeY = 0;
         auto windowSize = ImGui::GetContentRegionAvail();

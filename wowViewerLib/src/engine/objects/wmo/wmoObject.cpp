@@ -1093,10 +1093,15 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
         return result;
 }
 
+std::string WmoObject::getModelFileName() {
+    return m_modelName;
+}
 void WmoObject::setModelFileName(std::string modelName) {
     m_modelName = modelName;
 }
-
+int WmoObject::getModelFileId() {
+   return m_modelFileId;
+}
 void WmoObject::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;

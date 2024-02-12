@@ -115,8 +115,6 @@ public:
     EParameterSource globalFog = EParameterSource::eDatabase;
     FogResult fogResult;
 
-    std::string areaName;
-
     int diffuseColorHack = 0;
 
     EParameterSource glowSource = EParameterSource::eDatabase;

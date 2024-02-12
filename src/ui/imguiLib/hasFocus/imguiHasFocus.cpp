@@ -6,5 +6,7 @@
 #include "imgui_internal.h"
 
 bool ImGui::HasFocus() {
-    return ImGui::GetFocusID() != 0;
+    auto context = ImGui::GetCurrentContext();
+    ImGuiWindow* window = context->NavWindow;
+    return window != nullptr;
 }

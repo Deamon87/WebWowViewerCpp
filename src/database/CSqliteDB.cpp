@@ -54,7 +54,7 @@ const std::string getMapByIDSQL_classic =
         "select m.ID, m.Directory, m.MapName_lang, m.MapType from Map m";
 
 const std::string getWmoAreaAreaNameSQL = R"===(
-        select wat.AreaName_lang as wmoAreaName, at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from WMOAreaTable wat
+        select wat.AreaName_lang as wmoAreaName, at.AreaName_lang as areaName, at.ID as ID, at.ParentAreaID as ParentAreaID, at.Ambient_multiplier as Ambient_multiplier from WMOAreaTable wat
         left join AreaTable at on at.id = wat.AreaTableID
         where wat.WMOID = ? and wat.NameSetID = ? and (wat.WMOGroupID = -1 or wat.WMOGroupID = ?) ORDER BY wat.WMOGroupID DESC
         )===";
@@ -234,7 +234,7 @@ AreaRecord CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId) {
 
     while (getWmoAreaAreaName.execute()) {
         std::string wmoAreaName = getWmoAreaAreaName.getField("wmoAreaName").getString();
-        std::string areaName = getWmoAreaAreaName.getField("AreaName_lang").getString();
+        std::string areaName = getWmoAreaAreaName.getField("areaName").getString();
 
 
         if (wmoAreaName == "") {

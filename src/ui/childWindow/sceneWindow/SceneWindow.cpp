@@ -9,9 +9,10 @@
 #include "../../../../wowViewerLib/src/engine/objects/scenes/wmoScene.h"
 #include "../../../../wowViewerLib/src/engine/objects/scenes/NullScene.h"
 #include "../../../screenshots/screenshotMaker.h"
+#include "../../../../wowViewerLib/src/engine/camera/m2TiedCamera.h"
 
 
-void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std::shared_ptr<ICamera> &camera) {
+void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std::shared_ptr<ICamera> &camera, std::vector<std::shared_ptr<ICamera>> &cameraList) {
     if (m2Object->isMainDataLoaded()) {
         CAaBox aabb = m2Object->getColissionAABB();
         if ((mathfu::vec3(aabb.max) - mathfu::vec3(aabb.min)).LengthSquared() < 0.001 ) {
@@ -41,6 +42,16 @@ void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std:
             camera->setCameraPos(1.0,0,0);
             camera->setCameraOffset(0,0,0);
         }
+
+        //Create cameras
+        {
+            auto cameraNum = m2Object->getCameraNum();
+            for (int i = 0; i < cameraNum; i++) {
+                auto newCamera = std::make_shared<m2TiedCamera>(m2Object, i);
+                cameraList.push_back(newCamera);
+            }
+        }
+
 #ifdef __EMSCRIPTEN__
         std::vector <int> availableAnimations;
         m2Object->getAvailableAnimation(availableAnimations);
@@ -179,8 +190,8 @@ void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacem
     {
         //Post load event for m2
         auto m2Object = m2Scene->getSceneM2();
-        m2Object->addPostLoadEvent([m2Object, l_camera = m_camera]() {
-            updateCameraPosOnLoad(m2Object, l_camera);
+        m2Object->addPostLoadEvent([m2Object, l_camera = m_camera, &l_cameraList = m_cameraList]() {
+            updateCameraPosOnLoad(m2Object, l_camera, l_cameraList);
         });
     }
 }
@@ -199,8 +210,8 @@ void SceneWindow::openM2SceneByName(const std::string &m2FileName, const std::ve
     {
         //Post load event for m2
         auto m2Object = m2Scene->getSceneM2();
-        m2Object->addPostLoadEvent([m2Object, l_camera = m_camera]() {
-            updateCameraPosOnLoad(m2Object, l_camera);
+        m2Object->addPostLoadEvent([m2Object, l_camera = m_camera, &l_cameraList = m_cameraList]() {
+            updateCameraPosOnLoad(m2Object, l_camera, l_cameraList);
         });
     }
 }
@@ -240,6 +251,10 @@ std::shared_ptr<MapRenderPlan> SceneWindow::getLastPlan() {
     return (m_sceneRenderer) ? m_sceneRenderer->getLastCreatedPlan() : nullptr;
 }
 const std::shared_ptr<ICamera> SceneWindow::getCamera() {
+    if (m_currentCameraIndex >= 0 && m_currentCameraIndex <= m_cameraList.size()) {
+        return m_cameraList[m_currentCameraIndex];
+    }
+
     return m_camera;
 }
 
@@ -262,12 +277,15 @@ SceneWindow::render(double deltaTime,
                     )
 {
     if (!hasRenderer()) return;
-    if (!m_camera) return;
+
+    auto currentCamera = getCamera();
+    if (!currentCamera) return;
+
     if (!m_renderToSwapChain && !m_renderView) {
         m_renderView = m_sceneRenderer->createRenderView(true);
     }
 
-    m_camera->tick(deltaTime * 1000.0f);
+    currentCamera->tick(deltaTime * 1000.0f);
 
     if (m_api->getConfig()->pauseAnimation) {
         deltaTime = 0.0;
@@ -294,7 +312,7 @@ SceneWindow::render(double deltaTime,
 
     std::vector<RenderTargetParameters> renderTargetParams = {
         {
-            m_camera,
+            currentCamera,
             l_dimension,
             target
         }
@@ -302,13 +320,13 @@ SceneWindow::render(double deltaTime,
 
     if (m_api->getConfig()->doubleCameraDebug) {
         auto &debugParams = renderTargetParams.emplace_back();
-        debugParams.camera = debugWindow->m_camera;
+        debugParams.camera = debugWindow->getCamera();
         debugParams.dimensions = debugViewDimension;
         debugParams.target = debugTarget;
     }
 
     wowSceneFrameInput->frameParameters = createMapSceneParams(m_api,
-                                                               m_camera,
+                                                               currentCamera,
                                                                fov,
                                                                renderTargetParams,
                                                                m_currentScene);

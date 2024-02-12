@@ -15,6 +15,8 @@ struct MapRenderPlan {
     int areaId = -1;
     int parentAreaId = -1;
 
+    std::string areaName = "";
+
     animTime_t deltaTime;
     HCameraMatrices renderingMatrices;
 

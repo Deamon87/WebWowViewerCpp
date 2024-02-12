@@ -35,11 +35,14 @@ HCameraMatrices m2TiedCamera::getCameraMatrices(float fov, float canvasAspect, f
     fov = m_lastCameraResult.diagFov / sqrt(1.0f + canvasAspect*canvasAspect);
 
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
-    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
-        fov,
-        canvasAspect,
-        nearPlane,
-        farPlane);
+//    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
+//        fov,
+//        canvasAspect,
+//        nearPlane,
+//        farPlane);
+
+    cameraMatrices->perspectiveMat = persectiveInvertZ(canvasAspect, fov, nearPlane, farPlane);
+
     cameraMatrices->lookAtMat = lookAtMat4;
 
     auto invViewMat = lookAtMat4.Inverse();

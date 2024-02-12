@@ -87,13 +87,11 @@ private:
     void getAdtSelectionMinimap(int wdtFileDataId);
     void getAdtSelectionMinimap(std::string wdtFilePath);
     void getMapList(std::vector<MapRecord> &mapList);
-    std::string getCurrentAreaName();
+
     bool fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists);
 
-
+    std::shared_ptr<SceneWindow> getOrCreateWindow();
     void unloadScene();
-    int getCameraNumCallback();
-    bool setNewCameraCallback(int cameraNum);
     void resetAnimationCallback();
 
     std::array<std::array<HGSamplableTexture, 64>, 64> adtSelectionMinimapTextures;
@@ -157,7 +155,7 @@ private:
     int glowSource = 0;
     float customGlow = 0.0;
 
-    int currentCameraNum = -1;
+
 
     MapRecord prevMapRec;
 
@@ -193,8 +191,8 @@ private:
     std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpFileViewerWindow = nullptr;
-    std::shared_ptr<M2Window> m_m2Window = nullptr;
-    std::shared_ptr<M2Window> m_m2Window2 = nullptr;
+    std::vector<std::shared_ptr<M2Window>> m_m2Windows = {};
+
     std::shared_ptr<FileListWindow> m_fileListWindow = nullptr;
     std::shared_ptr<DebugRendererWindow> m_debugRenderWindow;
 
