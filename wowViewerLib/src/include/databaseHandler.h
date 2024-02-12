@@ -14,7 +14,7 @@ public:
     virtual void getMapArray(std::vector<MapRecord> &mapRecords) = 0;
     virtual bool getMapById(int mapId, MapRecord &mapRecord) = 0;
     virtual AreaRecord getArea(int areaId) = 0;
-    virtual AreaRecord getWmoArea(int wmoId, int nameId, int groupId) = 0;
+    virtual bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) = 0;
     virtual void getLightById(int lightId, int time, LightResult &lightResult, float farClip) = 0;
     virtual void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults, float farClip) = 0;
     virtual void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) = 0;

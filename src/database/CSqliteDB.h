@@ -19,7 +19,7 @@ public:
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
     bool getMapById(int mapId, MapRecord &mapRecord) override;
     AreaRecord getArea(int areaId) override;
-    AreaRecord getWmoArea(int wmoId, int nameId, int groupId) override;
+    bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) override;
 
     void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults, float farClip) override;
     void getLightById(int lightId, int time, LightResult &lightResult, float farClip) override;

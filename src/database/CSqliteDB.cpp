@@ -227,8 +227,7 @@ AreaRecord CSqliteDB::getArea(int areaId) {
     return areaRecord;
 }
 
-AreaRecord CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId) {
-    AreaRecord areaRecord;
+bool CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) {
 
     getWmoAreaAreaName.setInputs( wmoId, nameId, groupId);
 
@@ -238,18 +237,18 @@ AreaRecord CSqliteDB::getWmoArea(int wmoId, int nameId, int groupId) {
 
 
         if (wmoAreaName == "") {
-            areaRecord.areaName = areaName;
+            result.areaName = areaName;
         } else {
-            areaRecord.areaName = wmoAreaName;
+            result.areaName = wmoAreaName;
         }
-        areaRecord.areaId = getWmoAreaAreaName.getField("ID").getInt();
-        areaRecord.parentAreaId = getWmoAreaAreaName.getField("ParentAreaID").getInt();
-        areaRecord.ambientMultiplier= getWmoAreaAreaName.getField("Ambient_multiplier").getDouble();
+        result.areaId = getWmoAreaAreaName.getField("ID").getInt();
+        result.parentAreaId = getWmoAreaAreaName.getField("ParentAreaID").getInt();
+        result.ambientMultiplier= getWmoAreaAreaName.getField("Ambient_multiplier").getDouble();
 
-        break;
+        return true;
     }
 
-    return areaRecord;
+    return false;
 }
 
 template <int T>

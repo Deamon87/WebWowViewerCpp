@@ -404,24 +404,31 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     //7. Get AreaId and Area Name
     StateForConditions stateForConditions;
 
-    AreaRecord areaRecord;
+    AreaRecord wmoAreaRecord;
+    bool wmoAreaFound = false;
     if (mapRenderPlan->m_currentWMO != nullptr) {
         auto nameId = mapRenderPlan->m_currentWMO->getNameSet();
         auto wmoId = mapRenderPlan->m_currentWMO->getWmoId();
         auto groupId =  mapRenderPlan->m_currentWMO->getWmoGroupId(mapRenderPlan->m_currentWmoGroup);
 
         if (m_api->databaseHandler != nullptr) {
-            areaRecord = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId);
+            wmoAreaFound = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId, wmoAreaRecord);
         }
     }
 
-    if (areaRecord.areaId == 0) {
-        if (mapRenderPlan->adtAreadId > 0 && (m_api->databaseHandler != nullptr)) {
-            areaRecord = m_api->databaseHandler->getArea(mapRenderPlan->adtAreadId);
+    AreaRecord areaRecord;
+    if ((m_api->databaseHandler != nullptr)) {
+        if (wmoAreaRecord.areaId == 0) {
+            if (mapRenderPlan->adtAreadId > 0) {
+                areaRecord = m_api->databaseHandler->getArea(mapRenderPlan->adtAreadId);
+            }
+        } else {
+            areaRecord = m_api->databaseHandler->getArea(wmoAreaRecord.areaId);
         }
     }
 
 
+    mapRenderPlan->wmoAreaName = wmoAreaRecord.areaName;
     mapRenderPlan->areaName = areaRecord.areaName;
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;

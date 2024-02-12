@@ -227,7 +227,6 @@ void FrontendUI::showCurrentStatsDialog() {
         if (ImGui::CollapsingHeader("General statistics")) {
             ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate,
                         ImGui::GetIO().Framerate);
-//            if(getCurrentAreaName) {
 
             ImGui::Text("Uniform data for GPU: %.3f MB", m_api->hDevice->getUploadSize() / (1024.0f * 1024.0f));
 
@@ -253,6 +252,7 @@ void FrontendUI::showCurrentStatsDialog() {
                     ImGui::Text("Current area id: %d", mapPlan->areaId);
                     ImGui::Text("Current parent area id: %d", mapPlan->parentAreaId);
                     ImGui::Text("Current adt area id: %d", mapPlan->adtAreadId);
+                    ImGui::Text("Current wmo area name: %s", mapPlan->wmoAreaName.c_str());
                     ImGui::Text("Current area name: %s", mapPlan->areaName.c_str());
                     ImGui::Separator();
 
