@@ -204,7 +204,7 @@ std::set<std::string> get_supported_extensions() {
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
@@ -631,7 +631,7 @@ void GDeviceVLK::createSwapChainRenderPass(VkFormat swapChainImageFormat) {
                                                   std::vector({swapChainImageFormat}),
                                                   findDepthFormat(),
                                                   VK_SAMPLE_COUNT_1_BIT,
-                                                  false, true);
+                                                  false, true, true, true);
 }
 
 void GDeviceVLK::createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures, VkExtent2D &extent) {
@@ -641,6 +641,7 @@ void GDeviceVLK::createFramebuffers(std::vector<HGTextureVLK> &swapChainTextures
         swapChainFramebuffers[i] = std::make_shared<GFrameBufferVLK>(
             *this,
             swapChainTextures[i],
+            nullptr,
             extent.width,
             extent.height,
             swapchainRenderPass
@@ -1110,8 +1111,7 @@ RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBu
                                         swapChainFramebuffers[imageIndex],
                                         {0,0},
                                         {swapChainExtent.width, swapChainExtent.height},
-                                        {0.117647, 0.207843, 0.392157},
-                                        0.0f
+                                        {0.117647, 0.207843, 0.392157}
     );
 }
 
@@ -1385,7 +1385,9 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     ITextureFormat depthAttachment,
     VkSampleCountFlagBits sampleCountFlagBits,
     bool invertZ,
-    bool isSwapChainPass
+    bool isSwapChainPass,
+    bool clearColor,
+    bool clearDepth
 ) {
     for (auto &renderPassAvalability : m_createdRenderPasses) {
         if (renderPassAvalability.attachments.size() == textureAttachments.size() &&
@@ -1393,7 +1395,10 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
             renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
             renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
             renderPassAvalability.isSwapChainPass == isSwapChainPass &&
-            renderPassAvalability.invertZ == invertZ)
+            renderPassAvalability.invertZ == invertZ &&
+            renderPassAvalability.clearColor == clearColor &&
+            renderPassAvalability.clearDepth == clearDepth
+            )
         {
             //Check frame definition
             bool notEqual = false;
@@ -1416,7 +1421,9 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
         depthAttachment,
         sampleCountFlagBits,
         invertZ,
-        false
+        false,
+        clearColor,
+        clearDepth
     );
 
     RenderPassAvalabilityStruct avalabilityStruct;
@@ -1425,6 +1432,8 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     avalabilityStruct.renderPass = renderPass;
     avalabilityStruct.sampleCountFlagBits = sampleCountFlagBits;
     avalabilityStruct.isSwapChainPass = isSwapChainPass;
+    avalabilityStruct.clearColor = clearColor;
+    avalabilityStruct.clearDepth = clearDepth;
 
     m_createdRenderPasses.push_back(avalabilityStruct);
 

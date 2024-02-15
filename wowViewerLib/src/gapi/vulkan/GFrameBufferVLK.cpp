@@ -21,8 +21,12 @@ void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &
                 textureFormat = VK_FORMAT_R8G8B8A8_UNORM;
                 break;
 
+            case ITextureFormat::itInt:
+                textureFormat = VK_FORMAT_R32_UINT;
+                break;
+
             case ITextureFormat::itRGBAFloat32:
-                textureFormat = VK_FORMAT_R16G16B16_SFLOAT;
+                textureFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
                 break;
         }
 
@@ -46,6 +50,7 @@ inline void GFrameBufferVLK::initSamplableTextures() {
 //Support for swapchain framebuffer
 GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  const HGTexture &colorImage,
+                                 const HGTexture &depthBuffer,
                                  int width, int height,
                                  const std::shared_ptr<GRenderPassVLK> &renderPass)
                                  : mdevice(dynamic_cast<GDeviceVLK &>(device)),
@@ -54,6 +59,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
 
     initSampler(mdevice);
 
+    if (!depthBuffer)
     {
         // Find a suitable depth format
         VkFormat fbDepthFormat = mdevice.findDepthFormat();
@@ -80,6 +86,8 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
 //                  << " alignment. "
 //                  << " Size allocated by VMA " << std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->imageAllocationInfo.size
 //                  << std::endl;
+    } else {
+        m_depthTexture = depthBuffer;
     }
 
     std::vector<VkImageView> attachments = {
@@ -110,7 +118,9 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  bool invertZ,
                                  int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)),
                                                           m_height(height), m_width(width),
-                                                          m_multiSampleCnt(multiSampleCnt){
+                                                          m_multiSampleCnt(multiSampleCnt),
+                                                          m_textureAttachments(textureAttachments),
+                                                          m_depthAttachment(depthAttachment){
 
     initSampler(mdevice);
 
@@ -187,7 +197,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
         attachments.push_back(h_depthTexture->texture.view);
     }
 
-    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, sampleCountToVkSampleCountFlagBits(multiSampleCnt), invertZ, false);
+    m_renderPass = mdevice.getRenderPass(textureAttachments, depthAttachment, sampleCountToVkSampleCountFlagBits(multiSampleCnt), invertZ, false, true, true);
 
     VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
     fbufCreateInfo.pNext = nullptr;
@@ -210,6 +220,55 @@ GFrameBufferVLK::~GFrameBufferVLK() {
     mdevice.addDeallocationRecord([l_device, l_frameBuffer]() -> void {
         vkDestroyFramebuffer(l_device->getVkDevice(), l_frameBuffer, nullptr);
     });
+}
+
+GFrameBufferVLK::GFrameBufferVLK(const GFrameBufferVLK *toCopy,
+                                 const std::vector<uint8_t> &attachmentToCopy,
+                                 const std::shared_ptr<GRenderPassVLK> &renderPass) : mdevice(toCopy->mdevice), m_renderPass(renderPass){
+    m_multiSampleCnt = toCopy->m_multiSampleCnt;
+    m_height = toCopy->m_height;
+    m_width = toCopy->m_width;
+
+
+
+    std::vector<VkImageView> attachments;
+    int j = 0;
+    for (int i = 0; i < toCopy->m_attachmentFormats.size(); i++) {
+        if (attachmentToCopy[j] != i) continue;
+        j++;
+
+        uint32_t attIndex = (m_multiSampleCnt > 0) ?
+            2*i : i;
+
+        m_attachmentFormats.push_back(toCopy->m_attachmentFormats[i]);
+        m_textureAttachments.push_back(toCopy->m_textureAttachments[i]);
+
+        attachments.push_back(std::dynamic_pointer_cast<GTextureVLK>(toCopy->m_attachmentTextures[attIndex])->texture.view);
+        m_attachmentTexturesSampled.push_back(toCopy->m_attachmentTexturesSampled[attIndex]);
+        if (m_multiSampleCnt > 0) {
+            attachments.push_back(std::dynamic_pointer_cast<GTextureVLK>(toCopy->m_attachmentTextures[attIndex+1])->texture.view);
+            m_attachmentTexturesSampled.push_back(toCopy->m_attachmentTexturesSampled[attIndex + 1]);
+        }
+    }
+    m_depthAttachment = toCopy->m_depthAttachment;
+    m_depthTexture = toCopy->m_depthTexture;
+    if (m_depthTexture) {
+        attachments.push_back(
+            std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.view);
+    }
+
+
+    VkFramebufferCreateInfo fbufCreateInfo = {VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO};
+    fbufCreateInfo.pNext = nullptr;
+    fbufCreateInfo.flags = 0;
+    fbufCreateInfo.renderPass = m_renderPass->getRenderPass();
+    fbufCreateInfo.attachmentCount = attachments.size();
+    fbufCreateInfo.pAttachments = attachments.data();
+    fbufCreateInfo.width = m_width;
+    fbufCreateInfo.height = m_height;
+    fbufCreateInfo.layers = 1;
+
+    ERR_GUARD_VULKAN(vkCreateFramebuffer(mdevice.getVkDevice(), &fbufCreateInfo, nullptr, &m_frameBuffer));
 }
 
 void GFrameBufferVLK::readRGBAPixels(int x, int y, int width, int height, void *outputdata) {

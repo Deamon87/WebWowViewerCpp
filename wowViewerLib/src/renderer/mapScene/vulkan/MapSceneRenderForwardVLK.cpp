@@ -93,7 +93,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itDepth32,
 //                                          VK_SAMPLE_COUNT_1_BIT,
                                           sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
-                                          true, false);
+                                          true, false, true, true);
 
     defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, false);
 

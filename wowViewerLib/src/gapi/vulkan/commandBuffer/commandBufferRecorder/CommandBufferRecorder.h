@@ -48,7 +48,7 @@ public:
         const std::shared_ptr<GFrameBufferVLK> &frameBuffer,
         const std::array<int32_t, 2> &areaOffset,
         const std::array<uint32_t, 2> &areaSize,
-        const std::array<float,3> &colorClearColor, float depthClear);
+        const std::array<float,3> &colorClearColor);
 
     void bindMaterial(const std::shared_ptr<ISimpleMaterialVLK> &material);
     void bindVertexBindings(const std::shared_ptr<IVertexBufferBindings> &vertexBufferBindings);

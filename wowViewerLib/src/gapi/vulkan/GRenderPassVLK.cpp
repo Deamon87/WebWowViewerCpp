@@ -13,7 +13,9 @@ GRenderPassVLK::GRenderPassVLK(IDevice &device,
                                ITextureFormat depthAttachmentFormat,
                                VkSampleCountFlagBits sampleCountBit,
                                bool invertZ,
-                               bool isSwapChainPass) : m_invertZ(invertZ) {
+                               bool isSwapChainPass,
+                               bool clearColor,
+                               bool clearDepth) : m_invertZ(invertZ) {
 
     auto &deviceVlk = dynamic_cast<GDeviceVLK &>(device);
 
@@ -29,19 +31,26 @@ GRenderPassVLK::GRenderPassVLK(IDevice &device,
                      sampleCountBit, isSwapChainPass,
                      deviceVlk.getVkDevice(),
                      attachmentFormats,
-                     availableDepth);
+                     availableDepth,
+                     clearColor,
+                     clearDepth);
 }
 GRenderPassVLK::GRenderPassVLK(VkDevice vkDevice,
                                const std::vector<VkFormat> &textureAttachments,
                                VkFormat depthAttachment,
                                VkSampleCountFlagBits sampleCountBit,
                                bool invertZ,
-                               bool isSwapChainPass) : m_invertZ(invertZ) {
+                               bool isSwapChainPass,
+                               bool clearColor,
+                               bool clearDepth) : m_invertZ(invertZ) {
+
     createRenderPass(ITextureFormat::itDepth32,
                      sampleCountBit, isSwapChainPass,
                      vkDevice,
                      textureAttachments,
-                     depthAttachment);
+                     depthAttachment,
+                     clearColor,
+                     clearDepth);
 }
 
 
@@ -49,7 +58,9 @@ void GRenderPassVLK::createRenderPass(const ITextureFormat &depthAttachmentForma
                                       const VkSampleCountFlagBits &sampleCountBit, bool isSwapChainPass,
                                       VkDevice vkDevice,
                                       const std::vector<VkFormat> &attachmentFormats,
-                                      const VkFormat &availableDepth) {
+                                      const VkFormat &availableDepth,
+                                      bool clearColor,
+                                      bool clearDepth) {
 
     m_sampleCountBit = sampleCountBit;
 
@@ -60,15 +71,16 @@ void GRenderPassVLK::createRenderPass(const ITextureFormat &depthAttachmentForma
     std::vector<VkAttachmentReference> colorResolveReferences;
 
     int attachmentIndex = 0;
+    this->colorAttachmentCount = attachmentFormats.size();
     for (int i = 0; i < attachmentFormats.size(); i++) {
         VkAttachmentDescription colorAttachment = {};
         colorAttachment.format = attachmentFormats[i];
         colorAttachment.samples = sampleCountBit;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        colorAttachment.loadOp = clearColor ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         colorAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        colorAttachment.initialLayout = clearColor ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         colorAttachment.finalLayout = isSwapChainPass ? VK_IMAGE_LAYOUT_PRESENT_SRC_KHR : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
         attachments.push_back(colorAttachment);
@@ -116,11 +128,11 @@ void GRenderPassVLK::createRenderPass(const ITextureFormat &depthAttachmentForma
         VkAttachmentDescription depthAttachment = {};
         depthAttachment.format = availableDepth;
         depthAttachment.samples = sampleCountBit;
-        depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+        depthAttachment.loadOp = clearDepth ? VK_ATTACHMENT_LOAD_OP_CLEAR : VK_ATTACHMENT_LOAD_OP_LOAD;
+        depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
         depthAttachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
         depthAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depthAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+        depthAttachment.initialLayout = clearDepth ? VK_IMAGE_LAYOUT_UNDEFINED : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         depthAttachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         attachments.push_back(depthAttachment);
@@ -188,15 +200,15 @@ void GRenderPassVLK::createRenderPass(const ITextureFormat &depthAttachmentForma
     }
 }
 
-VkSampleCountFlagBits GRenderPassVLK::getSampleCountBit() {
+VkSampleCountFlagBits GRenderPassVLK::getSampleCountBit() const {
     return m_sampleCountBit;
 }
 
-VkRenderPass GRenderPassVLK::getRenderPass() {
+VkRenderPass GRenderPassVLK::getRenderPass() const {
     return renderPass;
 }
 
-std::vector<VkClearValue> GRenderPassVLK::produceClearColorVec(std::array<float, 3> colorClearColor, float depthClear) {
+std::vector<VkClearValue> GRenderPassVLK::produceClearColorVec(std::array<float, 3> colorClearColor) {
     std::vector<VkClearValue> result;
     for(int i = 0; i < attachmentTypes.size(); i++) {
         VkClearValue clearValue;
@@ -211,4 +223,8 @@ std::vector<VkClearValue> GRenderPassVLK::produceClearColorVec(std::array<float,
     }
 
     return result;
+}
+
+uint8_t GRenderPassVLK::getColorAttachmentsCount() const {
+    return colorAttachmentCount;
 }

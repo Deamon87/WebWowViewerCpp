@@ -72,7 +72,9 @@ float fmod1(float x, float y) {
     return x - (y * trunc(x/y));
 }
 
-vec2 transformADTUV(in vec2 uv, in int layer, in float sceneTime, in ivec4 animation_rotationPerLayer, in ivec4 animation_speedPerLayer, in vec4 scaleFactorPerLayer) {
+vec2 transformADTUV(in vec2 uv, in int layer, in float sceneTime, in ivec4 animation_rotationPerLayer,
+                    in ivec4 animation_speedPerLayer, in vec4 scaleFactorPerLayer)
+{
     vec2 translate = vec2(0.0);
     int animation_rotation = animation_rotationPerLayer[layer];
     if (animation_rotation >= 0 && animation_rotation < 8) {

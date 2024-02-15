@@ -18,26 +18,33 @@ public:
                    ITextureFormat depthAttachment,
                    VkSampleCountFlagBits sampleCountBit,
                    bool invertZ,
-                   bool isSwapChainPass);
+                   bool isSwapChainPass,
+                   bool clearColor,
+                   bool clearDepth);
 
     GRenderPassVLK(VkDevice vkDevice,
                    const std::vector<VkFormat> &textureAttachments,
                    VkFormat depthAttachment,
                    VkSampleCountFlagBits sampleCountBit,
                    bool invertZ,
-                   bool isSwapChainPass);
+                   bool isSwapChainPass,
+                   bool clearColor,
+                   bool clearDepth);
 
-    VkSampleCountFlagBits getSampleCountBit();
-    VkRenderPass getRenderPass();
+    VkSampleCountFlagBits getSampleCountBit() const;
+    uint8_t getColorAttachmentsCount() const;
+    VkRenderPass getRenderPass() const;
 
-    std::vector<VkClearValue> produceClearColorVec(std::array<float,3> colorClearColor, float depthClear);
-    bool getInvertZ() {
+    std::vector<VkClearValue> produceClearColorVec(std::array<float,3> colorClearColor);
+    bool getInvertZ() const {
         return m_invertZ;
     }
 
 private:
     VkSampleCountFlagBits m_sampleCountBit;
     VkRenderPass renderPass;
+
+    uint32_t colorAttachmentCount = 0;
 
     bool m_invertZ = false;
 
@@ -54,7 +61,9 @@ private:
                      const VkSampleCountFlagBits &sampleCountBit, bool isSwapChainPass,
                      VkDevice vkDevice,
                      const std::vector<VkFormat> &attachmentFormats,
-                     const VkFormat &availableDepth);
+                     const VkFormat &availableDepth,
+                     bool clearColor,
+                     bool clearDepth);
 };
 
 

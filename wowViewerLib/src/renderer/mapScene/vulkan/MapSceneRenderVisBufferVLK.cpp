@@ -16,6 +16,7 @@
 #include "../../frame/FrameProfile.h"
 #include "view/RenderViewForwardVLK.h"
 #include "../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
+#include "view/RenderViewDeferredVLK.h"
 #include <future>
 
 static const ShaderConfig forwardShaderConfig = {
@@ -193,14 +194,12 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
 
-    m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itDepth32,
-//                                          VK_SAMPLE_COUNT_1_BIT,
-                                           sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
-                                           true, false);
+    defaultView = std::make_shared<RenderViewDeferredVLK>(m_device, uboBuffer, m_drawQuadVao, false);
+
+    m_opaqueRenderPass = defaultView->getOpaqueRenderPass();
+    m_nonOpaquerenderPass = defaultView->getNonOpaqueRenderPass();
 
     glowPass = std::make_unique<FFXGlowPassVLK>(hDevice, uboBuffer, m_drawQuadVao);
-
-    defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, false);
 
     {
         //Create SceneWide descriptor
@@ -220,6 +219,14 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     createWaterGlobalMaterialData();
 }
 
+std::shared_ptr<GRenderPassVLK> MapSceneRenderVisBufferVLK::chooseRenderPass(const PipelineTemplate &pipelineTemplate) {
+    if (pipelineTemplate.blendMode != EGxBlendEnum::GxBlend_Opaque && pipelineTemplate.blendMode != EGxBlendEnum::GxBlend_AlphaKey) {
+        return m_nonOpaquerenderPass;
+    } else {
+        return m_opaqueRenderPass;
+    }
+}
+
 void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
     adtLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
     adtHeightLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
@@ -235,7 +242,7 @@ void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
         pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
         g_adtMaterial = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, adtVisShaderConfig)
-            .createPipeline(m_emptyADTVAO, m_renderPass, pipelineTemplate)
+            .createPipeline(m_emptyADTVAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
             .bindDescriptorSet(0, sceneWideDS)
             .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
                 ds->beginUpdate()
@@ -265,7 +272,7 @@ void MapSceneRenderVisBufferVLK::createWaterGlobalMaterialData() {
 
     //Create global water descriptor for bindless textures
     g_waterMaterial = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterVisShaderConfig)
-        .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyWaterVAO, m_nonOpaquerenderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [this](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -291,7 +298,7 @@ void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {
 
     //Create global wmo descriptor for bindless textures
     g_wmoMaterial = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
-        .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyWMOVAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -320,7 +327,7 @@ void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {
 
     //Create global m2 descriptor for bindless textures
     g_m2Material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
-        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyM2VAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -364,10 +371,13 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMater
         return i->second;
     }
 
+    bool isOpaq = pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque ||
+                  pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_AlphaKey;
+
     auto staticMaterial =
-        MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2VisShaderConfig)
+        MaterialBuilderVLK::fromShader(m_device, {"m2Shader", isOpaq ? "m2Shader" : "m2Shader_nonopaq"}, m2VisShaderConfig)
             .setMaterialId(generateUniqueM2MatId())
-            .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+            .createPipeline(m_emptyM2VAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
             .bindDescriptorSet(0, sceneWideDS)
             .bindDescriptorSet(1, m2BufferOneDS)
             .bindDescriptorSet(2, m2TextureDS)
@@ -388,7 +398,7 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getWMOStaticMate
     auto staticMaterial =
         MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, wmoVisShaderConfig)
             .setMaterialId(generateUniqueWMOMatId())
-            .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
+            .createPipeline(m_emptyWMOVAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
             .bindDescriptorSet(0, sceneWideDS)
             .bindDescriptorSet(1, wmoBufferOneDS)
             .bindDescriptorSet(2, wmoTexturesDS)
@@ -660,7 +670,7 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderVisBufferVLK::createM2Waterf
     auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"},
                                                    m2WaterfallVisShaderConfig)
         .overridePipelineLayout({{1, m2BufferOneDS}})
-        .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyM2VAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .bindDescriptorSet(1, m2BufferOneDS)
         .bindDescriptorSet(2, m2WaterfallBufferDS)
@@ -708,8 +718,11 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderVisBufferVLK::createM2Particl
     auto &l_sceneWideChunk = sceneWideChunk;
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Particle::meshParticleWideBlockPS>>(uboBuffer); ;
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"}, forwardShaderConfig)
-        .createPipeline(m_emptyM2ParticleVAO, m_renderPass, pipelineTemplate)
+    bool isOpaq = pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque ||
+                  pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_AlphaKey;
+
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", isOpaq ? "m2ParticleShader" : "m2ParticleShader_nonopaq"}, visShaderConfig)
+        .createPipeline(m_emptyM2ParticleVAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -736,7 +749,7 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderVisBufferVLK::createM2RibbonMat
     auto &l_m2ModelData = m2ModelData;
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, visShaderConfig)
-        .createPipeline(m_emptyM2RibbonVAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyM2RibbonVAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&l_sceneWideChunk, &l_fragmentData, &l_m2ModelData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -818,7 +831,7 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderVisBufferVLK::createWaterMaterial(
 
     auto &l_sceneWideChunk = sceneWideChunk;
     auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterVisShaderConfig)
-        .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyWaterVAO, m_nonOpaquerenderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .bindDescriptorSet(1, waterDataDS)
         .bindDescriptorSet(2, waterTexturesDS)
@@ -862,7 +875,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderVisBufferVLK::createSkyMeshMater
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"}, forwardShaderConfig)
-        .createPipeline(m_emptySkyVAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptySkyVAO, m_nonOpaquerenderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -880,7 +893,7 @@ std::shared_ptr<IPortalMaterial> MapSceneRenderVisBufferVLK::createPortalMateria
     auto materialPS = std::make_shared<CBufferChunkVLK<DrawPortalShader::meshWideBlockPS>>(uboBuffer);
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"drawPortalShader", "drawPortalShader"}, forwardShaderConfig)
-        .createPipeline(m_emptyPortalVAO, m_renderPass, pipelineTemplate)
+        .createPipeline(m_emptyPortalVAO, chooseRenderPass(pipelineTemplate), pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&materialPS, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -1203,7 +1216,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 
             mapScene->doPostLoad(l_this, framePlan);
             for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
-                auto updatingTarget = std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
+                auto updatingTarget = std::dynamic_pointer_cast<RenderViewDeferredVLK>(renderTarget.target);
                 if (!updatingTarget) updatingTarget = l_this->defaultView;
 
                 updatingTarget->update(
@@ -1301,18 +1314,24 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 
                 auto currentView = renderTarget.target == nullptr ?
                                    l_this->defaultView :
-                                   std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
+                                   std::dynamic_pointer_cast<RenderViewDeferredVLK>(renderTarget.target);
                 {
-                    auto passHelper = currentView->beginPass(frameBufCmd, l_this->m_renderPass,
-                                                             false,
-                                                             frameInputParams->frameParameters->clearColor);
-
-
+                    //Opaque part
                     {
-                        ZoneScopedN("submit opaque");
-                        VkZone(frameBufCmd, "render opaque")
-                        l_opaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_usual);
+                        auto passHelper = currentView->beginOpaquePass(frameBufCmd, false,
+                                                                       frameInputParams->frameParameters->clearColor);
+
+
+                        {
+                            ZoneScopedN("submit opaque");
+                            VkZone(frameBufCmd, "render opaque")
+                            l_opaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_usual);
+                        }
                     }
+                    currentView->doOpaqueNonOpaqueBarrier(frameBufCmd);
+
+                    auto passHelper = currentView->beginNonOpaquePass(frameBufCmd, false,
+                                                                   frameInputParams->frameParameters->clearColor);
                     {
                         //Sky opaque
                         if (renderSky && skyMesh)
@@ -1469,5 +1488,5 @@ HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTe
 }
 
 std::shared_ptr<IRenderView> MapSceneRenderVisBufferVLK::createRenderView(bool createOutput) {
-    return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
+    return std::make_shared<RenderViewDeferredVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
 }

@@ -9,7 +9,7 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
 
-AnimationManager::AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2) {
+AnimationManager::AnimationManager(const HApiContainer &api, const std::shared_ptr<CBoneMasterData> &boneMasterData, bool hasExp2) {
     this->m_api = api;
     this->boneMasterData = boneMasterData;
 
@@ -39,6 +39,8 @@ AnimationManager::AnimationManager(HApiContainer api, std::shared_ptr<CBoneMaste
     if (!this->setAnimationId(0, false)) { // try Stand(0) animation
         this->setAnimationId(147, false); // otherwise try Closed(147) animation
     }
+
+    this->m_needToUpdateBB = true;
 }
 
 void AnimationManager::initBonesIsCalc() {
@@ -158,6 +160,7 @@ bool AnimationManager::setAnimationId(int animationId, bool reset) {
         this->animationInfo.nextSubAnimation.mainVariationRecord = nullptr;
 
         this->firstCalc = true;
+        this->m_needToUpdateBB = true;
 
         deferredLoadingStarted = false;
     }
@@ -737,7 +740,6 @@ void AnimationManager::update(
     std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
     std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters) {
 
-
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
     auto &bones = *boneMasterData->getSkelData()->m_m2CompBones;
 
@@ -863,7 +865,7 @@ void AnimationManager::update(
 
             this->animationInfo.currentAnimation = this->animationInfo.nextSubAnimation;
             //Update bounding box
-
+            this->m_needToUpdateBB = true;
 
             this->firstCalc = true;
 

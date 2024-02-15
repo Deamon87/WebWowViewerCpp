@@ -32,7 +32,10 @@ layout(location=9) in flat int vMeshIndex;
 
 layout(set=2, binding=0) uniform sampler2D s_Textures[];
 
-layout (location = 0) out vec4 outputColor;
+layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outViewPos;
+layout(location = 3) out uint outMatProps;
 
 void main() {
     WMOPerMeshData perMeshData = perMeshDatas[nonuniformEXT(vMeshIndex)];
@@ -96,5 +99,8 @@ void main() {
         vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
     finalColor.a = 1.0;
 
-    outputColor = finalColor;
+    outColor = finalColor;
+    outNormal = vec4(normalize(vNormal), 0.0);
+    outViewPos = vec4(vPosition.xyz, 0.0);
+    outMatProps = 0;
 }

@@ -17,7 +17,7 @@ layout(location=3) in flat int meshInd;
 #include "../common/commonUboSceneData.glsl"
 #include "../common/commonWaterIndirect.glsl"
 
-layout(location=0) out vec4 outputColor;
+layout(location = 0) out vec4 outColor;
 
 const InteriorLightParam intLight = {
     vec4(0,0,0,0),
@@ -137,5 +137,5 @@ void main() {
     //BlendMode is always GxBlend_Alpha
     finalColor.rgb = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 2).rgb;
 
-    outputColor = vec4(finalColor.rgb, 0.7);
+    outColor = vec4(finalColor.rgb, 0.7);
 }

@@ -27,6 +27,9 @@ layout (set = 4, binding = 0) uniform sampler2D s_LayerHeightTextures[];
 #include "../common/commonUboSceneData.glsl"
 
 layout(location = 0) out vec4 outColor;
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outViewPos;
+layout(location = 3) out uint outMatProps;
 
 const InteriorLightParam intLight = {
     vec4(0,0,0,0),
@@ -119,5 +122,9 @@ void main() {
         vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
 
     finalColor.a = 1.0;
+
     outColor = finalColor;
+    outNormal = vec4(normalize(vNormal), 0);
+    outViewPos = vec4(vPosition, 0);
+    outMatProps = 0;
 }

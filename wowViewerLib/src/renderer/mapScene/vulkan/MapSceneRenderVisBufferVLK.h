@@ -15,6 +15,7 @@
 #include "view/RenderViewForwardVLK.h"
 #include "../../../gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h"
 #include "../../../engine/objects/scenes/EntityActorsFactory.h"
+#include "view/RenderViewDeferredVLK.h"
 
 class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
     friend class COpaqueMeshCollectorBindlessVLK;
@@ -227,7 +228,8 @@ private:
     std::shared_ptr<GDescriptorSet> waterTexturesDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> waterTextureHolder = nullptr;
 
-    std::shared_ptr<GRenderPassVLK> m_renderPass;
+    std::shared_ptr<GRenderPassVLK> m_opaqueRenderPass;
+    std::shared_ptr<GRenderPassVLK> m_nonOpaquerenderPass;
 
     std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
 
@@ -240,7 +242,9 @@ private:
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
-    std::shared_ptr<RenderViewForwardVLK> defaultView;
+
+    using RendererViewClass = RenderViewDeferredVLK;
+    std::shared_ptr<RenderViewDeferredVLK> defaultView;
 
     MeshCount lastMeshCount;
 
@@ -281,10 +285,12 @@ public:
     const std::shared_ptr<ISimpleMaterialVLK> &getGlobalWMOMaterial() const {return g_wmoMaterial;};
     const std::shared_ptr<ISimpleMaterialVLK> &getGlobalWaterMaterial() const {return g_waterMaterial;};
 
-    const HGVertexBufferBindings getDefaultADTVao() {return m_emptyADTVAO;};
-    const HGVertexBufferBindings getDefaultM2Vao() {return m_emptyM2VAO;};
-    const HGVertexBufferBindings getDefaultWMOVao() {return m_emptyWMOVAO;};
-    const HGVertexBufferBindings getDefaultWaterVao() {return m_emptyWaterVAO;};
+    HGVertexBufferBindings getDefaultADTVao() const   {return m_emptyADTVAO;};
+    HGVertexBufferBindings getDefaultM2Vao() const    {return m_emptyM2VAO;};
+    HGVertexBufferBindings getDefaultWMOVao() const   {return m_emptyWMOVAO;};
+    HGVertexBufferBindings getDefaultWaterVao() const {return m_emptyWaterVAO;};
+
+    std::shared_ptr<GRenderPassVLK> chooseRenderPass(const PipelineTemplate &pipelineTemplate);
 
 };
 

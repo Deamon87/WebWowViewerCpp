@@ -23,6 +23,8 @@ private:
 
     bool firstCalc = true;
     bool deferredLoadingStarted = false;
+    bool m_needToUpdateBB = false;
+
 
     bool isMirrored = false;
     bool m_hasExp2 = false;
@@ -43,11 +45,8 @@ private:
     void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
 
     void calcAnimRepetition(AnimationStruct &animationStruct);
-
-
-
 public:
-    AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2);
+    AnimationManager(const HApiContainer &api, const std::shared_ptr<CBoneMasterData> &boneMasterData, bool hasExp2);
 
     void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
@@ -80,8 +79,17 @@ public:
 
     void calcTransparencies(std::vector<float> &transparencies);
 
-    bool getIsFirstCalc() {
-        return firstCalc;
+    bool isNeedUpdateBB() {
+        return m_needToUpdateBB;
+    }
+
+    M2Bounds getAnimatinonBB() {
+        m_needToUpdateBB = false;
+
+        if (this->animationInfo.currentAnimation.animationRecord != nullptr)
+            return this->animationInfo.currentAnimation.animationRecord->bounds;
+
+        return {};
     }
 
     void calcLights(std::vector<M2LightResult> &lights,

@@ -585,6 +585,8 @@ if (LINK_VULKAN)
             src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h
             src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.cpp
             src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.h
+            src/renderer/mapScene/vulkan/view/RenderViewDeferredVLK.cpp
+            src/renderer/mapScene/vulkan/view/RenderViewDeferredVLK.h
             src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.cpp
             src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h
 )

@@ -18,7 +18,13 @@ layout(location=3) in vec3 vNormal;
 layout(location=4) in vec3 vPosition;
 layout(location=5) flat in int meshInd;
 
-layout(location=0) out vec4 outputColor;
+layout(location = 0) out vec4 outColor;
+#ifndef NON_OPAQ_SHADER
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outViewPos;
+layout(location = 3) out uint outMatProps;
+#endif
+
 
 
 
@@ -114,5 +120,10 @@ void main() {
     finalColor = makeFog2(fogData,/*int(scene.extLight.adtSpecMult_fogCount.y),*/ finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 0);
 
 
-    outputColor = finalColor;
+    outColor = finalColor;
+#ifndef NON_OPAQ_SHADER
+    outNormal = vec4(normalize(vNormal), 0);
+    outViewPos = vec4(vPosition, 0);
+    outMatProps = 0;
+#endif
 }

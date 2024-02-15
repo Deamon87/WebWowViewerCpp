@@ -13,9 +13,13 @@
 class GFrameBufferVLK : public IFrameBuffer {
 public:
     GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, bool invertZ, int width, int height);
-    GFrameBufferVLK(IDevice &device, const HGTexture &colorImage,
+    GFrameBufferVLK(IDevice &device,
+                    const HGTexture &colorImage,
+                    const HGTexture &depthBuffer,
                     int width, int height,
                     const std::shared_ptr<GRenderPassVLK> &renderPass);
+
+    GFrameBufferVLK(const GFrameBufferVLK *toCopy, const std::vector<uint8_t> &attachmentToCopy, const std::shared_ptr<GRenderPassVLK> &renderPass);
 
     ~GFrameBufferVLK() override;
 
@@ -46,6 +50,10 @@ private:
 
     //Used only in readRGBAPixels function
     std::vector<VkFormat> m_attachmentFormats;
+
+    //Stored for copying
+    std::vector<ITextureFormat> m_textureAttachments;
+    ITextureFormat m_depthAttachment = ITextureFormat::itNone;
 
     int m_multiSampleCnt;
 

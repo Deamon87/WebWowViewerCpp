@@ -59,7 +59,7 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     const std::shared_ptr<GFrameBufferVLK> &frameBuffer,
     const std::array<int32_t, 2> &areaOffset,
     const std::array<uint32_t, 2> &areaSize,
-    const std::array<float,3> &colorClearColor, float depthClear
+    const std::array<float,3> &colorClearColor
 ) {
     if (m_currentRenderPass != nullptr) {
         throw std::runtime_error("tried to start render pass with another pass being active already");
@@ -86,7 +86,7 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     auto renderPass = RenderPassHelper(
         *this,
         isAboutToExecSecondaryCMD,
-        renderPassVlk, frameBuffer, areaOffset, fixedAreasSize, colorClearColor, depthClear
+        renderPassVlk, frameBuffer, areaOffset, fixedAreasSize, colorClearColor
     );
     setDefaultScissors();
     return renderPass;

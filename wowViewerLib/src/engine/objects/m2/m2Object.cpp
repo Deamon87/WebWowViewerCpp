@@ -980,6 +980,18 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         this->ribbonEmitters
     );
 
+    if (m_animationManager->isNeedUpdateBB()) {
+        auto bounds = m_animationManager->getAnimatinonBB();
+
+        CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix,
+                                                             mathfu::vec4(mathfu::vec3(bounds.extent.min), 1.0f),
+                                                             mathfu::vec4(mathfu::vec3(bounds.extent.max), 1.0f));
+
+        this->aabb = worldAABB;
+
+    }
+
+
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 

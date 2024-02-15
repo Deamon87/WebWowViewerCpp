@@ -48,7 +48,7 @@ void RenderViewForwardVLK::createFrameBuffers() {
 
         m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itNone,
                                                VK_SAMPLE_COUNT_1_BIT,
-                                               invertZ, false);
+                                               invertZ, false, true, true);
 
         for (auto &outputFrameBuffer: m_outputFrameBuffers) {
             outputFrameBuffer = std::make_shared<GFrameBufferVLK>(
@@ -103,8 +103,7 @@ RenderPassHelper RenderViewForwardVLK::beginPass(CmdBufRecorder &frameBufCmd,
                                        m_colorFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
                                        {0,0},
                                        {m_width, m_height},
-                                       vec4ToArr3(clearColor),
-                                       true);
+                                       vec4ToArr3(clearColor));
 }
 
 void RenderViewForwardVLK::doOutputPass(CmdBufRecorder &frameBufCmd) {

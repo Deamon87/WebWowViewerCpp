@@ -25,7 +25,12 @@ layout(std140, set=1, binding=1) uniform meshWideBlockPS {
 
 layout(set=2, binding=0) uniform sampler2D uTexture;
 
-layout(location = 0) out vec4 outputColor;
+layout(location = 0) out vec4 outColor;
+#ifndef NON_OPAQ_SHADER
+layout(location = 1) out vec4 outNormal;
+layout(location = 2) out vec4 outViewPos;
+layout(location = 3) out uint outMatProps;
+#endif
 
 void main() {
     int textureTransformIndex = uPixelShader_BlendMode_TextureTransformIndex.z;
@@ -46,5 +51,10 @@ void main() {
 
     finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShader_BlendMode_TextureTransformIndex.y);
 
-    outputColor = finalColor;
+    outColor = finalColor;
+#ifndef NON_OPAQ_SHADER
+    outNormal = vec4(0,0,0,0);
+    outViewPos = vec4(vPosition, 0);
+    outMatProps = 0;
+#endif
 }

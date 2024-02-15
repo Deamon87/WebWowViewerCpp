@@ -22,7 +22,7 @@ FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &ubo
         m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itNone,
                                               VK_SAMPLE_COUNT_1_BIT,
 //                                          sampleCountToVkSampleCountFlagBits(hDevice->getMaxSamplesCnt()),
-                                              true, false);
+                                              true, false, true, true);
     }
 
     {
@@ -136,8 +136,7 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd) {
                 getTargetFrameBuffer(i, currentFrame),
                 {0,0},
                 {m_width >> 2, m_height >> 2},
-                {0, 0, 0},//todo
-                true
+                {0, 0, 0}//todo
             );
             frameBufCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
             frameBufCmd.setDefaultScissors();
@@ -161,8 +160,7 @@ void FFXGlowPassVLK::doFinalPass(CmdBufRecorder &finalBufCmd, const std::shared_
         frameBuff,
         {0,0},
         {static_cast<unsigned int>(frameBuff->getWidth()), static_cast<unsigned int>(frameBuff->getHeight())},
-        {0, 0, 0},//todo
-        true
+        {0, 0, 0}//todo
     );
 
     doFinalDraw(finalBufCmd);

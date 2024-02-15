@@ -136,7 +136,9 @@ public:
                                                   ITextureFormat depthAttachment,
                                                   VkSampleCountFlagBits sampleCountFlagBits,
                                                   bool invertZ,
-                                                  bool isSwapChainPass);
+                                                  bool isSwapChainPass,
+                                                  bool clearColor,
+                                                  bool clearDepth);
 
     std::shared_ptr<GRenderPassVLK> getSwapChainRenderPass();
 
@@ -382,6 +384,8 @@ protected:
         VkSampleCountFlagBits sampleCountFlagBits;
         bool isSwapChainPass;
         bool invertZ;
+        bool clearColor;
+        bool clearDepth;
     };
 
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
