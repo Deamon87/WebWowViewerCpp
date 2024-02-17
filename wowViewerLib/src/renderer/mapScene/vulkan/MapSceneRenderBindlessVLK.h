@@ -140,6 +140,7 @@ private:
 
     std::unique_ptr<FFXGlowPassVLK> glowPass;
 
+    bool useVisBuffer = false;
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
@@ -247,6 +248,8 @@ private:
     std::shared_ptr<RenderViewDeferredVLK> defaultView;
 
     MeshCount lastMeshCount;
+
+    std::string chooseShadDir(const std::string &shaderName);
 
     void createM2GlobalMaterialData();
     void createWMOGlobalMaterialData();

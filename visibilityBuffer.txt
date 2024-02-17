@@ -4,3 +4,21 @@ What needs to be inside the buffer:
 
 type: m2, WMO, ADT, Liquid, Particle, Ribbon -> can be stored in stencil
 
+2) Be able to choose between forward bindless and visbuffer bindless
+
+M2 forward: vert and frag
+M2 vis: vis vert and frag and frag_alphaCut, CS, m2 Forward vert and frag for transparent
+
+WMO forward: vert and frag
+WMO vis: vis vert and frag and frag_alphaCut, CS, WMO Forward vert and frag for transparent
+
+ADT forward: vert and frag
+ADT vis: vis vert and frag, CS
+
+For visbuffer all calls should come from indirect
+
+Vis buffer format:
+1) gl_DrawId -> indirect buffer (for VertexOffset, IndexOffset, InstanceIndex = meshIndex)
+2) gl_PrimitiveId (usage: vertexIndex = IndexBuffer[(IndexOffset) / 2 + PrimitiveId])
+3) Normal for LightBuffer creation
+

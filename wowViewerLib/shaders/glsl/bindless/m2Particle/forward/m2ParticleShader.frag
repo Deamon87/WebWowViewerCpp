@@ -1,3 +1,7 @@
+#version 450
+#extension GL_GOOGLE_include_directive: require
+#extension GL_EXT_nonuniform_qualifier : require
+
 
 precision highp float;
 precision highp int;
@@ -9,11 +13,9 @@ layout(location = 3) in vec2 vTexcoord1;
 layout(location = 4) in vec2 vTexcoord2;
 layout(location = 5) in float alphaCutoff;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonUboSceneData.glsl"
-
-
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 //Individual meshes
 layout(std140, set=1, binding=0) uniform meshWideBlockPS {
@@ -37,7 +39,7 @@ void main() {
     float colorMult = uAlphaTest_alphaMult_colorMult.z;
 
     if(tex.a < uAlphaTest)
-        discard;
+    discard;
 
     vec4 finalColor = vec4((tex * vColor ).rgb, tex.a*vColor.a );
     int uNonOptPixelShader = uPixelShaderBlendModev.x;

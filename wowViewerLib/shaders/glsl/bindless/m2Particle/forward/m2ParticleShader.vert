@@ -20,10 +20,10 @@ layout(location = 3) out vec2 vTexcoord1;
 layout(location = 4) out vec2 vTexcoord2;
 layout(location = 5) out float vAlphaCutoff;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
 
-#include "../common/commonUboSceneData.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 
 void main() {

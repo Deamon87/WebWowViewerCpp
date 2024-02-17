@@ -5,10 +5,10 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonFunctions.glsl"
-#include "../common/commonWMOMaterial.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonFunctions.glsl"
+#include "../../../common/commonWMOMaterial.glsl"
 
 /* vertex shader code */
 layout (location = 0) in vec3 aPosition;
@@ -21,8 +21,8 @@ layout (location = 6) in vec4 aColor;
 layout (location = 7) in vec4 aColor2;
 layout (location = 8) in vec4 aColorSecond;
 
-#include "../common/commonUboSceneData.glsl"
-#include "../common/commonWMOIndirectDescriptorSet.glsl"
+#include "../../../common/commonUboSceneData.glsl"
+#include "../../../common/commonWMOIndirectDescriptorSet.glsl"
 
 layout(location=0) out vec2 vTexCoord;
 layout(location=1) out vec2 vTexCoord2;

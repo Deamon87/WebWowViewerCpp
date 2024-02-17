@@ -1,9 +1,9 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonM2Material.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonM2Material.glsl"
 
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
@@ -19,10 +19,10 @@ layout(location = 3) out uint outMatProps;
 #endif
 
 
-#include "../common/commonUboSceneData.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 //Whole model
-#include "../common/commonM2IndirectDescriptorSet.glsl"
+#include "../../../common/commonM2IndirectDescriptorSet.glsl"
 
 layout (set = 2, binding = 0) uniform sampler2D s_Textures[];
 

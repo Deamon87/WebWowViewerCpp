@@ -6,10 +6,10 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonFunctions.glsl"
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonUboSceneData.glsl"
+#include "../../common/commonFunctions.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
+#include "../../common/commonUboSceneData.glsl"
 
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
@@ -29,8 +29,8 @@ layout(location = 3) out uint outMatProps;
 
 
 //Whole model
-#include "../common/commonM2IndirectDescriptorSet.glsl"
-#include "../common/commonM2WaterfallDescriptorSet.glsl"
+#include "../../common/commonM2IndirectDescriptorSet.glsl"
+#include "../../common/commonM2WaterfallDescriptorSet.glsl"
 
 const InteriorLightParam intLightWaterfall = {
     vec4(0,0,0,0),

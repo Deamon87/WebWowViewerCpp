@@ -100,15 +100,26 @@ macro(configure_filesVLK rootDir srcCommonDir shaderDirs destDir destDirGL20 des
             set(srcTemplatePath ${srcDir}/${templateFile})
             if(NOT IS_DIRECTORY ${srcTemplatePath})
                 message(STATUS "Configuring file ${templateFile}")
+                file(RELATIVE_PATH srcFileRelative ${srcDir} ${srcTemplatePath})
+
                 get_filename_component(FILE_NAME_WO_EXT ${srcTemplatePath} NAME_WE)
                 get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
+                get_filename_component(SHADER_SUB_DIR ${srcFileRelative} DIRECTORY )
+#                file(RELATIVE_PATH SHADER_SUB_DIR shaderDir ${srcTemplatePath})
+
+#                message(srcFileRelative = ${srcFileRelative})
+#                message(srcTemplatePath = ${srcTemplatePath})
+#                message(templateFile = ${templateFile})
+#                message(SHADER_SUB_DIR = ${SHADER_SUB_DIR})
                 if (NOT SPIRV_OPT_APP)
-                    set(SPIRV_NonOpt "${destDir}/${shaderDir}/${FILE_NAME}.spv")
+                    set(SPIRV_NonOpt "${destDir}/${shaderDir}/${SHADER_SUB_DIR}${FILE_NAME}.spv")
                 else()
-                    set(SPIRV_NonOpt "${spirvNonOptDir}/${shaderDir}/${FILE_NAME}.spv")
-                    set(SPIRVOpt "${destDir}/${shaderDir}/${FILE_NAME}.spv")
+                    set(SPIRV_NonOpt "${spirvNonOptDir}/${shaderDir}/${SHADER_SUB_DIR}${FILE_NAME}.spv")
+                    set(SPIRVOpt "${destDir}/${shaderDir}/${SHADER_SUB_DIR}${FILE_NAME}.spv")
                 endif()
 
+#                message(SPIRV_NonOpt = ${SPIRV_NonOpt})
+#                message(SPIRVOpt = ${SPIRVOpt})
 
                 add_custom_command(
                         OUTPUT ${SPIRV_NonOpt}
@@ -127,8 +138,8 @@ macro(configure_filesVLK rootDir srcCommonDir shaderDirs destDir destDirGL20 des
                 list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
 
                 #Generate GLSL for ogl33 and ogl20 from spirv
-                set(GLSL20_FILE ${destDirGL20}/${shaderDir}/${FILE_NAME})
-                set(GLSL33_FILE ${destDirGL33}/${shaderDir}/${FILE_NAME})
+                set(GLSL20_FILE ${destDirGL20}/${shaderDir}/${SHADER_SUB_DIR}/${FILE_NAME})
+                set(GLSL33_FILE ${destDirGL33}/${shaderDir}/${SHADER_SUB_DIR}/${FILE_NAME})
 
                 get_filename_component(GLSL20_FILE_FULLPATH "${GLSL20_FILE}"
                         REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")

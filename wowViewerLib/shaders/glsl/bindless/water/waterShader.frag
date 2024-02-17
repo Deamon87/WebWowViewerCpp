@@ -3,8 +3,8 @@
 #extension GL_GOOGLE_include_directive: require
 #extension GL_EXT_nonuniform_qualifier: require
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
 
 precision highp float;
 precision highp int;
@@ -14,8 +14,8 @@ layout(location=1) in vec2 vTextCoords;
 layout(location=2) in vec3 vNormal;
 layout(location=3) in flat int meshInd;
 
-#include "../common/commonUboSceneData.glsl"
-#include "../common/commonWaterIndirect.glsl"
+#include "../../common/commonUboSceneData.glsl"
+#include "../../common/commonWaterIndirect.glsl"
 
 layout(location = 0) out vec4 outColor;
 

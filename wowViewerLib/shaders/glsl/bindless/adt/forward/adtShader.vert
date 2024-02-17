@@ -7,9 +7,9 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonADTMaterial.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonADTMaterial.glsl"
 
 /* vertex shader code */
 layout(location = 0) in vec3 aPos;
@@ -17,8 +17,8 @@ layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
 
-#include "../common/commonUboSceneData.glsl"
-#include "../common/commonAdtIndirectDescriptorSet.glsl"
+#include "../../../common/commonUboSceneData.glsl"
+#include "../../../common/commonAdtIndirectDescriptorSet.glsl"
 
 
 mat3 blizzTranspose(mat4 value) {

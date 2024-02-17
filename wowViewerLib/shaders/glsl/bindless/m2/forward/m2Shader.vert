@@ -7,11 +7,11 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonFunctions.glsl"
-#include "../common/commonM2Material.glsl"
-#include "../common/commonUboSceneData.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonFunctions.glsl"
+#include "../../../common/commonM2Material.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 /* vertex shader code */
 layout(location=0) in vec3 aPosition;
@@ -22,7 +22,7 @@ layout(location=4) in vec2 aTexCoord;
 layout(location=5) in vec2 aTexCoord2;
 
 //Whole model
-#include "../common/commonM2IndirectDescriptorSet.glsl"
+#include "../../../common/commonM2IndirectDescriptorSet.glsl"
 
 //Shader output
 layout(location=0) out vec2 vTexCoord;

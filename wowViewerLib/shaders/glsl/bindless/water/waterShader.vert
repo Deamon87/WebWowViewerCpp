@@ -6,14 +6,14 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonUboSceneData.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
+#include "../../common/commonUboSceneData.glsl"
 
 layout(location=0) in vec4 aPositionTransp;
 layout(location=1) in vec2 aTexCoord;
 
-#include "../common/commonWaterIndirect.glsl"
+#include "../../common/commonWaterIndirect.glsl"
 
 //out vec2 vTexCoord;
 layout(location=0) out vec3 vPosition;

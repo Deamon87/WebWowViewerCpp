@@ -6,11 +6,11 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
 
-#include "../common/commonADTMaterial.glsl"
-#include "../common/commonAdtIndirectDescriptorSet.glsl"
+#include "../../../common/commonADTMaterial.glsl"
+#include "../../../common/commonAdtIndirectDescriptorSet.glsl"
 
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;
@@ -24,7 +24,7 @@ layout (set = 2, binding = 0) uniform sampler2D s_LayerTextures[];
 layout (set = 3, binding = 0) uniform sampler2D s_AlphaTextures[];
 layout (set = 4, binding = 0) uniform sampler2D s_LayerHeightTextures[];
 
-#include "../common/commonUboSceneData.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 layout(location = 0) out vec4 outColor;
 layout(location = 1) out vec4 outNormal;
