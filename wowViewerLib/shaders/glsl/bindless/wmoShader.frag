@@ -79,25 +79,26 @@ void main() {
     intLight.uInteriorDirectColorAndApplyExteriorLight = vec4(0, 0, 0, 1.0f);
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
-    finalColor = vec4(
-        calcLight(
-            matDiffuse,
-            vNormal,
-            wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.x == 1,
-            vColor.w,
-            scene,
-            intLight,
-            vec3(0.0) /*accumLight*/,
-            vColor.rgb,
-            spec, /* specular */
-            emissive
-        ),
-        finalOpacity
-    );
+//    finalColor = vec4(
+//        calcLight(
+//            matDiffuse,
+//            vNormal,
+//            wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.x == 1,
+//            vColor.w,
+//            scene,
+//            intLight,
+//            vec3(0.0) /*accumLight*/,
+//            vColor.rgb,
+//            spec, /* specular */
+//            emissive
+//        ),
+//        finalOpacity
+//    );
+    finalColor.rgb = matDiffuse;
 
-    finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz,
-        vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
-    finalColor.a = 1.0;
+//    finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz,
+//        vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.w);
+//    finalColor.a = 1.0;
 
     outColor = finalColor;
     outNormal = vec4(normalize(vNormal), 0.0);

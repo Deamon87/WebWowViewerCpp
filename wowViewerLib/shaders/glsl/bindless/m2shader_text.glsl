@@ -154,21 +154,23 @@ void main() {
 
     //    specular *= vMeshColorAlpha.rgb;
 
-    finalColor = vec4(
-        calcLight(
-            matDiffuse,
-            l_Normal,
-            meshWide.vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y > 0,
-            modelWide.interiorExteriorBlend.x,
-            scene,
-            modelWide.intLight,
-            accumLight,
-            vec3(0.0),
-            specular,
-            vec3(0.0)
-        ) ,
-        finalOpacity
-    );
+//    finalColor = vec4(
+//        calcLight(
+//            matDiffuse,
+//            l_Normal,
+//            meshWide.vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y > 0,
+//            modelWide.interiorExteriorBlend.x,
+//            scene,
+//            modelWide.intLight,
+//            accumLight,
+//            vec3(0.0),
+//            specular,
+//            vec3(0.0)
+//        ) ,
+//        finalOpacity
+//    );
+
+    finalColor = vec4(matDiffuse, finalOpacity);
 
     // ------------------------------
     // Apply Fog
@@ -183,10 +185,10 @@ void main() {
                 modelWide.interiorExteriorBlend.x
             ).xyz;
 
-        finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/,
-            finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz,
-            meshWide.PixelShader_UnFogged_blendMode.z
-        );
+//        finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/,
+//            finalColor, scene.uViewUpSceneTime.xyz, vPosition_EdgeFade.xyz, sunDir.xyz,
+//            meshWide.PixelShader_UnFogged_blendMode.z
+//        );
     }
 
     //Forward rendering without lights

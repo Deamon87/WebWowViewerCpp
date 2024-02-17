@@ -298,17 +298,16 @@ const std::unordered_map<std::string, std::vector<attributeDefine>> attributesPe
 };
 
 const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = { 
-{ "visBuffer/ribbonShader.frag.spv", 
+{ "bindless/waterfallShader.vert.spv", 
   {
-    ShaderStage::Fragment,
+    ShaderStage::Vertex,
     {
-      {1,1,16},
       {0,0,544},
     },
     {
       {
         {0,0,1},
-        {1,1,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -318,16 +317,110 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,0,4096},
+      {2,1,0},
+      {1,7,0},
+      {2,0,0},
+      {1,6,0},
+      {1,3,0},
+      {1,1,0},
+      {1,2,0},
+      {1,4,0},
+      {1,5,0},
+      {1,8,0},
+      {1,9,0},
     },
     {
-      {2,0, "uTexture"},
+      {3,0, "s_Textures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
+        {0,0,0},
         {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/waterfallShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {2,1,0},
+      {2,0,0},
+      {1,1,0},
+      {1,2,0},
+      {1,3,0},
+      {1,4,0},
+      {1,5,0},
+      {1,6,0},
+      {1,7,0},
+      {1,8,0},
+      {1,9,0},
+    },
+    {
+      {3,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/ribbonShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -337,7 +430,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/m2Shader.vert.spv", 
+{ "bindless/m2Shader.vert.spv", 
   {
     ShaderStage::Vertex,
     {
@@ -382,7 +475,93 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/m2ParticleShader_nonopaq.frag.spv", 
+{ "bindless/waterShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,2,0},
+      {1,1,0},
+      {1,0,0},
+    },
+    {
+      {2,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/m2Shader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,9,0},
+      {1,8,0},
+      {1,7,0},
+      {1,2,0},
+      {1,5,0},
+      {1,4,0},
+      {1,1,0},
+      {1,6,0},
+      {1,3,0},
+    },
+    {
+      {2,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/m2ParticleShader_nonopaq.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -413,78 +592,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
         {0,2,3},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/ribbonShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/m2ParticleShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -525,48 +632,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,0},
         {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/adtShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,3,0},
-      {1,1,0},
-      {1,2,0},
-    },
-    {
-      {2,0, "s_LayerTextures"},
-      {4,0, "s_LayerHeightTextures"},
-      {3,0, "s_AlphaTextures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,1},
-        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -727,6 +792,46 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
+{ "bindless/waterShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,2,0},
+      {1,0,0},
+      {1,1,0},
+    },
+    {
+      {2,0, "s_Textures"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
 { "forwardRendering/ribbonShader.vert.spv", 
   {
     ShaderStage::Vertex,
@@ -763,9 +868,9 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/waterfallShader.vert.spv", 
+{ "bindless/m2Shader_nonopaq.frag.spv", 
   {
-    ShaderStage::Vertex,
+    ShaderStage::Fragment,
     {
       {0,0,544},
     },
@@ -782,27 +887,25 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {2,1,0},
+      {1,9,0},
+      {1,8,0},
       {1,7,0},
-      {2,0,0},
+      {1,2,0},
+      {1,5,0},
+      {1,4,0},
+      {1,1,0},
       {1,6,0},
       {1,3,0},
-      {1,1,0},
-      {1,2,0},
-      {1,4,0},
-      {1,5,0},
-      {1,8,0},
-      {1,9,0},
     },
     {
-      {3,0, "s_Textures"},
+      {2,0, "s_Textures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {0,0,0},
         {0,0,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -919,7 +1022,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/m2ParticleShader.frag.spv", 
+{ "bindless/m2ParticleShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -995,49 +1098,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/wmoShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,6,0},
-      {1,4,0},
-      {1,1,0},
-      {1,2,0},
-      {1,3,0},
-      {1,5,0},
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/waterShader.frag.spv", 
+{ "bindless/wmoShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -1056,9 +1117,12 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,2,0},
-      {1,0,0},
+      {1,6,0},
+      {1,4,0},
+      {1,3,0},
+      {1,5,0},
       {1,1,0},
+      {1,2,0},
     },
     {
       {2,0, "s_Textures"},
@@ -1198,52 +1262,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/m2Shader_nonopaq.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,9,0},
-      {1,8,0},
-      {1,7,0},
-      {1,2,0},
-      {1,5,0},
-      {1,4,0},
-      {1,1,0},
-      {1,6,0},
-      {1,3,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
 { "forwardRendering/drawBBShader.vert.spv", 
   {
     ShaderStage::Vertex,
@@ -1317,7 +1335,7 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
-{ "visBuffer/waterfallShader.frag.spv", 
+{ "bindless/adtShader.frag.spv", 
   {
     ShaderStage::Fragment,
     {
@@ -1336,28 +1354,22 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {2,1,0},
-      {2,0,0},
+      {1,3,0},
       {1,1,0},
       {1,2,0},
-      {1,3,0},
-      {1,4,0},
-      {1,5,0},
-      {1,6,0},
-      {1,7,0},
-      {1,8,0},
-      {1,9,0},
     },
     {
-      {3,0, "s_Textures"},
+      {2,0, "s_LayerTextures"},
+      {4,0, "s_LayerHeightTextures"},
+      {3,0, "s_AlphaTextures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {0,0,0},
         {0,0,1},
-        {0,0,0},
+        {0,0,1},
+        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1547,6 +1559,45 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     {
       {
         {4,5,2},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/adtShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,3,0},
+      {1,1,0},
+      {1,2,0},
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1800,6 +1851,48 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
     }
   }
 },
+{ "bindless/wmoShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,6,0},
+      {1,4,0},
+      {1,1,0},
+      {1,2,0},
+      {1,3,0},
+      {1,5,0},
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
 { "forwardRendering/imguiShaderDepth.frag.spv", 
   {
     ShaderStage::Fragment,
@@ -1827,135 +1920,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
         {0,0,0},
         {0,0,1},
         {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/wmoShader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,6,0},
-      {1,4,0},
-      {1,3,0},
-      {1,5,0},
-      {1,1,0},
-      {1,2,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/waterShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,2,0},
-      {1,1,0},
-      {1,0,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/m2Shader.frag.spv", 
-  {
-    ShaderStage::Fragment,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,9,0},
-      {1,8,0},
-      {1,7,0},
-      {1,2,0},
-      {1,5,0},
-      {1,4,0},
-      {1,1,0},
-      {1,6,0},
-      {1,3,0},
-    },
-    {
-      {2,0, "s_Textures"},
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
-        {0,0,1},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2064,45 +2028,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {
         {0,0,0},
         {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    }
-  }
-},
-{ "visBuffer/adtShader.vert.spv", 
-  {
-    ShaderStage::Vertex,
-    {
-      {0,0,544},
-    },
-    {
-      {
-        {0,0,1},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-        {0,0,0},
-      }
-    },
-    {
-      {1,3,0},
-      {1,1,0},
-      {1,2,0},
-    },
-    {
-    },
-    {
-      {
-        {0,0,0},
-        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -2227,6 +2152,81 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   }
 },
 { "forwardRendering/m2ParticleShader.vert.spv", 
+  {
+    ShaderStage::Vertex,
+    {
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+    },
+    {
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/ribbonShader.frag.spv", 
+  {
+    ShaderStage::Fragment,
+    {
+      {1,1,16},
+      {0,0,544},
+    },
+    {
+      {
+        {0,0,1},
+        {1,1,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    },
+    {
+      {1,0,4096},
+    },
+    {
+      {2,0, "uTexture"},
+    },
+    {
+      {
+        {0,0,0},
+        {0,0,0},
+        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
+      }
+    }
+  }
+},
+{ "bindless/m2ParticleShader.vert.spv", 
   {
     ShaderStage::Vertex,
     {

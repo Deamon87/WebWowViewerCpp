@@ -2,7 +2,7 @@
 // Created by Deamon on 12/1/2022.
 //
 
-#include "MapSceneRenderVisBufferVLK.h"
+#include "MapSceneRenderBindlessVLK.h"
 #include "../../vulkan/IRenderFunctionVLK.h"
 #include "../../../engine/objects/scenes/map.h"
 #include "../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
@@ -34,7 +34,7 @@ const int adtTexturesBindlessCount = 4096;
 const int waterTexturesBindlessCount = 1024;
 
 static const ShaderConfig m2VisShaderConfig = {
-    "visBuffer",
+    "bindless",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -47,7 +47,7 @@ static const ShaderConfig m2VisShaderConfig = {
         }}
     }};
 static const ShaderConfig visShaderConfig = {
-    "visBuffer",
+    "bindless",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -55,7 +55,7 @@ static const ShaderConfig visShaderConfig = {
     }};
 
 static const ShaderConfig m2WaterfallVisShaderConfig = {
-    "visBuffer",
+    "bindless",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -66,7 +66,7 @@ static const ShaderConfig m2WaterfallVisShaderConfig = {
     }};
 
 static const ShaderConfig wmoVisShaderConfig = {
-    "visBuffer",
+    "bindless",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -77,7 +77,7 @@ static const ShaderConfig wmoVisShaderConfig = {
     }};
 
 static const ShaderConfig adtVisShaderConfig = {
-    "visBuffer",
+    "bindless",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -94,7 +94,7 @@ static const ShaderConfig adtVisShaderConfig = {
     }};
 
 static const ShaderConfig waterVisShaderConfig = {
-    "visBuffer",
+    "bindless",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -104,7 +104,7 @@ static const ShaderConfig waterVisShaderConfig = {
         }}
     }};
 
-MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevice, Config *config) :
+MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
     std::cout << "Create Bindless scene renderer " << std::endl;
 
@@ -219,7 +219,7 @@ MapSceneRenderVisBufferVLK::MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevic
     createWaterGlobalMaterialData();
 }
 
-std::shared_ptr<GRenderPassVLK> MapSceneRenderVisBufferVLK::chooseRenderPass(const PipelineTemplate &pipelineTemplate) {
+std::shared_ptr<GRenderPassVLK> MapSceneRenderBindlessVLK::chooseRenderPass(const PipelineTemplate &pipelineTemplate) {
     if (pipelineTemplate.blendMode != EGxBlendEnum::GxBlend_Opaque && pipelineTemplate.blendMode != EGxBlendEnum::GxBlend_AlphaKey) {
         return m_nonOpaquerenderPass;
     } else {
@@ -227,7 +227,7 @@ std::shared_ptr<GRenderPassVLK> MapSceneRenderVisBufferVLK::chooseRenderPass(con
     }
 }
 
-void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
+void MapSceneRenderBindlessVLK::createADTGlobalMaterialData() {
     adtLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
     adtHeightLayerTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
     adtAlphaTextureHolder = std::make_shared<BindlessTextureHolder>(adtTexturesBindlessCount);
@@ -262,7 +262,7 @@ void MapSceneRenderVisBufferVLK::createADTGlobalMaterialData() {
     }
 }
 
-void MapSceneRenderVisBufferVLK::createWaterGlobalMaterialData() {
+void MapSceneRenderBindlessVLK::createWaterGlobalMaterialData() {
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = true;
@@ -288,7 +288,7 @@ void MapSceneRenderVisBufferVLK::createWaterGlobalMaterialData() {
 
     waterTextureHolder = std::make_shared<BindlessTextureHolder>(waterTexturesBindlessCount);
 }
-void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {
+void MapSceneRenderBindlessVLK::createWMOGlobalMaterialData() {
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = true;
@@ -317,7 +317,7 @@ void MapSceneRenderVisBufferVLK::createWMOGlobalMaterialData() {
     wmoTextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
 }
 
-void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {
+void MapSceneRenderBindlessVLK::createM2GlobalMaterialData() {
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = true;
@@ -348,7 +348,7 @@ void MapSceneRenderVisBufferVLK::createM2GlobalMaterialData() {
         }).toMaterial();
     m2TextureHolder = std::make_shared<BindlessTextureHolder>(m2TexturesBindlessCount);
 }
-void MapSceneRenderVisBufferVLK::createM2WaterfallGlobalMaterialData() {
+void MapSceneRenderBindlessVLK::createM2WaterfallGlobalMaterialData() {
     MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2WaterfallVisShaderConfig)
         .overridePipelineLayout({{1, m2BufferOneDS}})
         .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
@@ -365,7 +365,7 @@ void MapSceneRenderVisBufferVLK::createM2WaterfallGlobalMaterialData() {
     m2WaterfallTextureHolder = std::make_shared<BindlessTextureHolder>(m2WaterfallTexturesBindlessCount);
 }
 
-std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMaterial(const PipelineTemplate &pipelineTemplate) {
+std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderBindlessVLK::getM2StaticMaterial(const PipelineTemplate &pipelineTemplate) {
     auto i = m_m2StaticMaterials.find(pipelineTemplate);
     if (i != m_m2StaticMaterials.end()) {
         return i->second;
@@ -389,7 +389,7 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getM2StaticMater
     return staticMaterial;
 }
 
-std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate) {
+std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderBindlessVLK::getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate) {
     auto i = m_wmoStaticMaterials.find(pipelineTemplate);
     if (i != m_wmoStaticMaterials.end()) {
         return i->second;
@@ -414,7 +414,7 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderVisBufferVLK::getWMOStaticMate
 // Buffer creation
 // ------------------
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createADTVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createADTVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto adtVAO = m_device->createVertexBufferBindings();
     adtVAO->addVertexBufferBinding(vertexBuffer, adtVertexBufferBinding);
@@ -423,7 +423,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createADTVAO(HGVertexBuffer v
     return adtVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto wmoVAO = m_device->createVertexBufferBindings();
 
@@ -432,7 +432,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createWmoVAO(HGVertexBuffer v
 
     return wmoVAO;
 }
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto m2VAO = m_device->createVertexBufferBindings();
     m2VAO->addVertexBufferBinding(vertexBuffer, staticM2Bindings);
@@ -440,7 +440,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createM2VAO(HGVertexBuffer ve
 
     return m2VAO;
 }
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto m2ParticleVAO = m_device->createVertexBufferBindings();
     m2ParticleVAO->addVertexBufferBinding(vertexBuffer, staticM2ParticleBindings);
@@ -449,7 +449,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createM2ParticleVAO(HGVertexB
     return m2ParticleVAO;
 }
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto m2RibbonVAO = m_device->createVertexBufferBindings();
     m2RibbonVAO->addVertexBufferBinding(vertexBuffer, staticM2RibbonBindings);
@@ -458,7 +458,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createM2RibbonVAO(HGVertexBuf
     return m2RibbonVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto waterVAO = m_device->createVertexBufferBindings();
     waterVAO->addVertexBufferBinding(vertexBuffer, std::vector(staticWaterBindings.begin(), staticWaterBindings.end()));
@@ -467,7 +467,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createWaterVAO(HGVertexBuffer
     return waterVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto skyVAO = m_device->createVertexBufferBindings();
     skyVAO->addVertexBufferBinding(vertexBuffer, std::vector(skyConusBinding.begin(), skyConusBinding.end()));
@@ -476,7 +476,7 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createSkyVAO(HGVertexBuffer v
     return skyVAO;
 }
 
-HGVertexBufferBindings MapSceneRenderVisBufferVLK::createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto portalVAO = m_device->createVertexBufferBindings();
     portalVAO->addVertexBufferBinding(vertexBuffer, std::vector(drawPortalBindings.begin(), drawPortalBindings.end()));
@@ -485,63 +485,63 @@ HGVertexBufferBindings MapSceneRenderVisBufferVLK::createPortalVAO(HGVertexBuffe
     return portalVAO;
 };
 
-HGVertexBuffer MapSceneRenderVisBufferVLK::createPortalVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createPortalVertexBuffer(int sizeInBytes) {
     return vboPortalBuffer->getSubBuffer(sizeInBytes);
 };
-HGIndexBuffer  MapSceneRenderVisBufferVLK::createPortalIndexBuffer(int sizeInBytes){
+HGIndexBuffer  MapSceneRenderBindlessVLK::createPortalIndexBuffer(int sizeInBytes){
     return iboBuffer->getSubBuffer(sizeInBytes);
 };
 
-HGVertexBuffer MapSceneRenderVisBufferVLK::createM2VertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createM2VertexBuffer(int sizeInBytes) {
     return vboM2Buffer->getSubBuffer(sizeInBytes);
 }
 
-HGVertexBuffer MapSceneRenderVisBufferVLK::createM2ParticleVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createM2ParticleVertexBuffer(int sizeInBytes) {
     return vboM2ParticleBuffer->getSubBuffer(sizeInBytes);
 }
-HGVertexBuffer MapSceneRenderVisBufferVLK::createM2RibbonVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createM2RibbonVertexBuffer(int sizeInBytes) {
     return vboM2RibbonBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGIndexBuffer MapSceneRenderVisBufferVLK::createM2IndexBuffer(int sizeInBytes) {
+HGIndexBuffer MapSceneRenderBindlessVLK::createM2IndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGVertexBuffer MapSceneRenderVisBufferVLK::createADTVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createADTVertexBuffer(int sizeInBytes) {
     return vboAdtBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGIndexBuffer MapSceneRenderVisBufferVLK::createADTIndexBuffer(int sizeInBytes) {
+HGIndexBuffer MapSceneRenderBindlessVLK::createADTIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGVertexBuffer MapSceneRenderVisBufferVLK::createWMOVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createWMOVertexBuffer(int sizeInBytes) {
     return vboWMOBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGIndexBuffer MapSceneRenderVisBufferVLK::createWMOIndexBuffer(int sizeInBytes) {
+HGIndexBuffer MapSceneRenderBindlessVLK::createWMOIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGVertexBuffer MapSceneRenderVisBufferVLK::createWaterVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createWaterVertexBuffer(int sizeInBytes) {
     return vboWaterBuffer->getSubBuffer(sizeInBytes);
 }
 
-HGIndexBuffer MapSceneRenderVisBufferVLK::createWaterIndexBuffer(int sizeInBytes) {
+HGIndexBuffer MapSceneRenderBindlessVLK::createWaterIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
-HGVertexBuffer MapSceneRenderVisBufferVLK::createSkyVertexBuffer(int sizeInBytes) {
+HGVertexBuffer MapSceneRenderBindlessVLK::createSkyVertexBuffer(int sizeInBytes) {
     return vboSkyBuffer->getSubBuffer(sizeInBytes);;
 };
 
-HGIndexBuffer  MapSceneRenderVisBufferVLK::createSkyIndexBuffer(int sizeInBytes) {
+HGIndexBuffer  MapSceneRenderBindlessVLK::createSkyIndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
 
 
 
 std::shared_ptr<IADTMaterial>
-MapSceneRenderVisBufferVLK::createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) {
+MapSceneRenderBindlessVLK::createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) {
     ZoneScoped;
     auto &l_sceneWideChunk = sceneWideChunk;
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(adtBuffers.adtMeshWideVSPSes);
@@ -600,9 +600,9 @@ MapSceneRenderVisBufferVLK::createAdtMaterial(const PipelineTemplate &pipelineTe
 }
 
 std::shared_ptr<IM2Material>
-MapSceneRenderVisBufferVLK::createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
-                                           const PipelineTemplate &pipelineTemplate,
-                                           const M2MaterialTemplate &m2MaterialTemplate) {
+MapSceneRenderBindlessVLK::createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                            const PipelineTemplate &pipelineTemplate,
+                                            const M2MaterialTemplate &m2MaterialTemplate) {
     ZoneScoped;
 
     auto m2ModelDataVisVLK = std::dynamic_pointer_cast<IM2ModelDataVisVLK>(m2ModelData);
@@ -656,9 +656,9 @@ MapSceneRenderVisBufferVLK::createM2Material(const std::shared_ptr<IM2ModelData>
     return material;
 }
 
-std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderVisBufferVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
-                                                                                          const PipelineTemplate &pipelineTemplate,
-                                                                                          const M2WaterfallMaterialTemplate &m2MaterialTemplate) {
+std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderBindlessVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                                                           const PipelineTemplate &pipelineTemplate,
+                                                                                           const M2WaterfallMaterialTemplate &m2MaterialTemplate) {
     auto m2ModelDataVisVLK = std::dynamic_pointer_cast<IM2ModelDataVisVLK>(m2ModelData);
 
     auto &l_sceneWideChunk = sceneWideChunk;
@@ -711,7 +711,7 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderVisBufferVLK::createM2Waterf
     return material;
 }
 
-std::shared_ptr<IM2ParticleMaterial> MapSceneRenderVisBufferVLK::createM2ParticleMaterial(
+std::shared_ptr<IM2ParticleMaterial> MapSceneRenderBindlessVLK::createM2ParticleMaterial(
     const PipelineTemplate &pipelineTemplate,
     const M2ParticleMaterialTemplate &m2ParticleMatTemplate) {
 
@@ -741,9 +741,9 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderVisBufferVLK::createM2Particl
     return material;
 }
 
-std::shared_ptr<IM2RibbonMaterial> MapSceneRenderVisBufferVLK::createM2RibbonMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
-                                                                                    const PipelineTemplate &pipelineTemplate,
-                                                                                    const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) {
+std::shared_ptr<IM2RibbonMaterial> MapSceneRenderBindlessVLK::createM2RibbonMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                                                     const PipelineTemplate &pipelineTemplate,
+                                                                                     const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Ribbon::meshRibbonWideBlockPS>>(uboBuffer); ;
     auto &l_m2ModelData = m2ModelData;
@@ -767,16 +767,16 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderVisBufferVLK::createM2RibbonMat
     return material;
 };
 
-std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderVisBufferVLK::createWMOWideChunk() {
+std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderBindlessVLK::createWMOWideChunk() {
     return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(wmoBuffers.wmoPlacementMats);
 }
-std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> MapSceneRenderVisBufferVLK::createWMOGroupAmbientChunk() {
+std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> MapSceneRenderBindlessVLK::createWMOGroupAmbientChunk() {
     return std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(wmoBuffers.wmoGroupAmbient);
 }
 
-std::shared_ptr<IWMOMaterial> MapSceneRenderVisBufferVLK::createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
-                                                                          const PipelineTemplate &pipelineTemplate,
-                                                                          const WMOMaterialTemplate &wmoMaterialTemplate) {
+std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                                           const PipelineTemplate &pipelineTemplate,
+                                                                           const WMOMaterialTemplate &wmoMaterialTemplate) {
     auto l_vertexData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockVS>>(wmoBuffers.wmoMeshWideVSes); ;
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockPS>>(wmoBuffers.wmoMeshWidePSes); ;
     auto l_bindless = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockBindless>>(wmoBuffers.wmoMeshWideBindless);
@@ -823,9 +823,9 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderVisBufferVLK::createWMOMaterial(cons
     return material;
 }
 
-std::shared_ptr<IWaterMaterial> MapSceneRenderVisBufferVLK::createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
-                                                                              const PipelineTemplate &pipelineTemplate,
-                                                                              const WaterMaterialTemplate &waterMaterialTemplate) {
+std::shared_ptr<IWaterMaterial> MapSceneRenderBindlessVLK::createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+                                                                               const PipelineTemplate &pipelineTemplate,
+                                                                               const WaterMaterialTemplate &waterMaterialTemplate) {
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(waterBuffer.waterDataBuffer); ;
     auto l_waterBindless = std::make_shared<CBufferChunkVLK<Water::WaterBindless>>(waterBuffer.waterBindlessBuffer); ;
 
@@ -870,7 +870,7 @@ std::shared_ptr<IWaterMaterial> MapSceneRenderVisBufferVLK::createWaterMaterial(
 
 
 
-std::shared_ptr<ISkyMeshMaterial> MapSceneRenderVisBufferVLK::createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) {
+std::shared_ptr<ISkyMeshMaterial> MapSceneRenderBindlessVLK::createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
 
@@ -888,7 +888,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderVisBufferVLK::createSkyMeshMater
     return material;
 }
 
-std::shared_ptr<IPortalMaterial> MapSceneRenderVisBufferVLK::createPortalMaterial(const PipelineTemplate &pipelineTemplate) {
+std::shared_ptr<IPortalMaterial> MapSceneRenderBindlessVLK::createPortalMaterial(const PipelineTemplate &pipelineTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
     auto materialPS = std::make_shared<CBufferChunkVLK<DrawPortalShader::meshWideBlockPS>>(uboBuffer);
 
@@ -906,7 +906,7 @@ std::shared_ptr<IPortalMaterial> MapSceneRenderVisBufferVLK::createPortalMateria
     return material;
 }
 
-std::shared_ptr<IM2ModelData> MapSceneRenderVisBufferVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) {
+std::shared_ptr<IM2ModelData> MapSceneRenderBindlessVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) {
     auto result = std::make_shared<IM2ModelDataVisVLK>();
 
     BufferChunkHelperVLK::create(m2Buffers.placementMatrix, result->m_placementMatrix);
@@ -930,7 +930,7 @@ std::shared_ptr<IM2ModelData> MapSceneRenderVisBufferVLK::createM2ModelMat(int b
     return result;
 }
 
-inline void MapSceneRenderVisBufferVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType ) {
+inline void MapSceneRenderBindlessVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType ) {
     if (mesh == nullptr) return;
 
     const auto &meshVlk = (GMeshVLK*) mesh.get();
@@ -965,20 +965,20 @@ static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
 
 class COpaqueMeshCollectorBindlessVLK : public COpaqueMeshCollector{
 public:
-    COpaqueMeshCollectorBindlessVLK(MapSceneRenderVisBufferVLK &rendererVlk) : m_renderer(rendererVlk) {
+    COpaqueMeshCollectorBindlessVLK(MapSceneRenderBindlessVLK &rendererVlk) : m_renderer(rendererVlk) {
         commonMeshes.reserve(1000);
         m2DrawVec.reserve(5000);
         wmoDrawVec.reserve(5000);
         adtDrawVec.reserve(1000);
     }
-    COpaqueMeshCollectorBindlessVLK(MapSceneRenderVisBufferVLK &rendererVlk, MeshCount &lastMeshCount) : m_renderer(rendererVlk) {
+    COpaqueMeshCollectorBindlessVLK(MapSceneRenderBindlessVLK &rendererVlk, MeshCount &lastMeshCount) : m_renderer(rendererVlk) {
         commonMeshes.reserve(lastMeshCount.commonMesh);
         m2DrawVec.reserve(lastMeshCount.m2Mesh);
         wmoDrawVec.reserve(lastMeshCount.wmoMesh);
         adtDrawVec.reserve(lastMeshCount.adtMesh);
     }
 private:
-    MapSceneRenderVisBufferVLK &m_renderer;
+    MapSceneRenderBindlessVLK &m_renderer;
     struct DrawCommand {
         uint32_t matId;
         uint32_t indexCount;
@@ -1085,7 +1085,7 @@ public:
 
             uint32_t currentMatId = 0xFFFFFFFF;
             for (auto const &drawCmd : wmoDrawVec) {
-                if (currentMatId != drawCmd.matId) {
+//                if (currentMatId != drawCmd.matId) {
                     auto material = m_renderer.m_wmoMatCacheId[drawCmd.matId].lock();
                     if (!material)
                         continue;
@@ -1093,7 +1093,7 @@ public:
                     cmdBuf.bindPipeline(material->getPipeline());
 
                     currentMatId = drawCmd.matId;
-                }
+//                }
 
                 cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
             }
@@ -1123,7 +1123,7 @@ public:
 
         //Render commonMeshes
         for (auto const &mesh : commonMeshes ) {
-            MapSceneRenderVisBufferVLK::drawMesh(cmdBuf, mesh, viewPortType);
+            MapSceneRenderBindlessVLK::drawMesh(cmdBuf, mesh, viewPortType);
         }
     }
     void renderWater(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
@@ -1154,12 +1154,12 @@ public:
 
 };
 
-std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
-                                                                  const std::shared_ptr<MapRenderPlan> &framePlan) {
+std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
+                                                                   const std::shared_ptr<MapRenderPlan> &framePlan) {
     TracyMessageStr(("Update stage frame = " + std::to_string(m_device->getCurrentProcessingFrameNumber())));
 
     ZoneScoped;
-    auto l_this = std::dynamic_pointer_cast<MapSceneRenderVisBufferVLK>(this->shared_from_this());
+    auto l_this = std::dynamic_pointer_cast<MapSceneRenderBindlessVLK>(this->shared_from_this());
     auto mapScene = std::dynamic_pointer_cast<Map>(frameInputParams->frameParameters->scene);
 
 
@@ -1335,8 +1335,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
                     {
                         //Sky opaque
                         if (renderSky && skyMesh)
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, skyMesh,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                            MapSceneRenderBindlessVLK::drawMesh(frameBufCmd, skyMesh,
+                                                                CmdBufRecorder::ViewportType::vp_skyBox);
 
                         l_skyOpaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_skyBox);
                     }
@@ -1354,12 +1354,12 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 //
 //                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, mesh,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                            MapSceneRenderBindlessVLK::drawMesh(frameBufCmd, mesh,
+                                                                CmdBufRecorder::ViewportType::vp_skyBox);
                         }
                         if (renderSky && skyMesh0x4)
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, skyMesh0x4,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                            MapSceneRenderBindlessVLK::drawMesh(frameBufCmd, skyMesh0x4,
+                                                                CmdBufRecorder::ViewportType::vp_skyBox);
                     }
                     {
                         //Render liquids
@@ -1380,8 +1380,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
 //
 //                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
-                            MapSceneRenderVisBufferVLK::drawMesh(frameBufCmd, mesh,
-                                                               CmdBufRecorder::ViewportType::vp_usual);
+                            MapSceneRenderBindlessVLK::drawMesh(frameBufCmd, mesh,
+                                                                CmdBufRecorder::ViewportType::vp_usual);
                         }
                     }
                 }
@@ -1398,20 +1398,20 @@ std::unique_ptr<IRenderFunction> MapSceneRenderVisBufferVLK::update(const std::s
     });
 }
 
-std::shared_ptr<MapRenderPlan> MapSceneRenderVisBufferVLK::getLastCreatedPlan() {
+std::shared_ptr<MapRenderPlan> MapSceneRenderBindlessVLK::getLastCreatedPlan() {
     return m_lastCreatedPlan;
 }
 
-HGMesh MapSceneRenderVisBufferVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
+HGMesh MapSceneRenderBindlessVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
     return meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }
 
-HGSortableMesh MapSceneRenderVisBufferVLK::createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
+HGSortableMesh MapSceneRenderBindlessVLK::createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
 
-HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
+HGSortableMesh MapSceneRenderBindlessVLK::createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyWaterVAO;
 
@@ -1426,7 +1426,7 @@ HGSortableMesh MapSceneRenderVisBufferVLK::createWaterMesh(gMeshTemplate &meshTe
 }
 
 HGMesh
-MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) {
+MapSceneRenderBindlessVLK::createAdtMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IADTMaterial> &material) {
     ZoneScoped;
 
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
@@ -1440,8 +1440,8 @@ MapSceneRenderVisBufferVLK::createAdtMesh(gMeshTemplate &meshTemplate,  const st
     return mesh;
 }
 HGM2Mesh
-MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
-                                       int layer, int priorityPlane) {
+MapSceneRenderBindlessVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material,
+                                        int layer, int priorityPlane) {
     ZoneScoped;
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyM2VAO;
@@ -1453,8 +1453,8 @@ MapSceneRenderVisBufferVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std:
     return mesh;
 }
 
-HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
-                                                 const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
+                                                const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyWMOVAO;
 
@@ -1479,14 +1479,14 @@ HGMesh MapSceneRenderVisBufferVLK::createWMOMesh(gMeshTemplate &meshTemplate, co
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
     return mesh;
 }
-HGM2Mesh MapSceneRenderVisBufferVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,
-                                                         const std::shared_ptr<IM2WaterFallMaterial> &material,
-                                                         int layer, int priorityPlane) {
+HGM2Mesh MapSceneRenderBindlessVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,
+                                                          const std::shared_ptr<IM2WaterFallMaterial> &material,
+                                                          int layer, int priorityPlane) {
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2WaterFallMaterialBindless>(material)->instanceIndex;
     return mesh;
 }
 
-std::shared_ptr<IRenderView> MapSceneRenderVisBufferVLK::createRenderView(bool createOutput) {
+std::shared_ptr<IRenderView> MapSceneRenderBindlessVLK::createRenderView(bool createOutput) {
     return std::make_shared<RenderViewDeferredVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
 }

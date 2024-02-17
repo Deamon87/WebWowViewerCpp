@@ -2,8 +2,8 @@
 // Created by Deamon on 12/1/2022.
 //
 
-#ifndef AWEBWOWVIEWERCPP_MAPSCENERENDERVISVLK_H
-#define AWEBWOWVIEWERCPP_MAPSCENERENDERVISVLK_H
+#ifndef AWEBWOWVIEWERCPP_MAPSCENERENDERBINDLESSVLK_H
+#define AWEBWOWVIEWERCPP_MAPSCENERENDERBINDLESSVLK_H
 
 
 #include "../MapSceneRenderer.h"
@@ -17,11 +17,11 @@
 #include "../../../engine/objects/scenes/EntityActorsFactory.h"
 #include "view/RenderViewDeferredVLK.h"
 
-class MapSceneRenderVisBufferVLK : public MapSceneRenderer {
+class MapSceneRenderBindlessVLK : public MapSceneRenderer {
     friend class COpaqueMeshCollectorBindlessVLK;
 public:
-    explicit MapSceneRenderVisBufferVLK(const HGDeviceVLK &hDevice, Config *config);
-    ~MapSceneRenderVisBufferVLK() override = default;
+    explicit MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice, Config *config);
+    ~MapSceneRenderBindlessVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
     inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType);

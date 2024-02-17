@@ -183,7 +183,7 @@ endmacro(configure_filesVLK)
 configure_filesVLK(
         ${PROJECT_SOURCE_DIR}/shaders/glsl/
         ${PROJECT_SOURCE_DIR}/shaders/glsl/common
-        "forwardRendering;visBuffer"
+        "forwardRendering;bindless"
         ${GLSL_TARGET_FOLDER}/spirv
         ${GLSL_TARGET_FOLDER}/glsl/glsl20/
         ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)

@@ -1,0 +1,6 @@
+What needs to be inside the buffer:
+1) gl_InstanceIndex = meshIndex/drawCall
+2) triangleIndex
+
+type: m2, WMO, ADT, Liquid, Particle, Ribbon -> can be stored in stencil
+

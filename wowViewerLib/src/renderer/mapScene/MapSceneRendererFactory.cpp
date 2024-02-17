@@ -4,7 +4,7 @@
 
 #include "MapSceneRendererFactory.h"
 #include "vulkan/MapSceneRenderForwardVLK.h"
-#include "vulkan/MapSceneRenderVisBufferVLK.h"
+#include "vulkan/MapSceneRenderBindlessVLK.h"
 
 std::shared_ptr<MapSceneRenderer> MapSceneRendererFactory::createForwardRenderer(const HGDevice &device, Config * config) {
     switch (device->getDeviceType()) {
@@ -13,7 +13,7 @@ std::shared_ptr<MapSceneRenderer> MapSceneRendererFactory::createForwardRenderer
                 return std::make_shared<MapSceneRenderForwardVLK>(std::dynamic_pointer_cast<GDeviceVLK>(device),
                                                                   config);
             } else {
-                return std::make_shared<MapSceneRenderVisBufferVLK>(std::dynamic_pointer_cast<GDeviceVLK>(device), config);
+                return std::make_shared<MapSceneRenderBindlessVLK>(std::dynamic_pointer_cast<GDeviceVLK>(device), config);
             }
         default:
             return std::make_shared<MapSceneRenderForwardVLK>(std::dynamic_pointer_cast<GDeviceVLK>(device), config);

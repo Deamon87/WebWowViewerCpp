@@ -95,21 +95,23 @@ void main() {
     vec3 matDiffuse = final.rgb * 2.0 * vColor.rgb;
 
 
-    vec4 finalColor = vec4(
-        calcLight(
-            matDiffuse,
-            vNormal,
-            true,
-            0.0,
-            scene,
-            intLight,
-            vVertexLighting.rgb, /* accumLight */
-            vec3(0.0), /*precomputedLight*/
-            vec3(0.0), /* specular */
-            vec3(0.0) /* emissive */
-        ),
-        1.0
-    );
+//    vec4 finalColor = vec4(
+//        calcLight(
+//            matDiffuse,
+//            vNormal,
+//            true,
+//            0.0,
+//            scene,
+//            intLight,
+//            vVertexLighting.rgb, /* accumLight */
+//            vec3(0.0), /*precomputedLight*/
+//            vec3(0.0), /* specular */
+//            vec3(0.0) /* emissive */
+//        ),
+//        1.0
+//    );
+
+    vec4 finalColor = vec4(matDiffuse, 1.0);
 
     //Spec part
     float specBlend = final.a;
@@ -118,8 +120,8 @@ void main() {
     vec3 specTerm = (vec3(specBlend) * lSpecular) * scene.extLight.adtSpecMult_fogCount.x;
     finalColor.rgb += specTerm;
 
-    finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz,
-        vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
+//    finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz,
+//        vPosition.xyz, scene.extLight.uExteriorDirectColorDir.xyz, 0);
 
     finalColor.a = 1.0;
 
