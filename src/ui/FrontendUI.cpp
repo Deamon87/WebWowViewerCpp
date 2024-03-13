@@ -117,7 +117,7 @@ void FrontendUI::composeUI() {
     }
 
 
-    static bool show_demo_window = true;
+    static bool show_demo_window = false;
     if (show_demo_window)
         ImGui::ShowDemoWindow(&show_demo_window);
 

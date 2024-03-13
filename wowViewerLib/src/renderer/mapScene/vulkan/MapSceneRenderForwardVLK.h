@@ -111,7 +111,7 @@ public:
 private:
     HGDeviceVLK m_device;
 
-    std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::shared_ptr<EntityFactory<GMeshVLK>>();
+    std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::make_shared<EntityFactory<GMeshVLK>>();
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;

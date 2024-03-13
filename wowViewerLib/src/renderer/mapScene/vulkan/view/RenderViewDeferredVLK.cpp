@@ -30,10 +30,9 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
 void RenderViewDeferredVLK::createFrameBuffers() {
     {
         auto const dataFormat = {
-            ITextureFormat::itRGBA,         //Diffuse
-            ITextureFormat::itRGBA,         //Normal
-            ITextureFormat::itRGBAFloat32,  //ViewPos
-            ITextureFormat::itInt           //MatProps
+            ITextureFormat::itRGBA,         //Albedo
+            ITextureFormat::itRGBA,         //Specular
+            ITextureFormat::itRGBA          //Normal
         };
 
         auto depthFormat = ITextureFormat::itDepth32;
@@ -69,10 +68,7 @@ void RenderViewDeferredVLK::createFrameBuffers() {
                 attachmentsToCopy,
                 m_nonOpaqueRenderPass
             );
-
         }
-
-
     }
     if (m_createOutputFBO) {
         auto const dataFormat = {ITextureFormat::itRGBA};

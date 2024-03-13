@@ -258,8 +258,9 @@ private:
     storage store_;
 };
 
+const bool processFileOnDetect = true;
 
-std::string detectFileType(const HFileContent &fileContent) {
+std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
     std::string fileType = "unk";
     
     if (fileContent == nullptr) return fileType;
@@ -269,27 +270,16 @@ std::string detectFileType(const HFileContent &fileContent) {
 
     uint32_t magic = *(uint32_t *)fileContent->data();
     magic = ntohl(magic);
-//    if (magic[0] == 0 || magic[0] == 4)
-//    {
-//        if (bin.BaseStream.Length >= 8)
-//        {
-//            var wwfMagic = bin.ReadUInt32();
-//            switch (wwfMagic)
-//            {
-//                case 0x932C64B4: // WWFParticulateGroup
-//                    type = "wwf";
-//                    break;
-//            }
-//        }
-//
-//        bin.BaseStream.Position = 4;
-//    }
 
     switch (magic)
     {
         case 'MD21':
         case 'MD20':
             fileType = "m2";
+            if (processFileOnDetect) {
+                M2Geom test = M2Geom(fileDataId);
+                test.process(fileContent, std::to_string(fileDataId));
+            }
             break;
         case 'SKIN':
             fileType = "skin";
@@ -323,12 +313,27 @@ std::string detectFileType(const HFileContent &fileContent) {
                     break;
                 case 'DHOM': // WMO root
                     fileType = "wmo";
+
+                    if (processFileOnDetect) {
+                        WmoMainGeom test = WmoMainGeom(fileDataId);
+                        test.process(fileContent, std::to_string(fileDataId));
+                    }
                     break;
                 case 'PGOM': // WMO GROUP
                     fileType = "gwmo";
+
+                    if (processFileOnDetect) {
+                        WmoGroupGeom test = WmoGroupGeom(fileDataId);
+                        test.process(fileContent, std::to_string(fileDataId));
+                    }
                     break;
                 case 'DHPM': // WDT root
                     fileType = "wdt";
+
+                    if (processFileOnDetect) {
+                        WdtFile test = WdtFile(fileDataId);
+                        test.process(fileContent, std::to_string(fileDataId));
+                    }
                     break;
                 case 'IOAM': // WDT OCC/LGT
                     fileType = "wdt_sec";
@@ -431,7 +436,7 @@ public:
                                         return fileRecord.fileType.empty();
                                     },
                                     [&statement, &storage](int fileDataId, const HFileContent &fileData) -> void {
-                                        auto fileType = detectFileType(fileData);
+                                        auto fileType = detectFileType(fileDataId, fileData);
                                         statement->setFileType(storage, fileDataId, fileType);
                                     }
                                 );

@@ -84,6 +84,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                                             const std::vector<HCameraMatrices> &renderingMatricess,
                                             const HFrameDependantData &fdd,
                                             bool isVulkan,
+                                            int lightBufferIndex,
                                             animTime_t sceneTime
                                             ) {
     ZoneScoped;
@@ -105,7 +106,9 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         } else {
             blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
         }
-        blockPSVS.uInteriorSunDir = renderingMatrices->interiorDirectLightDir;
+        blockPSVS.uInteriorSunDir_lightBufferIndex = mathfu::vec4_packed(
+            mathfu::vec4(renderingMatrices->interiorDirectLightDir.xyz(), lightBufferIndex)
+        );
         blockPSVS.uViewUpSceneTime = mathfu::vec4(renderingMatrices->viewUp.xyz(), sceneTime);
 
         blockPSVS.closeOceanColor = fdd->closeOceanColor;

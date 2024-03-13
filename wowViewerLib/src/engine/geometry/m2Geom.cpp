@@ -233,7 +233,7 @@ void M2Geom::process(HFileContent m2File, const std::string &fileName) {
     m2SizeLoaded.fetch_add(m2File->size());
 
     if (ident == '12DM') {
-        CChunkFileReader reader(*this->m2File.get());
+        CChunkFileReader reader(*this->m2File.get(), fileName);
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {
         M2Data *m2Header = (M2Data *) this->m2File->data();

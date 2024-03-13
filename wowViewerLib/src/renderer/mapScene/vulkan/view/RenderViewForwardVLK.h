@@ -26,6 +26,8 @@ public:
 
     void iterateOverOutputTextures(std::function<void (const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures, const std::string &name, ITextureFormat textureFormat)> callback) override;
     void readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata);
+
+    std::shared_ptr<GRenderPassVLK> getRenderPass() {return m_mainRenderPass;}
 private:
     uint32_t m_width = 640;
     uint32_t m_height = 480;
@@ -33,10 +35,11 @@ private:
     HGDeviceVLK m_device;
     bool m_createOutputFBO;
 
+    std::shared_ptr<GRenderPassVLK> m_mainRenderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
     std::unique_ptr<FFXGlowPassVLK> glowPass;
 
-    std::shared_ptr<GRenderPassVLK> m_renderPass;
+    std::shared_ptr<GRenderPassVLK> m_outputRenderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_outputFrameBuffers;
 
     void createFrameBuffers();

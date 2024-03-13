@@ -5,9 +5,9 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonUboSceneData.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 precision highp float;
 layout(location = 0) in vec3 aPosition;

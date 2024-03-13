@@ -164,7 +164,7 @@ void main() {
     if (uUnFogged == 0) {
         vec3 sunDir =
             mix(
-                scene.uInteriorSunDir,
+                scene.uInteriorSunDir_lightBufferIndex,
                 scene.extLight.uExteriorDirectColorDir,
                 interiorExteriorBlend.x
             )

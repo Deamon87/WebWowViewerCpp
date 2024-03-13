@@ -78,8 +78,8 @@ void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const
     vertShaderModule = createShaderModule(vertShaderCode);
     fragShaderModule = createShaderModule(fragShaderCode);
 
-    vertShaderMeta = &shaderMetaInfo.at(vertShaderName + ".vert.spv");
-    fragShaderMeta = &shaderMetaInfo.at(vertShaderFrag + ".frag.spv");
+    vertShaderMeta = &shaderMetaInfo.at("./"+vertShaderName + ".vert.spv");
+    fragShaderMeta = &shaderMetaInfo.at("./"+vertShaderFrag + ".frag.spv");
 
     this->createShaderLayout();
 

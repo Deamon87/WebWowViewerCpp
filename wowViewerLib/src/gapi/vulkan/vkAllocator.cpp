@@ -1,4 +1,5 @@
 #define VMA_IMPLEMENTATION
 #define VMA_DYNAMIC_VULKAN_FUNCTIONS 1
+#define VMA_STATS_STRING_ENABLED 0
 #include "vk_mem_alloc.h"
 

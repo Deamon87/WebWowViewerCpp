@@ -38,9 +38,9 @@ static const std::vector<GBufferBinding> staticWaterBindings = {{
 
 static const std::vector<GBufferBinding> staticM2Bindings = {{
     {+m2Shader::Attribute::aPosition,   3, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, pos) },
-    {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true,  sizeof(M2Vertex), offsetof(M2Vertex, bone_weights)},  // bonesWeight
-    {+m2Shader::Attribute::bones,       4, GBindingType::GUNSIGNED_BYTE, false, sizeof(M2Vertex), offsetof(M2Vertex, bone_indices)},  // bones
     {+m2Shader::Attribute::aNormal,     3, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, normal)}, // normal
+    {+m2Shader::Attribute::bones,       4, GBindingType::GUNSIGNED_BYTE, false, sizeof(M2Vertex), offsetof(M2Vertex, bone_indices)},  // bones
+    {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true,  sizeof(M2Vertex), offsetof(M2Vertex, bone_weights)},  // bonesWeight
     {+m2Shader::Attribute::aTexCoord,   2, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, tex_coords)}, // texcoord
     {+m2Shader::Attribute::aTexCoord2,  2, GBindingType::GFLOAT,         false, sizeof(M2Vertex), offsetof(M2Vertex, tex_coords[1])} // texcoord
 }};
@@ -111,6 +111,7 @@ public:
                               const std::vector<HCameraMatrices> &renderingMatrices,
                               const HFrameDependantData &fdd,
                               bool isVulkan,
+                              int lightBufferIndex,
                               animTime_t sceneTime);
 
     virtual std::shared_ptr<IRenderView> createRenderView(bool createOutput) = 0;

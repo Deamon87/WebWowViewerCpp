@@ -151,6 +151,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
                  "#include <vector>\n"
                  "#include <array>\n"
                  "#include <unordered_map>\n"
+                 "#include <cstdint>\n"
                  "\n"
                  "template <typename T>\n"
                  "inline constexpr const uint32_t operator+ (T const val) { return static_cast<const uint32_t>(val); };"

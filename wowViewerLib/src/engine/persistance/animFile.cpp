@@ -44,7 +44,7 @@ void AnimFile::process(HFileContent animFile, const std::string &fileName) {
 
 
     if (chunk == 'BSFA' || chunk == 'ASFA' || chunk == '2MFA') {
-        CChunkFileReader reader(fileVec);
+        CChunkFileReader reader(fileVec, fileName);
         reader.processFile(*this, &AnimFile::animFileTable);
     } else {
         m_animFileDataBlob = (uint8_t *) &fileVec[0];

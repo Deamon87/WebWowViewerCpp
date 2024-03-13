@@ -48,7 +48,7 @@ struct sceneWideBlockVSPS {
     mathfu::mat4 uLookAtMat;
     mathfu::mat4 uPMatrix;
     mathfu::vec4_packed uViewUpSceneTime;
-    mathfu::vec4_packed uInteriorSunDir;
+    mathfu::vec4_packed uInteriorSunDir_lightBufferIndex;
 
     mathfu::vec4_packed closeRiverColor;
     mathfu::vec4_packed farRiverColor;

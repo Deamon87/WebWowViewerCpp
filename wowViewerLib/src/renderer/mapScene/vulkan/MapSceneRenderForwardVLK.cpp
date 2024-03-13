@@ -643,6 +643,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                          renderingMatricess,
                          framePlan->frameDependentData,
                          true,
+                         -1,
                          mapScene->getCurrentSceneTime());
 
 

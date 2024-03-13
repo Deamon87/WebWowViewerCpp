@@ -69,7 +69,7 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
 
 void WdlFile::process(HFileContent wdlFile, const std::string &fileName) {
     m_wdlFile = wdlFile;
-    CChunkFileReader reader(*m_wdlFile.get());
+    CChunkFileReader reader(*m_wdlFile.get(), fileName);
     reader.processFile(*this, &WdlFile::wdlFileTable);
 
     fsStatus = FileStatus::FSLoaded;

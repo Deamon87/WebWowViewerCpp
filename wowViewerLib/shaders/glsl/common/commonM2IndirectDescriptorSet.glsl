@@ -11,7 +11,6 @@ layout(std430, set=1, binding=1) buffer readonly modelWideBlockVS {
 
 struct modelWideBlockPSStruct {
     InteriorLightParam intLight;
-    LocalLight pc_lights[4];
     ivec4 lightCountAndBcHack;
     vec4 interiorExteriorBlend;
 };

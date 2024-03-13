@@ -222,7 +222,7 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
 void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileName) {
     m_wmoGroupFile = wmoGroupFile;
 
-    CChunkFileReader reader(*m_wmoGroupFile.get());
+    CChunkFileReader reader(*m_wmoGroupFile.get(), fileName);
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
     fsStatus = FileStatus::FSLoaded;

@@ -1,8 +1,3 @@
-#version 450
-
-#extension GL_GOOGLE_include_directive: require
-#extension GL_EXT_nonuniform_qualifier : require
-
 precision highp float;
 precision highp int;
 
@@ -18,23 +13,21 @@ layout(location=3) in vec3 vNormal;
 layout(location=4) in vec3 vPosition;
 layout(location=5) flat in int meshInd;
 
+#ifndef DEFERRED
 layout(location = 0) out vec4 outColor;
-#ifndef NON_OPAQ_SHADER
-layout(location = 1) out vec4 outNormal;
-layout(location = 2) out vec4 outViewPos;
-layout(location = 3) out uint outMatProps;
+#else
+layout(location = 0) out vec4 outAlbedo;
+layout(location = 1) out vec4 outSpecular;
+layout(location = 2) out vec4 outNormal;
 #endif
-
-
-
 
 //Whole model
 #include "../../common/commonM2IndirectDescriptorSet.glsl"
 #include "../../common/commonM2WaterfallDescriptorSet.glsl"
 
 const InteriorLightParam intLightWaterfall = {
-    vec4(0,0,0,0),
-    vec4(0,0,0,1)
+vec4(0,0,0,0),
+vec4(0,0,0,1)
 };
 
 // For references:
@@ -113,17 +106,19 @@ void main() {
     vec4 finalColor = vec4(
         mix(colorAfterLight.rgb, whiteWater_val_baseColor_mix.rgb, waterfallCommon.values3.w),
         w_alpha_combined
-//        whiteWater_val.a+0.2
+    //        whiteWater_val.a+0.2
     );
 
+#ifndef DEFERRED
     vec3 sunDir = scene.extLight.uExteriorDirectColorDir.xyz;
     finalColor = makeFog2(fogData,/*int(scene.extLight.adtSpecMult_fogCount.y),*/ finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, 0);
+#endif
 
-
+#ifndef DEFERRED
     outColor = finalColor;
-#ifndef NON_OPAQ_SHADER
-    outNormal = vec4(normalize(vNormal), 0);
-    outViewPos = vec4(vPosition, 0);
-    outMatProps = 0;
+#else
+    outAlbedo = vec4(whiteWater_val_baseColor_mix.rgb, 0.0);
+    outNormal = vec4(perturbedNormal.rgb, 0.0);
+    outSpecular = vec4(0.0);
 #endif
 }

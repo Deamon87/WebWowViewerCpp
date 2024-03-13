@@ -5,6 +5,7 @@
 #include <array>
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #ifndef AWEBWOWVIEWERCPP_DBSTRUCTS_H
 #define AWEBWOWVIEWERCPP_DBSTRUCTS_H

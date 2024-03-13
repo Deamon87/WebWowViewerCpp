@@ -23,21 +23,30 @@ RenderViewForwardVLK::RenderViewForwardVLK(const HGDeviceVLK &device,
 
         glowPass->updateDimensions(m_width, m_height,
                                    inputColorTextures,
-                                   !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_renderPass);
+                                   !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_outputRenderPass);
     }
 }
 
 void RenderViewForwardVLK::createFrameBuffers() {
     {
         auto const dataFormat = {ITextureFormat::itRGBA};
+        auto depthFormat = ITextureFormat::itDepth32;
+        bool invertZ = true;
+
+        m_mainRenderPass = m_device->getRenderPass(dataFormat,
+                                                     depthFormat,
+                                                     sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
+                                                     invertZ, false,
+                                                     true, true);
+
 
         for (auto &colorFrameBuffer: m_colorFrameBuffers) {
             colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
                 dataFormat,
-                ITextureFormat::itDepth32,
+                depthFormat,
                 m_device->getMaxSamplesCnt(),
-                true,
+                invertZ,
                 m_width, m_height
             );
         }
@@ -46,7 +55,7 @@ void RenderViewForwardVLK::createFrameBuffers() {
         auto const dataFormat = {ITextureFormat::itRGBA};
         bool invertZ = false;
 
-        m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itNone,
+        m_outputRenderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itNone,
                                                VK_SAMPLE_COUNT_1_BIT,
                                                invertZ, false, true, true);
 
@@ -82,7 +91,7 @@ void RenderViewForwardVLK::update(int width, int height, float glow) {
 
             glowPass->updateDimensions(m_width, m_height,
                                        inputColorTextures,
-                                       !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_renderPass);
+                                       !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_outputRenderPass);
         }
 
         this->executeOnChange();

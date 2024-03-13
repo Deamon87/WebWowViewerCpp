@@ -5,16 +5,14 @@
 precision highp float;
 precision highp int;
 
-#include "../common/commonLightFunctions.glsl"
-#include "../common/commonFogFunctions.glsl"
-#include "../common/commonUboSceneData.glsl"
+#include "../../../common/commonLightFunctions.glsl"
+#include "../../../common/commonFogFunctions.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 
 precision highp float;
 layout(location = 0) in vec3 vPosition;
 layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec2 vTexcoord0;
-
-
 
 layout(std140, set=1, binding=0) buffer readonly textureMatrices {
     mat4 textureMatrix[64];
@@ -26,11 +24,6 @@ layout(std140, set=1, binding=1) uniform meshWideBlockPS {
 layout(set=2, binding=0) uniform sampler2D uTexture;
 
 layout(location = 0) out vec4 outColor;
-#ifndef NON_OPAQ_SHADER
-layout(location = 1) out vec4 outNormal;
-layout(location = 2) out vec4 outViewPos;
-layout(location = 3) out uint outMatProps;
-#endif
 
 void main() {
     int textureTransformIndex = uPixelShader_BlendMode_TextureTransformIndex.z;
@@ -52,9 +45,4 @@ void main() {
     finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShader_BlendMode_TextureTransformIndex.y);
 
     outColor = finalColor;
-#ifndef NON_OPAQ_SHADER
-    outNormal = vec4(0,0,0,0);
-    outViewPos = vec4(vPosition, 0);
-    outMatProps = 0;
-#endif
 }

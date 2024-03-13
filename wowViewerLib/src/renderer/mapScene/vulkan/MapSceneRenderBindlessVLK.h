@@ -15,7 +15,8 @@
 #include "view/RenderViewForwardVLK.h"
 #include "../../../gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h"
 #include "../../../engine/objects/scenes/EntityActorsFactory.h"
-#include "view/RenderViewDeferredVLK.h"
+
+class COpaqueMeshCollectorBindlessVLK;
 
 class MapSceneRenderBindlessVLK : public MapSceneRenderer {
     friend class COpaqueMeshCollectorBindlessVLK;
@@ -114,9 +115,9 @@ public:
     std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
 
     std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::make_shared<EntityFactory<GMeshVLK>>();
-private:
-    std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
-    std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
+protected:
+    virtual std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
+    virtual std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
 
     struct PipelineTemplateHasher {
         std::size_t operator()(const PipelineTemplate& k) const {
@@ -132,15 +133,13 @@ private:
     };
     robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
     robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
-private:
+protected:
     HGDeviceVLK m_device;
 
     int m_width = 640;
     int m_height = 480;
 
     std::unique_ptr<FFXGlowPassVLK> glowPass;
-
-    bool useVisBuffer = false;
 
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
@@ -229,8 +228,7 @@ private:
     std::shared_ptr<GDescriptorSet> waterTexturesDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> waterTextureHolder = nullptr;
 
-    std::shared_ptr<GRenderPassVLK> m_opaqueRenderPass;
-    std::shared_ptr<GRenderPassVLK> m_nonOpaquerenderPass;
+    std::shared_ptr<GRenderPassVLK> m_renderPass;
 
     std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
 
@@ -244,12 +242,10 @@ private:
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
 
-    using RendererViewClass = RenderViewDeferredVLK;
-    std::shared_ptr<RenderViewDeferredVLK> defaultView;
+    using RendererViewClass = RenderViewForwardVLK;
+    std::shared_ptr<RenderViewForwardVLK> defaultView;
 
     MeshCount lastMeshCount;
-
-    std::string chooseShadDir(const std::string &shaderName);
 
     void createM2GlobalMaterialData();
     void createWMOGlobalMaterialData();
@@ -294,15 +290,11 @@ public:
     HGVertexBufferBindings getDefaultWaterVao() const {return m_emptyWaterVAO;};
 
     std::shared_ptr<GRenderPassVLK> chooseRenderPass(const PipelineTemplate &pipelineTemplate);
+    virtual std::shared_ptr<GRenderPassVLK> getRenderPass(bool isOpaque);
 
+    void
+    drawOpaque(CmdBufRecorder &frameBufCmd,
+               const std::unique_ptr<COpaqueMeshCollectorBindlessVLK> &l_opaqueMeshes);
 };
-
-class IM2ModelDataVisVLK : public IM2ModelData {
-public:
-    ~IM2ModelDataVisVLK() override = default;
-    std::shared_ptr<GDescriptorSet> placementMatrixDS;
-};
-
-
 
 #endif //AWEBWOWVIEWERCPP_MAPSCENERENDERVISVLK_H

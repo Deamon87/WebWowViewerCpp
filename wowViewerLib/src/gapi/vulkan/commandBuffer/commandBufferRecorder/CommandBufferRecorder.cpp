@@ -43,6 +43,7 @@ CmdBufRecorder::~CmdBufRecorder() {
     }
 
     if (vkEndCommandBuffer(m_gCmdBuffer.m_cmdBuffer) != VK_SUCCESS) {
+        std::cerr << "failed to record command buffer!" << std::endl;
         throw std::runtime_error("failed to record command buffer!");
     }
 }

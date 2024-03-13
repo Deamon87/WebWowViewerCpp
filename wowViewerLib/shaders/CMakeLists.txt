@@ -75,20 +75,22 @@ endif()
 
 
 
-macro(configure_filesVLK rootDir srcCommonDir shaderDirs destDir destDirGL20 destDirGL33 )
+macro(configure_filesVLK rootDir srcCommonDirs shaderDirs destDir destDirGL20 destDirGL33 )
     message(STATUS "Configuring directory ${destDir}")
     set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spriv_raw)
 
     file(MAKE_DIRECTORY ${spirvNonOptDir})
 
-    file(GLOB_RECURSE commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.glsl)
+    foreach(srcCommonDir ${srcCommonDirs})
+        file(GLOB_RECURSE commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.glsl)
 
-    foreach(commonFileRelative ${commonFilesRelative})
-        set(commonFileFullPath ${srcCommonDir}/${commonFileRelative})
-        if(NOT IS_DIRECTORY ${commonFileFullPath})
-            list(APPEND commonFiles ${commonFileFullPath})
-        endif()
-    endforeach(commonFileRelative)
+        foreach(commonFileRelative ${commonFilesRelative})
+            set(commonFileFullPath ${srcCommonDir}/${commonFileRelative})
+            if(NOT IS_DIRECTORY ${commonFileFullPath})
+                list(APPEND commonFiles ${commonFileFullPath})
+            endif()
+        endforeach(commonFileRelative)
+    endforeach(srcCommonDir)
 
     foreach(shaderDir ${shaderDirs})
         set(srcDir "${rootDir}/${shaderDir}")
@@ -105,6 +107,9 @@ macro(configure_filesVLK rootDir srcCommonDir shaderDirs destDir destDirGL20 des
                 get_filename_component(FILE_NAME_WO_EXT ${srcTemplatePath} NAME_WE)
                 get_filename_component(FILE_NAME ${srcTemplatePath} NAME)
                 get_filename_component(SHADER_SUB_DIR ${srcFileRelative} DIRECTORY )
+                if (SHADER_SUB_DIR)
+                    set(SHADER_SUB_DIR "${SHADER_SUB_DIR}/")
+                endif()
 #                file(RELATIVE_PATH SHADER_SUB_DIR shaderDir ${srcTemplatePath})
 
 #                message(srcFileRelative = ${srcFileRelative})
@@ -193,8 +198,8 @@ endmacro(configure_filesVLK)
 
 configure_filesVLK(
         ${PROJECT_SOURCE_DIR}/shaders/glsl/
-        ${PROJECT_SOURCE_DIR}/shaders/glsl/common
-        "forwardRendering;bindless"
+        "${PROJECT_SOURCE_DIR}/shaders/glsl/common;${PROJECT_SOURCE_DIR}/shaders/glsl/bindless"
+        "."
         ${GLSL_TARGET_FOLDER}/spirv
         ${GLSL_TARGET_FOLDER}/glsl/glsl20/
         ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
