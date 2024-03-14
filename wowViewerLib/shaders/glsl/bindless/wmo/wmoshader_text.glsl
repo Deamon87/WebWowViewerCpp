@@ -67,7 +67,7 @@ void main() {
     );
 
     if (doDiscard)
-    discard;
+        discard;
 
     InteriorLightParam intLight;
     intLight.uInteriorAmbientColorAndApplyInteriorLight = s_wmoAmbient[perMeshData.meshWideBindlessIndex_wmoAmbientIndex.y];
@@ -91,7 +91,6 @@ void main() {
         finalOpacity
     );
 #endif
-    finalColor.rgb = matDiffuse;
 
 #ifndef DEFERRED
     finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, finalColor, scene.uViewUpSceneTime.xyz,

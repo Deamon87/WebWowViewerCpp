@@ -152,8 +152,6 @@ void main() {
             finalOpacity
         );
 #endif
-
-        finalColor = vec4(matDiffuse, finalOpacity);
     }
 
     // ------------------------------

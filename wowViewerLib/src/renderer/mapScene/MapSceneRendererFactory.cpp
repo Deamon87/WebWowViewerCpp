@@ -9,7 +9,7 @@
 std::shared_ptr<MapSceneRenderer> MapSceneRendererFactory::createForwardRenderer(const HGDevice &device, Config * config) {
     switch (device->getDeviceType()) {
         case GDeviceType::GVulkan:
-            if (device->supportsBindless()) {
+            if (!device->supportsBindless()) {
                 return std::make_shared<MapSceneRenderForwardVLK>(std::dynamic_pointer_cast<GDeviceVLK>(device),
                                                                   config);
             } else {

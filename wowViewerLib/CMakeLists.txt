@@ -527,6 +527,8 @@ if (LINK_VULKAN)
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
             src/renderer/mapScene/vulkan/MapSceneRenderBindlessVLK.cpp
             src/renderer/mapScene/vulkan/MapSceneRenderBindlessVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderBindlessDeferredVLK.cpp
+            src/renderer/mapScene/vulkan/MapSceneRenderBindlessDeferredVLK.h
             src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.h
             src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.cpp

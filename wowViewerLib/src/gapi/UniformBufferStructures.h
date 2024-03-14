@@ -129,7 +129,6 @@ namespace M2 {
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
         InteriorLightParam intLight;
-        LocalLight pc_lights[4];
         int LightCount;
         int bcHack;
         int notUsed2;
