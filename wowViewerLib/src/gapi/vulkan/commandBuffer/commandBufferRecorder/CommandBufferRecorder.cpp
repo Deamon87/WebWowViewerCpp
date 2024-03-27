@@ -29,7 +29,8 @@ CmdBufRecorder::CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<
 
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+        ((renderPass != nullptr) ? (VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) : 0);
     beginInfo.pNext = NULL;
     beginInfo.pInheritanceInfo = (renderPass != nullptr) ? &bufferInheritanceInfo : nullptr;
 
@@ -48,11 +49,18 @@ CmdBufRecorder::~CmdBufRecorder() {
     }
 }
 
+void CmdBufRecorder::setSecondaryCmdRenderArea(const std::array<int32_t, 2> &areaOffset,
+                                   const std::array<uint32_t, 2> &areaSize) {
+    std::array<uint32_t, 2> fixedAreasSize = {
+        std::max<uint32_t>(1, areaSize[0]),
+        std::max<uint32_t>(1, areaSize[1])
+    };
 
-uint32_t CmdBufRecorder::getQueueFamily() {
-    return m_gCmdBuffer.m_queueFamilyIndex;
+    createViewPortTypes(areaOffset, fixedAreasSize, m_currentRenderPass->getInvertZ());
+    createDefaultScissors(areaOffset, fixedAreasSize);
+
+    setDefaultScissors();
 }
-
 
 RenderPassHelper CmdBufRecorder::beginRenderPass(
     bool isAboutToExecSecondaryCMD,
@@ -89,7 +97,9 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
         isAboutToExecSecondaryCMD,
         renderPassVlk, frameBuffer, areaOffset, fixedAreasSize, colorClearColor
     );
-    setDefaultScissors();
+    if (!isAboutToExecSecondaryCMD) {
+        setDefaultScissors();
+    }
     return renderPass;
 }
 
@@ -158,6 +168,12 @@ void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, ui
                      firstInstance);
 }
 
+void CmdBufRecorder::executeSecondaryCmdBuffer(const std::shared_ptr<GCommandBuffer> &cmdBuffer) {
+    std::array<VkCommandBuffer, 1> buffers = {cmdBuffer->getNativeCmdBuffer()};
+
+    vkCmdExecuteCommands(m_gCmdBuffer.m_cmdBuffer, 1, buffers.data());
+}
+
 void CmdBufRecorder::recordPipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
                                                 const std::vector<VkImageMemoryBarrier> &imageBarrierData) {
     vkCmdPipelineBarrier(
@@ -193,6 +209,10 @@ void CmdBufRecorder::copyBufferToImage(VkBuffer buffer, VkImage image, const std
 }
 
 void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK) {
+//    TracyMessageStr(("Submiting buffer " + bufferVLK->getName()));
+    ZoneScopedN("submitBufferUploads");
+
+
     auto submitRecords = bufferVLK->getSubmitRecords();
 
     if (submitRecords.get().empty())

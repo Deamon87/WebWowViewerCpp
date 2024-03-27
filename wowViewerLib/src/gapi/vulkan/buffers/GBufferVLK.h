@@ -58,6 +58,10 @@ public:
         return 0;
     };
 
+    std::string getName() {
+        return m_objName;
+    }
+
     MutexLockedVector<VulkanCopyCommands> getSubmitRecords();
 
     void resize(int newLength);

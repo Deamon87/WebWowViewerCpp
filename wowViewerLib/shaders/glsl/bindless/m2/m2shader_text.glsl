@@ -1,10 +1,13 @@
 precision highp float;
 precision highp int;
 
-#include "../../../common/commonLightFunctions.glsl"
-#include "../../../common/commonFogFunctions.glsl"
-#include "../../../common/commonM2Material.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
+#include "../../common/commonM2Material.glsl"
 
+#ifdef TRUE_OPAQUE
+layout(early_fragment_tests) in;
+#endif
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
 layout(location=2) in vec3 vNormal;
@@ -19,10 +22,12 @@ layout(location = 1) out vec4 outSpecular;
 layout(location = 2) out vec4 outNormal;
 #endif
 
-#include "../../../common/commonUboSceneData.glsl"
+
+
+#include "../../common/commonUboSceneData.glsl"
 
 //Whole model
-#include "../../../common/commonM2IndirectDescriptorSet.glsl"
+#include "../../common/commonM2IndirectDescriptorSet.glsl"
 
 layout (set = 2, binding = 0) uniform sampler2D s_Textures[];
 
@@ -125,8 +130,10 @@ void main() {
             matDiffuse, specular, finalOpacity, doDiscard
         );
 
+#ifndef TRUE_OPAQUE
         if (doDiscard)
             discard;
+#endif
 
         // ------------------------------
         // Apply lighting

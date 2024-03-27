@@ -1,6 +1,10 @@
 precision highp float;
 precision highp int;
 
+#ifdef TRUE_OPAQUE
+layout(early_fragment_tests) in;
+#endif
+
 layout (location = 0) in vec3 vPosition;
 layout (location = 1) in vec4 vColor;
 layout (location = 2) in vec2 vTexcoord0;
@@ -8,9 +12,9 @@ layout (location = 3) in vec2 vTexcoord1;
 layout (location = 4) in vec2 vTexcoord2;
 layout (location = 5) in float alphaCutoff;
 
-#include "../../../common/commonLightFunctions.glsl"
-#include "../../../common/commonFogFunctions.glsl"
-#include "../../../common/commonUboSceneData.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
+#include "../../common/commonUboSceneData.glsl"
 
 //Individual meshes
 layout (std140, set = 1, binding = 0) uniform meshWideBlockPS {

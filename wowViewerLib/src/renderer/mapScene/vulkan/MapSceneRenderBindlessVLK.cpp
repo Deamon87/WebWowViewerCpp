@@ -994,40 +994,15 @@ private:
 
     typedef robin_hood::unordered_flat_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
 
-    framebased::vector<DrawCommand> m2DrawVec;
+    tbb::concurrent_vector<DrawCommand> m2DrawVec;
     framebased::vector<DrawCommand> wmoDrawVec;
     MeshMap waterMeshMap;
     framebased::vector<DrawCommand> adtDrawVec;
     framebased::vector<HGMesh> commonMeshes;
 
-    inline static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
-        const auto &meshVlk = (GMeshVLK*) mesh.get();
-        auto const &pipeline = meshVlk->material()->getPipeline();
-
-        auto &vec = meshMap[pipeline];
-        if (vec.empty())
-            vec.reserve(3000);
-
-        auto &drawCommand = meshMap[pipeline].emplace_back();
-        drawCommand.indexCount = meshVlk->end();
-        drawCommand.instanceCount = 1;
-        drawCommand.firstIndex = meshVlk->start() / 2;
-
-        if (meshVlk->instanceIndex != -1) {
-            drawCommand.firstInstance = meshVlk->instanceIndex;
-            drawCommand.vertexOffset = meshVlk->vertexStart;
-        } else {
-            drawCommand.firstInstance = 0;
-            drawCommand.vertexOffset = 0;
-        }
-    }
-    inline void addDrawCommand(framebased::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
-        auto meshId = mesh->getObjectId();
-        auto meshVlk = m_renderer.meshFactory->getObjectById(meshId);
-
+    inline static void fillDrawCommand(DrawCommand &drawCommand, GMeshVLK *meshVlk) {
         auto const matId = meshVlk->material()->getMaterialId();
 
-        auto &drawCommand = drawVec.emplace_back();
         drawCommand.matId = matId;
         drawCommand.indexCount = meshVlk->end();
         drawCommand.instanceCount = 1;
@@ -1040,6 +1015,34 @@ private:
             drawCommand.firstInstance = 0;
             drawCommand.vertexOffset = 0;
         }
+    }
+
+    inline static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
+        const auto &meshVlk = (GMeshVLK*) mesh.get();
+        auto const &pipeline = meshVlk->material()->getPipeline();
+
+        auto &vec = meshMap[pipeline];
+        if (vec.empty())
+            vec.reserve(3000);
+
+        auto &drawCommand = meshMap[pipeline].emplace_back();
+        fillDrawCommand(drawCommand, meshVlk);
+    }
+
+    inline void addDrawCommand(framebased::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
+        auto meshId = mesh->getObjectId();
+        auto meshVlk = m_renderer.meshFactory->getObjectById(meshId);
+
+        auto &drawCommand = drawVec.emplace_back();
+        fillDrawCommand(drawCommand, meshVlk);
+    }
+    inline void addDrawCommand(tbb::concurrent_vector<DrawCommand> &drawVec, const HGMesh &mesh) {
+        auto meshId = mesh->getObjectId();
+        auto meshVlk = m_renderer.meshFactory->getObjectById(meshId);
+
+        DrawCommand drawCommand;
+        fillDrawCommand(drawCommand, meshVlk);
+        drawVec.push_back(drawCommand);
     }
 public:
     void addM2Mesh(const HGM2Mesh &mesh) override {

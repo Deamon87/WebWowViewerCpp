@@ -20,7 +20,7 @@ public:
     friend class IDeviceVulkan;
 
 public:
-    GCommandBuffer(IDeviceVulkan &deviceVlk, VkQueue vkQueue, VkCommandPool commandPool, bool isPrimary, uint32_t queueFamilyIndex);
+    GCommandBuffer(IDeviceVulkan &deviceVlk, VkQueue vkQueue, VkCommandPool commandPool, bool isPrimary);
 
     CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass);
     VkCommandBuffer getNativeCmdBuffer() const {
@@ -34,7 +34,6 @@ private:
     VkCommandBuffer m_cmdBuffer;
     VkQueue m_vkQueue;
     bool m_isPrimary = true;
-    const uint32_t m_queueFamilyIndex;
     VkCommandPool m_commandPool;
 
     bool m_cmdBufWasCreated = false;

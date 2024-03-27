@@ -13,6 +13,9 @@
 #include "tbb/tbb.h"
 #include "tbb/scalable_allocator.h"
 
+template <class T>
+using transp_vec = tbb::concurrent_vector<T>;
+
 namespace framebased {
 
 #if ((defined (_GLIBCXX_VECTOR) \

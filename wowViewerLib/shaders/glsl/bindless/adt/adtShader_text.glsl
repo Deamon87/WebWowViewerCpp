@@ -1,11 +1,14 @@
 precision highp float;
 precision highp int;
 
-#include "../../../common/commonLightFunctions.glsl"
-#include "../../../common/commonFogFunctions.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
 
-#include "../../../common/commonADTMaterial.glsl"
-#include "../../../common/commonAdtIndirectDescriptorSet.glsl"
+#include "../../common/commonADTMaterial.glsl"
+#include "../../common/commonAdtIndirectDescriptorSet.glsl"
+
+//ADT is always opaque
+layout(early_fragment_tests) in;
 
 layout(location = 0) in vec2 vChunkCoords;
 layout(location = 1) in vec3 vPosition;

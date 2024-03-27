@@ -44,38 +44,76 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
     bool renderWMO = m_config->renderWMO;
 
     for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
+        ZoneScopedN("Collect interiors");
         view->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
     }
 
     {
         auto exteriorView = cullStage->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
+            ZoneScopedN("Collect Exterior");
             exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
         }
     }
 
     if (m_config->renderM2) {
-        for (auto &m2Object : cullStage->m2Array.getDrawn()) {
-            if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
-            m2Object->drawParticles(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
+        ZoneScopedN("collect m2s");
+
+        auto threadsAvailable = m_config->hardwareThreadCount();
+        auto &m2ToDraw = cullStage->m2Array.getDrawn();
+        int granSize = m2ToDraw.size() / (2 * threadsAvailable);
+
+        transp_vec<HGSortableMesh> transpVec;
+
+        if (granSize > 0) {
+            oneapi::tbb::task_arena arena(std::min<uint32_t>(threadsAvailable, 16), 1);
+            arena.execute([&] {
+                tbb::affinity_partitioner ap;
+
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                                  [&](tbb::blocked_range<size_t> r) {
+                                      for (size_t i = r.begin(); i != r.end(); ++i) {
+                                          auto &m2Object = m2ToDraw[i];
+                                          if (m2Object != nullptr) {
+                                              m2Object->collectMeshes(opaqueMeshCollector, transpVec,
+                                                                      m_viewRenderOrder);
+                                              m2Object->drawParticles(opaqueMeshCollector, transpVec,
+                                                                      m_viewRenderOrder);
+                                          }
+                                      }
+                                  }, ap);
+            });
+        } else {
+            for (auto &m2Object : cullStage->m2Array.getDrawn()) {
+                if (m2Object == nullptr) continue;
+                m2Object->collectMeshes(opaqueMeshCollector, transpVec, m_viewRenderOrder);
+                m2Object->drawParticles(opaqueMeshCollector, transpVec, m_viewRenderOrder);
+            }
         }
+
+        transparentMeshes.insert(transparentMeshes.end(), transpVec.begin(), transpVec.end());
 
         auto skyBoxView = cullStage->viewsHolder.getSkybox();
         if (skyBoxView) {
+            transp_vec<HGSortableMesh> skyTranspVec;
+
+            ZoneScopedN("collect skyBox");
             for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
                 if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(skyOpaqueMeshCollector, skyTransparentMeshes, m_viewRenderOrder);
-                m2Object->drawParticles(skyOpaqueMeshCollector, skyTransparentMeshes, m_viewRenderOrder);
+                m2Object->collectMeshes(skyOpaqueMeshCollector, skyTranspVec, m_viewRenderOrder);
+                m2Object->drawParticles(skyOpaqueMeshCollector, skyTranspVec, m_viewRenderOrder);
             }
+            skyTransparentMeshes.insert(skyTransparentMeshes.end(), skyTranspVec.begin(), skyTranspVec.end());
         }
     }
 
     //No need to sort array which has only one element
     if (transparentMeshes.size() > 1) {
+        ZoneScopedN("sort transparent");
         std::sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
     }
     if (skyTransparentMeshes.size() > 1) {
+        ZoneScopedN("sky transparent");
         std::sort(skyTransparentMeshes.begin(), skyTransparentMeshes.end(), SortMeshes);
     }
 }

@@ -245,7 +245,7 @@ public:
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
     bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder);
 
     bool setUseLocalLighting(bool value) {
         if (m_useLocalDiffuseColor == -1) {
@@ -289,7 +289,7 @@ public:
         m_ambientColorOverride = ambientColor;
     }
 
-    void drawParticles(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes,  int renderOrder);
+    void drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes,  int renderOrder);
 
     void createVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
 

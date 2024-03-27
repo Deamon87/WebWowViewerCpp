@@ -9,6 +9,10 @@ precision highp int;
 #include "../../../common/commonWMOMaterial.glsl"
 #include "../../../common/commonUboSceneData.glsl"
 
+#ifdef TRUE_OPAQUE
+layout(early_fragment_tests) in;
+#endif
+
 layout (location = 0) in vec2 vTexCoord;
 layout (location = 1) in vec2 vTexCoord2;
 layout (location = 2) in vec2 vTexCoord3;
@@ -65,9 +69,10 @@ void main() {
                    matDiffuse, spec, emissive, finalOpacity,
                    doDiscard
     );
-
+#ifndef TRUE_OPAQUE
     if (doDiscard)
         discard;
+#endif
 
     InteriorLightParam intLight;
     intLight.uInteriorAmbientColorAndApplyInteriorLight = s_wmoAmbient[perMeshData.meshWideBindlessIndex_wmoAmbientIndex.y];

@@ -8,10 +8,8 @@
 GCommandBuffer::GCommandBuffer(IDeviceVulkan &deviceVlk,
                                VkQueue vkQueue,
                                VkCommandPool commandPool,
-                               bool isPrimary,
-                               uint32_t queueFamilyIndex) : m_device(deviceVlk),
+                               bool isPrimary) : m_device(deviceVlk),
                                                             m_isPrimary(isPrimary),
-                                                            m_queueFamilyIndex(queueFamilyIndex),
                                                             m_commandPool(commandPool),
                                                             m_vkQueue(vkQueue)
 {
@@ -41,8 +39,10 @@ void GCommandBuffer::createCommandBufVLK() {
         auto l_cmdBuf = m_cmdBuffer;
 
 #ifdef LINK_TRACY
-        auto l_tracyContext = tracyContext;
-        TracyVkCollect(l_tracyContext, l_cmdBuf);
+        if (m_isPrimary) {
+            auto l_tracyContext = tracyContext;
+            TracyVkCollect(l_tracyContext, l_cmdBuf);
+        }
 #endif
         vkResetCommandBuffer(m_cmdBuffer, 0);
 
@@ -59,7 +59,7 @@ void GCommandBuffer::createCommandBufVLK() {
         }
     }
 
-    if (!m_cmdBufWasCreated) {
+    if (!m_cmdBufWasCreated && m_isPrimary) {
 #ifdef LINK_TRACY
         tracyContext = TracyVkContext(m_device.getVkPhysicalDevice(), m_device.getVkDevice(), m_vkQueue, m_cmdBuffer);
 #endif

@@ -40,7 +40,8 @@ public:
     CmdBufRecorder operator=(const CmdBufRecorder&) = delete;
     ~CmdBufRecorder();
 
-    uint32_t getQueueFamily();
+    void setSecondaryCmdRenderArea(const std::array<int32_t, 2> &areaOffset,
+                                   const std::array<uint32_t, 2> &areaSize);
 
     RenderPassHelper beginRenderPass(
         bool isAboutToExecSecondaryCMD,
@@ -62,6 +63,8 @@ public:
     inline void bindDescriptorSets(VkPipelineBindPoint bindPoint, const std::vector<std::shared_ptr<GDescriptorSet>> &descriptorSets);
 
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance, uint32_t vertexOffset = 0);
+
+    void executeSecondaryCmdBuffer(const std::shared_ptr<GCommandBuffer> &cmdBuffer);
 
     void setScissors(const std::array<int32_t, 2> &areaOffset,
                      const std::array<uint32_t, 2> &areaSize);
