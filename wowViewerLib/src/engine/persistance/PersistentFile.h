@@ -15,7 +15,7 @@ public:
     FileStatus getStatus() {
         return fsStatus;
     };
-    void rejected() {
+    void setRejected() {
         fsStatus = FileStatus::FSRejected;
     };
 protected:

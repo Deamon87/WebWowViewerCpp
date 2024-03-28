@@ -598,7 +598,15 @@ public:
             MapSceneRenderForwardVLK::drawMesh(cmdBuf, mesh, viewPortType);
         }
     }
+    COpaqueMeshCollector* clone() override {
+        return new COpaqueMeshCollectorForwardVLK();
+    }
+    void merge(COpaqueMeshCollector& collector) override {
+        auto l_collector = (COpaqueMeshCollectorForwardVLK &) collector;
 
+        commonMeshes.insert(commonMeshes.end(), l_collector.commonMeshes.begin(), l_collector.commonMeshes.end());
+        waterMeshes.insert(waterMeshes.end(), l_collector.waterMeshes.begin(), l_collector.waterMeshes.end());
+    }
 };
 
 std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,

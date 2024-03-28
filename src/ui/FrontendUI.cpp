@@ -1771,7 +1771,6 @@ bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     try {
         newProcessor = std::make_shared<CascRequestProcessor>(cascPath, buildDef);
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
-        newProcessor->setFileRequester(newStorage.get());
     } catch (...){
         return false;
     };
@@ -1860,7 +1859,6 @@ void FrontendUI::createDefaultprocessor() {
 ////        processor->setThreaded(false);
 ////
     m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_api->requestProcessor.get());
-    m_api->requestProcessor->setFileRequester(m_api->cacheStorage.get());
     overrideCascOpened(true);
 }
 

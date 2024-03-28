@@ -37,14 +37,8 @@ protected:
     };
 
 protected:
-    IFileRequester *m_fileRequester = nullptr;
-
     virtual void processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) = 0;
 public:
-    void setFileRequester(IFileRequester *fileRequester) {
-        m_fileRequester = fileRequester;
-    }
-
     void initThreadQueue(bool &isTerminating) {
         m_threaded = true;
         m_requestQueue = std::make_unique<decltype(m_requestQueue)::element_type>(isTerminating);

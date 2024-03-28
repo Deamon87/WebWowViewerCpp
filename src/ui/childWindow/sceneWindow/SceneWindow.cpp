@@ -122,6 +122,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
 }
 
 SceneWindow::SceneWindow(const HApiContainer &api, bool renderToSwapChain) : m_api(api), m_renderToSwapChain(renderToSwapChain){
+
 }
 
 /*

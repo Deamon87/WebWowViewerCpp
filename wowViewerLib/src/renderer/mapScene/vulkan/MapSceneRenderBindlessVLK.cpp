@@ -994,7 +994,7 @@ private:
 
     typedef robin_hood::unordered_flat_map<std::shared_ptr<GPipelineVLK>, std::vector<DrawCommand>> MeshMap;
 
-    tbb::concurrent_vector<DrawCommand> m2DrawVec;
+    framebased::vector<DrawCommand> m2DrawVec;
     framebased::vector<DrawCommand> wmoDrawVec;
     MeshMap waterMeshMap;
     framebased::vector<DrawCommand> adtDrawVec;
@@ -1061,6 +1061,20 @@ public:
     void addMesh(const HGMesh &mesh) override {
         commonMeshes.push_back(mesh);
     };
+
+    virtual COpaqueMeshCollector * clone() {
+        return new COpaqueMeshCollectorBindlessVLK(m_renderer);
+    }
+
+    void merge(COpaqueMeshCollector & collector) override {
+        auto l_collector = (COpaqueMeshCollectorBindlessVLK &) collector;
+
+        m2DrawVec.insert(m2DrawVec.end(), l_collector.m2DrawVec.begin(), l_collector.m2DrawVec.end());
+        wmoDrawVec.insert(wmoDrawVec.end(), l_collector.wmoDrawVec.begin(), l_collector.wmoDrawVec.end());
+        adtDrawVec.insert(adtDrawVec.end(), l_collector.adtDrawVec.begin(), l_collector.adtDrawVec.end());
+        commonMeshes.insert(commonMeshes.end(), l_collector.commonMeshes.begin(), l_collector.commonMeshes.end());
+        waterMeshMap.insert(l_collector.waterMeshMap.begin(), l_collector.waterMeshMap.end());
+    }
 
     void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
         std::sort(m2DrawVec.begin(), m2DrawVec.end(), [](DrawCommand const &a, DrawCommand const &b) {

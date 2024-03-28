@@ -125,7 +125,7 @@ public:
         if (!weakPtr.expired())
         {
             if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
-                sharedPtr->rejected();
+                sharedPtr->setRejected();
             }
         }
     }

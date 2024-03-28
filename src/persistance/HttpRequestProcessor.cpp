@@ -127,8 +127,8 @@ void HttpRequestProcessor::processFileRequest(const std::string &fileName, Cache
                 toBeProcessed--;
             }
     );
-    httpFile->setFailCallback([fileName, this, holderType, httpFile](HFileContent fileContent) -> void {
-        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
+    httpFile->setFailCallback([fileName, this, perstFile, httpFile](HFileContent fileContent) -> void {
+        perstFile->setRejected();
         toBeProcessed--;
     });
     httpFile->startDownloading();

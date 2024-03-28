@@ -63,35 +63,46 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
         auto &m2ToDraw = cullStage->m2Array.getDrawn();
         int granSize = m2ToDraw.size() / (2 * threadsAvailable);
 
-        transp_vec<HGSortableMesh> transpVec;
+
 
         if (granSize > 0) {
+            std::mutex mergeMtx;
             oneapi::tbb::task_arena arena(std::min<uint32_t>(threadsAvailable, 16), 1);
             arena.execute([&] {
-                tbb::affinity_partitioner ap;
+                tbb::static_partitioner ap;
 
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
                                   [&](tbb::blocked_range<size_t> r) {
+                                      transp_vec<HGSortableMesh> transpVec;
+                                      auto lCollector = opaqueMeshCollector.clone();
                                       for (size_t i = r.begin(); i != r.end(); ++i) {
                                           auto &m2Object = m2ToDraw[i];
                                           if (m2Object != nullptr) {
-                                              m2Object->collectMeshes(opaqueMeshCollector, transpVec,
+                                              m2Object->collectMeshes(*lCollector, transpVec,
                                                                       m_viewRenderOrder);
-                                              m2Object->drawParticles(opaqueMeshCollector, transpVec,
+                                              m2Object->drawParticles(*lCollector, transpVec,
                                                                       m_viewRenderOrder);
                                           }
                                       }
+
+                                      {
+                                          std::lock_guard<std::mutex> lock(mergeMtx);
+                                          opaqueMeshCollector.merge(*lCollector);
+                                          transparentMeshes.insert(transparentMeshes.end(), transpVec.begin(), transpVec.end());
+                                      }
+                                      delete lCollector;
+
                                   }, ap);
             });
         } else {
             for (auto &m2Object : cullStage->m2Array.getDrawn()) {
                 if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(opaqueMeshCollector, transpVec, m_viewRenderOrder);
-                m2Object->drawParticles(opaqueMeshCollector, transpVec, m_viewRenderOrder);
+                m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
+                m2Object->drawParticles(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
             }
         }
 
-        transparentMeshes.insert(transparentMeshes.end(), transpVec.begin(), transpVec.end());
+
 
         auto skyBoxView = cullStage->viewsHolder.getSkybox();
         if (skyBoxView) {

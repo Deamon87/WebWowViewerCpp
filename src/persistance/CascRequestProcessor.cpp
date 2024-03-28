@@ -194,7 +194,8 @@ void CascRequestProcessor::processFileRequest(const std::string &fileName, Cache
             std::cout << "Could read file " << fileName << std::endl << std::flush;
         }
         toBeProcessed--;
-        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
+        perstFile->setRejected();
+//        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
     }
 }
 

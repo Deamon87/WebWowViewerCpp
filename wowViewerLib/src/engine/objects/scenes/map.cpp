@@ -476,6 +476,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
 
     if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
+        ZoneScopedN("Skybox");
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
         auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
         if (m_wdlObject != nullptr) {
@@ -496,16 +497,27 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     }
 
     {
+
         auto exteriorView = mapRenderPlan->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
-            exteriorView->addM2FromGroups(frustumData, cameraPos);
-            for (auto &adtRes: exteriorView->drawnADTs) {
-                adtRes->adtObject->collectMeshes(*adtRes, exteriorView->m_adtOpaqueMeshes,
-                                                 exteriorView->liquidMeshes,
-                                                 exteriorView->renderOrder);
+            {
+                ZoneScopedN("collect m2 from groups");
+                exteriorView->addM2FromGroups(frustumData, cameraPos);
             }
-            mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);
-            mapRenderPlan->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
+
+            {
+                ZoneScopedN("adt mesh collect");
+                for (auto &adtRes: exteriorView->drawnADTs) {
+                    adtRes->adtObject->collectMeshes(*adtRes, exteriorView->m_adtOpaqueMeshes,
+                                                     exteriorView->liquidMeshes,
+                                                     exteriorView->renderOrder);
+                }
+            }
+            {
+                ZoneScopedN("m2AndWMOArr merge");
+                mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);
+                mapRenderPlan->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
+            }
         }
     }
 

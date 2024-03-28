@@ -14,7 +14,7 @@
 #include "tbb/scalable_allocator.h"
 
 template <class T>
-using transp_vec = tbb::concurrent_vector<T>;
+using transp_vec = std::vector<T, tbb::cache_aligned_allocator<T>>;
 
 namespace framebased {
 

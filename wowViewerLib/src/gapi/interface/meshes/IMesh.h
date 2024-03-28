@@ -102,11 +102,15 @@ public:
 
 class COpaqueMeshCollector {
 public:
+    virtual ~COpaqueMeshCollector() {};
     virtual void addM2Mesh(const HGM2Mesh &mesh) = 0;
     virtual void addWMOMesh(const HGMesh &mesh) = 0;
     virtual void addWaterMesh(const HGMesh &mesh) = 0;
     virtual void addADTMesh(const HGMesh &mesh) = 0;
 
     virtual void addMesh(const HGMesh &mesh) = 0;
+
+    virtual void merge(COpaqueMeshCollector & collector) = 0;
+    virtual COpaqueMeshCollector * clone() = 0;
 };
 #endif //AWEBWOWVIEWERCPP_IMESH_H
