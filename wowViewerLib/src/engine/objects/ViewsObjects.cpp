@@ -45,7 +45,7 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
         }
     }
 
-    auto candidatesArr = this->m2List.getCandidates();
+    auto &candidatesArr = this->m2List.getCandidates();
     auto candCullRes = std::vector<uint32_t>(candidatesArr.size(), 0xFFFFFFFF);
 
     oneapi::tbb::task_arena arena(oneapi::tbb::task_arena::automatic, 3);
@@ -75,7 +75,7 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
     }
 }
 
-void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
+void GeneralView::setM2Lights(const std::shared_ptr<M2Object> &m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
@@ -168,7 +168,7 @@ void GeneralView::collectPortalMeshes(framebased::vector<HGSortableMesh> &transp
     }
 }
 
-void InteriorView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
+void InteriorView::setM2Lights(const std::shared_ptr<M2Object> &m2Object) {
     if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
 
     if (ownerGroupWMO->getDontUseLocalLightingForM2()) {

@@ -23,11 +23,13 @@ MaterialBuilderVLK::MaterialBuilderVLK(
         const std::shared_ptr<IDeviceVulkan> &device,
         const std::shared_ptr<GShaderPermutationVLK> &shader,
         const HPipelineVLK &pipeline,
+        const HPipelineVLK &gBufferPipeline,
         const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
         const PipelineTemplate &pipelineTemplate,
         const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
         uint32_t materialId) :
-        m_device(device), m_shader(shader), m_pipeline(pipeline), m_pipelineTemplate(pipelineTemplate),
+        m_device(device), m_shader(shader), m_pipeline(pipeline), m_gBufferPipeline(gBufferPipeline),
+        m_pipelineTemplate(pipelineTemplate),
         m_descriptorSets(descriptorSets), m_pipelineLayout(pipelineLayout), m_materialId(materialId) {
 
 }
@@ -74,11 +76,42 @@ MaterialBuilderVLK &MaterialBuilderVLK::createPipeline(const HGVertexBufferBindi
         pipelineTemplate.triCCW,
         pipelineTemplate.blendMode,
         pipelineTemplate.depthCulling,
-        pipelineTemplate.depthWrite
+        pipelineTemplate.depthWrite,
+        pipelineTemplate.colorMask
     );
 
     return *this;
 }
+
+MaterialBuilderVLK& MaterialBuilderVLK::createGBufferPipeline(const HGVertexBufferBindings &bindings,
+                                          const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig,
+                                          const std::shared_ptr<GRenderPassVLK> &renderPass) {
+    if (m_pipelineTemplate.blendMode >= EGxBlendEnum::GxBlend_Alpha) {
+        return *this;
+    }
+
+    auto gbufferShader = std::dynamic_pointer_cast<GShaderPermutationVLK>(std::dynamic_pointer_cast<GDeviceVLK>(m_device)->getShader(
+        shaderFiles[0],
+        shaderFiles[1], shaderConfig));
+
+
+    m_gBufferPipeline = std::dynamic_pointer_cast<GDeviceVLK>(m_device)->createPipeline(
+        bindings,
+        gbufferShader,
+        m_pipelineLayout,
+        renderPass,
+        m_pipelineTemplate.element,
+        m_pipelineTemplate.backFaceCulling,
+        m_pipelineTemplate.triCCW,
+        m_pipelineTemplate.blendMode,
+        m_pipelineTemplate.depthCulling,
+        m_pipelineTemplate.depthWrite,
+        m_pipelineTemplate.colorMask
+    );
+
+    return *this;
+}
+
 
 MaterialBuilderVLK &MaterialBuilderVLK::setMaterialId(uint32_t matId) {
     m_materialId = matId;
@@ -91,6 +124,7 @@ std::shared_ptr<ISimpleMaterialVLK> MaterialBuilderVLK::toMaterial() {
         m_shader,
         m_pipelineTemplate,
         m_pipeline,
+        m_gBufferPipeline,
         m_descriptorSets,
         m_materialId
       );

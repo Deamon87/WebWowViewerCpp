@@ -18,6 +18,7 @@ public:
     explicit ISimpleMaterialVLK(const std::shared_ptr<GShaderPermutationVLK> &shader,
                                 const PipelineTemplate &pipelineTemplate,
                                 const HPipelineVLK &pipeline,
+                                const HPipelineVLK &gBufferPipeline,
                                 const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
                                 uint32_t materialId);
     ~ISimpleMaterialVLK() override = default;
@@ -32,6 +33,9 @@ public:
     const HPipelineVLK &getPipeline() const {
         return m_pipeline;
     }
+    const HPipelineVLK &getGBufferPipeline() const {
+        return m_gBufferPipeline;
+    }
     const PipelineTemplate &getPipelineTemplate() const {
         return m_pipelineTemplate;
     }
@@ -45,6 +49,7 @@ private:
     uint32_t m_materialId;
     std::shared_ptr<GShaderPermutationVLK> m_shader;
     HPipelineVLK m_pipeline;
+    HPipelineVLK m_gBufferPipeline;
     PipelineTemplate m_pipelineTemplate;
 };
 

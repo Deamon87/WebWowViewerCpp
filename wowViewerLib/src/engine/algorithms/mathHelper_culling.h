@@ -13,7 +13,7 @@ public:
     static void cull(const MathHelper::FrustumCullingData &cullingData,
                      const int start,
                      const int end,
-                     const std::vector<T> &objects,
+                     const framebased::vector<T> &objects,
                      std::vector<uint32_t> &culling_res) {
         for (int i = start; i < end; i++) {
             culling_res[i] &= MathHelper::checkFrustum(cullingData.frustums, retrieveAABB(objects[i])) ? 0 : 0xFFFFFFFF;

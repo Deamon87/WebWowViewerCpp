@@ -20,9 +20,9 @@ std::vector<mathfu::vec3> createAntiPortal(const HWmoGroupGeom& groupGeom, const
             ; ++mopy_index, ++movi_index
             )
     {
-        points.push_back((placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]), 1.0f)).xyz());
-        points.push_back((placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]), 1.0f)).xyz());
-        points.push_back((placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]), 1.0f)).xyz());
+        points.emplace_back() = (placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]), 1.0f)).xyz();
+        points.emplace_back() = (placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]), 1.0f)).xyz();
+        points.emplace_back() = (placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]), 1.0f)).xyz();
     }
     return points;
 }
@@ -245,7 +245,7 @@ void WmoObject::createWorldPortals() {
                 portalVerticles[base_index + k].y,
                 portalVerticles[base_index + k].z);
 
-            portalVecs.push_back(verticle);
+            portalVecs.emplace_back() = verticle;
         }
 
         //Calculate center of the portal
@@ -276,7 +276,7 @@ void WmoObject::createWorldPortals() {
 
         portalVecs.clear();
         for (int k = 0; k < hulled.size(); k++) {
-            portalVecs.push_back((viewMatInv * mathfu::vec4(hulled[k], 1.0)).xyz());
+            portalVecs.emplace_back() = (viewMatInv * mathfu::vec4(hulled[k], 1.0)).xyz();
         }
         geometryPerPortal[j].sortedVericles = portalVecs;
 
@@ -709,8 +709,8 @@ bool WmoObject::startTraversingWMOGroup(
             } else {
                 if ((mainGeom->groups[i].flags.ANTIPORTAL) > 0) { //ANTIPORTAL
                     if (this->groupObjects[i]->getIsLoaded()) {
-                        exteriorView->worldAntiPortalVertices.push_back(
-                            createAntiPortal(this->groupObjects[i]->getWmoGroupGeom(), m_placementMatrix));
+                        exteriorView->worldAntiPortalVertices.emplace_back() =
+                            createAntiPortal(this->groupObjects[i]->getWmoGroupGeom(), m_placementMatrix);
                     }
                 }
             }
@@ -930,7 +930,7 @@ void WmoObject::traverseGroupWmo(
                     n *= -1.0f;
                 }
 
-                thisPortalPlanes.push_back(n);
+                thisPortalPlanes.emplace_back() = n;
             }
             //The portalPlanes do not have far and near plane. So we need to add them
             //Near plane is this portal's plane, far plane is a global one
@@ -939,8 +939,8 @@ void WmoObject::traverseGroupWmo(
                 nearPlane *= -1.0f;
 
             auto &farPlane = traverseTempData.farPlane;
-            thisPortalPlanes.push_back(nearPlane);
-            thisPortalPlanes.push_back(farPlane);
+            thisPortalPlanes.emplace_back() = nearPlane;
+            thisPortalPlanes.emplace_back() = farPlane;
         } else {
             // If camera is too close - just use usual frustums
             thisPortalPlanes = localFrustumPlanes;
@@ -982,11 +982,11 @@ void WmoObject::traverseGroupWmo(
                 interiorView->ownerGroupWMO = nextGroupObject;
                 interiorView->wmoGroupArray.addToDraw(nextGroupObject);
                 interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
-                interiorView->portalIndexes.push_back(relation->portal_index);
+                interiorView->portalIndexes.emplace_back() = relation->portal_index;
             }
 
-            interiorView->worldPortalVertices.push_back(worldSpacePortalVertices);
-            interiorView->frustumData.frustums.push_back(worldSpaceFrustum);
+            interiorView->worldPortalVertices.emplace_back() = worldSpacePortalVertices;
+            interiorView->frustumData.frustums.emplace_back() = worldSpaceFrustum;
             if (globalLevel+1 >= interiorView->level) {
                 interiorView->level = globalLevel + 1;
             } else {
@@ -1012,8 +1012,8 @@ void WmoObject::traverseGroupWmo(
             if (!traverseTempData.exteriorWasCreatedBeforeTraversing) {
                 auto exteriorView = traverseTempData.viewsHolder.getOrCreateExterior({});
                 exteriorView->level = globalLevel + 1;
-                exteriorView->worldPortalVertices.push_back(worldSpacePortalVertices);
-                exteriorView->frustumData.frustums.push_back(worldSpaceFrustum);
+                exteriorView->worldPortalVertices.emplace_back() = worldSpacePortalVertices;
+                exteriorView->frustumData.frustums.emplace_back() = worldSpaceFrustum;
             }
         }
     }

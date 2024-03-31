@@ -500,7 +500,7 @@ constexpr int alphaTexSize = 64;
 constexpr int texWidth = alphaTexSize * 16;
 constexpr int texHeight = alphaTexSize * 16;
 
-std::vector<uint8_t> bigTexture = std::vector<uint8_t>(texWidth * texHeight * 4, 0);
+auto bigTexture = std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>>(texWidth * texHeight * 4, 0);
 
 void AdtObject::loadAlphaTextures() {
     ZoneScoped;
@@ -509,7 +509,7 @@ void AdtObject::loadAlphaTextures() {
     int createdThisRun = 0;
     alphaTexture = m_api->hDevice->createTexture(false, false);
 
-        memset(bigTexture.data(), 0, bigTexture.size());
+    memset(bigTexture.data(), 0, bigTexture.size());
 
     if (chunkCount > 0) {
 //        for (int i = 0; i < chunkCount; i++){
@@ -589,7 +589,7 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaq
     transparentMeshes.reserve(transparentMeshes.size() + m_liquidInstancesPerChunk.size());
     for (int i = 0; i < meshCount; i++) {
         if (adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
-            opaqueMeshes.push_back(adtMeshes[i]);
+            opaqueMeshes.emplace_back() = adtMeshes[i];
         }
         if (adtRes.drawWaterChunk[i]) {
             for (auto const &liquidInstance : m_liquidInstancesPerChunk[i]) {
@@ -760,14 +760,10 @@ void AdtObject::update(animTime_t deltaTime ) {
 void AdtObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData) {
     if (!m_loaded) return;
 
-    if (m_waterPlacementChunk != nullptr) {
-        m_waterPlacementChunk->getObject().uPlacementMat = mathfu::mat4::Identity();
-        m_waterPlacementChunk->save();
-    }
-
-    for(auto &liquidInstance : m_liquidInstances) {
-        liquidInstance->updateLiquidMaterials(frameDependantData, m_mapApi->getCurrentSceneTime());
-    }
+//Not used in current code
+//    for(auto &liquidInstance : m_liquidInstances) {
+//        liquidInstance->updateLiquidMaterials(frameDependantData, m_mapApi->getCurrentSceneTime());
+//    }
 }
 
 HGSamplableTexture AdtObject::getAdtTexture(int textureId) {

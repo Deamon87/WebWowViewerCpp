@@ -17,8 +17,8 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
     createFrameBuffers();
     {
         std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
-        for (int i = 0; i < m_colorFrameBuffers.size(); i++) {
-            inputColorTextures.emplace_back(m_colorFrameBuffers[i]->getAttachment(0));
+        for (int i = 0; i < m_forwardFrameBuffers.size(); i++) {
+            inputColorTextures.emplace_back(m_forwardFrameBuffers[i]->getAttachment(0));
         }
 
         glowPass->updateDimensions(m_width, m_height,
@@ -29,44 +29,63 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
 
 void RenderViewDeferredVLK::createFrameBuffers() {
     {
-        auto const dataFormat = {
+        auto const gBufferFormat = {
             ITextureFormat::itRGBA,         //Albedo
             ITextureFormat::itRGBA,         //Specular
             ITextureFormat::itRGBA          //Normal
         };
 
+        auto const forwardBufferFormat = {
+            ITextureFormat::itRGBA   //Color
+        };
+
         auto depthFormat = ITextureFormat::itDepth32;
         bool invertZ = true;
 
-        m_opaqueRenderPass = m_device->getRenderPass(dataFormat,
+        int gBufferPassSamples = 1;
+        int forwardPassSamples = 1; //m_device->getMaxSamplesCnt();
+
+        m_gBufferRenderPass = m_device->getRenderPass(gBufferFormat,
                                                      depthFormat,
-                                                     sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
+                                                     sampleCountToVkSampleCountFlagBits(gBufferPassSamples),
                                                      invertZ, false,
                                                      true, true);
 
-        m_nonOpaqueRenderPass = m_device->getRenderPass({ITextureFormat::itRGBA},
+        m_forwardRenderPass = m_device->getRenderPass(forwardBufferFormat,
                                                         depthFormat,
-                                                        sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
+                                                        sampleCountToVkSampleCountFlagBits(forwardPassSamples),
                                                         invertZ, false,
-                                                        false, false);
+                                                        true, true);
 
-        for (auto &colorFrameBuffer: m_colorFrameBuffers) {
-            colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
+        m_forwardRenderPassNoDepthClear = m_device->getRenderPass(forwardBufferFormat,
+                                                        depthFormat,
+                                                        sampleCountToVkSampleCountFlagBits(forwardPassSamples),
+                                                        invertZ, false,
+                                                        true, false);
+
+        for (auto &gBufferFrameBuffer: m_gBufferFrameBuffers) {
+            gBufferFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
-                dataFormat,
+                gBufferFormat,
                 depthFormat,
-                m_device->getMaxSamplesCnt(),
+                nullptr,
+                gBufferPassSamples,
                 invertZ,
                 m_width, m_height
             );
         }
 
-        std::vector<uint8_t> attachmentsToCopy = {0};
-        for (int i = 0; i < m_colorNonOpaqFrameBuffers.size(); i++) {
-            m_colorNonOpaqFrameBuffers[i] = std::make_shared<GFrameBufferVLK>(
-                m_colorFrameBuffers[i].get(),
-                attachmentsToCopy,
-                m_nonOpaqueRenderPass
+//        std::vector<uint8_t> attachmentsToCopy = {};
+        for (int i = 0; i < m_forwardFrameBuffers.size(); i++) {
+            m_forwardFrameBuffers[i] = std::make_shared<GFrameBufferVLK>(
+                *m_device,
+                forwardBufferFormat,
+                depthFormat,
+                m_gBufferFrameBuffers[i]->getDepthTexture(),
+                forwardPassSamples, //m_device->getMaxSamplesCnt(),
+                invertZ,
+                m_width,
+                m_height
             );
         }
     }
@@ -83,6 +102,7 @@ void RenderViewDeferredVLK::createFrameBuffers() {
                 *m_device,
                 dataFormat,
                 ITextureFormat::itNone,
+                nullptr,
                 1,
                 invertZ,
                 m_width, m_height
@@ -104,8 +124,8 @@ void RenderViewDeferredVLK::update(int width, int height, float glow) {
 
         {
             std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
-            for (int i = 0; i < m_colorFrameBuffers.size(); i++) {
-                inputColorTextures.emplace_back(m_colorFrameBuffers[i]->getAttachment(0));
+            for (int i = 0; i < m_forwardFrameBuffers.size(); i++) {
+                inputColorTextures.emplace_back(m_forwardFrameBuffers[i]->getAttachment(0));
             }
 
             glowPass->updateDimensions(m_width, m_height,
@@ -122,18 +142,18 @@ static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
     return {vec[0], vec[1], vec[2]};
 }
 
-RenderPassHelper RenderViewDeferredVLK::beginOpaquePass(CmdBufRecorder &frameBufCmd,
+RenderPassHelper RenderViewDeferredVLK::beginGBufferPass(CmdBufRecorder &frameBufCmd,
                                                   bool willExecuteSecondaryBuffs,
                                                   mathfu::vec4 &clearColor) {
     return frameBufCmd.beginRenderPass(willExecuteSecondaryBuffs,
-                                       m_opaqueRenderPass,
-                                       m_colorFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
+                                       m_gBufferRenderPass,
+                                       m_gBufferFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
                                        {0,0},
                                        {m_width, m_height},
                                        vec4ToArr3(clearColor));
 }
-void RenderViewDeferredVLK::doOpaqueNonOpaqueBarrier(CmdBufRecorder &frameBufCmd) {
-    auto const &fb = m_colorFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+void RenderViewDeferredVLK::doGBufferBarrier(CmdBufRecorder &frameBufCmd) {
+    auto const &fb = m_gBufferFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
 
     VkImageSubresourceRange subresourceRange = {};
     // Image only contains color data
@@ -163,10 +183,11 @@ void RenderViewDeferredVLK::doOpaqueNonOpaqueBarrier(CmdBufRecorder &frameBufCmd
     );
 }
 
-RenderPassHelper RenderViewDeferredVLK::beginNonOpaquePass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs, mathfu::vec4 &clearColor) {
+RenderPassHelper RenderViewDeferredVLK::beginForwardPass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs,
+                                                         bool clearDepth, mathfu::vec4 &clearColor) {
     return frameBufCmd.beginRenderPass(willExecuteSecondaryBuffs,
-                                       m_nonOpaqueRenderPass,
-                                       m_colorNonOpaqFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
+                                       clearDepth ? m_forwardRenderPass : m_forwardRenderPassNoDepthClear,
+                                       m_forwardFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
                                        {0,0},
                                        {m_width, m_height},
                                        vec4ToArr3(clearColor));
@@ -203,7 +224,7 @@ void RenderViewDeferredVLK::iterateOverOutputTextures(
     {
         std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> depthTextures;
         for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)
-            depthTextures[i] = m_device->createSampledTexture(m_colorFrameBuffers[i]->getDepthTexture(), false, false);
+            depthTextures[i] = m_device->createSampledTexture(m_forwardFrameBuffers[i]->getDepthTexture(), false, false);
 
         callback(depthTextures, "Depth buffer", ITextureFormat::itDepth32);
     }

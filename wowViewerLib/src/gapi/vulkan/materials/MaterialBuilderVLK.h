@@ -26,6 +26,7 @@ public:
                                            const std::shared_ptr<ISimpleMaterialVLK> &materialVlk) {
         return {device, materialVlk->getShader(),
                         materialVlk->getPipeline(),
+                        materialVlk->getGBufferPipeline(),
                         materialVlk->getPipeline()->getLayout(),
                         materialVlk->getPipelineTemplate(),
                         toArray(materialVlk->getDescriptorSets()),
@@ -38,6 +39,9 @@ public:
     MaterialBuilderVLK& createPipeline(const HGVertexBufferBindings &bindings,
                                        const std::shared_ptr<GRenderPassVLK> &renderPass,
                                        const PipelineTemplate &pipelineTemplate);
+    MaterialBuilderVLK& createGBufferPipeline(const HGVertexBufferBindings &bindings,
+                                       const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig,
+                                       const std::shared_ptr<GRenderPassVLK> &renderPass);
     MaterialBuilderVLK& setMaterialId(uint32_t matId);
     std::shared_ptr<ISimpleMaterialVLK> toMaterial();
 
@@ -47,6 +51,7 @@ public:
                                    m_shader,
                                    m_pipelineTemplate,
                                    m_pipeline,
+                                   m_gBufferPipeline,
                                    m_descriptorSets,
                                    m_materialId);
     }
@@ -66,6 +71,7 @@ private:
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
                        const std::shared_ptr<GShaderPermutationVLK> &shader,
                        const HPipelineVLK &pipeline,
+                       const HPipelineVLK &gBufferPipeline,
                        const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout,
                        const PipelineTemplate &pipelineTemplate,
                        const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
@@ -79,6 +85,7 @@ private:
     uint32_t m_materialId;
     std::shared_ptr<GShaderPermutationVLK> m_shader;
     HPipelineVLK m_pipeline;
+    HPipelineVLK m_gBufferPipeline = nullptr;
     std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;
     PipelineTemplate m_pipelineTemplate;
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> m_descriptorSets;

@@ -19,6 +19,7 @@
 
 static const ShaderConfig forwardShaderConfig = {
     "forwardRendering",
+    "forwardRendering",
     {
         {0, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
@@ -26,6 +27,7 @@ static const ShaderConfig forwardShaderConfig = {
     }
 };
 static const ShaderConfig m2ForwardShaderConfig = {
+    "forwardRendering",
     "forwardRendering",
     {
         {0, {
@@ -857,7 +859,7 @@ HGSortableMesh MapSceneRenderForwardVLK::createWaterMesh(gMeshTemplate &meshTemp
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
-HGMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGSortableMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
     return mesh;
 }

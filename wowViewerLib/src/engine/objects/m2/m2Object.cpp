@@ -1144,7 +1144,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
     }
 }
 
-bool M2Object::isMainDataLoaded() {
+bool M2Object::isMainDataLoaded() const {
     if (m_m2Geom == nullptr) return false;
     if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return false;
 
@@ -1677,7 +1677,7 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_v
             }
 
             if (mesh->getIsTransparent()) {
-                transparentMeshes.push_back(mesh);
+                transparentMeshes.emplace_back() = mesh;
             } else {
                 if (!isWaterFallMesh) {
                     opaqueMeshCollector.addM2Mesh(mesh);
@@ -1713,7 +1713,7 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_v
     }
 
     if (m_api->getConfig()->drawM2BB) {
-        transparentMeshes.push_back(boundingBoxMesh);
+        transparentMeshes.emplace_back(boundingBoxMesh);
     }
 //    std::cout << "Collected meshes at update frame =" << m_api->hDevice->getUpdateFrameNumber() << std::endl;
 }

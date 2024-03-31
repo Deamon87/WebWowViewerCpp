@@ -25,7 +25,8 @@ public:
                           bool triCCW,
                           EGxBlendEnum blendMode,
                           bool depthCulling,
-                          bool depthWrite);
+                          bool depthWrite,
+                          uint8_t colorMask);
     ~GPipelineVLK();
 
     void createPipeline(
@@ -37,6 +38,7 @@ public:
         EGxBlendEnum m_blendMode,
         bool m_depthCulling,
         bool m_depthWrite,
+        uint8_t colorMask,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);

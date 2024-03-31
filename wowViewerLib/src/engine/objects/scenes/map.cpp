@@ -1589,7 +1589,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         if (granSize > 0) {
             auto l_device = m_api->hDevice;
             auto oldProcessingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
-            auto processingFrame = oldProcessingFrame % IDevice::MAX_FRAMES_IN_FLIGHT;
+            auto processingFrame = oldProcessingFrame;
             oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
             arena.execute([&] {
                 tbb::affinity_partitioner ap;

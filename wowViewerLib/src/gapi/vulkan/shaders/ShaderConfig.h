@@ -27,7 +27,8 @@ struct DescTypeConfig {
 typedef std::unordered_map<int,std::unordered_map<int, DescTypeConfig>> DescTypeOverride;
 
 struct ShaderConfig {
-    std::string shaderFolder;
+    std::string vertexShaderFolder;
+    std::string fragmentShaderFolder;
     DescTypeOverride typeOverrides;
 };
 

@@ -43,7 +43,8 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     bool triCCW,
     EGxBlendEnum blendMode,
     bool depthCulling,
-    bool depthWrite) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    bool depthWrite,
+    uint8_t colorMask) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
     auto &arrVLKFormat = bufferBindingsVlk->getVLKFormat();
@@ -70,6 +71,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         blendMode,
         depthCulling,
         depthWrite,
+        colorMask,
         vertexBindingDescriptions,
         vertexAttributeDescriptions);
 }
@@ -94,6 +96,7 @@ void GPipelineVLK::createPipeline(
         EGxBlendEnum m_blendMode,
         bool depthCulling,
         bool depthWrite,
+        uint8_t colorMask,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
@@ -191,7 +194,10 @@ void GPipelineVLK::createPipeline(
     {
         auto &colorBlendAttachment = colorBlendAttachments.emplace_back();
         colorBlendAttachment.colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            (((colorMask & 1) > 0) ? VK_COLOR_COMPONENT_R_BIT : 0) |
+            (((colorMask & 2) > 0) ? VK_COLOR_COMPONENT_G_BIT : 0) |
+            (((colorMask & 4) > 0) ? VK_COLOR_COMPONENT_B_BIT : 0) |
+            (((colorMask & 8) > 0) ? VK_COLOR_COMPONENT_A_BIT : 0);
         colorBlendAttachment.blendEnable = blendModesVLK[(char) m_blendMode].blendModeEnable ? VK_TRUE : VK_FALSE;
         colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
         colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
@@ -207,7 +213,10 @@ void GPipelineVLK::createPipeline(
         colorBlendAttachment.blendEnable = VK_FALSE;
 
         colorBlendAttachment.colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            (((colorMask & 1) > 0) ? VK_COLOR_COMPONENT_R_BIT : 0) |
+            (((colorMask & 2) > 0) ? VK_COLOR_COMPONENT_G_BIT : 0) |
+            (((colorMask & 4) > 0) ? VK_COLOR_COMPONENT_B_BIT : 0) |
+            (((colorMask & 8) > 0) ? VK_COLOR_COMPONENT_A_BIT : 0);
         colorBlendAttachment.blendEnable = VK_FALSE;
         colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
         colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;

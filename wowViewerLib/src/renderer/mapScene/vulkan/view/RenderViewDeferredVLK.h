@@ -16,13 +16,13 @@ public:
 
     void update(int width, int height, float glow);
 
-    std::shared_ptr<GRenderPassVLK> getOpaqueRenderPass() {return m_opaqueRenderPass;}
-    std::shared_ptr<GRenderPassVLK> getNonOpaqueRenderPass() {return m_nonOpaqueRenderPass;}
+    std::shared_ptr<GRenderPassVLK> getGBufferPass() {return m_gBufferRenderPass;}
+    std::shared_ptr<GRenderPassVLK> getForwardPass() {return m_forwardRenderPass;}
 
-    RenderPassHelper beginOpaquePass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs, mathfu::vec4 &clearColor);
-    RenderPassHelper beginNonOpaquePass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs, mathfu::vec4 &clearColor);
+    RenderPassHelper beginGBufferPass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs, mathfu::vec4 &clearColor);
+    RenderPassHelper beginForwardPass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs, bool clearDepth, mathfu::vec4 &clearColor);
 
-    void doOpaqueNonOpaqueBarrier(CmdBufRecorder &frameBufCmd);
+    void doGBufferBarrier(CmdBufRecorder &frameBufCmd);
 
     void doOutputPass(CmdBufRecorder &frameBufCmd);
 
@@ -38,10 +38,12 @@ private:
     HGDeviceVLK m_device;
     bool m_createOutputFBO;
 
-    std::shared_ptr<GRenderPassVLK> m_opaqueRenderPass;
-    std::shared_ptr<GRenderPassVLK> m_nonOpaqueRenderPass;
-    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorFrameBuffers;
-    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_colorNonOpaqFrameBuffers;
+    std::shared_ptr<GRenderPassVLK> m_gBufferRenderPass;
+    std::shared_ptr<GRenderPassVLK> m_forwardRenderPass;
+    std::shared_ptr<GRenderPassVLK> m_forwardRenderPassNoDepthClear;
+    std::shared_ptr<GRenderPassVLK> m_shadowPass;
+    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_gBufferFrameBuffers;
+    std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_forwardFrameBuffers;
     std::unique_ptr<FFXGlowPassVLK> glowPass;
 
     std::shared_ptr<GRenderPassVLK> m_outputRenderPass;

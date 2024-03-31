@@ -1453,7 +1453,8 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                         bool triCCW,
                                         EGxBlendEnum blendMode,
                                         bool depthCulling,
-                                        bool depthWrite) {
+                                        bool depthWrite,
+                                        uint8_t colorMask) {
 
     PipelineCacheRecord pipelineCacheRecord = {
         .shader = shader,
@@ -1465,6 +1466,7 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
         .blendMode = blendMode,
         .depthCulling = depthCulling,
         .depthWrite = depthWrite,
+        .colorMask = colorMask,
     };
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
@@ -1482,7 +1484,8 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                       backFaceCulling,
                                       triCCW,
                                       blendMode,
-                                      depthCulling, depthWrite);
+                                      depthCulling, depthWrite,
+                                      colorMask);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;

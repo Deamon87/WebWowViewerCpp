@@ -582,18 +582,18 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
 //        }
     }
 
-    if (mcalRuntime.uncompressedIndex) {
-        auto pCurrentLayer = currentLayer;
-        auto pCurrentLayerInt = (uint32_t *)currentLayer;
-        for ( int i = 0; i < 64; i++ ) {
-            uint8_t layer0 = *pCurrentLayer++;
-            uint8_t layer1 = *pCurrentLayer++;
-            uint8_t layer2 = *pCurrentLayer++;
-            uint8_t layer3 = *pCurrentLayer++;
-
-            *pCurrentLayerInt++ = 255 - layer0 - layer1 - layer2 - layer3;
-        }
-    }
+//    if (mcalRuntime.uncompressedIndex) {
+//        auto pCurrentLayer = currentLayer;
+//        auto pCurrentLayerInt = (uint32_t *)currentLayer;
+//        for ( int i = 0; i < 64; i++ ) {
+//            uint8_t layer0 = *pCurrentLayer++;
+//            uint8_t layer1 = *pCurrentLayer++;
+//            uint8_t layer2 = *pCurrentLayer++;
+//            uint8_t layer3 = *pCurrentLayer++;
+//
+//            *pCurrentLayerInt++ = 255 - layer0 - layer1 - layer2 - layer3;
+//        }
+//    }
 }
 
 static bool isHoleLowRes(int hole, int i, int j) {

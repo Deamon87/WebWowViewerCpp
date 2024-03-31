@@ -15,6 +15,7 @@
 #include "view/RenderViewForwardVLK.h"
 #include "../../../gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h"
 #include "../../../engine/objects/scenes/EntityActorsFactory.h"
+#include "view/RenderViewDeferredVLK.h"
 
 class COpaqueMeshCollectorBindlessVLK;
 
@@ -105,7 +106,7 @@ public:
     HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
-    HGMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) override;
+    HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
 
 //--------------------------------------
@@ -228,7 +229,9 @@ protected:
     std::shared_ptr<GDescriptorSet> waterTexturesDS = nullptr;
     std::shared_ptr<BindlessTextureHolder> waterTextureHolder = nullptr;
 
-    std::shared_ptr<GRenderPassVLK> m_renderPass;
+    std::shared_ptr<GRenderPassVLK> m_forwardRenderPass;
+    std::shared_ptr<GRenderPassVLK> m_gBufferPass;
+    std::shared_ptr<GRenderPassVLK> m_shadowPass;
 
     std::shared_ptr<MapRenderPlan> m_lastCreatedPlan = nullptr;
 
@@ -242,8 +245,8 @@ protected:
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
 
-    using RendererViewClass = RenderViewForwardVLK;
-    std::shared_ptr<RenderViewForwardVLK> defaultView;
+    using RendererViewClass = RenderViewDeferredVLK;
+    std::shared_ptr<RendererViewClass> defaultView;
 
     MeshCount lastMeshCount;
 
@@ -288,9 +291,6 @@ public:
     HGVertexBufferBindings getDefaultM2Vao() const    {return m_emptyM2VAO;};
     HGVertexBufferBindings getDefaultWMOVao() const   {return m_emptyWMOVAO;};
     HGVertexBufferBindings getDefaultWaterVao() const {return m_emptyWaterVAO;};
-
-    std::shared_ptr<GRenderPassVLK> chooseRenderPass(const PipelineTemplate &pipelineTemplate);
-    virtual std::shared_ptr<GRenderPassVLK> getRenderPass(bool isOpaque);
 
     void
     drawOpaque(CmdBufRecorder &frameBufCmd,

@@ -12,7 +12,8 @@
 
 class GFrameBufferVLK : public IFrameBuffer {
 public:
-    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, int multiSampleCnt, bool invertZ, int width, int height);
+    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, const HGTexture &depthBuffer, int multiSampleCnt, bool invertZ, int width, int height);
+    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, const HGTexture &depthBuffer, int multiSampleCnt, bool invertZ, int width, int height);
     GFrameBufferVLK(IDevice &device,
                     const HGTexture &colorImage,
                     const HGTexture &depthBuffer,
@@ -55,7 +56,7 @@ private:
     std::vector<ITextureFormat> m_textureAttachments;
     ITextureFormat m_depthAttachment = ITextureFormat::itNone;
 
-    int m_multiSampleCnt;
+    int m_multiSampleCnt = 0;
 
     int m_width = 0;
     int m_height = 0;

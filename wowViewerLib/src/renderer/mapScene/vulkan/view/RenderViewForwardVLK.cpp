@@ -45,6 +45,7 @@ void RenderViewForwardVLK::createFrameBuffers() {
                 *m_device,
                 dataFormat,
                 depthFormat,
+                nullptr,
                 m_device->getMaxSamplesCnt(),
                 invertZ,
                 m_width, m_height
@@ -64,6 +65,7 @@ void RenderViewForwardVLK::createFrameBuffers() {
                 *m_device,
                 dataFormat,
                 ITextureFormat::itNone,
+                nullptr,
                 1,
                 invertZ,
                 m_width, m_height

@@ -130,7 +130,8 @@ public:
                                 bool triCCW,
                                 EGxBlendEnum blendMode,
                                 bool depthCulling,
-                                bool depthWrite);
+                                bool depthWrite,
+                                uint8_t colorMask);
 
     std::shared_ptr<GRenderPassVLK> getRenderPass(const std::vector<ITextureFormat> &textureAttachments,
                                                   ITextureFormat depthAttachment,
@@ -347,7 +348,8 @@ protected:
         bool operator==(const ShaderPermutationCacheRecord &other) const {
             return
                 (name == other.name) &&
-                (shaderConfig.shaderFolder == other.shaderConfig.shaderFolder) &&
+                (shaderConfig.vertexShaderFolder == other.shaderConfig.vertexShaderFolder) &&
+                (shaderConfig.fragmentShaderFolder == other.shaderConfig.fragmentShaderFolder) &&
                 (shaderConfig.typeOverrides == other.shaderConfig.typeOverrides);
         };
     };
@@ -355,7 +357,8 @@ protected:
         std::size_t operator()(const ShaderPermutationCacheRecord& k) const {
             using std::hash;
 
-            size_t mapHash = hash<std::string>{}(k.shaderConfig.shaderFolder);
+            size_t mapHash = hash<std::string>{}(k.shaderConfig.vertexShaderFolder) ^
+                             hash<std::string>{}(k.shaderConfig.fragmentShaderFolder);
             for (const auto &rec : k.shaderConfig.typeOverrides)
                 for (const auto &rec2 : rec.second)
                     mapHash ^=

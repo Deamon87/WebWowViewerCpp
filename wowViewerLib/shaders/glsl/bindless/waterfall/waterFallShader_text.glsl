@@ -16,9 +16,7 @@ layout(location=5) flat in int meshInd;
 #ifndef DEFERRED
 layout(location = 0) out vec4 outColor;
 #else
-layout(location = 0) out vec4 outAlbedo;
-layout(location = 1) out vec4 outSpecular;
-layout(location = 2) out vec4 outNormal;
+#include "../deferred_excerpt.glsl"
 #endif
 
 //Whole model
@@ -117,8 +115,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    outAlbedo = vec4(whiteWater_val_baseColor_mix.rgb, 0.0);
-    outNormal = vec4(perturbedNormal.rgb, 0.0);
-    outSpecular = vec4(0.0);
+    writeGBuffer(whiteWater_val_baseColor_mix.rgb, perturbedNormal.rgb, vec3(0.0));
 #endif
 }

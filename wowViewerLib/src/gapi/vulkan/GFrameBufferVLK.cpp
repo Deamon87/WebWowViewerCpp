@@ -114,6 +114,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
 GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
                                  const std::vector<ITextureFormat> &textureAttachments,
                                  ITextureFormat depthAttachment,
+                                 const HGTexture &depthBuffer,
                                  int multiSampleCnt,
                                  bool invertZ,
                                  int width, int height) : mdevice(dynamic_cast<GDeviceVLK &>(device)),
@@ -165,7 +166,12 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
     });
 
     //Depth attachment
-    if (depthAttachment != ITextureFormat::itNone) {
+    if (depthBuffer != nullptr) {
+        m_depthTexture = depthBuffer;
+
+        attachments.push_back(std::dynamic_pointer_cast<GTextureVLK>(m_depthTexture)->texture.view);
+
+    } else if (depthAttachment != ITextureFormat::itNone) {
         assert(depthAttachment == ITextureFormat::itDepth32);
 
         // Find a suitable depth format
@@ -179,7 +185,7 @@ GFrameBufferVLK::GFrameBufferVLK(IDevice &device,
             fbDepthFormat,
             sampleCountToVkSampleCountFlagBits(multiSampleCnt),
             1,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
         ));
 
         m_depthTexture = h_depthTexture;

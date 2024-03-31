@@ -17,9 +17,7 @@ layout(location=4) in flat int vMeshIndex;
 #ifndef DEFERRED
 layout(location = 0) out vec4 outColor;
 #else
-layout(location = 0) out vec4 outAlbedo;
-layout(location = 1) out vec4 outSpecular;
-layout(location = 2) out vec4 outNormal;
+#include "../deferred_excerpt.glsl"
 #endif
 
 
@@ -186,8 +184,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    outAlbedo = vec4(matDiffuse.xyz, 0.0);
-    outNormal = vec4(normalize(vNormal), 0.0);
-    outSpecular = vec4(specular.rgb, 0.0);
+    writeGBuffer(matDiffuse.xyz, normalize(vNormal), specular.rgb);
 #endif
 }

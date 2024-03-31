@@ -69,8 +69,8 @@ void GShaderPermutationVLK::createSetDescriptorLayouts() {
 }
 
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
-    vertShaderName = m_shaderConf.shaderFolder +"/" + m_shaderNameVert;
-    vertShaderFrag = m_shaderConf.shaderFolder +"/" + m_shaderNameFrag;
+    vertShaderName = m_shaderConf.vertexShaderFolder +"/" + m_shaderNameVert;
+    vertShaderFrag = m_shaderConf.fragmentShaderFolder +"/" + m_shaderNameFrag;
 
     auto vertShaderCode = readFile("spirv/" + vertShaderName + ".vert.spv");
     auto fragShaderCode = readFile("spirv/" + vertShaderFrag + ".frag.spv");

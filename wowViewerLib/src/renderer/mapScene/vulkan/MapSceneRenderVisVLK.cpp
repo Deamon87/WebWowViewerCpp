@@ -1461,7 +1461,7 @@ MapSceneRenderBindlessVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::
     return mesh;
 }
 
-HGMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
+HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
                                                 const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyWMOVAO;

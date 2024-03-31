@@ -27,9 +27,7 @@ layout (set = 4, binding = 0) uniform sampler2D s_LayerHeightTextures[];
 #ifndef DEFERRED
 layout(location = 0) out vec4 outColor;
 #else
-layout(location = 0) out vec4 outAlbedo;
-layout(location = 1) out vec4 outSpecular;
-layout(location = 2) out vec4 outNormal;
+#include "../deferred_excerpt.glsl"
 #endif
 
 const InteriorLightParam intLight = {
@@ -133,8 +131,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    outAlbedo = vec4(matDiffuse.xyz, 0);
-    outNormal = vec4(normalize(vNormal), 0);
-    outSpecular = vec4(specTerm.rgb, 0);
+    writeGBuffer(matDiffuse.xyz, normalize(vNormal), specTerm.rgb);
 #endif
 }

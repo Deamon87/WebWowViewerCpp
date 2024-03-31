@@ -297,7 +297,7 @@ void LiquidInstance::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector) {
 void LiquidInstance::collectMeshes(framebased::vector<HGSortableMesh> &transparentMeshes) {
     //TODO: Get time and right mesh instance for animation
     if (m_api->getConfig()->renderLiquid) {
-        transparentMeshes.push_back(m_liquidMeshes[0]);
+        transparentMeshes.emplace_back() = m_liquidMeshes[0];
     }
 }
 

@@ -261,8 +261,8 @@ public:
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const MathHelper::FrustumCullingData &frustumData);
 
-    bool isMainDataLoaded();
-    bool getHasBoundingBox() {return m_hasAABB;}
+    bool isMainDataLoaded() const;
+    bool getHasBoundingBox() const {return m_hasAABB;}
 
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
@@ -354,17 +354,17 @@ public:
         toLoadGeom.reserve(10000);
         drawn.reserve(10000);
     }
-    void addCandidate(const std::shared_ptr<M2Object> &cand) {
-        if (m_locked) {
-            throw "oops";
-        }
+    inline void addCandidate(const std::shared_ptr<M2Object> &cand) {
+//        if (m_locked) {
+//            throw "oops";
+//        }
 
         if (cand == nullptr) return;
         if (cand->getHasBoundingBox()) {
-            candidates.push_back(cand);
+            candidates.emplace_back() = cand;
             candCanHaveDuplicates = true;
         } else {
-            toLoadMain.push_back(cand);
+            toLoadMain.emplace_back() = cand;
             toLoadMainCanHaveDuplicates = true;
         }
     }
@@ -375,13 +375,13 @@ public:
         }
 
         if (toDraw->getGetIsLoaded()) {
-            drawn.push_back(toDraw);
+            drawn.emplace_back() = toDraw;
             drawnCanHaveDuplicates = true;
         } else if (!toDraw->isMainDataLoaded()) {
-            toLoadMain.push_back(toDraw);
+            toLoadMain.emplace_back() = toDraw;
             toLoadMainCanHaveDuplicates = true;
         } else {
-            toLoadGeom.push_back(toDraw);
+            toLoadGeom.emplace_back() = toDraw;
             toLoadGeomCanHaveDuplicates = true;
         }
     }

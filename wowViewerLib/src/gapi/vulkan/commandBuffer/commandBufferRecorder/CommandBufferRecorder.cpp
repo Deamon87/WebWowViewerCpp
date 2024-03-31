@@ -366,7 +366,11 @@ void CmdBufRecorder::bindMaterial(const std::shared_ptr<ISimpleMaterialVLK> &mat
     if (m_material == material) return;
 
     //1. Bind pipeline
-    this->bindPipeline(material->getPipeline());
+    if (m_gbufferMode) {
+        this->bindPipeline(material->getGBufferPipeline());
+    } else {
+        this->bindPipeline(material->getPipeline());
+    }
 
     //2. Bind Descriptor sets
     auto const &descSets = material->getDescriptorSets();

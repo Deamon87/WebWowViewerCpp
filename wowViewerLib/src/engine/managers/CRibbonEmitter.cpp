@@ -846,7 +846,7 @@ void CRibbonEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, tr
     for (int i = 0; i < currFrame.m_meshes.size(); i++) {
         auto mesh = currFrame.m_meshes[i];
         if (mesh->getIsTransparent()) {
-            transparentMeshes.push_back(mesh);
+            transparentMeshes.emplace_back() = mesh;
         } else {
             opaqueMeshCollector.addMesh(mesh);
         }

@@ -59,7 +59,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
     }
 
     auto &l_imguiUbo = m_imguiUbo;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", !opaque?"imguiShader":"imguiShader_opaque"}, {"forwardRendering"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", !opaque?"imguiShader":"imguiShader_opaque"}, {"forwardRendering","forwardRendering"})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -93,7 +93,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterialDepth(c
     }
 
     auto &l_imguiUbo = m_imguiUbo;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShaderDepth"}, {"forwardRendering"})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShaderDepth"}, {"forwardRendering", "forwardRendering"})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

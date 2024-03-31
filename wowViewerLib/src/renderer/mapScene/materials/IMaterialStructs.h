@@ -55,12 +55,15 @@ struct WaterMaterialTemplate {
 class IM2ModelData {
 public:
     virtual ~IM2ModelData() = default;
+
     std::shared_ptr<IBufferChunk<M2::PlacementMatrix>> m_placementMatrix = nullptr;
     std::shared_ptr<IBufferChunk<M2::Bones>> m_bonesData = nullptr;
     std::shared_ptr<IBufferChunk<M2::M2Colors>> m_colors = nullptr;
     std::shared_ptr<IBufferChunk<M2::TextureWeights>> m_textureWeights = nullptr;
-    std::shared_ptr<IBufferChunk<M2::TextureMatrices>> m_textureMatrices = nullptr;
+
     std::shared_ptr<IBufferChunk<M2::modelWideBlockPS>> m_modelFragmentData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::TextureMatrices>> m_textureMatrices = nullptr;
+    //Constants
     std::shared_ptr<IBufferChunk<M2::M2InstanceRecordBindless>> m_instanceBindless = nullptr;
 };
 

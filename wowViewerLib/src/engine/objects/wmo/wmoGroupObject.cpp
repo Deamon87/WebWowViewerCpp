@@ -166,8 +166,12 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         meshTemplate.end = renderBatch.num_indices;
 
         //Make mesh
-        HGMesh hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_ambientChunk);
-        this->m_meshArray.push_back(hmesh);
+        auto hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_ambientChunk);
+        if (!hmesh->getIsTransparent()) {
+            this->m_meshArray.push_back(hmesh);
+        } else {
+            this->m_sortableMeshArray.push_back(hmesh);
+        }
     }
 }
 
@@ -752,7 +756,7 @@ void WmoGroupObject::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, fr
         opaqueMeshCollector.addWMOMesh(i);
     }
     for (auto &i : this->m_sortableMeshArray) {
-        if (i->getIsTransparent()) {
+        if (!i->getIsTransparent()) {
             opaqueMeshCollector.addWMOMesh(i);
         } else {
             transparentMeshes.push_back(i);

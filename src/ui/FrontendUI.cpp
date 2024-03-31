@@ -53,7 +53,7 @@ void FrontendUI::composeUI() {
     ZoneScoped;
 
     {
-        auto processingFrame = m_api->hDevice->getFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+        auto processingFrame = m_api->hDevice->getFrameNumber();
         m_api->hDevice->setCurrentProcessingFrameNumber(processingFrame);
     }
 
@@ -845,7 +845,7 @@ void FrontendUI::showMainMenu() {
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Open settings")) {showSettings = true;}
-            if (ImGui::MenuItem("Open QuickLinks")) {showQuickLinks = true;}
+            if (ImGui::MenuItem("Open QuickLinks", "", nullptr,cascOpened)) {showQuickLinks = true;}
             if (ImGui::MenuItem("Open MapConstruction")) {showMapConstruction = true;}
             if (ImGui::MenuItem("Open minimap generator", "", false, cascOpened)) {
                 showMinimapGeneratorSettings = true;
@@ -1702,7 +1702,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         m_minimapGenerationWindow->process();
     }
     auto l_device = m_api->hDevice;
-    auto processingFrame = l_device->getFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto processingFrame = l_device->getFrameNumber();
     std::function<uint32_t()> updateFrameNumberLambda = [l_device, frame = processingFrame]() -> uint32_t {
         l_device->setCurrentProcessingFrameNumber(frame);
         return frame;

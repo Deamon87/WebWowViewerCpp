@@ -200,7 +200,7 @@ private:
 		bool active = false;
 	} ;
     std::shared_ptr<IM2ParticleMaterial> m_material = nullptr;
-    std::array<particleFrame, IDevice::MAX_FRAMES_IN_FLIGHT> frame;
+    std::array<particleFrame, IDevice::MAX_FRAMES_IN_FLIGHT + 1> frame;
 
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
 

@@ -6,6 +6,12 @@
 #include "../../../database/csvtest/csv.h"
 #include "../../../../wowViewerLib/src/include/string_utils.h"
 
+#ifndef _WIN32
+#include <arpa/inet.h>
+#else
+#include <winsock.h>
+#endif
+
 namespace FileListDB {
     inline static auto makeStorage(const std::string &dataBaseFile) {
         using namespace sqlite_orm;

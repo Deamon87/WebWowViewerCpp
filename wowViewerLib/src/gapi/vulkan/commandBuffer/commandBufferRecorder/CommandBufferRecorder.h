@@ -43,6 +43,13 @@ public:
     void setSecondaryCmdRenderArea(const std::array<int32_t, 2> &areaOffset,
                                    const std::array<uint32_t, 2> &areaSize);
 
+    void setGBufferMode(bool value) {
+        if (m_gbufferMode != value) {
+            m_currentPipeline = nullptr;
+            m_gbufferMode = value;
+        }
+    }
+
     RenderPassHelper beginRenderPass(
         bool isAboutToExecSecondaryCMD,
         const std::shared_ptr<GRenderPassVLK> &renderPassVlk,
@@ -106,6 +113,7 @@ private:
     std::array<VkViewport, (int)ViewportType::vp_MAX> viewportsForThisStage;
     VkRect2D defaultScissor;
 
+    bool m_gbufferMode = false;
 
     void createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
                              const std::array<uint32_t, 2> &areaSize,
