@@ -155,6 +155,8 @@ protected:
     HGBufferVLK iboBuffer;
 
     HGBufferVLK uboStaticBuffer;
+    HGBufferVLK pointLightBuffer;
+    HGBufferVLK spotLightBuffer;
     struct {
         HGBufferVLK placementMatrix;
         HGBufferVLK boneMatrix;

@@ -281,10 +281,14 @@ Map::Map(HApiContainer api, int mapId, const std::string &mapName) {
 
     std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
     std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
+    std::string wdtLightFileName = "world/maps/"+mapName+"/"+mapName+"_lgt.wdt";
 
     m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
+    m_wdtLightObject = std::make_shared<WdtLightsObject>(api, wdtLightFileName);
+
     m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
     m_wdlObject->setMapApi(this);
+
 
     loadZoneLights();
 
@@ -1096,6 +1100,12 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
+    if (m_wdtLightObject == nullptr && m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (m_wdtfile->mphd->flags.wdt_has_maid) {
+            m_wdtLightObject = std::make_shared<WdtLightsObject>(m_api, m_wdtfile->mphd->lgtFileDataID);
+        }
+    }
+
     auto exteriorView = mapRenderPlan->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
 
     if (m_wdlObject != nullptr) {
@@ -1272,6 +1282,14 @@ void Map::checkADTCulling(int i, int j,
         if (result) {
             mapRenderPlan->viewsHolder.getExterior()->drawnADTs.push_back(adtFrustRes);
             mapRenderPlan->adtArray.push_back(adtFrustRes);
+
+            //Add lights from WDTLightObject
+            if (m_wdtLightObject) {
+                auto pointLightsOfAdt = m_wdtLightObject->getPointLights(i, j);
+                auto pointLights = mapRenderPlan->pointLights;
+                pointLights.reserve(pointLights.size() + pointLightsOfAdt.size());
+                for (auto pointLight : pointLightsOfAdt) pointLights.push_back(pointLight.getLightRec());
+            }
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -1444,6 +1462,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         int granSize = m2ToDraw.size() / (2 * threadsAvailable);
         if (granSize == 0) granSize = m2ToDraw.size();
 
+        std::mutex fillLights;
         if (granSize > 0) {
             oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
             arena.execute([&] {
@@ -1452,7 +1471,16 @@ void Map::update(const HMapRenderPlan &renderPlan) {
                                   [&](tbb::blocked_range<size_t> r) {
                                       for (size_t i = r.begin(); i != r.end(); ++i) {
                                           auto &m2Object = m2ToDraw[i];
-                                          m2Object->update(deltaTime, cameraVec3, lookAtMat);
+                                          m2Object->update(deltaTime, cameraVec3, lookAtMat);\
+
+                                          std::vector<LocalLight> localLights;
+                                          m2Object->collectLights(localLights);
+                                          if (!localLights.empty()) {
+                                              std::unique_lock<std::mutex> lock(fillLights);
+                                              renderPlan->pointLights.insert(
+                                                  renderPlan->pointLights.end(),
+                                                  localLights.begin(),localLights.end());
+                                          }
                                       }
                                   }, ap);
             });

@@ -3,15 +3,17 @@
 //
 
 #include "RenderViewDeferredVLK.h"
+#include "../../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
 
 /*
  * RenderViewDeferredVLK
  */
 
 RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
-                                                                     const HGBufferVLK &uboBuffer,
-                                                                     const HGVertexBufferBindings &quadVAO,
-                                                                     bool createOutputFBO) : m_device(device), m_createOutputFBO(createOutputFBO) {
+                                             const HGBufferVLK &uboBuffer,
+                                             const HGBufferVLK &lightDataBuffer,
+                                             const HGVertexBufferBindings &quadVAO,
+                                             bool createOutputFBO) : m_device(device), m_quadVAO(quadVAO), m_lightDataBuffer(lightDataBuffer), m_createOutputFBO(createOutputFBO) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
 
     createFrameBuffers();
@@ -25,19 +27,28 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                    inputColorTextures,
                                    !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_outputRenderPass);
     }
+
+    for (auto &pointLightBuff : m_pointLightBuffers) {
+        pointLightBuff = lightDataBuffer->getSubBuffer(100*sizeof(LocalLight));
+    }
+
 }
 
 void RenderViewDeferredVLK::createFrameBuffers() {
     {
         auto const gBufferFormat = {
-            ITextureFormat::itRGBA,         //Albedo
-            ITextureFormat::itRGBA,         //Specular
-            ITextureFormat::itRGBA          //Normal
+            ITextureFormat::itRGBA,        //Normals
+            ITextureFormat::itFloat32,     //Depth Readable
         };
 
         auto const forwardBufferFormat = {
             ITextureFormat::itRGBA   //Color
         };
+
+        auto const lightBufferFormat = {
+            ITextureFormat::itRGBA   //Color
+        };
+
 
         auto depthFormat = ITextureFormat::itDepth32;
         bool invertZ = true;
@@ -62,6 +73,12 @@ void RenderViewDeferredVLK::createFrameBuffers() {
                                                         sampleCountToVkSampleCountFlagBits(forwardPassSamples),
                                                         invertZ, false,
                                                         true, false);
+
+        m_lightBufferPass = m_device->getRenderPass(lightBufferFormat,
+                                                    depthFormat,
+                                                    sampleCountToVkSampleCountFlagBits(gBufferPassSamples),
+                                                    invertZ, false,
+                                                    true, false);
 
         for (auto &gBufferFrameBuffer: m_gBufferFrameBuffers) {
             gBufferFrameBuffer = std::make_shared<GFrameBufferVLK>(
@@ -88,6 +105,18 @@ void RenderViewDeferredVLK::createFrameBuffers() {
                 m_height
             );
         }
+        for (int i = 0; i < m_lightFrameBuffers.size(); i++) {
+            m_lightFrameBuffers[i] = std::make_shared<GFrameBufferVLK>(
+                *m_device,
+                forwardBufferFormat,
+                depthFormat,
+                m_gBufferFrameBuffers[i]->getDepthTexture(),
+                gBufferPassSamples, //m_device->getMaxSamplesCnt(),
+                invertZ,
+                m_width,
+                m_height
+            );
+        }
     }
     if (m_createOutputFBO) {
         auto const dataFormat = {ITextureFormat::itRGBA};
@@ -109,10 +138,36 @@ void RenderViewDeferredVLK::createFrameBuffers() {
             );
         }
     }
-
 }
 
-void RenderViewDeferredVLK::update(int width, int height, float glow) {
+static const PipelineTemplate s_lightBufferPipelineT = {
+    DrawElementMode::TRIANGLES,
+    false,
+    true,
+    EGxBlendEnum::GxBlend_Add,
+    true,
+    false,
+    0xFF
+};
+
+void RenderViewDeferredVLK::createLightBufferMats() {
+    PipelineTemplate pipelineTemplate;
+    for (int i = 0; i < m_pointLightMats.size(); i++) {
+        m_pointLightMats[i] = MaterialBuilderVLK::fromShader(m_device, {"pointLight", "pointLight"}, {
+            .vertexShaderFolder = "bindless/lights/forward",
+            .fragmentShaderFolder = "bindless/lights/forward",
+
+        })
+        .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineT)
+
+        .toMaterial();
+    }
+}
+
+void RenderViewDeferredVLK::update(int width, int height, float glow,
+                                   const std::vector<LocalLight> &pointLights,
+                                   const std::vector<Spotlight> &spotLights
+                                   ) {
     width = std::max<int>(1, width);
     height = std::max<int>(1, height);
 
@@ -135,7 +190,15 @@ void RenderViewDeferredVLK::update(int width, int height, float glow) {
 
         this->executeOnChange();
     }
+    updateLightBuffers(pointLights, spotLights);
     glowPass->assignFFXGlowUBOConsts(glow);
+}
+
+void RenderViewDeferredVLK::setLightBuffers(const std::shared_ptr<GDescriptorSet> &sceneWideDS) {
+    auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+
+    sceneWideDS->beginUpdate()
+        .texture(1, m_lightFrameBuffers[frameNum]->getAttachment(0));
 }
 
 static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
@@ -181,6 +244,19 @@ void RenderViewDeferredVLK::doGBufferBarrier(CmdBufRecorder &frameBufCmd) {
             imgBarrier
         }
     );
+}
+void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
+    auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+
+    auto renderPass = frameBufCmd.beginRenderPass(false, m_lightBufferPass,
+                                m_lightFrameBuffers[frameNum],
+                                {0,0},
+                                {m_width, m_height},
+                                {0,0,0});
+
+    frameBufCmd.bindVertexBindings(m_quadVAO);
+    frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
+    frameBufCmd.drawIndexed(6, m_lightPointCount, 0, 0, 0);
 }
 
 RenderPassHelper RenderViewDeferredVLK::beginForwardPass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs,
@@ -236,4 +312,18 @@ RenderViewDeferredVLK::readRGBAPixels(int frameNumber, int x, int y, int width, 
     if (m_createOutputFBO) {
         m_outputFrameBuffers[frameNumber % IDevice::MAX_FRAMES_IN_FLIGHT]->readRGBAPixels(x,y,width,height,outputdata);
     }
+}
+
+void RenderViewDeferredVLK::updateLightBuffers(const std::vector<LocalLight> &pointLights,
+                                               const std::vector<Spotlight> &spotLights) {
+
+    auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto &pointLightBuffer = m_pointLightBuffers[frameNum];
+    if (pointLightBuffer->getSize() < pointLights.size()*sizeof(LocalLight)) {
+        pointLightBuffer = m_lightDataBuffer->getSubBuffer((pointLights.size() + 100) * sizeof(LightResult));
+    }
+
+    pointLightBuffer->uploadData(pointLights.data(), pointLights.size()*sizeof(LocalLight));
+
+    m_lightPointCount = pointLights.size();
 }

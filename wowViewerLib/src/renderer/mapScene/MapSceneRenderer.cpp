@@ -78,8 +78,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
                                       for (size_t i = r.begin(); i != r.end(); ++i) {
                                           auto &m2Object = m2ToDraw[i];
                                           if (m2Object != nullptr) {
-                                              m2Object->collectMeshes(*lCollector, transpVec,
-                                                                      m_viewRenderOrder);
+                                              m2Object->collectMeshes(*lCollector, transpVec);
                                               m2Object->drawParticles(*lCollector, transpVec,
                                                                       m_viewRenderOrder);
                                           }
@@ -97,7 +96,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
         } else {
             for (auto &m2Object : cullStage->m2Array.getDrawn()) {
                 if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
+                m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes);
                 m2Object->drawParticles(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
             }
         }
@@ -111,7 +110,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
             ZoneScopedN("collect skyBox");
             for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
                 if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(skyOpaqueMeshCollector, skyTranspVec, m_viewRenderOrder);
+                m2Object->collectMeshes(skyOpaqueMeshCollector, skyTranspVec);
                 m2Object->drawParticles(skyOpaqueMeshCollector, skyTranspVec, m_viewRenderOrder);
             }
             skyTransparentMeshes.insert(skyTransparentMeshes.end(), skyTranspVec.begin(), skyTranspVec.end());

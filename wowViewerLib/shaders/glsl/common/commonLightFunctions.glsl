@@ -1,11 +1,25 @@
 #ifndef COMMON_LIGHT_FUNCTIONS
 #define COMMON_LIGHT_FUNCTIONS
+
 struct LocalLight
 {
-    vec4 color;
+    vec4 innerColor;
+    vec4 outerColor;
     vec4 position;
     vec4 attenuation;
+    vec4 blendParams;
 };
+
+struct Spotlight
+{
+    vec4 colorAndFalloff;
+    vec4 outercolor;
+    vec4 positionAndcosInnerAngle;
+    vec4 attenuationAndcosOuterAngle;
+    vec4 directionAndcosAngleDiff;
+    vec4 interior;
+};
+
 
 struct SceneExteriorLight {
      vec4 uExteriorAmbientColor;

@@ -969,6 +969,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         cameraInlocalPos,
         this->m_localUpVector,
         this->m_localRightVector,
+        m_placementMatrix,
         modelViewMat,
         this->bonesMatrices,
         this->textAnimMatrices,
@@ -1038,6 +1039,29 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
 
         float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
         m_finalTransparencies[i] = finalTransparency;
+    }
+}
+
+void M2Object::collectLights(std::vector<LocalLight> &pointLights) {
+    //Fill lights
+    {
+        auto const m2Data = m_m2Geom->getM2Data();
+        pointLights.reserve(pointLights.size() + lights.size());
+        for (int i = 0; i < lights.size(); i++) {
+            //1 == point light
+            if (m2Data->lights[i]->type != 1) continue;
+
+            auto const &m2Light = lights[i];
+            if (!m2Light.visibility) continue;
+
+            auto &pointLight =  pointLights.emplace_back();
+            pointLight.attenuation = mathfu::vec4(m2Light.attenuation_start, m2Light.diffuse_intensity,
+                                                  m2Light.attenuation_end, 0);
+            pointLight.innerColor = m2Light.diffuse_color ;
+            pointLight.outerColor = m2Light.diffuse_color ;
+            pointLight.position = m2Light.position;
+            pointLight.blendParams = mathfu::vec4(0,0,0,0);
+        }
     }
 }
 
@@ -1651,7 +1675,7 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int index
     return m2Mesh;
 }
 
-void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;

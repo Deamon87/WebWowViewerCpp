@@ -368,6 +368,14 @@ set(SOURCE_FILES
         src/engine/objects/SceneObjectWithID.h
         src/engine/custom_allocators/FrameBasedStackAllocator.cpp
         src/engine/custom_allocators/FrameBasedStackAllocator.h
+        src/engine/objects/wdt/wdtLightsObject.cpp
+        src/engine/objects/wdt/wdtLightsObject.h
+        src/engine/persistance/wdtLightFile.cpp
+        src/engine/persistance/wdtLightFile.h
+        src/engine/objects/lights/CPointLight.cpp
+        src/engine/objects/lights/CPointLight.h
+        src/engine/objects/lights/CSpotLight.cpp
+        src/engine/objects/lights/CSpotLight.h
 )
 
 if (LINK_OGL2)

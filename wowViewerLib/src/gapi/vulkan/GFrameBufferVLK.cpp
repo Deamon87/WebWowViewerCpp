@@ -25,6 +25,10 @@ void GFrameBufferVLK::iterateOverAttachments(const std::vector<ITextureFormat> &
                 textureFormat = VK_FORMAT_R32_UINT;
                 break;
 
+            case ITextureFormat::itFloat32:
+                textureFormat = VK_FORMAT_R32_SFLOAT;
+                break;
+
             case ITextureFormat::itRGBAFloat32:
                 textureFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
                 break;

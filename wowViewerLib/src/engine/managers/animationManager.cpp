@@ -731,6 +731,7 @@ void AnimationManager::update(
     mathfu::vec3 &cameraPosInLocal,
     mathfu::vec3 &localUpVector,
     mathfu::vec3 &localRightVector,
+    const mathfu::mat4 &modelMatrix,
     const mathfu::mat4 &modelViewMatrix,
     std::vector<mathfu::mat4> &bonesMatrices,
     std::vector<mathfu::mat4> &textAnimMatrices,
@@ -935,7 +936,7 @@ void AnimationManager::update(
     this->calcTransparencies(transparencies);
 
 //    this->calcCameras(cameraDetails, this->currentAnimationIndex, this->currentAnimationTime);
-    this->calcLights(lights, bonesMatrices);
+    this->calcLights(lights, bonesMatrices, modelMatrix);
     this->calcParticleEmitters(particleEmitters, bonesMatrices);
     this->calcRibbonEmitters(ribbonEmitters);
 
@@ -1000,7 +1001,7 @@ void AnimationManager::calcTransparencies(std::vector<float> &transparencies) {
 }
 
 
-void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vector<mathfu::mat4> &bonesMatrices) {
+void AnimationManager::calcLights(std::vector<M2LightResult> &lights, const std::vector<mathfu::mat4> &bonesMatrices, const mathfu::mat4 &modelMatrix) {
     auto &lightRecords = boneMasterData->getM2Geom()->getM2Data()->lights;
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
 
@@ -1111,10 +1112,10 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, std::vecto
                         defaultChar
                 );
 
-        mathfu::mat4 &boneMat = bonesMatrices[lightRecord->bone];
+        const mathfu::mat4 &boneMat = bonesMatrices[lightRecord->bone];
         C3Vector &pos_vec = lightRecord->position;
 
-        mathfu::vec4 lightWorldPos = boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
+        mathfu::vec4 lightWorldPos = modelMatrix * boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
         lightWorldPos.w = 1.0;
 
 //        if (i == 0) {

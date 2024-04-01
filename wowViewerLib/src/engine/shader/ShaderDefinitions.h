@@ -493,7 +493,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,8,0},
       {1,7,0},
       {1,5,0},
-      {1,4,0},
       {1,6,0},
     },
     {
@@ -756,18 +755,14 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,6,0},
-      {1,4,0},
-      {1,3,0},
     },
     {
-      {2,0, "s_Textures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {0,0,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1086,11 +1081,10 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
   {
     ShaderStage::Fragment,
     {
-      {0,0,544},
     },
     {
       {
-        {0,0,1},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1101,22 +1095,16 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       }
     },
     {
-      {1,3,0},
-      {1,1,0},
-      {1,2,0},
     },
     {
-      {2,0, "s_LayerTextures"},
-      {4,0, "s_LayerHeightTextures"},
-      {3,0, "s_AlphaTextures"},
     },
     {
       {
         {0,0,0},
         {0,0,0},
-        {0,0,1},
-        {0,0,1},
-        {0,0,1},
+        {0,0,0},
+        {0,0,0},
+        {0,0,0},
         {0,0,0},
         {0,0,0},
         {0,0,0},
@@ -1388,7 +1376,6 @@ const std::unordered_map<std::string, shaderMetaData> shaderMetaInfo = {
       {1,8,0},
       {1,7,0},
       {1,5,0},
-      {1,4,0},
       {1,6,0},
     },
     {
@@ -3257,6 +3244,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
       }
     },
     {
+      4, {
+        {"_1_4_textureWeight[0]", true, 0, 1, 4, 16},
+      }
+    },
+    {
       2, {
       }
     },
@@ -3268,11 +3260,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       6, {
         {"_1_6_textureMatrix", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      4, {
-        {"_1_4_textureWeight[0]", true, 0, 1, 4, 16},
       }
     },
     {
@@ -3297,6 +3284,18 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       5, {
         {"_1_5_s_wmoAmbient", true, 0, 1, 4, 0},
+      }
+    },
+    {
+      3, {
+      }
+    },
+    {
+      4, {
+      }
+    },
+    {
+      6, {
       }
     },
     {
@@ -3329,18 +3328,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
         {"_0_0_fogData_heightDensityFogCoeff", true, 496, 1, 4, 0},
         {"_0_0_fogData_mainFogEndDist_mainFogStartDist_legacyFogScalar_blendAlpha", true, 512, 1, 4, 0},
         {"_0_0_fogData_heightFogEndColor_fogStartOffset", true, 528, 1, 4, 0},
-      }
-    },
-    {
-      3, {
-      }
-    },
-    {
-      4, {
-      }
-    },
-    {
-      6, {
       }
     },
   }},
@@ -3405,6 +3392,11 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
   }},
   {"m2Shader_opaq",  {
     {
+      4, {
+        {"_1_4_colors", true, 0, 1, 4, 0},
+      }
+    },
+    {
       2, {
       }
     },
@@ -3443,11 +3435,6 @@ const  std::unordered_map<std::string, std::unordered_map<int, std::vector<field
     {
       6, {
         {"_1_6_textureMatrix", true, 0, 4, 4, 0},
-      }
-    },
-    {
-      4, {
-        {"_1_4_colors", true, 0, 1, 4, 0},
       }
     },
     {

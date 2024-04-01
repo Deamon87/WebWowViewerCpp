@@ -48,6 +48,7 @@ WoWFilesCacheStorage::WoWFilesCacheStorage(IFileRequest *requestProcessor) :
     wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
     wmoGeomCache(requestProcessor, CacheHolderType::CACHE_GROUP_WMO),
     wdtCache(requestProcessor, CacheHolderType::CACHE_WDT),
+    wdtLightCache(requestProcessor, CacheHolderType::CACHE_WDT_LIGHT),
     wdlCache(requestProcessor, CacheHolderType::CACHE_WDL),
     m2GeomCache(requestProcessor, CacheHolderType::CACHE_M2),
     skinGeomCache(requestProcessor, CacheHolderType::CACHE_SKIN),
@@ -104,8 +105,12 @@ Cache<WmoGroupGeom> *WoWFilesCacheStorage::getWmoGroupGeomCache() {
     return &wmoGeomCache;
 };
 
-Cache<WdtFile> *WoWFilesCacheStorage::getWdtFileCache() {
+Cache<WdtFile>* WoWFilesCacheStorage::getWdtFileCache() {
     return &wdtCache;
+}
+
+Cache<WdtLightFile> *WoWFilesCacheStorage::getWdtLightFileCache() {
+    return &wdtLightCache;
 };
 
 Cache<WdlFile> *WoWFilesCacheStorage::getWdlFileCache() {

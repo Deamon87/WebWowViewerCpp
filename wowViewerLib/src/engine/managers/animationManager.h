@@ -58,6 +58,7 @@ public:
         mathfu::vec3 &cameraPosInLocal,
         mathfu::vec3 &localUpVector,
         mathfu::vec3 &localRightVector,
+        const mathfu::mat4 &modelMatrix,
         const mathfu::mat4 &modelViewMatrix,
         std::vector<mathfu::mat4> &bonesMatrices,
         std::vector<mathfu::mat4> &textAnimMatrices,
@@ -93,7 +94,8 @@ public:
     }
 
     void calcLights(std::vector<M2LightResult> &lights,
-                    std::vector<mathfu::mat4> &bonesMatrices);
+                    const std::vector<mathfu::mat4> &bonesMatrices,
+                    const mathfu::mat4 &modelMatrix);
     void calcParticleEmitters(
         const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
         std::vector<mathfu::mat4> &bonesMatrices);

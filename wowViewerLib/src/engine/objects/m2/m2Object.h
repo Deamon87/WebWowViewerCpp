@@ -245,7 +245,7 @@ public:
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
     bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes);
 
     bool setUseLocalLighting(bool value) {
         if (m_useLocalDiffuseColor == -1) {
@@ -267,6 +267,7 @@ public:
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
+    void collectLights(std::vector<LocalLight> &pointLights);
     void fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);

@@ -44,6 +44,9 @@ struct MapRenderPlan {
     WMOListContainer wmoArray;
     WMOGroupListContainer wmoGroupArray;
 
+    std::vector<LocalLight> pointLights;
+    std::vector<Spotlight> spotLights;
+
 
 };
 typedef std::shared_ptr<MapRenderPlan> HMapRenderPlan;

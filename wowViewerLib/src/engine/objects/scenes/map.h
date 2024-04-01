@@ -19,6 +19,7 @@
 #include "../../../renderer/frame/FrameInputParams.h"
 #include "../../../renderer/mapScene/MapScenePlan.h"
 #include "../../../renderer/mapScene/MapSceneParams.h"
+#include "../wdt/wdtLightsObject.h"
 
 enum class SceneMode {
    smMap,
@@ -57,6 +58,7 @@ protected:
     std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
 
     std::shared_ptr<WdlObject> m_wdlObject = nullptr;
+    std::shared_ptr<WdtLightsObject> m_wdtLightObject = nullptr;
 
     int m_viewRenderOrder = 0;
 

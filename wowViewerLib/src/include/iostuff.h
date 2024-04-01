@@ -26,6 +26,7 @@ enum class CacheHolderType {
     CACHE_GROUP_WMO,
     CACHE_ADT,
     CACHE_WDT,
+    CACHE_WDT_LIGHT,
     CACHE_WDL,
     CACHE_BLP,
     CACHE_DB2,

@@ -66,9 +66,21 @@ struct InteriorLightParam {
 
 struct LocalLight
 {
-    mathfu::vec4_packed color;
+    mathfu::vec4_packed innerColor;
+    mathfu::vec4_packed outerColor;
     mathfu::vec4_packed position;
     mathfu::vec4_packed attenuation;
+    mathfu::vec4_packed blendParams;
+};
+
+struct Spotlight
+{
+    mathfu::vec4_packed colorAndFalloff;
+    mathfu::vec4_packed outercolor;
+    mathfu::vec4_packed positionAndcosInnerAngle;
+    mathfu::vec4_packed attenuationAndcosOuterAngle;
+    mathfu::vec4_packed directionAndcosAngleDiff;
+    mathfu::vec4_packed interior;
 };
 
 namespace M2 {

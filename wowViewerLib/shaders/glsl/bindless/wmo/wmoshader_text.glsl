@@ -3,11 +3,11 @@
 precision highp float;
 precision highp int;
 
-#include "../../../common/commonLightFunctions.glsl"
-#include "../../../common/commonFogFunctions.glsl"
-#include "../../../common/commonFunctions.glsl"
-#include "../../../common/commonWMOMaterial.glsl"
-#include "../../../common/commonUboSceneData.glsl"
+#include "../../common/commonLightFunctions.glsl"
+#include "../../common/commonFogFunctions.glsl"
+#include "../../common/commonFunctions.glsl"
+#include "../../common/commonWMOMaterial.glsl"
+#include "../../common/commonUboSceneData.glsl"
 
 #ifdef TRUE_OPAQUE
 layout(early_fragment_tests) in;
@@ -24,7 +24,7 @@ layout (location = 7) in vec4 vPosition;
 layout (location = 8) in vec3 vNormal;
 layout (location = 9) in flat int vMeshIndex;
 
-#include "../../../common/commonWMOIndirectDescriptorSet.glsl"
+#include "../../common/commonWMOIndirectDescriptorSet.glsl"
 
 layout (set = 2, binding = 0) uniform sampler2D s_Textures[];
 

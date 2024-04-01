@@ -203,6 +203,9 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     m2WaterfallBuffer.waterfallCommon = m_device->createSSBOBuffer("M2 Waterfall Common",200, sizeof(M2::WaterfallData::WaterfallCommon));
     m2WaterfallBuffer.waterfallBindless = m_device->createSSBOBuffer("M2 Waterfall Bindless",200, sizeof(M2::WaterfallData::WaterfallBindless));
 
+    pointLightBuffer = m_device->createSSBOBuffer("Point Light Buffer",200, sizeof(LocalLight));
+    spotLightBuffer = m_device->createSSBOBuffer("Spot Light Buffer",200, sizeof(Spotlight));
+
     uboBuffer = m_device->createUniformBuffer("UBO Buffer", 1024*1024);
     uboStaticBuffer = m_device->createUniformBuffer("UBO Static", 1024*1024);
 
@@ -218,7 +221,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
 
-    defaultView = std::make_shared<RendererViewClass>(m_device, uboBuffer, m_drawQuadVao, false);
+    defaultView = std::make_shared<RendererViewClass>(m_device, uboBuffer, pointLightBuffer, m_drawQuadVao, false);
 
     m_forwardRenderPass = defaultView->getForwardPass();
     m_gBufferPass = defaultView->getGBufferPass();
@@ -232,7 +235,10 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig)
             .createDescriptorSet(0, [&](std::shared_ptr<GDescriptorSet> &ds) {
                 ds->beginUpdate()
-                    .ubo_dynamic(0, sceneWideChunk);
+                    .ubo_dynamic(0, sceneWideChunk)
+                    .texture(1, hDevice->getBlackTexturePixel())
+                    .texture(2, hDevice->getWhiteTexturePixel());
+
                 sceneWideDS = ds;
             });
     }
@@ -1216,14 +1222,6 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
 
-
-//    TracyMessageL("collect meshes created");
-//    std::future<void> collectMeshAsync = std::async(std::launch::async,
-//                                                    [&]() {
-
-//                                                    }
-//    );
-
     mapScene->update(framePlan);
     mapScene->updateBuffers(l_this, framePlan);
 
@@ -1264,7 +1262,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
                 updatingTarget->update(
                     renderTarget.viewPortDimensions.maxs[0],
                     renderTarget.viewPortDimensions.maxs[1],
-                    framePlan->frameDependentData->currentGlow
+                    framePlan->frameDependentData->currentGlow,
+                    framePlan->pointLights,
+                    framePlan->spotLights
                 );
             }
         }
@@ -1294,6 +1294,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
 //            VkZone(uploadCmd, "submit buffers")
             uploadCmd.submitBufferUploads(l_this->uboBuffer);
             uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
+
+            uploadCmd.submitBufferUploads(l_this->pointLightBuffer);
+            uploadCmd.submitBufferUploads(l_this->spotLightBuffer);
 
             uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
             uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
@@ -1357,6 +1360,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
                 auto currentView = renderTarget.target == nullptr ?
                                    l_this->defaultView :
                                    std::dynamic_pointer_cast<RendererViewClass>(renderTarget.target);
+
+                currentView->setLightBuffers(l_this->sceneWideDS);
                 {
 
                     {
@@ -1370,7 +1375,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
                         frameBufCmd.setGBufferMode(false);
                     }
                     currentView->doGBufferBarrier(frameBufCmd);
-
+                    currentView->doLightPass(frameBufCmd);
                     {
                         auto passHelper = currentView->beginForwardPass(frameBufCmd, false, false,
                                                                         frameInputParams->frameParameters->clearColor);
@@ -1543,5 +1548,5 @@ HGM2Mesh MapSceneRenderBindlessVLK::createM2WaterfallMesh(gMeshTemplate &meshTem
 }
 
 std::shared_ptr<IRenderView> MapSceneRenderBindlessVLK::createRenderView(bool createOutput) {
-    return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
+    return std::make_shared<RendererViewClass>(m_device, uboBuffer, pointLightBuffer, m_drawQuadVao, createOutput);
 }
