@@ -4,6 +4,7 @@
 
 #include "RenderViewDeferredVLK.h"
 #include "../../../../gapi/vulkan/materials/MaterialBuilderVLK.h"
+#include "../../../../gapi/vulkan/buffers/CBufferChunkVLK.h"
 
 /*
  * RenderViewDeferredVLK
@@ -12,9 +13,17 @@
 RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                              const HGBufferVLK &uboBuffer,
                                              const HGBufferVLK &lightDataBuffer,
+                                             const std::shared_ptr<GDescriptorSet> &sceneWideDS,
                                              const HGVertexBufferBindings &quadVAO,
-                                             bool createOutputFBO) : m_device(device), m_quadVAO(quadVAO), m_lightDataBuffer(lightDataBuffer), m_createOutputFBO(createOutputFBO) {
+                                             bool createOutputFBO) : m_device(device),
+                                             m_quadVAO(quadVAO), m_lightDataBuffer(lightDataBuffer),
+                                             m_sceneWideDS(sceneWideDS),
+                                             m_createOutputFBO(createOutputFBO) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
+
+    for (auto &pointLightBuff : m_pointLightBuffers) {
+        pointLightBuff = lightDataBuffer->getSubBuffer(100*sizeof(LocalLight));
+    }
 
     createFrameBuffers();
     {
@@ -28,17 +37,14 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                    !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_outputRenderPass);
     }
 
-    for (auto &pointLightBuff : m_pointLightBuffers) {
-        pointLightBuff = lightDataBuffer->getSubBuffer(100*sizeof(LocalLight));
-    }
-
+    m_lightScreenSize = std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(uboBuffer);
 }
 
 void RenderViewDeferredVLK::createFrameBuffers() {
     {
         auto const gBufferFormat = {
             ITextureFormat::itRGBA,        //Normals
-            ITextureFormat::itFloat32,     //Depth Readable
+            ITextureFormat::itFloat32,        //Depth packed Readable
         };
 
         auto const forwardBufferFormat = {
@@ -46,7 +52,7 @@ void RenderViewDeferredVLK::createFrameBuffers() {
         };
 
         auto const lightBufferFormat = {
-            ITextureFormat::itRGBA   //Color
+            ITextureFormat::itRGBAFloat32   //Color
         };
 
 
@@ -108,7 +114,7 @@ void RenderViewDeferredVLK::createFrameBuffers() {
         for (int i = 0; i < m_lightFrameBuffers.size(); i++) {
             m_lightFrameBuffers[i] = std::make_shared<GFrameBufferVLK>(
                 *m_device,
-                forwardBufferFormat,
+                lightBufferFormat,
                 depthFormat,
                 m_gBufferFrameBuffers[i]->getDepthTexture(),
                 gBufferPassSamples, //m_device->getMaxSamplesCnt(),
@@ -151,17 +157,31 @@ static const PipelineTemplate s_lightBufferPipelineT = {
 };
 
 void RenderViewDeferredVLK::createLightBufferMats() {
-    PipelineTemplate pipelineTemplate;
     for (int i = 0; i < m_pointLightMats.size(); i++) {
         m_pointLightMats[i] = MaterialBuilderVLK::fromShader(m_device, {"pointLight", "pointLight"}, {
-            .vertexShaderFolder = "bindless/lights/forward",
-            .fragmentShaderFolder = "bindless/lights/forward",
-
+            .vertexShaderFolder = "bindless/lights",
+            .fragmentShaderFolder = "bindless/lights",
+            .typeOverrides = {
+                {0, {
+                    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+                }}
+            }
         })
+        .overridePipelineLayout({{0, m_sceneWideDS}})
         .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineT)
-
+        .bindDescriptorSet(0, m_sceneWideDS)
+        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ssbo(0, m_pointLightBuffers[i])
+                .texture(1, m_gBufferFrameBuffers[i]->getAttachment(1))
+                .texture(2, m_gBufferFrameBuffers[i]->getAttachment(0))
+                .ubo(3, BufferChunkHelperVLK::cast(m_lightScreenSize))
+                .delayUpdate();
+        })
         .toMaterial();
     }
+
+    m_lightMatsCreated = true;
 }
 
 void RenderViewDeferredVLK::update(int width, int height, float glow,
@@ -175,7 +195,16 @@ void RenderViewDeferredVLK::update(int width, int height, float glow,
         m_width = std::max<int>(1, width);
         m_height = std::max<int>(1, height);
 
+        {
+            auto &screensize = m_lightScreenSize->getObject();
+            screensize = {m_width, m_height, 0, 0};
+            m_lightScreenSize->save();
+        }
+
         this->createFrameBuffers();
+        this->createLightBufferMats();
+
+
 
         {
             std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
@@ -190,6 +219,10 @@ void RenderViewDeferredVLK::update(int width, int height, float glow,
 
         this->executeOnChange();
     }
+    if (!m_lightMatsCreated) {
+        this->createLightBufferMats();
+    }
+
     updateLightBuffers(pointLights, spotLights);
     glowPass->assignFFXGlowUBOConsts(glow);
 }
@@ -218,34 +251,65 @@ RenderPassHelper RenderViewDeferredVLK::beginGBufferPass(CmdBufRecorder &frameBu
 void RenderViewDeferredVLK::doGBufferBarrier(CmdBufRecorder &frameBufCmd) {
     auto const &fb = m_gBufferFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
 
-    VkImageSubresourceRange subresourceRange = {};
-    // Image only contains color data
-    subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    // Start at first mip level
-    subresourceRange.baseMipLevel = 0;
-    // We will transition on all mip levels
-    subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-    // The 2D texture only has one layer
-    subresourceRange.layerCount = 1;
+    {
+        VkImageSubresourceRange subresourceRange = {};
+        // Image only contains color data
+        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        // Start at first mip level
+        subresourceRange.baseMipLevel = 0;
+        // We will transition on all mip levels
+        subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        // The 2D texture only has one layer
+        subresourceRange.layerCount = 1;
 
-    VkImageMemoryBarrier imgBarrier{};
-    imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-    imgBarrier.subresourceRange = subresourceRange;
-    imgBarrier.image = std::dynamic_pointer_cast<GTextureVLK>(fb->getAttachment(0)->getTexture())->texture.image;
-    imgBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imgBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-    imgBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+        VkImageMemoryBarrier imgBarrier{};
+        imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imgBarrier.subresourceRange = subresourceRange;
+        imgBarrier.image = std::dynamic_pointer_cast<GTextureVLK>(fb->getAttachment(0)->getTexture())->texture.image;
+        imgBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imgBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        imgBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
-    frameBufCmd.recordPipelineImageBarrier(
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        {
-            imgBarrier
-        }
-    );
+        frameBufCmd.recordPipelineImageBarrier(
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            {
+                imgBarrier
+            }
+        );
+    }
+    {
+        VkImageSubresourceRange subresourceRange = {};
+        // Image only contains color data
+        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        // Start at first mip level
+        subresourceRange.baseMipLevel = 0;
+        // We will transition on all mip levels
+        subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+        // The 2D texture only has one layer
+        subresourceRange.layerCount = 1;
+
+        VkImageMemoryBarrier imgBarrier{};
+        imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        imgBarrier.subresourceRange = subresourceRange;
+        imgBarrier.image = std::dynamic_pointer_cast<GTextureVLK>(fb->getAttachment(1)->getTexture())->texture.image;
+        imgBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imgBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        imgBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
+
+        frameBufCmd.recordPipelineImageBarrier(
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            {
+                imgBarrier
+            }
+        );
+    }
 }
 void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
+
     auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
     auto renderPass = frameBufCmd.beginRenderPass(false, m_lightBufferPass,
@@ -254,9 +318,11 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
                                 {m_width, m_height},
                                 {0,0,0});
 
-    frameBufCmd.bindVertexBindings(m_quadVAO);
-    frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
-    frameBufCmd.drawIndexed(6, m_lightPointCount, 0, 0, 0);
+    if (m_lightPointCount > 0) {
+        frameBufCmd.bindVertexBindings(m_quadVAO);
+        frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
+        frameBufCmd.drawIndexed(6, m_lightPointCount, 0, 0, 0);
+    }
 }
 
 RenderPassHelper RenderViewDeferredVLK::beginForwardPass(CmdBufRecorder &frameBufCmd, bool willExecuteSecondaryBuffs,
@@ -316,14 +382,20 @@ RenderViewDeferredVLK::readRGBAPixels(int frameNumber, int x, int y, int width, 
 
 void RenderViewDeferredVLK::updateLightBuffers(const std::vector<LocalLight> &pointLights,
                                                const std::vector<Spotlight> &spotLights) {
+    bool recreateLightMat = false;
 
     auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &pointLightBuffer = m_pointLightBuffers[frameNum];
     if (pointLightBuffer->getSize() < pointLights.size()*sizeof(LocalLight)) {
         pointLightBuffer = m_lightDataBuffer->getSubBuffer((pointLights.size() + 100) * sizeof(LightResult));
+        recreateLightMat = true;
     }
 
     pointLightBuffer->uploadData(pointLights.data(), pointLights.size()*sizeof(LocalLight));
 
     m_lightPointCount = pointLights.size();
+
+    if (recreateLightMat) {
+        createLightBufferMats();
+    }
 }

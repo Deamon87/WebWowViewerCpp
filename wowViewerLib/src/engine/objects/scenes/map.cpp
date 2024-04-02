@@ -1286,9 +1286,9 @@ void Map::checkADTCulling(int i, int j,
             //Add lights from WDTLightObject
             if (m_wdtLightObject) {
                 auto pointLightsOfAdt = m_wdtLightObject->getPointLights(i, j);
-                auto pointLights = mapRenderPlan->pointLights;
+                auto &pointLights = mapRenderPlan->pointLights;
                 pointLights.reserve(pointLights.size() + pointLightsOfAdt.size());
-                for (auto pointLight : pointLightsOfAdt) pointLights.push_back(pointLight.getLightRec());
+                for (auto &pointLight : pointLightsOfAdt) pointLights.push_back(pointLight.getLightRec());
             }
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {

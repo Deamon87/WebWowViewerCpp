@@ -94,6 +94,12 @@ struct MeshCount {
     int adtMesh = 0;
 };
 
+struct RenderingMatAndSceneSize {
+    HCameraMatrices renderingMat;
+    int width;
+    int height;
+};
+
 class MapSceneRenderer : public IRenderer, public IMapSceneBufferCreate, public IRendererParameters<MapSceneParams, MapRenderPlan>  {
 public:
     MapSceneRenderer(Config *config) : m_config(config) {};
@@ -108,10 +114,9 @@ public:
                        const std::shared_ptr<framebased::vector<HGSortableMesh>> &hSkyTransparentMeshes);
 
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
-                              const std::vector<HCameraMatrices> &renderingMatrices,
+                              const std::vector<RenderingMatAndSceneSize> &renderingMatricesAndSizes,
                               const HFrameDependantData &fdd,
                               bool isVulkan,
-                              int lightBufferIndex,
                               animTime_t sceneTime);
 
     virtual std::shared_ptr<IRenderView> createRenderView(bool createOutput) = 0;

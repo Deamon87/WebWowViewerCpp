@@ -78,6 +78,11 @@ void main() {
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
 #ifndef DEFERRED
+    vec3 accumLight = vec3(0.0);
+    if (scene.uSceneSize_DisableLightBuffer.z == 0.0 && wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.w <= 1) {
+        accumLight = texture(lightBuffer, (gl_FragCoord.xy / scene.uSceneSize_DisableLightBuffer.xy)).xyz;
+    }
+
     finalColor = vec4(
         calcLight(
             matDiffuse,
@@ -86,7 +91,7 @@ void main() {
             vColor.w,
             scene,
             intLight,
-            vec3(0.0) /*accumLight*/,
+            accumLight /*accumLight*/,
             vColor.rgb,
             spec, /* specular */
             emissive
@@ -105,6 +110,6 @@ finalColor.a = 1.0;
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    writeGBuffer(matDiffuse.xyz, normalize(vNormal), spec.rgb);
+    writeGBuffer(matDiffuse.xyz, normalize(vNormal), spec.rgb, vPosition.xyz);
 #endif
 }

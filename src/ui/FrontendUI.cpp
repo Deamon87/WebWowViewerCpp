@@ -1413,6 +1413,11 @@ void FrontendUI::showSettingsDialog() {
                 m_api->getConfig()->disableFog = disableFog;
             }
 
+            bool enableLightBuffer = m_api->getConfig()->enableLightBuffer;
+            if (ImGui::Checkbox("Enable lightBuffer", &enableLightBuffer)) {
+                m_api->getConfig()->enableLightBuffer = enableLightBuffer;
+            }
+
             bool renderADT = m_api->getConfig()->renderAdt;
             if (ImGui::Checkbox("Render ADT", &renderADT)) {
                 m_api->getConfig()->renderAdt = renderADT;

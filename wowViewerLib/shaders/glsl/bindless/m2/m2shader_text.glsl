@@ -14,16 +14,15 @@ layout(location=2) in vec3 vNormal;
 layout(location=3) in vec4 vPosition_EdgeFade;
 layout(location=4) in flat int vMeshIndex;
 
+#include "../../common/commonUboSceneData.glsl"
+
 #ifndef DEFERRED
 layout(location = 0) out vec4 outColor;
 #else
 #include "../deferred_excerpt.glsl"
 #endif
 
-
-
 #include "../../common/commonUboSceneData.glsl"
-
 //Whole model
 #include "../../common/commonM2IndirectDescriptorSet.glsl"
 
@@ -82,11 +81,6 @@ void main() {
 
     vec3 meshResColor = vMeshColorAlpha.rgb;
 
-    vec3 accumLight = vec3(0.0);
-
-    //Query light buffer
-
-
     //----------------------
     // Calc Diffuse and Specular
     //---------------------
@@ -141,6 +135,11 @@ void main() {
         specular *= vMeshColorAlpha.rgb;
 
 #ifndef DEFERRED
+        vec3 accumLight = vec3(0.0);
+        if (scene.uSceneSize_DisableLightBuffer.z == 0.0 && blendMode <= 1) {
+            accumLight = texture(lightBuffer, (gl_FragCoord.xy / scene.uSceneSize_DisableLightBuffer.xy)).xyz;
+        }
+
         finalColor = vec4(
             calcLight(
                 matDiffuse,
@@ -168,7 +167,7 @@ void main() {
     if (uUnFogged == 0) {
         vec3 sunDir =
             mix(
-                scene.uInteriorSunDir_lightBufferIndex,
+                scene.uInteriorSunDir,
                 scene.extLight.uExteriorDirectColorDir,
                 modelWide.interiorExteriorBlend.x
             ).xyz;
@@ -184,6 +183,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    writeGBuffer(matDiffuse.xyz, normalize(vNormal), specular.rgb);
+    writeGBuffer(matDiffuse.xyz, normalize(vNormal), specular.rgb, vPosition_EdgeFade.xyz);
 #endif
 }

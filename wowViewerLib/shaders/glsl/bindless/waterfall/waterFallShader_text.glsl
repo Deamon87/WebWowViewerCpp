@@ -115,6 +115,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    writeGBuffer(whiteWater_val_baseColor_mix.rgb, perturbedNormal.rgb, vec3(0.0));
+    writeGBuffer(whiteWater_val_baseColor_mix.rgb, perturbedNormal.rgb, vec3(0.0), vPosition.xyz);
 #endif
 }

@@ -140,8 +140,6 @@ protected:
     int m_width = 640;
     int m_height = 480;
 
-    std::unique_ptr<FFXGlowPassVLK> glowPass;
-
     HGBufferVLK vboM2Buffer;
     HGBufferVLK vboM2ParticleBuffer;
     HGBufferVLK vboM2RibbonBuffer;

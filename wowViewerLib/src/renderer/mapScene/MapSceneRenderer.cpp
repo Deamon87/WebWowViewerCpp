@@ -129,10 +129,9 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
 }
 
 void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
-                                            const std::vector<HCameraMatrices> &renderingMatricess,
+                                            const std::vector<RenderingMatAndSceneSize> &renderingMatricesAndSizes,
                                             const HFrameDependantData &fdd,
                                             bool isVulkan,
-                                            int lightBufferIndex,
                                             animTime_t sceneTime
                                             ) {
     ZoneScoped;
@@ -144,8 +143,9 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
 
     const static mathfu::vec4 zUp = {0,0,1.0,0};
 
-    for (int i = 0; i < renderingMatricess.size(); i++) {
-        auto const &renderingMatrices = renderingMatricess[i];
+    for (int i = 0; i < renderingMatricesAndSizes.size(); i++) {
+        auto const &matAndSceneSize = renderingMatricesAndSizes[i];
+        auto const &renderingMatrices = matAndSceneSize.renderingMat;
 
         auto &blockPSVS = sceneWideChunk->getObject(i);
         blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
@@ -154,9 +154,16 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         } else {
             blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
         }
-        blockPSVS.uInteriorSunDir_lightBufferIndex = mathfu::vec4_packed(
-            mathfu::vec4(renderingMatrices->interiorDirectLightDir.xyz(), lightBufferIndex)
+        blockPSVS.uInteriorSunDir = mathfu::vec4_packed(
+            mathfu::vec4(renderingMatrices->interiorDirectLightDir.xyz(), 0)
         );
+        blockPSVS.uSceneSize_DisableLightBuffer = mathfu::vec4_packed(mathfu::vec4(
+            (float)matAndSceneSize.width,
+            (float)matAndSceneSize.height,
+            !m_config->enableLightBuffer ? 1.0 : 0.0,
+            0.0
+        ));
+
         blockPSVS.uViewUpSceneTime = mathfu::vec4(renderingMatrices->viewUp.xyz(), sceneTime);
 
         blockPSVS.closeOceanColor = fdd->closeOceanColor;

@@ -42,7 +42,7 @@ static std::shared_ptr<ITextureSampler> s_sampler = nullptr;
 
 inline void GFrameBufferVLK::initSampler(GDeviceVLK &device) {
     if (s_sampler == nullptr)
-        s_sampler = std::make_shared<GTextureSamplerVLK>(device, false, false);
+        s_sampler = std::make_shared<GTextureSamplerVLK>(device, false, false, true);
 }
 inline void GFrameBufferVLK::initSamplableTextures() {
     m_attachmentTexturesSampled.resize(m_attachmentTextures.size());

@@ -1101,7 +1101,7 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, const std:
                     defaultFloat
                 );
 
-        static unsigned char defaultChar = 0;
+        static unsigned char defaultChar = 1;
         unsigned char visibility =
                 animateTrackWithBlend<unsigned char, unsigned char>(
                         animationInfo,

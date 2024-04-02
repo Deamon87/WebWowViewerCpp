@@ -34,7 +34,8 @@ struct SceneWideParams {
     mat4 uLookAtMat;
     mat4 uPMatrix;
     vec4 uViewUpSceneTime;
-    vec4 uInteriorSunDir_lightBufferIndex;
+    vec4 uInteriorSunDir;
+    vec4 uSceneSize_DisableLightBuffer;
 
     vec4 closeRiverColor;
     vec4 farRiverColor;
@@ -59,7 +60,7 @@ vec3 Slerp(vec3 p0, vec3 p1, float t)
         return p1;
     }
     float theta = acos(dotp);
-    vec3 P = ((p0*sin((1-t)*theta) + p1*sin(t*theta)) / sin(theta));
+    vec3 P = ((p0*sin((1.0-t)*theta) + p1*sin(t*theta)) / sin(theta));
 
     return P;
 }
@@ -105,7 +106,7 @@ vec3 calcLight(
             currColor = mix(groundColor, skyColor, (0.5f + vec3(0.5f * nDotL)));
         }
         if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0) {
-            float nDotL = clamp(dot(normalizedN, -(sceneParams.uInteriorSunDir_lightBufferIndex.xyz)), 0.0, 1.0);
+            float nDotL = clamp(dot(normalizedN, -(sceneParams.uInteriorSunDir.xyz)), 0.0, 1.0);
             vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL;
             vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
 

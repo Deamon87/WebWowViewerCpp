@@ -644,16 +644,19 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //                                                    }
 //    );
 
-    std::vector<HCameraMatrices> renderingMatricess;
+    std::vector<RenderingMatAndSceneSize> renderingMatricessAndSizes;
     for (auto &rt : frameInputParams->frameParameters->renderTargets) {
-        renderingMatricess.push_back(rt.cameraMatricesForRendering);
+        auto &matAndSceneSize = renderingMatricessAndSizes.emplace_back();
+        matAndSceneSize.renderingMat = rt.cameraMatricesForRendering;
+        matAndSceneSize.width = rt.viewPortDimensions.maxs[0];
+        matAndSceneSize.height = rt.viewPortDimensions.maxs[1];
     }
 
+
     updateSceneWideChunk(sceneWideChunk,
-                         renderingMatricess,
+                         renderingMatricessAndSizes,
                          framePlan->frameDependentData,
                          true,
-                         -1,
                          mapScene->getCurrentSceneTime());
 
 

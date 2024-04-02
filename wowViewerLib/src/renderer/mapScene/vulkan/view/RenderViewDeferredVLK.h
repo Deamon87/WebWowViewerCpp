@@ -13,6 +13,7 @@ class RenderViewDeferredVLK : public IRenderView {
 public:
     RenderViewDeferredVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer,
                           const HGBufferVLK &lightDataBuffer,
+                          const std::shared_ptr<GDescriptorSet> &sceneWideDS,
                           const HGVertexBufferBindings &quadVAO, bool createOutputFBO);
     ~RenderViewDeferredVLK() override = default;
 
@@ -44,13 +45,17 @@ private:
     uint32_t m_lightPointCount;
     uint32_t m_spotPointCount;
 
+    std::shared_ptr<GDescriptorSet> m_sceneWideDS;
+
     HGDeviceVLK m_device;
 
     bool m_createOutputFBO;
+    bool m_lightMatsCreated = false;
 
     HGVertexBufferBindings m_quadVAO;
 
     HGBufferVLK m_lightDataBuffer;
+    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> m_lightScreenSize;
 
     std::shared_ptr<GRenderPassVLK> m_gBufferRenderPass;
     std::shared_ptr<GRenderPassVLK> m_forwardRenderPass;
@@ -62,7 +67,7 @@ private:
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_lightFrameBuffers;
 
 
-    std::array<std::shared_ptr<IBuffer>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightBuffers;
+    std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightBuffers;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightMats;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightMats;
 

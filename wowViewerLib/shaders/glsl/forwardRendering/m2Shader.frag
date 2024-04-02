@@ -83,7 +83,7 @@ void main() {
 
             float attenuation = (1.0 - clamp((distanceToLight - attenuationRec.x) * (1.0 / (attenuationRec.z - attenuationRec.x)), 0.0, 1.0));
 
-            vec3 attenuatedColor = attenuation * lightRecord.color.xyz;
+            vec3 attenuatedColor = attenuation * lightRecord.innerColor.xyz;
             lightColor = (lightColor + vec3(attenuatedColor * attenuatedColor * diffuseTerm1 ));
         }
 
@@ -164,7 +164,7 @@ void main() {
     if (uUnFogged == 0) {
         vec3 sunDir =
             mix(
-                scene.uInteriorSunDir_lightBufferIndex,
+                scene.uInteriorSunDir,
                 scene.extLight.uExteriorDirectColorDir,
                 interiorExteriorBlend.x
             )

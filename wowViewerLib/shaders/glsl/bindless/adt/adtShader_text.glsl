@@ -5,6 +5,7 @@ precision highp int;
 #include "../../common/commonFogFunctions.glsl"
 
 #include "../../common/commonADTMaterial.glsl"
+#include "../../../common/commonUboSceneData.glsl"
 #include "../../common/commonAdtIndirectDescriptorSet.glsl"
 
 //ADT is always opaque
@@ -96,6 +97,12 @@ void main() {
     vec4 finalColor = vec4(matDiffuse, 1.0);
 
 #ifndef DEFERRED
+
+    vec3 accumLight = vVertexLighting.rgb;
+    if (scene.uSceneSize_DisableLightBuffer.z == 0.0 ) {
+        accumLight = texture(lightBuffer, (gl_FragCoord.xy / scene.uSceneSize_DisableLightBuffer.xy)).xyz;
+    }
+
     finalColor = vec4(
         calcLight(
             matDiffuse,
@@ -104,7 +111,7 @@ void main() {
             0.0,
             scene,
             intLight,
-            vVertexLighting.rgb, /* accumLight */
+            accumLight, /* accumLight */
             vec3(0.0), /*precomputedLight*/
             vec3(0.0), /* specular */
             vec3(0.0) /* emissive */
@@ -131,6 +138,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    writeGBuffer(matDiffuse.xyz, normalize(vNormal), specTerm.rgb);
+    writeGBuffer(matDiffuse.xyz, normalize(vNormal), specTerm.rgb, vPosition.xyz);
 #endif
 }

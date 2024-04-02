@@ -218,17 +218,6 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     m_emptyWaterVAO = createWaterVAO(vboWaterBuffer, iboBuffer);
     m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
-    //Framebuffers for rendering
-    auto const dataFormat = { ITextureFormat::itRGBA};
-
-    defaultView = std::make_shared<RendererViewClass>(m_device, uboBuffer, pointLightBuffer, m_drawQuadVao, false);
-
-    m_forwardRenderPass = defaultView->getForwardPass();
-    m_gBufferPass = defaultView->getGBufferPass();
-
-
-    glowPass = std::make_unique<FFXGlowPassVLK>(hDevice, uboBuffer, m_drawQuadVao);
-
     {
         //Create SceneWide descriptor
         sceneWideChunk = std::make_shared<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>>(hDevice, 3, uboBuffer);
@@ -242,6 +231,13 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
                 sceneWideDS = ds;
             });
     }
+
+    defaultView = std::make_shared<RendererViewClass>(m_device, uboBuffer,
+                                                      pointLightBuffer, sceneWideDS,
+                                                      m_drawQuadVao, false);
+
+    m_forwardRenderPass = defaultView->getForwardPass();
+    m_gBufferPass = defaultView->getGBufferPass();
 
     createM2GlobalMaterialData();
     createWMOGlobalMaterialData();
@@ -907,6 +903,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderBindlessVLK::createSkyMeshMateri
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"}, forwardShaderConfig)
+        .overridePipelineLayout({{0, sceneWideDS}})
         .createPipeline(m_emptySkyVAO, m_forwardRenderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
@@ -1225,16 +1222,18 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
     mapScene->update(framePlan);
     mapScene->updateBuffers(l_this, framePlan);
 
-    std::vector<HCameraMatrices> renderingMatricess;
+    std::vector<RenderingMatAndSceneSize> renderingMatricessAndSizes;
     for (auto &rt : frameInputParams->frameParameters->renderTargets) {
-        renderingMatricess.push_back(rt.cameraMatricesForRendering);
+        auto &matAndSceneSize = renderingMatricessAndSizes.emplace_back();
+        matAndSceneSize.renderingMat = rt.cameraMatricesForRendering;
+        matAndSceneSize.width = rt.viewPortDimensions.maxs[0];
+        matAndSceneSize.height = rt.viewPortDimensions.maxs[1];
     }
 
     updateSceneWideChunk(sceneWideChunk,
-                         renderingMatricess,
+                         renderingMatricessAndSizes,
                          framePlan->frameDependentData,
                          true,
-                         -1,
                          mapScene->getCurrentSceneTime());
 
 
@@ -1548,5 +1547,6 @@ HGM2Mesh MapSceneRenderBindlessVLK::createM2WaterfallMesh(gMeshTemplate &meshTem
 }
 
 std::shared_ptr<IRenderView> MapSceneRenderBindlessVLK::createRenderView(bool createOutput) {
-    return std::make_shared<RendererViewClass>(m_device, uboBuffer, pointLightBuffer, m_drawQuadVao, createOutput);
+    return std::make_shared<RendererViewClass>(m_device, uboBuffer, pointLightBuffer, sceneWideDS,
+                                               m_drawQuadVao, createOutput);
 }

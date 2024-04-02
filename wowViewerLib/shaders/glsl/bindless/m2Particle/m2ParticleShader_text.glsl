@@ -113,6 +113,6 @@ void main() {
 #ifndef DEFERRED
     outColor = finalColor;
 #else
-    writeGBuffer(matDiffuse.xyz, vec3(0.0, 0.0, 1.0), vec3(0.0));
+    writeGBuffer(matDiffuse.xyz, vec3(0.0, 0.0, 1.0), vec3(0.0), vPosition.xyz);
 #endif
 }

@@ -13,10 +13,10 @@ TextureManagerVLK::TextureManagerVLK(IDeviceVulkan &device) : mdevice(device) {
 void TextureManagerVLK::initialize() {
     createUpdateCallback();
 
-    m_textureSamplers[0] = std::make_shared<GTextureSamplerVLK>(mdevice, false, false);
-    m_textureSamplers[1] = std::make_shared<GTextureSamplerVLK>(mdevice, false, true);
-    m_textureSamplers[2] = std::make_shared<GTextureSamplerVLK>(mdevice, true, false);
-    m_textureSamplers[3] = std::make_shared<GTextureSamplerVLK>(mdevice, true, true);
+    m_textureSamplers[0] = std::make_shared<GTextureSamplerVLK>(mdevice, false, false, false);
+    m_textureSamplers[1] = std::make_shared<GTextureSamplerVLK>(mdevice, false, true, false);
+    m_textureSamplers[2] = std::make_shared<GTextureSamplerVLK>(mdevice, true, false, false);
+    m_textureSamplers[3] = std::make_shared<GTextureSamplerVLK>(mdevice, true, true, false);
 }
 
 HGSamplableTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture, bool wrapX, bool wrapY) {
