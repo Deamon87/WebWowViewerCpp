@@ -326,15 +326,6 @@ struct t_BSP_NODE
     float    fDist;
 };
 
-struct MOLP {
-    float unk;
-    CArgb unk2;
-    C3Vector vec1;
-    C3Vector vec2;
-    float unk3;
-    unsigned int unk4;
-    CArgb unk5;
-};
 #pragma pack(push, 1)
 struct MLIQ {
     uint32_t xverts;
@@ -374,5 +365,118 @@ struct SMOLTile
     uint8_t flag_128 : 1;
     ;
 };
+
+//Light related structs
+
+struct Light_texture_animation
+{
+    float flickerIntensity;
+    float flickerSpeed;
+    int flickerMode;
+};
+
+struct LightUnkRecord
+{
+    int unk0;
+    int unk1;
+    int unk2;
+    int unk3;
+    int lightTextureFileDataId;
+    int unk5;
+    int unk6;
+    int unk7;
+    int unk8;
+    int unk9;
+};
+
+
+struct LightRecPerSet {
+    uint32_t offset;
+    uint32_t count;
+};
+
+//MOLP
+PACK(
+struct map_object_point_light {
+    uint32_t lightId;
+    CImVector color;
+    C3Vector pos;
+    float attenuationStart;
+    float attenuationEnd;
+    float intensity;
+    C3Vector rotation;
+});
+
+//MOP2
+PACK(
+struct map_object_pointlight_anim
+{
+    map_object_point_light pointLight;
+    Light_texture_animation lightTextureAnimation;
+    LightUnkRecord lightUnkRecord;
+});
+
+//MOLS
+PACK(
+struct map_object_spot_light {
+    uint32_t lightIndex;
+    uint32_t color;
+    C3Vector pos;
+    uint32_t attenuationStart;
+    float attenuationEnd;
+    uint32_t intesity;
+    C3Vector rotation;
+    uint32_t spotlightRadius; //A
+    float innerAngle;
+    float outerAngle;
+});
+
+//MOS2
+PACK(
+struct map_object_spotlight_anim
+{
+    map_object_spot_light spotLight;
+    Light_texture_animation lightTextureAnimation;
+    LightUnkRecord lightUnkRecord;
+});
+
+//MLND - lives in main WMO
+struct mapobject_new_light_def {
+    int type;
+    int lightIndex;
+    int flags;
+    int doodadSet;
+    CImVector innerColor;
+    C3Vector position;
+    C3Vector rotation;
+    float attenStart;
+    float attenEnd;
+    float intensity;
+    CImVector outerColor;
+    float spotLightAttenuationStart;
+    float spotLightAttenuationEnd;
+    int field_44;
+    Light_texture_animation lightTextureAnimation;
+    LightUnkRecord lightUnkRecord;
+    float spotlightRadius;
+    float innerAngle;
+    float outerAngle;
+    uint16_t packedVal1;
+    uint16_t field_8A;
+    int field_8C;
+    int field_90;
+    int field_94;
+    int field_98;
+    int field_9C;
+    int field_A0;
+    int field_A4;
+    int field_A8;
+    int field_AC;
+    int field_B0;
+    int field_B4;
+};
+
+static_assert(sizeof(mapobject_new_light_def) == 0xb8);
+
 
 #endif //WOWVIEWERLIB_WMOFILEHEADER_H

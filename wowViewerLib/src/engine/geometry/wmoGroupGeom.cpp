@@ -208,11 +208,64 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MOLP', {
                             [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOLP");
-                                object.molpCnt = chunkData.chunkLen / sizeof(MOLP);
-                                chunkData.readValues(object.molp, object.molpCnt);
+                                object.map_object_point_lightLen = chunkData.chunkLen / sizeof(map_object_point_light);
+                                chunkData.readValues(object.map_object_point_lights, object.map_object_point_lightLen);
                             },
                         }
                     },
+                    {
+                        'MOP2', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOP2");
+                                object.map_object_pointlight_animLen = chunkData.chunkLen / sizeof(map_object_point_light);
+                                chunkData.readValues(object.map_object_pointlight_anims, object.map_object_pointlight_animLen);
+                            },
+                        }
+                    },
+                    {
+                            'MLSK', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLSK");
+                                object.mapobject_pointlight_animsetsLen = chunkData.chunkLen / sizeof(LightRecPerSet);
+                                chunkData.readValues(object.mapobject_pointlight_animsets, object.mapobject_pointlight_animsetsLen);
+                            },
+                        }
+                    },
+                    {
+                            'MLSO', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLSO");
+                                object.mapobject_spotlight_animsetsLen = chunkData.chunkLen / sizeof(LightRecPerSet);
+                                chunkData.readValues(object.mapobject_spotlight_animsets, object.mapobject_spotlight_animsetsLen);
+                            },
+                        }
+                    },
+                    {
+                            'MLSP', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLSP");
+                                object.map_object_lightset_pointlightsLen = chunkData.chunkLen / sizeof(LightRecPerSet);
+                                chunkData.readValues(object.map_object_lightset_pointlights, object.map_object_lightset_pointlightsLen);
+                            },
+                        }
+                    },
+                    {
+                        'MNLR', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MNLR");
+                                object.mapobject_new_light_refsLen = chunkData.chunkLen / sizeof(uint16_t);
+                                chunkData.readValues(object.mapobject_new_light_refs, object.mapobject_new_light_refsLen);
+                            },
+                        }
+                    },
+
+//                    {
+//                        'MLSO', {
+//                            [](WmoGroupGeom& object, ChunkData& chunkData){
+//
+//                            }
+//                        }
+//                    }
                 }
             }
         }

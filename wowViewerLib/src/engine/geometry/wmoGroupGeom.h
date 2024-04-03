@@ -118,8 +118,7 @@ public:
     int use_replacement_for_header_color = 0;
     CArgb replacement_for_header_color = {};
 
-    PointerChecker<MOLP> molp = (molpCnt);
-    int molpCnt = 0;
+
 
     MLIQ *m_mliq = nullptr;
 
@@ -128,6 +127,26 @@ public:
 
     PointerChecker<SMOLTile> m_liquidTiles = (m_liquidTiles_len);
     int m_liquidTiles_len = -1;
+
+
+
+    PointerChecker<LightRecPerSet> mapobject_pointlight_animsets = (mapobject_pointlight_animsetsLen);
+    int mapobject_pointlight_animsetsLen = -1;
+
+    PointerChecker<LightRecPerSet> mapobject_spotlight_animsets = (mapobject_spotlight_animsetsLen);
+    int mapobject_spotlight_animsetsLen = -1;
+
+    PointerChecker<LightRecPerSet> map_object_lightset_pointlights = (map_object_lightset_pointlightsLen);
+    int map_object_lightset_pointlightsLen = -1;
+
+    PointerChecker<map_object_point_light> map_object_point_lights = (map_object_point_lightLen);
+    int map_object_point_lightLen = 0;
+
+    PointerChecker<map_object_pointlight_anim> map_object_pointlight_anims = (map_object_pointlight_animLen);
+    int map_object_pointlight_animLen = 0;
+
+    PointerChecker<uint16_t > mapobject_new_light_refs = (mapobject_new_light_refsLen);
+    int mapobject_new_light_refsLen = 0;
 
     HGVertexBuffer combinedVBO;
     HGIndexBuffer indexVBO;

@@ -500,6 +500,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         }
     }
 
+    std::vector<std::shared_ptr<CWmoNewLight>> newWmoLights = {};
     {
 
         auto exteriorView = mapRenderPlan->viewsHolder.getExterior();
@@ -522,17 +523,30 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
                 mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);
                 mapRenderPlan->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
             }
+
+            exteriorView->collectLights(mapRenderPlan->pointLights, mapRenderPlan->spotLights, newWmoLights);
         }
     }
 
     //Fill and collect M2 objects for views from WmoGroups
     {
+        ZoneScopedN("collect from interiors");
         auto &interiorViews = mapRenderPlan->viewsHolder.getInteriorViews();
 
         for (auto &interiorView: interiorViews) {
             interiorView->addM2FromGroups(frustumData, cameraPos);
             mapRenderPlan->m2Array.addDrawnAndToLoad(interiorView->m2List);
             mapRenderPlan->wmoGroupArray.addToLoadAndDraw(interiorView->wmoGroupArray);
+
+            interiorView->collectLights(mapRenderPlan->pointLights, mapRenderPlan->spotLights, newWmoLights);
+        }
+    }
+    {
+        ZoneScopedN("process new lights");
+        std::sort(newWmoLights.begin(), newWmoLights.end());
+        newWmoLights.erase(std::unique(newWmoLights.begin(), newWmoLights.end()), newWmoLights.end());
+        for (auto &newWmoLight: newWmoLights) {
+            newWmoLight->collectLight(mapRenderPlan->pointLights, mapRenderPlan->spotLights);
         }
     }
 

@@ -299,6 +299,7 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
 
             this->createMaterialCache();
+            this->createNewLights();
             this->createGroupObjects();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
@@ -1401,4 +1402,20 @@ mathfu::vec3 WmoObject::getAmbientColor() {
     );
 
     return ambColor;
+}
+
+void WmoObject::createNewLights() {
+    m_newLights.resize(mainGeom->newLightsLen);
+    for (int i = 0; i < mainGeom->newLightsLen; i++) {
+        auto &newLightRec = mainGeom->newLights[i];
+        if (m_doodadSet != newLightRec.doodadSet) {
+            m_newLights[i] = nullptr;
+            continue;
+        }
+        m_newLights[i] = std::make_shared<CWmoNewLight>(m_placementMatrix, mainGeom->newLights[i]);
+    }
+}
+
+std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
+    return m_newLights[index];
 }

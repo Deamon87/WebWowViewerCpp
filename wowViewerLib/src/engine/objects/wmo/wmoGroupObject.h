@@ -14,6 +14,9 @@ class WMOGroupListContainer;
 #include "../liquid/LiquidInstance.h"
 #include "../../../gapi/interface/meshes/IMesh.h"
 #include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
+#include "../lights/CPointLight.h"
+#include "../lights/CSpotLight.h"
+#include "../lights/CWmoNewLight.h"
 
 
 class WmoGroupObject {
@@ -47,7 +50,8 @@ public:
     void setModelFileId(int fileId);
 
     void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
-
+    const std::vector<CPointLight> &getPointLights();
+    const std::vector<std::shared_ptr<CWmoNewLight>> &getWmoNewLights();
 
     bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
@@ -91,6 +95,9 @@ private:
     SMOGroupInfo *m_main_groupInfo;
 
     std::vector <std::shared_ptr<M2Object>> m_doodads = {};
+    std::vector<CPointLight> m_pointLights = {};
+    std::vector<CSpotLight> m_spotLights = {};
+    std::vector<std::shared_ptr<CWmoNewLight>> m_wmoNewLights = {};
 
     bool m_useLocalLightingForM2 = false;
 
@@ -114,6 +121,7 @@ private:
     void setLiquidType();
 
     void loadDoodads();
+    void loadLights();
 
     bool checkIfInsidePortals(
         mathfu::vec3 point,

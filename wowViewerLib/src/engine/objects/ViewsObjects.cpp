@@ -36,6 +36,23 @@ void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool rende
         }
     }
 }
+void GeneralView::collectLights(std::vector<LocalLight> &pointLights, std::vector<Spotlight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights) {
+    for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
+        auto &wmoPointLights = wmoGroup->getPointLights();
+
+        pointLights.reserve(pointLights.size() + wmoPointLights.size());
+
+        for (auto &pointLight : wmoPointLights)
+            pointLights.push_back(pointLight.getLightRec());
+
+        auto &wmoNewLights = wmoGroup->getWmoNewLights();
+        newWmoLights.reserve(newWmoLights.size() + wmoNewLights.size());
+        for (auto &newLight : wmoNewLights) {
+            newWmoLights.push_back(newLight);
+        }
+    }
+};
+
 
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
     for (auto &wmoGroup : wmoGroupArray.getToCheckM2()) {

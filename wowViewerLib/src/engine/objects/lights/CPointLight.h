@@ -6,14 +6,17 @@
 #define AWEBWOWVIEWERCPP_CPOINTLIGHT_H
 
 #include "../../persistance/wdtLightFile.h"
+#include "../../persistance/header/wmoFileHeader.h"
 #include "../../../gapi/UniformBufferStructures.h"
 
 class CPointLight {
 public:
     CPointLight();
     CPointLight(WdtLightFile::MapPointLight3 &lightRecord);
+    CPointLight(const mathfu::mat4 &modelMat, const map_object_point_light &lightRecord);
+    CPointLight(const mathfu::mat4 &modelMat, const map_object_pointlight_anim &lightRecord);
 
-    LocalLight& getLightRec() {
+    const LocalLight& getLightRec() const {
         return m_localLight;
     }
 private:

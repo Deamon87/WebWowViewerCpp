@@ -73,6 +73,9 @@ public:
     PointerChecker<mathfu::vec4_packed> convexVolumePlanes = (convexVolumePlanesLen);
     int convexVolumePlanesLen = 0;
 
+    PointerChecker<mapobject_new_light_def> newLights = (newLightsLen);
+    int newLightsLen = 0;
+
     int skyboxM2FileId = 0;
 };
 

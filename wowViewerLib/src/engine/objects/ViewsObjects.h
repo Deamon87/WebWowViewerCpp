@@ -57,6 +57,7 @@ public:
     framebased::vector<HGSortableMesh> liquidMeshes = {};
 
     virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
+    virtual void collectLights(std::vector<LocalLight> &pointLights, std::vector<Spotlight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights);
     void collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
     virtual void setM2Lights(const std::shared_ptr<M2Object> &m2Object);
 

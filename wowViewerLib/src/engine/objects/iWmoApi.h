@@ -8,6 +8,7 @@
 #include <functional>
 #include "../engineClassList.h"
 #include "m2/m2Object.h"
+#include "lights/CWmoNewLight.h"
 
 struct PortalInfo_t {
     std::vector<mathfu::vec3> sortedVericles;
@@ -318,6 +319,9 @@ public:
     virtual PointerChecker<SMOLight> &getLightArray() = 0;
 
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
+    virtual int getActiveDoodadSet() = 0;
+    virtual std::shared_ptr<CWmoNewLight> getNewLight(int index) = 0;
+
 
     virtual HGSamplableTexture getTexture(int textureId, bool isSpec) = 0;
     virtual void updateBB() = 0;

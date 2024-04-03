@@ -376,6 +376,8 @@ set(SOURCE_FILES
         src/engine/objects/lights/CPointLight.h
         src/engine/objects/lights/CSpotLight.cpp
         src/engine/objects/lights/CSpotLight.h
+        src/engine/objects/lights/CWmoNewLight.cpp
+        src/engine/objects/lights/CWmoNewLight.h
 )
 
 if (LINK_OGL2)

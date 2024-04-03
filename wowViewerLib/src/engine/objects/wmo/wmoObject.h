@@ -23,6 +23,7 @@ class WmoGroupObject;
 #include "../ViewsObjects.h"
 #include "../../../include/database/dbStructs.h"
 #include "../SceneObjectWithID.h"
+#include "../lights/CWmoNewLight.h"
 
 class WmoObject : public IWmoApi/*, public SceneObjectWithId*/ {
 
@@ -72,6 +73,8 @@ private:
     std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod2 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
     std::vector<BlpTexture> blpTextures;
 
+    std::vector<std::shared_ptr<CWmoNewLight>> m_newLights;
+
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
     robin_hood::unordered_flat_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
@@ -117,8 +120,11 @@ public:
     }
     int getWmoGroupId (int groupNum);
 
-    virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
-    virtual SMOHeader *getWmoHeader() override;
+    std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
+    SMOHeader *getWmoHeader() override;
+    int getActiveDoodadSet() override {
+        return m_doodadSet;
+    }
     mathfu::vec3 getAmbientColor() override;
 
     PointerChecker<SMOMaterial> &getMaterials() override;
@@ -186,6 +192,8 @@ public:
     void drawDebugLights();
 
     void createWorldPortals();
+    void createNewLights();
+    std::shared_ptr<CWmoNewLight> getNewLight(int index) override;
 };
 
 class WMOListContainer {
