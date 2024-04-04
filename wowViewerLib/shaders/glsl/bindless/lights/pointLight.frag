@@ -65,3 +65,23 @@ void main() {
 
     outColor = vec4(vec3(lightColor), 1.0);
 }
+
+//void test() {
+//t391 = cb_local_light_data.cb_localLightData.c_lights[index_388];
+//float3 vectorToLight_394 = (t391.position.xyz - t376);
+//float distanceToLightSqr_395 = dot(vectorToLight_394, vectorToLight_394);
+//float distanceToLightInv_396 = rsqrt(distanceToLightSqr_395);
+//float distanceToLight_397 = (distanceToLightSqr_395 * distanceToLightInv_396);
+//float dot_398 = dot(vectorToLight_394, normalize_366);
+//float diffuseTerm_400 = fmax((dot_398 * distanceToLightInv_396), 0.0f);
+//float4 t401 = t391.attenuation;
+//float saturate_406 = saturate(((distanceToLight_397 - t401.x) * t401.z));
+//float attenuation_407 = (1.0f - saturate_406);
+//float4 t408 = t391.blendParams;
+//float colorLerp_411 = smoothstep(t408.y, t408.x, distanceToLight_397);
+//float3 lerp_417 = mix(t391.outerColor.xyz, t391.innerColor.xyz, float3(colorLerp_411));
+//float3 color_421 = (color_389 + (((lerp_417 * attenuation_407) * (lerp_417 * attenuation_407)) * diffuseTerm_400));
+//);
+//
+//
+//1.0f - (x - attStart) * (1.)

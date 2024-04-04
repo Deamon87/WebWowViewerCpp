@@ -151,7 +151,7 @@ static const PipelineTemplate s_lightBufferPipelineT = {
     false,
     true,
     EGxBlendEnum::GxBlend_Add,
-    true,
+    false,
     false,
     0xFF
 };

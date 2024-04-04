@@ -169,6 +169,8 @@ std::shared_ptr<IScene> setScene(const HApiContainer& apiContainer, int sceneTyp
 */
 
 void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
+    unload();
+
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<Map>(m_api, mapId, wdtFileId);
 
@@ -177,6 +179,8 @@ void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y
     m_camera->setMovementSpeed(movementSpeed);
 }
 void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds) {
+    unload();
+
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2Fdid);
     m_currentScene = m2Scene;
@@ -198,6 +202,8 @@ void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacem
 }
 
 void SceneWindow::openM2SceneByName(const std::string &m2FileName, const std::vector<int> &replacementTextureIds) {
+    unload();
+
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
 
     auto m2Scene = std::make_shared<M2Scene>(m_api, m2FileName);
@@ -218,6 +224,8 @@ void SceneWindow::openM2SceneByName(const std::string &m2FileName, const std::ve
 }
 
 void SceneWindow::openWMOSceneByfdid(int WMOFdid) {
+    unload();
+
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<WmoScene>(m_api, WMOFdid);
 
@@ -225,6 +233,8 @@ void SceneWindow::openWMOSceneByfdid(int WMOFdid) {
     m_camera->setCameraPos(0, 0, 0);
 }
 void SceneWindow::openWMOSceneByFilename(const std::string &wmoFileName) {
+    unload();
+
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<WmoScene>(m_api, wmoFileName);
 
@@ -233,6 +243,8 @@ void SceneWindow::openWMOSceneByFilename(const std::string &wmoFileName) {
 }
 
 void SceneWindow::openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z) {
+    unload();
+
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
     m_currentScene = std::make_shared<Map>(m_api, mapId, mapName);
 
@@ -246,6 +258,9 @@ void SceneWindow::openMapByIdAndFilename(int mapId, const std::string &mapName, 
 void SceneWindow::unload() {
     m_sceneRenderer = nullptr;
     m_currentScene = std::make_shared<NullScene>();
+    m_camera = nullptr;
+    m_cameraList.resize(0);
+    m_renderView = nullptr;
 }
 
 std::shared_ptr<MapRenderPlan> SceneWindow::getLastPlan() {

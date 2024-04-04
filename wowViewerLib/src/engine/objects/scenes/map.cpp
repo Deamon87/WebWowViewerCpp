@@ -1621,7 +1621,8 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         if (granSize == 0) granSize = m2ToDraw.size();
 
         //Can't be paralleled?
-        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+        auto &drawnM2s = renderPlan->m2Array.getDrawn();
+        for (auto &m2Object: drawnM2s) {
             if (m2Object != nullptr) {
                 m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
             }

@@ -22,20 +22,35 @@ void main() {
 
     vec4 lightPosView = scene.uLookAtMat * vec4(lightRec.position.xyz, 1.0);
 
-    float attentuationEnd = lightRec.attenuation.z;
+    float attenStart = lightRec.attenuation.x;
+    float attenEnd = lightRec.attenuation.z;
+
+    float pointLightRadius = attenEnd;
+
+    //Hack. If the point light is behind the camera
+    //With current first person camera positive Z is behind the camera. Should fix?
+    {
+        float distToLight = abs(lightPosView.z);
+        if (lightPosView.z > 0.0 && distToLight < attenEnd) {
+            pointLightRadius *= ((attenEnd - distToLight) / attenEnd);
+        }
+    }
+
 
     //Hack to get square bounding the circle of point light
     //The quads (-1.0, 1.0) or other is multiplied by radius end of point light
-    vec2 quadPosView = (position.xy * attentuationEnd);
+    vec2 quadPosView = (position.xy * pointLightRadius);
 
     lightPosView.xy += quadPosView;
     //Bring the projection on sphere to the front
-    lightPosView.z = min(-0.001, lightPosView.z + attentuationEnd);
-
-
 
     //Now it's safe to multiply it by perspective matrix
-    gl_Position = scene.uPMatrix * vec4(lightPosView.xyz, 1.0);
+    vec4 pointLightClip = scene.uPMatrix * vec4(lightPosView.xyz, 1.0);
+    pointLightClip.z = pointLightClip.w - (sign(pointLightClip.w) * 0.0001);
+    //clamp it against screen bounderies
+//    pointLightClip.xy = clamp(pointLightClip.xy, -vec2(abs(pointLightClip.w)), vec2(abs(pointLightClip.w)));
+
+    gl_Position = pointLightClip;
     lightIndex = gl_InstanceIndex;
 }
 

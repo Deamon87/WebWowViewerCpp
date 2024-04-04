@@ -5,7 +5,7 @@
 #include "GBufferVLK.h"
 #include "../vk_mem_alloc.h"
 
-GBufferVLK::GBufferVLK(const HGDeviceVLK &device, const char *objName,
+GBufferVLK::GBufferVLK(const HGDeviceVLK &device, const std::string &objName,
                        const std::shared_ptr<GStagingRingBuffer> &ringBuff,
                        VkBufferUsageFlags usageFlags, int maxSize, int alignment) : m_device(device) {
     m_usageFlags = usageFlags;

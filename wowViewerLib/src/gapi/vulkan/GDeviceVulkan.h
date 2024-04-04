@@ -102,10 +102,10 @@ public:
 public:
     std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConf);
 
-    HGBufferVLK createUniformBuffer(const char * objName, size_t size);
-    HGBufferVLK createSSBOBuffer(const char * objName, size_t size, int recordSize);
-    HGBufferVLK createVertexBuffer(const char * objName, size_t size, int recordSize = -1);
-    HGBufferVLK createIndexBuffer(const char * objName, size_t size);
+    HGBufferVLK createUniformBuffer(const std::string &objName, size_t size);
+    HGBufferVLK createSSBOBuffer(const std::string &objName, size_t size, int recordSize);
+    HGBufferVLK createVertexBuffer(const std::string &objName, size_t size, int recordSize = -1);
+    HGBufferVLK createIndexBuffer(const std::string &objName, size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;

@@ -37,7 +37,7 @@ class GBufferVLK : public IBufferVLK, public std::enable_shared_from_this<GBuffe
     friend class GDeviceVLK;
     class GSubBufferVLK;
 public:
-    GBufferVLK(const HGDeviceVLK &device, const char *objName, const std::shared_ptr<GStagingRingBuffer> &ringBuff,
+    GBufferVLK(const HGDeviceVLK &device, const std::string &objName, const std::shared_ptr<GStagingRingBuffer> &ringBuff,
                VkBufferUsageFlags usageFlags, int maxSize, int alignment = -1);
     ~GBufferVLK() override;
 

@@ -253,7 +253,7 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
             if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
                 auto &mclv = m_adtFile->mcnkStructs[i].mclv;
                 adtVertex.mclv = {
-                    mclv->values[j].b    / 255.0f,
+                    mclv->values[j].b / 255.0f,
                     mclv->values[j].g / 255.0f,
                     mclv->values[j].r / 255.0f,
                     mclv->values[j].a / 255.0f

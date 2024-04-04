@@ -136,14 +136,21 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
 
     iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
-    vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024, sizeof(M2Vertex));
-    vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024);
-    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024, 64);
-    vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024, 64);
-    vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024, sizeof(AdtVertex));
-    vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024, sizeof(WMOVertex));
-    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024, sizeof(LiquidVertexFormat));
-    vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
+    const int rendererId = std::hash<uint64_t>()((uint64_t)this) & 0xFFFF;
+    const std::string rendererIdStr = " " + std::to_string(rendererId);
+
+    auto un = [rendererIdStr](const std::string &name) -> std::string {
+        return name + rendererIdStr;
+    };
+
+    vboM2Buffer         = m_device->createVertexBuffer(un("Scene_VBO_M2"),1024*1024, sizeof(M2Vertex));
+    vboPortalBuffer     = m_device->createVertexBuffer(un("Scene_VBO_Portal"),1024*1024);
+    vboM2ParticleBuffer = m_device->createVertexBuffer(un("Scene_VBO_M2Particle"),1024*1024, 64);
+    vboM2RibbonBuffer   = m_device->createVertexBuffer(un("Scene_VBO_M2Ribbon"),1024*1024, 64);
+    vboAdtBuffer        = m_device->createVertexBuffer(un("Scene_VBO_ADT"),3*1024*1024, sizeof(AdtVertex));
+    vboWMOBuffer        = m_device->createVertexBuffer(un("Scene_VBO_WMO"),1024*1024, sizeof(WMOVertex));
+    vboWaterBuffer      = m_device->createVertexBuffer(un("Scene_VBO_Water"),1024*1024, sizeof(LiquidVertexFormat));
+    vboSkyBuffer        = m_device->createVertexBuffer(un("Scene_VBO_Sky"),1024*1024);
 
 
     {
@@ -158,8 +165,8 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
             0, 1, 2,
             2, 1, 3
         };
-        m_vboQuad = m_device->createVertexBuffer("Scene_VBO_Quad", vertexBuffer.size() * sizeof(mathfu::vec2_packed));
-        m_iboQuad = m_device->createIndexBuffer("Scene_IBO_Quad", indexBuffer.size() * sizeof(uint16_t));
+        m_vboQuad = m_device->createVertexBuffer(un("Scene_VBO_Quad"), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
+        m_iboQuad = m_device->createIndexBuffer(un("Scene_IBO_Quad"), indexBuffer.size() * sizeof(uint16_t));
         m_vboQuad->uploadData(vertexBuffer.data(), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
         m_iboQuad->uploadData(indexBuffer.data(), indexBuffer.size() * sizeof(uint16_t));
 
@@ -171,45 +178,45 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
 
     //Create m2 shaders
     {
-        m2Buffers.placementMatrix = m_device->createSSBOBuffer("M2 Placement", 1024*1024, sizeof(M2::PlacementMatrix));
-        m2Buffers.boneMatrix = m_device->createSSBOBuffer("M2 BoneMatrices",1024*1024, sizeof(mathfu::mat4));
-        m2Buffers.m2Colors = m_device->createSSBOBuffer("M2 BoneMatrices", 1024*1024, sizeof(mathfu::vec4_packed));
-        m2Buffers.textureWeights = m_device->createSSBOBuffer("M2 TextureWeight", 1024*1024, sizeof(mathfu::vec4_packed));
-        m2Buffers.textureMatrices = m_device->createSSBOBuffer("M2 TextureMatrices", 1024*1024, sizeof(mathfu::mat4));
-        m2Buffers.modelFragmentDatas = m_device->createSSBOBuffer("M2 FragmentData", 1024*1024, sizeof(M2::modelWideBlockPS));
-        m2Buffers.m2InstanceData = m_device->createSSBOBuffer("M2 InstanceData", 1024*1024, sizeof(M2::M2InstanceRecordBindless));
-        m2Buffers.meshWideBlocks = m_device->createSSBOBuffer("M2 MeshWide", 1024*1024, sizeof(M2::meshWideBlockVSPS));
-        m2Buffers.meshWideBlocksBindless = m_device->createSSBOBuffer("M2 MeshWide Bindless", 1024*1024, sizeof(M2::meshWideBlockVSPS_Bindless));
+        m2Buffers.placementMatrix = m_device->createSSBOBuffer(un("M2 Placement"), 1024*1024, sizeof(M2::PlacementMatrix));
+        m2Buffers.boneMatrix = m_device->createSSBOBuffer(un("M2 BoneMatrices"),1024*1024, sizeof(mathfu::mat4));
+        m2Buffers.m2Colors = m_device->createSSBOBuffer(un("M2 BoneMatrices"), 1024*1024, sizeof(mathfu::vec4_packed));
+        m2Buffers.textureWeights = m_device->createSSBOBuffer(un("M2 TextureWeight"), 1024*1024, sizeof(mathfu::vec4_packed));
+        m2Buffers.textureMatrices = m_device->createSSBOBuffer(un("M2 TextureMatrices"), 1024*1024, sizeof(mathfu::mat4));
+        m2Buffers.modelFragmentDatas = m_device->createSSBOBuffer(un("M2 FragmentData"), 1024*1024, sizeof(M2::modelWideBlockPS));
+        m2Buffers.m2InstanceData = m_device->createSSBOBuffer(un("M2 InstanceData"), 1024*1024, sizeof(M2::M2InstanceRecordBindless));
+        m2Buffers.meshWideBlocks = m_device->createSSBOBuffer(un("M2 MeshWide"), 1024*1024, sizeof(M2::meshWideBlockVSPS));
+        m2Buffers.meshWideBlocksBindless = m_device->createSSBOBuffer(un("M2 MeshWide Bindless"), 1024*1024, sizeof(M2::meshWideBlockVSPS_Bindless));
     }
     //Create adt Shader buffs
     {
-        adtBuffers.adtMeshWideVSPSes = m_device->createSSBOBuffer("ADT MeshVSPS", 1024*1024, sizeof(ADT::meshWideBlockVSPS));
-        adtBuffers.adtMeshWidePSes = m_device->createSSBOBuffer("ADT MeshPS", 1024*1024, sizeof(ADT::meshWideBlockPS));
-        adtBuffers.adtInstanceDatas = m_device->createSSBOBuffer("ADT InstanceData", 1024*1024, sizeof(ADT::AdtInstanceData));
+        adtBuffers.adtMeshWideVSPSes = m_device->createSSBOBuffer(un("ADT MeshVSPS"), 1024*1024, sizeof(ADT::meshWideBlockVSPS));
+        adtBuffers.adtMeshWidePSes = m_device->createSSBOBuffer(un("ADT MeshPS"), 1024*1024, sizeof(ADT::meshWideBlockPS));
+        adtBuffers.adtInstanceDatas = m_device->createSSBOBuffer(un("ADT InstanceData"), 1024*1024, sizeof(ADT::AdtInstanceData));
     }
     //Create wmo Shader buffs
     {
-        wmoBuffers.wmoPlacementMats = m_device->createSSBOBuffer("WMO PlaceMat", 1024*1024, sizeof(mathfu::mat4));
-        wmoBuffers.wmoMeshWideVSes = m_device->createSSBOBuffer("WMO MeshWideVS", 1024*1024, sizeof(WMO::meshWideBlockVS));
-        wmoBuffers.wmoMeshWidePSes = m_device->createSSBOBuffer("WMO MeshWidePS", 1024*1024, sizeof(WMO::meshWideBlockPS));
-        wmoBuffers.wmoMeshWideBindless = m_device->createSSBOBuffer("WMO MeshWideBindless", 1024*1024, sizeof(WMO::meshWideBlockBindless));
-        wmoBuffers.wmoPerMeshData = m_device->createSSBOBuffer("WMO PerMeshData", 1024*1024, sizeof(WMO::perMeshData));
-        wmoBuffers.wmoGroupAmbient = m_device->createSSBOBuffer("Scene_VBO_WMOAmbient",16*200, sizeof(mathfu::vec4_packed));
+        wmoBuffers.wmoPlacementMats = m_device->createSSBOBuffer(un("WMO PlaceMat"), 1024*1024, sizeof(mathfu::mat4));
+        wmoBuffers.wmoMeshWideVSes = m_device->createSSBOBuffer(un("WMO MeshWideVS"), 1024*1024, sizeof(WMO::meshWideBlockVS));
+        wmoBuffers.wmoMeshWidePSes = m_device->createSSBOBuffer(un("WMO MeshWidePS"), 1024*1024, sizeof(WMO::meshWideBlockPS));
+        wmoBuffers.wmoMeshWideBindless = m_device->createSSBOBuffer(un("WMO MeshWideBindless"), 1024*1024, sizeof(WMO::meshWideBlockBindless));
+        wmoBuffers.wmoPerMeshData = m_device->createSSBOBuffer(un("WMO PerMeshData"), 1024*1024, sizeof(WMO::perMeshData));
+        wmoBuffers.wmoGroupAmbient = m_device->createSSBOBuffer(un("Scene_VBO_WMOAmbient"),16*200, sizeof(mathfu::vec4_packed));
     }
     //Create water buffs
     {
-        waterBuffer.waterDataBuffer = m_device->createSSBOBuffer("Water data", 1024, sizeof(Water::meshWideBlockPS));
-        waterBuffer.waterBindlessBuffer = m_device->createSSBOBuffer("Water Bindless", 1024, sizeof(Water::WaterBindless));
+        waterBuffer.waterDataBuffer = m_device->createSSBOBuffer(un("Water data"), 1024, sizeof(Water::meshWideBlockPS));
+        waterBuffer.waterBindlessBuffer = m_device->createSSBOBuffer(un("Water Bindless"), 1024, sizeof(Water::WaterBindless));
     }
 
-    m2WaterfallBuffer.waterfallCommon = m_device->createSSBOBuffer("M2 Waterfall Common",200, sizeof(M2::WaterfallData::WaterfallCommon));
-    m2WaterfallBuffer.waterfallBindless = m_device->createSSBOBuffer("M2 Waterfall Bindless",200, sizeof(M2::WaterfallData::WaterfallBindless));
+    m2WaterfallBuffer.waterfallCommon = m_device->createSSBOBuffer(un("M2 Waterfall Common"),200, sizeof(M2::WaterfallData::WaterfallCommon));
+    m2WaterfallBuffer.waterfallBindless = m_device->createSSBOBuffer(un("M2 Waterfall Bindless"),200, sizeof(M2::WaterfallData::WaterfallBindless));
 
-    pointLightBuffer = m_device->createSSBOBuffer("Point Light Buffer",200, sizeof(LocalLight));
-    spotLightBuffer = m_device->createSSBOBuffer("Spot Light Buffer",200, sizeof(Spotlight));
+    pointLightBuffer = m_device->createSSBOBuffer(un("Point Light Buffer"),200, sizeof(LocalLight));
+    spotLightBuffer = m_device->createSSBOBuffer(un("Spot Light Buffer"),200, sizeof(Spotlight));
 
-    uboBuffer = m_device->createUniformBuffer("UBO Buffer", 1024*1024);
-    uboStaticBuffer = m_device->createUniformBuffer("UBO Static", 1024*1024);
+    uboBuffer = m_device->createUniformBuffer(un("UBO Buffer"), 1024*1024);
+    uboStaticBuffer = m_device->createUniformBuffer(un("UBO Static"), 1024*1024);
 
     m_emptyADTVAO = createADTVAO(vboAdtBuffer, iboBuffer);
     m_emptyM2VAO = createM2VAO(vboM2Buffer, iboBuffer);
@@ -229,9 +236,9 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
                     .ubo_dynamic(0, sceneWideChunk)
                     .texture(1, hDevice->getBlackTexturePixel())
 //Untill AO is ready.
-#ifndef NDEBUG
+//#ifndef NDEBUG
                     .texture(2, hDevice->getWhiteTexturePixel())
-#endif
+//#endif
                     ;
 
                 sceneWideDS = ds;
