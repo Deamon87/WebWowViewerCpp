@@ -34,7 +34,7 @@ public:
     void unload();
 
     std::shared_ptr<MapRenderPlan> getLastPlan();
-    const std::shared_ptr<ICamera> getCamera();
+    const std::shared_ptr<ICamera> &getCamera();
 
     bool hasRenderer();
     std::shared_ptr<IRenderView> createRenderView();

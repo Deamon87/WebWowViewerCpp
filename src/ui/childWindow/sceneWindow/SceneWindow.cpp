@@ -266,7 +266,7 @@ void SceneWindow::unload() {
 std::shared_ptr<MapRenderPlan> SceneWindow::getLastPlan() {
     return (m_sceneRenderer) ? m_sceneRenderer->getLastCreatedPlan() : nullptr;
 }
-const std::shared_ptr<ICamera> SceneWindow::getCamera() {
+const std::shared_ptr<ICamera> &SceneWindow::getCamera() {
     if (m_currentCameraIndex >= 0 && m_currentCameraIndex <= m_cameraList.size()) {
         return m_cameraList[m_currentCameraIndex];
     }
