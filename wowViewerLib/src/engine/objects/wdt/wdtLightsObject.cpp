@@ -15,7 +15,7 @@ WdtLightsObject::WdtLightsObject(HApiContainer api, int wdtLgtFileDataId) {
 }
 
 static const std::vector<CPointLight> emptyPointLights = {};
-static const std::vector<CSpotLight> emptySpotLights = {};
+static const std::vector<CWmoNewLight> emptySpotLights = {};
 
 const std::vector<CPointLight> &WdtLightsObject::getPointLights(uint8_t tileX, uint8_t tileY) {
     if (m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
@@ -29,16 +29,20 @@ const std::vector<CPointLight> &WdtLightsObject::getPointLights(uint8_t tileX, u
     return m_pointLights[tileX][tileY];
 }
 
-const std::vector<CSpotLight> &WdtLightsObject::getSpotLights(uint8_t tileX, uint8_t tileY) {
+void WdtLightsObject::collectSpotLights(uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights) {
     if (m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
-        return emptySpotLights;
+        return;
 
     if (!m_lightsCreated) {
         createLightArray();
         m_lightsCreated = true;
     }
 
-    return m_spotLights[tileX][tileY];
+    std::vector<LocalLight> dummyPointLight;
+    auto &lights = m_spotLights[tileX][tileY];
+    for (auto &spotLight : lights) {
+        spotLight.collectLight(dummyPointLight, spotLights);
+    }
 }
 
 void WdtLightsObject::createLightArray() {
@@ -63,6 +67,29 @@ void WdtLightsObject::createLightArray() {
 
             m_pointLights[pointLight3.tileX][pointLight3.tileY].emplace_back() =
                 CPointLight(pointLight3);
+
+//        processedLightIds[pointLight3.lightIndex] = &pointLight3;
+        }
+    }
+
+    //Create Spot Lights
+    {
+//    std::unordered_map<uint32_t, WdtLightFile::MapPointLight3*> processedLightIds;
+        for (int i = 0; i < m_wdtLightFile->mapSpotLightLen; i++) {
+            auto &spotLight = m_wdtLightFile->mapSpotLights[i];
+
+//        {
+//            auto it = processedLightIds.find(pointLight3.lightIndex);
+//            bool found = it != processedLightIds.end();
+//            if (found) {
+//                auto duplicateRec = it->second;
+//                std::cout << "Found duploicate" << std::endl;
+//            }
+//        }
+
+
+            m_spotLights[spotLight.tileX][spotLight.tileY].emplace_back() =
+                CWmoNewLight(spotLight);
 
 //        processedLightIds[pointLight3.lightIndex] = &pointLight3;
         }

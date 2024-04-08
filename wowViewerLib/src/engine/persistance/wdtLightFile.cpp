@@ -22,7 +22,7 @@ chunkDef<WdtLightFile> WdtLightFile::wdtLightFileTable = {
                 [](WdtLightFile &file, ChunkData &chunkData) {
                     debuglog("Entered MSLT");
                     file.mapSpotLightLen = (chunkData.chunkLen / sizeof(MapSpotLight));
-                    chunkData.readValues(file.mapSpotLights3, file.mapSpotLightLen);
+                    chunkData.readValues(file.mapSpotLights, file.mapSpotLightLen);
                 }
             }
         },

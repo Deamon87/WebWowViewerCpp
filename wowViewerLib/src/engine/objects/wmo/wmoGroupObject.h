@@ -62,7 +62,7 @@ public:
                            const MathHelper::FrustumCullingData &frustumData);
 
     mathfu::vec4 getAmbientColor();
-    void assignInteriorParams(const std::shared_ptr<M2Object> &m2Object);
+    void assignInteriorParams(M2Object *m2Object);
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,

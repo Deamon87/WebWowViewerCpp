@@ -2129,3 +2129,5 @@ void M2Object::resetReplaceParticleColor() {
 int M2Object::getCurrentAnimationIndex() {
     return m_animationManager->getCurrentAnimationIndex();
 }
+
+EntityFactory<M2Object, M2ObjId> m2Factory;

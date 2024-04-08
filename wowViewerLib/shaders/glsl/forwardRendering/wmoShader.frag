@@ -80,7 +80,8 @@ void main() {
             vec3(0.0) /*accumLight*/,
             vColor.rgb,
             spec, /* specular */
-            emissive
+            emissive,
+            1.0 /* ao */
         ),
         finalOpacity
     );

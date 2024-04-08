@@ -10,10 +10,12 @@ struct LocalLight
     vec4 blendParams;
 };
 
-struct Spotlight
+struct SpotLight
 {
+//    vec4 rotQuaternion;
+    mat4 rotMat;
+    vec4 spotLightLen;
     vec4 colorAndFalloff;
-    vec4 outercolor;
     vec4 positionAndcosInnerAngle;
     vec4 attenuationAndcosOuterAngle;
     vec4 directionAndcosAngleDiff;
@@ -73,7 +75,9 @@ vec3 calcLight(
     const in SceneWideParams sceneParams,
     const in InteriorLightParam intLight,
     const in vec3 accumLight, const in vec3 precomputedLight, const in vec3 specular,
-    const in vec3 emissive) {
+    const in vec3 emissive,
+    const in float ao
+) {
 
     vec3 result = matDiffuse;
     if (applyLight) {
@@ -129,7 +133,7 @@ vec3 calcLight(
         result = sqrt(gammaDiffTerm*gammaDiffTerm + linearDiffTerm)  + emTerm;
     }
 
-    return result + specular;
+    return (result + specular) * ao;
 }
 
 

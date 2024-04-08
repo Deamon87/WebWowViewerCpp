@@ -76,7 +76,7 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
                                       transp_vec<HGSortableMesh> transpVec;
                                       auto lCollector = opaqueMeshCollector.clone();
                                       for (size_t i = r.begin(); i != r.end(); ++i) {
-                                          auto &m2Object = m2ToDraw[i];
+                                          auto *m2Object = m2Factory.getObjectById(m2ToDraw[i]);
                                           if (m2Object != nullptr) {
                                               m2Object->collectMeshes(*lCollector, transpVec);
                                               m2Object->drawParticles(*lCollector, transpVec,
@@ -94,7 +94,8 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
                                   }, ap);
             });
         } else {
-            for (auto &m2Object : cullStage->m2Array.getDrawn()) {
+            for (auto m2ObjectId : cullStage->m2Array.getDrawn()) {
+                auto m2Object = m2Factory.getObjectById(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes);
                 m2Object->drawParticles(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
@@ -108,7 +109,9 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
             transp_vec<HGSortableMesh> skyTranspVec;
 
             ZoneScopedN("collect skyBox");
-            for (auto &m2Object : skyBoxView->m2List.getDrawn()) {
+            for (auto &m2ObjectId : skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory.getObjectById(m2ObjectId);
+
                 if (m2Object == nullptr) continue;
                 m2Object->collectMeshes(skyOpaqueMeshCollector, skyTranspVec);
                 m2Object->drawParticles(skyOpaqueMeshCollector, skyTranspVec, m_viewRenderOrder);

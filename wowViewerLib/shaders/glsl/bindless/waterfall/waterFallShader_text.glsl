@@ -95,7 +95,8 @@ void main() {
         vec3(0.0), /* accumLight */
         vec3(0.0), /*precomputedLight*/
         vec3(0.0), /* specular */
-        vec3(0.0) /* emissive */
+        vec3(0.0), /* emissive */
+        1.0 /* ao */
     );
 
     float w_clamped = clamp((1.0f - mask_val_0.w) * waterfallCommon.values1.w, 0.0f, 1.0f);

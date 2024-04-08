@@ -9,8 +9,8 @@
 #include <mutex>
 #include "../../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
 
-template<typename T>
-class EntityFactory : public std::enable_shared_from_this<EntityFactory<T>>{
+template<typename T, typename ObjIdType>
+class EntityFactory : public std::enable_shared_from_this<EntityFactory<T, ObjIdType>>{
 static constexpr int initSize = 1000;
 public:
     explicit EntityFactory() {
@@ -34,7 +34,7 @@ public:
             }
 
             entity = new T(std::forward<decltype(__args)>(__args)...);
-            entity->setId(offsetData.offset);
+            entity->setId((ObjIdType)offsetData.offset);
             objectCache[offsetData.offset] = entity;
         }
 
@@ -45,8 +45,8 @@ public:
                 shared->deallocate(offsetData);
         });
     }
-    T * getObjectById(int id) {
-        return objectCache[id];
+    T * getObjectById(ObjIdType id) {
+        return objectCache[(int)id];
     }
 
     void deallocate(const OffsetAllocator::Allocation &alloc) {

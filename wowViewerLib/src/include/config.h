@@ -67,7 +67,7 @@ public:
 
     bool BCLightHack = false;
 
-    bool enableLightBuffer = false;
+    bool enableLightBuffer = true;
 
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object

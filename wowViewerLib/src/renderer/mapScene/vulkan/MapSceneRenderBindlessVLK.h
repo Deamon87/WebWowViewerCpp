@@ -115,7 +115,7 @@ public:
 
     std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
 
-    std::shared_ptr<EntityFactory<GMeshVLK>> meshFactory = std::make_shared<EntityFactory<GMeshVLK>>();
+    std::shared_ptr<EntityFactory<GMeshVLK, GMeshId>> meshFactory = std::make_shared<EntityFactory<GMeshVLK, GMeshId>>();
 protected:
     virtual std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
     virtual std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
@@ -198,6 +198,11 @@ protected:
     HGBufferVLK m_iboQuad;
 
     HGVertexBufferBindings m_drawQuadVao = nullptr;
+
+    HGBufferVLK m_vboSpot;
+    HGBufferVLK m_iboSpot;
+
+    HGVertexBufferBindings m_drawSpotVao = nullptr;
 
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;

@@ -26,5 +26,6 @@ public:
     }
 };
 
+constexpr uint32_t spotLightSegments = 10;
 
 #endif //AWEBWOWVIEWERCPP_IMATERIALINSTANCE_H

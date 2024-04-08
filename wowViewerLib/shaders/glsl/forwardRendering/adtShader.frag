@@ -93,7 +93,8 @@ void main() {
             vVertexLighting.rgb, /* accumLight */
             vec3(0.0), /*precomputedLight*/
             vec3(0.0), /* specular */
-            vec3(0.0) /* emissive */
+            vec3(0.0), /* emissive */
+            1.0 /* ao */
         ),
         1.0
     );

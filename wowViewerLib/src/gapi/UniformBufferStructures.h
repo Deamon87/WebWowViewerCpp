@@ -74,10 +74,12 @@ struct LocalLight
     mathfu::vec4_packed blendParams;
 };
 
-struct Spotlight
+struct SpotLight
 {
+    mathfu::mat4 rotMat;
+//    mathfu::vec4_packed rotQuaternion;
+    mathfu::vec4_packed spotLightLen;
     mathfu::vec4_packed colorAndFalloff;
-    mathfu::vec4_packed outercolor;
     mathfu::vec4_packed positionAndcosInnerAngle;
     mathfu::vec4_packed attenuationAndcosOuterAngle;
     mathfu::vec4_packed directionAndcosAngleDiff;

@@ -36,7 +36,7 @@ void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool rende
         }
     }
 }
-void GeneralView::collectLights(std::vector<LocalLight> &pointLights, std::vector<Spotlight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights) {
+void GeneralView::collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights) {
     for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
         auto &wmoPointLights = wmoGroup->getPointLights();
 
@@ -72,7 +72,7 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
                           [&](tbb::blocked_range<size_t> r) {
     //for (int i = 0; i < candidatesArr.size(); i++) {
 #if (__AVX__ && __SSE2__)
-            ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(this->frustumData, r.begin(),
+            ObjectCullingSEE<M2ObjId>::cull(this->frustumData, r.begin(),
                                                                            r.end(), candidatesArr,
                                                                            candCullRes);
 #else
@@ -85,14 +85,15 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
 
     for (int i = 0; i < candCullRes.size(); i++) {
         if (!candCullRes[i]) {
-            auto &m2ObjectCandidate = candidatesArr[i];
+            const auto m2ObjectCandidate = m2Factory.getObjectById(candidatesArr[i]);
             setM2Lights(m2ObjectCandidate);
-            this->m2List.addToDraw(m2ObjectCandidate);
+            if (m2ObjectCandidate != nullptr)
+                this->m2List.addToDraw(m2ObjectCandidate);
         }
     }
 }
 
-void GeneralView::setM2Lights(const std::shared_ptr<M2Object> &m2Object) {
+void GeneralView::setM2Lights(M2Object *m2Object) {
     m2Object->setUseLocalLighting(false);
 }
 
@@ -185,7 +186,7 @@ void GeneralView::collectPortalMeshes(framebased::vector<HGSortableMesh> &transp
     }
 }
 
-void InteriorView::setM2Lights(const std::shared_ptr<M2Object> &m2Object) {
+void InteriorView::setM2Lights(M2Object *m2Object) {
     if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
 
     if (ownerGroupWMO->getDontUseLocalLightingForM2()) {

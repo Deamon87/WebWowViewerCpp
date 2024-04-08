@@ -27,8 +27,8 @@ class M2ObjectListContainer;
 #include "m2Helpers/CBoneMasterData.h"
 #include "../../../gapi/UniformBufferStructures.h"
 
-
-class M2Object : public ObjectWithId {
+enum class M2ObjId : int;
+class M2Object : public ObjectWithId<M2ObjId> {
 public:
     friend class IExporter;
 
@@ -314,14 +314,24 @@ public:
 
 #include "../../algorithms/mathHelper.h"
 #include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
+#include "../scenes/EntityActorsFactory.h"
+
+extern EntityFactory<M2Object, M2ObjId> m2Factory;
 
 template<>
 inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
     return object->getAABB();
 }
 
+template<>
+inline const CAaBox &retrieveAABB<>(const M2ObjId &objectId) {
+    return m2Factory.getObjectById(objectId)->getAABB();
+}
+
+
+
 class M2ObjectListContainer {
-using m2Container = framebased::vector<std::shared_ptr<M2Object>>;
+using m2Container = framebased::vector<M2ObjId>;
 //using m2Container = std::vector<std::shared_ptr<M2Object>>;
 private:
     m2Container candidates;
@@ -362,10 +372,10 @@ public:
 
         if (cand == nullptr) return;
         if (cand->getHasBoundingBox()) {
-            candidates.emplace_back() = cand;
+            candidates.push_back(cand->getObjectId());
             candCanHaveDuplicates = true;
         } else {
-            toLoadMain.emplace_back() = cand;
+            toLoadMain.push_back(cand->getObjectId());
             toLoadMainCanHaveDuplicates = true;
         }
     }
@@ -376,16 +386,34 @@ public:
         }
 
         if (toDraw->getGetIsLoaded()) {
-            drawn.emplace_back() = toDraw;
+            drawn.push_back(toDraw->getObjectId());
             drawnCanHaveDuplicates = true;
         } else if (!toDraw->isMainDataLoaded()) {
-            toLoadMain.emplace_back() = toDraw;
+            toLoadMain.push_back(toDraw->getObjectId());
             toLoadMainCanHaveDuplicates = true;
         } else {
-            toLoadGeom.emplace_back() = toDraw;
+            toLoadGeom.push_back(toDraw->getObjectId());
             toLoadGeomCanHaveDuplicates = true;
         }
     }
+
+    void addToDraw(M2Object * toDraw) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        if (toDraw->getGetIsLoaded()) {
+            drawn.push_back(toDraw->getObjectId());
+            drawnCanHaveDuplicates = true;
+        } else if (!toDraw->isMainDataLoaded()) {
+            toLoadMain.push_back(toDraw->getObjectId());
+            toLoadMainCanHaveDuplicates = true;
+        } else {
+            toLoadGeom.push_back(toDraw->getObjectId());
+            toLoadGeomCanHaveDuplicates = true;
+        }
+    }
+
     void addDrawnAndToLoad(M2ObjectListContainer &anotherList) {
         if (m_locked) {
             throw "oops";

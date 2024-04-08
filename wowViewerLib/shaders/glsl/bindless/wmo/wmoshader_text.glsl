@@ -94,7 +94,8 @@ void main() {
             accumLight /*accumLight*/,
             vColor.rgb,
             spec, /* specular */
-            emissive
+            emissive,
+            1.0 /* ao */
         ),
         finalOpacity
     );

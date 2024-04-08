@@ -15,14 +15,20 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                              const HGBufferVLK &lightDataBuffer,
                                              const std::shared_ptr<GDescriptorSet> &sceneWideDS,
                                              const HGVertexBufferBindings &quadVAO,
+                                             const HGVertexBufferBindings &spotVAO,
                                              bool createOutputFBO) : m_device(device),
-                                             m_quadVAO(quadVAO), m_lightDataBuffer(lightDataBuffer),
+                                             m_quadVAO(quadVAO),
+                                             m_spotVAO(spotVAO),
+                                             m_lightDataBuffer(lightDataBuffer),
                                              m_sceneWideDS(sceneWideDS),
                                              m_createOutputFBO(createOutputFBO) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
 
     for (auto &pointLightBuff : m_pointLightBuffers) {
         pointLightBuff = lightDataBuffer->getSubBuffer(100*sizeof(LocalLight));
+    }
+    for (auto &spotLightBuff : m_spotLightBuffers) {
+        spotLightBuff = lightDataBuffer->getSubBuffer(100*sizeof(SpotLight));
     }
 
     createFrameBuffers();
@@ -156,6 +162,16 @@ static const PipelineTemplate s_lightBufferPipelineT = {
     0xFF
 };
 
+static const PipelineTemplate s_lightBufferPipelineSpot = {
+    DrawElementMode::TRIANGLES,
+    false,
+    true,
+    EGxBlendEnum::GxBlend_Add,
+    false,
+    false,
+    0xFF
+};
+
 void RenderViewDeferredVLK::createLightBufferMats() {
     for (int i = 0; i < m_pointLightMats.size(); i++) {
         m_pointLightMats[i] = MaterialBuilderVLK::fromShader(m_device, {"pointLight", "pointLight"}, {
@@ -180,13 +196,36 @@ void RenderViewDeferredVLK::createLightBufferMats() {
         })
         .toMaterial();
     }
+    for (int i = 0; i < m_spotLightMats.size(); i++) {
+        m_spotLightMats[i] = MaterialBuilderVLK::fromShader(m_device, {"spotLight", "spotLight"}, {
+            .vertexShaderFolder = "bindless/lights",
+            .fragmentShaderFolder = "bindless/lights",
+            .typeOverrides = {
+                {0, {
+                    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+                }}
+            }
+        })
+        .overridePipelineLayout({{0, m_sceneWideDS}})
+        .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineSpot)
+        .bindDescriptorSet(0, m_sceneWideDS)
+        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ssbo(0, m_spotLightBuffers[i])
+                .texture(1, m_gBufferFrameBuffers[i]->getAttachment(1))
+                .texture(2, m_gBufferFrameBuffers[i]->getAttachment(0))
+                .ubo(3, BufferChunkHelperVLK::cast(m_lightScreenSize))
+                .delayUpdate();
+        })
+        .toMaterial();
+    }
 
     m_lightMatsCreated = true;
 }
 
 void RenderViewDeferredVLK::update(int width, int height, float glow,
                                    const std::vector<LocalLight> &pointLights,
-                                   const std::vector<Spotlight> &spotLights
+                                   const std::vector<SpotLight> &spotLights
                                    ) {
     width = std::max<int>(1, width);
     height = std::max<int>(1, height);
@@ -203,8 +242,6 @@ void RenderViewDeferredVLK::update(int width, int height, float glow,
 
         this->createFrameBuffers();
         this->createLightBufferMats();
-
-
 
         {
             std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
@@ -318,10 +355,15 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
                                 {m_width, m_height},
                                 {0,0,0});
 
-    if (m_lightPointCount > 0) {
+    if (m_pointLightCount > 0) {
         frameBufCmd.bindVertexBindings(m_quadVAO);
         frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
-        frameBufCmd.drawIndexed(6, m_lightPointCount, 0, 0, 0);
+        frameBufCmd.drawIndexed(6, m_pointLightCount, 0, 0, 0);
+    }
+    if (m_spotLightCount > 0) {
+        frameBufCmd.bindVertexBindings(m_spotVAO);
+        frameBufCmd.bindMaterial(m_spotLightMats[frameNum]);
+        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, m_spotLightCount, 0, 0, 0);
     }
 }
 
@@ -381,19 +423,33 @@ RenderViewDeferredVLK::readRGBAPixels(int frameNumber, int x, int y, int width, 
 }
 
 void RenderViewDeferredVLK::updateLightBuffers(const std::vector<LocalLight> &pointLights,
-                                               const std::vector<Spotlight> &spotLights) {
+                                               const std::vector<SpotLight> &spotLights) {
     bool recreateLightMat = false;
 
     auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
-    auto &pointLightBuffer = m_pointLightBuffers[frameNum];
-    if (pointLightBuffer->getSize() < pointLights.size()*sizeof(LocalLight)) {
-        pointLightBuffer = m_lightDataBuffer->getSubBuffer((pointLights.size() + 100) * sizeof(LightResult));
-        recreateLightMat = true;
+
+    {
+        auto &pointLightBuffer = m_pointLightBuffers[frameNum];
+        if (pointLightBuffer->getSize() < pointLights.size() * sizeof(LocalLight)) {
+            pointLightBuffer = m_lightDataBuffer->getSubBuffer((pointLights.size() + 100) * sizeof(LocalLight));
+            recreateLightMat = true;
+        }
+
+        pointLightBuffer->uploadData(pointLights.data(), pointLights.size() * sizeof(LocalLight));
+
+        m_pointLightCount = pointLights.size();
     }
+    {
+        auto &spotLightBuffer = m_spotLightBuffers[frameNum];
+        if (spotLightBuffer->getSize() < spotLights.size()*sizeof(SpotLight)) {
+            spotLightBuffer = m_lightDataBuffer->getSubBuffer((spotLights.size() + 100) * sizeof(SpotLight));
+            recreateLightMat = true;
+        }
 
-    pointLightBuffer->uploadData(pointLights.data(), pointLights.size()*sizeof(LocalLight));
+        spotLightBuffer->uploadData(spotLights.data(), spotLights.size()*sizeof(SpotLight));
 
-    m_lightPointCount = pointLights.size();
+        m_spotLightCount = spotLights.size();
+    }
 
     if (recreateLightMat) {
         createLightBufferMats();

@@ -43,16 +43,17 @@ public:
         uint32_t id;
         CArgb color;
         C3Vector position;
-        float rangeAttenuationStart;// When to start the attenuation of the light, must be <= rangeAttenuationEnd or glitches
-        float rangeAttenuationEnd;
+        float attenuationStart; // When to start the attenuation of the light, must be <= attenuationEnd or glitches
+        float attenuationEnd;
         float intensity;
         C3Vector rotation; // radians
-        float falloffExponent;
-        float innerRadius;
-        float outerRadius; // radians
-        uint16_t tile_x;
-        uint16_t tile_y;
-        int16_t unk[2]; // -1 mostly, may be an MLTA ID though.
+        float spotlightRadius;
+        float innerAngle;
+        float outerAngle; // radians
+        uint16_t tileX;
+        uint16_t tileY;
+        uint16_t mlta_index; //Index into MTLA
+        uint16_t textureIndex; //Index into MTEX
     }) ;
 
     PACK(
@@ -65,7 +66,7 @@ public:
     PointerChecker<MapPointLight3> mapPointLights3 = (mapPointLights3Len);
     int mapPointLights3Len = 0;
 
-    PointerChecker<MapSpotLight> mapSpotLights3 = (mapSpotLightLen);
+    PointerChecker<MapSpotLight> mapSpotLights = (mapSpotLightLen);
     int mapSpotLightLen = 0;
 
     PointerChecker<MapLightTextureAttenuation> mapTextureLightAttenuation = (mapTextureLightAttenuationLen);

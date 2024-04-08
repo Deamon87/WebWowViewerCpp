@@ -570,8 +570,8 @@ void MinimapGenerator::calcBB(const HMapRenderPlan &mapRenderPlan, mathfu::vec3 
     minCoord = mathfu::vec3(20000, 20000, 20000);
     maxCoord = mathfu::vec3(-20000, -20000, -20000);
 
-    for (auto &m2Object: mapRenderPlan->m2Array.getDrawn()) {
-        auto objBB = m2Object->getAABB();
+    for (auto &m2ObjectId: mapRenderPlan->m2Array.getDrawn()) {
+        auto objBB = m2Factory.getObjectById(m2ObjectId)->getAABB();
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 

@@ -14,12 +14,14 @@ public:
     RenderViewDeferredVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer,
                           const HGBufferVLK &lightDataBuffer,
                           const std::shared_ptr<GDescriptorSet> &sceneWideDS,
-                          const HGVertexBufferBindings &quadVAO, bool createOutputFBO);
+                          const HGVertexBufferBindings &quadVAO,
+                          const HGVertexBufferBindings &spotVAO,
+                          bool createOutputFBO);
     ~RenderViewDeferredVLK() override = default;
 
     void update(int width, int height, float glow,
                 const std::vector<LocalLight> &pointLights,
-                const std::vector<Spotlight> &spotLights);
+                const std::vector<SpotLight> &spotLights);
 
     void setLightBuffers(const std::shared_ptr<GDescriptorSet> &sceneWideDS);
 
@@ -42,8 +44,8 @@ private:
     uint32_t m_width = 640;
     uint32_t m_height = 480;
 
-    uint32_t m_lightPointCount;
-    uint32_t m_spotPointCount;
+    uint32_t m_pointLightCount;
+    uint32_t m_spotLightCount;
 
     std::shared_ptr<GDescriptorSet> m_sceneWideDS;
 
@@ -53,6 +55,7 @@ private:
     bool m_lightMatsCreated = false;
 
     HGVertexBufferBindings m_quadVAO;
+    HGVertexBufferBindings m_spotVAO;
 
     HGBufferVLK m_lightDataBuffer;
     std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> m_lightScreenSize;
@@ -68,6 +71,7 @@ private:
 
 
     std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightBuffers;
+    std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightBuffers;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightMats;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightMats;
 
@@ -81,7 +85,7 @@ private:
     void createLightBufferMats();
     std::vector<std::function<void ()>> onUpdates;
 
-    void updateLightBuffers(const std::vector<LocalLight> &pointLights, const std::vector<Spotlight> &spotLights);
+    void updateLightBuffers(const std::vector<LocalLight> &pointLights, const std::vector<SpotLight> &spotLights);
 };
 
 #endif //AWEBWOWVIEWERCPP_RENDERVIEWDEFERREDVLK_H

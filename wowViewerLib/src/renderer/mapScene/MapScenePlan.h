@@ -45,7 +45,7 @@ struct MapRenderPlan {
     WMOGroupListContainer wmoGroupArray;
 
     std::vector<LocalLight> pointLights;
-    std::vector<Spotlight> spotLights;
+    std::vector<SpotLight> spotLights;
 
 
 };

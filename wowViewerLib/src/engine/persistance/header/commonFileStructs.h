@@ -318,6 +318,15 @@ struct CImVector
 };
 using CArgb = CImVector;
 
+inline mathfu::vec4 ImVectorToVec4(const CImVector &color) {
+    return mathfu::vec4(
+        ((float)color.r)/255.0f,
+        ((float)color.g)/255.0f,
+        ((float)color.b)/255.0f,
+        ((float)color.a)/255.0f
+    );
+}
+
 struct C4Plane
 {
     union {

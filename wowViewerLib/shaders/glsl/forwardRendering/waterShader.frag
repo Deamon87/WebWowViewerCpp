@@ -119,7 +119,9 @@ void main() {
                 vec3(0.0) /*accumLight*/,
                 vec3(0.0),
                 vec3(0.0), /* specular */
-                vec3(0.0)
+                vec3(0.0),
+                1.0 /* ao */
+
             ),
             1.0
         );

@@ -8,7 +8,7 @@
 
 #include "../../ApiContainer.h"
 #include "../lights/CPointLight.h"
-#include "../lights/CSpotLight.h"
+#include "../lights/CWmoNewLight.h"
 
 class WdtLightsObject {
 public:
@@ -16,7 +16,7 @@ public:
     explicit WdtLightsObject(HApiContainer api, int wdtLgtFileDataId);
 
     const std::vector<CPointLight> &getPointLights(uint8_t tileX, uint8_t tileY);
-    const std::vector<CSpotLight> &getSpotLights(uint8_t tileX, uint8_t tileY);
+    void collectSpotLights(uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights);
 private:
     void createLightArray();
 private:
@@ -26,7 +26,7 @@ private:
     bool m_lightsCreated = false;
 
     std::array<std::array<std::vector<CPointLight>, 64>, 64> m_pointLights = {};
-    std::array<std::array<std::vector<CSpotLight>, 64>, 64> m_spotLights = {};
+    std::array<std::array<std::vector<CWmoNewLight>, 64>, 64> m_spotLights = {};
 };
 
 

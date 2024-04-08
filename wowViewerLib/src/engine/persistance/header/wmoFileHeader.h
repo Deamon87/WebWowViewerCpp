@@ -453,8 +453,8 @@ struct mapobject_new_light_def {
     float attenEnd;
     float intensity;
     CImVector outerColor;
-    float spotLightAttenuationStart;
-    float spotLightAttenuationEnd;
+    float falloffStart;
+    float falloff;
     int field_44;
     Light_texture_animation lightTextureAnimation;
     LightUnkRecord lightUnkRecord;

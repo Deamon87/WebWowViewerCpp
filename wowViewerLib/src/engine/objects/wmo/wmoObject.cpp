@@ -87,7 +87,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         fileIdMode = true;
     }
 
-    auto m2Object = std::make_shared<M2Object>(m_api);
+    auto m2Object = m2Factory.createObject(m_api);
 
     m2Object->setLoadParams(0, {},{});
     if (fileIdMode) {
@@ -306,7 +306,7 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
             m_modelWideChunk = sceneRenderer->createWMOWideChunk();
 
             if ((mainGeom->skyBoxM2FileName != nullptr && mainGeom->skyBoxM2FileNameLen > 0) || mainGeom->skyboxM2FileId != 0) {
-                skyBox = std::make_shared<M2Object>(m_api, true);
+                skyBox = m2Factory.createObject(m_api, true);
                 skyBox->setLoadParams(0, {},{});
 
                 if ( mainGeom->skyboxM2FileId != 0) {
