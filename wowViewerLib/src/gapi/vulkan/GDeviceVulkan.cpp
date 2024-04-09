@@ -204,7 +204,7 @@ std::set<std::string> get_supported_extensions() {
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
-    enableValidationLayers = false;
+    enableValidationLayers = true;
 
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;

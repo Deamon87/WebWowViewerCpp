@@ -50,8 +50,8 @@ private:
     float m_innerAngle;
     float m_outerAngle;
 
-    mathfu::mat4 rot_mat;
-    mathfu::vec4 calcedLightDir;
+    mathfu::mat3 rot_mat;
+    mathfu::vec3 calcedLightDir;
 
 };
 

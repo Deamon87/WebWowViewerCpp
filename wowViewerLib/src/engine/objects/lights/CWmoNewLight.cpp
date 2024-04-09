@@ -26,10 +26,11 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_
     m_outerAngle = newLightDef.outerAngle;
 
     rot_mat =
-        MathHelper::RotationZ((m_rotation.z)) *
-        MathHelper::RotationY((m_rotation.y)) *
-        MathHelper::RotationX((m_rotation.x));
-    calcedLightDir = ((modelMatrix * rot_mat).Inverse().Transpose()*mathfu::vec4(0,0,-1,0));
+        mathfu::mat4::RotationZ(m_rotation.z) *
+        mathfu::mat4::RotationY(m_rotation.y) *
+        mathfu::mat4::RotationX(m_rotation.x);
+
+    calcedLightDir = ((rot_mat).Inverse().Transpose()*mathfu::vec3(0,0,-1));
 }
 
 CWmoNewLight::CWmoNewLight(const WdtLightFile::MapSpotLight &mapSpotLight ) {
@@ -51,10 +52,13 @@ CWmoNewLight::CWmoNewLight(const WdtLightFile::MapSpotLight &mapSpotLight ) {
     m_rotation = mapSpotLight.rotation;
 
     rot_mat =
-        MathHelper::RotationZ((m_rotation.z)) *
-        MathHelper::RotationY((m_rotation.y)) *
-        MathHelper::RotationX((m_rotation.x));
-    calcedLightDir = (rot_mat).Inverse().Transpose()*mathfu::vec4(0,0,-1,0);
+        mathfu::mat4::RotationZ(m_rotation.z) *
+        mathfu::mat4::RotationY(m_rotation.y) *
+        mathfu::mat4::RotationX(m_rotation.x);
+
+
+
+    calcedLightDir = ((rot_mat).Inverse().Transpose()*mathfu::vec3(0,0,-1));
 }
 
 void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights) {
@@ -83,7 +87,7 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
 //            rotQuat = rotQuatD;
         }
 
-        spotLight.rotMat = rot_mat;
+        spotLight.rotMat = mathfu::mat4::FromRotationMatrix(rot_mat);
 //        spotLight.rotQuaternion = mathfu::vec4(
 //            rotQuat[1], rotQuat[2],rotQuat[3], rotQuat[0]
 //        );
@@ -110,7 +114,7 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
             cosf(m_outerAngle * 0.5f)
         );
         spotLight.directionAndcosAngleDiff = mathfu::vec4(
-            calcedLightDir.xyz(),
+            calcedLightDir,
             1.0f/fmaxf(cosf(m_innerAngle * 0.5f) - cosf(m_outerAngle * 0.5f), 0.0099999f)
         );
         spotLight.interior = mathfu::vec4(
