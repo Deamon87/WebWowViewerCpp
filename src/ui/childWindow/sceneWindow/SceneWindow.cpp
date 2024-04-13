@@ -121,7 +121,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
 }
 
 SceneWindow::SceneWindow(const HApiContainer &api, bool renderToSwapChain, const std::shared_ptr<FrontendUIRenderer> &uiRenderer) :
-    m_api(api), m_renderToSwapChain(renderToSwapChain)
+    m_api(api), m_renderToSwapChain(renderToSwapChain), m_uiRenderer(uiRenderer)
 {
 
 }
@@ -423,16 +423,19 @@ SceneWindow::makeScreenshot(float fov,
 
 void SceneWindow::createMaterials() {
     materials = {};
-    m_renderView->iterateOverOutputTextures([&](const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures,
-                                                const std::string &name, ITextureFormat textureFormat) {
-        auto &matArrayTuple = materials.emplace_back();
-        std::get<0>(matArrayTuple) = name;
+    if (m_renderView) {
+        m_renderView->iterateOverOutputTextures(
+            [&](const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures,
+                const std::string &name, ITextureFormat textureFormat) {
+                auto &matArrayTuple = materials.emplace_back();
+                std::get<0>(matArrayTuple) = name;
 
-        auto &matArray = std::get<1>(matArrayTuple);
-        if (textureFormat == ITextureFormat::itRGBA) {
-            for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
-                matArray[i] = m_uiRenderer->createUIMaterial(textures[i]);
-            }
-        }
-    });
+                auto &matArray = std::get<1>(matArrayTuple);
+                if (textureFormat == ITextureFormat::itRGBA) {
+                    for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
+                        matArray[i] = m_uiRenderer->createUIMaterial(textures[i], true);
+                    }
+                }
+            });
+    }
 }

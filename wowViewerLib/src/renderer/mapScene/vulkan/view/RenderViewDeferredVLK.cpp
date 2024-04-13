@@ -419,7 +419,7 @@ void RenderViewDeferredVLK::iterateOverOutputTextures(
         for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)
             lightBufferTextures[i] = m_lightFrameBuffers[i]->getAttachment(0);
 
-        callback(lightBufferTextures, "Light buffer", ITextureFormat::itDepth32);
+        callback(lightBufferTextures, "Light buffer", ITextureFormat::itRGBA);
     }
 
     //4. Depth buffer

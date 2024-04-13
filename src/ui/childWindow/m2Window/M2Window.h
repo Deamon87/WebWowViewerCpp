@@ -10,10 +10,10 @@
 #include "../../renderer/uiScene/materials/UIMaterial.h"
 #include "../../renderer/uiScene/FrontendUIRenderer.h"
 
-class M2Window : public SceneWindow, public std::enable_shared_from_this<M2Window> {
+class M2Window : public SceneWindow {
 public:
     M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix = "");
-    ~M2Window();
+    ~M2Window() override;
     bool draw();
 
     void render(double deltaTime,

@@ -1614,8 +1614,25 @@ void FrontendUI::showSettingsDialog() {
                 for (int i = 0; i < materials.size(); i++) {
                     auto &mat = materials[i];
 
-                    if (ImGui::ImageButton(std::get<0>(mat).c_str(), std::get<1>(mat)->uniqueId, {256, 256})) {
-                        activeScene->setCurrentCameraIndex(i);
+                    const uint32_t thumbnailDim = 256;
+
+                    auto &textureMat = std::get<1>(mat);
+                    if (textureMat) {
+                        ImGui::BeginChild((std::string("mat##test_") + std::to_string(i)).c_str(), {thumbnailDim+10, thumbnailDim + 25});
+
+                        auto const &matName = std::get<0>(mat);
+
+                        if (ImGui::ImageButton(matName.c_str(), std::get<1>(mat)->uniqueId, {thumbnailDim, thumbnailDim})) {
+                            activeScene->setSelectedMat(i);
+                        }
+                        ImGui::Text(matName.c_str());
+                        ImGui::EndChild();
+                    }
+                    if ((i+1) < materials.size()) {
+                        if (ImGui::GetCursorPos().x +
+                            (i + 2) * (thumbnailDim + 10 + ImGui::GetStyle().ItemSpacing.x) < ImGui::GetContentRegionMax().x) {
+                            ImGui::SameLine();
+                        }
                     }
                 }
             }
@@ -1934,7 +1951,8 @@ std::shared_ptr<SceneWindow> FrontendUI::getOrCreateWindow() {
     if (io.KeyShift) {
         for (int i = 0; i < m_m2Windows.size(); i++) {
             if (m_m2Windows[i] == nullptr) {
-                m_m2Windows[i] = std::make_shared<M2Window>(m_api, m_uiRenderer, std::to_string(i));
+                auto newWindow = std::make_shared<M2Window>(m_api, m_uiRenderer, std::to_string(i));
+                m_m2Windows[i] = newWindow;
                 return m_m2Windows[i];
             }
         }

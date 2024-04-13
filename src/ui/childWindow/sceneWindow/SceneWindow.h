@@ -24,7 +24,7 @@ struct RenderTargetParameters {
 class SceneWindow : public std::enable_shared_from_this<SceneWindow> {
 public:
     SceneWindow(const HApiContainer &api, bool renderToSwapChain, const std::shared_ptr<FrontendUIRenderer> &uiRenderer);
-    ~SceneWindow();
+    virtual ~SceneWindow();
 
     void openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z);
     void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
