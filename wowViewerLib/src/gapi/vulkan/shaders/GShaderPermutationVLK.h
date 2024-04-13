@@ -11,7 +11,7 @@
 #include "../GDeviceVulkan.h"
 #include "../../interface/IShaderPermutation.h"
 #include "../descriptorSets/GDescriptorSet.h"
-#include "../../../engine/shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 
 
 struct ShaderSetLayout {

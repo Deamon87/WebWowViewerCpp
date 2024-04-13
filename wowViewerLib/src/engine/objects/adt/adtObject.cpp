@@ -5,7 +5,7 @@
 #include <cstring>
 #include <bitset>
 #include "adtObject.h"
-#include "../../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../algorithms/mathHelper.h"
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"

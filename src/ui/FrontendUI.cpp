@@ -18,7 +18,6 @@
 #include <imageButton2/imageButton2.h>
 #include <stateSaver/stateSaver.h>
 #include "imguiLib/fileBrowser/imfilebrowser.h"
-#include "../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
@@ -46,7 +45,7 @@ FrontendUI::FrontendUI(HApiContainer api) {
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
     //this->createDefaultprocessor();
 
-    m_backgroundScene = std::make_shared<SceneWindow>(api, true);
+    m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer);
 }
 
 void FrontendUI::composeUI() {
@@ -1605,6 +1604,19 @@ void FrontendUI::showSettingsDialog() {
             if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
                 if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
                     m_api->getConfig()->currentGlow = customGlow;
+                }
+            }
+        }
+        if (ImGui::CollapsingHeader("Mat options")) {
+            auto activeScene = m_lastActiveScene.lock();
+            if (activeScene) {
+                auto materials = activeScene->getMaterials();
+                for (int i = 0; i < materials.size(); i++) {
+                    auto &mat = materials[i];
+
+                    if (ImGui::ImageButton(std::get<0>(mat).c_str(), std::get<1>(mat)->uniqueId, {256, 256})) {
+                        activeScene->setCurrentCameraIndex(i);
+                    }
                 }
             }
         }

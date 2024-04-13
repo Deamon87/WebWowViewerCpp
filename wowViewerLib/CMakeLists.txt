@@ -773,6 +773,9 @@ if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
+#    message("SPIRV_META_DIR (include) = ${SPIRV_META_DIR}")
+    target_include_directories(WoWViewerLib PUBLIC ${SPIRV_META_DIR})
+
     if (LINK_OGL2)
         add_dependencies(WoWViewerLib ShadersGLSL20)
     endif()

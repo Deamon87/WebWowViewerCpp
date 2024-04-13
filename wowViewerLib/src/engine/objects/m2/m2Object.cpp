@@ -728,14 +728,10 @@ uint8_t miniLogic(const CImVector *a2) {
     return v10;
 }
 
-void M2Object::setDiffuseColor(CImVector& value) {
+void M2Object::setDiffuseColor(CImVector& value, float intensity) {
     this->m_localDiffuseColor = value;
 
-    this->m_localDiffuseColorV = mathfu::vec4(
-            value.r / 255.0f,
-            value.g / 255.0f,
-            value.b / 255.0f,
-            value.a / 255.0f);
+    this->m_localDiffuseColorV = ImVectorToVec4(value) * intensity;
 
     if (value.a != 255) {
 //        std::cout << "Found index into MOLT = " << (int)value.a << std::endl;
@@ -1057,8 +1053,8 @@ void M2Object::collectLights(std::vector<LocalLight> &pointLights) {
             auto &pointLight =  pointLights.emplace_back();
             pointLight.attenuation = mathfu::vec4(m2Light.attenuation_start, m2Light.diffuse_intensity,
                                                   m2Light.attenuation_end, 0);
-            pointLight.innerColor = m2Light.diffuse_color ;
-            pointLight.outerColor = m2Light.diffuse_color ;
+            pointLight.innerColor = m2Light.diffuse_color * m2Light.diffuse_intensity;
+            pointLight.outerColor = m2Light.diffuse_color * m2Light.diffuse_intensity;
             pointLight.position = m2Light.position;
             pointLight.blendParams = mathfu::vec4(0,0,0,0);
         }

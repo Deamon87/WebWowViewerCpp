@@ -7,7 +7,6 @@
 
 #include "../../../../wowViewerLib/src/renderer/IRenderParameters.h"
 #include "ImGUIPlan.h"
-#include "../../../../wowViewerLib/src/engine/shader/ShaderDefinitions.h"
 #include "IFrontendUIBufferCreate.h"
 #include "../../../../wowViewerLib/src/gapi/vulkan/buffers/CBufferChunkVLK.h"
 

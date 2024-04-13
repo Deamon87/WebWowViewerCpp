@@ -278,7 +278,7 @@ public:
 
     void drawBB(mathfu::vec3 &color);
 
-    void setDiffuseColor(CImVector& value);
+    void setDiffuseColor(CImVector& value, float intensity);
 
     HBlpTexture getBlpTextureData(int textureInd);
     HGSamplableTexture getTexture(int textureInd);

@@ -4,7 +4,6 @@
 
 #include "ViewsObjects.h"
 #include "../../gapi/UniformBufferStructures.h"
-#include "../shader/ShaderDefinitions.h"
 #include "oneapi/tbb/parallel_for.h"
 
 #if (__AVX__ && __SSE2__)

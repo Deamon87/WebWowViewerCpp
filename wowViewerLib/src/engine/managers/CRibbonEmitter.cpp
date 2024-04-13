@@ -2,7 +2,7 @@
 #include <cassert>
 #include "CRibbonEmitter.h"
 #include "../../gapi/interface/IVertexBufferBindings.h"
-#include "../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "../../gapi/UniformBufferStructures.h"
 #include "../../gapi/interface/materials/IMaterial.h"

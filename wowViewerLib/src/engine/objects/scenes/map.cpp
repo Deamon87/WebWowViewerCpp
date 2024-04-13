@@ -13,7 +13,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../algorithms/quick-sort-omp.h"
 #include "../../../gapi/UniformBufferStructures.h"
-#include "../../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
 

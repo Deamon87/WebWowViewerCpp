@@ -134,6 +134,7 @@ public:
         std::unique_lock<std::mutex> cacheLck(cacheMapMutex, std::defer_lock);
         cacheLck.lock();
         m_cache.clear();
+        m_cacheFdid.clear();
         cacheLck.unlock();
     }
 private:

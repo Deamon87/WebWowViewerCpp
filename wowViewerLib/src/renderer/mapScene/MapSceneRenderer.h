@@ -13,7 +13,7 @@
 #include "MapScenePlan.h"
 
 #include "../../gapi/interface/buffers/IBufferVersioned.h"
-#include "../../engine/shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../engine/algorithms/FrameCounter.h"
 
 static const std::vector<GBufferBinding> staticWMOBindings = {{

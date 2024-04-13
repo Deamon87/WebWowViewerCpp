@@ -4,7 +4,7 @@
 
 #include "wmoGroupGeom.h"
 #include "../persistance/header/wmoFileHeader.h"
-#include "../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../gapi/interface/IDevice.h"
 #include "../algorithms/mathHelper.h"
 #include "../algorithms/animate.h"

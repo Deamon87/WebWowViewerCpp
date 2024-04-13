@@ -4,7 +4,7 @@
 
 #include "m2Geom.h"
 #include "skinGeom.h"
-#include "../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include <atomic>
 
 std::atomic<int> m2SizeLoaded = 0;

@@ -13,7 +13,7 @@ class IDeviceVulkan;
 #include <bitset>
 #include "../context/vulkan_context.h"
 #include "../IDeviceVulkan.h"
-#include "../../../engine/shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../shaders/ShaderConfig.h"
 
 class GDescriptorSetLayout {

@@ -20,25 +20,17 @@ public:
                 const HFrameScenario &scenario,
                 const std::function<uint32_t()> &updateFrameNumberLambda);
 
-    bool isActive() const {return m_isActive;};
-private:
-    void createMaterials();
+    bool isActive() const;;
+    void setSelectedMat(uint8_t matIndex) override;
+    std::vector<std::tuple<std::string, std::shared_ptr<IUIMaterial>>> getMaterials() override;
 private:
     std::string m_windowName = "";
     bool m_showWindow = true;
     bool m_isActive = false;
-
-    bool m_needToUpdateMaterials = false;
+    uint8_t m_selectedMat = 0;
 
     uint16_t m_width = 640;
     uint16_t m_height = 480;
-
-    std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
-
-    typedef std::list<std::function<void()>>::const_iterator OnUpdateIter;
-    std::unique_ptr<OnUpdateIter> iteratorUnique = nullptr;
-
-    std::array<std::shared_ptr<IUIMaterial>, IDevice::MAX_FRAMES_IN_FLIGHT> materials = {nullptr};
 };
 
 

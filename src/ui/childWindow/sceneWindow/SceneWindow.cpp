@@ -11,7 +11,6 @@
 #include "../../../screenshots/screenshotMaker.h"
 #include "../../../../wowViewerLib/src/engine/camera/m2TiedCamera.h"
 
-
 void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std::shared_ptr<ICamera> &camera, std::vector<std::shared_ptr<ICamera>> &cameraList) {
     if (m2Object->isMainDataLoaded()) {
         CAaBox aabb = m2Object->getColissionAABB();
@@ -121,8 +120,16 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
     return result;
 }
 
-SceneWindow::SceneWindow(const HApiContainer &api, bool renderToSwapChain) : m_api(api), m_renderToSwapChain(renderToSwapChain){
+SceneWindow::SceneWindow(const HApiContainer &api, bool renderToSwapChain, const std::shared_ptr<FrontendUIRenderer> &uiRenderer) :
+    m_api(api), m_renderToSwapChain(renderToSwapChain)
+{
 
+}
+
+SceneWindow::~SceneWindow() {
+    if (m_renderView) {
+        m_renderView->eraseOnUpdate(iteratorUnique);
+    }
 }
 
 /*
@@ -301,6 +308,22 @@ SceneWindow::render(double deltaTime,
         m_renderView = m_sceneRenderer->createRenderView(true);
     }
 
+    if (iteratorUnique == nullptr && m_renderView ) {
+        auto l_weak = this->weak_from_this();
+        iteratorUnique = m_renderView->addOnUpdate([l_weak] {
+            auto shared = l_weak.lock();
+            if (shared) {
+                shared->m_needToUpdateMaterials = true;
+            }
+        });
+    }
+
+    if (m_needToUpdateMaterials) {
+        this->createMaterials();
+        m_needToUpdateMaterials = false;
+    }
+
+
     currentCamera->tick(deltaTime * 1000.0f);
 
     if (m_api->getConfig()->pauseAnimation) {
@@ -395,5 +418,21 @@ SceneWindow::makeScreenshot(float fov,
         saveDataFromDrawStage([screenShotRenderView, processingFrame](int x, int y, int width, int height, uint8_t* data){
             screenShotRenderView->readRGBAPixels(processingFrame, x, y, width, height, data);
         }, screenshotFilename, screenShotWidth, screenShotHeight);
+    });
+}
+
+void SceneWindow::createMaterials() {
+    materials = {};
+    m_renderView->iterateOverOutputTextures([&](const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures,
+                                                const std::string &name, ITextureFormat textureFormat) {
+        auto &matArrayTuple = materials.emplace_back();
+        std::get<0>(matArrayTuple) = name;
+
+        auto &matArray = std::get<1>(matArrayTuple);
+        if (textureFormat == ITextureFormat::itRGBA) {
+            for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
+                matArray[i] = m_uiRenderer->createUIMaterial(textures[i]);
+            }
+        }
     });
 }

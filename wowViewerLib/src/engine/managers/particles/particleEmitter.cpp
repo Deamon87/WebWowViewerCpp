@@ -6,7 +6,7 @@
 #include "../../../gapi/interface/meshes/IParticleMesh.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
-#include "../../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"

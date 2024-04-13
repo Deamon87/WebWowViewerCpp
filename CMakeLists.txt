@@ -373,12 +373,12 @@ if (NOT MSVC)
 
 		#    find_library(SSP_EXISTS ssp)
 		#    message("SSP_EXISTS = ${SSP_EXISTS}")
-		#    if (SSP_EXISTS STREQUAL "SSP_EXISTS-NOTFOUND" )
-
-		message("Linking against SSP")
-		message("SSP_EXISTS = ${SSP_EXISTS}")
-		target_compile_options(AWebWoWViewerCpp PUBLIC -fstack-protector)
-		target_link_libraries(AWebWoWViewerCpp ssp)
+        if (SSP_EXISTS STREQUAL "SSP_EXISTS-NOTFOUND" )
+            message("Linking against SSP")
+            message("SSP_EXISTS = ${SSP_EXISTS}")
+            target_compile_options(AWebWoWViewerCpp PUBLIC -fstack-protector)
+            target_link_libraries(AWebWoWViewerCpp ssp)
+        endif()
 	endif()
 endif(NOT MSVC)
 

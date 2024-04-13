@@ -58,7 +58,7 @@ void RenderViewDeferredVLK::createFrameBuffers() {
         };
 
         auto const lightBufferFormat = {
-            ITextureFormat::itRGBAFloat32   //Color
+            ITextureFormat::itRGBA   //Color
         };
 
 
@@ -404,7 +404,25 @@ void RenderViewDeferredVLK::iterateOverOutputTextures(
         callback(colorTextures, "Color Texture", ITextureFormat::itRGBA);
     }
 
-    //2. Depth buffer
+    //2. Light Buffer
+    {
+        std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> normalBufferTextures;
+        for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)
+            normalBufferTextures[i] = m_gBufferFrameBuffers[i]->getAttachment(0);
+
+        callback(normalBufferTextures, "Normal buffer", ITextureFormat::itRGBA);
+    }
+
+    //3. Light Buffer
+    {
+        std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> lightBufferTextures;
+        for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)
+            lightBufferTextures[i] = m_lightFrameBuffers[i]->getAttachment(0);
+
+        callback(lightBufferTextures, "Light buffer", ITextureFormat::itDepth32);
+    }
+
+    //4. Depth buffer
     {
         std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> depthTextures;
         for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++)

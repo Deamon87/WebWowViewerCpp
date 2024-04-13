@@ -6,7 +6,7 @@
 #include "GShaderPermutationVLK.h"
 #include "../../../engine/stringTrim.h"
 #include "../../../engine/algorithms/hashString.h"
-#include "../../../engine/shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../UniformBufferStructures.h"
 #include "../../interface/IDevice.h"
 #include <unordered_map>

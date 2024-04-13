@@ -101,12 +101,12 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
 
         auto &light = this->mainGeom->lights[doodadDef->color.a];
-        m2Object->setDiffuseColor(light.color);
+        m2Object->setDiffuseColor(light.color, light.intensity);
 
 
 //        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
     } else {
-        m2Object->setDiffuseColor(doodadDef->color);
+        m2Object->setDiffuseColor(doodadDef->color, 1.0f);
     }
 
     this->m_doodadsUnorderedMap[index] = m2Object;

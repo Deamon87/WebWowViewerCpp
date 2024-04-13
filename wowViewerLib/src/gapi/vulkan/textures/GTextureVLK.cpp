@@ -250,7 +250,7 @@ void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat te
                            VK_COMPONENT_SWIZZLE_B,
                            VK_COMPONENT_SWIZZLE_A};
     } else {
-        view.components = {VK_COMPONENT_SWIZZLE_IDENTITY};
+        view.components = {VK_COMPONENT_SWIZZLE_R};
     }
     // The subresource range describes the set of mip levels (and array layers) that can be accessed through this image view
     // It's possible to create multiple image views for a single image referring to different (and/or overlapping) ranges of the image

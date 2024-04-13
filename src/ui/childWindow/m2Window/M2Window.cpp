@@ -6,33 +6,16 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 
-M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix) : SceneWindow(api, false), m_uiRenderer(renderer) {
+M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix) : SceneWindow(api, false, renderer) {
     m_windowName = "M2Window##" + nameSuffix;
 }
 
 M2Window::~M2Window() {
-    if (m_renderView) {
-        m_renderView->eraseOnUpdate(iteratorUnique);
-    }
+
 }
 
 bool M2Window::draw() {
     this->m_isActive = false;
-
-    if (iteratorUnique == nullptr && m_renderView ) {
-        auto l_weak = this->weak_from_this();
-        iteratorUnique = m_renderView->addOnUpdate([l_weak] {
-            auto shared = l_weak.lock();
-            if (shared) {
-                shared->m_needToUpdateMaterials = true;
-            }
-        });
-    }
-
-    if (m_needToUpdateMaterials) {
-        this->createMaterials();
-        m_needToUpdateMaterials = false;
-    }
 
     if (ImGui::Begin(m_windowName.c_str(), &m_showWindow))
     {
@@ -59,7 +42,10 @@ bool M2Window::draw() {
             m_height = sizeY > 0 ? sizeY : 1;
         }
 
-        auto const &currentMaterial = materials[currentFrame];
+        //Clamp to 0 if the selected mat is too big
+        m_selectedMat = (m_selectedMat >= materials.size()) ? 0 : m_selectedMat;
+
+        auto const &currentMaterial = (m_selectedMat < materials.size()) ? std::get<1>(materials[m_selectedMat])[currentFrame] : nullptr;
         if (currentMaterial) {
             ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
             ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
@@ -94,16 +80,6 @@ bool M2Window::draw() {
     return m_showWindow;
 }
 
-void M2Window::createMaterials() {
-    m_renderView->iterateOverOutputTextures([&](const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures,
-                                                const std::string &name, ITextureFormat textureFormat) {
-        if (textureFormat == ITextureFormat::itRGBA) {
-            for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
-                materials[i] = m_uiRenderer->createUIMaterial(textures[i]);
-            }
-        }
-    });
-}
 
 void M2Window::render(double deltaTime, const HFrameScenario &scenario,
                       const std::function<uint32_t()> &updateFrameNumberLambda) {
@@ -114,4 +90,21 @@ void M2Window::render(double deltaTime, const HFrameScenario &scenario,
     };
 
     SceneWindow::render(deltaTime, 60, scenario, nullptr, updateFrameNumberLambda);
+}
+
+bool M2Window::isActive() const {return m_isActive;}
+
+void M2Window::setSelectedMat(uint8_t matIndex) {
+    m_selectedMat = matIndex;
+}
+
+std::vector<std::tuple<std::string, std::shared_ptr<IUIMaterial>>> M2Window::getMaterials() {
+    std::vector<std::tuple<std::string, std::shared_ptr<IUIMaterial>>> result;
+
+    auto currentFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    for (auto &matArray : materials) {
+        result.push_back(std::make_tuple(std::get<0>(matArray), std::get<1>(matArray)[currentFrame]));
+    }
+
+    return result;
 }

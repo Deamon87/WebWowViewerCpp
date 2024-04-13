@@ -19,7 +19,8 @@ endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
-set(SPIRV_META_FILE ${PROJECT_SOURCE_DIR}/src/engine/shader/ShaderDefinitions.h)
+set(SPIRV_META_DIR ${CMAKE_BINARY_DIR}/shader_meta/ PARENT_SCOPE)
+set(SPIRV_META_FILE ${SPIRV_META_DIR}ShaderDefinitions.h)
 
 if(NOT ANDROID)
     #GLSL Compiler
@@ -249,8 +250,14 @@ if (NOT EMSCRIPTEN)
         )
     endif()
     if(LINK_VULKAN)
-        install(FILES ${SPIRV_BINARY_FILES_NON_OPT}
-                DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
-        )
+        if(SPIRV_OPT_APP)
+            install(FILES ${SPIRV_BINARY_FILES_OPT}
+                    DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
+            )
+        else()
+            install(FILES ${SPIRV_BINARY_FILES_NON_OPT}
+                    DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
+            )
+        endif()
     endif()
 endif()
