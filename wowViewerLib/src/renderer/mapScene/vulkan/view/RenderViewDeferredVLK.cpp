@@ -234,7 +234,7 @@ void RenderViewDeferredVLK::update(int width, int height, float glow,
 
         {
             auto &screensize = m_lightScreenSize->getObject();
-            screensize = {m_width, m_height, 0, 0};
+            screensize = {(float)m_width, (float)m_height, 0.0, 0.0};
             m_lightScreenSize->save();
         }
 

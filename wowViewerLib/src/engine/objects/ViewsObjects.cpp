@@ -75,7 +75,7 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
                                                                            r.end(), candidatesArr,
                                                                            candCullRes);
 #else
-            ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
+            ObjectCulling<M2ObjId>::cull(this->frustumData,
                                                               r.begin(), r.end(), candidatesArr,
                                                               candCullRes);
 #endif

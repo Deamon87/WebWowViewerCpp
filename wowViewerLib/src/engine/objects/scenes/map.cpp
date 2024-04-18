@@ -1169,7 +1169,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
                                                                         r.begin(), r.end(), candidates,
                                                                         results);
 #else
-                      ObjectCulling<std::shared_ptr<M2Object>>::cull(frustumData,
+                      ObjectCulling<M2ObjId>::cull(frustumData,
                                                                      r.begin(), r.end(), candidates,
                                                                      results);
 #endif

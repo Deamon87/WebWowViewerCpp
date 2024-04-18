@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <thread>
+#include <stdlib.h>
 #include "GDeviceVulkan.h"
 
 #include "meshes/GMeshVLK.h"
@@ -206,6 +207,8 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
     enableValidationLayers = false;
 
+    _putenv("VK_LOADER_DRIVERS_DISABLE=*dzn*");
+
     if (volkInitialize()) {
         std::cerr << "Failed to initialize volk loader" << std::endl;
         exit(1);
@@ -221,8 +224,15 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     if (vkEnumerateInstanceVersion != nullptr)
         vkEnumerateInstanceVersion(&apiVersion);
 
+    std::cout << "reported VK API: major = " << VK_VERSION_MAJOR(apiVersion) << 
+                " minor = " << VK_VERSION_MINOR(apiVersion) <<  
+                " patch = " << VK_VERSION_PATCH(apiVersion) 
+        
+        << std::endl;
+
     if (apiVersion > VK_API_VERSION_1_2)
         apiVersion = VK_API_VERSION_1_2;
+    
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -249,6 +259,13 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     char** extensions;
     int extensionCnt = 0;
     callback->getRequiredExtensions(extensions, extensionCnt);
+
+    std::cout << "required extensions: ";
+    for (int i = 0; i < extensionCnt; i++) {
+        std::cout << std::string(extensions[i]) << " ";
+    }
+    std::cout << std::endl;
+
     std::vector<const char *> extensionsVec(extensions, extensions+extensionCnt);
     if (enableValidationLayers) {
         extensionsVec.push_back("VK_EXT_debug_report");
