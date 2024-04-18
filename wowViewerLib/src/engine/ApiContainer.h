@@ -19,15 +19,30 @@ typedef std::shared_ptr<ApiContainer> HApiContainer;
 
 class ApiContainer {
 private:
-    Config config;
+    std::shared_ptr<Config> m_config = nullptr;
 public:
+    ApiContainer() : m_config(std::make_shared<Config>()){
+    };
+
+    HApiContainer clone() {
+        auto newApi = std::make_shared<ApiContainer>();
+        newApi->m_config = this->m_config;
+        newApi->requestProcessor = this->requestProcessor;
+        newApi->cacheStorage = this->cacheStorage;
+        newApi->hDevice = this->hDevice;
+        newApi->databaseHandler = this->databaseHandler;
+
+        return newApi;
+    }
+
+
     HWoWFilesCacheStorage cacheStorage = nullptr;
     HRequestProcessor requestProcessor = nullptr;
     HGDevice hDevice = nullptr;
     std::shared_ptr<IClientDatabase> databaseHandler = nullptr;
 
     Config *getConfig() {
-        return &config;
+        return m_config.get();
     }
 };
 

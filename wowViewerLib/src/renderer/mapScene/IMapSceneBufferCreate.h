@@ -41,6 +41,7 @@ PACK(
     }
 );
 
+static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
 class IMapSceneBufferCreate {
 public:
@@ -65,6 +66,8 @@ public:
     virtual HGVertexBuffer createM2VertexBuffer(int sizeInBytes) = 0;
 
     virtual HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) = 0;
+
+    virtual HGIndexBuffer  getOrCreateM2ParticleIndexBuffer() = 0;
 
     virtual HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) = 0;
     virtual HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) = 0;

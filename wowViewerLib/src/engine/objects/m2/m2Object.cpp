@@ -1672,6 +1672,8 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int index
 }
 
 void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
+    if (!this->m_loaded) return;
+
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
     int minBatch = m_api->getConfig()->m2MinBatch;
@@ -1949,7 +1951,8 @@ int32_t M2Object::getTextureTransformIndexByLookup(int textureTrasformlookup) {
 }
 
 void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
-//    return;
+    if (!this->m_loaded) return;
+
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());

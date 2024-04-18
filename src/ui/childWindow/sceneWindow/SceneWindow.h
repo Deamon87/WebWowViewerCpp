@@ -75,6 +75,8 @@ private:
     std::shared_ptr<IScene> m_currentScene = nullptr;
     bool m_renderToSwapChain = true;
 
+    HApiContainer createNewApiContainer();
+
 private:
     void createMaterials();
 

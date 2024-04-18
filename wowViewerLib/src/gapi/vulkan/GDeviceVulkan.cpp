@@ -1296,10 +1296,7 @@ HGBufferVLK GDeviceVLK::createIndexBuffer(const std::string &objName, size_t ini
 }
 
 HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
-    std::shared_ptr<GVertexBufferBindingsVLK> h_vertexBindings;
-    h_vertexBindings.reset(new GVertexBufferBindingsVLK());
-
-    return h_vertexBindings;
+    return std::make_shared<GVertexBufferBindingsVLK>();
 }
 
 HGSamplableTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {

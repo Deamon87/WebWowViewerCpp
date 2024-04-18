@@ -48,6 +48,8 @@ public:
     HGVertexBuffer createM2VertexBuffer(int sizeInBytes) override;
     HGIndexBuffer  createM2IndexBuffer(int sizeInBytes) override;
 
+    HGIndexBuffer  getOrCreateM2ParticleIndexBuffer() override;
+
     HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) override;
     HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) override;
 
@@ -196,6 +198,8 @@ protected:
 
     HGBufferVLK m_vboQuad;
     HGBufferVLK m_iboQuad;
+
+    HGBufferVLK m_particleIndexBuffer;
 
     HGVertexBufferBindings m_drawQuadVao = nullptr;
 

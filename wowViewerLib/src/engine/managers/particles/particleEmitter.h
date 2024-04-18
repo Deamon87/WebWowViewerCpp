@@ -134,10 +134,6 @@ private:
 
     ParticleBuffStructQuad *szVertexBuf = nullptr;
     int szVertexCnt = 0;
-    std::vector<uint16_t> szIndexBuff;
-
-
-
 private:
 
     struct ParticlePreRenderData
@@ -204,7 +200,7 @@ private:
 
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
 
-    static HGIndexBuffer m_indexVBO;
+    HGIndexBuffer m_indexVBO = nullptr;
 
     void GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const;
     void createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int size);

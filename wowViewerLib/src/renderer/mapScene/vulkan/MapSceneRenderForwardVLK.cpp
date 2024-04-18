@@ -75,6 +75,25 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
         m_drawQuadVao->save();
     }
 
+    {
+        m_particleIndexBuffer = m_device->createIndexBuffer("Scene_IBO_Particle",
+                                                            MAX_PARTICLES_PER_EMITTER * 6 * sizeof(uint16_t));
+
+        std::vector<uint16_t> szIndexBuff;
+
+        int vo = 0;
+        for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
+            szIndexBuff.push_back(vo + 0);
+            szIndexBuff.push_back(vo + 1);
+            szIndexBuff.push_back(vo + 2);
+            szIndexBuff.push_back(vo + 3);
+            szIndexBuff.push_back(vo + 2);
+            szIndexBuff.push_back(vo + 1);
+            vo += 4;
+        }
+        m_particleIndexBuffer->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+    }
+
     uboBuffer = m_device->createUniformBuffer("Scene_UBO", 1024*1024);
     uboStaticBuffer = m_device->createUniformBuffer("Scene_UBOStatic", 1024*1024);
 
@@ -205,6 +224,10 @@ HGVertexBuffer MapSceneRenderForwardVLK::createM2RibbonVertexBuffer(int sizeInBy
 
 HGIndexBuffer MapSceneRenderForwardVLK::createM2IndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
+}
+
+HGIndexBuffer MapSceneRenderForwardVLK::getOrCreateM2ParticleIndexBuffer() {
+    return m_particleIndexBuffer;
 }
 
 HGVertexBuffer MapSceneRenderForwardVLK::createADTVertexBuffer(int sizeInBytes) {

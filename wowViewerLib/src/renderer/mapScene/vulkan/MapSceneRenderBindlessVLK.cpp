@@ -134,7 +134,6 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     m_device(hDevice), MapSceneRenderer(config) {
     std::cout << "Create Bindless scene renderer " << std::endl;
 
-    iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
     const int rendererId = std::hash<uint64_t>()((uint64_t)this) & 0xFFFF;
     const std::string rendererIdStr = " " + std::to_string(rendererId);
@@ -142,6 +141,9 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     auto un = [rendererIdStr](const std::string &name) -> std::string {
         return name + rendererIdStr;
     };
+
+    iboBuffer   = m_device->createIndexBuffer(un("Scene_IBO"), 1024*1024);
+
 
     vboM2Buffer         = m_device->createVertexBuffer(un("Scene_VBO_M2"),1024*1024, sizeof(M2Vertex));
     vboPortalBuffer     = m_device->createVertexBuffer(un("Scene_VBO_Portal"),1024*1024);
@@ -175,7 +177,24 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         m_drawQuadVao->setIndexBuffer(m_iboQuad);
         m_drawQuadVao->save();
     }
+    {
+        m_particleIndexBuffer = m_device->createIndexBuffer(un("Scene_IBO_Particle"),
+                                                            MAX_PARTICLES_PER_EMITTER * 6 * sizeof(uint16_t));
 
+        std::vector<uint16_t> szIndexBuff;
+
+        int vo = 0;
+        for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
+            szIndexBuff.push_back(vo + 0);
+            szIndexBuff.push_back(vo + 1);
+            szIndexBuff.push_back(vo + 2);
+            szIndexBuff.push_back(vo + 3);
+            szIndexBuff.push_back(vo + 2);
+            szIndexBuff.push_back(vo + 1);
+            vo += 4;
+        }
+        m_particleIndexBuffer->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+    }
     //Create vertex data for SpotLight in z-up
     {
         std::vector<mathfu::vec2_packed> vertexBuffer;
@@ -586,6 +605,11 @@ HGVertexBuffer MapSceneRenderBindlessVLK::createM2RibbonVertexBuffer(int sizeInB
 HGIndexBuffer MapSceneRenderBindlessVLK::createM2IndexBuffer(int sizeInBytes) {
     return iboBuffer->getSubBuffer(sizeInBytes);
 }
+
+HGIndexBuffer MapSceneRenderBindlessVLK::getOrCreateM2ParticleIndexBuffer() {
+    return m_particleIndexBuffer;
+}
+
 
 HGVertexBuffer MapSceneRenderBindlessVLK::createADTVertexBuffer(int sizeInBytes) {
     return vboAdtBuffer->getSubBuffer(sizeInBytes);
@@ -1386,6 +1410,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
             uploadCmd.submitBufferUploads(l_this->iboBuffer);
             uploadCmd.submitBufferUploads(l_this->m_vboQuad);
             uploadCmd.submitBufferUploads(l_this->m_iboQuad);
+            uploadCmd.submitBufferUploads(l_this->m_particleIndexBuffer);
             uploadCmd.submitBufferUploads(l_this->m_vboSpot);
             uploadCmd.submitBufferUploads(l_this->m_iboSpot);
         }

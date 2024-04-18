@@ -17,9 +17,7 @@
 #include "../../../gapi/interface/materials/IMaterial.h"
 
 
-HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
 
-static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
 enum class ParticleVertexShader : int {
     None = -1,
@@ -262,22 +260,8 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     HGDevice device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
-        //TODO:
-        m_indexVBO = sceneRenderer->createM2IndexBuffer(MAX_PARTICLES_PER_EMITTER*6*sizeof(uint16_t));
-        int vo = 0;
-        for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
-            szIndexBuff.push_back(vo + 0);
-            szIndexBuff.push_back(vo + 1);
-            szIndexBuff.push_back(vo + 2);
-            szIndexBuff.push_back(vo + 3);
-            szIndexBuff.push_back(vo + 2);
-            szIndexBuff.push_back(vo + 1);
-            vo += 4;
-        }
-        m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+        m_indexVBO = sceneRenderer->getOrCreateM2ParticleIndexBuffer();
     }
-
-
 
     //Create Material
     {
@@ -1119,6 +1103,9 @@ void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, t
 
     auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % (IDevice::MAX_FRAMES_IN_FLIGHT + 1)];
     if (!currentFrame.active)
+        return;
+
+    if (this->szVertexCnt == 0)
         return;
 
     HGParticleMesh mesh = currentFrame.m_mesh;
