@@ -18,8 +18,15 @@ public:
     MaterialBuilderVLK& operator=(MaterialBuilderVLK const& ) = delete;
 
     static MaterialBuilderVLK fromShader(const std::shared_ptr<IDeviceVulkan> &device,
-                                         const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig) {
-        return {device, shaderFiles, shaderConfig};
+                                         const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig,
+                                         const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dsesOverrides) {
+
+        std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> dsLayoutOverrides = {};
+        for (const auto &rec : dsesOverrides) {
+            dsLayoutOverrides.emplace(rec.first, rec.second->getDescSetLayout());
+        }
+
+        return {device, shaderFiles, shaderConfig, dsLayoutOverrides};
     }
 
     static MaterialBuilderVLK fromMaterial(const std::shared_ptr<IDeviceVulkan> &device,
@@ -33,7 +40,6 @@ public:
                         materialVlk->getMaterialId()
                 };
     }
-    MaterialBuilderVLK& overridePipelineLayout(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses);
     MaterialBuilderVLK& bindDescriptorSet(int bindPoint, std::shared_ptr<GDescriptorSet> &ds);
     MaterialBuilderVLK& createDescriptorSet(int bindPoint, const std::function<void(std::shared_ptr<GDescriptorSet> &ds)> &callback);
     MaterialBuilderVLK& createPipeline(const HGVertexBufferBindings &bindings,
@@ -66,7 +72,8 @@ private:
         return res;
     }
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
-                       const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig);
+                       const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig,
+                       const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides);
 
     MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
                        const std::shared_ptr<GShaderPermutationVLK> &shader,
@@ -89,6 +96,7 @@ private:
     std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;
     PipelineTemplate m_pipelineTemplate;
     std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> m_descriptorSets;
+    std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> m_dsLayoutOverrides;
 };
 
 

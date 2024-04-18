@@ -100,7 +100,9 @@ public:
         return indices;
     }
 public:
-    std::shared_ptr<IShaderPermutation> getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConf);
+    std::shared_ptr<IShaderPermutation> getShader(const std::string &vertexName, const std::string &fragmentName,
+                                                  const ShaderConfig &shaderConf,
+                                                  const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides);
 
     HGBufferVLK createUniformBuffer(const std::string &objName, size_t size);
     HGBufferVLK createSSBOBuffer(const std::string &objName, size_t size, int recordSize);
@@ -344,13 +346,15 @@ protected:
     struct ShaderPermutationCacheRecord {
         std::string name;
         ShaderConfig shaderConfig;
+        std::unordered_map<int, VkDescriptorSetLayout> dsLayoutOverrides;
 
         bool operator==(const ShaderPermutationCacheRecord &other) const {
             return
                 (name == other.name) &&
                 (shaderConfig.vertexShaderFolder == other.shaderConfig.vertexShaderFolder) &&
                 (shaderConfig.fragmentShaderFolder == other.shaderConfig.fragmentShaderFolder) &&
-                (shaderConfig.typeOverrides == other.shaderConfig.typeOverrides);
+                (shaderConfig.typeOverrides == other.shaderConfig.typeOverrides) &&
+                (dsLayoutOverrides == other.dsLayoutOverrides);
         };
     };
     struct ShaderPermutationRecordHasher {
@@ -368,6 +372,10 @@ protected:
                         hash<int>{}(rec2.first) << 12 ^
                         hash<int>{}(rec.first) << 16;
 
+            for (const auto &rec : k.dsLayoutOverrides)
+                mapHash ^=
+                        hash<int>{}(rec.first) << 4 ^
+                        hash<VkDescriptorSetLayout>{}(rec.second) << 8;
 
             return hash<std::string>{}(k.name) ^ mapHash;
 

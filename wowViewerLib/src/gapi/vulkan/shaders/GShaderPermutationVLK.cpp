@@ -45,11 +45,14 @@ VkShaderModule GShaderPermutationVLK::createShaderModule(const std::vector<char>
     return shaderModule;
 }
 
-GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName,
+GShaderPermutationVLK::GShaderPermutationVLK(const std::string &shaderVertName, const std::string &shaderFragName,
                                              const std::shared_ptr<GDeviceVLK> &device,
-                                             const ShaderConfig &shaderConf) :
+                                             const ShaderConfig &shaderConf,
+                                             const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides
+                                             ) :
     m_device(device), m_combinedName(shaderVertName + " "+ shaderFragName), m_shaderConf(shaderConf),
-    m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName){
+    m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName),
+    m_dsLayoutOverrides(dsLayoutOverrides) {
                                              
 
 }
@@ -61,10 +64,15 @@ std::vector<const shaderMetaData *> GShaderPermutationVLK::createMetaArray() {
 void GShaderPermutationVLK::createSetDescriptorLayouts() {
     std::vector<const shaderMetaData *> metas = createMetaArray();
     for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
-        auto &setLayout = combinedShaderLayout.setLayouts[i];
-        if (setLayout.imageBindings.length == 0 && setLayout.uboBindings.length == 0) continue;
+        if (m_dsLayoutOverrides.find(i) != m_dsLayoutOverrides.end()) {
+            descriptorSetLayouts[i] = m_dsLayoutOverrides.at(i);
+        } else {
+            auto &setLayout = combinedShaderLayout.setLayouts[i];
+            if (setLayout.imageBindings.length == 0 && setLayout.uboBindings.length == 0) continue;
 
-        descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i, m_shaderConf.typeOverrides);
+            descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i,
+                                                                             m_shaderConf.typeOverrides);
+        }
     }
 }
 
@@ -181,6 +189,7 @@ void GShaderPermutationVLK::createShaderLayout() {
         }
     }
 }
+
 std::shared_ptr<GPipelineLayoutVLK>
 GShaderPermutationVLK::createPipelineLayoutOverrided(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses) {
     std::vector<VkDescriptorSetLayout> descLayouts;

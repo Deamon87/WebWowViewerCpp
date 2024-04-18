@@ -29,7 +29,9 @@ struct CombinedShaderLayout {
 class GShaderPermutationVLK : public IShaderPermutation {
     friend class GDeviceVLK;
 public:
-    explicit GShaderPermutationVLK(std::string &shaderVertName, std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device, const ShaderConfig &shaderConf);
+    explicit GShaderPermutationVLK(const std::string &shaderVertName, const std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device, const ShaderConfig &shaderConf,
+                                   const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides
+                                   );
     ~GShaderPermutationVLK() override {};
 
     VkShaderModule getVertexModule() {return vertShaderModule;}
@@ -80,6 +82,8 @@ private:
     CombinedShaderLayout combinedShaderLayout;
     ShaderConfig m_shaderConf;
 
+    const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> m_dsLayoutOverrides;
+
     std::string vertShaderName = "";
     std::string vertShaderFrag = "";
 
@@ -87,6 +91,7 @@ private:
     std::vector<const shaderMetaData *> createMetaArray();
     void createShaderLayout();
     void createPipelineLayout();
+
 
 };
 

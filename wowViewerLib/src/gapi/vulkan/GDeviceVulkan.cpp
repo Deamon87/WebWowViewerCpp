@@ -817,7 +817,8 @@ void GDeviceVLK::createLogicalDevice() {
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &uploadQueue);
+//    vkGetDeviceQueue(device, indices.transferFamily.value(), 0, &uploadQueue);
+    vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &uploadQueue);
 //    vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
 }
 
@@ -1241,18 +1242,31 @@ void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantDa
 
 void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {}
 
-std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(std::string vertexName, std::string fragmentName, const ShaderConfig &shaderConfig) {
+std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(const std::string &vertexName, const std::string &fragmentName,
+                                                          const ShaderConfig &shaderConfig,
+                                                          const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides) {
+
+    std::unordered_map<int, VkDescriptorSetLayout> override = {};
+    for (const auto &rec : dsLayoutOverrides) {
+        override.emplace(rec.first, rec.second->getSetLayout());
+    }
 
     ShaderPermutationCacheRecord cacheRecord;
     cacheRecord.name = vertexName + " " + fragmentName;
     cacheRecord.shaderConfig = shaderConfig;
+    cacheRecord.dsLayoutOverrides = override;
 
     if (m_shaderPermuteCache.find(cacheRecord) != m_shaderPermuteCache.end()) {
         HGShaderPermutation ptr = m_shaderPermuteCache.at(cacheRecord);
         return ptr;
     }
 
-    std::shared_ptr<GShaderPermutationVLK> sharedPtr = std::make_shared<GShaderPermutationVLK>(vertexName, fragmentName, this->shared_from_this(), shaderConfig);
+    std::shared_ptr<GShaderPermutationVLK> sharedPtr = std::make_shared<GShaderPermutationVLK>(
+        vertexName, fragmentName,
+        this->shared_from_this(),
+        shaderConfig,
+        dsLayoutOverrides
+    );
     sharedPtr->compileShader("", "");
 
     m_shaderPermuteCache[cacheRecord] = sharedPtr;

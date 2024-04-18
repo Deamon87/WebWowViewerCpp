@@ -39,7 +39,7 @@ void main() {
 //    vec3 viewRay = vec3((in_viewPos.xy / vec2(in_viewPos.z)), 1.0);
 //    vec3 viewPos = (viewRay * sceneDepth);
     
-    vec3 lightDir = -(transpose(inverse(scene.uLookAtMat)) * vec4(lightRec.directionAndcosAngleDiff.xyz, 0.0)).xyz;
+    vec3 lightDir = normalize(-(transpose(inverse(scene.uLookAtMat)) * vec4(lightRec.directionAndcosAngleDiff.xyz, 0.0)).xyz);
     vec3 lightAtten = lightRec.attenuationAndcosOuterAngle.xyz;
 
     vec3 color = lightRec.colorAndFalloff.xyz;
@@ -56,6 +56,24 @@ void main() {
     float distanceToLightSqr = dot(vectorToLight, vectorToLight);
     float distanceToLightInv = inversesqrt(distanceToLightSqr);
     float diffuseTerm = max((dot(vectorToLight, viewNormal.xyz) * distanceToLightInv), 0.0);
+
+    //Ld is distance from spot light center
+    //ld = lightDir * normalize(-(vectorToLight)) * length(vectorToLight) =
+    //     cos(angle_between_lightDir_and_vectorToLight) * length(vectorToLight) = dist_r
+    //
+//                |\
+//                | \
+//                |  \
+//                |   \
+//                |    \
+//  lightDir ->   |     \   <- vectorToLight
+//                |      \
+//                |       \
+//                |        \
+//                |         \
+//                |__________\
+//                     ^
+//                   dist_r
 
     float ld = max(dot(lightDir, -(vectorToLight)), 0.0);
     float attenuation = (1.0 - clamp(((ld - lightAtten.x) * lightAtten.z), 0.0, 1.0));

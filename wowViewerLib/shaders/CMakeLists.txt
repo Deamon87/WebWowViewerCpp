@@ -19,8 +19,12 @@ endif()
 
 message(INFO "GLSL_TARGET_FOLDER = ${GLSL_TARGET_FOLDER}")
 
-set(SPIRV_META_DIR ${CMAKE_BINARY_DIR}/shader_meta/ PARENT_SCOPE)
-set(SPIRV_META_FILE ${SPIRV_META_DIR}ShaderDefinitions.h)
+
+set(SPIRV_META_DIR_local ${CMAKE_BINARY_DIR}/shader_meta)
+set(SPIRV_META_DIR ${SPIRV_META_DIR_local} PARENT_SCOPE)
+set(SPIRV_META_FILE ${SPIRV_META_DIR_local}/ShaderDefinitions.h)
+
+file(MAKE_DIRECTORY SPIRV_META_DIR)
 
 if(NOT ANDROID)
     #GLSL Compiler
@@ -204,6 +208,8 @@ configure_filesVLK(
         ${GLSL_TARGET_FOLDER}/spirv
         ${GLSL_TARGET_FOLDER}/glsl/glsl20/
         ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
+
+#message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}")
 
 add_custom_command(
         OUTPUT ${SPIRV_META_FILE}

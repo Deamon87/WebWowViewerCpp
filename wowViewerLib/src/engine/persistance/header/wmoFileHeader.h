@@ -284,17 +284,16 @@ struct SMOPoly
     uint8_t material_id;           // index into MOMT, 0xff for collision faces
 };
 
-
 struct SMOBatch
 {
     union {
         struct {
-        /*0x00*/ int16_t unknown_box_min[3];              // -2,-2,-1, 2,2,3 in cameron -> seems to be a bounding box for culling
-        /*0x06*/ int16_t unknown_box_max[3];
+            /*0x00*/ int16_t unknown_box_min[3];              // -2,-2,-1, 2,2,3 in cameron -> seems to be a bounding box for culling
+            /*0x06*/ int16_t unknown_box_max[3];
         } preLegion;
         struct {
-        /*0x00*/ uint8_t unknown[0xA];
-        /*0x0A*/ uint16_t material_id_large;              // used if flag_use_uint16_t_material is set.
+            /*0x00*/ uint8_t unknown[0xA];
+            /*0x0A*/ uint16_t material_id_large;              // used if flag_use_uint16_t_material is set.
         } postLegion;
     };
 
@@ -316,6 +315,7 @@ struct SMOBatch
     /*0x17*/ uint8_t material_id;                     // index in MOMT
 //#else
 };
+
 
 struct t_BSP_NODE
 {

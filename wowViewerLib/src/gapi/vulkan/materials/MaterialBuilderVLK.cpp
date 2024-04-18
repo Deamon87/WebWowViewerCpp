@@ -8,11 +8,15 @@
 #include "ISimpleMaterialVLK.h"
 
 MaterialBuilderVLK::MaterialBuilderVLK(const std::shared_ptr<IDeviceVulkan> &device,
-                                       const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig) : m_device(device) {
+                                       const std::vector<std::string> &shaderFiles, const ShaderConfig &shaderConfig,
+                                       const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides) :
+                                       m_device(device), m_dsLayoutOverrides(dsLayoutOverrides) {
 
     m_shader = std::dynamic_pointer_cast<GShaderPermutationVLK>(std::dynamic_pointer_cast<GDeviceVLK>(device)->getShader(
         shaderFiles[0],
-        shaderFiles[1], shaderConfig));
+        shaderFiles[1], shaderConfig,
+        dsLayoutOverrides)
+    );
 
     m_materialId = 0;
 
@@ -55,12 +59,6 @@ MaterialBuilderVLK &MaterialBuilderVLK::bindDescriptorSet(int bindPoint, std::sh
     return *this;
 }
 
-MaterialBuilderVLK& MaterialBuilderVLK::overridePipelineLayout(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses) {
-    m_pipelineLayout = m_shader->createPipelineLayoutOverrided(dses);
-
-    return *this;
-}
-
 MaterialBuilderVLK &MaterialBuilderVLK::createPipeline(const HGVertexBufferBindings &bindings,
                                                        const std::shared_ptr<GRenderPassVLK> &renderPass,
                                                        const PipelineTemplate &pipelineTemplate) {
@@ -92,7 +90,7 @@ MaterialBuilderVLK& MaterialBuilderVLK::createGBufferPipeline(const HGVertexBuff
 
     auto gbufferShader = std::dynamic_pointer_cast<GShaderPermutationVLK>(std::dynamic_pointer_cast<GDeviceVLK>(m_device)->getShader(
         shaderFiles[0],
-        shaderFiles[1], shaderConfig));
+        shaderFiles[1], shaderConfig, m_dsLayoutOverrides));
 
 
     m_gBufferPipeline = std::dynamic_pointer_cast<GDeviceVLK>(m_device)->createPipeline(
