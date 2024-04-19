@@ -27,10 +27,10 @@ PACK(
 
 PACK(
     struct AdtVertex {
-        mathfu::vec3_packed pos;
+        float height;
         mathfu::vec3_packed normal;
-        mathfu::vec4_packed mccv;
-        mathfu::vec4_packed mclv;
+        uint8_t mccv[4];
+        uint8_t mclv[4];
     }
 );
 

@@ -12,7 +12,7 @@ precision highp int;
 #include "../../../common/commonADTMaterial.glsl"
 
 /* vertex shader code */
-layout(location = 0) in vec3 aPos;
+layout(location = 0) in float aHeight;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
 layout(location = 3) in vec3 aNormal;
@@ -51,9 +51,10 @@ void main() {
     //Thus, we first need to get vertexNumber within MCNK
 
     int indexInMCNK = (gl_VertexIndex - gl_BaseVertexARB) % (9 * 9 + 8 * 8);
-    calcAdtAlphaUV(indexInMCNK, adtMeshWideVSPS.uPos.xyz, vAlphaCoords, vChunkCoords);
+    vec2 worldPointXY;
+    calcAdtAlphaUV(indexInMCNK, adtMeshWideVSPS.uPos.xyz, vAlphaCoords, vChunkCoords, worldPointXY);
 
-    vec4 worldPoint = vec4(aPos, 1);
+    vec4 worldPoint = vec4(worldPointXY.xy, aHeight, 1);
 
     mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
     vec3 normal = normalize((viewMatForNormal * vec4(aNormal, 0.0)).xyz);

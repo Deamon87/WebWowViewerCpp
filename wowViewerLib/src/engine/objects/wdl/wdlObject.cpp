@@ -173,6 +173,8 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                     std::cout << "Unk condition " << (int) condition.conditionType << std::endl;            }
         }
 
+        conditionPassed = true;
+
         if (conditionPassed) {
             for (auto &m2Object : skyScene.m2Objects) {
                 m2ObjectsCandidates.addToDraw(m2Object);

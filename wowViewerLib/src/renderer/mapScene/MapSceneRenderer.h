@@ -72,10 +72,10 @@ static std::vector<GBufferBinding> staticM2RibbonBindings = {{
 }};
 
 static std::vector<GBufferBinding> adtVertexBufferBinding = {{
-    {+adtShader::Attribute::aPos, 3,       GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, pos)},
+    {+adtShader::Attribute::aHeight, 1,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, height)},
     {+adtShader::Attribute::aNormal, 3,    GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, normal)},
-    {+adtShader::Attribute::aColor, 4,     GBindingType::GFLOAT, false,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
-    {+adtShader::Attribute::aVertexLighting, 4, GBindingType::GFLOAT, false, sizeof(AdtVertex), offsetof(AdtVertex, mclv)},
+    {+adtShader::Attribute::aColor, 4,     GBindingType::GUNSIGNED_BYTE, true,      sizeof(AdtVertex), offsetof(AdtVertex, mccv)},
+    {+adtShader::Attribute::aVertexLighting, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(AdtVertex), offsetof(AdtVertex, mclv)},
 }};
 
 static std::vector<GBufferBinding> adtVertexBufferLODBinding = {{

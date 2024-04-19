@@ -23,7 +23,7 @@ const float TILESIZE = (1600.0 / 3.0);
 const float CHUNKSIZE = TILESIZE / 16.0;
 const float UNITSIZE =  CHUNKSIZE / 8.0;
 
-void calcAdtAlphaUV(in int indexInMCNK, in vec3 adtMCNKPos, out vec2 alphaCoords, out vec2 chunkCoords) {
+void calcAdtAlphaUV(in int indexInMCNK, in vec3 adtMCNKPos, out vec2 alphaCoords, out vec2 chunkCoords, out vec2 worldPointXY) {
     float iX = mod(indexInMCNK, 17.0);
     float iY = floor(indexInMCNK/17.0);
 
@@ -32,7 +32,7 @@ void calcAdtAlphaUV(in int indexInMCNK, in vec3 adtMCNKPos, out vec2 alphaCoords
         iX = iX - 8.5;
     }
 
-    vec2 worldPoint_xy = vec2(
+    worldPointXY = vec2(
         adtMCNKPos.x - iY * UNITSIZE,
         adtMCNKPos.y - iX * UNITSIZE
     );
@@ -47,7 +47,7 @@ void calcAdtAlphaUV(in int indexInMCNK, in vec3 adtMCNKPos, out vec2 alphaCoords
 
     chunkCoords = vec2(iX, iY);
 
-    alphaCoords = ((vec2(32.0f) - ADTIndex) * TILESIZE - worldPoint_xy.yx) / TILESIZE;
+    alphaCoords = ((vec2(32.0f) - ADTIndex) * TILESIZE - worldPointXY.yx) / TILESIZE;
     alphaCoords.x = fixADTUVBorder(alphaCoords.x, chunkCoords.x/8.0);
     alphaCoords.y = fixADTUVBorder(alphaCoords.y, chunkCoords.y/8.0);
 }

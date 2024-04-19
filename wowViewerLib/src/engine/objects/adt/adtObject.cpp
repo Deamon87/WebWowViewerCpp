@@ -225,9 +225,7 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
                 iY = iY + 0.5f;
                 iX = iX - 8.5f;
             }
-            adtVertex.pos = { m_adtFile->mapTile[i].position.x - iY * UNITSIZE,
-                              m_adtFile->mapTile[i].position.y - iX * UNITSIZE,
-                              m_adtFile->mapTile[i].position.z + m_adtFile->mcnkStructs[i].mcvt->height[j] };
+            adtVertex.height = {m_adtFile->mapTile[i].position.z + m_adtFile->mcnkStructs[i].mcvt->height[j] };
 
             /* 1.3 Normals */
             if (m_adtFile->mcnkStructs[i].mcnr != nullptr) {
@@ -240,27 +238,17 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
             /* 1.4 MCCV */ //Color vertex
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
                 auto &mccv = m_adtFile->mcnkStructs[i].mccv;
-                adtVertex.mccv = {
-                    mccv->entries[j].red / 255.0f,
-                    mccv->entries[j].green / 255.0f,
-                    mccv->entries[j].blue / 255.0f,
-                    mccv->entries[j].alpha / 255.0f,
-                };
+                *(uint32_t*)(&adtVertex.mccv) = *((uint32_t*)&mccv->entries[j]);
             } else {
-                adtVertex.mccv = { 0.5f, 0.5f, 0.5f, 0.5f};
+                *(uint32_t*)&adtVertex.mccv = 0x7F7F7F7F;
             }
             /* 1.4 MCLV */ //Lightning Vertex
             if (m_adtFile->mcnkStructs[i].mclv != nullptr) {
                 auto &mclv = m_adtFile->mcnkStructs[i].mclv;
-                adtVertex.mclv = {
-                    mclv->values[j].b / 255.0f,
-                    mclv->values[j].g / 255.0f,
-                    mclv->values[j].r / 255.0f,
-                    mclv->values[j].a / 255.0f
-                };
+                *(uint32_t*)(&adtVertex.mclv) = *((uint32_t*)&mclv->values[j]);
             } else {
                 //If MCLV is empty, localDiffuse doesn't exist in shader
-                adtVertex.mclv = { 0.0f, 0.0f, 0.0f, 0.0f };
+                *(uint32_t*)&adtVertex.mclv = 0x00000000;
             }
         }
     }
