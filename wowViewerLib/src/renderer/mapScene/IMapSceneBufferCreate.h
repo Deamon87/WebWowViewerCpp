@@ -28,7 +28,7 @@ PACK(
 PACK(
     struct AdtVertex {
         float height;
-        mathfu::vec3_packed normal;
+        uint8_t normal[4];
         uint8_t mccv[4];
         uint8_t mclv[4];
     }

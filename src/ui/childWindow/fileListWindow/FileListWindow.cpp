@@ -54,7 +54,7 @@ public:
         auto whereClause = where(
             (like(&FileListDB::FileRecord::fileName, searchClause) ||
             like(&FileListDB::FileRecord::fileDataId, searchClause)) ||
-            like(&FileListDB::FileRecord::fileType, fileType)
+            like(&FileListDB::FileRecord::fileType, searchClause)
         );
 
         calcTotal = [whereClause, &storage]() {
@@ -264,7 +264,7 @@ private:
     storage store_;
 };
 
-const bool processFileOnDetect = true;
+const bool processFileOnDetect = false;
 
 std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
     std::string fileType = "unk";
@@ -308,14 +308,26 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
             uint32_t subChunkMagic = *(uint32_t *) fptr; fptr += 4;
             subChunkMagic = ntohl(subChunkMagic);
             switch (subChunkMagic) {
-                case 'RDHM': // ADT root
+                case 'RDHM': // ADT main
+                    fileType = "adt";
+                    if (processFileOnDetect) {
+                        AdtFile adtFile = AdtFile(fileDataId);
+                        adtFile.setIsMain(true);
+                        adtFile.process(fileContent, std::to_string(fileDataId));
+                    }
+                break;
+
                 case 'FDDM': // ADT OBJ
                 case 'DDLM': // ADT OBJ
                 case 'DFLM': // ADT OBJ
                 case 'XDMM': // ADT OBJ (old)
                 case 'DHLM': // ADT LOD
                 case 'PMAM': // ADT TEX
-                    fileType = "adt";
+                    fileType = "adt_sec";
+                    if (processFileOnDetect) {
+                        AdtFile adtFile = AdtFile(fileDataId);
+                        adtFile.process(fileContent, std::to_string(fileDataId));
+                    }
                     break;
                 case 'DHOM': // WMO root
                     fileType = "wmo";
@@ -342,7 +354,16 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
                     }
                     break;
                 case 'IOAM': // WDT OCC/LGT
-                    fileType = "wdt_sec";
+                    fileType = "wdt_occ";
+                    break;
+                case '3LPM': // WDT OCC/LGT
+                case 'TLSM': // WDT OCC/LGT
+                case 'ATLM': // WDT OCC/LGT
+                    fileType = "wdt_lgt";
+                    if (processFileOnDetect) {
+                        WdtLightFile test = WdtLightFile(fileDataId);
+                        test.process(fileContent, std::to_string(fileDataId));
+                    }
                     break;
                 default:
                     fileType = "chUNK";

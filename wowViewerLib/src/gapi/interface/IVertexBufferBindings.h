@@ -9,7 +9,8 @@
 
 enum class GBindingType {
     GFLOAT,
-    GUNSIGNED_BYTE
+    GUNSIGNED_BYTE,
+    GSIGNED_BYTE
 };
 
 struct GBufferBinding{

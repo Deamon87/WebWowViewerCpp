@@ -214,18 +214,24 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
 };
 
 
-void M2Geom::process(HFileContent m2File, const std::string &fileName) {
-    this->m2File = m2File;
-    auto &m2FileData = *m2File.get();
+void M2Geom::process(HFileContent m2FileC, const std::string &fileName) {
+    this->m2File = m2FileC;
+    auto &m2FileData = *m2FileC.get();
     if (m2FileData.empty()) {
-        std::cout << "M2 file is empty" << std::endl;
+        std::cout << "M2 file "+fileName << " " << std::to_string(m_modelFileId)+" is empty" << std::endl;
         fsStatus = FileStatus::FSRejected;
         return;
     }
 
+    if (m2FileData.size() < 5) {
+        std::cout << "Error: file " << std::to_string(m_modelFileId) << " is smaller than header length" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+    }
+
     uint32_t ident = *(uint32_t *)m2FileData.data();
     if (ident != '12DM' && ident != '02DM') {
-        std::cout << "wrong file header for M2 file" << std::endl;
+        std::cout << "wrong file header for M2 file " << fileName << " " << std::to_string(m_modelFileId) << " ident = " << std::string((char *)&ident, 4) << std::endl;
+        std::cout << "Content : " << std::hex << (int)m2FileData[0] << " " << (int)m2FileData[1] << " " << (int)m2FileData[2] << " " << (int)m2FileData[3] << std::dec << std::endl;
         fsStatus = FileStatus::FSRejected;
         return;
     }

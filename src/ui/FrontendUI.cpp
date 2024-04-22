@@ -1432,6 +1432,16 @@ void FrontendUI::showSettingsDialog() {
                 m_api->getConfig()->renderWMO = renderWMO;
             }
 
+            bool renderSkyDom = m_api->getConfig()->renderSkyDom;
+            if (ImGui::Checkbox("Render Sky M2", &renderSkyDom)) {
+                m_api->getConfig()->renderSkyDom = renderSkyDom;
+            }
+
+            bool renderSkyScene = m_api->getConfig()->renderSkyScene;
+            if (ImGui::Checkbox("Render SkyScene Models", &renderSkyScene)) {
+                m_api->getConfig()->renderSkyScene = renderSkyScene;
+            }
+
             bool renderLiquid = m_api->getConfig()->renderLiquid;
             if (ImGui::Checkbox("Render Liquid", &renderLiquid)) {
                 m_api->getConfig()->renderLiquid = renderLiquid;

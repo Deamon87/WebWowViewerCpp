@@ -15,7 +15,7 @@ precision highp int;
 layout(location = 0) in float aHeight;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
-layout(location = 3) in vec3 aNormal;
+layout(location = 3) in vec4 aNormal;
 
 #include "../../../common/commonUboSceneData.glsl"
 #include "../../../common/commonAdtIndirectDescriptorSet.glsl"
@@ -57,7 +57,7 @@ void main() {
     vec4 worldPoint = vec4(worldPointXY.xy, aHeight, 1);
 
     mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
-    vec3 normal = normalize((viewMatForNormal * vec4(aNormal, 0.0)).xyz);
+    vec3 normal = normalize((viewMatForNormal * vec4(aNormal.xyz, 0.0)).xyz);
 
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vNormal = normal;

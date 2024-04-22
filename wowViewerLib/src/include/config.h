@@ -44,6 +44,8 @@ public:
     bool renderAdt = true;
     bool renderWMO = true;
     bool renderM2 = true;
+    bool renderSkyDom = true;
+    bool renderSkyScene = true;
     bool renderLiquid = true;
     bool renderBSP = false;
     bool renderPortals = false;
@@ -56,7 +58,7 @@ public:
 
 
     bool disableFog = false;
-    bool renderSkyDom = true;
+
 
     bool drawWmoBB = false;
     bool drawM2BB = false;

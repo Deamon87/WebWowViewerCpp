@@ -10,13 +10,21 @@
 
 struct msso_t
 {
-    uint32_t unk_0;
-    uint32_t unk_1;
+    uint32_t sceneModelId;
+    union {
+        uint32_t flags_raw;
+        struct {
+            uint32_t unk_0x1: 1; //0x1
+            uint32_t unk_0x2: 1; //0x2
+            uint32_t animateWithTimeOfDay: 1; //0x4
+        } flags;
+    };
     uint32_t fileDataID;
     C3Vector translateVec;
-    C3Vector rotationInRads;
+    C3Vector rotationInDegree;
     float scale;
-    uint32_t unk_2;
+    uint16_t mssf_index;
+    uint16_t unk_10;
     uint32_t unk_11;
 };
 

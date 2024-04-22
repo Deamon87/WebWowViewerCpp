@@ -13,7 +13,7 @@ precision highp int;
 layout(location = 0) in float aHeight;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec4 aVertexLighting;
-layout(location = 3) in vec3 aNormal;
+layout(location = 3) in vec4 aNormal;
 
 #include "../common/commonUboSceneData.glsl"
 
@@ -55,7 +55,7 @@ void main() {
     calcAdtAlphaUV(indexInMCNK, uPos.xyz, vAlphaCoords, vChunkCoords, worldPointXY);
 
     mat4 viewMatForNormal = transpose(inverse(scene.uLookAtMat));
-    vec3 normal = normalize((viewMatForNormal * vec4(aNormal, 0.0)).xyz);
+    vec3 normal = normalize((viewMatForNormal * vec4(aNormal.xyz, 0.0)).xyz);
     vec4 worldPoint = vec4(worldPointXY, aHeight, 1);
 
     vPosition = (scene.uLookAtMat * worldPoint).xyz;

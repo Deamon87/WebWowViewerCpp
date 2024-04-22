@@ -479,11 +479,11 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
 
 
-    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
+    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox)) {
         ZoneScopedN("Skybox");
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
-        auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
-        if (m_wdlObject != nullptr) {
+
+        if (m_wdlObject != nullptr && config->renderSkyScene) {
             m_wdlObject->checkSkyScenes(
                 stateForConditions,
                 exteriorView->m2List,
@@ -491,8 +491,10 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
                 frustumData);
         }
 
-        if (config->renderSkyDom) {
-            for (auto &model : m_exteriorSkyBoxes) {
+        if (!m_exteriorSkyBoxes.empty() && config->renderSkyDom) {
+            auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
+
+            for (auto &model: m_exteriorSkyBoxes) {
                 if (model != nullptr) {
                     skyBoxView->m2List.addToDraw(model);
                 }

@@ -73,9 +73,11 @@ void WdlObject::loadM2s() {
 //            std::cout << "rotationInRads.z = " << msso_rec.rotationInRads.z << std::endl;
 //            std::cout << "scale = " << msso_rec.scale << std::endl;
 
-                auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInRads.z - M_PI_2);
-                rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInRads.x);
-                rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInRads.y);
+                constexpr float degreeToRad = M_PI/180.0f;
+
+                auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInDegree.z*degreeToRad);
+                rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInDegree.x*degreeToRad);
+                rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInDegree.y*degreeToRad);
 
 //            auto quat = mathfu::quat::FromMatrix(rotationMatrix);
 //            auto rotationMatrix1 = quat.ToMatrix4();
@@ -88,7 +90,9 @@ void WdlObject::loadM2s() {
                 m2Object->calcWorldPosition();
                 m2Object->setAlwaysDraw(true);
 
-                skyObjectScene.m2Objects.push_back(m2Object);
+                auto &skyModel = skyObjectScene.skyModels.emplace_back();
+                skyModel.m_model = m2Object;
+                skyModel.animateWithTimeOfDay = msso_rec.flags.animateWithTimeOfDay;
             }
             skyScenes.push_back(skyObjectScene);
         }
@@ -138,45 +142,55 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                                const MathHelper::FrustumCullingData &frustumData
                                ) {
     for (auto &skyScene : skyScenes) {
-        bool conditionPassed = true;
+        bool conditionPassed = false;
 
         for (auto &condition : skyScene.conditions) {
             switch (condition.conditionType) {
                 case 1 : {
-                    if ((state.currentAreaId != condition.conditionValue) &&
-                        (state.currentParentAreaId != condition.conditionValue))
-                        conditionPassed = false;
+                    if ((state.currentAreaId == condition.conditionValue) ||
+                        (state.currentParentAreaId == condition.conditionValue))
+                        conditionPassed = true;
                     break;
                 }
                 case 2 : {
                     auto it = std::find(state.currentLightParams.begin(), state.currentLightParams.end(), condition.conditionValue);
-                    if (it == state.currentLightParams.end()) {
-                        conditionPassed = false;
+                    if (it != state.currentLightParams.end()) {
+                        conditionPassed = true;
                     }
                     break;
                 }
                 case 3 : {
                     auto it = std::find(state.currentSkyboxIds.begin(), state.currentSkyboxIds.end(), condition.conditionValue);
-                    if (it == state.currentSkyboxIds.end()) {
-                        conditionPassed = false;
+                    if (it != state.currentSkyboxIds.end()) {
+                        conditionPassed = true;
                     }
                     break;
                 }
                 case 5 : {
                     auto it = std::find(state.currentZoneLights.begin(), state.currentZoneLights.end(), condition.conditionValue);
-                    if (it == state.currentZoneLights.end()) {
-                        conditionPassed = false;
+                    if (it != state.currentZoneLights.end()) {
+                        conditionPassed = true;
                     }
                     break;
                 }
                 default:
-                    std::cout << "Unk condition " << (int) condition.conditionType << std::endl;            }
+                    std::cout << "Unk condition " << (int) condition.conditionType << std::endl;
+            }
+
+            if (conditionPassed)
+                break;
         }
 
-        conditionPassed = true;
+//        conditionPassed = true;
 
         if (conditionPassed) {
-            for (auto &m2Object : skyScene.m2Objects) {
+            auto const config = m_api->getConfig();
+            for (const auto &skyModel : skyScene.skyModels) {
+                auto const &m2Object = skyModel.m_model;
+
+                if(skyModel.animateWithTimeOfDay) {
+                    m2Object->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
+                }
                 m2ObjectsCandidates.addToDraw(m2Object);
             }
         }

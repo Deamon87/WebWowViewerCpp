@@ -218,22 +218,23 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
             AdtVertex &adtVertex = vboArray.emplace_back();
 
             /* 1.2 Heights */
-            float iX = fmod(j, 17.0f);
-            float iY = floor(j/17.0f);
-
-            if (iX > 8.01f) {
-                iY = iY + 0.5f;
-                iX = iX - 8.5f;
-            }
+//            float iX = fmod(j, 17.0f);
+//            float iY = floor(j/17.0f);
+//
+//            if (iX > 8.01f) {
+//                iY = iY + 0.5f;
+//                iX = iX - 8.5f;
+//            }
             adtVertex.height = {m_adtFile->mapTile[i].position.z + m_adtFile->mcnkStructs[i].mcvt->height[j] };
 
             /* 1.3 Normals */
             if (m_adtFile->mcnkStructs[i].mcnr != nullptr) {
                 for (int k = 0; k < 3; k++) {
-                    adtVertex.normal.data_[k] = m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k] / 127.0f;
+                    adtVertex.normal[k] = m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k];
                 }
+                adtVertex.normal[4] = 0;
             } else {
-                adtVertex.normal = { 0, 0, 1.0 };
+                *(uint32_t*)&adtVertex.normal = 0x00FF0000;
             }
             /* 1.4 MCCV */ //Color vertex
             if (m_adtFile->mcnkStructs[i].mccv != nullptr) {

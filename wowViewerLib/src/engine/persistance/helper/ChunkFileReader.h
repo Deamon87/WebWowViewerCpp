@@ -81,6 +81,7 @@ public:
 
     template <typename T>
     void processFile(T &resultObj, chunkDef<T> *sectionReaders) {
+        debuglog("Processing file " + fileName);
         loopOverSubChunks(sectionReaders, 0, regionSizeToProcess, resultObj);
     }
 
