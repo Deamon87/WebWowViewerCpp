@@ -348,7 +348,9 @@ private:
 
     void inline removeDuplicates(m2Container &array) {
         if (array.size() < 1000) {
-            std::sort(array.begin(), array.end());
+            std::sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
         } else {
             tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
                 return a < b;

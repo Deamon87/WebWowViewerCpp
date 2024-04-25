@@ -8,10 +8,16 @@
 #include <memory>
 #include <mutex>
 #include "../../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
+#include "memoryPool/MemoryPool.h"
+
+
 
 template<typename T, typename ObjIdType>
 class EntityFactory : public std::enable_shared_from_this<EntityFactory<T, ObjIdType>>{
 static constexpr int initSize = 1000;
+static constexpr int BlockSize = sizeof(T)*5000;
+
+MemoryPool<T, BlockSize> pool;
 public:
     explicit EntityFactory() {
         objectCache.resize(initSize);
@@ -32,27 +38,33 @@ public:
                 offsetData = allocator.allocate(1);
                 objectCache.resize(objectCache.size() + growSize);
             }
+            auto ptr = pool.allocate();
 
-            entity = new T(std::forward<decltype(__args)>(__args)...);
+            entity = new(ptr) T(std::forward<decltype(__args)>(__args)...);
             entity->setId((ObjIdType)offsetData.offset);
             objectCache[offsetData.offset] = entity;
         }
 
         auto weakPtr = this->weak_from_this();
-        return std::shared_ptr<T>(entity, [offsetData, weakPtr](T *ls) -> void {
+        return std::shared_ptr<T>(entity, [offsetData, weakPtr, entity](T *ls) -> void {
             auto shared = weakPtr.lock();
             if (shared != nullptr)
                 shared->deallocate(offsetData);
         });
     }
     T * getObjectById(ObjIdType id) {
+        int index = (int)id;
+        if ((index < 0) || (index >= ((int)objectCache.size())))
+            return nullptr;
+
         return objectCache[(int)id];
     }
 
     void deallocate(const OffsetAllocator::Allocation &alloc) {
         std::unique_lock<std::mutex> lock(m_mutex);
 
-        delete objectCache[alloc.offset];
+        objectCache[alloc.offset]->~T();
+        pool.deallocate(objectCache[alloc.offset]);
 
         objectCache[alloc.offset] = nullptr;
         allocator.free(alloc);

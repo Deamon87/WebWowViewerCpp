@@ -367,7 +367,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     m_viewRenderOrder = 0;
 
     mapRenderPlan->m_currentInteriorGroups = {};
-    mapRenderPlan->m_currentWMO = nullptr;
+    mapRenderPlan->m_currentWMO = emptyWMO;
 
     int bspNodeId = -1;
     int interiorGroupNum = -1;
@@ -382,12 +382,15 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
         getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
 
-        for (auto &checkingWmoObj: potentialWmo.getCandidates()) {
+        for (auto &wmoId: potentialWmo.getCandidates()) {
             WmoGroupResult groupResult;
+            auto checkingWmoObj = wmoFactory.getObjectById(wmoId);
+            if (checkingWmoObj == nullptr) continue;
+
             bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
 
             if (result) {
-                mapRenderPlan->m_currentWMO = checkingWmoObj;
+                mapRenderPlan->m_currentWMO = wmoId;
                 mapRenderPlan->m_currentWmoGroup = groupResult.groupIndex;
                 if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
                     mapRenderPlan->m_currentInteriorGroups.push_back(groupResult);
@@ -410,13 +413,16 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
     AreaRecord wmoAreaRecord;
     bool wmoAreaFound = false;
-    if (mapRenderPlan->m_currentWMO != nullptr) {
-        auto nameId = mapRenderPlan->m_currentWMO->getNameSet();
-        auto wmoId = mapRenderPlan->m_currentWMO->getWmoId();
-        auto groupId =  mapRenderPlan->m_currentWMO->getWmoGroupId(mapRenderPlan->m_currentWmoGroup);
+    if (mapRenderPlan->m_currentWMO != emptyWMO) {
+        auto l_currentWmoObject = wmoFactory.getObjectById(mapRenderPlan->m_currentWMO);
+        if (l_currentWmoObject != nullptr) {
+            auto nameId = l_currentWmoObject->getNameSet();
+            auto wmoId = l_currentWmoObject->getWmoId();
+            auto groupId = l_currentWmoObject->getWmoGroupId(mapRenderPlan->m_currentWmoGroup);
 
-        if (m_api->databaseHandler != nullptr) {
-            wmoAreaFound = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId, wmoAreaRecord);
+            if (m_api->databaseHandler != nullptr) {
+                wmoAreaFound = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId, wmoAreaRecord);
+            }
         }
     }
 
@@ -447,7 +453,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     ///-----------------------------------
 
 
-    auto lcurrentWMO = mapRenderPlan->m_currentWMO;
+    auto lcurrentWMO = wmoFactory.getObjectById(mapRenderPlan->m_currentWMO);
     auto currentWmoGroup = mapRenderPlan->m_currentWmoGroup;
 
     if ((lcurrentWMO != nullptr) && (!mapRenderPlan->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
@@ -459,7 +465,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
             m_viewRenderOrder,
             true,
             mapRenderPlan->viewsHolder)) {
-            mapRenderPlan->wmoArray.addToDrawn(mapRenderPlan->m_currentWMO);
+            mapRenderPlan->wmoArray.addToDrawn(lcurrentWMO);
         }
 
         auto exterior = mapRenderPlan->viewsHolder.getExterior();
@@ -593,9 +599,12 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
     bool fogRecordWasFound = false;
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
-    std::vector<LightResult> wmoFogs = {};
-    if (mapRenderPlan->m_currentWMO != nullptr) {
-        mapRenderPlan->m_currentWMO->checkFog(frustumData.cameraPos, wmoFogs);
+    std::vector<SMOFog_Data> wmoFogData = {};
+    if (mapRenderPlan->m_currentWMO != emptyWMO) {
+        auto l_currentWmoObject = wmoFactory.getObjectById(mapRenderPlan->m_currentWMO);
+        if (l_currentWmoObject != nullptr) {
+            l_currentWmoObject->checkFog(frustumData.cameraPos, wmoFogData);
+        }
     }
     std::vector<LightResult> lightResults;
 
@@ -823,28 +832,48 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
 
         //Apply fog from WMO
         {
-            bool fogDefaultExist = false;
-            int fogDefaultIndex = -1;
-            for (int i = 0; i < wmoFogs.size() && totalSummator < 1.0f; i++) {
-                auto &fogRec = wmoFogs[i];
-                if (fogRec.isDefault) {
-                    fogDefaultExist = true;
-                    fogDefaultIndex = i;
-                    continue;
-                }
-                if (totalSummator + fogRec.blendCoef > 1.0f) {
-                    fogRec.blendCoef = 1.0f - totalSummator;
-                    totalSummator = 1.0f;
-                } else {
-                    totalSummator += fogRec.blendCoef;
-                }
-                combinedResults.push_back(fogRec);
-            }
+            for (auto &wmoFog : wmoFogData) {
+                auto &lightResult = combinedResults.emplace_back();
+                auto farPlaneClamped = std::min<float>(config->farPlane, wmoFog.end);
 
-            if (fogDefaultExist && totalSummator < 1.0f) {
-                wmoFogs[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
-                totalSummator = 1.0f;
-                combinedResults.push_back(wmoFogs[fogDefaultIndex]);
+                std::array<float, 3> colorConverted;
+                ImVectorToArrBGR(colorConverted, wmoFog.color);
+
+                lightResult.FogEnd = farPlaneClamped;
+                lightResult.FogStart = farPlaneClamped * wmoFog.start_scalar;
+                lightResult.SkyFogColor = colorConverted;
+                lightResult.FogDensity = 1.0;
+                lightResult.FogHeightColor = colorConverted;
+                lightResult.EndFogColor = colorConverted;
+                lightResult.SunFogColor = colorConverted;
+                lightResult.HeightEndFogColor = colorConverted;
+
+                if (farPlaneClamped < 30.f) {
+                    lightResult.FogEnd = farPlaneClamped;
+                    farPlaneClamped = 30.f;
+                }
+
+                bool mapHasWeightedBlendFlag = false;
+                if (!mapHasWeightedBlendFlag) {
+                    float difference = farPlaneClamped - lightResult.FogStart;
+                    float farPlaneClamped2 = std::min<float>(config->farPlane, 700.0f) - 200.0f;
+                    if ((difference > farPlaneClamped2) || (farPlaneClamped2 <= 0.0f)) {
+                        lightResult.FogDensity = 1.5;
+                    } else {
+                        lightResult.FogDensity = ((1.0 - (difference / farPlaneClamped2)) * 5.5) + 1.5;
+                    }
+                    lightResult.FogEnd = config->farPlane;
+                    if (lightResult.FogStart < 0.0f)
+                        lightResult.FogStart = 0.0;
+                }
+
+                lightResult.FogHeightDensity = lightResult.FogDensity;
+                lightResult.FogStartOffset = 0;
+                lightResult.FogHeightScaler = 1.0;
+                lightResult.FogZScalar = 0;
+                lightResult.FogHeight = -10000.0;
+                lightResult.LegacyFogScalar = 1.0;
+                lightResult.EndFogColorDistance = 10000.0;
             }
         }
 
@@ -1065,7 +1094,7 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
             }
         } else {
             if (wmoMap == nullptr) {
-                wmoMap = std::make_shared<WmoObject>(m_api);
+                wmoMap = wmoFactory.createObject(m_api);
                 wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
                 wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
             }
@@ -1131,8 +1160,9 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
     getCandidatesEntities(frustumData, cameraPos, mapRenderPlan, exteriorView->m2List, mapRenderPlan->wmoArray);
 
     //Frustum cull
-    for (auto &wmoCandidate : mapRenderPlan->wmoArray.getCandidates()) {
-        if (!wmoCandidate->isLoaded()) continue;
+    for (auto &wmoId : mapRenderPlan->wmoArray.getCandidates()) {
+        auto wmoCandidate = wmoFactory.getObjectById(wmoId);
+        if (wmoCandidate!= nullptr && !wmoCandidate->isLoaded()) continue;
 
         if (wmoCandidate->startTraversingWMOGroup(
             cameraPos,
@@ -1415,9 +1445,11 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     {
         ZoneScopedN("Load wmoObject");
         if (m_api->getConfig()->renderWMO) {
-            for (auto &wmoObject: renderPlan->wmoArray.getToLoad()) {
-                if (wmoObject == nullptr) continue;
-                wmoObject->doPostLoad(sceneRenderer);
+            for (auto wmoId: renderPlan->wmoArray.getToLoad()) {
+                auto wmoObject = wmoFactory.getObjectById(wmoId);
+                if (wmoObject != nullptr) {
+                    wmoObject->doPostLoad(sceneRenderer);
+                }
             }
         }
     }
@@ -1521,7 +1553,8 @@ void Map::update(const HMapRenderPlan &renderPlan) {
     {
         ZoneScopedN("wmoUpdate");
 
-        for (const auto &wmoObject: renderPlan->wmoArray.getToDrawn()) {
+        for (const auto &wmoId: renderPlan->wmoArray.getToDrawn()) {
+            auto wmoObject = wmoFactory.getObjectById(wmoId);
             if (wmoObject == nullptr) continue;
             wmoObject->update();
         }
@@ -1741,7 +1774,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory.createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
 
@@ -1756,7 +1789,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObj
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory.createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 
@@ -1771,7 +1804,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefOb
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory.createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
 
@@ -1786,7 +1819,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory.createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 

@@ -15,6 +15,7 @@ struct MapRecord {
     std::string MapName;
     int WdtFileID;
     int MapType;
+    int overrideTime;
 };
 
 struct LightResult {
@@ -36,6 +37,7 @@ struct LightResult {
     std::array<float, 3> SkyFogColor;
 
     //Fog
+    float FogStart = 0.0;
     float FogEnd = 0.0;
     float FogScaler = 0.0;
     float FogDensity = 100000;

@@ -42,16 +42,16 @@ SQLite::Column CSqliteDB::StatementFieldHolder::getField(const HashedString fiel
 
 
 const std::string getMapListSQL =
-        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.WdtFileDataID > 0";
+        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride from Map m where m.WdtFileDataID > 0";
 
 const std::string getMapListSQL_classic =
-        "select m.ID, m.Directory, m.MapName_lang, m.MapType from Map m";
+        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride from Map m";
 
 const std::string getMapByIDSQL =
-        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType from Map m where m.ID = ?";
+        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride from Map m where m.ID = ?";
 
 const std::string getMapByIDSQL_classic =
-        "select m.ID, m.Directory, m.MapName_lang, m.MapType from Map m";
+        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride from Map m";
 
 const std::string getWmoAreaAreaNameSQL = R"===(
         select wat.AreaName_lang as wmoAreaName, at.AreaName_lang as areaName, at.ID as ID, at.ParentAreaID as ParentAreaID, at.Ambient_multiplier as Ambient_multiplier from WMOAreaTable wat
@@ -183,6 +183,7 @@ void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
             mapRecord.WdtFileID = -1;
         }
         mapRecord.MapType = getMapList.getField("MapType").getInt();
+        mapRecord.overrideTime = getMapList.getField("TimeOfDayOverride").getInt();
     }
 
 }
@@ -204,6 +205,7 @@ bool CSqliteDB::getMapById(int mapId, MapRecord &mapRecord) {
             mapRecord.WdtFileID = -1;
         }
         mapRecord.MapType = getMapByIdStatement.getField("MapType").getInt();
+        mapRecord.overrideTime = getMapByIdStatement.getField("TimeOfDayOverride").getInt();
 
         return true;
     }

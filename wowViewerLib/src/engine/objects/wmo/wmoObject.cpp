@@ -1224,7 +1224,7 @@ std::function<void(WmoGroupGeom &wmoGroupGeom)> WmoObject::getAttenFunction() {
     } ;
 }
 
-void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults) {
+void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &fogResults) {
     mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
     for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
         SMOFog &fogRecord = mainGeom->fogs[i];
@@ -1232,32 +1232,7 @@ void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogR
 
         float distanceToFog = (fogPosVec - cameraLocal).Length();
         if ((distanceToFog < fogRecord.larger_radius) || fogRecord.flag_infinite_radius) {
-            LightResult wmoFog;
-            wmoFog.id = -1;
-            wmoFog.FogScaler = fogRecord.fog.start_scalar;
-            wmoFog.FogEnd = fogRecord.fog.end;
-            wmoFog.FogDensity = 0.18f;
-
-            wmoFog.FogHeightScaler = 0;
-            wmoFog.FogHeightDensity = 0;
-            wmoFog.SunFogAngle = 0;
-            wmoFog.EndFogColorDistance = 0;
-            wmoFog.SunFogStrength = 0;
-            if (fogRecord.flag_infinite_radius) {
-                wmoFog.blendCoef = 1.0;
-                wmoFog.isDefault = true;
-            } else {
-                wmoFog.blendCoef = std::min(
-                    (fogRecord.larger_radius - distanceToFog) / (fogRecord.larger_radius - fogRecord.smaller_radius),
-                    1.0f);
-                wmoFog.isDefault = false;
-            }
-            std::array<float, 3> fogColor = {fogRecord.fog.color.r/255.0f, fogRecord.fog.color.g/255.0f,  fogRecord.fog.color.b/255.0f};
-            wmoFog.EndFogColor = fogColor;
-            wmoFog.SunFogColor = fogColor;
-            wmoFog.FogHeightColor = fogColor;
-
-            fogResults.push_back(wmoFog);
+            fogResults.push_back(fogRecord.fog);
         }
     }
 }
@@ -1419,3 +1394,5 @@ void WmoObject::createNewLights() {
 std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
     return m_newLights[index];
 }
+
+EntityFactory<WmoObject, WMOObjId> wmoFactory;

@@ -30,7 +30,7 @@ GMeshVLK::GMeshVLK(const gMeshTemplate &meshTemplate,
 }
 
 GMeshVLK::~GMeshVLK() {
-
+//    std::cout << "mesh destroyed" << std::endl;
 }
 
 bool GMeshVLK::getIsTransparent() { return m_isTransparent; }

@@ -182,7 +182,7 @@ HApiContainer SceneWindow::createNewApiContainer() {
     return newApi;
 }
 
-void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z) {
+void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z, int timeOverride) {
     unload();
 
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
@@ -191,6 +191,10 @@ void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y
     m_camera = std::make_shared<FirstPersonCamera>();
     m_camera->setCameraPos(x,y,z);
     m_camera->setMovementSpeed(movementSpeed);
+
+    if (timeOverride >= 0) {
+        m_api->getConfig()->currentTime = timeOverride;
+    }
 }
 void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds) {
     unload();
@@ -256,7 +260,7 @@ void SceneWindow::openWMOSceneByFilename(const std::string &wmoFileName) {
     m_camera->setCameraPos(0, 0, 0);
 }
 
-void SceneWindow::openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z) {
+void SceneWindow::openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z, int timeOverride) {
     unload();
 
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
@@ -265,6 +269,10 @@ void SceneWindow::openMapByIdAndFilename(int mapId, const std::string &mapName, 
     m_camera = std::make_shared<FirstPersonCamera>();
     m_camera->setCameraPos(x,y,z);
     m_camera->setMovementSpeed(movementSpeed);
+
+    if (timeOverride >= 0) {
+        m_api->getConfig()->currentTime = timeOverride;
+    }
 }
 
 

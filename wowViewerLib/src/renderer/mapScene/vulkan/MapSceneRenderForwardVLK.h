@@ -12,6 +12,7 @@
 #include "../materials/IMaterialStructs.h"
 #include "passes/FFXGlowPassVLK.h"
 #include "view/RenderViewForwardVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../engine/objects/scenes/EntityActorsFactory.h"
 
 class MapSceneRenderForwardVLK : public MapSceneRenderer {

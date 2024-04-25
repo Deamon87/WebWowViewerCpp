@@ -29,7 +29,7 @@ struct MapRenderPlan {
     std::vector<WmoGroupResult> m_currentInteriorGroups = {};
     bool currentWmoGroupIsExtLit = false;
     bool currentWmoGroupShowExtSkybox = false;
-    std::shared_ptr<WmoObject> m_currentWMO = nullptr;
+    WMOObjId m_currentWMO = emptyWMO;
     int m_currentWmoGroup = -1;
 
     FrameViewsHolder viewsHolder;

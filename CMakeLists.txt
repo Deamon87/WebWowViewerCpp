@@ -428,7 +428,7 @@ INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Lib
 if( MINGW )
 	message( STATUS "    Installing system-libraries: MinGW DLLs." )
 	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
-	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${Mingw_Path}/libgcc_s_seh-1.dll ${Mingw_Path}/libstdc++-6.dll ${Mingw_Path}/libssp-0.dll ${Mingw_Path}/libwinpthread-1.dll)
+	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${Mingw_Path}/libgcc_s_seh-1.dll ${Mingw_Path}/libstdc++-6.dll ${Mingw_Path}/libwinpthread-1.dll)
 endif( MINGW )
 include( InstallRequiredSystemLibraries )
 

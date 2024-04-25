@@ -10,6 +10,7 @@
 #endif
 
 #include <cstdint>
+#include <array>
 #include <string>
 #include <mathfu/glsl_mappings.h>
 
@@ -325,6 +326,14 @@ inline mathfu::vec4 ImVectorToVec4(const CImVector &color) {
         ((float)color.b)/255.0f,
         ((float)color.a)/255.0f
     );
+}
+
+inline void ImVectorToArrBGR(std::array<float, 3> &arr, const CImVector &color) {
+    arr = {{
+        ((float) color.b) / 255.0f,
+        ((float) color.g) / 255.0f,
+        ((float) color.r) / 255.0f
+    }};
 }
 
 struct C4Plane

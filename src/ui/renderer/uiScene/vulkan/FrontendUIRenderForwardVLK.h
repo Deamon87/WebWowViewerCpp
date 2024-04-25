@@ -14,6 +14,7 @@
 #include "../../../../../wowViewerLib/src/gapi/UniformBufferStructures.h"
 #include "../../../../../wowViewerLib/src/gapi/interface/materials/IMaterial.h"
 #include "../../../../../wowViewerLib/src/renderer/vulkan/IRenderFunctionVLK.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../../../wowViewerLib/src/engine/objects/scenes/EntityActorsFactory.h"
 
 class FrontendUIRenderForwardVLK : public FrontendUIRenderer {

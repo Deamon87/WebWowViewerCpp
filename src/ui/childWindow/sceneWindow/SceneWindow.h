@@ -26,8 +26,8 @@ public:
     SceneWindow(const HApiContainer &api, bool renderToSwapChain, const std::shared_ptr<FrontendUIRenderer> &uiRenderer);
     virtual ~SceneWindow();
 
-    void openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z);
-    void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
+    void openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z, int timeOverride);
+    void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z, int timeOverride);
 
     void openWMOSceneByfdid(int WMOFdid);
     void openWMOSceneByFilename(const std::string &wmoFileName);

@@ -206,6 +206,12 @@ struct SMODoodadDef
     /*020h*/  float scale;                      // scale factor
     /*024h*/  CImVector color;                 // (B,G,R,A) diffuse lighting color, used in place of global diffuse from DBCs
 };
+
+struct SMOFog_Data {
+    /*018h*/    float end;
+    /*01Ch*/    float start_scalar;              // (0..1)
+    /*020h*/    CImVector color;
+};
 struct SMOFog
 {
     /*000h*/  uint32_t flag_infinite_radius : 1; // F_IEBLEND: Ignore radius in CWorldView::QueryCameraFog
@@ -215,20 +221,10 @@ struct SMOFog
     /*004h*/  C3Vector pos;
     /*010h*/  float smaller_radius;              // start
     /*014h*/  float larger_radius;               // end
-    struct
-    {
-        /*018h*/    float end;
-        /*01Ch*/    float start_scalar;              // (0..1)
-        /*020h*/    CImVector color;                // The back buffer is also cleared to this colour
-    } fog;
-    struct
-    {
-        /*024h*/    float end;
-        /*028h*/    float start_scalar;              // (0..1)
-        /*02Ch*/    CImVector color;
-    } underwater_fog;
+    SMOFog_Data fog;
+    SMOFog_Data underwater_fog;
 };
-
+static_assert(sizeof(SMOFog) == 0x30);
 
 
 struct MOGP {

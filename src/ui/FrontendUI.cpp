@@ -258,9 +258,13 @@ void FrontendUI::showCurrentStatsDialog() {
                     {
                         int modelFdid = 0;
                         std::string modelFileName = "";
-                        if (mapPlan->m_currentWMO != nullptr) {
-                            modelFdid = mapPlan->m_currentWMO->getModelFileId();
-                            modelFileName = mapPlan->m_currentWMO->getModelFileName();
+                        if (mapPlan->m_currentWMO != emptyWMO) {
+                            auto l_currentWmo = wmoFactory.getObjectById(mapPlan->m_currentWMO);
+
+                            if (l_currentWmo != nullptr) {
+                                modelFdid = l_currentWmo->getModelFileId();
+                                modelFileName = l_currentWmo->getModelFileName();
+                            }
                         }
                         if (modelFileName.empty()) {
                             ImGui::Text("Current WMO: %d", modelFdid);
@@ -568,9 +572,9 @@ void FrontendUI::showAdtSelectionMinimap() {
         if (ImGui::Button("Go")) {
 
             if (prevMapRec.WdtFileID > 0) {
-                m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200);
+                m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200, prevMapRec.overrideTime);
             } else {
-                m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200);
+                m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200, prevMapRec.overrideTime);
             }
             showSelectMap = false;
 
@@ -771,11 +775,11 @@ void FrontendUI::showMapSelectionDialog() {
                     worldPosY = 0;
                     if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
                         if (prevMapRec.WdtFileID > 0) {
-                            m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0);
+                            m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0, prevMapRec.overrideTime);
                         } else {
                             //Try to open map by fileName
                             m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f,
-                                                   0);
+                                                   0, prevMapRec.overrideTime);
                         }
                         showSelectMap = false;
                     }
@@ -834,7 +838,7 @@ void FrontendUI::showMainMenu() {
                         } else if (fileType == "wmo") {
                             getOrCreateWindow()->openWMOSceneByfdid(fileId);
                         } else if (fileType == "wdt") {
-                            getOrCreateWindow()->openMapByIdAndWDTId(0, fileId, 0,0,0);
+                            getOrCreateWindow()->openMapByIdAndWDTId(0, fileId, 0,0,0, -1);
                         }
                     });
             }
@@ -1000,7 +1004,7 @@ void FrontendUI::showQuickLinksDialog() {
         getOrCreateWindow()->openM2SceneByfdid(1810676, replacementTextureFDids);
     }
     if (ImGui::Button("Tomb of sargares hall", ImVec2(-1, 0))) {
-        getOrCreateWindow()->openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028);
+        getOrCreateWindow()->openMapByIdAndWDTId(1676, 1532459, 6289, -801, 3028, -1);
     }
     if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
         getOrCreateWindow()->openWMOSceneByfdid(1120838);
@@ -1049,7 +1053,7 @@ void FrontendUI::showQuickLinksDialog() {
 //        openMapByIdAndFilename(0, "azeroth", -8739, 944, 200);
 //    }
     if (ImGui::Button("Nyalotha map", ImVec2(-1, 0))) {
-        getOrCreateWindow()->openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260);
+        getOrCreateWindow()->openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260, -1);
     }
     if (ImGui::Button("WMO 1247268", ImVec2(-1, 0))) {
         getOrCreateWindow()->openWMOSceneByfdid(1247268);

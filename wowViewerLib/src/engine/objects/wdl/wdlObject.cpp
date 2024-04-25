@@ -189,7 +189,7 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                 auto const &m2Object = skyModel.m_model;
 
                 if(skyModel.animateWithTimeOfDay) {
-                    m2Object->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
+                    m2Object->setOverrideAnimationPerc(config->currentTime / 2880.0f, true);
                 }
                 m2ObjectsCandidates.addToDraw(m2Object);
             }

@@ -25,7 +25,10 @@ class WmoGroupObject;
 #include "../SceneObjectWithID.h"
 #include "../lights/CWmoNewLight.h"
 
-class WmoObject : public IWmoApi/*, public SceneObjectWithId*/ {
+enum class WMOObjId : int;
+constexpr WMOObjId emptyWMO = static_cast<const WMOObjId>(0xFFFFFFF);
+
+class WmoObject : public IWmoApi, public ObjectWithId<WMOObjId>{
 
 public:
     WmoObject(HApiContainer &api/*, int id*/) : /*SceneObjectWithId(id),*/ m_api(api) {
@@ -142,7 +145,7 @@ public:
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
     void createGroupObjects();
-    void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
+    void checkFog(mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &wmoFogData);
 
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
@@ -196,8 +199,10 @@ public:
     std::shared_ptr<CWmoNewLight> getNewLight(int index) override;
 };
 
+extern EntityFactory<WmoObject, WMOObjId> wmoFactory;
+
 class WMOListContainer {
-    using wmoContainer = framebased::vector<std::shared_ptr<WmoObject>>;
+    using wmoContainer = framebased::vector<WMOObjId>;
 //    using wmoContainer = std::vector<std::shared_ptr<WmoObject>>;
 private:
     wmoContainer wmoCandidates;
@@ -212,7 +217,9 @@ private:
 
     void inline removeDuplicates(wmoContainer &array) {
         if (array.size() < 1000) {
-            std::sort(array.begin(), array.end());
+            std::sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
         } else {
             tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
                 return a < b;
@@ -235,10 +242,10 @@ public:
         }
 
         if (toDraw->isLoaded()) {
-            wmoCandidates.push_back(toDraw);
+            wmoCandidates.push_back(toDraw->getObjectId());
             candCanHaveDuplicates = true;
         } else {
-            wmoToLoad.push_back(toDraw);
+            wmoToLoad.push_back(toDraw->getObjectId());
             toLoadCanHaveDuplicates = true;
         }
     }
@@ -249,7 +256,7 @@ public:
         }
 
         if (!toLoad->isLoaded()) {
-            wmoToLoad.push_back(toLoad);
+            wmoToLoad.push_back(toLoad->getObjectId());
             toLoadCanHaveDuplicates = true;
         }
     }
@@ -260,7 +267,17 @@ public:
         }
 
         if (toDrawn->isLoaded()) {
-            wmoToDrawn.push_back(toDrawn);
+            wmoToDrawn.push_back(toDrawn->getObjectId());
+            toDrawmCanHaveDuplicates = true;
+        }
+    }
+    void addToDrawn(WmoObject* toDrawn) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        if (toDrawn->isLoaded()) {
+            wmoToDrawn.push_back(toDrawn->getObjectId());
             toDrawmCanHaveDuplicates = true;
         }
     }
