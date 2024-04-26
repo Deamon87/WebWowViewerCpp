@@ -304,7 +304,7 @@ public:
 
     HGM2Mesh createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int indexStartCorrection,
                               const HGVertexBufferBindings &finalBufferBindings,
-                              const std::shared_ptr<IM2Material> m2Material,
+                              const std::shared_ptr<IM2Material> &m2Material,
                               const M2SkinSection *skinSection,
                               const M2Batch *m2Batch);
 

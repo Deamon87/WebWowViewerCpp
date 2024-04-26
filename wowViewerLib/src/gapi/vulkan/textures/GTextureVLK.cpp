@@ -63,15 +63,16 @@ void GTextureVLK::destroyBuffer() {
     if (!m_uploaded) return;
 
     auto *l_device = &m_device;
-    auto &l_texture = texture;
+    auto l_textureImage = texture.image;
+    auto l_textureView = texture.view;
 
-    auto &l_imageAllocation = imageAllocation;
+    auto l_imageAllocation = imageAllocation;
 
     m_device.addDeallocationRecord(
-        [l_device, l_texture, l_imageAllocation]() {
-            vkDestroyImageView(l_device->getVkDevice(), l_texture.view, nullptr);
+        [l_device, l_textureImage, l_textureView, l_imageAllocation]() {
+            vkDestroyImageView(l_device->getVkDevice(), l_textureView, nullptr);
             if (l_imageAllocation != nullptr) {
-                vmaDestroyImage(l_device->getVMAAllocator(), l_texture.image, l_imageAllocation);
+                vmaDestroyImage(l_device->getVMAAllocator(), l_textureImage, l_imageAllocation);
             } else {
                 //This is swapchain image. Deleting swapchain image leads to exception
 //                vkDestroyImage(l_device->getVkDevice(), l_texture.image, nullptr);

@@ -5,6 +5,7 @@
 #ifndef AWEBWOWVIEWERCPP_ISAMPLABLETEXTURE_H
 #define AWEBWOWVIEWERCPP_ISAMPLABLETEXTURE_H
 
+#include <iostream>
 #include <memory>
 #include "ITexture.h"
 #include "ITextureSampler.h"
@@ -15,6 +16,12 @@ public:
                       const std::shared_ptr<ITextureSampler> &sampler) : m_texture(texture), m_sampler(sampler) {
 
     };
+
+    ~ISamplableTexture() {
+//        std::cout << "~ISamplableTexture" << std::endl;
+        m_texture = nullptr;
+        m_sampler = nullptr;
+    }
 
     auto getTexture() const {
         return m_texture;

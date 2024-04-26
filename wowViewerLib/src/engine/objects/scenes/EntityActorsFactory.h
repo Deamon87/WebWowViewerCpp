@@ -13,7 +13,7 @@
 
 
 template<typename T, typename ObjIdType>
-class EntityFactory : public std::enable_shared_from_this<EntityFactory<T, ObjIdType>>{
+class EntityFactory {
 static constexpr int initSize = 1000;
 static constexpr int BlockSize = sizeof(T)*5000;
 
@@ -45,11 +45,9 @@ public:
             objectCache[offsetData.offset] = entity;
         }
 
-        auto weakPtr = this->weak_from_this();
-        return std::shared_ptr<T>(entity, [offsetData, weakPtr, entity](T *ls) -> void {
-            auto shared = weakPtr.lock();
-            if (shared != nullptr)
-                shared->deallocate(offsetData);
+        auto l_this = this;
+        return std::shared_ptr<T>(entity, [offsetData, l_this, entity](T *ls) -> void {
+            l_this->deallocate(offsetData);
         });
     }
     T * getObjectById(ObjIdType id) {

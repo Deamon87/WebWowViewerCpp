@@ -69,6 +69,8 @@ public:
 
 class IM2Material : public IMaterial {
 public:
+    ~IM2Material() override = default;
+
     int vertexShader;
     int pixelShader;
     int batchIndex;
@@ -81,6 +83,8 @@ public:
 
 class IM2MaterialVis : public IM2Material {
 public:
+    ~IM2MaterialVis() override = default;
+
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS_Bindless>> m_vertexFragmentDataBindless = nullptr;
     std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
     int instanceIndex = 0;
@@ -114,6 +118,8 @@ public:
 
 class ISkyMeshMaterial : public IMaterial {
 public:
+    ~ISkyMeshMaterial() override = default;
+
     std::shared_ptr<IBufferChunk<DnSky::meshWideBlockVS>> m_skyColors = nullptr;
 };
 

@@ -1545,6 +1545,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId : skyBoxView->m2List.getDrawn()) {
                 auto m2Object = m2Factory.getObjectById(m2ObjectId);
+                if (m2Object == nullptr) continue;
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
             }
         }

@@ -36,7 +36,7 @@ public:
     explicit M2Scene(const HApiContainer &api, int fileDataId);
 
 
-    ~M2Scene() override {}
+    ~M2Scene() override;
 
     void setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<int> &replaceTextureArray) ;
     void setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds) ;

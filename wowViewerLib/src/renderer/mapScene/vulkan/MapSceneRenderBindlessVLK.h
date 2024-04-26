@@ -117,8 +117,6 @@ public:
 //--------------------------------------
 
     std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
-
-    std::shared_ptr<EntityFactory<GMeshVLK, GMeshId>> meshFactory = std::make_shared<EntityFactory<GMeshVLK, GMeshId>>();
 protected:
     virtual std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
     virtual std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);

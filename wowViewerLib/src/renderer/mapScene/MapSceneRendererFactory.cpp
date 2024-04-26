@@ -6,6 +6,8 @@
 #include "vulkan/MapSceneRenderForwardVLK.h"
 #include "vulkan/MapSceneRenderBindlessVLK.h"
 
+
+
 std::shared_ptr<MapSceneRenderer> MapSceneRendererFactory::createForwardRenderer(const HGDevice &device, Config * config) {
     switch (device->getDeviceType()) {
         case GDeviceType::GVulkan:

@@ -49,6 +49,8 @@ public:
                 }
             }
         }
+        buffer = nullptr;
+        texture = nullptr;
     }
 
     typedef std::list<std::function<void()>>::const_iterator RecordInter;

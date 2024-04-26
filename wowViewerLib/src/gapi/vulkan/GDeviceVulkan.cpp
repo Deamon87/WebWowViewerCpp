@@ -406,6 +406,7 @@ void GDeviceVLK::initialize() {
 void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const char *name)
 {
     // Check for valid function pointer (may not be present if not running in a debugging application)
+
     if (vkSetDebugUtilsObjectNameEXT != nullptr)
     {
         VkDebugUtilsObjectNameInfoEXT nameInfo = {};
@@ -970,6 +971,8 @@ unsigned int GDeviceVLK::getProcessingFrameNumber() {
 
 void GDeviceVLK::increaseFrameNumber() {
     m_frameNumber++;
+
+    allocatorBeginFrame(m_frameNumber);
 }
 
 bool GDeviceVLK::getIsAnisFiltrationSupported() {

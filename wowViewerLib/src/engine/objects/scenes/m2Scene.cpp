@@ -9,6 +9,11 @@
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../../camera/m2TiedCamera.h"
 
+M2Scene::~M2Scene() {
+//    std::cout << "M2Scene destroyed" << std::endl;
+}
+
+
 void M2Scene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                    const mathfu::vec4 &cameraPos,
                                    const HMapRenderPlan &mapRenderPlan,
@@ -146,3 +151,4 @@ void M2Scene::exportScene(IExporter* exporter) {
 std::shared_ptr<M2Object> M2Scene::getSceneM2() {
     return m_m2Object;
 }
+

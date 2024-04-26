@@ -1658,10 +1658,11 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
 HGM2Mesh
 M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int indexStartCorrection,
                            const HGVertexBufferBindings &finalBufferBindings,
-                           const std::shared_ptr<IM2Material> m2Material,
+                           const std::shared_ptr<IM2Material> &m2Material,
                            const M2SkinSection *skinSection,
                            const M2Batch *m2Batch) {
     gMeshTemplate meshTemplate(finalBufferBindings);
+    meshTemplate.meshType = MeshType::eM2Mesh;
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
