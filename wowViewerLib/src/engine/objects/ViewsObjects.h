@@ -24,7 +24,6 @@ typedef std::shared_ptr<ExteriorView> HExteriorView;
 class ADTObjRenderRes {
 public:
     std::shared_ptr<AdtObject> adtObject;
-    bool wasLoaded = false;
     std::array<bool, 256> drawChunk = {false};
     std::array<bool, 256> drawWaterChunk = {false};
     std::array<bool, 256> checkRefs = {false};
@@ -75,8 +74,7 @@ public:
 
 class ExteriorView : public GeneralView {
 public:
-	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
-    std::vector<HGMesh> m_adtOpaqueMeshes = {};
+	std::vector<HGMesh> m_adtOpaqueMeshes = {};
 public:
     void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) override;
 };

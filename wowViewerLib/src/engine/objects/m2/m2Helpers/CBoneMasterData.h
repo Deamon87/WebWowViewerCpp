@@ -44,7 +44,7 @@ public:
         }
     }
 
-    HM2Geom getM2Geom() {
+    const HM2Geom &getM2Geom() {
         return m_m2Geom;
     }
 

@@ -130,7 +130,7 @@ static const ShaderConfig waterBindlessShaderConfig = {
         }}
     }};
 
-EntityFactory<GMeshVLK, GMeshId> bindlessMeshFactoryVlk;
+EntityFactory<10000, GMeshId, GMeshVLK> bindlessMeshFactoryVlk;
 
 MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
@@ -1132,14 +1132,14 @@ private:
 
     inline void addDrawCommand(framebased::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
-        auto meshVlk = bindlessMeshFactoryVlk.getObjectById(meshId);
+        auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
 
         auto &drawCommand = drawVec.emplace_back();
         fillDrawCommand(drawCommand, meshVlk);
     }
     inline void addDrawCommand(tbb::concurrent_vector<DrawCommand> &drawVec, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
-        auto meshVlk = bindlessMeshFactoryVlk.getObjectById(meshId);
+        auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
 
         DrawCommand drawCommand;
         fillDrawCommand(drawCommand, meshVlk);

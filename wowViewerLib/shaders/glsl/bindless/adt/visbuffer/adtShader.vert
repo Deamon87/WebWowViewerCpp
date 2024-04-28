@@ -61,7 +61,7 @@ void main() {
 
     vPosition = (scene.uLookAtMat * worldPoint).xyz;
     vNormal = normal;
-    vColor = aColor;
+    vColor = aColor.bgra;
     vVertexLighting = aVertexLighting.rgb;
     vMeshIndex = gl_InstanceIndex;
 

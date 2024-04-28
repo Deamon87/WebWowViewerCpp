@@ -9,8 +9,14 @@ class IMapApi;
 
 #include "../../ApiContainer.h"
 #include "../../custom_allocators/FrameBasedStackAllocator.h"
+#include "../scenes/EntityActorsFactory.h"
 
-class LiquidInstance {
+class LiquidInstance;
+
+enum class LiquidInstId : int;
+extern EntityFactory<1000, LiquidInstId, LiquidInstance> liquidInstanceFactory;
+
+class LiquidInstance : public ObjectWithId<LiquidInstId> {
 public:
     LiquidInstance(const HApiContainer &api,
                    const HMapSceneBufferCreate &sceneRenderer,

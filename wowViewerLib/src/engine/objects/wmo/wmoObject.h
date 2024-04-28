@@ -199,7 +199,7 @@ public:
     std::shared_ptr<CWmoNewLight> getNewLight(int index) override;
 };
 
-extern EntityFactory<WmoObject, WMOObjId> wmoFactory;
+extern EntityFactory<2000, WMOObjId, WmoObject> wmoFactory;
 
 class WMOListContainer {
     using wmoContainer = framebased::vector<WMOObjId>;

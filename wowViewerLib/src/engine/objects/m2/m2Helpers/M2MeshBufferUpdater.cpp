@@ -152,7 +152,7 @@ void M2MeshBufferUpdater::getTextureMatrixIndexes(const M2Object &m2Object, int 
 mathfu::vec4 M2MeshBufferUpdater::getCombinedColor(
     M2SkinProfile *skinData,
     int batchIndex,
-    const std::vector<mathfu::vec4> &subMeshColors
+    const std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors
 ) {
     int colorIndex = skinData->batches[batchIndex]->colorIndex;
     mathfu::vec4 submeshColor = mathfu::vec4(1,1,1,1);

@@ -1027,7 +1027,7 @@ private:
     }
     inline void addDrawCommand(framebased::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
-        auto meshVlk = m_renderer.meshFactory->getObjectById(meshId);
+        auto meshVlk = m_renderer.meshFactory->getObjectById<0>(meshId);
 //        const auto &meshVlk = (GMeshVLK*) mesh->getObjectId();
         auto const matId = meshVlk->material()->getMaterialId();
 

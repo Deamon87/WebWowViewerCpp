@@ -26,7 +26,7 @@ public:
     static void getTextureMatrixIndexes(const M2Object &m2Object, int batchIndex, M2Data *m2Data,
                                             const M2SkinProfile *m2SkinProfile, std::array<int, 2> &o_textureMatIndexes);
 
-    static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4> &subMeshColors) ;
+    static mathfu::vec4 getCombinedColor(M2SkinProfile *skinData, int batchIndex,  const std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors) ;
     static float getTextureWeight(M2SkinProfile *skinData, M2Data *m2data, int batchIndex, int textureIndex, const std::vector<float> &transparencies) ;
 
     static void fillTextureMatrices(const M2Object &m2Object, int batchIndex, M2Data *m2Data,

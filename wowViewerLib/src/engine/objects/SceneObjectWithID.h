@@ -7,7 +7,7 @@
 
 template<typename ObjIdType>
 class ObjectWithId {
-    template<class T, typename A> friend class EntityFactory;
+    template<uint16_t MemoryBlockSize, typename T, typename MainClass, typename... Types> friend class EntityFactory;
 public:
     ObjectWithId() {
 

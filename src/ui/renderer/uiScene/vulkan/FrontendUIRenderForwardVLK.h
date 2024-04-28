@@ -36,7 +36,7 @@ public:
 private:
     HGDeviceVLK m_device;
 
-    std::shared_ptr<EntityFactory<GMeshVLK, GMeshId>> meshFactory = std::make_shared<EntityFactory<GMeshVLK, GMeshId>>();
+    std::shared_ptr<EntityFactory<1000, GMeshId, GMeshVLK>> meshFactory = std::make_shared<EntityFactory<1000, GMeshId, GMeshVLK>>();
 
     std::mt19937_64 eng; //Use the 64-bit Mersenne Twister 19937 generator
     //and seed it with entropy.

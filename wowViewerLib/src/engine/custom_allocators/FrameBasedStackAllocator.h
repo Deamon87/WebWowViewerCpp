@@ -14,6 +14,7 @@
 #include "tbb/scalable_allocator.h"
 
 void * frameLinearAllocate(size_t size);
+void frameDeAllocate(void *p, size_t size);
 void allocatorBeginFrame(unsigned int frameNum);
 
 template<class T>
@@ -44,7 +45,7 @@ struct FrameBasedStackAllocator
     void deallocate(T* p, std::size_t n) noexcept
     {
 //        report(p, n, 0);
-//        frameDeAllocate(p);
+        frameDeAllocate(p, n * sizeof(T));
     }
 private:
 //    void report(T* p, std::size_t n, bool alloc = true) const

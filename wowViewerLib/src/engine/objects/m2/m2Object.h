@@ -26,15 +26,28 @@ class M2ObjectListContainer;
 #include "../../ApiContainer.h"
 #include "m2Helpers/CBoneMasterData.h"
 #include "../../../gapi/UniformBufferStructures.h"
+#include "../scenes/EntityActorsFactory.h"
+
 
 enum class M2ObjId : int;
+
+struct M2LoadedStatus {
+    bool m_loading = false;
+    bool m_loaded = false;
+    bool m_geomLoaded = false;
+    bool m_hasAABB = false;
+};
+
+extern EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus> m2Factory;
+
 class M2Object : public ObjectWithId<M2ObjId> {
 public:
     friend class IExporter;
 
     M2Object(HApiContainer &api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
         m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
-        {
+    {
+
     }
 
     ~M2Object();
@@ -42,22 +55,20 @@ public:
     friend class M2MeshBufferUpdater;
 private:
     void createAABB();
-    bool m_loading = false;
-    bool m_loaded = false;
-    bool m_geomLoaded = false;
-    bool m_hasAABB = false;
+
+    M2LoadedStatus *status;
 
     bool m_alwaysDraw = false;
 
 
 
-    void load(std::string modelName, SMODoodadDef &doodadDef, mathfu::mat4 &wmoPlacementMat){
-        createPlacementMatrix(doodadDef, wmoPlacementMat);
-        calcWorldPosition();
-
-        this->setLoadParams(0, {}, {});
-        this->setModelFileName(modelName);
-    }
+//    void load(std::string modelName, SMODoodadDef &doodadDef, mathfu::mat4 &wmoPlacementMat){
+//        createPlacementMatrix(doodadDef, wmoPlacementMat);
+//        calcWorldPosition();
+//
+//        this->setLoadParams(0, {}, {});
+//        this->setModelFileName(modelName);
+//    }
 
     struct dynamicVaoMeshFrame {
         int batchIndex = -1;
@@ -77,7 +88,7 @@ private:
 
     float m_currentDistance = 0;
 
-    CAaBox aabb;
+    CAaBox *aabb;
     CAaBox colissionAabb;
 
     HApiContainer m_api = nullptr;
@@ -122,10 +133,10 @@ private:
     bool particleColorReplacementIsSet = false;
     std::array<std::array<mathfu::vec4, 3>, 3> m_particleColorReplacement;
 
-
-    std::vector<mathfu::mat4> bonesMatrices;
-    std::vector<mathfu::mat4> textAnimMatrices;
-    std::vector<mathfu::vec4> subMeshColors;
+    std::unique_ptr<AnimationManager> m_animationManager;
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> bonesMatrices;
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> textAnimMatrices;
+    std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> subMeshColors;
     std::vector<float> transparencies;
     std::vector<M2LightResult> lights;
     std::vector<std::unique_ptr<ParticleEmitter>> particleEmitters;
@@ -143,7 +154,6 @@ private:
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, IDevice::MAX_FRAMES_IN_FLIGHT>> dynamicMeshes;
-    std::unique_ptr<AnimationManager> m_animationManager;
 
     bool m_interiorAmbientWasSet = false; // For static only
     bool m_boolSkybox = false;
@@ -194,8 +204,8 @@ public:
         m_postLoadEvents.push_back(value);
     }
 
-    const CAaBox &getAABB() { return aabb; };
-    CAaBox getColissionAABB();;
+    const CAaBox &getAABB() { return *aabb; };
+    CAaBox getColissionAABB();
 
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<HBlpTexture> replaceTextures);
@@ -241,7 +251,7 @@ public:
     void getMeshIds(std::vector<int> &meshIdList);
     mathfu::mat4 getTextureTransformByLookup(int textureTrasformlookup);
     int32_t getTextureTransformIndexByLookup(int textureTrasformlookup);
-    bool getGetIsLoaded() { return m_loaded; };
+    bool getGetIsLoaded() { return status->m_loaded; };
     mathfu::mat4 getModelMatrix() { return m_placementMatrix; };
 
     bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
@@ -262,7 +272,7 @@ public:
                                    const MathHelper::FrustumCullingData &frustumData);
 
     bool isMainDataLoaded() const;
-    bool getHasBoundingBox() const {return m_hasAABB;}
+    bool getHasBoundingBox() const {return status->m_hasAABB;}
 
     void doLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
@@ -314,9 +324,8 @@ public:
 
 #include "../../algorithms/mathHelper.h"
 #include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
-#include "../scenes/EntityActorsFactory.h"
 
-extern EntityFactory<M2Object, M2ObjId> m2Factory;
+
 
 template<>
 inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
@@ -325,7 +334,7 @@ inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
 
 template<>
 inline const CAaBox &retrieveAABB<>(const M2ObjId &objectId) {
-    return m2Factory.getObjectById(objectId)->getAABB();
+    return *m2Factory.getObjectById<1>(objectId);
 }
 
 
@@ -382,6 +391,20 @@ public:
         }
     }
 
+    inline void addCandidate(const M2ObjId &cand) {
+//        if (m_locked) {
+//            throw "oops";
+//        }
+        auto status = m2Factory.getObjectById<2>(cand);
+        if (status->m_hasAABB) {
+            candidates.push_back(cand);
+            candCanHaveDuplicates = true;
+        } else {
+            toLoadMain.push_back(cand);
+            toLoadMainCanHaveDuplicates = true;
+        }
+    }
+
     void addToDraw(const std::shared_ptr<M2Object> &toDraw) {
         if (m_locked) {
             throw "oops";
@@ -398,6 +421,29 @@ public:
             toLoadGeomCanHaveDuplicates = true;
         }
     }
+
+    void addToDraw(const M2ObjId &toDrawId) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        auto status = m2Factory.getObjectById<2>(toDrawId);
+        if (status->m_loaded) {
+            drawn.push_back(toDrawId);
+            drawnCanHaveDuplicates = true;
+        } else {
+            auto toDraw = m2Factory.getObjectById<0>(toDrawId);
+            if (!toDraw->isMainDataLoaded()) {
+                toLoadMain.push_back(toDrawId);
+                toLoadMainCanHaveDuplicates = true;
+            } else {
+                toLoadGeom.push_back(toDrawId);
+                toLoadGeomCanHaveDuplicates = true;
+            }
+        }
+    }
+
+
 
     void addToDraw(M2Object * toDraw) {
         if (m_locked) {

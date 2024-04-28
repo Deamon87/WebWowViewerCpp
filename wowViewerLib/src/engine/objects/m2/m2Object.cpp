@@ -537,7 +537,7 @@ void M2Object::createAABB() {
 
         CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
 
-        this->aabb = worldAABB;
+        *this->aabb = worldAABB;
     }
 
 
@@ -551,7 +551,7 @@ void M2Object::createAABB() {
         CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
 
         //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
-        this->aabb = worldAABB;
+        *this->aabb = worldAABB;
     }
 
     {
@@ -565,7 +565,7 @@ void M2Object::createAABB() {
         //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
         this->colissionAabb = worldAABB;
     }
-    m_hasAABB = true;
+    status->m_hasAABB = true;
 }
 
 
@@ -666,7 +666,7 @@ void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 sc
 }
 
 void M2Object::updatePlacementMatrixFromParentAttachment(M2Object *parent, int attachment, float scale) {
-    if (!parent->m_loaded) return;
+    if (!parent->status->m_loaded) return;
     auto &m2Geom = parent->m_m2Geom;
     if (m2Geom->m_m2Data->attachment_lookup_table.size == 0) return;
     if (m2Geom->m_m2Data->attachments.size == 0) return;
@@ -704,7 +704,8 @@ float M2Object::getCurrentDistance() {
     return m_currentDistance;
 }
 float M2Object::getHeight(){
-    return this->aabb.max.z -this->aabb.min.z;
+    const auto &aabb = *this->aabb;
+    return aabb.max.z -aabb.min.z;
 }
 
 uint8_t miniLogic(const CImVector *a2) {
@@ -766,11 +767,14 @@ void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::ve
     this->m_skinNum = skinNum;
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
+    this->aabb = m2Factory.getObjectById<1>(this->getObjectId());
+    this->status = m2Factory.getObjectById<2>(this->getObjectId());
+    *this->status = M2LoadedStatus();
 }
 
 void M2Object::startLoading() {
-    if (!m_loading) {
-        m_loading = true;
+    if (!status->m_loading) {
+        status->m_loading = true;
 
         Cache<M2Geom> *m2GeomCache = m_api->cacheStorage->getM2GeomCache();
         if (!useFileId) {
@@ -782,7 +786,7 @@ void M2Object::startLoading() {
 }
 
 void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
-    if (!m_loaded) return;
+    if (!status->m_loaded) return;
 
     M2Data * m2File = this->m_m2Geom->getM2Data();
     M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
@@ -847,7 +851,7 @@ void M2Object::debugDumpAnimationSequences() {
 }
 
 void M2Object::doLoadMainFile(){
-    if (!this->m_loaded && !this->m_loading) {
+    if (!this->status->m_loaded && !this->status->m_loading) {
         this->startLoading();
     }
 
@@ -858,7 +862,7 @@ void M2Object::doLoadMainFile(){
 
 void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     //0. If loading procedures were already done - exit
-    if (this->m_loaded) return;
+    if (this->status->m_loaded) return;
 
     //1. Check if .m2 files is loaded
     if (m_m2Geom == nullptr) return;
@@ -916,9 +920,9 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     this->initRibbonEmitters(sceneRenderer);
 
 
-    this->m_loaded = true;
-    this->m_geomLoaded = true;
-    this->m_loading = false;
+    this->status->m_loaded = true;
+    this->status->m_geomLoaded = true;
+    this->status->m_loading = false;
 
     for ( auto &item : m_postLoadEvents) {
         item();
@@ -930,7 +934,7 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
 
 //deltaTime = miliseconds
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
-    if (!this->m_loaded) return;
+    if (!this->status->m_loaded) return;
 
     m_postLoadEvents.clear();
 
@@ -984,7 +988,7 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
                                                              mathfu::vec4(mathfu::vec3(bounds.extent.min), 1.0f),
                                                              mathfu::vec4(mathfu::vec3(bounds.extent.max), 1.0f));
 
-        this->aabb = worldAABB;
+        *this->aabb = worldAABB;
 
     }
 
@@ -1074,7 +1078,7 @@ void M2Object::fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sc
 }
 
 void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
-    if (!this->m_loaded)  return;
+    if (!this->status->m_loaded)  return;
 
 //    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
 
@@ -1172,7 +1176,7 @@ bool M2Object::isMainDataLoaded() const {
 }
 
 const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const MathHelper::FrustumCullingData &frustumData) {
-    if (!this->m_hasAABB) {
+    if (!this->status->m_hasAABB) {
         if (!this->isMainDataLoaded()) return false;
 
         if (m_m2Geom != nullptr) {
@@ -1189,7 +1193,7 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const M
         return true;
     }
 
-    CAaBox &aabb = this->aabb;
+    CAaBox &aabb = *this->aabb;
 
     //1. Check if camera position is inside Bounding Box
     if (
@@ -1280,10 +1284,10 @@ void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &pla
 }
 
 void M2Object::drawBB(mathfu::vec3 &color) {
-    if (!this->m_loaded) return;
+    if (!this->status->m_loaded) return;
 
     mathfu::mat4 defMat = mathfu::mat4::Identity();
-    drawBBInternal(this->aabb, color, defMat);
+    drawBBInternal(*this->aabb, color, defMat);
 
 }
 
@@ -1673,7 +1677,7 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int index
 }
 
 void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
-    if (!this->m_loaded) return;
+    if (!this->status->m_loaded) return;
 
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
@@ -1749,16 +1753,16 @@ void M2Object::initAnimationManager() {
 void M2Object::initBoneAnimMatrices() {
     ZoneScoped;
     auto &bones = *m_boneMasterData->getSkelData()->m_m2CompBones;
-    this->bonesMatrices = std::vector<mathfu::mat4>(bones.size, mathfu::mat4::Identity());;
+    this->bonesMatrices = std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>>(bones.size, mathfu::mat4::Identity());;
 }
 void M2Object::initTextAnimMatrices() {
     ZoneScoped;
-    textAnimMatrices = std::vector<mathfu::mat4>(m_m2Geom->getM2Data()->texture_transforms.size, mathfu::mat4::Identity());;
+    textAnimMatrices = std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>>(m_m2Geom->getM2Data()->texture_transforms.size, mathfu::mat4::Identity());;
 }
 
 void M2Object::initSubmeshColors() {
     ZoneScoped;
-    subMeshColors = std::vector<mathfu::vec4>(m_m2Geom->getM2Data()->colors.size);
+    subMeshColors = std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>>(m_m2Geom->getM2Data()->colors.size);
 
 }
 void M2Object::initTransparencies() {
@@ -1858,12 +1862,12 @@ void M2Object::setModelFileId(int fileId) {
 }
 
 void M2Object::setAnimationId(int animationId) {
-    if (!m_loaded) return;
+    if (!status->m_loaded) return;
 
     m_animationManager->setAnimationId(animationId, false);
 }
 void M2Object::resetCurrentAnimation() {
-    if (!m_loaded) return;
+    if (!status->m_loaded) return;
 
     m_animationManager->resetCurrentAnimation();
 }
@@ -1952,7 +1956,7 @@ int32_t M2Object::getTextureTransformIndexByLookup(int textureTrasformlookup) {
 }
 
 void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
-    if (!this->m_loaded) return;
+    if (!this->status->m_loaded) return;
 
 //        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
     int minParticle = m_api->getConfig()->minParticle;
@@ -2095,14 +2099,14 @@ void M2Object::updateDynamicMeshes() {
 void M2Object::setReplaceTextures(const HMapSceneBufferCreate &sceneRenderer, const std::vector<HBlpTexture> &replaceTextures) {
     m_replaceTextures = replaceTextures;
 
-    if (m_loaded) {
+    if (status->m_loaded) {
         createMeshes(sceneRenderer); // recreate meshes
     }
 }
 void M2Object::setMeshIds(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds) {
     m_meshIds = meshIds;
 
-    if (m_loaded) {
+    if (status->m_loaded) {
         createMeshes(sceneRenderer); // recreate meshes
     }
 }
@@ -2130,4 +2134,4 @@ int M2Object::getCurrentAnimationIndex() {
     return m_animationManager->getCurrentAnimationIndex();
 }
 
-EntityFactory<M2Object, M2ObjId> m2Factory;
+EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus> m2Factory;

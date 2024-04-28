@@ -27,6 +27,7 @@
 #include "../../renderer/vulkan/IRenderFunctionVLK.h"
 #include "commandBuffer/commandBufferRecorder/TextureUploadHelper.h"
 #include "../../renderer/frame/FrameProfile.h"
+#include "../../engine/objects/scenes/EntityActorsFactory.h"
 #include <tbb/tbb.h>
 
 const int WIDTH = 1900;
@@ -1400,14 +1401,19 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
 }
 
 void GDeviceVLK::executeDeallocators() {
-    std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
-    while ((!listOfDeallocators.empty()) && (listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-        auto stuff = listOfDeallocators.front();
-        if (stuff.callback != nullptr) {
-            stuff.callback();
-        }
+    {
+        std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
+        while ((!listOfDeallocators.empty()) && (listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+            auto stuff = listOfDeallocators.front();
+            if (stuff.callback != nullptr) {
+                stuff.callback();
+            }
 
-        listOfDeallocators.pop_front();
+            listOfDeallocators.pop_front();
+        }
+    }
+    {
+        executeEntityDeallocators();
     }
 }
 

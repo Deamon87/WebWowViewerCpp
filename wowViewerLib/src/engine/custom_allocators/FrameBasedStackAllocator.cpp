@@ -8,6 +8,7 @@
 #include <array>
 
 #include "../../gapi/interface/IDevice.h"
+#include "../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
 #include <memory>
 #include <list>
 
@@ -34,40 +35,63 @@ static inline uint8_t BitScanMSB2(uint32_t mask)
 }
 
 struct MemoryStoringPool {
-    MemoryStoringPool(size_t size) {
-        currentOffset = 0;
+
+    MemoryStoringPool(size_t size) : m_Allocator(OffsetAllocator::Allocator(size)) {
+
         data.resize(size);
     }
-    int currentOffset;
-    std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>> data;
+    bool isInThisRegion(void *p) {
+        bool biggerThanLowerBound = (((uintptr_t)p) > ((uintptr_t)data.data()));
+        bool lessThanHigherBound = ((((uintptr_t)p) - ((uintptr_t)data.data())) < data.size());
+
+        return biggerThanLowerBound && lessThanHigherBound;
+    }
+
+    inline void * allocateFromMemPool(size_t size, int &regionSize) {
+        void *ptr = nullptr;
+
+        regionSize = data.size();
+
+        OffsetAllocator::Allocation alloc = m_Allocator.allocate(size+16+sizeof(OffsetAllocator::Allocation));
+        if (alloc.offset == OffsetAllocator::Allocation::NO_SPACE) {
+            return nullptr;
+        }
+
+        ptr = &data[alloc.offset & (~15)];
+        *(OffsetAllocator::Allocation *) &(((uint8_t*) ptr)[size]) = alloc;
+
+        return ptr;
+    }
+    void deallocate(void *ptr, size_t size) {
+        if (!this->isInThisRegion(ptr)) {
+            return;
+        }
+
+        OffsetAllocator::Allocation alloc = *(OffsetAllocator::Allocation *) &(((uint8_t*) ptr)[size]);
+        m_Allocator.free(alloc);
+    }
+
+    private:
+        OffsetAllocator::Allocator m_Allocator;
+        std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>> data;
 };
 
 
 
 std::array<std::mutex, 2*IDevice::MAX_FRAMES_IN_FLIGHT> g_frameStackMutexes;
+std::mutex g_g_frameStackMutexes;
 std::array<std::list<std::unique_ptr<MemoryStoringPool>>, 2*IDevice::MAX_FRAMES_IN_FLIGHT> g_frameStackList;
 
-inline void * allocateFromMemPool(size_t alignedSize, std::unique_ptr<MemoryStoringPool> &frameRegion, int &regionSize) {
-    void *ptr = nullptr;
 
-    regionSize = frameRegion->data.size();
-
-    bool isWithinBoundary = (frameRegion->currentOffset + ((alignedSize+16)) < regionSize);
-    if (isWithinBoundary) {
-        ptr = &frameRegion->data[frameRegion->currentOffset];
-        frameRegion->currentOffset += alignedSize;
-    }
-
-    return ptr;
-}
 
 void * frameLinearAllocate(size_t size) {
     auto currentFrame = IDevice::getCurrentProcessingFrameNumber() % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
 
+    std::lock_guard<std::mutex> g_lock(g_g_frameStackMutexes);
     std::lock_guard<std::mutex> lock(g_frameStackMutexes[currentFrame]);
     auto &current_list = g_frameStackList[currentFrame];
 
-    size_t alignedSize = (size + 16) & (~15L);
+//    size_t alignedSize = (size + 16) & (~15L);
 
     void *ptr = nullptr;
     int regionSize = 2048;
@@ -75,7 +99,7 @@ void * frameLinearAllocate(size_t size) {
         auto &memPoolRegion = current_list.front();
 
         if (memPoolRegion) {
-            ptr = allocateFromMemPool(alignedSize, memPoolRegion, regionSize);
+            ptr = memPoolRegion->allocateFromMemPool(size, regionSize);
         }
     }
     if (ptr == nullptr) {
@@ -83,7 +107,7 @@ void * frameLinearAllocate(size_t size) {
         size_t newSize = std::max<int>(currentBufferSize * 2, 1 << (BitScanMSB2(currentBufferSize + size) + 1));
 
         auto newPool = std::make_unique<MemoryStoringPool>(newSize);
-        ptr = allocateFromMemPool(alignedSize, newPool, regionSize);
+        ptr = newPool->allocateFromMemPool(size, regionSize);
 
         current_list.push_front(std::move(newPool));
     }
@@ -94,12 +118,31 @@ void * frameLinearAllocate(size_t size) {
     return ptr;
 }
 
+void frameDeAllocate(void *ptr, std::size_t n) {
+    auto currentFrame = IDevice::getCurrentProcessingFrameNumber() % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
+
+    std::lock_guard<std::mutex> g_lock(g_g_frameStackMutexes);
+
+    for (auto &frameList : g_frameStackList) {
+        for (auto it = frameList.begin(); it != frameList.end(); ++it) {
+            auto &region = (*it);
+            if (region->isInThisRegion(ptr)) {
+                region->deallocate(ptr, n);
+
+                return;
+            }
+        }
+    }
+
+//    std::cout << "failed to deallocate" << std::endl;
+};
+
 void allocatorBeginFrame(unsigned int frameNum) {
     auto currentFrame = frameNum % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
     std::lock_guard<std::mutex> lock(g_frameStackMutexes[currentFrame]);
 
     if (!g_frameStackList[currentFrame].empty()) {
         g_frameStackList[currentFrame].resize(1);
-        g_frameStackList[currentFrame].front()->currentOffset = 0;
     }
 }
+

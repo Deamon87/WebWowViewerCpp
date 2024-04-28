@@ -25,7 +25,10 @@ class M2Object;
 
 typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)> FreeStrategy;
 
-class AdtObject {
+class AdtObject;
+enum class AdtObjectId : int;
+extern EntityFactory<50, AdtObjectId, AdtObject> adtObjectFactory;
+class AdtObject : public ObjectWithId<AdtObjectId> {
 public:
     AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
     AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
@@ -161,6 +164,9 @@ private:
     struct lodLevels {
         std::vector<std::shared_ptr<M2Object>> m2Objects;
         std::vector<std::shared_ptr<WmoObject>> wmoObjects;
+
+        std::vector<M2ObjId> m2ObjectIds;
+        std::vector<WMOObjId> wmoObjectIds;
     };
     std::array<lodLevels, 2> objectLods;
 

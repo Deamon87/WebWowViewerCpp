@@ -84,7 +84,7 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
 
     for (int i = 0; i < candCullRes.size(); i++) {
         if (!candCullRes[i]) {
-            const auto m2ObjectCandidate = m2Factory.getObjectById(candidatesArr[i]);
+            const auto m2ObjectCandidate = m2Factory.getObjectById<0>(candidatesArr[i]);
             setM2Lights(m2ObjectCandidate);
             if (m2ObjectCandidate != nullptr)
                 this->m2List.addToDraw(m2ObjectCandidate);

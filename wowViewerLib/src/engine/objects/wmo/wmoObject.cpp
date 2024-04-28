@@ -1395,4 +1395,4 @@ std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
     return m_newLights[index];
 }
 
-EntityFactory<WmoObject, WMOObjId> wmoFactory;
+EntityFactory<2000, WMOObjId, WmoObject> wmoFactory;

@@ -571,7 +571,7 @@ void MinimapGenerator::calcBB(const HMapRenderPlan &mapRenderPlan, mathfu::vec3 
     maxCoord = mathfu::vec3(-20000, -20000, -20000);
 
     for (auto &m2ObjectId: mapRenderPlan->m2Array.getDrawn()) {
-        auto objBB = m2Factory.getObjectById(m2ObjectId)->getAABB();
+        auto objBB = m2Factory.getObjectById<0>(m2ObjectId)->getAABB();
 
         if (applyAdtChecks && !MathHelper::isAabbIntersect2d(objBB, adtBox2d)) continue;
 
@@ -622,7 +622,7 @@ void MinimapGenerator::calcBB(const HMapRenderPlan &mapRenderPlan, mathfu::vec3 
 
 
     for (auto &adtObjectRes: mapRenderPlan->adtArray) {
-        auto adtObj = adtObjectRes->adtObject;
+        auto const &adtObj = adtObjectRes.adtObject;
 
 
         if (applyAdtChecks && (adtObj->getAdtX() != adt_x || adtObj->getAdtY() != adt_y)) {
@@ -670,8 +670,8 @@ void MinimapGenerator::process() {
             if (cullStage == nullptr) continue;
 
             for (const auto &adtCullRes : cullStage->adtArray) {
-                if (adtCullRes->adtObject == nullptr) continue;
-                if (adtCullRes->adtObject->getLoadedStatus() == FileStatus::FSNotLoaded) {
+                if (adtCullRes.adtObject == nullptr) continue;
+                if (adtCullRes.adtObject->getLoadedStatus() == FileStatus::FSNotLoaded) {
                     resetCandidate();
                     return;
                 }

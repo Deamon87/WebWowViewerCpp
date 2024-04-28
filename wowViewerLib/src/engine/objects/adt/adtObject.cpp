@@ -45,16 +45,21 @@ void AdtObject::loadM2s() {
     int32_t length = m_adtFileObj->doodadDef_len;
     //1. Load non-lod
     objectLods[0].m2Objects = std::vector<std::shared_ptr<M2Object>>(length, nullptr);
+    objectLods[0].m2ObjectIds = std::vector<M2ObjId>(length);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id) {
             //2. Get model
             int fileDataId = doodadDef.nameId;
-            objectLods[0].m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
+            auto m2Object = m_mapApi->getM2Object(fileDataId, doodadDef);
+            objectLods[0].m2Objects[i] = m2Object;
+            objectLods[0].m2ObjectIds[i] = m2Object->getObjectId();
         } else {
             std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.nameId]];
             //2. Get model
-            objectLods[0].m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
+            auto m2Object =m_mapApi->getM2Object(fileName, doodadDef);
+            objectLods[0].m2Objects[i] = m2Object;
+            objectLods[0].m2ObjectIds[i] = m2Object->getObjectId();
         }
     }
 
@@ -68,17 +73,22 @@ void AdtObject::loadM2s() {
         length = 0;
     };
     objectLods[1].m2Objects = std::vector<std::shared_ptr<M2Object>>(length, nullptr);
+    objectLods[1].m2ObjectIds = std::vector<M2ObjId>(length);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         //1. Get filename
         SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id == 1) {
             //2. Get model
             int fileDataId = doodadDef.nameId;
-            objectLods[1].m2Objects[i] = m_mapApi->getM2Object(fileDataId, doodadDef);
+            auto m2Object = m_mapApi->getM2Object(fileDataId, doodadDef);
+            objectLods[1].m2Objects[i] = m2Object;
+            objectLods[1].m2ObjectIds[i] = m2Object->getObjectId();
         } else {
             std::string fileName = &m_adtFileObj->doodadNamesField[m_adtFileObj->mmid[doodadDef.nameId]];
             //2. Get model
-            objectLods[1].m2Objects[i] = m_mapApi->getM2Object(fileName, doodadDef);
+            auto m2Object = m_mapApi->getM2Object(fileName, doodadDef);
+            objectLods[0].m2Objects[i] = m2Object;
+            objectLods[0].m2ObjectIds[i] = m2Object->getObjectId();
         }
     }
 }
@@ -90,6 +100,7 @@ void AdtObject::loadWmos() {
 
     //1. Load non lod
     objectLods[0].wmoObjects = std::vector<std::shared_ptr<WmoObject>>(length, nullptr);
+    objectLods[0].wmoObjectIds = std::vector<WMOObjId>(length, emptyWMO);
 
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //1. Get filename
@@ -97,10 +108,14 @@ void AdtObject::loadWmos() {
         if (!mapDef.flags.modf_entry_is_filedata_id) {
             std::string fileName;
             fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
-            objectLods[0].wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDef);
+            auto wmoObject = m_mapApi->getWmoObject(fileName, mapDef);
+            objectLods[0].wmoObjects[j] = wmoObject;
+            objectLods[0].wmoObjectIds[j] = wmoObject->getObjectId();
         } else {
             uint32_t fileDataId = mapDef.nameId;
-            objectLods[0].wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDef);
+            auto wmoObject = m_mapApi->getWmoObject(fileDataId, mapDef);
+            objectLods[0].wmoObjects[j] = wmoObject;
+            objectLods[0].wmoObjectIds[j] = wmoObject->getObjectId();
         }
 //        std::cout << "wmo filename = "<< fileName << std::endl;
     }
@@ -116,16 +131,23 @@ void AdtObject::loadWmos() {
         length = 0;
     }
     objectLods[1].wmoObjects = std::vector<std::shared_ptr<WmoObject>>(length, nullptr);
+    objectLods[1].wmoObjectIds = std::vector<WMOObjId>(length, emptyWMO);
     for (int j = 0, i = offset; i < offset + length; i++, j++) {
         //Load Lods
         std::string fileName;
         auto &mapDefLod = m_adtFileObjLod->mapObjDefObj1[i];
         if (mapDefLod.flags.modf_entry_is_filedata_id == 0) {
             fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDefLod.nameId]];
-            objectLods[1].wmoObjects[j] = m_mapApi->getWmoObject(fileName, mapDefLod);
+
+            auto wmoObject = m_mapApi->getWmoObject(fileName, mapDefLod);
+            objectLods[1].wmoObjects[j] = wmoObject;
+            objectLods[1].wmoObjectIds[j] = wmoObject->getObjectId();
         } else {
             uint32_t fileDataId = mapDefLod.nameId;
-            objectLods[1].wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDefLod);
+
+            auto wmoObject = m_mapApi->getWmoObject(fileDataId, mapDefLod);
+            objectLods[1].wmoObjects[j] = wmoObject;
+            objectLods[1].wmoObjectIds[j] = wmoObject->getObjectId();
         }
     }
 }
@@ -165,7 +187,7 @@ void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
             for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
                 SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
 
-                auto l_liquidInstance = std::make_shared<LiquidInstance>(
+                auto l_liquidInstance = liquidInstanceFactory.createObject(
                     m_api, sceneRenderer, liquidInstance,
                     m_waterPlacementChunk, liquidBasePos, m_adtFile->mH2OBlob,
                     waterTileAabb[i]
@@ -570,8 +592,6 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaq
     if (m_freeStrategy != nullptr) m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
     if (!m_loaded) return;
-
-    adtRes.wasLoaded = true;
 
     size_t meshCount = adtMeshes.size();
     opaqueMeshes.reserve(opaqueMeshes.size() + adtMeshes.size());
@@ -1030,8 +1050,8 @@ AdtObject::checkWmoGlobally(int lodLevel, M2ObjectListContainer &m2ObjectsCandid
                  int x_len, int y_len) {
 
     if (lodLevel >= 4) {
-        for (auto const &m2Object : objectLods[0].m2Objects)
-            m2ObjectsCandidates.addCandidate(m2Object);
+        for (auto const &m2ObjectId : objectLods[0].m2ObjectIds)
+            m2ObjectsCandidates.addCandidate(m2ObjectId);
     } else {
         for (auto const &m2Object: objectLods[1].m2Objects) {
             m2ObjectsCandidates.addCandidate(m2Object);
@@ -1325,3 +1345,5 @@ void AdtObject::createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer) 
 
     m_holesIgnored = m_api->getConfig()->ignoreADTHoles;
 }
+
+EntityFactory<50, AdtObjectId, AdtObject> adtObjectFactory;

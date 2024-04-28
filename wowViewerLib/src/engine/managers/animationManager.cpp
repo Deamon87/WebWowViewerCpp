@@ -284,7 +284,7 @@ inline void calcTextureAnimationTransform(
 }
 
 
-void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices) {
+void AnimationManager::calcAnimMatrixes (std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices) {
 
     mathfu::vec4 pivotPoint(0.5, 0.5, 0, 0);
     mathfu::vec4 negatePivotPoint = -pivotPoint;
@@ -382,7 +382,7 @@ void calcBoneBillboardMatrix(
 
 void
 AnimationManager::calcBoneMatrix(
-    std::vector<mathfu::mat4> &boneMatrices,
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices,
     int boneIndex,
     const mathfu::mat4 &modelViewMatrix
     ) {
@@ -650,7 +650,7 @@ AnimationManager::calcBoneMatrix(
 }
 
 void AnimationManager::calcChildBones(
-    std::vector<mathfu::mat4> &boneMatrices,
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices,
     int boneIndex,
     const mathfu::mat4 &modelViewMatrix) {
     std::vector<int> *childBones = &this->childBonesLookup[boneIndex];
@@ -669,7 +669,7 @@ std::string dumpMatrix(mathfu::mat4 &mat4) {
            std::to_string(mat4[12])+" "+std::to_string(mat4[13])+" "+std::to_string(mat4[14])+" "+std::to_string(mat4[15])+"\n";
 }
 void AnimationManager::calcBones (
-    std::vector<mathfu::mat4> &boneMatrices,
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices,
     const mathfu::mat4 &modelViewMatrix) {
 
 
@@ -733,9 +733,9 @@ void AnimationManager::update(
     mathfu::vec3 &localRightVector,
     const mathfu::mat4 &modelMatrix,
     const mathfu::mat4 &modelViewMatrix,
-    std::vector<mathfu::mat4> &bonesMatrices,
-    std::vector<mathfu::mat4> &textAnimMatrices,
-    std::vector<mathfu::vec4> &subMeshColors,
+    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+    std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
     std::vector<float> &transparencies,
     std::vector<M2LightResult> &lights,
     std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
@@ -946,7 +946,7 @@ void AnimationManager::update(
     this->animationInfo.currentAnimation.firstUpdate = false;
 }
 
-void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors) {
+void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors) {
     M2Array<M2Color> &colors = boneMasterData->getM2Geom()->getM2Data()->colors;
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
 
@@ -1001,7 +1001,7 @@ void AnimationManager::calcTransparencies(std::vector<float> &transparencies) {
 }
 
 
-void AnimationManager::calcLights(std::vector<M2LightResult> &lights, const std::vector<mathfu::mat4> &bonesMatrices, const mathfu::mat4 &modelMatrix) {
+void AnimationManager::calcLights(std::vector<M2LightResult> &lights, const std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices, const mathfu::mat4 &modelMatrix) {
     auto &lightRecords = boneMasterData->getM2Geom()->getM2Data()->lights;
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
 
@@ -1211,7 +1211,7 @@ void AnimationManager::calcCamera(M2CameraResult &camera, int cameraId, mathfu::
 }
 
 void AnimationManager::calcParticleEmitters(const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
-                                            std::vector<mathfu::mat4> &bonesMatrices) {
+                                            std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices) {
     auto &peRecords = boneMasterData->getM2Geom()->getM2Data()->particle_emitters;
     if (peRecords.size <= 0) return;
 

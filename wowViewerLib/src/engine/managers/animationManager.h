@@ -42,7 +42,7 @@ private:
     void initGlobalSequenceTimes();
 
     void calculateBoneTree();
-    void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
+    void calcAnimMatrixes (std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices);
 
     void calcAnimRepetition(AnimationStruct &animationStruct);
 public:
@@ -60,9 +60,9 @@ public:
         mathfu::vec3 &localRightVector,
         const mathfu::mat4 &modelMatrix,
         const mathfu::mat4 &modelViewMatrix,
-        std::vector<mathfu::mat4> &bonesMatrices,
-        std::vector<mathfu::mat4> &textAnimMatrices,
-        std::vector<mathfu::vec4> &subMeshColors,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+        std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
         std::vector<float> &transparencies,
         std::vector<M2LightResult> &lights,
         std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
@@ -70,13 +70,13 @@ public:
 
         /*cameraDetails, particleEmitters*/);
 
-    void calcBones(std::vector<mathfu::mat4> &boneMatrices, const mathfu::mat4 &modelViewMatrix);
+    void calcBones(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, const mathfu::mat4 &modelViewMatrix);
 
-    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
+    void calcBoneMatrix(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 
-    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
+    void calcChildBones(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 
-    void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors);
+    void calcSubMeshColors(std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors);
 
     void calcTransparencies(std::vector<float> &transparencies);
 
@@ -94,11 +94,11 @@ public:
     }
 
     void calcLights(std::vector<M2LightResult> &lights,
-                    const std::vector<mathfu::mat4> &bonesMatrices,
+                    const std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
                     const mathfu::mat4 &modelMatrix);
     void calcParticleEmitters(
         const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
-        std::vector<mathfu::mat4> &bonesMatrices);
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices);
 
     void calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters);
 
