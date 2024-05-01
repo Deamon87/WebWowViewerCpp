@@ -30,7 +30,7 @@ layout(set=2, binding=8) uniform sampler2D uLayerHeight3;
 
 layout(std140, set=1, binding=0) uniform meshWideBlockVSPS {
     vec4 uPos;
-    ivec4 uUseHeightMixFormula;
+    ivec4 uUseHeightMixFormula_useWeightedBlend;
     vec4 uHeightScale;
     vec4 uHeightOffset;
 };
@@ -60,7 +60,7 @@ void main() {
     vec2 tcLayer3 = transformADTUV(vTexCoord, 3, sceneTime, animation_rotationPerLayer, animation_speedPerLayer, scaleFactorPerLayer);
 
     vec4 final;
-    if (uUseHeightMixFormula.r > 0) {
+    if (uUseHeightMixFormula_useWeightedBlend.r > 0) {
         calcADTHeightFragMaterial(
             tcLayer0, tcLayer1, tcLayer2, tcLayer3,
             uLayer0, uLayer1, uLayer2, uLayer3,
@@ -76,6 +76,7 @@ void main() {
             uLayer0, uLayer1, uLayer2, uLayer3,
             vAlphaCoords,
             uAlphaTexture,
+            uUseHeightMixFormula_useWeightedBlend.g > 0,
             final
         );
     }

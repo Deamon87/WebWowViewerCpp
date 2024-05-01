@@ -30,8 +30,8 @@ enum class AdtObjectId : int;
 extern EntityFactory<50, AdtObjectId, AdtObject> adtObjectFactory;
 class AdtObject : public ObjectWithId<AdtObjectId> {
 public:
-    AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, HWdtFile wdtfile);
-    AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, HWdtFile wdtfile);
+    AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, bool useWeightedBlend, HWdtFile wdtfile);
+    AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, bool useWeightedBlend, HWdtFile wdtfile);
     ~AdtObject() {
 //        std::cout << "~AdtObject called" << std::endl;
     };
@@ -157,6 +157,7 @@ private:
     int adt_x;
     int adt_y;
 
+    bool m_useWeightedBlend;
 
     std::string m_adtFileTemplate;
 

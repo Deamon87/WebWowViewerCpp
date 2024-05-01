@@ -493,23 +493,51 @@ MCAL_Offsets_Runtime AdtFile::createAlphaTextureRuntime(int mcnkChunkIndex) {
     uint8_t* mcal = mcnkObj.mcal;
     auto &layers = mcnkObj.mcly;
 
-    MCAL_Offsets_Runtime result;
+    uint32_t uniqueTextureIds[4] = {0,0,0,0};
+    uint32_t uniqTextCnt = 0;
+    if ( mcnkObj.mclyCnt) {
+        uniqueTextureIds[0] = layers[0].textureId;
+        uniqTextCnt = 1;
+    }
     for (int j = 1; j < mcnkObj.mclyCnt; j++ ) {
         auto &layerDef = layers[j];
-        int alphaOffs = layerDef.offsetInMCAL;
 
-        result.alphaOffsets[j-1] = &mcal[alphaOffs];
+        bool alreadyIncluded = false;
+        for (int k = 0; k < uniqTextCnt; k++) {
+            if (uniqueTextureIds[k] == layerDef.textureId) {
+                alreadyIncluded = true;
+                break;
+            }
+        }
+        if (!alreadyIncluded) {
+            uniqueTextureIds[uniqTextCnt++] = layerDef.textureId;
+        }
     }
 
-    result.uncompressedIndex = 0;
+
+    MCAL_Offsets_Runtime result;
     for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
-        if (layers[j].flags.use_alpha_map == 0) {
-            result.uncompressedIndex = j;
+        auto &layerDef = layers[j];
+        uint32_t alphaOffs = layerDef.offsetInMCAL;
+
+        for (int k = 0; k < uniqTextCnt; k++) {
+            if (uniqueTextureIds[k] == layerDef.textureId) {
+                if (layerDef.flags.use_alpha_map) {
+                    result.alphaPtrs[k] = &mcal[alphaOffs];
+                } else {
+                    result.uncompressedIndex = k;
+                }
+                result.alphaFlags[k] = layerDef.flags;
+
+                break;
+            }
         }
     }
 
     return result;
 }
+
+const std::array<uint8_t, 64> noAlphaArray = {};
 
 void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t* __restrict currentLayer, uint32_t textureSize) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
@@ -520,38 +548,40 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
     if (layers == nullptr || mcal == nullptr) return;
 
 
-    for (int j = 1; j < mcnkObj.mclyCnt; j++ ) {
+    for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
         auto &layerDef = layers[j];
 
-        auto &alphaArray = mcalRuntime.alphaOffsets[j-1];
+        auto &alphaArray = mcalRuntime.alphaPtrs[j];
+        auto alphaFlag = mcalRuntime.alphaFlags[j];
 
         int readForThisLayer = 0;
 
-        if (!layerDef.flags.use_alpha_map) {
-//            for (int k = 0; k < 4096; k++) {
-//                *currentLayer++ = 0;
-//            }
-        } else if (layerDef.flags.alpha_map_compressed) {
+        if (!alphaFlag.use_alpha_map) {
+            std::copy(noAlphaArray.data(), noAlphaArray.data() + textureSize, currentLayer);
+            currentLayer += textureSize;
+            readForThisLayer += textureSize;
+        } else if (alphaFlag.alpha_map_compressed) {
             //Compressed
             //http://www.pxr.dk/wowdev/wiki/index.php?title=ADT/v18
-            while( readForThisLayer < 64 )
-            {
+            while (readForThisLayer < textureSize) {
                 // fill or copy mode
                 uint8_t codeVal = *alphaArray++;
-                bool fill = (codeVal & 0x80 ) != 0;
+                bool fill = (codeVal & 0x80) != 0;
+
                 int n = fill ?
-                    codeVal & 0x7F :
-                    codeVal;
+                        codeVal & 0x7F :
+                        codeVal;
 
                 if (fill) {
                     uint8_t alphaVal = *alphaArray++;
 
-                    for (int k = 0; k < n && readForThisLayer < 64; k++, readForThisLayer++) {
+                    for (int k = 0; (k < n) && (readForThisLayer < textureSize); k++, readForThisLayer++) {
                         *currentLayer++ = alphaVal;
                     }
                 } else {
-                    for (int k = 0; k < n && readForThisLayer < 64; k++, readForThisLayer++) {
-                        *currentLayer++ = *alphaArray++;
+                    for (int k = 0; (k < n) && (readForThisLayer < textureSize); k++, readForThisLayer++) {
+                        *currentLayer++ = *alphaArray;
+                        alphaArray++;
                     }
                 }
             }
@@ -559,27 +589,20 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
             //Uncompressed
             if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
                 //Uncompressed (4096)
-                    for (int iY = 0; iY < 64; iY++){
-                        *currentLayer++ = *alphaArray++;
-                    }
+                for (int iY = 0; iY < textureSize; iY++) {
+                    *currentLayer++ = *alphaArray++;
+                }
 
             } else {
                 //Uncompressed (2048)
-                    for (int iY = 0; iY < 32; iY++){
-                        //Old world
-                        uint8_t alphaVal = *alphaArray++;
-                        *currentLayer++ = (alphaVal & 0x0f ) * 17;
-                        *currentLayer++ =  ((alphaVal & 0xf0 ) >> 4) * 17;
-                    }
+                for (int iY = 0; iY < textureSize; iY += 2) {
+                    //Old world
+                    uint8_t alphaVal = *alphaArray++;
+                    *currentLayer++ = (alphaVal & 0x0f) * 17;
+                    *currentLayer++ = ((alphaVal & 0xf0) >> 4) * 17;
+                }
             }
         }
-        //Fix alpha depending on flag
-//        if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
-//            int offO = j;
-//            for (int k = 0; k < 4096; k++) {
-//                currentLayer[offO+k*4] = (unsigned char) (178 * currentLayer[offO + k * 4] >> 8);
-//            }
-//        }
     }
 
 //    if (mcalRuntime.uncompressedIndex) {

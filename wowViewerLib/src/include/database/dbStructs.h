@@ -16,6 +16,7 @@ struct MapRecord {
     int WdtFileID;
     int MapType;
     int overrideTime;
+    uint32_t flags0;
 };
 
 struct LightResult {

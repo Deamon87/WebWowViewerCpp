@@ -279,6 +279,11 @@ Map::Map(HApiContainer api, int mapId, const std::string &mapName) {
     m_sceneMode = SceneMode::smMap;
     createAdtFreeLamdas();
 
+    MapRecord mapRecord;
+    api->databaseHandler->getMapById(mapId, mapRecord);
+    useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+
+
     std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
     std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
     std::string wdtLightFileName = "world/maps/"+mapName+"/"+mapName+"_lgt.wdt";
@@ -1347,6 +1352,7 @@ void Map::checkADTCulling(int i, int j,
             if (mapFileIds.rootADT > 0) {
                 adtObject = adtObjectFactory.createObject(m_api, i, j,
                                                         m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                        useWeightedBlend,
                                                         m_wdtfile);
             } else {
                 return;
@@ -1355,7 +1361,9 @@ void Map::checkADTCulling(int i, int j,
             std::string adtFileTemplate =
                 "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
                 std::to_string(j);
-            adtObject = adtObjectFactory.createObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+            adtObject = adtObjectFactory.createObject(m_api, adtFileTemplate, mapName, i, j,
+                                                      useWeightedBlend,
+                                                      m_wdtfile);
         }
 
         adtObject->setMapApi(this);

@@ -69,7 +69,7 @@ void main() {
     vec4 heightOffset = adtMeshWideVSPS.uHeightOffset;
 
     vec4 final;
-    if (adtMeshWideVSPS.uUseHeightMixFormula.r > 0) {
+    if (adtMeshWideVSPS.uUseHeightMixFormula_useWeightedBlend.r > 0) {
         calcADTHeightFragMaterial(
             tcLayer0, tcLayer1, tcLayer2, tcLayer3,
             s_LayerTextures[nonuniformEXT(txLayer0)], s_LayerTextures[nonuniformEXT(txLayer1)],
@@ -88,6 +88,7 @@ void main() {
             s_LayerTextures[nonuniformEXT(txLayer2)], s_LayerTextures[nonuniformEXT(txLayer3)],
             vAlphaCoords,
             s_AlphaTextures[nonuniformEXT(adtInstanceData.meshIndexVSPS_meshIndexPS_AlphaTextureInd.z)],
+            adtMeshWideVSPS.uUseHeightMixFormula_useWeightedBlend.g > 0,
             final
         );
     }
@@ -98,7 +99,7 @@ void main() {
 
 #ifndef DEFERRED
 
-    vec3 accumLight = vVertexLighting.rgb;
+    vec3 accumLight = vec3(0.0);//vVertexLighting.rgb;
     float ao = 0.0;
     {
         vec2 screenUV = (gl_FragCoord.xy / scene.uSceneSize_DisableLightBuffer.xy);

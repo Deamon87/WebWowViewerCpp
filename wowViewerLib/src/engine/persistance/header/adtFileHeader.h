@@ -127,18 +127,18 @@ struct SMChunk
 {
     struct
     {
-        uint32_t has_mcsh : 1;
-        uint32_t impass : 1;
-        uint32_t lq_river : 1;
-        uint32_t lq_ocean : 1;
-        uint32_t lq_magma : 1;
-        uint32_t lq_slime : 1;
-        uint32_t has_mccv : 1;
-        uint32_t unknown_0x80 : 1;
-        uint32_t unused1: 7;                                         // not set in 6.2.0.20338
-        uint32_t do_not_fix_alpha_map : 1;                    // "fix" alpha maps in MCAL (4 bit alpha maps are 63*63 instead of 64*64).
+        uint32_t has_mcsh : 1; //0x1
+        uint32_t impass : 1;   //0x2
+        uint32_t lq_river : 1; //0x4
+        uint32_t lq_ocean : 1; //0x8
+        uint32_t lq_magma : 1; //0x10
+        uint32_t lq_slime : 1; //0x20
+        uint32_t has_mccv : 1; //0x40
+        uint32_t unknown_0x80 : 1; //0x80
+        uint32_t unused1: 7;       //0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000, 0x4000,                                    // not set in 6.2.0.20338
+        uint32_t do_not_fix_alpha_map : 1; //0x8000                   // "fix" alpha maps in MCAL (4 bit alpha maps are 63*63 instead of 64*64).
         // Note that this also means that it *has* to be 4 bit alpha maps, otherwise UnpackAlphaShadowBits will assert.
-        uint32_t high_res_holes : 1;                          // Since ~5.3 WoW uses full 64-bit to store holes for each tile if this flag is set.
+        uint32_t high_res_holes : 1;       //0x10000                  // Since ~5.3 WoW uses full 64-bit to store holes for each tile if this flag is set.
         uint32_t unused2: 15;                                        // not set in 6.2.0.20338
     } flags;
 
@@ -250,7 +250,7 @@ struct SMNormal {
 struct SMLayer
 {
     uint32_t textureId;
-    struct
+    struct MCAL_FLAG
     {
         uint32_t animation_rotation : 3;        // each tick is 45°
         uint32_t animation_speed : 3;

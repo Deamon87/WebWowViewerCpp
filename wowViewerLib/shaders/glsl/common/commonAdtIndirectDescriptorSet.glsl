@@ -3,7 +3,7 @@
 
 struct AdtMeshWideVSPS {
     vec4 uPos;
-    ivec4 uUseHeightMixFormula;
+    ivec4 uUseHeightMixFormula_useWeightedBlend;
     vec4 uHeightScale;
     vec4 uHeightOffset;
 };

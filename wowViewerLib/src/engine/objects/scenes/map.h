@@ -54,6 +54,7 @@ protected:
     HWdtFile m_wdtfile = nullptr;
     std::shared_ptr<WmoObject> wmoMap = nullptr;
 
+    bool useWeightedBlend = false;
 
     std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
 
@@ -135,13 +136,17 @@ protected:
     explicit Map() {
     }
 public:
-    explicit Map(HApiContainer api, int mapId, const std::string &mapName);;
+    explicit Map(HApiContainer api, int mapId, const std::string &mapName);
 
     explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; mapName = "";
         m_sceneMode = SceneMode::smMap;
+
+        MapRecord mapRecord;
+        api->databaseHandler->getMapById(mapId, mapRecord);
+        useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
 
         createAdtFreeLamdas();
 
@@ -167,7 +172,7 @@ public:
 
         m_lockedMap = true;
         std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-        auto adtObject = adtObjectFactory.createObject(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+        auto adtObject = adtObjectFactory.createObject(m_api, adtFileTemplate, mapName, i, j, false, m_wdtfile);
 
         adtObject->setMapApi(this);
         this->mapTiles[i][j] = adtObject;

@@ -35,7 +35,8 @@ struct mcnkStruct_t {
 
 struct MCAL_Offsets_Runtime {
     int uncompressedIndex = 0;
-    std::array<uint8_t*, 3> alphaOffsets = {nullptr,nullptr,nullptr};
+    std::array<uint8_t*, 4> alphaPtrs = {nullptr,nullptr,nullptr, nullptr};
+    std::array<SMLayer::MCAL_FLAG, 4> alphaFlags = {0,0,0,0};
 };
 
 class AdtFile: public PersistentFile {

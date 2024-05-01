@@ -94,17 +94,28 @@ void calcADTOrigFragMaterial(
     in sampler2D t_Layer0, in sampler2D t_Layer1, in sampler2D t_Layer2, in sampler2D t_Layer3,
     in vec2 tcAlpha,
     in sampler2D t_alphaTex,
-
+    in bool useWeightedBlend,
     out vec4 matDiffuse
 ) {
-    vec3 alphaBlend = texture( t_alphaTex, tcAlpha).rgb;
+    vec3 alphaBlend = texture( t_alphaTex, tcAlpha).gba;
 
     vec4 tex1 = texture(t_Layer0, tcLayer0).rgba;
     vec4 tex2 = texture(t_Layer1, tcLayer1).rgba;
     vec4 tex3 = texture(t_Layer2, tcLayer2).rgba;
-    vec4 tex4 = texture(t_Layer2, tcLayer3).rgba;
+    vec4 tex4 = texture(t_Layer3, tcLayer3).rgba;
 
-    matDiffuse = mix(mix(mix(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b);
+    if (!useWeightedBlend) {
+        matDiffuse = mix(mix(mix(tex1, tex2, alphaBlend.r), tex3, alphaBlend.g), tex4, alphaBlend.b);
+    } else {
+        float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
+        vec4 weights = vec4(minusAlphaBlendSum, alphaBlend);
+
+        matDiffuse =
+        (tex1 * weights.r) +
+        (tex2 * weights.g) +
+        (tex3 * weights.b) +
+        (tex4 * weights.a);
+    }
 }
 
 void calcADTHeightFragMaterial(
@@ -118,7 +129,7 @@ void calcADTHeightFragMaterial(
 
     out vec4 matDiffuse
 ) {
-    vec3 alphaBlend = texture( t_alphaTex, tcAlpha).rgb;
+    vec3 alphaBlend = texture( t_alphaTex, tcAlpha).gba;
 
     float minusAlphaBlendSum = (1.0 - clamp(dot(alphaBlend, vec3(1.0)), 0.0, 1.0));
     vec4 weightsVector = vec4(minusAlphaBlendSum, alphaBlend);
