@@ -328,7 +328,7 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 double currentFrame;
 double lastFrame;
 
-int main(){
+int main(int argc, char *argv[]) {
 //    std::ofstream out("log.txt");
 //    std::streambuf *coutbuf = std::cout.rdbuf(); //save old buf
 //    std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
@@ -355,8 +355,12 @@ int main(){
 #endif
 
 //    std::string rendererName = "ogl2";
-//      std::string rendererName = "ogl3";
-    std::string rendererName = "vulkan";
+      std::string rendererName = "ogl3";
+//    std::string rendererName = "vulkan";
+
+    if (argc > 1 && std::string(argv[1]) == "-vulkan") {
+        rendererName = "vulkan";
+    }
 
     //FOR OGL
 
