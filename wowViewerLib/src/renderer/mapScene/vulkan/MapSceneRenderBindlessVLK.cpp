@@ -362,8 +362,8 @@ void MapSceneRenderBindlessVLK::createWaterGlobalMaterialData() {
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = true;
     pipelineTemplate.depthCulling = true;
-    pipelineTemplate.backFaceCulling = true;
-    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
     //Create global water descriptor for bindless textures
     g_waterMaterial = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, waterBindlessShaderConfig, {{0, sceneWideDS}})
@@ -1097,7 +1097,7 @@ private:
 
     framebased::vector<DrawCommand> m2DrawVec;
     framebased::vector<DrawCommand> wmoDrawVec;
-    MeshMap waterMeshMap;
+    framebased::vector<DrawCommand> waterMeshVec;
     framebased::vector<DrawCommand> adtDrawVec;
     framebased::vector<HGMesh> commonMeshes;
 
@@ -1119,7 +1119,9 @@ private:
     }
 
     inline static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
-        const auto &meshVlk = (GMeshVLK*) mesh.get();
+        auto meshId = mesh->getObjectId();
+        const auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
+//        const auto &meshVlk = (GMeshVLK*) mesh.get();
         auto const &pipeline = meshVlk->material()->getPipeline();
 
         auto &vec = meshMap[pipeline];
@@ -1153,7 +1155,7 @@ public:
         addDrawCommand(wmoDrawVec, mesh);
     } ;
     void addWaterMesh(const HGMesh &mesh) override {
-        fillMapWithMesh(waterMeshMap, mesh);
+        addDrawCommand(waterMeshVec, mesh);
     } ;
     void addADTMesh(const HGMesh &mesh) override {
         addDrawCommand(adtDrawVec, mesh);
@@ -1174,7 +1176,7 @@ public:
         wmoDrawVec.insert(wmoDrawVec.end(), l_collector.wmoDrawVec.begin(), l_collector.wmoDrawVec.end());
         adtDrawVec.insert(adtDrawVec.end(), l_collector.adtDrawVec.begin(), l_collector.adtDrawVec.end());
         commonMeshes.insert(commonMeshes.end(), l_collector.commonMeshes.begin(), l_collector.commonMeshes.end());
-        waterMeshMap.insert(l_collector.waterMeshMap.begin(), l_collector.waterMeshMap.end());
+        waterMeshVec.insert(waterMeshVec.end(), l_collector.waterMeshVec.begin(), l_collector.waterMeshVec.end());
     }
 
     void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
@@ -1250,18 +1252,17 @@ public:
         cmdBuf.setDefaultScissors();
         cmdBuf.setViewPort(viewPortType);
 
-        if (!waterMeshMap.empty())
+        if (!waterMeshVec.empty())
         {
             //4. Render water
             cmdBuf.bindVertexBindings(m_renderer.getDefaultWaterVao());
-            cmdBuf.bindMaterial(m_renderer.getGlobalWaterMaterial());
+            auto const &gWaterMat = m_renderer.getGlobalWaterMaterial();
 
-            for (auto const &record : waterMeshMap) {
-                cmdBuf.bindPipeline(record.first);
+            cmdBuf.bindMaterial(gWaterMat);
+            cmdBuf.bindPipeline(gWaterMat->getPipeline());
 
-                for (auto const & drawCmd : record.second) {
-                    cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
-                }
+            for (auto const &drawCmd : waterMeshVec) {
+                cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
             }
         }
     }

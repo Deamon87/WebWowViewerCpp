@@ -19,8 +19,6 @@ public:
 
     static void updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
 
-    static void fillLights(const M2Object &m2Object, M2::modelWideBlockPS &modelBlockPS);
-
     static mathfu::mat4 getTextureMatrix(const M2Object &m2Object, int textureMatIndex,  M2Data *m2Data);
 
     static void getTextureMatrixIndexes(const M2Object &m2Object, int batchIndex, M2Data *m2Data,

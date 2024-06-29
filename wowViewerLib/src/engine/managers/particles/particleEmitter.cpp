@@ -474,8 +474,6 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
     int i = 0;
 
 
-    std::list<int> listForDeletion;
-
     int numThreads = 10;
     #pragma omp parallel for schedule(dynamic, 200) default(none) shared(delta, forces) num_threads(numThreads)
     for (int i = 0; i < this->particles.size(); i++) {
@@ -608,11 +606,7 @@ void ParticleEmitter::KillParticle(int index) {
     particles.erase(particles.begin()+index);
 }
 CParticle2& ParticleEmitter::BirthParticle() {
-    CParticle2 p1;
-    particles.push_back(p1);
-    
-
-    CParticle2 &p = particles[particles.size() - 1];
+    CParticle2 &p = particles.emplace_back();
     return p;
 }
 
@@ -673,7 +667,7 @@ void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRendere
 }
 
 int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
-    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedHeadCell &  this->textureColMask);
+    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedHeadCell & this->textureColMask);
     float coefXf;
     if (coefXInt < 0) {
         coefXf = (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1)) + (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1));
@@ -1073,27 +1067,27 @@ ParticleEmitter::BuildQuadT3(
     mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
-
-        record.particle[i].position = ( inverseLookAt * mathfu::vec4(
+        auto &particleData = record.particle[i];
+        particleData.position = ( inverseLookAt * mathfu::vec4(
                 m0 * vxs[i] + m1 * vys[i] + viewPos,
                 1.0
         )).xyz();
-        record.particle[i].color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+        particleData.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
 
-        record.particle[i].textCoord0 =
+        particleData.textCoord0 =
             mathfu::vec2(txs[i] * this->texScaleX + texStartX,
                          tys[i] * this->texScaleY + texStartY);
 
-        record.particle[i].textCoord1 =
+        particleData.textCoord1 =
             mathfu::vec2(
                 txs[i] * paramXTransform(this->m_data->old.multiTextureParamX[0]) + texPos[0].x,
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[0]) + texPos[0].y);
-        record.particle[i].textCoord2 =
+        particleData.textCoord2 =
             mathfu::vec2(
                 txs[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].x,
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].y);
 
-        record.particle[i].alphaCutoff = alphaCutoff;
+        particleData.alphaCutoff = alphaCutoff;
     }
 
 }
@@ -1124,9 +1118,20 @@ void ParticleEmitter::updateBuffers() {
 
     if (!currentFrame.active)
         return;
+//
+//    if (szVertexCnt * sizeof(ParticleBuffStructQuad) > currentFrame.m_bufferVBO->getSize()) {
+//        std::cout << "Buffer miss match " <<
+//            szVertexCnt * sizeof(ParticleBuffStructQuad) <<
+//            " < " <<
+//            currentFrame.m_bufferVBO->getSize()
+//            << std::endl;
+//    }
 
 //    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
     currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
+
+
+
 
     currentFrame.m_mesh->setEnd(szVertexCnt * 6);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);

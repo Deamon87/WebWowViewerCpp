@@ -6,17 +6,8 @@
 #include <iomanip>
 #include <unordered_set>
 #include "m2Object.h"
-#include "../../algorithms/mathHelper.h"
-#include "../../managers/animationManager.h"
 #include "mathfu/matrix.h"
-#include "../../persistance/header/M2FileHeader.h"
-#include "../../../gapi/UniformBufferStructures.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
-
-#include "../../../gapi/interface/IOcclusionQuery.h"
-#include "../../../gapi/interface/IDevice.h"
-#include "../../../gapi/interface/meshes/IM2Mesh.h"
-#include "../../../gapi/interface/materials/IMaterial.h"
 
 //Shader stuff
 enum class M2PixelShader : int {
@@ -730,8 +721,10 @@ uint8_t miniLogic(const CImVector *a2) {
 }
 
 void M2Object::setDiffuseColor(CImVector& value, float intensity) {
+    if (ImVectorToVec4(value) * intensity != this->m_localDiffuseColorV) {
+        m_modelWideDataChanged = true;
+    }
     this->m_localDiffuseColor = value;
-
     this->m_localDiffuseColorV = ImVectorToVec4(value) * intensity;
 
     if (value.a != 255) {
@@ -919,7 +912,6 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     this->initParticleEmitters(sceneRenderer);
     this->initRibbonEmitters(sceneRenderer);
 
-
     this->status->m_loaded = true;
     this->status->m_geomLoaded = true;
     this->status->m_loading = false;
@@ -932,19 +924,19 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     return;
 }
 
+static const mathfu::mat4 particleCoordinatesFix =
+    mathfu::mat4(
+        0,1,0,0,
+        -1,0,0,0,
+        0,0,1,0,
+        0,0,0,1
+    );
+
 //deltaTime = miliseconds
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
     if (!this->status->m_loaded) return;
 
     m_postLoadEvents.clear();
-
-    static const mathfu::mat4 particleCoordinatesFix =
-        mathfu::mat4(
-            0,1,0,0,
-            -1,0,0,0,
-            0,0,1,0,
-            0,0,0,1
-        );
 
     if (m_boolSkybox && m_overrideSkyModelMat) {
         m_placementMatrix.GetColumn(3) = mathfu::vec4(cameraPos, 1.0);
@@ -989,7 +981,6 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
                                                              mathfu::vec4(mathfu::vec3(bounds.extent.max), 1.0f));
 
         *this->aabb = worldAABB;
-
     }
 
 
@@ -1077,7 +1068,7 @@ void M2Object::fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sc
     }
 }
 
-void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
+void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
     if (!this->status->m_loaded)  return;
 
 //    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
@@ -1094,14 +1085,14 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_placementMatrix->save();
         m_placementMatrixChanged = false;
     }
-    if (bonesMatrices.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)]) {
+    if (!bonesMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)]) {
         auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
         m_modelWideDataBuff->m_bonesData->save();
     }
-    if (subMeshColors.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)]) {
+    if (!subMeshColors.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)]) {
         auto &m2Colors = m_modelWideDataBuff->m_colors->getObject();
         int m2ColorsCnt = (int) std::min(subMeshColors.size(), (size_t) MAX_M2COLORS_NUM);
 
@@ -1109,7 +1100,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_colors->save();
     }
 
-    if (transparencies.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::transparencies)]) {
+    if (!transparencies.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::transparencies)]) {
         auto &textureWeights = m_modelWideDataBuff->m_textureWeights->getObject();
         int textureWeightsCnt = (int) std::min(transparencies.size(), (size_t) MAX_TEXTURE_WEIGHT_NUM);
 
@@ -1117,7 +1108,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_textureWeights->save();
     }
 
-    if (textAnimMatrices.size() > 0 && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::textAnimMatrices)]) {
+    if (!textAnimMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::textAnimMatrices)]) {
         auto &textureMatrices = m_modelWideDataBuff->m_textureMatrices->getObject();
         int textureMatricesCnt = (int) std::min(textAnimMatrices.size(), (size_t) MAX_TEXTURE_MATRIX_NUM);
 
@@ -1125,6 +1116,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
         m_modelWideDataBuff->m_textureMatrices->save();
     }
 
+    if (m_modelWideDataChanged)
     {
         auto &modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
@@ -1148,13 +1140,18 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
                 0,0,0));
 
         //Lights
-        M2MeshBufferUpdater::fillLights(*this, modelFragmentData);
+
+        bool BCLoginScreenHack = m_api->getConfig()->BCLightHack;
+        modelFragmentData.bcHack = BCLoginScreenHack ? 1 : 0;
+
         m_modelWideDataBuff->m_modelFragmentData->save();
+        m_modelWideDataChanged = false;
     }
 
     //Manually update vertices for dynamics
     updateDynamicMeshes();
-
+}
+void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
@@ -2051,6 +2048,8 @@ void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) 
 }
 
 void M2Object::updateDynamicMeshes() {
+    if (dynamicMeshes.empty()) return;
+
     auto rootMatInverse = bonesMatrices[0].Inverse();
     auto frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 

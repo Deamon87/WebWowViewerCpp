@@ -566,11 +566,12 @@ void AdtObject::loadAlphaTextures() {
 
                             if (chunkMcalRuntime.uncompressedIndex) {
                                 _alpha[chunkMcalRuntime.uncompressedIndex] =
-                                    vec255 -
-                                    _alpha[0] -
-                                    _alpha[1] -
-                                    _alpha[2] -
-                                    _alpha[3];
+                                    _mm_sub_epi8(_mm_sub_epi8(
+                                        _mm_sub_epi8(
+                                            _mm_sub_epi8(vec255,_alpha[0]),
+                                            _alpha[1]),
+                                        _alpha[2]),
+                                    _alpha[3]);
                             }
 
                             __m128i a_b_low = _mm_unpacklo_epi8(_alpha[0], _alpha[1]); //a_1 b_1 a_2 b_2 a_3 b_3 a_4 b_4 a_5 b_5 a_6 b_6 a_7 b_7
@@ -605,21 +606,20 @@ void AdtObject::loadAlphaTextures() {
 
 
 
-void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
     if (m_freeStrategy != nullptr) m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
 
     if (!m_loaded) return;
 
     size_t meshCount = adtMeshes.size();
-    opaqueMeshes.reserve(opaqueMeshes.size() + adtMeshes.size());
     transparentMeshes.reserve(transparentMeshes.size() + m_liquidInstancesPerChunk.size());
     for (int i = 0; i < meshCount; i++) {
         if (adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
-            opaqueMeshes.emplace_back() = adtMeshes[i];
+            opaqueMeshCollector.addADTMesh(adtMeshes[i]);
         }
         if (adtRes.drawWaterChunk[i]) {
             for (auto const &liquidInstance : m_liquidInstancesPerChunk[i]) {
-                liquidInstance->collectMeshes(transparentMeshes);
+                liquidInstance->collectMeshes(opaqueMeshCollector);
             }
         }
     }

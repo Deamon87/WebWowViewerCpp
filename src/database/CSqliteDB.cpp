@@ -51,7 +51,7 @@ const std::string getMapByIDSQL =
         "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m where m.ID = ?";
 
 const std::string getMapByIDSQL_classic =
-        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m";
+        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m where m.ID = ?";
 
 const std::string getWmoAreaAreaNameSQL = R"===(
         select wat.AreaName_lang as wmoAreaName, at.AreaName_lang as areaName, at.ID as ID, at.ParentAreaID as ParentAreaID, at.Ambient_multiplier as Ambient_multiplier from WMOAreaTable wat

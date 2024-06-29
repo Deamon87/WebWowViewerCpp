@@ -62,7 +62,7 @@ namespace EntityMemoryPool {
 
 template<uint16_t MemoryBlockSize, typename ObjIdType, typename MainClass, typename... Types>
 class EntityFactory {
-
+    static_assert(sizeof(ObjIdType) == sizeof(uintptr_t));
 
 
     static constexpr int ComponentAmount = sizeof...(Types);
@@ -73,7 +73,7 @@ class EntityFactory {
     struct EttMemoryPoolGetter
     {
         using return_type = typename EttMemoryPoolGetter<I-1, Args...>::return_type;
-        static const return_type &get(const EntityMemoryPool::EttMemoryPool<MemoryBlockSize, Head, Args...> &t)
+        static inline const return_type &get(const EntityMemoryPool::EttMemoryPool<MemoryBlockSize, Head, Args...> &t)
         {
             return EttMemoryPoolGetter<I-1, Args...>::get(t);
         }
@@ -82,7 +82,7 @@ class EntityFactory {
     struct EttMemoryPoolGetter<0, Head, Args...>
     {
         using return_type = EntityMemoryPool::EttMemoryPool<MemoryBlockSize, Head, Args...>;
-        static const return_type &get(const EntityMemoryPool::EttMemoryPool<MemoryBlockSize, Head, Args...> &t)
+        static const inline return_type &get(const EntityMemoryPool::EttMemoryPool<MemoryBlockSize, Head, Args...> &t)
         {
             return t;
         }
@@ -91,7 +91,7 @@ class EntityFactory {
     EntityMemoryPool::EttMemoryPool<MemoryBlockSize, MainClass, Types...> m_combinedMemoryPool;
 
     template<int I>
-    const typename EttMemoryPoolGetter<I, MainClass, Types...>::return_type &
+    const inline typename EttMemoryPoolGetter<I, MainClass, Types...>::return_type &
     getMemoryPool()
     {
         return EttMemoryPoolGetter<I, MainClass, Types...>::get(m_combinedMemoryPool);
@@ -103,13 +103,14 @@ public:
         m_combinedMemoryPool.expand();
     };
 
-
+private:
     template<int I>
-    typename EttMemoryPoolGetter<I, MainClass, Types...>::return_type::value_type *
+    inline typename EttMemoryPoolGetter<I, MainClass, Types...>::return_type::value_type *
     getPtrFromOffset(int offset)
     {
         return getMemoryPool<I>().getPtrFromOffset(offset);
     }
+public:
 
 //    inline T * getPtrFromOffset(int offset) {
 //        auto blockIndex = offset / BlockSize;
@@ -146,7 +147,7 @@ public:
         });
     }
     template<int I>
-    typename EttMemoryPoolGetter<I, MainClass, Types...>::return_type::value_type *
+    inline typename EttMemoryPoolGetter<I, MainClass, Types...>::return_type::value_type *
     getObjectById(ObjIdType id) {
         int index = (int)id;
         if ((index < 0))
@@ -155,6 +156,7 @@ public:
         return getPtrFromOffset<I>((int)id);
     }
 
+private:
     void deallocate(const OffsetAllocator::Allocation &alloc) {
         std::unique_lock<std::mutex> lock(m_mutex);
 

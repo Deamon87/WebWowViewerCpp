@@ -1431,6 +1431,13 @@ void FrontendUI::showSettingsDialog() {
                 m_api->getConfig()->renderM2 = renderM2;
             }
 
+            {
+                bool renderParticles = m_api->getConfig()->maxParticle >= 0;
+                if (ImGui::Checkbox("Render Particles", &renderParticles)) {
+                    m_api->getConfig()->maxParticle = renderParticles ? 9999 : -1;
+                }
+            }
+
             bool renderWMO = m_api->getConfig()->renderWMO;
             if (ImGui::Checkbox("Render WMO", &renderWMO)) {
                 m_api->getConfig()->renderWMO = renderWMO;

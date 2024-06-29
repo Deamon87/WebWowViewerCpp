@@ -93,31 +93,6 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
     hmesh->setSortDistance(value);
 }
 
-void M2MeshBufferUpdater::fillLights(const M2Object &m2Object, M2::modelWideBlockPS &modelBlockPS) {
-    bool BCLoginScreenHack = m2Object.m_api->getConfig()->BCLightHack;
-//    int lightCount = (int) std::min(m2Object.lights.size(), (size_t) 4);
-//    for (int j = 0; j < lightCount; j++) {
-//        std::string uniformName;
-//        mathfu::vec4 attenVec;
-//
-//        attenVec = mathfu::vec4(m2Object.lights[j].attenuation_start, m2Object.lights[j].diffuse_intensity, m2Object.lights[j].attenuation_end, m2Object.lights.size());
-//
-//
-//        modelBlockPS.pc_lights[j].attenuation = attenVec;//;lights[i].diffuse_color);
-//
-//        if (BCLoginScreenHack) {
-//            modelBlockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color ;
-//        } else {
-//            modelBlockPS.pc_lights[j].color = m2Object.lights[j].diffuse_color * m2Object.lights[j].diffuse_intensity;
-//        }
-//
-////        mathfu::vec4 viewPos = modelView * m2Object.lights[j].position;
-//        modelBlockPS.pc_lights[j].position = m2Object.lights[j].position;
-//    }
-//    modelBlockPS.LightCount = lightCount;
-    modelBlockPS.bcHack = BCLoginScreenHack ? 1 : 0;
-}
-
 mathfu::mat4 M2MeshBufferUpdater::getTextureMatrix(const M2Object &m2Object, int textureMatIndex,  M2Data *m2Data) {
     if (textureMatIndex < 0)
         return mathfu::mat4::Identity();

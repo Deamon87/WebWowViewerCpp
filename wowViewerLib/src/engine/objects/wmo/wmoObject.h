@@ -25,7 +25,7 @@ class WmoGroupObject;
 #include "../SceneObjectWithID.h"
 #include "../lights/CWmoNewLight.h"
 
-enum class WMOObjId : int;
+enum class WMOObjId : uintptr_t;
 constexpr WMOObjId emptyWMO = static_cast<const WMOObjId>(0xFFFFFFF);
 
 class WmoObject : public IWmoApi, public ObjectWithId<WMOObjId>{

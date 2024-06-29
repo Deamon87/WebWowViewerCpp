@@ -29,7 +29,7 @@ class M2ObjectListContainer;
 #include "../scenes/EntityActorsFactory.h"
 
 
-enum class M2ObjId : int;
+enum class M2ObjId : uintptr_t;
 
 struct M2LoadedStatus {
     bool m_loading = false;
@@ -80,6 +80,7 @@ private:
 private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
     bool m_placementMatrixChanged = false;
+    bool m_modelWideDataChanged = false;
     mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
     mathfu::vec3 m_localPosition;
@@ -109,6 +110,7 @@ private:
 
     float m_alpha = 1.0f;
 
+    bool m_animationRequired = false;
     bool animationOverrideActive = false;
     float animationOverridePercent = 0;
 
@@ -260,9 +262,11 @@ public:
     bool setUseLocalLighting(bool value) {
         if (m_useLocalDiffuseColor == -1) {
             m_useLocalDiffuseColor = value ? 1 : 0;
+            m_modelWideDataChanged = true;
         }
         if (value && m_useLocalDiffuseColor == 0) {
             m_useLocalDiffuseColor = 1;
+            m_modelWideDataChanged = true;
         }
 
         return m_useLocalDiffuseColor == 1;
@@ -279,6 +283,7 @@ public:
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void collectLights(std::vector<LocalLight> &pointLights);
     void fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
+    void uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
     void drawDebugLight();
@@ -296,8 +301,11 @@ public:
 
     mathfu::vec4 getM2SceneAmbientLight();
     void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
-        m_setAmbientColor = override;
-        m_ambientColorOverride = ambientColor;
+        if (m_setAmbientColor != override && m_ambientColorOverride != ambientColor) {
+            m_setAmbientColor = override;
+            m_ambientColorOverride = ambientColor;
+            m_modelWideDataChanged = true;
+        }
     }
 
     void drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes,  int renderOrder);
@@ -332,9 +340,16 @@ inline const CAaBox &retrieveAABB<>(const std::shared_ptr<M2Object> &object) {
     return object->getAABB();
 }
 
+//TODO: In retrieveAABB, AABB can be null
+static const CAaBox nonexitsting = CAaBox(
+    mathfu::vec3_packed(mathfu::vec3(999999, 999999, 999999)),
+    mathfu::vec3_packed(mathfu::vec3(-999999, -999999, -999999))
+);
+
 template<>
 inline const CAaBox &retrieveAABB<>(const M2ObjId &objectId) {
-    return *m2Factory.getObjectById<1>(objectId);
+    auto * ptr = m2Factory.getObjectById<1>(objectId);
+    return ptr ? *ptr : nonexitsting;
 }
 
 

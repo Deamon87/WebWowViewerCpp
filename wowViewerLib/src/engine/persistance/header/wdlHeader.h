@@ -53,6 +53,18 @@ struct mssc_t
     uint32_t conditionValue;
 };
 
+struct msld_t
+{
+  uint32_t unk_0;
+  uint32_t unk_1;
+  uint32_t unk_2;
+  uint32_t unk_3;
+  uint32_t timeStart0;
+  uint32_t timeStart1;
+  uint32_t timeEnd0;
+  uint32_t timeEnd1;
+};
+
 
 
 #endif //AWEBWOWVIEWERCPP_WDLHEADER_H

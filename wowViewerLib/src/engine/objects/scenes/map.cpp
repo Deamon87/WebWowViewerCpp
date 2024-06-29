@@ -522,15 +522,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
                 ZoneScopedN("collect m2 from groups");
                 exteriorView->addM2FromGroups(frustumData, cameraPos);
             }
-
-            {
-                ZoneScopedN("adt mesh collect");
-                for (auto &adtRes: mapRenderPlan->adtArray) {
-                    adtRes.adtObject->collectMeshes(adtRes, exteriorView->m_adtOpaqueMeshes,
-                                                     exteriorView->liquidMeshes,
-                                                     exteriorView->renderOrder);
-                }
-            }
             {
                 ZoneScopedN("m2AndWMOArr merge");
                 mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);
@@ -1532,22 +1523,23 @@ void Map::update(const HMapRenderPlan &renderPlan) {
             arena.execute([&] {
                 tbb::affinity_partitioner ap;
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-                                  [&](tbb::blocked_range<size_t> r) {
-                                      for (size_t i = r.begin(); i != r.end(); ++i) {
-                                          auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
-                                          if (m2Object == nullptr) continue;
-                                          m2Object->update(deltaTime, cameraVec3, lookAtMat);\
+                    [&](tbb::blocked_range<size_t> r) {
+                        std::vector<LocalLight> localLights;
 
-                                          std::vector<LocalLight> localLights;
-                                          m2Object->collectLights(localLights);
-                                          if (!localLights.empty()) {
-                                              std::unique_lock<std::mutex> lock(fillLights);
-                                              renderPlan->pointLights.insert(
-                                                  renderPlan->pointLights.end(),
-                                                  localLights.begin(),localLights.end());
-                                          }
-                                      }
-                                  }, ap);
+                        for (size_t i = r.begin(); i != r.end(); ++i) {
+                            auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
+                            if (m2Object == nullptr) continue;
+                            m2Object->update(deltaTime, cameraVec3, lookAtMat);\
+
+                            m2Object->collectLights(localLights);
+                        }
+                        if (!localLights.empty()) {
+                            std::unique_lock<std::mutex> lock(fillLights);
+                            renderPlan->pointLights.insert(
+                                renderPlan->pointLights.end(),
+                                localLights.begin(),localLights.end());
+                        }
+                    }, ap);
             });
         }
 
@@ -1675,37 +1667,60 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         if (granSize == 0) granSize = m2ToDraw.size();
 
         //Can't be paralleled?
-        auto &drawnM2s = renderPlan->m2Array.getDrawn();
-        for (auto &m2ObjectId: drawnM2s) {
-            auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
-            if (m2Object != nullptr) {
-                m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
+        {
+            ZoneScopedN("fitParticleAndRibbonBuffersToSize");
+            auto &drawnM2s = renderPlan->m2Array.getDrawn();
+            for (auto &m2ObjectId: drawnM2s) {
+                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                if (m2Object != nullptr) {
+                    m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
+                }
             }
         }
 
+        auto updateLambda = [&](const std::function<void(M2Object *)> &callback) {
+            if (granSize > 0) {
+                auto l_device = m_api->hDevice;
+                auto oldProcessingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
+                auto processingFrame = oldProcessingFrame;
+                oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+                arena.execute([&] {
+                    tbb::affinity_partitioner ap;
+                    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                        [&](tbb::blocked_range<size_t> r) {
+                            l_device->setCurrentProcessingFrameNumber(processingFrame);
+                            for (size_t i = r.begin(); i != r.end(); ++i) {
+                                auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
+                                if (m2Object != nullptr) {
+                                    callback(m2Object);
+                                }
+                            }
+                        }, ap);
+                });
+                //Restore processing frame
+                l_device->setCurrentProcessingFrameNumber(oldProcessingFrame);
+            }
+        };
 
-        if (granSize > 0) {
-            auto l_device = m_api->hDevice;
-            auto oldProcessingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
-            auto processingFrame = oldProcessingFrame;
-            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
-            arena.execute([&] {
-                tbb::affinity_partitioner ap;
-                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-                                  [&](tbb::blocked_range<size_t> r) {
-                                      l_device->setCurrentProcessingFrameNumber(processingFrame);
-                                      for (size_t i = r.begin(); i != r.end(); ++i) {
-                                          auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
-                                          if (m2Object != nullptr) {
-                                              m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
-                                                                               renderPlan->frameDependentData);
-                                          }
-                                      }
-                                  }, ap);
+        {
+            ZoneScopedN("upload Model buffers");
+
+            updateLambda([&renderPlan](M2Object *m2Object) {
+                m2Object->uploadBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
             });
-            //Restore processing frame
-            l_device->setCurrentProcessingFrameNumber(oldProcessingFrame);
         }
+
+        {
+            ZoneScopedN("upload generators buffers");
+
+            updateLambda([&renderPlan](M2Object *m2Object) {
+                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            });
+        }
+
+
 
 //        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
 //            if (m2Object != nullptr) {

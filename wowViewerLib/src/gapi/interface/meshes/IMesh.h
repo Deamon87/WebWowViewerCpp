@@ -66,7 +66,8 @@ public:
     std::array<uint32_t, 2> scissorSize = {0,0};
 };
 
-enum class GMeshId : int;
+enum class GMeshId : uintptr_t;
+
 class IMesh : public ObjectWithId<GMeshId> {
     friend class IDevice;
 

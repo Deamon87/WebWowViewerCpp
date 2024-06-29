@@ -53,8 +53,6 @@ public:
 
     std::vector<PortalPointsFrame> portals;
 
-    framebased::vector<HGSortableMesh> liquidMeshes = {};
-
     virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
     virtual void collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights);
     void collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
@@ -73,8 +71,6 @@ public:
 };
 
 class ExteriorView : public GeneralView {
-public:
-	std::vector<HGMesh> m_adtOpaqueMeshes = {};
 public:
     void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) override;
 };

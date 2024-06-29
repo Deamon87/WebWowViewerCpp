@@ -60,27 +60,28 @@ void WdlObject::loadM2s() {
             for (int l = mssn_rec.mssoIndex; l < mssn_rec.mssoIndex+mssn_rec.mssoRecordsNum; l++) {
                 auto &msso_rec = m_wdlFile->m_msso[l];
 
+                uint64_t mssf_val = 0;
+                if (msso_rec.flags.unk_0x1) {
+                    mssf_val = m_wdlFile->m_mssf[msso_rec.mssf_index];
+                }
+
+                if (m_wdlFile->m_msli) {
+                    auto msliIndex = m_wdlFile->m_msli[l];
+                    if (msliIndex != -1) {
+                        auto &msld = m_wdlFile->m_msld[msliIndex];
+                        //std::cout << msld.timeEnd0 << " " << mssf_val;
+                    }
+                }
 
                 auto m2Object = m2Factory.createObject(m_api, false, false);
                 m2Object->setLoadParams(0, {}, {});
                 m2Object->setModelFileId(msso_rec.fileDataID);
-//            std::cout << "fileDataID = " << msso_rec.fileDataID << std::endl;
-//            std::cout << "translateVec.x = " << msso_rec.translateVec.x << std::endl;
-//            std::cout << "translateVec.y = " << msso_rec.translateVec.y << std::endl;
-//            std::cout << "translateVec.z = " << msso_rec.translateVec.z << std::endl;
-//            std::cout << "rotationInRads.x = " << msso_rec.rotationInRads.x << std::endl;
-//            std::cout << "rotationInRads.y = " << msso_rec.rotationInRads.y << std::endl;
-//            std::cout << "rotationInRads.z = " << msso_rec.rotationInRads.z << std::endl;
-//            std::cout << "scale = " << msso_rec.scale << std::endl;
 
                 constexpr float degreeToRad = M_PI/180.0f;
 
                 auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInDegree.z*degreeToRad);
                 rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInDegree.x*degreeToRad);
                 rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInDegree.y*degreeToRad);
-
-//            auto quat = mathfu::quat::FromMatrix(rotationMatrix);
-//            auto rotationMatrix1 = quat.ToMatrix4();
 
                 m2Object->createPlacementMatrix(
                     mathfu::vec3(msso_rec.translateVec.x, msso_rec.translateVec.y, msso_rec.translateVec.z),

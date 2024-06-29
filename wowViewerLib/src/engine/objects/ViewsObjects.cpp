@@ -12,18 +12,6 @@
 #include "../algorithms/mathHelper_culling.h"
 
 void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
-    if (renderADT) {
-        for (auto const &adtMesh : this->m_adtOpaqueMeshes ) {
-            opaqueMeshCollector.addADTMesh(adtMesh);
-        }
-    }
-
-    if (renderAdtLiquid) {
-        for (auto const &liquidMesh : this->liquidMeshes ) {
-            opaqueMeshCollector.addWaterMesh(liquidMesh);
-        }
-    }
-
     GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshCollector, transparentMeshes);
 }
 

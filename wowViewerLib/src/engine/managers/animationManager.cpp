@@ -741,11 +741,13 @@ void AnimationManager::update(
     std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
     std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters) {
 
-    auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
-    auto &bones = *boneMasterData->getSkelData()->m_m2CompBones;
+    auto skelData = boneMasterData->getSkelData();
+
+    auto &global_loops = *skelData->m_globalSequences;
+    auto &bones = *skelData->m_m2CompBones;
 
     {
-        auto sequences = *boneMasterData->getSkelData()->m_sequences;
+        auto sequences = *skelData->m_sequences;
         if (sequences.size <= 0) return;
     }
 
@@ -850,7 +852,7 @@ void AnimationManager::update(
         this->animationInfo.currentAnimation.repeatTimes--;
 
         if (this->animationInfo.nextSubAnimation.animationIndex > -1) {
-            M2Array<M2Sequence> * sequences = boneMasterData->getSkelData()->m_sequences;
+            M2Array<M2Sequence> * sequences = skelData->m_sequences;
             if (this->animationInfo.nextSubAnimation.animationFoundInParent) {
                 sequences = boneMasterData->getParentSkelData()->m_sequences;;
             }

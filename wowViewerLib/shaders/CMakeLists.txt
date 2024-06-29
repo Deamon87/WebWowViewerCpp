@@ -4,6 +4,7 @@ else()
     set(GLSL_TARGET_FOLDER ${CMAKE_BINARY_DIR})
 endif()
 
+message( Shader SPIRV_OPT_APP = ${SPIRV_OPT_APP})
 
 if (COMPILE_SHADER_WITH_DEBUG)
     set(SHADER_DEBUG_FLAG "-g")
@@ -140,7 +141,7 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs destDir destDirGL20 de
                 if(SPIRV_OPT_APP)
                     add_custom_command(
                             OUTPUT ${SPIRVOpt}
-                            COMMAND ${SPIRV_OPT_APP} -O -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                            COMMAND ${SPIRV_OPT_APP} -O -Os -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 

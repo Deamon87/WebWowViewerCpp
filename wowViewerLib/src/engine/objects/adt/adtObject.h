@@ -26,7 +26,7 @@ class M2Object;
 typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)> FreeStrategy;
 
 class AdtObject;
-enum class AdtObjectId : int;
+enum class AdtObjectId : uintptr_t;
 extern EntityFactory<50, AdtObjectId, AdtObject> adtObjectFactory;
 class AdtObject : public ObjectWithId<AdtObjectId> {
 public:
@@ -47,7 +47,7 @@ public:
 
     FileStatus getLoadedStatus();
 
-    void collectMeshes(ADTObjRenderRes &adtRes, std::vector<HGMesh> &opaqueMeshes, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(ADTObjRenderRes &adtRes, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
     void collectMeshesLod(std::vector<HGMesh> &renderedThisFrame);
 
     void update(animTime_t deltaTime);

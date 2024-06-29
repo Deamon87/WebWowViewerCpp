@@ -111,10 +111,10 @@ void calcADTOrigFragMaterial(
         vec4 weights = vec4(minusAlphaBlendSum, alphaBlend);
 
         matDiffuse =
-        (tex1 * weights.r) +
-        (tex2 * weights.g) +
-        (tex3 * weights.b) +
-        (tex4 * weights.a);
+            (tex1 * weights.r) +
+            (tex2 * weights.g) +
+            (tex3 * weights.b) +
+            (tex4 * weights.a);
     }
 }
 

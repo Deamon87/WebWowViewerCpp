@@ -53,6 +53,13 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
         if (exteriorView != nullptr) {
             ZoneScopedN("Collect Exterior");
             exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
+
+            {
+                ZoneScopedN("adt mesh collect");
+                for (auto &adtRes: renderPlan->adtArray) {
+                    adtRes.adtObject->collectMeshes(adtRes, opaqueMeshCollector, transparentMeshes);
+                }
+            }
         }
     }
 

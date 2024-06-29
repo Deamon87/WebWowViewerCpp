@@ -52,7 +52,8 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
                     chunkData.readValues(file.m_mssn, file.m_mssn_len);
                 }
             }
-        }, {
+        },
+        {
             'MSSC',
             {
                 [](WdlFile& file, ChunkData& chunkData){
@@ -61,6 +62,40 @@ chunkDef<WdlFile> WdlFile::wdlFileTable = {
                     file.m_mssc_len = chunkData.chunkLen / sizeof(mssc_t);
 
                     chunkData.readValues(file.m_mssc, file.m_mssc_len);
+                }
+            }
+        },
+        {
+            'MSLI',
+            {
+                [](WdlFile& file, ChunkData& chunkData){
+                    debuglog("Entered MSLI");
+
+                    file.m_msli_len = chunkData.chunkLen / sizeof(uint32_t);
+
+                    chunkData.readValues(file.m_msli, file.m_msli_len);
+                }
+            }
+        },
+        {
+            'MSLD',
+            {
+                [](WdlFile& file, ChunkData& chunkData){
+                    debuglog("Entered MSLD");
+
+                    file.m_msld_len = chunkData.chunkLen / sizeof(msld_t);
+
+                    chunkData.readValues(file.m_msld, file.m_msld_len);
+                }
+            }
+        },
+        {
+            'MSSF',
+            {
+                [](WdlFile& file, ChunkData& chunkData){
+                    debuglog("Entered MSSF");
+
+                    chunkData.readValues(file.m_mssf, chunkData.chunkLen/8);
                 }
             }
         }

@@ -13,7 +13,7 @@ class IMapApi;
 
 class LiquidInstance;
 
-enum class LiquidInstId : int;
+enum class LiquidInstId : uintptr_t;
 extern EntityFactory<1000, LiquidInstId, LiquidInstance> liquidInstanceFactory;
 
 class LiquidInstance : public ObjectWithId<LiquidInstId> {
