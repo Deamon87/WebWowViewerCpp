@@ -117,10 +117,12 @@ void GShaderPermutationVLK::createShaderLayout() {
             auto it = setLayout.uboSizesPerBinding.find(uboBinding.binding);
             if (it != std::end(setLayout.uboSizesPerBinding)) {
                 if (it->second != uboBinding.size) {
-                    std::cerr << "UBO sizes mismatch for set = " << uboBinding.set
-                              << " binding = " << uboBinding.binding
-                              << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
-                              << std::endl;
+
+//                    std::cerr << "UBO sizes mismatch for set = " << uboBinding.set
+//                              << " binding = " << uboBinding.binding
+//                              << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
+//                              << std::endl;
+                    makeMax(it->second, uboBinding.size);
                 }
             } else {
                 setLayout.uboSizesPerBinding[uboBinding.binding] = uboBinding.size;

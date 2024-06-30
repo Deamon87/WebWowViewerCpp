@@ -355,12 +355,12 @@ int main(int argc, char *argv[]) {
 #endif
 
 //    std::string rendererName = "ogl2";
-      std::string rendererName = "ogl3";
-//    std::string rendererName = "vulkan";
+//      std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
-    if (argc > 1 && std::string(argv[1]) == "-vulkan") {
-        rendererName = "vulkan";
-    }
+//    if (argc > 1 && std::string(argv[1]) == "-vulkan") {
+//        rendererName = "vulkan";
+//    }
 
     //FOR OGL
 

@@ -134,7 +134,7 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu EXCLUDE_FROM_ALL)
 if (LINK_TRACY)
     option( TRACY_ENABLE "" ON)
     option( TRACY_ON_DEMAND "" ON)
-    add_subdirectory (${PROJECT_SOURCE_DIR}/3rdparty/tracy)
+    add_subdirectory (${PROJECT_SOURCE_DIR}/3rdparty/tracy EXCLUDE_FROM_ALL)
 
     add_definitions(-DTRACY_ENABLE)
     set(TRACY_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/tracy/public/tracy")

@@ -4,6 +4,7 @@
 
 #include <cstring>
 #include <bitset>
+#include <emmintrin.h>
 #include "adtObject.h"
 #include <ShaderDefinitions.h>
 #include "../../algorithms/mathHelper.h"
@@ -562,7 +563,7 @@ void AdtObject::loadAlphaTextures() {
                             _alpha[0] = _mm_load_si128(alpha[0]++); //a_1 a_2 a_3 a_4 a_5 a_6 a_7 a_8 a_9 a_10 a_11 a_12 a_13 a_14 a_15 a_16
                             _alpha[1] = _mm_load_si128(alpha[1]++); //b_1 b_2 b_3 b_4 b_5 b_6 b_7 b_8 b_9 b_10 b_11 b_12 b_13 b_14 b_15 b_16
                             _alpha[2] = _mm_load_si128(alpha[2]++); //c_1 c_2 c_3 c_4 c_5 c_6 c_7 c_8 c_9 c_10 c_11 c_12 c_13 c_14 c_15 c_16
-                            _alpha[3]= _mm_load_si128(alpha[3]++); //d_1 d_2 d_3 d_4 d_5 d_6 d_7 d_8 d_9 d_10 d_11 d_12 d_13 d_14 d_15 d_16
+                            _alpha[3] = _mm_load_si128(alpha[3]++); //d_1 d_2 d_3 d_4 d_5 d_6 d_7 d_8 d_9 d_10 d_11 d_12 d_13 d_14 d_15 d_16
 
                             if (chunkMcalRuntime.uncompressedIndex) {
                                 _alpha[chunkMcalRuntime.uncompressedIndex] =
@@ -585,8 +586,6 @@ void AdtObject::loadAlphaTextures() {
 
                             __m128i a_b_c_d_high_low = _mm_unpacklo_epi16(a_b_high, c_d_high);//a_8 b_8 c_8 d_8 a_9 b_9 c_9 d_9...
                             __m128i a_b_c_d_high_high = _mm_unpackhi_epi16(a_b_high, c_d_high);//a_11 b_11 c_11 d_11 a_12 b_12 c_12 d_12...
-
-
 
                             _mm_store_si128(texturePtr++, a_b_c_d_low_low);
                             _mm_store_si128(texturePtr++, a_b_c_d_low_high);

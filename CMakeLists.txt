@@ -87,9 +87,8 @@ set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 
 if (TRUE)
 	set(ZLIB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/zlib ${CMAKE_BINARY_DIR}/3rdparty/zlib)
-	message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
+    message("CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 	message("CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE}")
-
 endif()
 
 
@@ -112,21 +111,25 @@ add_compile_definitions(HAVE_LIMITS_H)
 SET(CMAKE_USE_LIBSSH2 0)
 SET(CPR_BUILD_TESTS 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
-FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git GIT_TAG 2553fc41450301cd09a9271c8d2c3e0cf3546b73) # the commit hash for 1.8.3
+FetchContent_Declare(cpr
+		GIT_REPOSITORY https://github.com/libcpr/cpr.git
+		GIT_TAG 2553fc41450301cd09a9271c8d2c3e0cf3546b73 # the commit hash for 1.8.3
+		EXCLUDE_FROM_ALL
+)
 
-FetchContent_MakeAvailable(cpr)
-#FetchContent_GetProperties(cpr)
-#message("cpr_POPULATED = ${cpr_POPULATED}")
-#if(NOT cpr_POPULATED)
-	# Fetch the content using previously declared details
-	#FetchContent_Populate(cpr)
-	#message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
-	#message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
-	# Bring the populated content into the build
-	#set(BUILD_SHARED_LIBS ON CACHE BOOL "")
-	#add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
-	#set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
-#endif()
+#FetchContent_MakeAvailable(cpr)
+FetchContent_GetProperties(cpr)
+message("cpr_POPULATED = ${cpr_POPULATED}")
+if(NOT cpr_POPULATED)
+#	 Fetch the content using previously declared details
+	FetchContent_Populate(cpr)
+	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
+	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
+#	 Bring the populated content into the build
+	set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+endif()
 
 #StormLib
 #add_subdirectory(3rdparty/stormlib)
@@ -144,6 +147,7 @@ if (WIN32)
 endif()
 
 set(CASC_BUILD_STATIC_LIB 1)
+
 set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
 set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
 add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
@@ -428,7 +432,12 @@ INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Lib
 if( MINGW )
 	message( STATUS "    Installing system-libraries: MinGW DLLs." )
 	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
-	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${Mingw_Path}/libgcc_s_seh-1.dll ${Mingw_Path}/libstdc++-6.dll ${Mingw_Path}/libwinpthread-1.dll)
+	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
+			${Mingw_Path}/libgcc_s_seh-1.dll
+			${Mingw_Path}/libstdc++-6.dll
+			${Mingw_Path}/libwinpthread-1.dll
+			${Mingw_Path}/zlib1.dll
+	)
 endif( MINGW )
 include( InstallRequiredSystemLibraries )
 

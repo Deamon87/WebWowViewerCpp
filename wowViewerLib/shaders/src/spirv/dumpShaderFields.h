@@ -72,8 +72,8 @@ struct bindingAmountData {
 
 struct shaderMetaData {
     ShaderStage stage;
-    std::vector<uboBindingData> uboBindings;
-    std::vector<ssboBindingData> ssboBindingData;
+    std::vector<uboBindingData> m_uboBindings;
+    std::vector<ssboBindingData> m_ssboBindingData;
     std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
     std::vector<imageBindingData> imageBindings;
@@ -338,7 +338,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
             unsigned set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
             unsigned binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
 
-            metaInfo.uboBindings.push_back({set, binding, typeId_size});
+            metaInfo.m_uboBindings.push_back({set, binding, typeId_size});
 
             if (set >= 0) {
                 metaInfo.uboBindingAmountsPerSet[set].start =
@@ -383,7 +383,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
             unsigned set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
             unsigned binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
 
-            metaInfo.ssboBindingData.push_back({set, binding, typeId_size});
+            metaInfo.m_ssboBindingData.push_back({set, binding, typeId_size});
 
 //            if (set >= 0) {
 //                metaInfo.uboBindingAmountsPerSet[set].start =
@@ -499,7 +499,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
         std::cout << "    " << ShaderStageToStr(it->second.stage) << "," << std::endl;
         //Dump UBO Bindings per shader
         std::cout << "    {\n";
-        for (auto subIt = it->second.uboBindings.begin(); subIt != it->second.uboBindings.end(); subIt++) {
+        for (auto subIt = it->second.m_uboBindings.begin(); subIt != it->second.m_uboBindings.end(); subIt++) {
             std::cout << "      {" << subIt->set << "," << subIt->binding << "," << subIt->size << "}," << std::endl;
         }
         std::cout << "    },\n";
@@ -520,7 +520,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
 
         //Dump SSBO Bindings per shader
         std::cout << "    {\n";
-        for (auto subIt = it->second.ssboBindingData.begin(); subIt != it->second.ssboBindingData.end(); subIt++) {
+        for (auto subIt = it->second.m_ssboBindingData.begin(); subIt != it->second.m_ssboBindingData.end(); subIt++) {
             std::cout << "      {" << subIt->set << "," << subIt->binding << "," << subIt->size << "}," << std::endl;
         }
         std::cout << "    },\n";

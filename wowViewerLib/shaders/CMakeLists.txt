@@ -258,11 +258,11 @@ if (NOT EMSCRIPTEN)
     endif()
     if(LINK_VULKAN)
         if(SPIRV_OPT_APP)
-            install(FILES ${SPIRV_BINARY_FILES_OPT}
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/spirv/
                     DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
             )
         else()
-            install(FILES ${SPIRV_BINARY_FILES_NON_OPT}
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/spriv_raw/
                     DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
             )
         endif()
