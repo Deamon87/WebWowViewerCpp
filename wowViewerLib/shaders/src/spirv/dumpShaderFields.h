@@ -209,7 +209,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
         std::vector<uboBindingData> uboBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
-        std::vector<ssboBindingData> ssboBindingData;
+        std::vector<ssboBindingData> m_ssboBindings;
 
         std::vector<imageBindingData> imageBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;

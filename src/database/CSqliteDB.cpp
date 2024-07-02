@@ -61,9 +61,13 @@ const std::string getWmoAreaAreaNameSQL = R"===(
 
 const std::string getLightByIdSQL = R"===(
         select
-        l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
-        IFNULL(ls.SkyboxFileDataID, 0) as SkyboxFileDataID, IFNULL(lp.LightSkyboxID, 0) as LightSkyboxID,
-        lp.Glow, IFNULL(ls.Flags, 0) as SkyboxFlags
+        l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd,
+        l.LightParamsID_0, l.LightParamsID_1, l.LightParamsID_2, l.LightParamsID_3, l.LightParamsID_4,
+        l.LightParamsID_5, l.LightParamsID_6, l.LightParamsID_7,
+        IFNULL(ls.SkyboxFileDataID, 0) as SkyboxFileDataID,
+        IFNULL(ls.Flags, 0) as SkyboxFlags,
+        IFNULL(lp.LightSkyboxID, 0) as LightSkyboxID,
+        lp.Glow
         from Light l
         left join LightParams lp on lp.ID = l.LightParamsID_0
         left join LightSkybox ls on ls.ID = lp.LightSkyboxID
@@ -72,15 +76,17 @@ const std::string getLightByIdSQL = R"===(
 
 const std::string getLightSQL = R"===(
         select
-        l.id as LightId, l.GameCoords_0, l.GameCoords_1, l.GameCoords_2, l.GameFalloffStart, l.GameFalloffEnd, l.LightParamsID_0,
-        IFNULL(ls.SkyboxFileDataID, 0) as SkyboxFileDataID, IFNULL(lp.LightSkyboxID, 0) as LightSkyboxID,
-        lp.Glow, IFNULL(ls.Flags, 0) as SkyboxFlags, l.ContinentID,
+        l.id as LightId, l.GameCoords_0, l.GameCoords_1, l.GameCoords_2,
+        l.GameFalloffStart, l.GameFalloffEnd,
+        l.ContinentID,
+
+        l.LightParamsID_0, l.LightParamsID_1, l.LightParamsID_2, l.LightParamsID_3, l.LightParamsID_4,
+        l.LightParamsID_5, l.LightParamsID_6, l.LightParamsID_7,
+
         (abs(l.GameCoords_0 - ?1) * abs(l.GameCoords_0 - ?1) +
          abs(l.GameCoords_1 - ?2) * abs(l.GameCoords_1 - ?2) +
          abs(l.GameCoords_2 - ?3) * abs(l.GameCoords_2 - ?3)) as lightDistSQR
     from Light l
-             left join LightParams lp on lp.ID = l.LightParamsID_0
-             left join LightSkybox ls on ls.ID = lp.LightSkyboxID
     where
         ((l.ContinentID = ?4) and
         (
@@ -336,7 +342,14 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult, fl
         ilr.pos[2] = getLightByIdStatement.getField("GameCoords_2").getDouble();
         ilr.fallbackStart = getLightByIdStatement.getField("GameFalloffStart").getDouble();
         ilr.fallbackEnd = getLightByIdStatement.getField("GameFalloffEnd").getDouble();
-        ilr.paramId = getLightByIdStatement.getField("LightParamsID_0").getInt();
+        ilr.paramId[0] = getLightByIdStatement.getField("LightParamsID_0").getInt();
+        ilr.paramId[1] = getLightByIdStatement.getField("LightParamsID_1").getInt();
+        ilr.paramId[2] = getLightByIdStatement.getField("LightParamsID_2").getInt();
+        ilr.paramId[3] = getLightByIdStatement.getField("LightParamsID_3").getInt();
+        ilr.paramId[4] = getLightByIdStatement.getField("LightParamsID_4").getInt();
+        ilr.paramId[5] = getLightByIdStatement.getField("LightParamsID_5").getInt();
+        ilr.paramId[6] = getLightByIdStatement.getField("LightParamsID_6").getInt();
+        ilr.paramId[7] = getLightByIdStatement.getField("LightParamsID_7").getInt();
         ilr.skyBoxFileId = getLightByIdStatement.getField("SkyboxFileDataID").getInt();
         ilr.lightSkyboxId = getLightByIdStatement.getField("LightSkyboxID").getInt();
         ilr.glow = getLightByIdStatement.getField("Glow").getDouble();
@@ -366,7 +379,14 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, int ptime, std:
         ilr.pos[2] = getLightStatement.getField("GameCoords_2").getDouble();
         ilr.fallbackStart = getLightStatement.getField("GameFalloffStart").getDouble();
         ilr.fallbackEnd = getLightStatement.getField("GameFalloffEnd").getDouble();
-        ilr.paramId = getLightStatement.getField("LightParamsID_0").getInt();
+        ilr.paramId[0] = getLightStatement.getField("LightParamsID_0").getInt();
+        ilr.paramId[1] = getLightStatement.getField("LightParamsID_1").getInt();
+        ilr.paramId[2] = getLightStatement.getField("LightParamsID_2").getInt();
+        ilr.paramId[3] = getLightStatement.getField("LightParamsID_3").getInt();
+        ilr.paramId[4] = getLightStatement.getField("LightParamsID_4").getInt();
+        ilr.paramId[5] = getLightStatement.getField("LightParamsID_5").getInt();
+        ilr.paramId[6] = getLightStatement.getField("LightParamsID_6").getInt();
+        ilr.paramId[7] = getLightStatement.getField("LightParamsID_7").getInt();
         ilr.skyBoxFileId = getLightStatement.getField("SkyboxFileDataID").getInt();
         ilr.lightSkyboxId = getLightStatement.getField("LightSkyboxID").getInt();
         ilr.glow = getLightStatement.getField("Glow").getDouble();

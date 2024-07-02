@@ -30,6 +30,7 @@ struct LightResult {
     float closeOceanColor[3];
     float farOceanColor[3];
 
+    //Sky
     std::array<float, 3> SkyTopColor;
     float SkyMiddleColor[3];
     float SkyBand1Color[3];
@@ -63,7 +64,6 @@ struct LightResult {
     float FogBlendAlpha = 0.0f; //Set manually in map.cpp //TODO BTW
     std::array<float, 3> HeightEndFogColor;
     float FogStartOffset = 0;
-
 
     std::string skyBoxName;
     int skyBoxFdid;

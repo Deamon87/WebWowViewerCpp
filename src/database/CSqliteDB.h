@@ -135,7 +135,7 @@ private:
         float fallbackEnd;
         float lightDistSQR = 0;
         float blendAlpha = 0;
-        int paramId;
+        int paramId[8];
         int skyBoxFileId;
         int lightSkyboxId;
         float glow;
