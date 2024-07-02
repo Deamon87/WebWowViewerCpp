@@ -21,8 +21,12 @@ public:
     AreaRecord getArea(int areaId) override;
     bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) override;
 
-    void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults, float farClip) override;
-    void getLightById(int lightId, int time, LightResult &lightResult, float farClip) override;
+    void getLightById(int lightId, int time, LightResult &lightResult) override;
+    void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) override;
+
+    bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) override;
+
+
     void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
     void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
     void getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData> &textures);
@@ -86,6 +90,7 @@ private:
     StatementFieldHolder getAreaNameStatement;
     StatementFieldHolder getLightStatement;
     StatementFieldHolder getLightByIdStatement;
+    StatementFieldHolder getLightParamDataStatement;
     StatementFieldHolder getLightData;
     StatementFieldHolder getLiquidObjectInfo;
     StatementFieldHolder getLiquidTypeInfo;
@@ -128,74 +133,7 @@ private:
         return result;
     }
 
-    struct InnerLightResult {
-        int id;
-        float pos[3];
-        float fallbackStart;
-        float fallbackEnd;
-        float lightDistSQR = 0;
-        float blendAlpha = 0;
-        int paramId[8];
-        int skyBoxFileId;
-        int lightSkyboxId;
-        float glow;
-        int skyBoxFlags ;
-        bool isDefault = false;
-    };
-
-    struct InnerLightDataRes {
-        int ambientLight;
-        int horizontAmbientColor = 0;
-        int groundAmbientColor = 0;
-
-        int directLight;
-        int closeRiverColor;
-        int farRiverColor;
-        int closeOceanColor;
-        int farOceanColor;
-
-        int SkyTopColor;
-        int SkyMiddleColor;
-        int SkyBand1Color;
-        int SkyBand2Color;
-        int SkySmogColor;
-        int SkyFogColor;
-
-        float FogEnd;
-        float FogScaler;
-        float FogDensity;
-        float FogHeight;
-        float FogHeightScaler;
-        float FogHeightDensity;
-        float FogZScalar;
-        float MainFogStartDist;
-        float MainFogEndDist;
-        float SunFogAngle;
-        int EndFogColor;
-        float EndFogColorDistance;
-        float FogStartOffset;
-        int SunFogColor;
-        float SunFogStrength;
-        int FogHeightColor;
-        int EndFogHeightColor;
-        float FogHeightCoefficients[4];
-        float MainFogCoefficients[4];
-        float HeightDensityFogCoeff[4];
-
-        int time;
-    };
-
-    void convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults,
-                                     std::vector<InnerLightResult> &innerResults, float farClip);
-
-    void
-    addOnlyOne(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &currLdRes) const;
-
-    void
-    blendTwoAndAdd(LightResult &lightResult, const InnerLightDataRes &lastLdRes,
-                   const InnerLightDataRes &currLdRes,
-                   float timeAlphaBlend) const;
-
+    void getTimedLightParamData(int lightParamId, int time, LightParamData &lightParamData);
 };
 
 #endif //AWEBWOWVIEWERCPP_CSQLITEDB_H

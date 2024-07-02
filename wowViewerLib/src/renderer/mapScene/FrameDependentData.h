@@ -53,6 +53,16 @@ struct ExteriorColors {
     mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
 };
 
+struct StateForConditions {
+    int currentAreaId = 0;
+    int currentParentAreaId = 0;
+    std::vector<int> currentSkyboxIds = {};
+    std::vector<int> currentLightIds = {};
+    std::vector<int> currentLightParams = {};
+    std::vector<int> currentZoneLights = {};
+};
+
+
 struct FrameDependantData {
     //Glow
     float currentGlow;
@@ -61,8 +71,7 @@ struct FrameDependantData {
     ExteriorColors colors;
     mathfu::vec3 exteriorDirectColorDir;
 
-    std::vector<int> currentLightIds;
-    std::vector<int> currentLightParamIds;
+    StateForConditions stateForConditions;
 
 //Sky params
     bool overrideValuesWithFinalFog = false;

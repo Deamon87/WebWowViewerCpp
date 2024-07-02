@@ -86,12 +86,8 @@ protected:
     uint32_t m_start;
     uint32_t  m_end;
 
-
-
 public:
-    ~IMesh() override {
-        1 + 1;
-    };
+    ~IMesh() override = default ;
 
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;

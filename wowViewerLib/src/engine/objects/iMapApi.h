@@ -11,14 +11,6 @@ class IMapApi;
 #include "../../include/database/dbStructs.h"
 #include "../../include/config.h"
 
-struct StateForConditions {
-    int currentAreaId = 0;
-    int currentParentAreaId = 0;
-    std::vector<int> currentSkyboxIds = {};
-    std::vector<int> currentLightParams = {};
-    std::vector<int> currentZoneLights = {};
-};
-
 class IMapApi {
 public:
     virtual std::shared_ptr<M2Object> getM2Object(std::string fileName, SMDoodadDef &doodadDef) = 0;

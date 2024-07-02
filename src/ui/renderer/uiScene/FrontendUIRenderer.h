@@ -8,12 +8,12 @@
 #include "../../../../wowViewerLib/src/renderer/IRenderParameters.h"
 #include "ImGUIPlan.h"
 #include "IFrontendUIBufferCreate.h"
-#include "../../../../wowViewerLib/src/gapi/vulkan/buffers/CBufferChunkVLK.h"
+#include "ShaderDefinitions.h"
 
 static const std::array<GBufferBinding, 3> imguiBindings = {{
     {+imguiShader::Attribute::Position, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, pos)},
-    {+imguiShader::Attribute::UV, 2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, uv)},
-    {+imguiShader::Attribute::Color, 4, GBindingType::GUNSIGNED_BYTE, true, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col)},
+    {+imguiShader::Attribute::UV,       2, GBindingType::GFLOAT, false, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, uv)},
+    {+imguiShader::Attribute::Color,    4, GBindingType::GUNSIGNED_BYTE, true, sizeof(ImDrawVert), IM_OFFSETOF(ImDrawVert, col)},
 }};
 
 static const PipelineTemplate s_imguiPipelineTemplate = {
@@ -47,7 +47,7 @@ protected:
     UiMaterialCache m_materialDepthCache;
     UiMaterialCache m_materialCacheOpaque;
     UiMaterialCacheMap m_materialCacheIdMap;
-    std::shared_ptr<CBufferChunkVLK<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
+    std::shared_ptr<IBufferChunk<ImgUI::modelWideBlockVS>> m_imguiUbo = nullptr;
 
     void consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, std::vector<HGMesh> &meshes);
 

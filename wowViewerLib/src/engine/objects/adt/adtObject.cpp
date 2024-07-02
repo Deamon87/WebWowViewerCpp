@@ -255,7 +255,7 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
                 for (int k = 0; k < 3; k++) {
                     adtVertex.normal[k] = m_adtFile->mcnkStructs[i].mcnr->entries[j].normal[k];
                 }
-                adtVertex.normal[4] = 0;
+                adtVertex.normal[3] = 0;
             } else {
                 *(uint32_t*)&adtVertex.normal = 0x00FF0000;
             }
@@ -1290,11 +1290,13 @@ bool AdtObject::getWaterColorFromDB(mathfu::vec4 cameraPos, mathfu::vec3 &closeR
     mathfu::vec3 waterPos = (mathfu::vec3(waterAaBB.max) + mathfu::vec3(waterAaBB.min)) / 2.0f;
     std::vector<LightResult> lightResults = {};
     closeRiverColor = {0,0,0};
-    this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults, nullptr);
-    for (auto &_light : lightResults) {
-        closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
-    }
-    closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
+//TODO: Restore this for futere minimap creator
+
+//    this->m_mapApi->getLightResultsFromDB(waterPos, m_api->getConfig(), lightResults, nullptr);
+//    for (auto &_light : lightResults) {
+//        closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
+//    }
+//    closeRiverColor = mathfu::vec3(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0]);
 
     return true;
 }

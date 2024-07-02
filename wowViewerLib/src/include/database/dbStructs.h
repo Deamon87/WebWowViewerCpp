@@ -21,6 +21,73 @@ struct MapRecord {
 
 struct LightResult {
     int id;
+    float pos[3];
+    int continentId;
+    float fallbackStart;
+    float fallbackEnd;
+    float lightDistSQR = 0;
+    float blendAlpha = 0;
+    int lightParamId[8];
+};
+
+struct LightTimedData {
+    int time;
+
+    int ambientLight = 0 ;
+    int horizontAmbientColor = 0;
+    int groundAmbientColor = 0;
+
+    int directColor;
+
+    int closeRiverColor;
+    int farRiverColor;
+    int closeOceanColor;
+    int farOceanColor;
+
+    int SkyTopColor;
+    int SkyMiddleColor;
+    int SkyBand1Color;
+    int SkyBand2Color;
+    int SkySmogColor;
+    int SkyFogColor;
+
+    float FogEnd;
+    float FogScaler;
+    float FogDensity;
+    float FogHeight;
+    float FogHeightScaler;
+    float FogHeightDensity;
+    float FogZScalar;
+    float MainFogStartDist;
+    float MainFogEndDist;
+    float SunFogAngle;
+    int EndFogColor;
+    float EndFogColorDistance;
+    float FogStartOffset;
+    int SunFogColor;
+    float SunFogStrength;
+    int FogHeightColor;
+    int EndFogHeightColor;
+    float FogHeightCoefficients[4];
+    float MainFogCoefficients[4];
+    float HeightDensityFogCoeff[4];
+};
+
+struct LightParamData {
+    int lightSkyBoxId = 0;
+    float glow = 1.0f;
+    float waterShallowAlpha;
+    float waterDeepAlpha;
+    float oceanShallowAlpha;
+    float oceanDeepAlpha;
+    int lightParamFlags = 0;
+
+    std::array<LightTimedData, 2> lightTimedData;
+};
+
+/*
+struct LightResult {
+    int id;
     float ambientColor[3];
     float horizontAmbientColor[3];
     float groundAmbientColor[3];
@@ -74,6 +141,7 @@ struct LightResult {
     float blendCoef;
     bool isDefault = false;
 };
+ */
 
 struct LiquidTextureData {
     int fileDataId;
@@ -125,6 +193,8 @@ struct ZoneLight {
     float Zmax;
     std::vector<vec2> points;
 };
+
+
 
 struct AreaRecord {
     std::string areaName = "";

@@ -414,8 +414,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
 
     //7. Get AreaId and Area Name
-    StateForConditions stateForConditions;
-
     AreaRecord wmoAreaRecord;
     bool wmoAreaFound = false;
     if (mapRenderPlan->m_currentWMO != emptyWMO) {
@@ -445,6 +443,9 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
     mapRenderPlan->wmoAreaName = wmoAreaRecord.areaName;
     mapRenderPlan->areaName = areaRecord.areaName;
+
+    auto &stateForConditions = mapRenderPlan->frameDependentData->stateForConditions;
+
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
 
@@ -487,8 +488,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
         checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, mapRenderPlan);
     }
-
-
 
     if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox)) {
         ZoneScopedN("Skybox");
@@ -602,20 +601,11 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
             l_currentWmoObject->checkFog(frustumData.cameraPos, wmoFogData);
         }
     }
-    std::vector<LightResult> lightResults;
 
+    std::vector<LightResult> lightResults;
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
         getLightResultsFromDB(frustumData.cameraPos, config, lightResults, &stateForConditions);
-
-        {
-            auto &fdd = mapRenderPlan->frameDependentData;
-            //Fill current light ids
-            for (auto &light : lightResults) {
-                fdd->currentLightIds.push_back(light.id);
-                fdd->currentLightParamIds.push_back(light.lightParamId);
-            }
-        }
 
         bool drawDefaultSkybox = true;
         for (auto &_light : lightResults) {
@@ -1007,49 +997,47 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
         }
     }
 
+    uint8_t currentLightParamId = 0;
+
     if (zoneLightFound) {
-        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult, config->farPlane);
+        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
         if (stateForConditions != nullptr) {
-            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId);
+            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId[currentLightParamId]);
         }
     }
 
+    //Get light from DB
     m_api->databaseHandler->getEnvInfo(m_mapId,
                                        cameraVec3.x,
                                        cameraVec3.y,
                                        cameraVec3.z,
-                                       config->currentTime,
-                                       lightResults,
-                                       config->farPlane
+                                       lightResults
     );
+    std::sort(lightResults.begin(), lightResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
+        return a.blendAlpha > b.blendAlpha;
+    });
+
+    int selectedLightParam = 0;
+    for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
+        if (feq(it->pos[0], 0.0) && feq(it->pos[1], 0.0) && feq(it->pos[2], 0.0)) {
+            //This is default record. If zoneLight was selected -> skip it.
+            if (!zoneLightFound) {
+
+            }
+        }
+            selectedLightParam = it->lightParamId[currentLightParamId];
+    }
+
+    config->currentTime,
 
 
     if (stateForConditions != nullptr) {
         for (auto &_light : lightResults) {
-            stateForConditions->currentZoneLights.push_back(_light.lightParamId);
+            stateForConditions->currentZoneLights.push_back(_light.lightParamId[currentLightParamId]);
+            stateForConditions->currentLightIds.push_back(_light.id);
         }
     }
 
-    //Calc final blendcoef for zoneLight;
-    if (zoneLightFound) {
-        float blendCoef = 1.0;
-
-        //Replace default light with ZoneLight
-        //TODO: make a blend coef to zonelight border based on the least distance to border and replace default only if that coef is 1.0
-        bool hasDefault = false;
-        zoneLightResult.blendCoef = 1.0f;
-        for (auto &_light : lightResults) {
-            if (_light.isDefault) {
-                hasDefault = true;
-                _light = zoneLightResult;
-            }
-        }
-        if (!hasDefault) {
-            lightResults.push_back(zoneLightResult);
-        }
-        std::sort(lightResults.begin(), lightResults.end(), [](auto const &a, auto const &b) {return a.blendCoef > b.blendCoef; });
-
-    }
 }
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
