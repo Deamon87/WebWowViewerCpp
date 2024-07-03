@@ -68,9 +68,9 @@ struct LightTimedData {
     float SunFogStrength;
     int FogHeightColor;
     int EndFogHeightColor;
-    float FogHeightCoefficients[4];
-    float MainFogCoefficients[4];
-    float HeightDensityFogCoeff[4];
+    std::array<float, 4> FogHeightCoefficients;
+    std::array<float, 4> MainFogCoefficients;
+    std::array<float, 4> HeightDensityFogCoeff;
 };
 
 struct LightParamData {

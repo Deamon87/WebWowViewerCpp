@@ -973,7 +973,68 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
     }
 }
 
-void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) {
+template <int T>
+inline float getFloatFromInt(int value) {
+    if constexpr (T == 0) {
+        return (value & 0xFF) / 255.0f;
+    }
+    if constexpr (T == 1) {
+        return ((value >> 8) & 0xFF) / 255.0f;
+    }
+    if constexpr (T == 2) {
+        return ((value >> 16) & 0xFF) / 255.0f;
+    }
+}
+
+inline mathfu::vec3 intToColor3(int a) {
+    //BGR
+    return mathfu::vec3(
+        getFloatFromInt<2>(a),
+        getFloatFromInt<1>(a),
+        getFloatFromInt<0>(a)
+    );
+}
+inline mathfu::vec4 intToColor4(int a) {
+    //BGRA
+    return mathfu::vec4(
+        getFloatFromInt<2>(a),
+        getFloatFromInt<1>(a),
+        getFloatFromInt<0>(a),
+        getFloatFromInt<3>(a)
+    );
+}
+inline mathfu::vec4 floatArr(std::array<float, 4> a) {
+    //BGRA
+    return mathfu::vec4(
+        a[3],
+        a[2],
+        a[1],
+        a[0]
+    );
+}
+
+template <int C, typename T>
+decltype(auto) mixMembers(LightParamData& data, T LightTimedData::*member, float blendTimeCoeff) {
+    if constexpr (C == 3) {
+        static_assert(std::is_same<T, int>::value, "the type must be int for vector component");
+        return mix(intToColor3(data.lightTimedData[0].*member), intToColor3(data.lightTimedData[0].*member), blendTimeCoeff);
+    }
+    if constexpr (C == 4 && std::is_same<T, std::array<float, 4>>::value) {
+        return mix(floatArr(data.lightTimedData[0].*member), floatArr(data.lightTimedData[1].*member), blendTimeCoeff);
+    } else if constexpr (C == 4) {
+        static_assert(std::is_same<T, int>::value, "the type must be int for vector component");
+        return mix(intToColor4(data.lightTimedData[0].*member), intToColor4(data.lightTimedData[0].*member), blendTimeCoeff);
+    }
+    if constexpr (C == 1) {
+        static_assert(std::is_same<T, float>::value, "the type must be float for one component");
+        return mix(data.lightTimedData[0].*member, data.lightTimedData[0].*member, blendTimeCoeff);
+    }
+}
+
+void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
+                                SkyColors &skyColors,
+                                ExteriorColors &exteriorColors,
+                                FogResult &fogResult, StateForConditions *stateForConditions) {
     if (m_api->databaseHandler == nullptr)
         return ;
 
@@ -1044,7 +1105,46 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
 
     LightParamData lightParamData;
     if (m_api->databaseHandler->getLightParamData(selectedLightParam, config->currentTime, lightParamData)) {
+
+        float blendTimeCoeff = (config->currentTime - lightParamData.lightTimedData[0].time) / (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
+
+        auto &dataA = lightParamData.lightTimedData[0];
+        auto &dataB = lightParamData.lightTimedData[1];
         //Blend two times using certain rules
+
+        //Ambient lights
+
+        //Fog!
+        fogResult.FogEnd =           mixMembers<1>(lightParamData, &LightTimedData::FogEnd, blendTimeCoeff);
+        fogResult.FogScaler =        mixMembers<1>(lightParamData, &LightTimedData::FogScaler, blendTimeCoeff);
+        fogResult.FogDensity =       mixMembers<1>(lightParamData, &LightTimedData::FogDensity, blendTimeCoeff);
+        fogResult.FogHeight =        mixMembers<1>(lightParamData, &LightTimedData::FogHeight, blendTimeCoeff);
+        fogResult.FogHeightScaler =  mixMembers<1>(lightParamData, &LightTimedData::FogHeightScaler, blendTimeCoeff);
+        fogResult.FogHeightDensity = mixMembers<1>(lightParamData, &LightTimedData::FogHeightDensity, blendTimeCoeff);
+        fogResult.SunFogAngle =      mixMembers<1>(lightParamData, &LightTimedData::SunFogAngle, blendTimeCoeff);
+
+        if (false) {//fdd->overrideValuesWithFinalFog) {
+            fogResult.FogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogColor, blendTimeCoeff);
+        } else {
+            fogResult.FogColor = mixMembers<3>(lightParamData, &LightTimedData::SkyFogColor, blendTimeCoeff);
+        }
+
+        fogResult.EndFogColor =           mixMembers<3>(lightParamData, &LightTimedData::EndFogColor, blendTimeCoeff);
+        fogResult.EndFogColorDistance =   mixMembers<1>(lightParamData, &LightTimedData::EndFogColorDistance, blendTimeCoeff);
+        fogResult.SunFogColor =           mixMembers<3>(lightParamData, &LightTimedData::SunFogColor, blendTimeCoeff);
+        fogResult.SunFogStrength =        mixMembers<1>(lightParamData, &LightTimedData::SunFogStrength, blendTimeCoeff);
+        fogResult.FogHeightColor =        mixMembers<3>(lightParamData, &LightTimedData::FogHeightColor, blendTimeCoeff);
+        fogResult.FogHeightCoefficients = mixMembers<4>(lightParamData, &LightTimedData::FogHeightCoefficients, blendTimeCoeff);
+        fogResult.MainFogCoefficients =   mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
+        fogResult.HeightDensityFogCoefficients = mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
+
+        fogResult.FogZScalar =        mixMembers<1>(lightParamData, &LightTimedData::FogZScalar, blendTimeCoeff);
+//        fogResult.LegacyFogScalar =   mixMembers<1>(lightParamData, &LightTimedData::LegacyFogScalar, blendTimeCoeff);
+        fogResult.MainFogStartDist =  mixMembers<1>(lightParamData, &LightTimedData::MainFogStartDist, blendTimeCoeff);
+        fogResult.MainFogEndDist =    mixMembers<1>(lightParamData, &LightTimedData::MainFogEndDist, blendTimeCoeff);
+//        fogResult.FogBlendAlpha =     mixMembers<1>(lightParamData, &LightTimedData::FogBlendAlpha, blendTimeCoeff);
+        fogResult.HeightEndFogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogHeightColor, blendTimeCoeff);
+        fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
     }
 }

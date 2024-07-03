@@ -19,7 +19,10 @@ public:
     virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) = 0;
     virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) = 0;
     virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) = 0;
-    virtual void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults,StateForConditions *stateForConditions) = 0;
+    virtual void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
+                                       SkyColors &skyColors,
+                                       ExteriorColors &exteriorColors,
+                                       FogResult &fogResult, StateForConditions *stateForConditions) = 0;
 
 
     virtual animTime_t getCurrentSceneTime() = 0;

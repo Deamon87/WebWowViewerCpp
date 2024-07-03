@@ -321,14 +321,14 @@ void FrontendUI::showCurrentStatsDialog() {
                     if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr ) {
                         ImGui::Text("List of current Light.db2 ids:");
 
-                        for (auto lightId : cullStageData->frameDependentData->currentLightIds) {
+                        for (auto lightId : cullStageData->frameDependentData->stateForConditions.currentLightIds) {
                             ImGui::Text("%d", lightId);
                         }
 
                         ImGui::Separator();
 
                         ImGui::Text("List of current LightParams.db2 ids:");
-                        for (auto lightParamId : cullStageData->frameDependentData->currentLightParamIds) {
+                        for (auto lightParamId : cullStageData->frameDependentData->stateForConditions.currentLightParams) {
                             ImGui::Text("%d", lightParamId);
                         }
                     }
