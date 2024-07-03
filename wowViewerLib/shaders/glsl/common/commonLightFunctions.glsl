@@ -39,10 +39,10 @@ struct SceneWideParams {
     vec4 uInteriorSunDir;
     vec4 uSceneSize_DisableLightBuffer;
 
-    vec4 closeRiverColor;
-    vec4 farRiverColor;
-    vec4 closeOceanColor;
-    vec4 farOceanColor;
+    vec4 closeRiverColor_shallowAlpha;
+    vec4 farRiverColor_deepAlpha;
+    vec4 closeOceanColor_shallowAlpha;
+    vec4 farOceanColor_deepAlpha;
     SceneExteriorLight extLight;
 };
 

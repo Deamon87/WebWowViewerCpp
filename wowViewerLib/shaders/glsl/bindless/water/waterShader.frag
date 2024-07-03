@@ -87,10 +87,10 @@ void main() {
     int materialId = waterData.materialId_liquidFlags.x;
 
     if ((liquidFlags & 1024) > 0) {// Ocean
-        color = scene.closeOceanColor;
+        color = scene.closeOceanColor_shallowAlpha;
     } else if (liquidFlags == 15) { //River/Lake
         //Query river color
-        color = vec4(scene.closeRiverColor.xyz, 0.7);
+        color = scene.closeRiverColor_shallowAlpha;
     } else {
         color = vec4(waterData.matColor.xyz, 0.7);
     }
@@ -125,7 +125,7 @@ void main() {
                 0,
                 scene,
                 intLight,
-                vec3(0.0) /*accumLight*/,
+                vec3(0.0)  /* accumLight */,
                 vec3(0.0),
                 vec3(0.0), /* specular */
                 vec3(0.0),

@@ -63,7 +63,6 @@ protected:
 
     int m_viewRenderOrder = 0;
 
-    float m_skyConeAlpha = 0.0;
     HGMesh skyMesh = nullptr;
     std::shared_ptr<ISkyMeshMaterial> skyMeshMat = nullptr;
 
@@ -210,7 +209,9 @@ private:
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
                                SkyColors &skyColors,
                                ExteriorColors &exteriorColors,
-                               FogResult &fogResult, StateForConditions *stateForConditions) override;
+                               FogResult &fogResult,
+                               LiquidColors &liquidColors,
+                               StateForConditions *stateForConditions) override;
 
     void createAdtFreeLamdas();
 };

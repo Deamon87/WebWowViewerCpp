@@ -311,7 +311,6 @@ std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSc
     pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
 
     auto material = sceneRenderer->createSkyMeshMaterial(pipelineTemplate);
-    //TODO: Pass m_skyConeAlpha to fragment shader
 
     gMeshTemplate meshTemplate(skyBindings);
 
@@ -556,9 +555,9 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom &&
         (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupIsExtLit));
 
-    if (m_skyConeAlpha > 0) {
+//    if (m_skyConeAlpha > 0) {
         mapRenderPlan->skyMesh = skyMesh;
-    }
+//    }
     if (mapRenderPlan->frameDependentData->overrideValuesWithFinalFog) {
         mapRenderPlan->skyMesh0x4 = skyMesh0x4Sky;
     }
@@ -605,16 +604,15 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
     std::vector<LightResult> lightResults;
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
-        getLightResultsFromDB(frustumData.cameraPos, config, lightResults, &stateForConditions);
+        SkyColors skyColors;
+        ExteriorColors exteriorColors;
+        FogResult fogResult;
+        LiquidColors liquidColors;
 
-        bool drawDefaultSkybox = true;
-        for (auto &_light : lightResults) {
-            if (!_light.isDefault && _light.blendCoef > 0.99999f) {
-                drawDefaultSkybox = false;
-            }
-        }
+        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, exteriorColors, fogResult, liquidColors, &stateForConditions);
 
-
+        //TODO: restore skyboxes
+        /*
         //Delete skyboxes that are not in light array
         std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
         auto modelIt = m_exteriorSkyBoxes.begin();
@@ -675,51 +673,9 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
                 skyBox->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
             }
         }
+        */
 
-        //Blend glow and ambient
-        mathfu::vec3 ambientColor = {0, 0, 0};
-        mathfu::vec3 horizontAmbientColor = {0, 0, 0};
-        mathfu::vec3 groundAmbientColor = {0, 0, 0};
-        mathfu::vec3 directColor = {0, 0, 0};
-        mathfu::vec3 closeRiverColor = {0, 0, 0};
-        mathfu::vec3 farRiverColor = {0, 0, 0};
-        mathfu::vec3 closeOceanColor = {0, 0, 0};
-        mathfu::vec3 farOceanColor = {0, 0, 0};
-
-        mathfu::vec3 SkyTopColor = {0, 0, 0};
-        mathfu::vec3 SkyMiddleColor = {0, 0, 0};
-        mathfu::vec3 SkyBand1Color = {0, 0, 0};
-        mathfu::vec3 SkyBand2Color = {0, 0, 0};
-        mathfu::vec3 SkySmogColor = {0, 0, 0};
-        mathfu::vec3 SkyFogColor = {0, 0, 0};
-        float currentGlow = 0;
-
-        for (auto &_light : lightResults) {
-            currentGlow = mix(currentGlow, _light.glow, _light.blendCoef);
-
-            ambientColor = mix(ambientColor, mathfu::vec3(_light.ambientColor), _light.blendCoef);
-            horizontAmbientColor = mix(horizontAmbientColor, mathfu::vec3(_light.horizontAmbientColor), _light.blendCoef);
-            groundAmbientColor = mix(groundAmbientColor, mathfu::vec3(_light.groundAmbientColor), _light.blendCoef);
-            directColor = mix(directColor, mathfu::vec3(_light.directColor), _light.blendCoef);
-
-            closeRiverColor = mix(closeRiverColor, mathfu::vec3(_light.closeRiverColor), _light.blendCoef);
-            farRiverColor = mix(farRiverColor, mathfu::vec3(_light.farRiverColor), _light.blendCoef);
-            closeOceanColor = mix(closeOceanColor, mathfu::vec3(_light.closeOceanColor), _light.blendCoef);
-            farOceanColor = mix(farOceanColor, mathfu::vec3(_light.farOceanColor), _light.blendCoef);
-
-            SkyTopColor = mix(SkyTopColor, mathfu::vec3(_light.SkyTopColor.data()), _light.blendCoef);
-            SkyMiddleColor = mix(SkyMiddleColor, mathfu::vec3(_light.SkyMiddleColor), _light.blendCoef);
-            SkyBand1Color = mix(SkyBand1Color, mathfu::vec3(_light.SkyBand1Color), _light.blendCoef);
-            SkyBand2Color = mix(SkyBand2Color, mathfu::vec3(_light.SkyBand2Color), _light.blendCoef);
-            SkySmogColor = mix(SkySmogColor, mathfu::vec3(_light.SkySmogColor), _light.blendCoef);
-            SkyFogColor = mix(SkyFogColor, mathfu::vec3(_light.SkyFogColor.data()), _light.blendCoef);
-        }
-
-        //Database is in BGRA
         float ambientMult = areaRecord.ambientMultiplier * 2.0f + 1;
-//        ambientColor *= ambientMult;
-//        groundAmbientColor *= ambientMult;
-//        horizontAmbientColor *= ambientMult;
 
         if (config->glowSource == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
@@ -733,12 +689,8 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         if (config->globalLighting == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
 
-            fdd->colors.exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
-            fdd->colors.exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
-                                                  0);
-            fdd->colors.exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
-                                                    horizontAmbientColor[0], 0);
-            fdd->colors.exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
+            fdd->colors = exteriorColors;
+
             auto extDir = MathHelper::calcExteriorColorDir(
                 frustumData.viewMat,
                 m_api->getConfig()->currentTime
@@ -766,53 +718,22 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         if (config->waterColorParams == EParameterSource::eDatabase)
         {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->closeRiverColor = mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
-            fdd->farRiverColor = mathfu::vec4(farRiverColor[2], farRiverColor[1], farRiverColor[0], 0);
-            fdd->closeOceanColor = mathfu::vec4(closeOceanColor[2], closeOceanColor[1], closeOceanColor[0], 0);
-            fdd->farOceanColor = mathfu::vec4(farOceanColor[2], farOceanColor[1], farOceanColor[0], 0);
+            fdd->liquidColors = liquidColors;
         } else if (config->waterColorParams == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->closeRiverColor = config->closeRiverColor;
-            fdd->farRiverColor = config->farRiverColor;
-            fdd->closeOceanColor = config->closeOceanColor;
-            fdd->farOceanColor = config->farOceanColor;
+            fdd->liquidColors.closeRiverColor_shallowAlpha = config->closeRiverColor;
+            fdd->liquidColors.farRiverColor_deepAlpha = config->farRiverColor;
+            fdd->liquidColors.closeOceanColor_shallowAlpha = config->closeOceanColor;
+            fdd->liquidColors.farOceanColor_deepAlpha = config->farOceanColor;
         }
         if (config->skyParams == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->skyColors.SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
-            fdd->skyColors.SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
-            fdd->skyColors.SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
-            fdd->skyColors.SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 1.0);
-            fdd->skyColors.SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 1.0);
-            fdd->skyColors.SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 1.0);
+            fdd->skyColors = skyColors;
         }
     }
 
     //Handle fog
     {
-        float FogEnd = 0;
-        float FogScaler = 0;
-        float FogDensity = 0;
-        float FogHeight = 0;
-        float FogHeightScaler = 0;
-        float FogHeightDensity = 0;
-        float SunFogAngle = 0;
-        mathfu::vec3 EndFogColor = mathfu::vec3(0,0,0);
-        float EndFogColorDistance = 0;
-        mathfu::vec3 SunFogColor = mathfu::vec3(0,0,0);
-        float SunFogStrength = 0;
-        mathfu::vec3 FogHeightColor = mathfu::vec3(0,0,0);
-        mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
-        mathfu::vec4 MainFogCoefficients = mathfu::vec4(0,0,0,0);
-        mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0,0,0,0);
-        float FogZScalar = 0;
-        float LegacyFogScalar = 0;
-        float MainFogStartDist = 0;
-        float MainFogEndDist = 0;
-        float FogBlendAlpha = 0;
-        mathfu::vec3 HeightEndFogColor = mathfu::vec3(0,0,0);
-        float FogStartOffset = 0;
-
         std::vector<LightResult> combinedResults = {};
         float totalSummator = 0.0;
 
@@ -866,29 +787,7 @@ void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelp
         //Apply fogs from lights
         if (totalSummator < 1.0) {
             if (config->globalFog == EParameterSource::eDatabase) {
-                bool fogDefaultExist = false;
-                int fogDefaultIndex = -1;
 
-                for (int i = 0; i < lightResults.size() && totalSummator < 1.0f; i++) {
-                    auto &fogRec = lightResults[i];
-                    if (fogRec.isDefault) {
-                        fogDefaultExist = true;
-                        fogDefaultIndex = i;
-                        continue;
-                    }
-                    if (totalSummator + fogRec.blendCoef > 1.0f) {
-                        fogRec.blendCoef = 1.0f - totalSummator;
-                        totalSummator = 1.0f;
-                    } else {
-                        totalSummator += fogRec.blendCoef;
-                    }
-                    combinedResults.push_back(fogRec);
-                }
-                if (fogDefaultExist && totalSummator < 1.0f) {
-                    lightResults[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
-                    totalSummator = 1.0f;
-                    combinedResults.push_back(lightResults[fogDefaultIndex]);
-                }
             } else if (config->globalFog == EParameterSource::eConfig) {
                 LightResult globalFog;
                 globalFog.FogScaler = config->fogResult.FogScaler;
@@ -1034,7 +933,9 @@ decltype(auto) mixMembers(LightParamData& data, T LightTimedData::*member, float
 void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
                                 SkyColors &skyColors,
                                 ExteriorColors &exteriorColors,
-                                FogResult &fogResult, StateForConditions *stateForConditions) {
+                                FogResult &fogResult,
+                                LiquidColors &liquidColors,
+                                StateForConditions *stateForConditions) {
     if (m_api->databaseHandler == nullptr)
         return ;
 
@@ -1073,6 +974,7 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
     }
 
     //Get light from DB
+    std::vector<LightResult> lightResults;
     m_api->databaseHandler->getEnvInfo(m_mapId,
                                        cameraVec3.x,
                                        cameraVec3.y,
@@ -1113,6 +1015,29 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
         //Blend two times using certain rules
 
         //Ambient lights
+        exteriorColors.exteriorAmbientColor =         mixMembers<4>(lightParamData, &LightTimedData::ambientLight, blendTimeCoeff);
+        exteriorColors.exteriorGroundAmbientColor =   mixMembers<4>(lightParamData, &LightTimedData::groundAmbientColor, blendTimeCoeff);
+        exteriorColors.exteriorHorizontAmbientColor = mixMembers<4>(lightParamData, &LightTimedData::horizontAmbientColor, blendTimeCoeff);
+        exteriorColors.exteriorDirectColor =          mixMembers<4>(lightParamData, &LightTimedData::directColor, blendTimeCoeff);
+
+        //Liquid colors
+        liquidColors.closeOceanColor_shallowAlpha = mixMembers<4>(lightParamData, &LightTimedData::closeOceanColor, blendTimeCoeff);
+        liquidColors.farOceanColor_deepAlpha =      mixMembers<4>(lightParamData, &LightTimedData::farOceanColor, blendTimeCoeff);
+        liquidColors.closeRiverColor_shallowAlpha = mixMembers<4>(lightParamData, &LightTimedData::closeRiverColor, blendTimeCoeff);
+        liquidColors.farRiverColor_deepAlpha =      mixMembers<4>(lightParamData, &LightTimedData::farRiverColor, blendTimeCoeff);
+
+        liquidColors.closeOceanColor_shallowAlpha.w = lightParamData.oceanShallowAlpha;
+        liquidColors.farOceanColor_deepAlpha.w =      lightParamData.oceanDeepAlpha;
+        liquidColors.closeRiverColor_shallowAlpha.w = lightParamData.waterShallowAlpha;
+        liquidColors.farRiverColor_deepAlpha.w =      lightParamData.waterDeepAlpha;
+
+        //SkyColors
+        skyColors.SkyTopColor =    mixMembers<4>(lightParamData, &LightTimedData::SkyTopColor, blendTimeCoeff);
+        skyColors.SkyMiddleColor = mixMembers<4>(lightParamData, &LightTimedData::SkyMiddleColor, blendTimeCoeff);
+        skyColors.SkyBand1Color =  mixMembers<4>(lightParamData, &LightTimedData::SkyBand1Color, blendTimeCoeff);
+        skyColors.SkyBand2Color =  mixMembers<4>(lightParamData, &LightTimedData::SkyBand2Color, blendTimeCoeff);
+        skyColors.SkySmogColor =   mixMembers<4>(lightParamData, &LightTimedData::SkySmogColor, blendTimeCoeff);
+        skyColors.SkyFogColor =    mixMembers<4>(lightParamData, &LightTimedData::SkyFogColor, blendTimeCoeff);
 
         //Fog!
         fogResult.FogEnd =           mixMembers<1>(lightParamData, &LightTimedData::FogEnd, blendTimeCoeff);

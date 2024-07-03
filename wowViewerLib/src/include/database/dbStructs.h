@@ -82,7 +82,9 @@ struct LightParamData {
     float oceanDeepAlpha;
     int lightParamFlags = 0;
 
-
+    std::string skyBoxName;
+    int skyBoxFdid;
+    int skyBoxFlags;
 
     std::array<LightTimedData, 2> lightTimedData;
 };

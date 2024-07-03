@@ -46,6 +46,13 @@ struct SkyColors {
     mathfu::vec4 SkyFogColor;
 };
 
+struct LiquidColors {
+    mathfu::vec4 closeRiverColor_shallowAlpha = mathfu::vec4(0,0,0,0);
+    mathfu::vec4 farRiverColor_deepAlpha = mathfu::vec4(0,0,0,0);
+
+    mathfu::vec4 closeOceanColor_shallowAlpha = mathfu::vec4(0,0,0,0);
+    mathfu::vec4 farOceanColor_deepAlpha = mathfu::vec4(0,0,0,0);
+};
 struct ExteriorColors {
     mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
@@ -85,11 +92,8 @@ struct FrameDependantData {
 //Water params
     bool useMinimapWaterColor;
     bool useCloseRiverColorForDB;
-    mathfu::vec4 closeRiverColor = mathfu::vec4(0,0,0,0);
-    mathfu::vec4 farRiverColor = mathfu::vec4(0,0,0,0);
 
-    mathfu::vec4 closeOceanColor = mathfu::vec4(0,0,0,0);
-    mathfu::vec4 farOceanColor = mathfu::vec4(0,0,0,0);
+    LiquidColors liquidColors;
 };
 typedef std::shared_ptr<FrameDependantData> HFrameDependantData;
 

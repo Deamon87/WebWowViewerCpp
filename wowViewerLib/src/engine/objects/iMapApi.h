@@ -22,7 +22,9 @@ public:
     virtual void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
                                        SkyColors &skyColors,
                                        ExteriorColors &exteriorColors,
-                                       FogResult &fogResult, StateForConditions *stateForConditions) = 0;
+                                       FogResult &fogResult,
+                                       LiquidColors &liquidColors,
+                                       StateForConditions *stateForConditions) = 0;
 
 
     virtual animTime_t getCurrentSceneTime() = 0;

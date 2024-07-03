@@ -79,10 +79,10 @@ void main() {
     vec4 color = vec4(0.0);
     int liquidFlags = materialId_liquidFlags.y;
     if ((materialId_liquidFlags.y & 1024) > 0) {// Ocean
-        color = scene.closeOceanColor;
+        color = scene.closeRiverColor_shallowAlpha;
     } else if (liquidFlags == 15) { //River/Lake
         //Query river color
-        color = vec4(scene.closeRiverColor.xyz, 0.7);
+        color = vec4(scene.closeRiverColor_shallowAlpha.xyz, 0.7);
     } else {
         color = vec4(matColor.xyz, 0.7);
     }
