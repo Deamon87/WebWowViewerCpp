@@ -202,8 +202,8 @@ void GDescriptorSetLayout::fillUbo(int setIndex, const DescTypeOverride &typeOve
 void GDescriptorSetLayout::fillSSBO(int setIndex, const DescTypeOverride &typeOverrides,
                                    std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
                                    const shaderMetaData *p_metaData, const VkShaderStageFlagBits &vkStageFlag) {
-    for (int i = 0; i < p_metaData->ssboBindings.size(); i++) {
-        auto &ssboBinding = p_metaData->ssboBindings[i];
+    for (int i = 0; i < p_metaData->m_ssboBindings.size(); i++) {
+        auto &ssboBinding = p_metaData->m_ssboBindings[i];
 
         if (ssboBinding.set != setIndex) continue;
 

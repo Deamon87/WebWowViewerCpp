@@ -132,8 +132,8 @@ void GShaderPermutationVLK::createShaderLayout() {
             }
         }
 
-        for (int i = 0; i < shaderMeta->ssboBindings.size(); i++) {
-            auto &ssboBinding = shaderMeta->ssboBindings[i];
+        for (int i = 0; i < shaderMeta->m_ssboBindings.size(); i++) {
+            auto &ssboBinding = shaderMeta->m_ssboBindings[i];
 
             auto &setLayout = combinedShaderLayout.setLayouts[ssboBinding.set];
 

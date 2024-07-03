@@ -82,6 +82,8 @@ struct LightParamData {
     float oceanDeepAlpha;
     int lightParamFlags = 0;
 
+
+
     std::array<LightTimedData, 2> lightTimedData;
 };
 

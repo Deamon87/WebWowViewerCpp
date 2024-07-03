@@ -5,7 +5,6 @@
 #ifndef AWEBWOWVIEWERCPP_FRONTENDUIRENDERFORWARDVLK_H
 #define AWEBWOWVIEWERCPP_FRONTENDUIRENDERFORWARDVLK_H
 
-
 #include <queue>
 #include <random>
 #include "../FrontendUIRenderer.h"
@@ -16,6 +15,7 @@
 #include "../../../../../wowViewerLib/src/renderer/vulkan/IRenderFunctionVLK.h"
 #include "../../../../../wowViewerLib/src/gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../../../wowViewerLib/src/engine/objects/scenes/EntityActorsFactory.h"
+#include "../../../../../wowViewerLib/src/gapi/vulkan/buffers/CBufferChunkVLK.h"
 
 class FrontendUIRenderForwardVLK : public FrontendUIRenderer {
 public:
@@ -53,6 +53,8 @@ private:
 
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass;
     std::shared_ptr<std::vector<HGMesh>> m_previousMeshes = nullptr;
+
+    std::shared_ptr<CBufferChunkVLK<ImgUI::modelWideBlockVS>> m_imguiUboVLK = nullptr;
 
     HGVertexBufferBindings m_emptyImguiVAO = nullptr;
 };

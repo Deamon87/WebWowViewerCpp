@@ -26,7 +26,8 @@ void FrontendUIRenderForwardVLK::createBuffers() {
     vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024);
     uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
 
-    m_imguiUbo = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
+    m_imguiUboVLK = std::make_shared<CBufferChunkVLK<ImgUI::modelWideBlockVS>>(uboBuffer);
+    m_imguiUbo = m_imguiUboVLK;
 }
 
 HGVertexBuffer FrontendUIRenderForwardVLK::createVertexBuffer(int sizeInBytes) {
@@ -58,7 +59,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
         }
     }
 
-    auto &l_imguiUbo = m_imguiUbo;
+    auto &l_imguiUbo = m_imguiUboVLK;
     auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", !opaque?"imguiShader":"imguiShader_opaque"}, {"forwardRendering","forwardRendering"}, {})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
@@ -92,7 +93,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterialDepth(c
         }
     }
 
-    auto &l_imguiUbo = m_imguiUbo;
+    auto &l_imguiUbo = m_imguiUboVLK;
     auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShaderDepth"}, {"forwardRendering", "forwardRendering"}, {})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {

@@ -997,12 +997,17 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
         }
     }
 
-    uint8_t currentLightParamId = 0;
+    uint8_t currentLightParamIdIndex = 0;
+
+    int selectedLightParam = 0;
+    int selectedLightId = 0;
 
     if (zoneLightFound) {
+        selectedLightId = LightId;
         m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
         if (stateForConditions != nullptr) {
-            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId[currentLightParamId]);
+            selectedLightParam = zoneLightResult.lightParamId[currentLightParamIdIndex];
+            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId[currentLightParamIdIndex]);
         }
     }
 
@@ -1017,27 +1022,31 @@ void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, 
         return a.blendAlpha > b.blendAlpha;
     });
 
-    int selectedLightParam = 0;
+
     for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
         if (feq(it->pos[0], 0.0) && feq(it->pos[1], 0.0) && feq(it->pos[2], 0.0)) {
             //This is default record. If zoneLight was selected -> skip it.
             if (!zoneLightFound) {
-
+                selectedLightParam = it->lightParamId[currentLightParamIdIndex];
+                selectedLightId = it->id;
             }
+        } else {
+            selectedLightParam = it->lightParamId[currentLightParamIdIndex];
+            selectedLightId = it->id;
+            break;
         }
-            selectedLightParam = it->lightParamId[currentLightParamId];
     }
-
-    config->currentTime,
-
 
     if (stateForConditions != nullptr) {
-        for (auto &_light : lightResults) {
-            stateForConditions->currentZoneLights.push_back(_light.lightParamId[currentLightParamId]);
-            stateForConditions->currentLightIds.push_back(_light.id);
-        }
+        stateForConditions->currentZoneLights.push_back(selectedLightParam);
+        stateForConditions->currentLightIds.push_back(selectedLightId);
     }
 
+    LightParamData lightParamData;
+    if (m_api->databaseHandler->getLightParamData(selectedLightParam, config->currentTime, lightParamData)) {
+        //Blend two times using certain rules
+
+    }
 }
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
