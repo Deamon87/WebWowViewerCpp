@@ -176,10 +176,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
 
         blockPSVS.uViewUpSceneTime = mathfu::vec4(renderingMatrices->viewUp.xyz(), sceneTime);
 
-        blockPSVS.closeOceanColor = fdd->closeOceanColor;
-        blockPSVS.farOceanColor = fdd->farOceanColor;
-        blockPSVS.closeRiverColor = fdd->closeRiverColor;
-        blockPSVS.farRiverColor = fdd->farRiverColor;
+        blockPSVS.closeOceanColor = fdd->liquidColors.closeOceanColor_shallowAlpha;
+        blockPSVS.farOceanColor = fdd->liquidColors.farOceanColor_deepAlpha;
+        blockPSVS.closeRiverColor = fdd->liquidColors.closeRiverColor_shallowAlpha;
+        blockPSVS.farRiverColor = fdd->liquidColors.farRiverColor_deepAlpha;
 
         blockPSVS.extLight.uExteriorAmbientColor = fdd->colors.exteriorAmbientColor;
         blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->colors.exteriorHorizontAmbientColor;

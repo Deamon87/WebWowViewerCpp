@@ -20,6 +20,7 @@
 #include "../../../renderer/mapScene/MapScenePlan.h"
 #include "../../../renderer/mapScene/MapSceneParams.h"
 #include "../wdt/wdtLightsObject.h"
+#include "dayNightDataHolder/DayNightLightHolder.h"
 
 enum class SceneMode {
    smMap,
@@ -55,6 +56,7 @@ protected:
     std::shared_ptr<WmoObject> wmoMap = nullptr;
 
     bool useWeightedBlend = false;
+    bool has0x200000Flag = false;
 
     std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
 
@@ -115,16 +117,7 @@ protected:
     virtual void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
-    struct mapInnerZoneLightRecord {
-        int ID;
-        std::string name;
-        int LightID;
-        CAaBox aabb;
-        std::vector<mathfu::vec2> points;
-        std::vector<mathfu::vec2> lines;
-    };
-    std::vector<mapInnerZoneLightRecord> m_zoneLights;
-    void loadZoneLights();
+    DayNightLightHolder dayNightLightHolder;
 
     FreeStrategy adtFreeLambda;
     FreeStrategy zeroStateLambda;
@@ -132,12 +125,12 @@ protected:
     HADTRenderConfigDataHolder m_adtConfigHolder = nullptr;
 
 protected:
-    explicit Map() {
+    explicit Map() : dayNightLightHolder(nullptr, -1) {
     }
 public:
     explicit Map(HApiContainer api, int mapId, const std::string &mapName);
 
-    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
+    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) : dayNightLightHolder(api, mapId) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; mapName = "";
@@ -146,15 +139,16 @@ public:
         MapRecord mapRecord;
         api->databaseHandler->getMapById(mapId, mapRecord);
         useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+        has0x200000Flag = (mapRecord.flags0 & 0x200000) > 0;
 
         createAdtFreeLamdas();
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
-        loadZoneLights();
+        dayNightLightHolder.loadZoneLights();
     };
 
-    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) {
+    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) : dayNightLightHolder(api, 0) {
         initMapTiles();
 
         m_mapId = 0; m_api = api; this->mapName = mapName;
@@ -204,14 +198,6 @@ private:
                        const HMapRenderPlan &mapRenderPlan);
 
 //    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const;
-
-
-    void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
-                               SkyColors &skyColors,
-                               ExteriorColors &exteriorColors,
-                               FogResult &fogResult,
-                               LiquidColors &liquidColors,
-                               StateForConditions *stateForConditions) override;
 
     void createAdtFreeLamdas();
 };

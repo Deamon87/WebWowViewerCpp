@@ -378,6 +378,8 @@ set(SOURCE_FILES
         src/engine/objects/lights/CSpotLight.h
         src/engine/objects/lights/CWmoNewLight.cpp
         src/engine/objects/lights/CWmoNewLight.h
+        src/engine/objects/scenes/dayNightDataHolder/DayNightLightHolder.cpp
+        src/engine/objects/scenes/dayNightDataHolder/DayNightLightHolder.h
 )
 
 if (LINK_OGL2)
