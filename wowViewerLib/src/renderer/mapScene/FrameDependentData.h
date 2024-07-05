@@ -35,6 +35,12 @@ struct FogResult {
     float FogBlendAlpha = 0.00001;
     mathfu::vec3 HeightEndFogColor = mathfu::vec3(0, 0, 0);
     float FogStartOffset = 0.00001;
+
+    float SunAngleBlend = 1.0f;
+
+    inline void addMix(FogResult &b, float blendAlpha) {
+
+    }
 };
 
 struct SkyColors {

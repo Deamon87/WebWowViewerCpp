@@ -9,6 +9,7 @@
 #include <vector>
 #include "../../../persistance/header/commonFileStructs.h"
 #include "../../../ApiContainer.h"
+#include "../../../../renderer/mapScene/MapScenePlan.h"
 
 class DayNightLightHolder {
 public:
@@ -38,6 +39,19 @@ public:
                                 FogResult &fogResult,
                                 LiquidColors &liquidColors,
                                 StateForConditions *stateForConditions);
+
+private:
+    bool m_useWeightedBlend = false;
+    bool m_mapHasFlag_0x200000 = false;
+    bool m_mapHasFlag_0x10000 = false;
+
+    float m_minFogDist1 = 0.0;
+    float m_minFogDist2 = 0.0;
+    float m_minFogDist3 = 0.0;
+
+    void fixLightTimedData(LightTimedData &data, float farClip, float &fogScalarOverride);
+    float getClampedFarClip(float farClip);
+    void createMinFogDistances();
 };
 
 

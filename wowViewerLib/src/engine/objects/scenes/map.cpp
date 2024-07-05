@@ -573,17 +573,6 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 //    }
 }
 
-static inline mathfu::vec4 mix(const mathfu::vec4 &a, const mathfu::vec4 &b, float alpha) {
-    return (b - a) * alpha + a;
-}
-static inline mathfu::vec3 mix(const mathfu::vec3 &a, const mathfu::vec3 &b, float alpha) {
-    return (b - a) * alpha + a;
-}
-static inline float mix(const float &a, const float &b, float alpha) {
-    return (b - a) * alpha + a;
-}
-
-
 void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
 

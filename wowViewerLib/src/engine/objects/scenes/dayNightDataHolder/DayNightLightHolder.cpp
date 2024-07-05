@@ -6,8 +6,14 @@
 #include "../../../../include/database/dbStructs.h"
 #include "../../../algorithms/mathHelper.h"
 
+
 DayNightLightHolder::DayNightLightHolder(const HApiContainer &api, int mapId) : m_api(api), m_mapId(mapId) {
 
+    MapRecord mapRecord;
+    api->databaseHandler->getMapById(mapId, mapRecord);
+    m_useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+    m_mapHasFlag_0x200000 = (mapRecord.flags0 & 0x200000) > 0;
+    m_mapHasFlag_0x10000 = (mapRecord.flags0 & 0x10000) > 0;
 }
 
 void DayNightLightHolder::loadZoneLights() {
@@ -55,7 +61,7 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
                                                    StateForConditions &stateForConditions,
                                                    const AreaRecord &areaRecord) {
 
-        ZoneScoped ;
+    ZoneScoped ;
 
     Config* config = this->m_api->getConfig();
 
@@ -342,6 +348,16 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
 }
 
 
+static inline mathfu::vec4 mix(const mathfu::vec4 &a, const mathfu::vec4 &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+static inline mathfu::vec3 mix(const mathfu::vec3 &a, const mathfu::vec3 &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+static inline float mix(const float &a, const float &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+
 template <int T>
 inline float getFloatFromInt(int value) {
     if constexpr (T == 0) {
@@ -405,24 +421,20 @@ bool vec3EqZero(const mathfu::vec3 &a) {
 }
 
 float maxFarClip(float farClip) {
-
      return std::max<float>(std::min<float>(farClip, 50000.0), 1000.0);
 }
 
-float getClampedFarClip(float farClip) {
+float DayNightLightHolder::getClampedFarClip(float farClip) {
     int someflag = 0;
     float multiplier = 1.0f;
 
-    if ((map_has0x10000Flag) != 0 && farClip >= 4400.0f)
+    if ((m_mapHasFlag_0x10000) != 0 && farClip >= 4400.0f)
         farClip = 4400.0;
-    farClip = farClip * multiplier;
 
-    return maxFarClip(
-
-    );
+    return maxFarClip(fmaxf(fmaxf(fmaxf(m_minFogDist1, farClip), m_minFogDist3), m_minFogDist2));
 }
 
-void fixLightTimedData(LightTimedData &data, float farClip) {
+void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip, float &fogScalarOverride) {
     if (data.EndFogColor == 0) {
         data.EndFogColor = data.SkyFogColor;
     }
@@ -446,6 +458,25 @@ void fixLightTimedData(LightTimedData &data, float farClip) {
 
     if (data.EndFogColorDistance <= 0.0f)
         data.EndFogColorDistance = getClampedFarClip(farClip);
+
+    if (data.FogHeight > 10000.0)
+        data.FogHeight = 0.0;
+
+    if (data.FogDensity <= 0.0f) {
+        float farPlaneClamped = std::min<float>(farClip, 700.0f) - 200.0f;
+
+        float difference = data.FogEnd - (float)(data.FogEnd * data.FogScaler);
+        if (difference > farPlaneClamped || difference <= 0.0f) {
+            data.FogDensity = 1.5f;
+        } else {
+            data.FogDensity = ((1.0f - (difference / farPlaneClamped)) * 5.5f) + 1.5f;
+        }
+    } else {
+        fogScalarOverride = std::min(fogScalarOverride, -0.2f);
+    }
+
+    if ( data.FogHeightScaler == 0.0f )
+        data.FogHeightDensity = data.FogDensity;
 }
 
 void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
@@ -530,9 +561,11 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
 
         auto &dataA = lightParamData.lightTimedData[0];
         auto &dataB = lightParamData.lightTimedData[1];
+
         //Blend two times using certain rules
-        fixLightTimedData(dataA, config->farPlane);
-        fixLightTimedData(dataB, config->farPlane);
+        float fogScalarOverride = 0.0f;
+        fixLightTimedData(dataA, config->farPlane, fogScalarOverride);
+        fixLightTimedData(dataB, config->farPlane, fogScalarOverride);
 
         //Ambient lights
         exteriorColors.exteriorAmbientColor =         mixMembers<4>(lightParamData, &LightTimedData::ambientLight, blendTimeCoeff);
@@ -572,7 +605,26 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.FogHeight =        mixMembers<1>(lightParamData, &LightTimedData::FogHeight, blendTimeCoeff);
         fogResult.FogHeightScaler =  mixMembers<1>(lightParamData, &LightTimedData::FogHeightScaler, blendTimeCoeff);
         fogResult.FogHeightDensity = mixMembers<1>(lightParamData, &LightTimedData::FogHeightDensity, blendTimeCoeff);
-        fogResult.SunFogAngle =      mixMembers<1>(lightParamData, &LightTimedData::SunFogAngle, blendTimeCoeff);
+        //Custom blend for Sun
+        if ( lightParamData.lightTimedData[1].SunFogAngle >= 1.0 &&
+            lightParamData.lightTimedData[0].SunFogAngle >= 1.0)
+        {
+            fogResult.SunAngleBlend = 0.0;
+            fogResult.SunFogStrength = 0.0;
+            fogResult.SunAngleBlend = 1.0;
+        } else if ( lightParamData.lightTimedData[1].SunFogAngle >= 1.0 || lightParamData.lightTimedData[0].SunFogAngle < 1.0) {
+            if ( lightParamData.lightTimedData[1].SunFogAngle < 1.0 )
+            {
+                fogResult.SunAngleBlend = 1.0;
+                fogResult.SunFogAngle = mixMembers<1>(lightParamData, &LightTimedData::SunFogAngle, blendTimeCoeff);;
+            }
+            else
+            {
+                fogResult.SunFogStrength = lightParamData.lightTimedData[0].SunFogStrength;
+                fogResult.SunFogAngle    = lightParamData.lightTimedData[0].SunFogAngle;
+                fogResult.SunAngleBlend = 1.0f - blendTimeCoeff;
+            }
+        }
 
         if (false) {//fdd->overrideValuesWithFinalFog) {
             fogResult.FogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogColor, blendTimeCoeff);
@@ -597,5 +649,49 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.HeightEndFogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogHeightColor, blendTimeCoeff);
         fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
+        if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
+            //TODO:
+        }
+
+        if (
+            (fogResult.MainFogCoefficients.LengthSquared()) > 0.00000011920929f ||
+            (fogResult.HeightDensityFogCoefficients.LengthSquared()) > 0.00000011920929f
+            ) {
+            fogResult.LegacyFogScalar = 0.0f;
+        } else {
+            fogResult.LegacyFogScalar = 1.0f;
+        }
+
+        fogResult.FogDensity = fmaxf(fogResult.FogDensity, 0.89999998f);
+        if ( m_useWeightedBlend )
+        {
+            fogResult.FogDensity = 1.0;
+        }
+        else if ( fogScalarOverride > fogResult.FogScaler )
+        {
+            fogResult.FogScaler = fogScalarOverride;
+        }
+    }
+}
+
+void DayNightLightHolder::createMinFogDistances() {
+    m_minFogDist1 = maxFarClip(0.0f);
+    m_minFogDist2 = maxFarClip(0.0f);
+
+    switch ( m_mapId )
+    {
+        case 1492:
+            m_minFogDist1 = maxFarClip(7000.0);
+            break;
+        case 1718:
+            m_minFogDist1 = maxFarClip(7000.0);
+            break;
+        case 571:
+            m_minFogDist1 = maxFarClip(30000.0);
+            break;
+    }
+
+    if (m_mapHasFlag_0x200000) {
+        m_minFogDist2 = maxFarClip(30000.0f);
     }
 }
