@@ -459,8 +459,8 @@ void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip,
     if (data.EndFogColorDistance <= 0.0f)
         data.EndFogColorDistance = getClampedFarClip(farClip);
 
-    if (data.FogHeight > 10000.0)
-        data.FogHeight = 0.0;
+    if (data.FogHeight > 10000.0f)
+        data.FogHeight = 0.0f;
 
     if (data.FogDensity <= 0.0f) {
         float farPlaneClamped = std::min<float>(farClip, 700.0f) - 200.0f;
@@ -606,23 +606,29 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.FogHeightScaler =  mixMembers<1>(lightParamData, &LightTimedData::FogHeightScaler, blendTimeCoeff);
         fogResult.FogHeightDensity = mixMembers<1>(lightParamData, &LightTimedData::FogHeightDensity, blendTimeCoeff);
         //Custom blend for Sun
-        if ( lightParamData.lightTimedData[1].SunFogAngle >= 1.0 &&
-            lightParamData.lightTimedData[0].SunFogAngle >= 1.0)
         {
-            fogResult.SunAngleBlend = 0.0;
-            fogResult.SunFogStrength = 0.0;
-            fogResult.SunAngleBlend = 1.0;
-        } else if ( lightParamData.lightTimedData[1].SunFogAngle >= 1.0 || lightParamData.lightTimedData[0].SunFogAngle < 1.0) {
-            if ( lightParamData.lightTimedData[1].SunFogAngle < 1.0 )
-            {
-                fogResult.SunAngleBlend = 1.0;
-                fogResult.SunFogAngle = mixMembers<1>(lightParamData, &LightTimedData::SunFogAngle, blendTimeCoeff);;
-            }
-            else
-            {
-                fogResult.SunFogStrength = lightParamData.lightTimedData[0].SunFogStrength;
-                fogResult.SunFogAngle    = lightParamData.lightTimedData[0].SunFogAngle;
-                fogResult.SunAngleBlend = 1.0f - blendTimeCoeff;
+            float SunFogAngle1 = lightParamData.lightTimedData[0].SunFogAngle;
+            float SunFogAngle2 = lightParamData.lightTimedData[1].SunFogAngle;
+            if (SunFogAngle1 >= 1.0f) {
+                if (SunFogAngle2 >= 1.0f) {
+                    fogResult.SunAngleBlend = 0.0f;
+                    fogResult.SunFogStrength = 0.0f;
+                    fogResult.SunAngleBlend = 1.0f;
+                } else if (SunFogAngle2 < 1.0f) {
+                    fogResult.SunAngleBlend = blendTimeCoeff;
+                    fogResult.SunFogAngle = SunFogAngle2;
+                    fogResult.SunFogStrength = lightParamData.lightTimedData[1].SunFogStrength;
+                }
+            } else if (SunFogAngle1 < 1.0f) {
+                if (SunFogAngle2 < 1.0f) {
+                    fogResult.SunAngleBlend = 1.0f;
+                    fogResult.SunFogAngle =      mixMembers<1>(lightParamData, &LightTimedData::SunFogAngle, blendTimeCoeff);
+                    fogResult.SunFogStrength =   mixMembers<1>(lightParamData, &LightTimedData::SunFogStrength, blendTimeCoeff);
+                } else if (SunFogAngle2 >= 1.0f) {
+                    fogResult.SunFogStrength = lightParamData.lightTimedData[0].SunFogStrength;
+                    fogResult.SunFogAngle = SunFogAngle1;
+                    fogResult.SunAngleBlend = 1.0f - blendTimeCoeff;
+                }
             }
         }
 
@@ -635,17 +641,14 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.EndFogColor =           mixMembers<3>(lightParamData, &LightTimedData::EndFogColor, blendTimeCoeff);
         fogResult.EndFogColorDistance =   mixMembers<1>(lightParamData, &LightTimedData::EndFogColorDistance, blendTimeCoeff);
         fogResult.SunFogColor =           mixMembers<3>(lightParamData, &LightTimedData::SunFogColor, blendTimeCoeff);
-        fogResult.SunFogStrength =        mixMembers<1>(lightParamData, &LightTimedData::SunFogStrength, blendTimeCoeff);
         fogResult.FogHeightColor =        mixMembers<3>(lightParamData, &LightTimedData::FogHeightColor, blendTimeCoeff);
         fogResult.FogHeightCoefficients = mixMembers<4>(lightParamData, &LightTimedData::FogHeightCoefficients, blendTimeCoeff);
         fogResult.MainFogCoefficients =   mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
         fogResult.HeightDensityFogCoefficients = mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
 
         fogResult.FogZScalar =        mixMembers<1>(lightParamData, &LightTimedData::FogZScalar, blendTimeCoeff);
-//        fogResult.LegacyFogScalar =   mixMembers<1>(lightParamData, &LightTimedData::LegacyFogScalar, blendTimeCoeff);
         fogResult.MainFogStartDist =  mixMembers<1>(lightParamData, &LightTimedData::MainFogStartDist, blendTimeCoeff);
         fogResult.MainFogEndDist =    mixMembers<1>(lightParamData, &LightTimedData::MainFogEndDist, blendTimeCoeff);
-//        fogResult.FogBlendAlpha =     mixMembers<1>(lightParamData, &LightTimedData::FogBlendAlpha, blendTimeCoeff);
         fogResult.HeightEndFogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogHeightColor, blendTimeCoeff);
         fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
@@ -665,7 +668,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.FogDensity = fmaxf(fogResult.FogDensity, 0.89999998f);
         if ( m_useWeightedBlend )
         {
-            fogResult.FogDensity = 1.0;
+            fogResult.FogDensity = 1.0f;
         }
         else if ( fogScalarOverride > fogResult.FogScaler )
         {
