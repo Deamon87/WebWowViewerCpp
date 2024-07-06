@@ -11,6 +11,7 @@ DayNightLightHolder::DayNightLightHolder(const HApiContainer &api, int mapId) : 
 
     MapRecord mapRecord;
     api->databaseHandler->getMapById(mapId, mapRecord);
+    m_mapFlag2_0x2 = (mapRecord.flags2 & 0x2) > 0;
     m_useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
     m_mapHasFlag_0x200000 = (mapRecord.flags0 & 0x200000) > 0;
     m_mapHasFlag_0x10000 = (mapRecord.flags0 & 0x10000) > 0;
@@ -55,6 +56,19 @@ void DayNightLightHolder::loadZoneLights() {
         }
     }
 }
+
+
+static inline mathfu::vec4 mix(const mathfu::vec4 &a, const mathfu::vec4 &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+static inline mathfu::vec3 mix(const mathfu::vec3 &a, const mathfu::vec3 &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+static inline float mix(const float &a, const float &b, float alpha) {
+    return (b - a) * alpha + a;
+}
+
+
 
 void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
                                                    MathHelper::FrustumCullingData &frustumData,
@@ -345,17 +359,6 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
             }
         }
     }
-}
-
-
-static inline mathfu::vec4 mix(const mathfu::vec4 &a, const mathfu::vec4 &b, float alpha) {
-    return (b - a) * alpha + a;
-}
-static inline mathfu::vec3 mix(const mathfu::vec3 &a, const mathfu::vec3 &b, float alpha) {
-    return (b - a) * alpha + a;
-}
-static inline float mix(const float &a, const float &b, float alpha) {
-    return (b - a) * alpha + a;
 }
 
 template <int T>
@@ -653,7 +656,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
         if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
-            //TODO:
+            fogResult.FogHeightCoefficients = mathfu::vec4(0,0,1,0);
         }
 
         if (
@@ -666,7 +669,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         }
 
         fogResult.FogDensity = fmaxf(fogResult.FogDensity, 0.89999998f);
-        if ( m_useWeightedBlend )
+        if ( m_mapFlag2_0x2 )
         {
             fogResult.FogDensity = 1.0f;
         }

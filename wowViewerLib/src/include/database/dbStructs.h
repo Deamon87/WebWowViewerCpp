@@ -17,6 +17,8 @@ struct MapRecord {
     int MapType;
     int overrideTime;
     uint32_t flags0;
+    uint32_t flags1;
+    uint32_t flags2;
 };
 
 struct LightResult {

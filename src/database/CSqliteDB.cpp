@@ -42,16 +42,16 @@ SQLite::Column CSqliteDB::StatementFieldHolder::getField(const HashedString fiel
 
 
 const std::string getMapListSQL =
-        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m where m.WdtFileDataID > 0";
+        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride, m.Flags_0, m.Flags_1, m.Flags_2 from Map m where m.WdtFileDataID > 0";
 
 const std::string getMapListSQL_classic =
-        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m";
+        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride, m.Flags_0, m.Flags_1, m.Flags_2 from Map m";
 
 const std::string getMapByIDSQL =
-        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m where m.ID = ?";
+        "select m.ID, m.Directory, m.MapName_lang, m.WdtFileDataID, m.MapType, m.TimeOfDayOverride, m.Flags_0, m.Flags_1, m.Flags_2 from Map m where m.ID = ?";
 
 const std::string getMapByIDSQL_classic =
-        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride, m.Flags_0 from Map m where m.ID = ?";
+        "select m.ID, m.Directory, m.MapName_lang, m.MapType, m.TimeOfDayOverride, m.Flags_0, m.Flags_1, m.Flags_2  from Map m where m.ID = ?";
 
 const std::string getWmoAreaAreaNameSQL = R"===(
         select wat.AreaName_lang as wmoAreaName, at.AreaName_lang as areaName, at.ID as ID, at.ParentAreaID as ParentAreaID, at.Ambient_multiplier as Ambient_multiplier from WMOAreaTable wat
@@ -182,6 +182,8 @@ void CSqliteDB::getMapArray(std::vector<MapRecord> &mapRecords) {
         mapRecord.MapType = getMapList.getField("MapType").getInt();
         mapRecord.overrideTime = getMapList.getField("TimeOfDayOverride").getInt();
         mapRecord.flags0 = getMapList.getField("Flags_0").getInt();
+        mapRecord.flags1 = getMapList.getField("Flags_1").getInt();
+        mapRecord.flags2 = getMapList.getField("Flags_2").getInt();
     }
 
 }
@@ -205,6 +207,8 @@ bool CSqliteDB::getMapById(int mapId, MapRecord &mapRecord) {
         mapRecord.MapType = getMapByIdStatement.getField("MapType").getInt();
         mapRecord.overrideTime = getMapByIdStatement.getField("TimeOfDayOverride").getInt();
         mapRecord.flags0 = getMapByIdStatement.getField("Flags_0").getInt();
+        mapRecord.flags1 = getMapByIdStatement.getField("Flags_1").getInt();
+        mapRecord.flags2 = getMapByIdStatement.getField("Flags_2").getInt();
 
         return true;
     }

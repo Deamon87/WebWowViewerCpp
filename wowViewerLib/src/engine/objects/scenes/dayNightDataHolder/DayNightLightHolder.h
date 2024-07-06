@@ -41,6 +41,7 @@ public:
                                 StateForConditions *stateForConditions);
 
 private:
+    bool m_mapFlag2_0x2 = false;
     bool m_useWeightedBlend = false;
     bool m_mapHasFlag_0x200000 = false;
     bool m_mapHasFlag_0x10000 = false;
