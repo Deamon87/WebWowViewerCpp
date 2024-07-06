@@ -118,7 +118,7 @@ M2Scene::M2Scene(const HApiContainer &api, const std::string &m2Model) {
     api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
-M2Scene::M2Scene(const HApiContainer &api, int fileDataId) {
+M2Scene::M2Scene(const HApiContainer &api, int fileDataId)  {
     m_api = api;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;

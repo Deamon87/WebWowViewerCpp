@@ -117,20 +117,19 @@ protected:
     virtual void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
-    DayNightLightHolder dayNightLightHolder;
-
     FreeStrategy adtFreeLambda;
     FreeStrategy zeroStateLambda;
 
     HADTRenderConfigDataHolder m_adtConfigHolder = nullptr;
 
 protected:
-    explicit Map() : dayNightLightHolder(nullptr, -1) {
+    explicit Map() : m_dayNightLightHolder(nullptr, -1) {
     }
+    DayNightLightHolder m_dayNightLightHolder;
 public:
     explicit Map(HApiContainer api, int mapId, const std::string &mapName);
 
-    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) : dayNightLightHolder(api, mapId) {
+    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) : m_dayNightLightHolder(api, mapId) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; mapName = "";
@@ -145,10 +144,10 @@ public:
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
-        dayNightLightHolder.loadZoneLights();
+        m_dayNightLightHolder.loadZoneLights();
     };
 
-    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) : dayNightLightHolder(api, 0) {
+    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) : m_dayNightLightHolder(api, 0) {
         initMapTiles();
 
         m_mapId = 0; m_api = api; this->mapName = mapName;

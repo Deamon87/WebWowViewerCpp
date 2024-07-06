@@ -37,10 +37,6 @@ struct FogResult {
     float FogStartOffset = 0.00001;
 
     float SunAngleBlend = 1.0f;
-
-    inline void addMix(FogResult &b, float blendAlpha) {
-
-    }
 };
 
 struct SkyColors {

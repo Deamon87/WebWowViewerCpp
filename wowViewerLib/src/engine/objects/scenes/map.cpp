@@ -272,7 +272,7 @@ HGVertexBufferBindings createSkyBindings(const HMapSceneBufferCreate &sceneRende
     return skyBindings;
 }
 
-Map::Map(HApiContainer api, int mapId, const std::string &mapName) : dayNightLightHolder(api, mapId) {
+Map::Map(HApiContainer api, int mapId, const std::string &mapName) : m_dayNightLightHolder(api, mapId) {
     initMapTiles();
 
     m_mapId = mapId; m_api = api; this->mapName = mapName;
@@ -295,7 +295,7 @@ Map::Map(HApiContainer api, int mapId, const std::string &mapName) : dayNightLig
     m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
     m_wdlObject->setMapApi(this);
 
-    dayNightLightHolder.loadZoneLights();
+    m_dayNightLightHolder.loadZoneLights();
 
     m_sceneWideBlockVSPSChunk = nullptr;
 }
@@ -576,7 +576,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
 
-    dayNightLightHolder.updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
+    m_dayNightLightHolder.updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
 }
 
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,

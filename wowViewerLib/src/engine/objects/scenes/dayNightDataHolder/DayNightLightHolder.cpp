@@ -10,15 +10,17 @@
 DayNightLightHolder::DayNightLightHolder(const HApiContainer &api, int mapId) : m_api(api), m_mapId(mapId) {
 
     MapRecord mapRecord;
-    api->databaseHandler->getMapById(mapId, mapRecord);
-    m_mapFlag2_0x2 = (mapRecord.flags2 & 0x2) > 0;
-    m_useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
-    m_mapHasFlag_0x200000 = (mapRecord.flags0 & 0x200000) > 0;
-    m_mapHasFlag_0x10000 = (mapRecord.flags0 & 0x10000) > 0;
+    if (m_api) {
+        api->databaseHandler->getMapById(mapId, mapRecord);
+        m_mapFlag2_0x2 = (mapRecord.flags2 & 0x2) > 0;
+        m_useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+        m_mapHasFlag_0x200000 = (mapRecord.flags0 & 0x200000) > 0;
+        m_mapHasFlag_0x10000 = (mapRecord.flags0 & 0x10000) > 0;
+    }
 }
 
 void DayNightLightHolder::loadZoneLights() {
-    if (m_api->databaseHandler != nullptr) {
+    if (m_api && m_api->databaseHandler != nullptr) {
         std::vector<ZoneLight> zoneLights;
         m_api->databaseHandler->getZoneLightsForMap(m_mapId, zoneLights);
 
@@ -68,6 +70,37 @@ static inline float mix(const float &a, const float &b, float alpha) {
     return (b - a) * alpha + a;
 }
 
+template <typename T>
+void mixFogMember(FogResult& a, FogResult& b, T FogResult::*member, float blendTimeCoeff) {
+    a.*member = mix(a.*member, b.*member, blendTimeCoeff);
+}
+
+void fogMixAndSet(FogResult& a, FogResult& b, float blendCoeff) {
+    mixFogMember(a, b, &FogResult::FogEnd                       , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogScaler                    , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogDensity                   , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogHeight                    , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogHeightScaler              , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogHeightDensity             , blendCoeff);
+    mixFogMember(a, b, &FogResult::SunFogAngle                  , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogColor                     , blendCoeff);
+    mixFogMember(a, b, &FogResult::EndFogColor                  , blendCoeff);
+    mixFogMember(a, b, &FogResult::EndFogColorDistance          , blendCoeff);
+    mixFogMember(a, b, &FogResult::SunFogColor                  , blendCoeff);
+    mixFogMember(a, b, &FogResult::SunFogStrength               , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogHeightColor               , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogHeightCoefficients        , blendCoeff);
+    mixFogMember(a, b, &FogResult::MainFogCoefficients          , blendCoeff);
+    mixFogMember(a, b, &FogResult::HeightDensityFogCoefficients , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogZScalar                   , blendCoeff);
+    mixFogMember(a, b, &FogResult::LegacyFogScalar              , blendCoeff);
+    mixFogMember(a, b, &FogResult::MainFogStartDist             , blendCoeff);
+    mixFogMember(a, b, &FogResult::MainFogEndDist               , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogBlendAlpha                , blendCoeff);
+    mixFogMember(a, b, &FogResult::HeightEndFogColor            , blendCoeff);
+    mixFogMember(a, b, &FogResult::FogStartOffset               , blendCoeff);
+    mixFogMember(a, b, &FogResult::SunAngleBlend                , blendCoeff);
+}
 
 
 void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
@@ -76,6 +109,7 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
                                                    const AreaRecord &areaRecord) {
 
     ZoneScoped ;
+    if(!m_api) return;
 
     Config* config = this->m_api->getConfig();
 
@@ -90,15 +124,17 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         }
     }
 
+    FogResult exteriorFogResult;
+
     std::vector<LightResult> lightResults;
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
         SkyColors skyColors;
         ExteriorColors exteriorColors;
-        FogResult fogResult;
+
         LiquidColors liquidColors;
 
-        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, exteriorColors, fogResult, liquidColors, &stateForConditions);
+        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, exteriorColors, exteriorFogResult, liquidColors, &stateForConditions);
 
         //TODO: restore skyboxes
         /*
@@ -168,7 +204,7 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
 
         if (config->glowSource == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->currentGlow = currentGlow;
+            fdd->currentGlow = 1.0;//currentGlow;
         } else if (config->glowSource == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
             fdd->currentGlow = config->currentGlow;
@@ -227,88 +263,51 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         float totalSummator = 0.0;
 
         //Apply fog from WMO
-        {
-            for (auto &wmoFog : wmoFogData) {
-                auto &lightResult = combinedResults.emplace_back();
-                auto farPlaneClamped = std::min<float>(config->farPlane, wmoFog.end);
-
-                std::array<float, 3> colorConverted;
-                ImVectorToArrBGR(colorConverted, wmoFog.color);
-
-                lightResult.FogEnd = farPlaneClamped;
-                lightResult.FogStart = farPlaneClamped * wmoFog.start_scalar;
-                lightResult.SkyFogColor = colorConverted;
-                lightResult.FogDensity = 1.0;
-                lightResult.FogHeightColor = colorConverted;
-                lightResult.EndFogColor = colorConverted;
-                lightResult.SunFogColor = colorConverted;
-                lightResult.HeightEndFogColor = colorConverted;
-
-                if (farPlaneClamped < 30.f) {
-                    lightResult.FogEnd = farPlaneClamped;
-                    farPlaneClamped = 30.f;
-                }
-
-                bool mapHasWeightedBlendFlag = false;
-                if (!mapHasWeightedBlendFlag) {
-                    float difference = farPlaneClamped - lightResult.FogStart;
-                    float farPlaneClamped2 = std::min<float>(config->farPlane, 700.0f) - 200.0f;
-                    if ((difference > farPlaneClamped2) || (farPlaneClamped2 <= 0.0f)) {
-                        lightResult.FogDensity = 1.5;
-                    } else {
-                        lightResult.FogDensity = ((1.0 - (difference / farPlaneClamped2)) * 5.5) + 1.5;
-                    }
-                    lightResult.FogEnd = config->farPlane;
-                    if (lightResult.FogStart < 0.0f)
-                        lightResult.FogStart = 0.0;
-                }
-
-                lightResult.FogHeightDensity = lightResult.FogDensity;
-                lightResult.FogStartOffset = 0;
-                lightResult.FogHeightScaler = 1.0;
-                lightResult.FogZScalar = 0;
-                lightResult.FogHeight = -10000.0;
-                lightResult.LegacyFogScalar = 1.0;
-                lightResult.EndFogColorDistance = 10000.0;
-            }
-        }
-
-        //Apply fogs from lights
-        if (totalSummator < 1.0) {
-            if (config->globalFog == EParameterSource::eDatabase) {
-
-            } else if (config->globalFog == EParameterSource::eConfig) {
-                LightResult globalFog;
-                globalFog.FogScaler = config->fogResult.FogScaler;
-                globalFog.FogEnd = config->fogResult.FogEnd;
-                globalFog.FogDensity = config->fogResult.FogDensity;
-
-                globalFog.FogHeightScaler = config->fogResult.FogHeightScaler;
-                globalFog.FogHeightDensity = config->fogResult.FogHeightDensity;
-                globalFog.SunFogAngle = config->fogResult.SunFogAngle;
-                globalFog.EndFogColorDistance = config->fogResult.EndFogColorDistance;
-                globalFog.SunFogStrength = config->fogResult.SunFogStrength;
-
-                globalFog.blendCoef = 1.0 - totalSummator;
-                globalFog.isDefault = true;
-
-                globalFog.EndFogColor = {config->fogResult.EndFogColor.z, config->fogResult.EndFogColor.y, config->fogResult.EndFogColor.x};
-                globalFog.SunFogColor = {config->fogResult.SunFogColor.z, config->fogResult.SunFogColor.y, config->fogResult.SunFogColor.x};
-                globalFog.FogHeightColor = {config->fogResult.FogHeightColor.z, config->fogResult.FogHeightColor.y, config->fogResult.FogHeightColor.x};
-
-                combinedResults = {globalFog};
-            }
-        }
-        std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
-            return a.blendCoef > b.blendCoef;
-        });
-
-        //Rebalance blendCoefs
-        if (totalSummator < 1.0f && totalSummator > 0.0f) {
-            for (auto &_light : combinedResults) {
-                _light.blendCoef = _light.blendCoef / totalSummator;
-            }
-        }
+//        {
+//            for (auto &wmoFog : wmoFogData) {
+//                auto &lightResult = combinedResults.emplace_back();
+//                auto farPlaneClamped = std::min<float>(config->farPlane, wmoFog.end);
+//
+//                std::array<float, 3> colorConverted;
+//                ImVectorToArrBGR(colorConverted, wmoFog.color);
+//
+//                lightResult.FogEnd = farPlaneClamped;
+//                lightResult.FogStart = farPlaneClamped * wmoFog.start_scalar;
+//                lightResult.SkyFogColor = colorConverted;
+//                lightResult.FogDensity = 1.0;
+//                lightResult.FogHeightColor = colorConverted;
+//                lightResult.EndFogColor = colorConverted;
+//                lightResult.SunFogColor = colorConverted;
+//                lightResult.HeightEndFogColor = colorConverted;
+//
+//                if (farPlaneClamped < 30.f) {
+//                    lightResult.FogEnd = farPlaneClamped;
+//                    farPlaneClamped = 30.f;
+//                }
+//
+//                bool mapHasWeightedBlendFlag = false;
+//                if (!mapHasWeightedBlendFlag) {
+//                    float difference = farPlaneClamped - lightResult.FogStart;
+//                    float farPlaneClamped2 = std::min<float>(config->farPlane, 700.0f) - 200.0f;
+//                    if ((difference > farPlaneClamped2) || (farPlaneClamped2 <= 0.0f)) {
+//                        lightResult.FogDensity = 1.5;
+//                    } else {
+//                        lightResult.FogDensity = ((1.0 - (difference / farPlaneClamped2)) * 5.5) + 1.5;
+//                    }
+//                    lightResult.FogEnd = config->farPlane;
+//                    if (lightResult.FogStart < 0.0f)
+//                        lightResult.FogStart = 0.0;
+//                }
+//
+//                lightResult.FogHeightDensity = lightResult.FogDensity;
+//                lightResult.FogStartOffset = 0;
+//                lightResult.FogHeightScaler = 1.0;
+//                lightResult.FogZScalar = 0;
+//                lightResult.FogHeight = -10000.0;
+//                lightResult.LegacyFogScalar = 1.0;
+//                lightResult.EndFogColorDistance = 10000.0;
+//            }
+//        }
 
         //In case of no data -> disable the fog
         {
@@ -316,47 +315,10 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
             fdd->FogDataFound = !combinedResults.empty();
 
             auto &fogResult = fdd->fogResults.emplace_back();
-            for (auto &_light : lightResults) {
-                fogResult.FogEnd = mix(fogResult.FogEnd, _light.FogEnd, _light.blendCoef);
-                fogResult.FogScaler = mix(fogResult.FogScaler, _light.FogScaler, _light.blendCoef);
-                fogResult.FogDensity = mix(fogResult.FogDensity, _light.FogDensity, _light.blendCoef);
-                fogResult.FogHeight = mix(fogResult.FogHeight, _light.FogHeight, _light.blendCoef);
-                fogResult.FogHeightScaler = mix(fogResult.FogHeightScaler, _light.FogHeightScaler, _light.blendCoef);
-                fogResult.FogHeightDensity = mix(fogResult.FogHeightDensity, _light.FogHeightDensity, _light.blendCoef);
-                fogResult.SunFogAngle = mix(fogResult.SunFogAngle, _light.SunFogAngle, _light.blendCoef);
-                if (fdd->overrideValuesWithFinalFog) {
-                    fogResult.FogColor = mix(fogResult.FogColor, mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]), _light.blendCoef);
-                } else {
-                    fogResult.FogColor = mix(fogResult.FogColor, mathfu::vec3(_light.SkyFogColor[2], _light.SkyFogColor[1], _light.SkyFogColor[0]), _light.blendCoef);
-                }
-                fogResult.EndFogColor = mix(fogResult.EndFogColor, mathfu::vec3(_light.EndFogColor[2], _light.EndFogColor[1], _light.EndFogColor[0]), _light.blendCoef);
-                fogResult.EndFogColorDistance = mix(fogResult.EndFogColorDistance, _light.EndFogColorDistance, _light.blendCoef);
-                fogResult.SunFogColor = mix(fogResult.SunFogColor, mathfu::vec3(_light.SunFogColor[2], _light.SunFogColor[1], _light.SunFogColor[0]), _light.blendCoef);
-                fogResult.SunFogStrength = mix(fogResult.SunFogStrength, _light.SunFogStrength, _light.blendCoef);
-                fogResult.FogHeightColor = mix(fogResult.FogHeightColor, mathfu::vec3(_light.FogHeightColor[2], _light.FogHeightColor[1], _light.FogHeightColor[0]), _light.blendCoef);
-                fogResult.FogHeightCoefficients = mix(
-                    fogResult.FogHeightCoefficients,
-                    mathfu::vec4(_light.FogHeightCoefficients[3], _light.FogHeightCoefficients[2],
-                    _light.FogHeightCoefficients[1], _light.FogHeightCoefficients[0]), _light.blendCoef);
-                fogResult.MainFogCoefficients = mix(
-                    fogResult.MainFogCoefficients,
-                    mathfu::vec4(_light.MainFogCoefficients[3], _light.MainFogCoefficients[2],
-                    _light.MainFogCoefficients[1], _light.MainFogCoefficients[0]), _light.blendCoef);
-                fogResult.HeightDensityFogCoefficients = mix(
-                    fogResult.HeightDensityFogCoefficients,
-                    mathfu::vec4(_light.HeightDensityFogCoefficients[3],
-                        _light.HeightDensityFogCoefficients[2],
-                        _light.HeightDensityFogCoefficients[1],
-                        _light.HeightDensityFogCoefficients[0]), _light.blendCoef);
+            fogResult = exteriorFogResult;
 
-                fogResult.FogZScalar = mix(fogResult.FogZScalar, _light.FogZScalar, _light.blendCoef);
-                fogResult.LegacyFogScalar = mix(fogResult.LegacyFogScalar, _light.LegacyFogScalar, _light.blendCoef);
-                fogResult.MainFogStartDist = mix(fogResult.MainFogStartDist, _light.MainFogStartDist, _light.blendCoef);
-                fogResult.MainFogEndDist = mix(fogResult.MainFogEndDist, _light.MainFogEndDist, _light.blendCoef);
-                fogResult.FogBlendAlpha = mix(fogResult.FogBlendAlpha, _light.blendCoef, _light.blendCoef);
-                fogResult.HeightEndFogColor = mix(fogResult.HeightEndFogColor, mathfu::vec3(_light.HeightEndFogColor[2], _light.HeightEndFogColor[1], _light.HeightEndFogColor[0]), _light.blendCoef);
-                fogResult.FogStartOffset = mix(fogResult.FogStartOffset, _light.FogStartOffset, _light.blendCoef);
-            }
+            fdd->FogDataFound = true;
+
         }
     }
 }
@@ -372,6 +334,8 @@ inline float getFloatFromInt(int value) {
     if constexpr (T == 2) {
         return ((value >> 16) & 0xFF) / 255.0f;
     }
+
+    return 0.0f;
 }
 
 inline mathfu::vec3 intToColor3(int a) {
@@ -454,7 +418,7 @@ void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip,
     data.FogScaler = std::max<float>(std::min<float>(data.FogScaler, 1.0f), -1.0f);
     data.FogEnd = std::max<float>(data.FogEnd, 10.0f);
     data.FogHeight = std::max<float>(data.FogHeight, -10000.0f);
-    data.FogHeightScaler = std::max<float>(std::min<float>(data.FogScaler, 1.0f), -1.0f);
+    data.FogHeightScaler = std::max<float>(std::min<float>(data.FogHeightScaler, 1.0f), -1.0f);
 
     if (data.SunFogColor == 0)
         data.SunFogAngle = 1.0f;
@@ -478,8 +442,8 @@ void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip,
         fogScalarOverride = std::min(fogScalarOverride, -0.2f);
     }
 
-    if ( data.FogHeightScaler == 0.0f )
-        data.FogHeightDensity = data.FogDensity;
+//    if ( data.FogHeightScaler == 0.0f )
+//        data.FogHeightDensity = data.FogDensity;
 }
 
 void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
@@ -488,7 +452,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
                                 FogResult &fogResult,
                                 LiquidColors &liquidColors,
                                 StateForConditions *stateForConditions) {
-    if (m_api->databaseHandler == nullptr)
+    if (!m_api || !m_api->databaseHandler)
         return ;
 
     LightResult zoneLightResult;
@@ -561,6 +525,8 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
     if (m_api->databaseHandler->getLightParamData(selectedLightParam, config->currentTime, lightParamData)) {
 
         float blendTimeCoeff = (config->currentTime - lightParamData.lightTimedData[0].time) / (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
+        blendTimeCoeff = std::min<float>(std::max<float>(blendTimeCoeff, 0.0f), 1.0f);
+
 
         auto &dataA = lightParamData.lightTimedData[0];
         auto &dataB = lightParamData.lightTimedData[1];
@@ -644,6 +610,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.EndFogColor =           mixMembers<3>(lightParamData, &LightTimedData::EndFogColor, blendTimeCoeff);
         fogResult.EndFogColorDistance =   mixMembers<1>(lightParamData, &LightTimedData::EndFogColorDistance, blendTimeCoeff);
         fogResult.SunFogColor =           mixMembers<3>(lightParamData, &LightTimedData::SunFogColor, blendTimeCoeff);
+//        fogResult.SunFogColor = mathfu::vec3(0,0,0);
         fogResult.FogHeightColor =        mixMembers<3>(lightParamData, &LightTimedData::FogHeightColor, blendTimeCoeff);
         fogResult.FogHeightCoefficients = mixMembers<4>(lightParamData, &LightTimedData::FogHeightCoefficients, blendTimeCoeff);
         fogResult.MainFogCoefficients =   mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
@@ -655,9 +622,9 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.HeightEndFogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogHeightColor, blendTimeCoeff);
         fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
-        if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
-            fogResult.FogHeightCoefficients = mathfu::vec4(0,0,1,0);
-        }
+//        if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
+//            fogResult.FogHeightCoefficients = mathfu::vec4(0,0,1,0);
+//        }
 
         if (
             (fogResult.MainFogCoefficients.LengthSquared()) > 0.00000011920929f ||

@@ -429,6 +429,7 @@ void CSqliteDB::getTimedLightParamData(int lightParamId, int time, LightParamDat
     bool hasHeightDensityFogCoeff = getLightData.getFieldIndex("HeightDensityFogCoeff_0") >= 0;
 
     int timeIndex = 0;
+    std::array<bool, 2> slotWritten = {false, false};
     while (getLightData.execute()) {
         int thisTime = getLightData.getField("Time").getInt();
         if (thisTime > time) {
@@ -438,7 +439,7 @@ void CSqliteDB::getTimedLightParamData(int lightParamId, int time, LightParamDat
 
         if (timeIndex > 1) return;
 
-        auto currLdRes = lightParamData.lightTimedData[timeIndex];
+        auto &currLdRes = lightParamData.lightTimedData[timeIndex];
         currLdRes.time = thisTime;
 
         currLdRes.ambientLight = getLightData.getField("AmbientColor");
@@ -488,12 +489,14 @@ void CSqliteDB::getTimedLightParamData(int lightParamId, int time, LightParamDat
         currLdRes.HeightDensityFogCoeff[1] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_1").getDouble() : 0.0f;
         currLdRes.HeightDensityFogCoeff[2] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_2").getDouble() : 0.0f;
         currLdRes.HeightDensityFogCoeff[3] = hasHeightDensityFogCoeff ? getLightData.getField("HeightDensityFogCoeff_3").getDouble() : 0.0f;
+
+        slotWritten[timeIndex] = true;
     }
 
-    if (timeIndex == 0) {
-        //Found only one result. Let's copy it to the second slot
-        lightParamData.lightTimedData[1] = lightParamData.lightTimedData[0];
-    }
+    //Found only one result. Let's copy it to the second slot
+    if (slotWritten[0] && !slotWritten[1]) lightParamData.lightTimedData[1] = lightParamData.lightTimedData[0];
+    if (slotWritten[1] && !slotWritten[0]) lightParamData.lightTimedData[0] = lightParamData.lightTimedData[1];
+
 }
 
 
