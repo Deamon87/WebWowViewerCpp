@@ -232,7 +232,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             );
 
             fogData.sunAngle_and_sunColor = mathfu::vec4(
-                1.0f,//fogResult.SunFogAngle,
+                fogResult.SunFogAngle,
                 fogResult.SunFogColor.x,
                 fogResult.SunFogColor.y,
                 fogResult.SunFogColor.z
@@ -244,10 +244,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                 1000.0f
             );
             fogData.sunPercentage = mathfu::vec4(
-                0.0f, //fogResult.SunAngleBlend * fogResult.SunFogStrength,
+                fogResult.SunAngleBlend * fogResult.SunFogStrength,
                 0, 1.0, 1.0);
             fogData.sunDirection_and_fogZScalar = mathfu::vec4(
-                fdd->exteriorDirectColorDir, //TODO: for fog this is calculated from SUN position
+                fdd->sunDirection,
                 fogResult.FogZScalar
             );
             fogData.heightFogCoeff = fogResult.FogHeightCoefficients;

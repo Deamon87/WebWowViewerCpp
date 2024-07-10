@@ -386,6 +386,8 @@ bool CSqliteDB::getLightParamData(int lightParamId, int time, LightParamData &li
 
     getLightParamDataStatement.setInputs(lightParamId);
 
+    bool hasSecondOverrideSphere = getLightParamDataStatement.getFieldIndex("Field_11_0_0_54210_001_0");
+
     if (getLightParamDataStatement.execute()) {
         lightParamData.glow = getLightParamDataStatement.getField("Glow").getDouble();
         lightParamData.lightSkyBoxId = getLightParamDataStatement.getField("LightSkyboxID").getInt();
@@ -394,6 +396,12 @@ bool CSqliteDB::getLightParamData(int lightParamId, int time, LightParamData &li
         lightParamData.oceanShallowAlpha = getLightParamDataStatement.getField("OceanShallowAlpha").getDouble();
         lightParamData.oceanDeepAlpha = getLightParamDataStatement.getField("OceanDeepAlpha").getDouble();
         lightParamData.lightParamFlags = getLightParamDataStatement.getField("Flags").getInt();
+
+        if (hasSecondOverrideSphere) {
+            lightParamData.celestialBodyOverride2[0] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_0").getDouble();
+            lightParamData.celestialBodyOverride2[1] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_1").getDouble();
+            lightParamData.celestialBodyOverride2[2] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_2").getDouble();
+        }
     } else {
         //Record not found
         return false;

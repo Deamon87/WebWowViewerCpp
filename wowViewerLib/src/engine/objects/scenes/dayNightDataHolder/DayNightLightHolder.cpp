@@ -126,6 +126,8 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
 
     FogResult exteriorFogResult;
 
+    auto fdd = mapRenderPlan->frameDependentData;
+
     std::vector<LightResult> lightResults;
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
@@ -133,8 +135,9 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         ExteriorColors exteriorColors;
 
         LiquidColors liquidColors;
+        SkyBodyData skyBodyData;
 
-        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, exteriorColors, exteriorFogResult, liquidColors, &stateForConditions);
+        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, skyBodyData, exteriorColors, exteriorFogResult, liquidColors, &stateForConditions);
 
         //TODO: restore skyboxes
         /*
@@ -199,6 +202,22 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
             }
         }
         */
+
+        {
+            mathfu::vec3 sunPlanetPosVec3 = MathHelper::calcSunPlanetPos(
+                mapRenderPlan->renderingMatrices->lookAtMat,
+                m_api->getConfig()->currentTime
+            ) + frustumData.cameraPos;
+
+            if (skyBodyData.celestialBodyOverride2.LengthSquared() > 0.0f) {
+                sunPlanetPosVec3 = mathfu::vec3(
+                    skyBodyData.celestialBodyOverride2[0],
+                    skyBodyData.celestialBodyOverride2[1],
+                    skyBodyData.celestialBodyOverride2[2]);
+            }
+            mathfu::vec4 sunPlanetPos = mathfu::vec4((sunPlanetPosVec3 - frustumData.cameraPos).Normalized(), 0.0f);
+            fdd->sunDirection = (frustumData.viewMat.Inverse().Transpose() * sunPlanetPos).xyz().Normalized();
+        }
 
         float ambientMult = areaRecord.ambientMultiplier * 2.0f + 1;
 
@@ -442,12 +461,13 @@ void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip,
         fogScalarOverride = std::min(fogScalarOverride, -0.2f);
     }
 
-//    if ( data.FogHeightScaler == 0.0f )
-//        data.FogHeightDensity = data.FogDensity;
+    if ( data.FogHeightScaler == 0.0f )
+        data.FogHeightDensity = data.FogDensity;
 }
 
 void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
                                 SkyColors &skyColors,
+                                SkyBodyData &skyBodyData,
                                 ExteriorColors &exteriorColors,
                                 FogResult &fogResult,
                                 LiquidColors &liquidColors,
@@ -527,6 +547,11 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         float blendTimeCoeff = (config->currentTime - lightParamData.lightTimedData[0].time) / (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
         blendTimeCoeff = std::min<float>(std::max<float>(blendTimeCoeff, 0.0f), 1.0f);
 
+        skyBodyData.celestialBodyOverride2 = mathfu::vec3(
+            lightParamData.celestialBodyOverride2[0],
+            lightParamData.celestialBodyOverride2[1],
+            lightParamData.celestialBodyOverride2[2]
+        );
 
         auto &dataA = lightParamData.lightTimedData[0];
         auto &dataB = lightParamData.lightTimedData[1];
@@ -622,9 +647,9 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         fogResult.HeightEndFogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogHeightColor, blendTimeCoeff);
         fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
-//        if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
-//            fogResult.FogHeightCoefficients = mathfu::vec4(0,0,1,0);
-//        }
+        if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
+            fogResult.FogHeightCoefficients = mathfu::vec4(0,0,1,0);
+        }
 
         if (
             (fogResult.MainFogCoefficients.LengthSquared()) > 0.00000011920929f ||
@@ -653,6 +678,9 @@ void DayNightLightHolder::createMinFogDistances() {
 
     switch ( m_mapId )
     {
+        case 2695:
+            m_minFogDist1 = maxFarClip(7000.0);
+            break;
         case 1492:
             m_minFogDist1 = maxFarClip(7000.0);
             break;

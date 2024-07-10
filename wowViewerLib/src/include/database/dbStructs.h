@@ -84,6 +84,9 @@ struct LightParamData {
     float oceanDeepAlpha;
     int lightParamFlags = 0;
 
+    std::array<float, 3> celestialBodyOverride;
+    std::array<float, 3> celestialBodyOverride2;
+
     std::string skyBoxName;
     int skyBoxFdid;
     int skyBoxFlags;

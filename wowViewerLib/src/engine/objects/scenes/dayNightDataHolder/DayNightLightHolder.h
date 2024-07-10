@@ -35,6 +35,7 @@ public:
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
                                 SkyColors &skyColors,
+                                SkyBodyData &skyBodyData,
                                 ExteriorColors &exteriorColors,
                                 FogResult &fogResult,
                                 LiquidColors &liquidColors,

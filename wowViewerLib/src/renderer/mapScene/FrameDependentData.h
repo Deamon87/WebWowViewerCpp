@@ -48,6 +48,11 @@ struct SkyColors {
     mathfu::vec4 SkyFogColor;
 };
 
+struct SkyBodyData {
+    mathfu::vec3 celestialBodyOverride;
+    mathfu::vec3 celestialBodyOverride2;
+};
+
 struct LiquidColors {
     mathfu::vec4 closeRiverColor_shallowAlpha = mathfu::vec4(0,0,0,0);
     mathfu::vec4 farRiverColor_deepAlpha = mathfu::vec4(0,0,0,0);
@@ -85,6 +90,9 @@ struct FrameDependantData {
 //Sky params
     bool overrideValuesWithFinalFog = false;
     SkyColors skyColors;
+
+//Planet data
+    mathfu::vec3 sunDirection;
 
 
 //Fog params

@@ -806,9 +806,8 @@ float doSomeConvert(float a) {
     return res;
 }
 
-mathfu::vec3 MathHelper::calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int time) {
-    // Phi Table
-    static constexpr std::array<std::array<float, 2>, 5> sunPhiTable = {
+namespace SkyConstantsAndFunctions {
+        static constexpr std::array<std::array<float, 2>, 5> sunPhiTable = {
         {
             { 0.25f,        1.7453293f },
             { 0.49652779f,  0.08726646f},
@@ -862,43 +861,54 @@ mathfu::vec3 MathHelper::calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int
         }
     };
 
+    enum class SkyDataType : int { SK_SUN, SK_MOON, SK_DIR_LIGHT };
 
+    template <SkyDataType T>
+    mathfu::vec3 getVector(int time) {
+        float timeF = time / 2880.0f;
 
-    float phi = sunPhiTable[0][1];
-    float theta = sunThetaTable[0][1];
+        float phi =   0.0f;
+        float theta = 0.0f;
 
-    //Find Index
-    float timeF = time / 2880.0f;
+        if constexpr (T == SkyDataType::SK_DIR_LIGHT) {
+            phi = InterpTable<4>(directionalLightPhiTable, timeF);
+            theta = InterpTable<4>(directionalLightThetaTable, timeF);
+        }
+        if constexpr (T == SkyDataType::SK_SUN) {
+            phi = InterpTable<5>(sunPhiTable, timeF);
+            theta = InterpTable<3>(sunThetaTable, timeF);
+        }
+        if constexpr (T == SkyDataType::SK_MOON) {
+            phi = InterpTable<5>(moonPhiTable, timeF);
+            theta = InterpTable<3>(moonThetaTable, timeF);
+        }
 
+        constexpr float INV_PI = 1.0f / M_PI;
 
-    phi = InterpTable<4>(directionalLightPhiTable, timeF);
-    theta = InterpTable<4>(directionalLightThetaTable, timeF);
+        float sinPhi = doSomeConvert(phi * INV_PI - 0.5f);
+        float cosPhi = doSomeConvert(phi * INV_PI);
 
-//    if ( timeF >= 0.22222222f && timeF <= 0.81944448f )
-//    {
-//        phi = InterpTable<5>(sunPhiTable, timeF);
-//        theta = InterpTable<3>(sunThetaTable, timeF);
-//    }
-//    else
-//    {
-//        phi = InterpTable<5>(moonPhiTable, timeF);
-//        theta = InterpTable<3>(moonThetaTable, timeF);
-//    }
-    constexpr float INV_PI = 1.0f / M_PI;
+        float sinTheta = doSomeConvert(theta * INV_PI + -0.5f);
+        float cosTheta = doSomeConvert(theta * INV_PI);
 
-    float sinPhi = doSomeConvert(phi * INV_PI - 0.5f);
-    float cosPhi = doSomeConvert(phi * INV_PI);
+        mathfu::vec3 vec = mathfu::vec3(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi);
+        return vec;
+    }
+}
 
-    float sinTheta = doSomeConvert(theta * INV_PI + -0.5f);
-    float cosTheta = doSomeConvert(theta * INV_PI);
+mathfu::vec3 MathHelper::calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int time) {
+    using namespace SkyConstantsAndFunctions;
 
-
-    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-//    sunDirWorld = mathfu::vec4(sunDirWorld.x, sunDirWorld.x, sunDirWorld.x, 0);
+    mathfu::vec4 sunDirWorld = mathfu::vec4(getVector<SkyDataType::SK_DIR_LIGHT>(time), 0.0f);
     sunDirWorld = mathfu::vec4(sunDirWorld.xyz().Normalized(), 0.0f);
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
+
     return (lookAtMat.Inverse().Transpose() * sunDirWorld).xyz().Normalized();
+}
+mathfu::vec3 MathHelper::calcSunPlanetPos(const mathfu::mat4 &lookAtMat, int time) {
+    using namespace SkyConstantsAndFunctions;
+
+    mathfu::vec4 sunPlanetPos = mathfu::vec4(getVector<SkyDataType::SK_SUN>(time), 0.0f);
+    return sunPlanetPos.xyz();
 }
 
 mathfu::vec3 MathHelper::hsv2rgb(const MathHelper::hsv &in) {
