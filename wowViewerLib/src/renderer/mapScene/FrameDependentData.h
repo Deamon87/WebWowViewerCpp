@@ -11,6 +11,8 @@
 #endif
 #include "mathfu/glsl_mappings.h"
 
+#include "../../include/database/dbStructs.h"
+
 struct FogResult {
     float FogEnd = 0;
     float FogScaler = 0;
@@ -51,6 +53,8 @@ struct SkyColors {
 struct SkyBodyData {
     mathfu::vec3 celestialBodyOverride;
     mathfu::vec3 celestialBodyOverride2;
+
+    SkyBoxInfo skyBoxInfo;
 };
 
 struct LiquidColors {

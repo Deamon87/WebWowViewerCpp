@@ -58,8 +58,6 @@ protected:
     bool useWeightedBlend = false;
     bool has0x200000Flag = false;
 
-    std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
-
     std::shared_ptr<WdlObject> m_wdlObject = nullptr;
     std::shared_ptr<WdtLightsObject> m_wdtLightObject = nullptr;
 

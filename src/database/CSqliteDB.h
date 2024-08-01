@@ -91,6 +91,7 @@ private:
     StatementFieldHolder getLightStatement;
     StatementFieldHolder getLightByIdStatement;
     StatementFieldHolder getLightParamDataStatement;
+    StatementFieldHolder getLightSkyStatement;
     StatementFieldHolder getLightData;
     StatementFieldHolder getLiquidObjectInfo;
     StatementFieldHolder getLiquidTypeInfo;

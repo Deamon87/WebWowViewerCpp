@@ -83,7 +83,7 @@ public:
     int minParticle = 0;
     int maxParticle = 9999;
 
-    int currentTime = 0;
+    uint16_t currentTime = 0;
 
     bool useWotlkLogic = false;
 

@@ -224,6 +224,10 @@ public:
     void setAlpha(float alpha) {
         m_alpha = alpha;
     }
+
+    float getAlpha() const {
+        return m_alpha;
+    }
     void setOverrideAnimationPerc(float percent, bool active) {
         animationOverrideActive = active;
         animationOverridePercent = percent;

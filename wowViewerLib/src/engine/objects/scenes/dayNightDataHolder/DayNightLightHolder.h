@@ -24,7 +24,28 @@ private:
         std::vector<mathfu::vec2> points;
         std::vector<mathfu::vec2> lines;
     };
+
+    struct SkyBoxCollector {
+        public:
+            SkyBoxCollector(const HApiContainer& api, std::vector<std::shared_ptr<M2Object>> &existingSkyBoxes) : m_existingSkyBoxes(existingSkyBoxes), m_api(api) {};
+
+            void addSkyBox(StateForConditions &stateForConditions, const SkyBoxInfo &skyBoxInfo, float alpha);
+            const std::vector<std::shared_ptr<M2Object>> &getNewSkyBoxes() const {
+                return m_existingSkyBoxes;
+            }
+            bool getOverrideValuesWithFinalFog() const  { return m_overrideValuesWithFinalFog; }
+
+        private:
+            HApiContainer m_api;
+
+            bool m_overrideValuesWithFinalFog = false;
+            std::vector<std::shared_ptr<M2Object>> &m_existingSkyBoxes;
+            std::vector<std::shared_ptr<M2Object>> m_newSkyBoxes;
+    };
+
     std::vector<mapInnerZoneLightRecord> m_zoneLights;
+    std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
+
 
     HApiContainer m_api;
     int m_mapId = -1;
@@ -39,7 +60,12 @@ public:
                                 ExteriorColors &exteriorColors,
                                 FogResult &fogResult,
                                 LiquidColors &liquidColors,
+                                SkyBoxCollector &skyBoxCollector,
                                 StateForConditions *stateForConditions);
+
+    const std::vector<std::shared_ptr<M2Object>> &getExteriorSkyBoxes() const {
+        return m_exteriorSkyBoxes;
+    }
 
 private:
     bool m_mapFlag2_0x2 = false;
@@ -54,6 +80,15 @@ private:
     void fixLightTimedData(LightTimedData &data, float farClip, float &fogScalarOverride);
     float getClampedFarClip(float farClip);
     void createMinFogDistances();
+
+    void
+    inline calcLightParamResult(int lightParamId, const Config *config, SkyBodyData &skyBodyData,
+                         ExteriorColors &exteriorColors,
+                         FogResult &fogResult, LiquidColors &liquidColors,
+                         SkyColors &skyColors);
+
+    void processSkyBoxes(const HMapRenderPlan &mapRenderPlan, const StateForConditions &stateForConditions,
+                         const Config *config) const;
 };
 
 

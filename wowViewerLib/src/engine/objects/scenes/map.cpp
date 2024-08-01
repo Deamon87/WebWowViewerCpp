@@ -500,10 +500,11 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
                 frustumData);
         }
 
-        if (!m_exteriorSkyBoxes.empty() && config->renderSkyDom) {
+        auto &exteriorSkyBoxes = m_dayNightLightHolder.getExteriorSkyBoxes();
+        if (!exteriorSkyBoxes.empty() && config->renderSkyDom) {
             auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
 
-            for (auto &model: m_exteriorSkyBoxes) {
+            for (auto &model: exteriorSkyBoxes) {
                 if (model != nullptr) {
                     skyBoxView->m2List.addToDraw(model);
                 }

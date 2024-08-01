@@ -143,6 +143,10 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
     getLightParamDataStatement(m_sqliteDatabase, generateSimpleSelectSQL("LightParams",
                                                                          {},
                                                                        "where ID = ?")),
+    getLightSkyStatement(m_sqliteDatabase, generateSimpleSelectSQL("LightSkybox",
+                                                                         {},
+                                                                       "where ID = ?")),
+
     getLiquidObjectInfo(m_sqliteDatabase,liquidObjectInfoSQL),
     getLiquidTypeInfo(m_sqliteDatabase, liquidTypeSQL),
     getLiquidTextureFileDataIds(m_sqliteDatabase, getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidTextureFileDataIdsSQL : "select 1 from Map;"),
@@ -354,8 +358,6 @@ void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
 void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) {
     getLightStatement.setInputs(x, y, z, mapId );
 
-    bool defaultRecordSet = false;
-
     while (getLightStatement.execute()) {
         auto &ilr = lightResults.emplace_back();
         ilr.id = getLightStatement.getField("LightId").getInt();
@@ -364,6 +366,7 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, std::vector<Lig
         ilr.pos[2] = getLightStatement.getField("GameCoords_2").getDouble();
         ilr.fallbackStart = getLightStatement.getField("GameFalloffStart").getDouble();
         ilr.fallbackEnd = getLightStatement.getField("GameFalloffEnd").getDouble();
+        ilr.continentId = getLightStatement.getField("ContinentID").getInt();
         ilr.lightParamId[0] = getLightStatement.getField("LightParamsID_0").getInt();
         ilr.lightParamId[1] = getLightStatement.getField("LightParamsID_1").getInt();
         ilr.lightParamId[2] = getLightStatement.getField("LightParamsID_2").getInt();
@@ -378,15 +381,20 @@ void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, std::vector<Lig
 
         ilr.blendAlpha =
             sqrtf(ilr.lightDistSQR) > ilr.fallbackStart ?
-            std::max<float>( ((ilr.fallbackStart - sqrtf(ilr.lightDistSQR)) / (ilr.fallbackEnd - ilr.fallbackStart)) + 1.0f, 0.0f) :
-            1.0f;
+            std::min<float>(
+                std::max<float>(
+                    ((ilr.fallbackStart - sqrtf(ilr.lightDistSQR)) / (ilr.fallbackEnd - ilr.fallbackStart)) + 1.0f,
+                    0.0f
+                ),
+                1.0f
+            ) : 1.0f;
     }
 }
 bool CSqliteDB::getLightParamData(int lightParamId, int time, LightParamData &lightParamData) {
 
     getLightParamDataStatement.setInputs(lightParamId);
 
-    bool hasSecondOverrideSphere = getLightParamDataStatement.getFieldIndex("Field_11_0_0_54210_001_0");
+    bool hasSecondOverrideSphere = getLightParamDataStatement.getFieldIndex("Field_11_0_0_54210_001_0") >= 0;
 
     if (getLightParamDataStatement.execute()) {
         lightParamData.glow = getLightParamDataStatement.getField("Glow").getDouble();
@@ -401,6 +409,18 @@ bool CSqliteDB::getLightParamData(int lightParamId, int time, LightParamData &li
             lightParamData.celestialBodyOverride2[0] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_0").getDouble();
             lightParamData.celestialBodyOverride2[1] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_1").getDouble();
             lightParamData.celestialBodyOverride2[2] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_2").getDouble();
+        }
+
+        if (lightParamData.lightSkyBoxId > 0) {
+            getLightSkyStatement.setInputs(lightParamData.lightSkyBoxId);
+            if (getLightSkyStatement.execute()) {
+                auto &skyboxInfo = lightParamData.skyboxInfo;
+
+                skyboxInfo.id = lightParamData.lightSkyBoxId;
+                skyboxInfo.skyBoxFlags = getLightSkyStatement.getField("Flags").getInt();
+                skyboxInfo.skyBoxFdid = getLightSkyStatement.getField("SkyboxFileDataID").getInt();
+                skyboxInfo.celectialSkyBoxFdid = getLightSkyStatement.getField("CelestialSkyboxFileDataID").getInt();
+            }
         }
     } else {
         //Record not found

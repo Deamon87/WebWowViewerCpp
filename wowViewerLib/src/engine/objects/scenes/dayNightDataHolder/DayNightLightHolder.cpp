@@ -17,6 +17,8 @@ DayNightLightHolder::DayNightLightHolder(const HApiContainer &api, int mapId) : 
         m_mapHasFlag_0x200000 = (mapRecord.flags0 & 0x200000) > 0;
         m_mapHasFlag_0x10000 = (mapRecord.flags0 & 0x10000) > 0;
     }
+
+    createMinFogDistances();
 }
 
 void DayNightLightHolder::loadZoneLights() {
@@ -70,38 +72,71 @@ static inline float mix(const float &a, const float &b, float alpha) {
     return (b - a) * alpha + a;
 }
 
-template <typename T>
-void mixFogMember(FogResult& a, FogResult& b, T FogResult::*member, float blendTimeCoeff) {
+template <typename T, typename S>
+void mixStructOffset(T& a, T& b, S T::*member, float blendTimeCoeff) {
     a.*member = mix(a.*member, b.*member, blendTimeCoeff);
 }
 
-void fogMixAndSet(FogResult& a, FogResult& b, float blendCoeff) {
-    mixFogMember(a, b, &FogResult::FogEnd                       , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogScaler                    , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogDensity                   , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogHeight                    , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogHeightScaler              , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogHeightDensity             , blendCoeff);
-    mixFogMember(a, b, &FogResult::SunFogAngle                  , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogColor                     , blendCoeff);
-    mixFogMember(a, b, &FogResult::EndFogColor                  , blendCoeff);
-    mixFogMember(a, b, &FogResult::EndFogColorDistance          , blendCoeff);
-    mixFogMember(a, b, &FogResult::SunFogColor                  , blendCoeff);
-    mixFogMember(a, b, &FogResult::SunFogStrength               , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogHeightColor               , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogHeightCoefficients        , blendCoeff);
-    mixFogMember(a, b, &FogResult::MainFogCoefficients          , blendCoeff);
-    mixFogMember(a, b, &FogResult::HeightDensityFogCoefficients , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogZScalar                   , blendCoeff);
-    mixFogMember(a, b, &FogResult::LegacyFogScalar              , blendCoeff);
-    mixFogMember(a, b, &FogResult::MainFogStartDist             , blendCoeff);
-    mixFogMember(a, b, &FogResult::MainFogEndDist               , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogBlendAlpha                , blendCoeff);
-    mixFogMember(a, b, &FogResult::HeightEndFogColor            , blendCoeff);
-    mixFogMember(a, b, &FogResult::FogStartOffset               , blendCoeff);
-    mixFogMember(a, b, &FogResult::SunAngleBlend                , blendCoeff);
+template <typename T>
+void mixStructure(T &a, T &b, float blendCoeff);
+
+template <>
+void mixStructure<FogResult>(FogResult& a, FogResult& b, float blendCoeff) {
+    mixStructOffset(a, b, &FogResult::FogEnd                       , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogScaler                    , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogDensity                   , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogHeight                    , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogHeightScaler              , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogHeightDensity             , blendCoeff);
+    mixStructOffset(a, b, &FogResult::SunFogAngle                  , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogColor                     , blendCoeff);
+    mixStructOffset(a, b, &FogResult::EndFogColor                  , blendCoeff);
+    mixStructOffset(a, b, &FogResult::EndFogColorDistance          , blendCoeff);
+    mixStructOffset(a, b, &FogResult::SunFogColor                  , blendCoeff);
+    mixStructOffset(a, b, &FogResult::SunFogStrength               , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogHeightColor               , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogHeightCoefficients        , blendCoeff);
+    mixStructOffset(a, b, &FogResult::MainFogCoefficients          , blendCoeff);
+    mixStructOffset(a, b, &FogResult::HeightDensityFogCoefficients , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogZScalar                   , blendCoeff);
+    mixStructOffset(a, b, &FogResult::LegacyFogScalar              , blendCoeff);
+    mixStructOffset(a, b, &FogResult::MainFogStartDist             , blendCoeff);
+    mixStructOffset(a, b, &FogResult::MainFogEndDist               , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogBlendAlpha                , blendCoeff);
+    mixStructOffset(a, b, &FogResult::HeightEndFogColor            , blendCoeff);
+    mixStructOffset(a, b, &FogResult::FogStartOffset               , blendCoeff);
+    mixStructOffset(a, b, &FogResult::SunAngleBlend                , blendCoeff);
 }
 
+template <>
+void mixStructure<SkyColors>(SkyColors& a, SkyColors& b, float blendCoeff) {
+    mixStructOffset(a, b, &SkyColors::SkyTopColor        , blendCoeff);
+    mixStructOffset(a, b, &SkyColors::SkyMiddleColor     , blendCoeff);
+    mixStructOffset(a, b, &SkyColors::SkyBand1Color      , blendCoeff);
+    mixStructOffset(a, b, &SkyColors::SkyBand2Color      , blendCoeff);
+    mixStructOffset(a, b, &SkyColors::SkySmogColor       , blendCoeff);
+    mixStructOffset(a, b, &SkyColors::SkyFogColor        , blendCoeff);
+}
+
+template <>
+void mixStructure<ExteriorColors>(ExteriorColors& a, ExteriorColors& b, float blendCoeff) {
+    mixStructOffset(a, b, &ExteriorColors::exteriorAmbientColor          , blendCoeff);
+    mixStructOffset(a, b, &ExteriorColors::exteriorHorizontAmbientColor  , blendCoeff);
+    mixStructOffset(a, b, &ExteriorColors::exteriorGroundAmbientColor    , blendCoeff);
+    mixStructOffset(a, b, &ExteriorColors::exteriorDirectColor           , blendCoeff);
+}
+template <>
+void mixStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoeff) {
+    mixStructOffset(a, b, &LiquidColors::closeRiverColor_shallowAlpha  , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::farRiverColor_deepAlpha       , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::closeOceanColor_shallowAlpha  , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::farOceanColor_deepAlpha       , blendCoeff);
+}
+template <>
+void mixStructure<SkyBodyData>(SkyBodyData& a, SkyBodyData& b, float blendCoeff) {
+    mixStructOffset(a, b, &SkyBodyData::celestialBodyOverride  , blendCoeff);
+    mixStructOffset(a, b, &SkyBodyData::celestialBodyOverride2 , blendCoeff);
+}
 
 void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
                                                    MathHelper::FrustumCullingData &frustumData,
@@ -127,8 +162,6 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
     FogResult exteriorFogResult;
 
     auto fdd = mapRenderPlan->frameDependentData;
-
-    std::vector<LightResult> lightResults;
     if ((m_api->databaseHandler != nullptr)) {
         //Check zoneLight
         SkyColors skyColors;
@@ -137,71 +170,12 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         LiquidColors liquidColors;
         SkyBodyData skyBodyData;
 
-        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, skyBodyData, exteriorColors, exteriorFogResult, liquidColors, &stateForConditions);
+        SkyBoxCollector skyBoxCollector(m_api, m_exteriorSkyBoxes);
 
-        //TODO: restore skyboxes
-        /*
-        //Delete skyboxes that are not in light array
-        std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
-        auto modelIt = m_exteriorSkyBoxes.begin();
-        while (modelIt != m_exteriorSkyBoxes.end()) {
-            bool found = false;
-            for (auto &_light : lightResults) {
-                if (_light.skyBoxFdid == (*modelIt)->getModelFileId()) {
-                    if (!drawDefaultSkybox && _light.isDefault) continue;
+        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, skyBodyData, exteriorColors, exteriorFogResult, liquidColors, skyBoxCollector, &stateForConditions);
 
-                    found = true;
-                    break;
-                }
-            }
-
-            if (found) {
-                perFdidMap[(*modelIt)->getModelFileId()] = *modelIt;
-                modelIt++;
-            } else {
-                modelIt = m_exteriorSkyBoxes.erase(modelIt);
-            }
-        }
-
-        m_skyConeAlpha = 1.0;
-
-
-
-        for (auto &_light : lightResults) {
-            if (_light.skyBoxFdid == 0 || _light.lightSkyboxId == 0) continue;
-
-            stateForConditions.currentSkyboxIds.push_back(_light.lightSkyboxId);
-            std::shared_ptr<M2Object> skyBox = nullptr;
-            if (perFdidMap[_light.skyBoxFdid] == nullptr) {
-                skyBox = m2Factory.createObject(m_api, true);
-                skyBox->setLoadParams(0, {}, {});
-
-                skyBox->setModelFileId(_light.skyBoxFdid);
-
-                skyBox->createPlacementMatrix(mathfu::vec3(0, 0, 0), 0, mathfu::vec3(1, 1, 1), nullptr);
-                skyBox->calcWorldPosition();
-                m_exteriorSkyBoxes.push_back(skyBox);
-            } else {
-                skyBox = perFdidMap[_light.skyBoxFdid];
-            }
-
-            skyBox->setAlpha(_light.blendCoef);
-            if ((_light.skyBoxFlags & 4) > 0 ) {
-                //In this case conus is still rendered been, but all values are final fog values.
-                auto fdd = mapRenderPlan->frameDependentData;
-                fdd->overrideValuesWithFinalFog = true;
-            }
-
-            if ((_light.skyBoxFlags & 2) == 0) {
-//                m_skyConeAlpha -= _light.blendCoef;
-                m_skyConeAlpha -= _light.blendCoef;
-            }
-
-            if (_light.skyBoxFlags & 1) {
-                skyBox->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
-            }
-        }
-        */
+        m_exteriorSkyBoxes = skyBoxCollector.getNewSkyBoxes();
+        mapRenderPlan->frameDependentData->overrideValuesWithFinalFog = skyBoxCollector.getOverrideValuesWithFinalFog();
 
         {
             mathfu::vec3 sunPlanetPosVec3 = MathHelper::calcSunPlanetPos(
@@ -342,6 +316,7 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
     }
 }
 
+
 template <int T>
 inline float getFloatFromInt(int value) {
     if constexpr (T == 0) {
@@ -471,43 +446,12 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
                                 ExteriorColors &exteriorColors,
                                 FogResult &fogResult,
                                 LiquidColors &liquidColors,
+                                SkyBoxCollector &skyBoxCollector,
                                 StateForConditions *stateForConditions) {
     if (!m_api || !m_api->databaseHandler)
         return ;
 
-    LightResult zoneLightResult;
-
-    bool zoneLightFound = false;
-    int LightId;
-    for (const auto &zoneLight : m_zoneLights) {
-        CAaBox laabb = zoneLight.aabb;
-        auto const vec50 = mathfu::vec3(50.0f,50.0f,0);
-        laabb.min = (mathfu::vec3(laabb.min) - vec50);
-        laabb.max = (mathfu::vec3(laabb.max) + vec50);
-        if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
-            zoneLightFound = true;
-
-            if (stateForConditions != nullptr) {
-                stateForConditions->currentZoneLights.push_back(zoneLight.ID);
-            }
-            LightId = zoneLight.LightID;
-            break;
-        }
-    }
-
-    uint8_t currentLightParamIdIndex = 0;
-
-    int selectedLightParam = 0;
-    int selectedLightId = 0;
-
-    if (zoneLightFound) {
-        selectedLightId = LightId;
-        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
-        if (stateForConditions != nullptr) {
-            selectedLightParam = zoneLightResult.lightParamId[currentLightParamIdIndex];
-            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId[currentLightParamIdIndex]);
-        }
-    }
+    int currentLightParamIdIndex = 0;
 
     //Get light from DB
     std::vector<LightResult> lightResults;
@@ -518,31 +462,126 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
                                        lightResults
     );
     std::sort(lightResults.begin(), lightResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
-        return a.blendAlpha > b.blendAlpha;
+        return a.blendAlpha < b.blendAlpha;
     });
 
-
-    for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
-        if (feq(it->pos[0], 0.0) && feq(it->pos[1], 0.0) && feq(it->pos[2], 0.0)) {
-            //This is default record. If zoneLight was selected -> skip it.
-            if (!zoneLightFound) {
-                selectedLightParam = it->lightParamId[currentLightParamIdIndex];
-                selectedLightId = it->id;
+    int defaultLightParamId = -1;
+    int defaultLightId = -1;
+    {
+        bool selectedDefault = false;
+        bool selectedDefaultMap = false;
+        int defaultLightParam = -1;
+        for (auto it = lightResults.begin(); it != lightResults.end();) {
+            if (feq(it->pos[0], 0.0) && feq(it->pos[1], 0.0) && feq(it->pos[2], 0.0)) {
+                //This is default record. If zoneLight was selected -> skip it.
+                if (!selectedDefaultMap) {
+                    if (it->continentId == m_mapId) {
+                        selectedDefaultMap = true;
+                        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, skyBodyData, exteriorColors, fogResult, liquidColors, skyColors);
+                        defaultLightParamId = it->lightParamId[currentLightParamIdIndex]; defaultLightId = it->id;
+                    } else if (!selectedDefault && it->continentId == 0) {
+                        selectedDefault = true;
+                        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, skyBodyData, exteriorColors, fogResult, liquidColors, skyColors);
+                        defaultLightParamId = it->lightParamId[currentLightParamIdIndex]; defaultLightId = it->id;
+                    }
+                }
+                it = lightResults.erase(it);
+            } else {
+                it++;
             }
-        } else {
-            selectedLightParam = it->lightParamId[currentLightParamIdIndex];
-            selectedLightId = it->id;
-            break;
         }
     }
 
-    if (stateForConditions != nullptr) {
-        stateForConditions->currentZoneLights.push_back(selectedLightParam);
-        stateForConditions->currentLightIds.push_back(selectedLightId);
+
+    struct FoundZoneLights {
+        int LightId = -1;
+        float dist;
+    };
+
+    std::vector<FoundZoneLights> foundZoneLights;
+
+    for (const auto &zoneLight : m_zoneLights) {
+        CAaBox laabb = zoneLight.aabb;
+        auto const vec50 = mathfu::vec3(50.0f,50.0f,0);
+        laabb.min = (mathfu::vec3(laabb.min) - vec50);
+        laabb.max = (mathfu::vec3(laabb.max) + vec50);
+        if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
+            if (stateForConditions != nullptr) {
+                stateForConditions->currentZoneLights.push_back(zoneLight.ID);
+            }
+            float distToBorder = MathHelper::findLeastDistanceToBorder(cameraVec3, zoneLight.points);
+            foundZoneLights.emplace_back() = {zoneLight.LightID, distToBorder};
+        }
     }
 
+    if (stateForConditions != nullptr && defaultLightParamId > 0 && defaultLightId > 0) {
+        stateForConditions->currentLightParams.push_back(defaultLightParamId);
+        stateForConditions->currentLightIds.push_back(defaultLightId);
+    }
+
+
+    std::sort(foundZoneLights.begin(), foundZoneLights.end(), [](const FoundZoneLights &a, const FoundZoneLights &b) {
+        return a.dist > b.dist;
+    });
+    for (auto it = foundZoneLights.begin(); it != foundZoneLights.end(); it++) {
+        LightResult zoneLightResult;
+
+        const float zoneBlendDistStart = 100.0f;
+        float blendFactor = std::min<float>(1.0f, (it->dist) / zoneBlendDistStart);
+
+        m_api->databaseHandler->getLightById(it->LightId, config->currentTime, zoneLightResult);
+
+        SkyColors tmp_skyColors;
+        ExteriorColors tmp_exteriorColors;
+
+        LiquidColors tmp_liquidColors;
+        SkyBodyData tmp_skyBodyData;
+        FogResult tmp_fogResult;
+
+        calcLightParamResult(zoneLightResult.lightParamId[currentLightParamIdIndex], config, tmp_skyBodyData,
+                             tmp_exteriorColors, tmp_fogResult, tmp_liquidColors, tmp_skyColors);
+
+        mixStructure(skyColors,      tmp_skyColors,      blendFactor);
+        mixStructure(exteriorColors, tmp_exteriorColors, blendFactor);
+        mixStructure(liquidColors,   tmp_liquidColors,   blendFactor);
+        mixStructure(skyBodyData,    tmp_skyBodyData,    blendFactor);
+        mixStructure(fogResult,      tmp_fogResult,      blendFactor);
+
+        if (tmp_skyBodyData.skyBoxInfo.id > 0) {
+            skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, blendFactor);
+        }
+    }
+
+    for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
+        SkyColors tmp_skyColors;
+        ExteriorColors tmp_exteriorColors;
+
+        LiquidColors tmp_liquidColors;
+        SkyBodyData tmp_skyBodyData;
+        FogResult tmp_fogResult;
+
+        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, tmp_skyBodyData,
+                             tmp_exteriorColors, tmp_fogResult, tmp_liquidColors, tmp_skyColors);
+
+        mixStructure(skyColors,      tmp_skyColors,      it->blendAlpha);
+        mixStructure(exteriorColors, tmp_exteriorColors, it->blendAlpha);
+        mixStructure(liquidColors,   tmp_liquidColors,   it->blendAlpha);
+        mixStructure(skyBodyData,    tmp_skyBodyData,    it->blendAlpha);
+        mixStructure(fogResult,      tmp_fogResult,      it->blendAlpha);
+
+        if (tmp_skyBodyData.skyBoxInfo.id > 0) {
+            skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, it->blendAlpha);
+        }
+    }
+}
+
+void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *config,
+                                               SkyBodyData &skyBodyData,
+                                               ExteriorColors &exteriorColors, FogResult &fogResult,
+                                               LiquidColors &liquidColors,
+                                               SkyColors &skyColors) {
     LightParamData lightParamData;
-    if (m_api->databaseHandler->getLightParamData(selectedLightParam, config->currentTime, lightParamData)) {
+    if (m_api->databaseHandler->getLightParamData(lightParamId, config->currentTime, lightParamData)) {
 
         float blendTimeCoeff = (config->currentTime - lightParamData.lightTimedData[0].time) / (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
         blendTimeCoeff = std::min<float>(std::max<float>(blendTimeCoeff, 0.0f), 1.0f);
@@ -661,7 +700,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         }
 
         fogResult.FogDensity = fmaxf(fogResult.FogDensity, 0.89999998f);
-        if ( m_mapFlag2_0x2 )
+        if (m_mapFlag2_0x2)
         {
             fogResult.FogDensity = 1.0f;
         }
@@ -694,5 +733,59 @@ void DayNightLightHolder::createMinFogDistances() {
 
     if (m_mapHasFlag_0x200000) {
         m_minFogDist2 = maxFarClip(30000.0f);
+    }
+}
+
+void DayNightLightHolder::SkyBoxCollector::addSkyBox(StateForConditions &stateForConditions, const SkyBoxInfo &skyBoxInfo, float alpha) {
+    if (skyBoxInfo.skyBoxFdid == 0) return;
+
+    std::shared_ptr<M2Object> skyBoxModel = nullptr;
+
+    //1. Find in added skyboxes
+    for (const auto &model : m_newSkyBoxes) {
+        if (skyBoxInfo.skyBoxFdid == model->getModelFileId()) {
+            skyBoxModel = model;
+
+            float currentAlpha = model->getAlpha();
+            model->setAlpha(std::max<float>(currentAlpha, alpha));
+            break;
+        }
+    }
+
+    //2. Otherwise, find in old skyboxes
+    if (!skyBoxModel) {
+        for (const auto &model: m_existingSkyBoxes) {
+            if (skyBoxInfo.skyBoxFdid == model->getModelFileId()) {
+                skyBoxModel = model;
+
+                model->setAlpha(alpha);
+                m_newSkyBoxes.push_back(model);
+                break;
+            }
+        }
+    }
+
+    stateForConditions.currentSkyboxIds.push_back(skyBoxInfo.id);
+
+    //3. Otherwise create
+    if (skyBoxModel == nullptr) {
+        skyBoxModel = m2Factory.createObject(m_api, true);
+        skyBoxModel->setLoadParams(0, {}, {});
+
+        skyBoxModel->setModelFileId(skyBoxInfo.skyBoxFdid);
+
+        skyBoxModel->createPlacementMatrix(mathfu::vec3(0, 0, 0), 0, mathfu::vec3(1, 1, 1), nullptr);
+        skyBoxModel->calcWorldPosition();
+        m_newSkyBoxes.push_back(skyBoxModel);
+    }
+
+
+    if ((skyBoxInfo.skyBoxFlags & 4) > 0 ) {
+        //In this case cone is still rendered been, but all values are final fog values.
+        m_overrideValuesWithFinalFog = true;
+    }
+
+    if (skyBoxInfo.skyBoxFlags & 1) {
+        skyBoxModel->setOverrideAnimationPerc(m_api->getConfig()->currentTime / 2880.0, true);
     }
 }

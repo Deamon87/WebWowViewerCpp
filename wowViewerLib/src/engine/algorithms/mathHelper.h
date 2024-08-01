@@ -124,6 +124,7 @@ public:
     static bool isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
 
     static bool isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points);
+    static float findLeastDistanceToBorder(mathfu::vec3 &p, const std::vector<mathfu::vec2> &points);
 
     static mathfu::vec3 getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec3 &c);
 

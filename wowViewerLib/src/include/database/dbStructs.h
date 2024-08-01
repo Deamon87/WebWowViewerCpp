@@ -75,21 +75,27 @@ struct LightTimedData {
     std::array<float, 4> HeightDensityFogCoeff;
 };
 
+struct SkyBoxInfo {
+    int id = -1;
+    std::string skyBoxName;
+    int skyBoxFdid = 0;
+    int celectialSkyBoxFdid = 0;
+    int skyBoxFlags = 0;
+};
+
 struct LightParamData {
     int lightSkyBoxId = 0;
     float glow = 1.0f;
-    float waterShallowAlpha;
-    float waterDeepAlpha;
-    float oceanShallowAlpha;
-    float oceanDeepAlpha;
+    float waterShallowAlpha = 1.0f;
+    float waterDeepAlpha= 1.0f;
+    float oceanShallowAlpha = 1.0f;
+    float oceanDeepAlpha = 1.0f;
     int lightParamFlags = 0;
 
     std::array<float, 3> celestialBodyOverride;
     std::array<float, 3> celestialBodyOverride2;
 
-    std::string skyBoxName;
-    int skyBoxFdid;
-    int skyBoxFlags;
+    SkyBoxInfo skyboxInfo;
 
     std::array<LightTimedData, 2> lightTimedData;
 };

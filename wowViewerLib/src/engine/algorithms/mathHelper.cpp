@@ -727,6 +727,26 @@ bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, con
     return false;
 }
 
+float MathHelper::findLeastDistanceToBorder(mathfu::vec3 &p, const std::vector<mathfu::vec2> &points) {
+    auto const calcDistance = [p](const mathfu::vec2 &a, const mathfu::vec2 &b) -> float {
+
+        float distance = mathfu::CrossProductHelper(
+                mathfu::vec3(p.xy()-a, 0.0f),
+                mathfu::vec3(p.xy()-b, 0.0f)
+            ).Length() / (a-b).Length();
+
+        return distance;
+    };
+
+    float dist = 999999.f;
+    for (int i = 0; i < points.size() - 1; i++) {
+        dist = std::min(dist, calcDistance(points[i], points[i+1]));
+    }
+    dist = std::min(dist, calcDistance(points[0], points[points.size()-1]));
+
+    return dist;
+}
+
 bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
 
     bool result = (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
