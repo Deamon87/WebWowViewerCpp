@@ -10,7 +10,7 @@ struct PSFog
     vec4 heightDensity_and_endColor;
     vec4 sunAngle_and_sunColor;
     vec4 heightColor_and_endFogDistance;
-    vec4 sunPercentage;
+    vec4 sunPercentage_sunFogStrength;
     vec4 sunDirection_and_fogZScalar;
     vec4 heightFogCoeff;
     vec4 mainFogCoeff;
@@ -94,7 +94,7 @@ vec4 makeFog(const in PSFog fogData, in vec4 final, in vec3 vertexInViewSpace, i
     fogFinal = mix(fogFinal, heightColor, vec3(heightFog));
 
     float nDotSun = dot(normalize(vertexInViewSpace), sunDirInViewSpace.xyz);
-    vec3 sunColor = mix(fogFinal, validateFogColor(fogData.sunAngle_and_sunColor.yzw, blendMode), vec3(fogData.sunPercentage.x));
+    vec3 sunColor = mix(fogFinal, validateFogColor(fogData.sunAngle_and_sunColor.yzw, blendMode), vec3(fogData.sunPercentage_sunFogStrength.x));
     nDotSun = clamp((nDotSun - fogData.sunAngle_and_sunColor.x), 0.0, 1.0);
     if ((nDotSun > 0.0))
     {
@@ -287,7 +287,7 @@ vec4 makeFog2(const in PSFog mainFogData, in vec4 final, in vec3 uViewUp, in vec
         vec3 sunColor_951 = mix(
             fogFinal_947,
             validateFogColor(mainFogData2.sunAngle_and_sunColor.yzw, blendMode),
-            vec3(mainFogData1.sunPercentage.x)
+            vec3(mainFogData1.sunPercentage_sunFogStrength.x)
         );
 
         float nDotSun_953 = saturatef((nDotSun_949 - t924));

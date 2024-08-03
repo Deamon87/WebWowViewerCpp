@@ -23,7 +23,7 @@ struct PSFog
     mathfu::vec4_packed  heightDensity_and_endColor;
     mathfu::vec4_packed  sunAngle_and_sunColor;
     mathfu::vec4_packed  heightColor_and_endFogDistance;
-    mathfu::vec4_packed  sunPercentage;
+    mathfu::vec4_packed  sunPercentage_sunFogStrength;
     mathfu::vec4_packed  sunDirection_and_fogZScalar;
     mathfu::vec4_packed  heightFogCoeff;
     mathfu::vec4_packed  mainFogCoeff;

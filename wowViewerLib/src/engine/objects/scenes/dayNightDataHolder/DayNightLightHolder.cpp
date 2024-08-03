@@ -573,6 +573,13 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
             skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, it->blendAlpha);
         }
     }
+
+
+    float blendCoeff = fmaxf(fminf(getClampedFarClip(config->farPlane) / fogResult.EndFogColorDistance, 1.0f), 0.0f);
+    skyColors.SkyFogColor =
+        mathfu::vec4(
+            mix(skyColors.SkyFogColor.xyz(), fogResult.EndFogColor, blendCoeff),
+        0);
 }
 
 void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *config,

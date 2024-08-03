@@ -19,6 +19,7 @@ layout(std140, set=1, binding=0) uniform meshWideBlockVS {
 layout(location = 0) in vec4 aPosition;
 
 layout(location = 0) out vec4 vColor;
+layout(location = 1) out vec4 vPosition;
 
 
 
@@ -38,5 +39,6 @@ void main() {
 
 
     vColor = skyColor[int(aPosition.w)].xyzw;
+    vPosition = vec4(cameraPos.xyz, inputPos.z);
 	gl_Position = scene.uPMatrix * cameraPos;
 }

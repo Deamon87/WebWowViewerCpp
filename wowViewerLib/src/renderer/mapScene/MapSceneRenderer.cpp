@@ -243,9 +243,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                 fogResult.EndFogColorDistance :
                 1000.0f
             );
-            fogData.sunPercentage = mathfu::vec4(
+            fogData.sunPercentage_sunFogStrength = mathfu::vec4(
                 fogResult.SunAngleBlend * fogResult.SunFogStrength,
-                0, 1.0, 1.0);
+                fogResult.SunFogStrength,
+                1.0, 1.0);
             fogData.sunDirection_and_fogZScalar = mathfu::vec4(
                 fdd->sunDirection,
                 fogResult.FogZScalar
