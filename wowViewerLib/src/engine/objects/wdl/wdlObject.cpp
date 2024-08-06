@@ -137,6 +137,12 @@ WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
     m_wdlFile = m_api->cacheStorage->getWdlFileCache()->getFileId(wdlFileDataId);
 }
 
+bool hasId(const std::vector<IdAndBlend> &vec, int id) {
+    return std::any_of(vec.begin(), vec.end(), [id](const IdAndBlend &val) {
+        return val.id == id;
+    });
+}
+
 void WdlObject::checkSkyScenes(const StateForConditions &state,
                                M2ObjectListContainer &m2ObjectsCandidates,
                                const mathfu::vec4 &cameraPos,
@@ -154,24 +160,15 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                     break;
                 }
                 case 2 : {
-                    auto it = std::find(state.currentLightParams.begin(), state.currentLightParams.end(), condition.conditionValue);
-                    if (it != state.currentLightParams.end()) {
-                        conditionPassed = true;
-                    }
+                    conditionPassed = hasId(state.currentLightParams, condition.conditionValue);
                     break;
                 }
                 case 3 : {
-                    auto it = std::find(state.currentSkyboxIds.begin(), state.currentSkyboxIds.end(), condition.conditionValue);
-                    if (it != state.currentSkyboxIds.end()) {
-                        conditionPassed = true;
-                    }
+                    conditionPassed = hasId(state.currentSkyboxIds, condition.conditionValue);
                     break;
                 }
                 case 5 : {
-                    auto it = std::find(state.currentZoneLights.begin(), state.currentZoneLights.end(), condition.conditionValue);
-                    if (it != state.currentZoneLights.end()) {
-                        conditionPassed = true;
-                    }
+                    conditionPassed = hasId(state.currentZoneLights, condition.conditionValue);
                     break;
                 }
                 default:

@@ -5,6 +5,44 @@
 #include "CWmoNewLight.h"
 #include "../../algorithms/mathHelper.h"
 
+float unpackPackedFloat_light(uint16_t a1)
+{
+  unsigned int v1; // eax
+  uint16_t v2; // edx
+  unsigned int v3; // ecx
+  int v4; // eax
+  uint32_t result; // xmm0_4
+
+  v1 = a1;
+  v2 = a1 & 0x3FF;
+  v3 = (a1 << 16) & 0x80000000;
+  v4 = (v1 >> 10) & 0x1F;
+  if ( v4 == 31 )
+  {
+    result = v3 | ((v2 | 0x3FC00) << 13);
+  }
+  else if ( v4 )
+  {
+    result = v3 | ((v2 | ((v4 + 112) << 10)) << 13);
+  }
+  else
+  {
+    if ( v2 )
+    {
+      v4 = 113;
+      do
+      {
+        v2 = 2 * v2;
+        --v4;
+      }
+      while ( (v2 & 0x400) == 0 );
+      v2 &= 0x3FFu;
+    }
+    result = v3 | ((v2 | (v4 << 10)) << 13);
+  }
+  return *(float *)&result;
+}
+
 CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_light_def &newLightDef) {
     isPointLight = newLightDef.type == 0;
     isSpotLight = newLightDef.type == 1;
@@ -17,7 +55,14 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_
     m_rotation = newLightDef.rotation;
     m_attenuationStart = newLightDef.attenStart;
     m_attenuationEnd = newLightDef.attenEnd;
-    m_intensity = newLightDef.intensity;
+
+    float unpackedIntensityMult = unpackPackedFloat_light(newLightDef.packedIntesityMultiplier);
+    if (feq(unpackedIntensityMult, 0.0f))
+        unpackedIntensityMult = 1.0f;
+    if ((newLightDef.flags & 0x2) == 0)
+        unpackedIntensityMult = 1.0f;
+
+    m_intensity = newLightDef.intensity * unpackedIntensityMult ;
     m_outerColor = newLightDef.outerColor;
     m_falloffStart = newLightDef.falloffStart;
     m_falloff = newLightDef.falloff;
@@ -92,7 +137,7 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
 //            rotQuat[1], rotQuat[2],rotQuat[3], rotQuat[0]
 //        );
         spotLight.spotLightLen = mathfu::vec4(
-            tanf(m_outerAngle * 0.5f) * m_attenuationEnd + 0.8,0,0,0
+            tanf(m_outerAngle * 0.5f) * m_attenuationEnd + 0.8f,0,0,0
         );
         float l_falloffStart = 0.0f;
         if (flags.FLAG_OUTERCOLOR_IS_MAIN) {

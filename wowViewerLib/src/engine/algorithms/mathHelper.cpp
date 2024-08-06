@@ -727,13 +727,27 @@ bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, con
     return false;
 }
 
+inline float minimum_distance(const mathfu::vec2 &v, const mathfu::vec2 &w, const mathfu::vec2 &p) {
+  // Return minimum distance between line segment vw and point p
+  const float l2 = (w - v).LengthSquared();  // i.e. |w-v|^2 -  avoid a sqrt
+  if (l2 == 0.0) return (p-v).Length();   // v == w case
+  // Consider the line extending the segment, parameterized as v + t (w - v).
+  // We find projection of point p onto the line.
+  // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+  // We clamp t from [0,1] to handle points outside the segment vw.
+  const float t = std::max<float>(0, std::min<float>(1, dot(p - v, w - v) / l2));
+  const mathfu::vec2 projection = v + t * (w - v);  // Projection falls on the segment
+  return (p - projection).Length();
+}
+
 float MathHelper::findLeastDistanceToBorder(mathfu::vec3 &p, const std::vector<mathfu::vec2> &points) {
     auto const calcDistance = [p](const mathfu::vec2 &a, const mathfu::vec2 &b) -> float {
 
-        float distance = mathfu::CrossProductHelper(
-                mathfu::vec3(p.xy()-a, 0.0f),
-                mathfu::vec3(p.xy()-b, 0.0f)
-            ).Length() / (a-b).Length();
+        float distance = minimum_distance(a, b, p.xy());
+//            mathfu::CrossProductHelper(
+//                mathfu::vec3(p.xy()-a, 0.0f),
+//                mathfu::vec3(p.xy()-b, 0.0f)
+//            ).Length() / (a-b).Length();
 
         return distance;
     };

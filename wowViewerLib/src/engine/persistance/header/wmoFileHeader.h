@@ -458,7 +458,7 @@ struct mapobject_new_light_def {
     float innerAngle;
     float outerAngle;
     uint16_t packedVal1;
-    uint16_t field_8A;
+    uint16_t packedIntesityMultiplier;
     int field_8C;
     int field_90;
     int field_94;

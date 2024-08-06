@@ -467,9 +467,9 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
 
     int defaultLightParamId = -1;
     int defaultLightId = -1;
+    bool selectedDefault = false;
+    bool selectedDefaultMap = false;
     {
-        bool selectedDefault = false;
-        bool selectedDefaultMap = false;
         int defaultLightParam = -1;
         for (auto it = lightResults.begin(); it != lightResults.end();) {
             if (feq(it->pos[0], 0.0) && feq(it->pos[1], 0.0) && feq(it->pos[2], 0.0)) {
@@ -500,36 +500,55 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
 
     std::vector<FoundZoneLights> foundZoneLights;
 
+    const float zoneBlendDistStart = 50.0f;
+
     for (const auto &zoneLight : m_zoneLights) {
         CAaBox laabb = zoneLight.aabb;
-        auto const vec50 = mathfu::vec3(50.0f,50.0f,0);
-        laabb.min = (mathfu::vec3(laabb.min) - vec50);
-        laabb.max = (mathfu::vec3(laabb.max) + vec50);
-        if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
+
+        bool isInsideConvex = MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points);
+        float distToBorder = MathHelper::findLeastDistanceToBorder(cameraVec3, zoneLight.points);
+
+        float diffMin = cameraVec3.z-zoneLight.aabb.min.z;
+        float diffMax = zoneLight.aabb.max.z - cameraVec3.z;
+
+        bool isInsideZMinMax = diffMin > 0.0f && diffMax > 0.0f;
+        float distToZminMax = std::min<float>(fabs(diffMin), fabs(diffMax));
+
+        if (isInsideConvex) distToBorder = -distToBorder;
+        if (isInsideZMinMax) distToZminMax = -distToZminMax;
+
+        float blendDist = distToBorder - 50.0f;
+        float blendDistZMinMax = distToZminMax - 50.0f;
+
+        if (blendDist < 0.0f && blendDistZMinMax < 0.0f) {
+            float finalBlendDist = fminf(fabs(blendDist), fabs(blendDistZMinMax));
+
             if (stateForConditions != nullptr) {
-                stateForConditions->currentZoneLights.push_back(zoneLight.ID);
+                stateForConditions->currentZoneLights.push_back({zoneLight.ID, finalBlendDist});
             }
-            float distToBorder = MathHelper::findLeastDistanceToBorder(cameraVec3, zoneLight.points);
-            foundZoneLights.emplace_back() = {zoneLight.LightID, distToBorder};
+            foundZoneLights.emplace_back() = {zoneLight.LightID, finalBlendDist};
         }
     }
 
     if (stateForConditions != nullptr && defaultLightParamId > 0 && defaultLightId > 0) {
-        stateForConditions->currentLightParams.push_back(defaultLightParamId);
-        stateForConditions->currentLightIds.push_back(defaultLightId);
+        stateForConditions->currentLightParams.push_back({defaultLightParamId, 1.0f});
+        stateForConditions->currentLightIds.push_back({defaultLightId, 1.0f});
     }
 
-
+    bool applyFirstAsDefault = !selectedDefaultMap;
     std::sort(foundZoneLights.begin(), foundZoneLights.end(), [](const FoundZoneLights &a, const FoundZoneLights &b) {
         return a.dist > b.dist;
     });
     for (auto it = foundZoneLights.begin(); it != foundZoneLights.end(); it++) {
         LightResult zoneLightResult;
 
-        const float zoneBlendDistStart = 100.0f;
-        float blendFactor = std::min<float>(1.0f, (it->dist) / zoneBlendDistStart);
+        float blendFactor = std::min<float>(1.0f, (it->dist) / (zoneBlendDistStart * 2.0f));
+//        if (applyFirstAsDefault) {
+//            blendFactor = 1.0f;
+//            applyFirstAsDefault = false;
+//        }
 
-        m_api->databaseHandler->getLightById(it->LightId, config->currentTime, zoneLightResult);
+        m_api->databaseHandler->getLightById(it->LightId, zoneLightResult);
 
         SkyColors tmp_skyColors;
         ExteriorColors tmp_exteriorColors;
@@ -550,8 +569,14 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         if (tmp_skyBodyData.skyBoxInfo.id > 0) {
             skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, blendFactor);
         }
+
+        stateForConditions->currentLightParams.push_back({zoneLightResult.lightParamId[currentLightParamIdIndex], blendFactor});
+        stateForConditions->currentLightIds.push_back({it->LightId, blendFactor});
     }
 
+    std::sort(lightResults.begin(), lightResults.end(), [](const LightResult &a, const LightResult &b) {
+        return a.blendAlpha > b.blendAlpha;
+    });
     for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
         SkyColors tmp_skyColors;
         ExteriorColors tmp_exteriorColors;
@@ -572,6 +597,9 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         if (tmp_skyBodyData.skyBoxInfo.id > 0) {
             skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, it->blendAlpha);
         }
+
+        stateForConditions->currentLightParams.push_back({it->lightParamId[currentLightParamIdIndex], it->blendAlpha});
+        stateForConditions->currentLightIds.push_back({it->id, it->blendAlpha});
     }
 
 
@@ -772,7 +800,7 @@ void DayNightLightHolder::SkyBoxCollector::addSkyBox(StateForConditions &stateFo
         }
     }
 
-    stateForConditions.currentSkyboxIds.push_back(skyBoxInfo.id);
+    stateForConditions.currentSkyboxIds.push_back({skyBoxInfo.id, alpha});
 
     //3. Otherwise create
     if (skyBoxModel == nullptr) {
