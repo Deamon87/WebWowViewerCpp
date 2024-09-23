@@ -6,11 +6,6 @@
 #include <algorithm>
 #include "IDevice.h"
 
-
-//inline bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
-//
-//}
-
 int compressedTexturesSupported = -1;
 int anisFiltrationSupported = -1;
 

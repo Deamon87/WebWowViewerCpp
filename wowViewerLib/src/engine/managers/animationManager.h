@@ -104,7 +104,7 @@ public:
 
     void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
 
-    inline const std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> getCombinedChangedData() {
+    inline const std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> getCombinedChangedData() const {
         if (animationInfo.blendFactor < 1.0) {
             std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> result;
 

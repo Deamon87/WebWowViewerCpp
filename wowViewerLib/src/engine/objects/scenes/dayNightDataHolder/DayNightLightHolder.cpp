@@ -166,13 +166,17 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         //Check zoneLight
         SkyColors skyColors;
         ExteriorColors exteriorColors;
+        float currentGlow = 0.0f;
 
         LiquidColors liquidColors;
         SkyBodyData skyBodyData;
 
         SkyBoxCollector skyBoxCollector(m_api, m_exteriorSkyBoxes);
 
-        getLightResultsFromDB(frustumData.cameraPos, config, skyColors, skyBodyData, exteriorColors, exteriorFogResult, liquidColors, skyBoxCollector, &stateForConditions);
+        getLightResultsFromDB(frustumData.cameraPos, config,
+                              currentGlow,
+                              skyColors, skyBodyData, exteriorColors,
+                              exteriorFogResult, liquidColors, skyBoxCollector, &stateForConditions);
 
         m_exteriorSkyBoxes = skyBoxCollector.getNewSkyBoxes();
         mapRenderPlan->frameDependentData->overrideValuesWithFinalFog = skyBoxCollector.getOverrideValuesWithFinalFog();
@@ -197,10 +201,10 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
 
         if (config->glowSource == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->currentGlow = 1.0;//currentGlow;
+            fdd->currentGlow = currentGlow;
         } else if (config->glowSource == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->currentGlow = config->currentGlow;
+            fdd->currentGlow = config->currentGlow; //copy from config to FDD
         }
 
 
@@ -386,7 +390,6 @@ float maxFarClip(float farClip) {
 }
 
 float DayNightLightHolder::getClampedFarClip(float farClip) {
-    int someflag = 0;
     float multiplier = 1.0f;
 
     if ((m_mapHasFlag_0x10000) != 0 && farClip >= 4400.0f)
@@ -441,6 +444,7 @@ void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip,
 }
 
 void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
+                                float &glow,
                                 SkyColors &skyColors,
                                 SkyBodyData &skyBodyData,
                                 ExteriorColors &exteriorColors,
@@ -477,11 +481,11 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
                 if (!selectedDefaultMap) {
                     if (it->continentId == m_mapId) {
                         selectedDefaultMap = true;
-                        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, skyBodyData, exteriorColors, fogResult, liquidColors, skyColors);
+                        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, glow, skyBodyData, exteriorColors, fogResult, liquidColors, skyColors);
                         defaultLightParamId = it->lightParamId[currentLightParamIdIndex]; defaultLightId = it->id;
                     } else if (!selectedDefault && it->continentId == 0) {
                         selectedDefault = true;
-                        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, skyBodyData, exteriorColors, fogResult, liquidColors, skyColors);
+                        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, glow, skyBodyData, exteriorColors, fogResult, liquidColors, skyColors);
                         defaultLightParamId = it->lightParamId[currentLightParamIdIndex]; defaultLightId = it->id;
                     }
                 }
@@ -499,6 +503,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
     };
 
     std::vector<FoundZoneLights> foundZoneLights;
+    std::vector<IdAndBlend> paramsBlend;
 
     const float zoneBlendDistStart = 50.0f;
 
@@ -550,34 +555,41 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
 
         m_api->databaseHandler->getLightById(it->LightId, zoneLightResult);
 
-        SkyColors tmp_skyColors;
-        ExteriorColors tmp_exteriorColors;
+        paramsBlend.push_back({zoneLightResult.lightParamId[currentLightParamIdIndex], blendFactor});
 
-        LiquidColors tmp_liquidColors;
-        SkyBodyData tmp_skyBodyData;
-        FogResult tmp_fogResult;
-
-        calcLightParamResult(zoneLightResult.lightParamId[currentLightParamIdIndex], config, tmp_skyBodyData,
-                             tmp_exteriorColors, tmp_fogResult, tmp_liquidColors, tmp_skyColors);
-
-        mixStructure(skyColors,      tmp_skyColors,      blendFactor);
-        mixStructure(exteriorColors, tmp_exteriorColors, blendFactor);
-        mixStructure(liquidColors,   tmp_liquidColors,   blendFactor);
-        mixStructure(skyBodyData,    tmp_skyBodyData,    blendFactor);
-        mixStructure(fogResult,      tmp_fogResult,      blendFactor);
-
-        if (tmp_skyBodyData.skyBoxInfo.id > 0) {
-            skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, blendFactor);
+        if (stateForConditions != nullptr) {
+            stateForConditions->currentLightParams.push_back({zoneLightResult.lightParamId[currentLightParamIdIndex], blendFactor});
+            stateForConditions->currentLightIds.push_back({it->LightId, blendFactor});
         }
-
-        stateForConditions->currentLightParams.push_back({zoneLightResult.lightParamId[currentLightParamIdIndex], blendFactor});
-        stateForConditions->currentLightIds.push_back({it->LightId, blendFactor});
     }
 
     std::sort(lightResults.begin(), lightResults.end(), [](const LightResult &a, const LightResult &b) {
         return a.blendAlpha > b.blendAlpha;
     });
     for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
+        paramsBlend.push_back({it->lightParamId[currentLightParamIdIndex], it->blendAlpha});
+
+        if (stateForConditions != nullptr) {
+            stateForConditions->currentLightParams.push_back({it->lightParamId[currentLightParamIdIndex], it->blendAlpha});
+            stateForConditions->currentLightIds.push_back({it->id, it->blendAlpha});\
+
+        }
+    }
+
+    //Rebalance blend coefs
+
+    {
+        for (int i = 0; i < paramsBlend.size(); i++) {
+            float blendAlpha = paramsBlend[i].blend;
+            for (int j = i+1; j < paramsBlend.size(); j++) {
+                blendAlpha = blendAlpha * (1.0f - paramsBlend[j].blend);
+            }
+
+            paramsBlend[i].blend = blendAlpha;
+        }
+    }
+
+    for (auto it = paramsBlend.begin(); it != paramsBlend.end(); it++) {
         SkyColors tmp_skyColors;
         ExteriorColors tmp_exteriorColors;
 
@@ -585,21 +597,22 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         SkyBodyData tmp_skyBodyData;
         FogResult tmp_fogResult;
 
-        calcLightParamResult(it->lightParamId[currentLightParamIdIndex], config, tmp_skyBodyData,
-                             tmp_exteriorColors, tmp_fogResult, tmp_liquidColors, tmp_skyColors);
+        float tmp_glow = 0.0;
 
-        mixStructure(skyColors,      tmp_skyColors,      it->blendAlpha);
-        mixStructure(exteriorColors, tmp_exteriorColors, it->blendAlpha);
-        mixStructure(liquidColors,   tmp_liquidColors,   it->blendAlpha);
-        mixStructure(skyBodyData,    tmp_skyBodyData,    it->blendAlpha);
-        mixStructure(fogResult,      tmp_fogResult,      it->blendAlpha);
+        calcLightParamResult(it->id, config,
+                             tmp_glow,
+                             tmp_skyBodyData, tmp_exteriorColors, tmp_fogResult, tmp_liquidColors, tmp_skyColors);
 
-        if (tmp_skyBodyData.skyBoxInfo.id > 0) {
-            skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, it->blendAlpha);
+        mixStructure(skyColors,      tmp_skyColors,      it->blend);
+        mixStructure(exteriorColors, tmp_exteriorColors, it->blend);
+        mixStructure(liquidColors,   tmp_liquidColors,   it->blend);
+        mixStructure(skyBodyData,    tmp_skyBodyData,    it->blend);
+        mixStructure(fogResult,      tmp_fogResult,      it->blend);
+        glow = mix(glow,                    tmp_glow,           it->blend);
+
+        if (tmp_skyBodyData.skyBoxInfo.id > 0 && (stateForConditions != nullptr)) {
+            skyBoxCollector.addSkyBox(*stateForConditions, tmp_skyBodyData.skyBoxInfo, it->blend);
         }
-
-        stateForConditions->currentLightParams.push_back({it->lightParamId[currentLightParamIdIndex], it->blendAlpha});
-        stateForConditions->currentLightIds.push_back({it->id, it->blendAlpha});
     }
 
 
@@ -611,6 +624,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
 }
 
 void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *config,
+                                               float &glow,
                                                SkyBodyData &skyBodyData,
                                                ExteriorColors &exteriorColors, FogResult &fogResult,
                                                LiquidColors &liquidColors,
@@ -627,6 +641,8 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
             lightParamData.celestialBodyOverride2[2]
         );
 
+        glow = lightParamData.glow;
+
         auto &dataA = lightParamData.lightTimedData[0];
         auto &dataB = lightParamData.lightTimedData[1];
 
@@ -634,6 +650,7 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         float fogScalarOverride = 0.0f;
         fixLightTimedData(dataA, config->farPlane, fogScalarOverride);
         fixLightTimedData(dataB, config->farPlane, fogScalarOverride);
+
 
         //Ambient lights
         exteriorColors.exteriorAmbientColor =         mixMembers<4>(lightParamData, &LightTimedData::ambientLight, blendTimeCoeff);

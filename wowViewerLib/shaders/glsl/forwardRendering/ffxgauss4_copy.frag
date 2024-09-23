@@ -14,7 +14,7 @@ vec4 texOffsetY;
 
 layout(set=1,binding=0) uniform sampler2D texture0;
 
-const float weight[4] = float[] (0.125, 0.375, 0.375, 0.125);
+const float weight[4] = float[] (0.25f, 0.25f, 0.25f, 0.25f);
 
 void main()
 {

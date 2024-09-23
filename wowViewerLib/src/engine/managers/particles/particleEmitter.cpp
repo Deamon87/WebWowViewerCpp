@@ -471,8 +471,6 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
 
     this->CalculateForces(forces, delta);
     this->EmitNewParticles(delta);
-    int i = 0;
-
 
     int numThreads = 10;
     #pragma omp parallel for schedule(dynamic, 200) default(none) shared(delta, forces) num_threads(numThreads)
@@ -638,7 +636,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = this->particles[i];
         ParticlePreRenderData particlePreRenderData;
-        if (this->CalculateParticlePreRenderData(p, particlePreRenderData)) {
+        if (this->CalculateParticlePreRenderData(p, particlePreRenderData) > 0) {
             if (m_data->old.flags & 0x20000) {
                 this->buildVertex1(p, particlePreRenderData);
             }
@@ -901,7 +899,6 @@ int ParticleEmitter::CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRe
     float twinkleMin = twinkleRange.min;
     float twinkleVary = twinkleRange.max - twinkleMin;
 
-
     int rndIdx = 0;
     uint16_t seed = p.seed;
     animTime_t age = p.age;
@@ -1044,7 +1041,7 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 }
 
 inline float paramXTransform(uint32_t x) {
-    return ((x & 0x1F)/32.0f) + (float)(x >> 5);
+    return (((float)(x & 0x1F))/32.0f) + (float)(x >> 5);
 }
 
 void

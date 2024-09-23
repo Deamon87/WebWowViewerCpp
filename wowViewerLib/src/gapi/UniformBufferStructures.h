@@ -296,8 +296,8 @@ namespace ImgUI {
 
 namespace FXGauss {
     struct meshWideBlockPS {
-        float texOffsetX[4];
-        float texOffsetY[4];
+        mathfu::vec4_packed texOffsetX;
+        mathfu::vec4_packed texOffsetY;
     };
 }
 

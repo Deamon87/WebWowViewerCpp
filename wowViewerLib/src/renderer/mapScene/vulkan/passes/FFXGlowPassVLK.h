@@ -47,6 +47,7 @@ private:
 
     std::shared_ptr<IMaterial> createFFXGaussMat(const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ffxGlowVs,
                                                  const std::shared_ptr<IBufferChunk<FXGauss::meshWideBlockPS>> &ffxGlowPS,
+                                                 bool isInitCopyMat,
                                                  const HGSamplableTexture &texture,
                                                  const PipelineTemplate &pipelineTemplate,
                                                  const std::shared_ptr<GRenderPassVLK> &targetRenderPass);
@@ -62,6 +63,8 @@ private:
 
     std::shared_ptr<GFrameBufferVLK> getTargetFrameBuffer(int GAUSS_PASS_I, int frameInFlightI);
     inline void drawMaterial (CmdBufRecorder& cmdBuffer, const std::shared_ptr<IMaterial> &mat);
+
+    void updateFsUBO(int width, int height);
 };
 
 

@@ -55,6 +55,7 @@ public:
                                    StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
     void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
+                                float &glow,
                                 SkyColors &skyColors,
                                 SkyBodyData &skyBodyData,
                                 ExteriorColors &exteriorColors,
@@ -82,10 +83,12 @@ private:
     void createMinFogDistances();
 
     void
-    inline calcLightParamResult(int lightParamId, const Config *config, SkyBodyData &skyBodyData,
-                         ExteriorColors &exteriorColors,
-                         FogResult &fogResult, LiquidColors &liquidColors,
-                         SkyColors &skyColors);
+    inline calcLightParamResult(int lightParamId, const Config *config,
+                                float &glow,
+                                SkyBodyData &skyBodyData,
+                                ExteriorColors &exteriorColors,
+                                FogResult &fogResult, LiquidColors &liquidColors,
+                                SkyColors &skyColors);
 
     void processSkyBoxes(const HMapRenderPlan &mapRenderPlan, const StateForConditions &stateForConditions,
                          const Config *config) const;

@@ -1069,7 +1069,7 @@ void M2Object::fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sc
 }
 
 void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
-    if (!this->status->m_loaded)  return;
+    if (!this->status->m_loaded) return;
 
 //    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
 
@@ -1079,20 +1079,20 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
     auto const dataIsChanged = m_animationManager->getCombinedChangedData();
 
     //Update materials`
-    if (m_placementMatrixChanged) {
+    if (m_firstUpdate || m_placementMatrixChanged) {
         auto &placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
         placementMatrix.uPlacementMat = m_placementMatrix;
         m_modelWideDataBuff->m_placementMatrix->save();
         m_placementMatrixChanged = false;
     }
-    if (!bonesMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)]) {
+    if (m_firstUpdate || (!bonesMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)])) {
         auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
         m_modelWideDataBuff->m_bonesData->save();
     }
-    if (!subMeshColors.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)]) {
+    if (m_firstUpdate || (!subMeshColors.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)])) {
         auto &m2Colors = m_modelWideDataBuff->m_colors->getObject();
         int m2ColorsCnt = (int) std::min(subMeshColors.size(), (size_t) MAX_M2COLORS_NUM);
 
@@ -1100,7 +1100,7 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
         m_modelWideDataBuff->m_colors->save();
     }
 
-    if (!transparencies.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::transparencies)]) {
+    if (m_firstUpdate || (!transparencies.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::transparencies)])) {
         auto &textureWeights = m_modelWideDataBuff->m_textureWeights->getObject();
         int textureWeightsCnt = (int) std::min(transparencies.size(), (size_t) MAX_TEXTURE_WEIGHT_NUM);
 
@@ -1108,7 +1108,7 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
         m_modelWideDataBuff->m_textureWeights->save();
     }
 
-    if (!textAnimMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::textAnimMatrices)]) {
+    if (m_firstUpdate || (!textAnimMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::textAnimMatrices)])) {
         auto &textureMatrices = m_modelWideDataBuff->m_textureMatrices->getObject();
         int textureMatricesCnt = (int) std::min(textAnimMatrices.size(), (size_t) MAX_TEXTURE_MATRIX_NUM);
 
@@ -1116,7 +1116,7 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
         m_modelWideDataBuff->m_textureMatrices->save();
     }
 
-    if (m_modelWideDataChanged)
+    if (m_firstUpdate || m_modelWideDataChanged)
     {
         auto &modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
@@ -1150,6 +1150,8 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
 
     //Manually update vertices for dynamics
     updateDynamicMeshes();
+
+    m_firstUpdate = false;
 }
 void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData) {
     int minParticle = m_api->getConfig()->minParticle;
@@ -1955,10 +1957,10 @@ int32_t M2Object::getTextureTransformIndexByLookup(int textureTrasformlookup) {
 void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (!this->status->m_loaded) return;
 
-//        for (int i = 0; i< std::min((int)particleEmitters.size(), 10); i++) {
+    int renderRibbons = m_api->getConfig()->renderRibbons;
+
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
-//    int maxBatch = particleEmitters.size();
 
 
     for (int i = minParticle; i < maxParticle; i++) {
@@ -1976,8 +1978,10 @@ void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_v
         particleEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
     }
 
-    for (int i = 0; i < ribbonEmitters.size(); i++) {
-        ribbonEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
+    if (renderRibbons) {
+        for (int i = 0; i < ribbonEmitters.size(); i++) {
+            ribbonEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
+        }
     }
 }
 

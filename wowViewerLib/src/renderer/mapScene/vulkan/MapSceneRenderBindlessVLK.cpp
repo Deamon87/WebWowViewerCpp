@@ -1296,8 +1296,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
 
-    mapScene->update(framePlan);
-    mapScene->updateBuffers(l_this, framePlan);
+    const bool stepBufferUpdates = !m_config->stopBufferUpdates || m_config->stepBufferUpdate;
+    m_config->stepBufferUpdate = false;
+
+    if (stepBufferUpdates) {
+        mapScene->update(framePlan);
+        mapScene->updateBuffers(l_this, framePlan);
+    }
 
     std::vector<RenderingMatAndSceneSize> renderingMatricessAndSizes;
     for (auto &rt : frameInputParams->frameParameters->renderTargets) {
@@ -1307,11 +1312,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
         matAndSceneSize.height = rt.viewPortDimensions.maxs[1];
     }
 
-    updateSceneWideChunk(sceneWideChunk,
-                         renderingMatricessAndSizes,
-                         framePlan->frameDependentData,
-                         true,
-                         mapScene->getCurrentSceneTime());
+    if (stepBufferUpdates) {
+        updateSceneWideChunk(sceneWideChunk,
+                             renderingMatricessAndSizes,
+                             framePlan->frameDependentData,
+                             true,
+                             mapScene->getCurrentSceneTime());
+    }
 
 
     collectMeshes(framePlan, *u_collector, *u_skyCollector, transparentMeshes, skyTransparentMeshes);
@@ -1325,12 +1332,13 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
     bool renderSky = framePlan->renderSky;
     auto skyMesh = framePlan->skyMesh;
     auto skyMesh0x4 = framePlan->skyMesh0x4;
-    return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes, frameInputParams](CmdBufRecorder &uploadCmd) -> void {
+    return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes, frameInputParams, stepBufferUpdates](CmdBufRecorder &uploadCmd) -> void {
         {
             ZoneScopedN("Post Load");
             //Do postLoad here. So creation of stuff is done from main thread
+            if (stepBufferUpdates)
+                mapScene->doPostLoad(l_this, framePlan);
 
-            mapScene->doPostLoad(l_this, framePlan);
             for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
                 auto updatingTarget = std::dynamic_pointer_cast<RendererViewClass>(renderTarget.target);
                 if (!updatingTarget) updatingTarget = l_this->defaultView;
@@ -1365,6 +1373,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
         // ---------------------
         // Upload stuff
         // ---------------------
+        if (stepBufferUpdates)
         {
 //            ZoneScopedN("submit buffers");
 //            VkZone(uploadCmd, "submit buffers")

@@ -330,7 +330,7 @@ inline void addOnlyOne(std::array<float, 3> &colorF, int currLdRes) {
 inline void addOnlyOne(float &colorF, float currLdRes) {
     colorF = currLdRes;
 }
-void CSqliteDB::getLightById(int lightId, int time, LightResult &lightResult) {
+void CSqliteDB::getLightById(int lightId, LightResult &lightResult) {
     getLightByIdStatement.setInputs( lightId );
 
     while (getLightByIdStatement.execute()) {

@@ -610,13 +610,16 @@ void AdtObject::collectMeshes(ADTObjRenderRes &adtRes, COpaqueMeshCollector &opa
 
     if (!m_loaded) return;
 
+    bool renderADT = m_api->getConfig()->renderAdt;
+    bool renderLiquid = m_api->getConfig()->renderLiquid;
+
     size_t meshCount = adtMeshes.size();
     transparentMeshes.reserve(transparentMeshes.size() + m_liquidInstancesPerChunk.size());
     for (int i = 0; i < meshCount; i++) {
-        if (adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
+        if (renderADT && adtRes.drawChunk[i] && (adtMeshes[i] != nullptr)) {
             opaqueMeshCollector.addADTMesh(adtMeshes[i]);
         }
-        if (adtRes.drawWaterChunk[i]) {
+        if (adtRes.drawWaterChunk[i] && renderLiquid) {
             for (auto const &liquidInstance : m_liquidInstancesPerChunk[i]) {
                 liquidInstance->collectMeshes(opaqueMeshCollector);
             }

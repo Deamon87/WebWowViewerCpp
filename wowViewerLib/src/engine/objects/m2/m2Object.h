@@ -81,6 +81,7 @@ private:
     mathfu::mat4 m_placementMatrix = mathfu::mat4::Identity();
     bool m_placementMatrixChanged = false;
     bool m_modelWideDataChanged = false;
+    bool m_firstUpdate = true;
     mathfu::mat4 m_placementInvertMatrix;
     mathfu::vec3 m_worldPosition;
     mathfu::vec3 m_localPosition;

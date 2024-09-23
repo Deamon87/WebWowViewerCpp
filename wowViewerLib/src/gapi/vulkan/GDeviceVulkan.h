@@ -221,6 +221,8 @@ private:
     void createCommandBuffers();
     void createSyncObjects();
 
+    uint32_t m_vulkanApiVersion = VK_API_VERSION_1_0;
+
     VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) override;
 
 protected:

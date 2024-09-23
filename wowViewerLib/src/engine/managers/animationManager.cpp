@@ -788,7 +788,7 @@ void AnimationManager::update(
             sequences = boneMasterData->getParentSkelData()->m_sequences;
         }
 
-        int probability = ((float)rand() / (float)RAND_MAX) * 0x7FFF;
+        int probability = (((float)rand() / (float)RAND_MAX) * (float)0x7FFF);
         int calcProb = 0;
 
         /* First iteration is out of loop */

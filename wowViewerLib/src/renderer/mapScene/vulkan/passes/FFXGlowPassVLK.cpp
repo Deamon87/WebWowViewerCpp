@@ -31,27 +31,37 @@ FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &ubo
         ffxGlowVs = {1, 1, 0, 0};
         m_ffxGlowVs->save();
 
-        static const std::array<std::array<float, 4>, 6> texOffsets = {{
-                                                                           //X & Y
-                                                                           {{-1, 0, 0, -1}},
-                                                                           {{2, 2, -1, -1}},
+        updateFsUBO(1, 1);
+    }
+}
 
-                                                                           //X & Y
-                                                                           {{-6, -1, 1, 6}},
-                                                                           {{0, 0, 0, 0}},
+void FFXGlowPassVLK::updateFsUBO(int width, int height) {
+    static const std::array<mathfu::vec4, 6> texOffsets = {{
+        //X & Y
+        {-1.5f, 0.5f, 2.667f, -1.5f},
+        {1.498f,1.498f,-0.499f,-0.499f},
 
-                                                                           //X & Y
-                                                                           {{0, 0, 0, 0}},
-                                                                           {{10, 2, -2, -10}},
-                                                                       }};
+        //X & Y
+        {-2.5f, -0.5f, 0.5f, 2.5f},
+        {0, 0, 0, 0},
 
-        for (int i = 0; i < GAUSS_PASS_COUNT; i++) {
-            auto &ffxGlowPs1 = m_ffxGaussPSs[i]->getObject();
-            std::copy(std::begin(texOffsets[i * 2]), std::end(texOffsets[i * 2]), std::begin(ffxGlowPs1.texOffsetX));
-            std::copy(std::begin(texOffsets[i * 2 + 1]), std::end(texOffsets[i * 2 + 1]),
-                      std::begin(ffxGlowPs1.texOffsetY));
-            m_ffxGaussPSs[i]->save();
-        }
+        //X & Y
+        {0, 0, 0, 0},
+        {2.505f, 0.501f, -0.501f, -2.505f},
+    }};
+
+    for (int i = 0; i < GAUSS_PASS_COUNT; i++) {
+        auto &ffxGlowPs1 = m_ffxGaussPSs[i]->getObject();
+        const auto &x_vec = texOffsets[i * 2];
+        const auto &y_vec = texOffsets[(i * 2) + 1];
+
+        int targetWidth = (i == 0) ? width : (width >> 2);
+        int targetHeight = (i == 0) ? height : (height >> 2);
+
+        ffxGlowPs1.texOffsetX = x_vec * (1.0f/(float)targetWidth);
+        ffxGlowPs1.texOffsetY = y_vec * (1.0f/(float)targetHeight);
+
+        m_ffxGaussPSs[i]->save();
     }
 }
 
@@ -65,6 +75,8 @@ void FFXGlowPassVLK::updateDimensions(int width, int height,
     m_height = height;
 
     createFrameBuffers(width, height);
+    updateFsUBO(width, height);
+
     assert(inputColorTextures.size() == IDevice::MAX_FRAMES_IN_FLIGHT);
 
     PipelineTemplate glowPipelineTemplate;
@@ -87,6 +99,7 @@ void FFXGlowPassVLK::updateDimensions(int width, int height,
             ffxGaussMat[i][j] = createFFXGaussMat(
                 m_ffxGlowVs,
                 m_ffxGaussPSs[j],
+                j == 0,
                 inputTextures[j],
                 glowPipelineTemplate,
                 m_renderPass
@@ -215,11 +228,14 @@ std::shared_ptr<IMaterial>
 FFXGlowPassVLK::createFFXGaussMat(
     const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ffxGaussVs,
     const std::shared_ptr<IBufferChunk<FXGauss::meshWideBlockPS>> &ffxGaussPS,
+    bool isInitCopyMat,
     const HGSamplableTexture &texture,
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxgauss4"}, {"forwardRendering", "forwardRendering"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device,
+                                                   {"drawQuad", isInitCopyMat ? "ffxgauss4_copy" : "ffxgauss4"},
+                                                   {"forwardRendering", "forwardRendering"}, {})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGaussVs, &ffxGaussPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

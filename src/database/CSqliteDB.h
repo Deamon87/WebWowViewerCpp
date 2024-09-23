@@ -21,7 +21,7 @@ public:
     AreaRecord getArea(int areaId) override;
     bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) override;
 
-    void getLightById(int lightId, int time, LightResult &lightResult) override;
+    void getLightById(int lightId, LightResult &lightResult) override;
     void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) override;
 
     bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) override;

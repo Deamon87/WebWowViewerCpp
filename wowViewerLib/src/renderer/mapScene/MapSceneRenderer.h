@@ -120,7 +120,7 @@ public:
                               animTime_t sceneTime);
 
     virtual std::shared_ptr<IRenderView> createRenderView(bool createOutput) = 0;
-private:
+protected:
     Config *m_config;
 };
 

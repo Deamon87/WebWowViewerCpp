@@ -14,7 +14,7 @@ public:
     bool getMapById(int mapId, MapRecord &mapRecord) override {return false;};
     AreaRecord getArea(int areaId) override { return {}; };
     bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) override {return false;};
-    void getLightById(int lightId, int time, LightResult &lightResult) override {};
+    void getLightById(int lightId, LightResult &lightResult) override {};
     void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) override {};
 
     bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) override {return false;};

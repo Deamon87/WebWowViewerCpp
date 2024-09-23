@@ -319,17 +319,31 @@ void FrontendUI::showCurrentStatsDialog() {
 
                 if (ImGui::CollapsingHeader("Active db2 lights")) {
                     if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr ) {
+
+                        ImGui::Text("List of current ZoneLight.db2 ids:");
+                        for (const auto &zoneLight : cullStageData->frameDependentData->stateForConditions.currentZoneLights) {
+                            ImGui::Text("%d %f", zoneLight.id, zoneLight.blend);
+                        }
+
+                        ImGui::Separator();
                         ImGui::Text("List of current Light.db2 ids:");
 
-                        for (auto lightId : cullStageData->frameDependentData->stateForConditions.currentLightIds) {
-                            ImGui::Text("%d", lightId);
+                        for (const auto &lightId : cullStageData->frameDependentData->stateForConditions.currentLightIds) {
+                            ImGui::Text("%d %f", lightId.id, lightId.blend);
                         }
 
                         ImGui::Separator();
 
                         ImGui::Text("List of current LightParams.db2 ids:");
-                        for (auto lightParamId : cullStageData->frameDependentData->stateForConditions.currentLightParams) {
-                            ImGui::Text("%d", lightParamId);
+                        for (const auto &lightParamId : cullStageData->frameDependentData->stateForConditions.currentLightParams) {
+                            ImGui::Text("%d %f", lightParamId.id, lightParamId.blend);
+                        }
+
+                        ImGui::Separator();
+
+                        ImGui::Text("List of current LightSkyBox.db2 ids:");
+                        for (const auto &skyboxId : cullStageData->frameDependentData->stateForConditions.currentSkyboxIds) {
+                            ImGui::Text("%d %f", skyboxId.id, skyboxId.blend);
                         }
                     }
                 }
@@ -1437,6 +1451,12 @@ void FrontendUI::showSettingsDialog() {
                     m_api->getConfig()->maxParticle = renderParticles ? 9999 : -1;
                 }
             }
+            {
+                bool renderRibbons = m_api->getConfig()->renderRibbons;
+                if (ImGui::Checkbox("Render Ribbons", &renderRibbons)) {
+                    m_api->getConfig()->renderRibbons = renderRibbons;
+                }
+            }
 
             bool renderWMO = m_api->getConfig()->renderWMO;
             if (ImGui::Checkbox("Render WMO", &renderWMO)) {
@@ -1508,33 +1528,19 @@ void FrontendUI::showSettingsDialog() {
                 m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
             }
 
-            /*
-            if (useDoubleCameraDebug) {
-                if (m_api->debugCamera == nullptr) {
-                    m_api->debugCamera = std::make_shared<FirstPersonCamera>();
-                    m_api->debugCamera->setMovementSpeed(movementSpeed);
-                    float currentCameraPos[4] = {0, 0, 0, 0};
-                    m_api->camera->getCameraPosition(&currentCameraPos[0]);
-
-
-                    m_api->debugCamera->setCameraPos(currentCameraPos[0],
-                                                     currentCameraPos[1],
-                                                     currentCameraPos[2]);
+            {
+                bool stopBufferUpdates = m_api->getConfig()->stopBufferUpdates;
+                if (ImGui::Checkbox("Stop buffer updates", &stopBufferUpdates)) {
+                    m_api->getConfig()->stopBufferUpdates = stopBufferUpdates;
                 }
 
-                bool controlSecondCamera = m_api->getConfig()->controlSecondCamera;
-                if (ImGui::Checkbox("Control debug camera", &controlSecondCamera)) {
-                    m_api->getConfig()->controlSecondCamera = controlSecondCamera;
+                if (stopBufferUpdates) {
+                    bool stepBufferUpdate = m_api->getConfig()->stepBufferUpdate;
+                    if (ImGui::Checkbox("Step buffer update", &stepBufferUpdate)) {
+                        m_api->getConfig()->stepBufferUpdate = stepBufferUpdate;
+                    }
                 }
-
-                bool swapMainAndDebug = m_api->getConfig()->swapMainAndDebug;
-                if (ImGui::Checkbox("Swap main and debug cameras", &swapMainAndDebug)) {
-                    m_api->getConfig()->swapMainAndDebug = swapMainAndDebug;
-                }
-            } else {
-                m_api->debugCamera = nullptr;
             }
-            */
 
             pauseAnimation = m_api->getConfig()->pauseAnimation;
             if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {

@@ -234,6 +234,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     if (apiVersion > VK_API_VERSION_1_2)
         apiVersion = VK_API_VERSION_1_2;
     
+    m_vulkanApiVersion = apiVersion;
 
     VkApplicationInfo appInfo = {};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -367,12 +368,20 @@ void GDeviceVLK::initialize() {
     vma_vulkan_func.vkMapMemory                         = vkMapMemory;
     vma_vulkan_func.vkUnmapMemory                       = vkUnmapMemory;
     vma_vulkan_func.vkCmdCopyBuffer                     = vkCmdCopyBuffer;
+    vma_vulkan_func.vkGetImageMemoryRequirements2KHR    = vkGetImageMemoryRequirements2;
+    vma_vulkan_func.vkGetBufferMemoryRequirements2KHR    = vkGetBufferMemoryRequirements2;
+    vma_vulkan_func.vkGetPhysicalDeviceMemoryProperties2KHR    = vkGetPhysicalDeviceMemoryProperties2;
+    vma_vulkan_func.vkGetDeviceImageMemoryRequirements    = vkGetDeviceImageMemoryRequirements;
+    vma_vulkan_func.vkGetDeviceBufferMemoryRequirements   = vkGetDeviceBufferMemoryRequirements;
 
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = physicalDevice;
     allocatorInfo.device = device;
     allocatorInfo.instance = vkInstance;
+    allocatorInfo.preferredLargeHeapBlockSize = 0;
+    allocatorInfo.pDeviceMemoryCallbacks = nullptr;
     allocatorInfo.pVulkanFunctions = &vma_vulkan_func;
+    allocatorInfo.vulkanApiVersion = m_vulkanApiVersion;
 
     vmaCreateAllocator(&allocatorInfo, &vmaAllocator);
 //---------------
@@ -1086,7 +1095,7 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
         {
             uploadSemaphores[currentDrawFrame]->getNativeSemaphore()
         },
-        {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT},
+        {VK_PIPELINE_STAGE_TRANSFER_BIT},
         {frameBufCmdBuf->getNativeCmdBuffer()},
         {frameBufSemaphores[currentDrawFrame]->getNativeSemaphore()},
         frameBufFences[currentDrawFrame]->getNativeFence()

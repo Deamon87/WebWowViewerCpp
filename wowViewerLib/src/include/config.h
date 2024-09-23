@@ -44,6 +44,7 @@ public:
     bool renderAdt = true;
     bool renderWMO = true;
     bool renderM2 = true;
+    bool renderRibbons = true;
     bool renderSkyDom = true;
     bool renderSkyScene = true;
     bool renderLiquid = true;
@@ -55,6 +56,9 @@ public:
     bool discardInvisibleMeshes = true;
 
     bool ignoreADTHoles = false;
+
+    bool stopBufferUpdates = false;
+    bool stepBufferUpdate = false;
 
 
     bool disableFog = false;
