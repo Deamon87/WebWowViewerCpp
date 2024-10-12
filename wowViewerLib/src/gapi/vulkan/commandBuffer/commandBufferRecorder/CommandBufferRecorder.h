@@ -81,6 +81,8 @@ public:
     void recordPipelineBufferBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkBufferMemoryBarrier> &imageBarrierData);
     void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);
     void submitBufferUploads(const std::shared_ptr<GBufferVLK> &bufferVLK);
+    void submitFullMemoryBarrierPostWrite(const std::shared_ptr<GBufferVLK> &bufferVLK);
+    void submitFullMemoryBarrierPreWrite(const std::shared_ptr<GBufferVLK> &bufferVLK);
 
     friend class RenderPassHelper;
 

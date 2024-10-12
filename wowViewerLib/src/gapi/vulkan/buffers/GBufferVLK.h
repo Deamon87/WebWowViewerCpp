@@ -51,6 +51,7 @@ public:
     size_t getSize() override { return m_bufferSize;};
 
     VkBuffer getGPUBuffer() override;
+    size_t getGPUBufferSize() override;
     size_t getOffset() override {
         return 0;
     };
@@ -106,6 +107,9 @@ private:
 
         VkBuffer getGPUBuffer() override {
             return m_parentBuffer->getGPUBuffer();
+        }
+        size_t getGPUBufferSize() override {
+            return m_parentBuffer->getGPUBufferSize();
         }
         size_t getOffset() override {
             return m_alloc.offset;

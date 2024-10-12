@@ -40,7 +40,6 @@ public:
         return m_pipelineTemplate;
     }
     const uint32_t getMaterialId() {return m_materialId;}
-    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(const std::shared_ptr<GRenderPassVLK> &renderPass);
     EGxBlendEnum getBlendMode();
 
 private:

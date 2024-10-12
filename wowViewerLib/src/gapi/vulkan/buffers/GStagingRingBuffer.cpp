@@ -5,6 +5,8 @@
 #include "GStagingRingBuffer.h"
 
 void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_offset) {
+//    TracyMessageStr(("GStagingRingBuffer::allocateNext, CurrentProcessingFrameNumber =" + std::to_string(m_device->getCurrentProcessingFrameNumber())));
+
     auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
@@ -72,6 +74,7 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
 }
 
 void GStagingRingBuffer::flushBuffers() {
+//    TracyMessageStr(("GStagingRingBuffer::flushBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_device->getCurrentProcessingFrameNumber())));
     auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 

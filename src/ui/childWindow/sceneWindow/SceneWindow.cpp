@@ -196,7 +196,7 @@ void SceneWindow::openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y
         m_api->getConfig()->currentTime = timeOverride;
     }
 }
-void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds) {
+void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds, float size) {
     unload();
 
     m_sceneRenderer = MapSceneRendererFactory::createForwardRenderer(m_api->hDevice, m_api->getConfig());
@@ -213,8 +213,9 @@ void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacem
     {
         //Post load event for m2
         auto m2Object = m2Scene->getSceneM2();
+        m2Object->setSize(size);
         m2Object->addPostLoadEvent([m2Object, l_camera = m_camera, &l_cameraList = m_cameraList]() {
-            updateCameraPosOnLoad(m2Object, l_camera, l_cameraList);
+            //updateCameraPosOnLoad(m2Object, l_camera, l_cameraList);
         });
     }
 }

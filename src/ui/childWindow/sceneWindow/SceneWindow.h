@@ -31,7 +31,7 @@ public:
 
     void openWMOSceneByfdid(int WMOFdid);
     void openWMOSceneByFilename(const std::string &wmoFileName);
-    void openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds);
+    void openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacementTextureIds, float size = 1.0f);
     void openM2SceneByName(const std::string &m2FileName, const std::vector<int> &replacementTextureIds);
 
     void unload();

@@ -113,13 +113,13 @@ void textureUploadStrategy(const std::vector<std::weak_ptr<GTextureVLK>> &textur
             //Change access mask
             TransitionParams transitionParams = {
                 .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                .dstAccessMask = 0,
+                .dstAccessMask = VK_ACCESS_MEMORY_READ_BIT,
                 .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                 .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
                 .srcStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT,
-                .dstStageMask = VK_PIPELINE_STAGE_TRANSFER_BIT
+                .dstStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT
             };
 
             transitionLayoutAndOwnageTextures(uploadCmdBufRecorder, textures, transitionParams);

@@ -22,6 +22,8 @@ FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevic
 }
 
 void FrontendUIRenderForwardVLK::createBuffers() {
+    allBuffers = {iboBuffer, vboBuffer, uboBuffer};
+
     iboBuffer = m_device->createIndexBuffer("UI_Ibo_Buffer", 1024*1024);
     vboBuffer = m_device->createVertexBuffer("UI_Vbo_Buffer", 1024*1024);
     uboBuffer = m_device->createUniformBuffer("UI_UBO", sizeof(ImgUI::modelWideBlockVS)*IDevice::MAX_FRAMES_IN_FLIGHT);
@@ -143,10 +145,17 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             // ---------------------
             // Upload stuff
             // ---------------------
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitFullMemoryBarrierPreWrite(buffer);
+            }
 
-            uploadCmd.submitBufferUploads(l_this->uboBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboBuffer);
-            uploadCmd.submitBufferUploads(l_this->iboBuffer);
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitBufferUploads(buffer);
+            }
+
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitFullMemoryBarrierPostWrite(buffer);
+            }
         }),
         std::move([meshes, l_this](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
                 TracyMessageStr(("Render stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));

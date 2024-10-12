@@ -205,6 +205,8 @@ protected:
     HGBufferVLK m_vboSpot;
     HGBufferVLK m_iboSpot;
 
+    std::vector<std::reference_wrapper<HGBufferVLK>> allBuffers = {};
+
     HGVertexBufferBindings m_drawSpotVao = nullptr;
 
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;

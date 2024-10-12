@@ -30,13 +30,13 @@ struct FogResult {
     mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 MainFogCoefficients = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 HeightDensityFogCoefficients = mathfu::vec4(0, 0, 0, 0);
-    float FogZScalar = 0.00001;
-    float LegacyFogScalar = 0.00001;
-    float MainFogStartDist = 0.00001;
-    float MainFogEndDist = 0.00001;
-    float FogBlendAlpha = 0.00001;
+    float FogZScalar = 0.00001f;
+    float LegacyFogScalar = 0.00001f;
+    float MainFogStartDist = 0.00001f;
+    float MainFogEndDist = 0.00001f;
+    float FogBlendAlpha = 0.00001f;
     mathfu::vec3 HeightEndFogColor = mathfu::vec3(0, 0, 0);
-    float FogStartOffset = 0.00001;
+    float FogStartOffset = 0.00001f;
 
     float SunAngleBlend = 1.0f;
 };

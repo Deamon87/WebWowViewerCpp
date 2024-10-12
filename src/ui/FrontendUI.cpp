@@ -1000,6 +1000,10 @@ void FrontendUI::showQuickLinksDialog() {
         replacementTextureFDids = std::vector<int>(17);
         getOrCreateWindow()->openM2SceneByfdid(5099010, replacementTextureFDids);
     }
+    if (ImGui::Button("Model with buggy particles", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        getOrCreateWindow()->openM2SceneByfdid(5587940, replacementTextureFDids);
+    }
     if (ImGui::Button("crystal song bush", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
         getOrCreateWindow()->openM2SceneByfdid(194418, replacementTextureFDids);

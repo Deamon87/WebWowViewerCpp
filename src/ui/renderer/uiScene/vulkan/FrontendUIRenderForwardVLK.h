@@ -49,6 +49,8 @@ private:
     HGBufferVLK iboBuffer;
     HGBufferVLK uboBuffer;
 
+    std::vector<std::reference_wrapper<HGBufferVLK>> allBuffers = {};
+
     void createBuffers();
 
     std::shared_ptr<GRenderPassVLK> m_lastRenderPass;

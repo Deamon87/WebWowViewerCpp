@@ -228,7 +228,7 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                 nullptr,
                 0,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_QUEUE_FAMILY_IGNORED,
                 VK_QUEUE_FAMILY_IGNORED,
                 submit.src,
@@ -248,8 +248,8 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
             barrierVec[0] =  {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                 nullptr,
-                0,
-                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_ACCESS_NONE,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_QUEUE_FAMILY_IGNORED,
                 VK_QUEUE_FAMILY_IGNORED,
                 submit.dst,
@@ -259,6 +259,40 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
             this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, barrierVec);
         }
     }
+}
+void CmdBufRecorder::submitFullMemoryBarrierPostWrite(const std::shared_ptr<GBufferVLK> &bufferVLK) {
+    std::vector<VkBufferMemoryBarrier> barrierVec = {
+        {
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+            nullptr,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_MEMORY_READ_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED,
+            bufferVLK->getGPUBuffer(),
+            0,
+            bufferVLK->getGPUBufferSize()
+        }
+    };
+
+    this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, barrierVec);
+}
+void CmdBufRecorder::submitFullMemoryBarrierPreWrite(const std::shared_ptr<GBufferVLK> &bufferVLK) {
+    std::vector<VkBufferMemoryBarrier> barrierVec = {
+        {
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+            nullptr,
+            VK_ACCESS_MEMORY_READ_BIT,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_QUEUE_FAMILY_IGNORED,
+            VK_QUEUE_FAMILY_IGNORED,
+            bufferVLK->getGPUBuffer(),
+            0,
+            bufferVLK->getGPUBufferSize()
+        }
+    };
+
+    this->recordPipelineBufferBarrier(VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, barrierVec);
 }
 
 void CmdBufRecorder::setViewPort(ViewportType viewportType) {

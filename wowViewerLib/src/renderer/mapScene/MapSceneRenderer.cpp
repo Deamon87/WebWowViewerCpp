@@ -202,17 +202,22 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             heightPlane = renderingMatrices->invTranspViewMat * heightPlane;
 
             float fogEnd = std::min<float>(std::max<float>(m_config->farPlane, 277.5), m_config->farPlane);
-            if (m_config->disableFog || !fdd->FogDataFound) {
-                fogEnd = 100000000.0f;
-                fogResult.FogScaler = 0;
-                fogResult.FogDensity = 0;
-                fogResult.FogHeightDensity = 0;
-            }
-
             const float densityMultFix = 0.00050000002 * std::pow(10, m_config->fogDensityIncreaser);
             float fogScaler = fogResult.FogScaler;
             if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
             float fogStart = std::min<float>(m_config->farPlane, 3000) * fogScaler;
+
+            if (m_config->disableFog || !fdd->FogDataFound) {
+                fogStart = 0.0f;
+                fogEnd = 100000000.0f;
+                fogScaler = 0;
+                fogResult.EndFogColorDistance = 100000000.0f;
+                fogResult.MainFogEndDist = 100000000.0f;
+                fogResult.FogStartOffset = 100000000.0f;
+                fogResult.MainFogStartDist = 0;
+                fogResult.FogDensity = 0;
+                fogResult.FogHeightDensity = 0;
+            }
 
             fogData.densityParams = mathfu::vec4(
                 fogStart,

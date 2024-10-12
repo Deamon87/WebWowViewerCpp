@@ -145,7 +145,7 @@ public:
 
     std::shared_ptr<GRenderPassVLK> getSwapChainRenderPass();
 
-    void setObjectName(uint64_t object, VkObjectType objectType, const char *name) override;
+    void setObjectName(uint64_t object, VkObjectType objectType, const std::string &name) override;
 
     void submitDrawCommands() override;
     void submitQueue(
@@ -312,6 +312,7 @@ protected:
 
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> uploadSemaphores;
     std::array<std::shared_ptr<GSemaphoreVLK>, MAX_FRAMES_IN_FLIGHT> frameBufSemaphores;
+    std::array<bool, MAX_FRAMES_IN_FLIGHT> firstTimeRender;
 
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_descriptorPools;
     std::vector<std::shared_ptr<GDescriptorPoolVLK>> m_bindlessDescriptorPools;

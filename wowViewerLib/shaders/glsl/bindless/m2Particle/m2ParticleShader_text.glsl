@@ -108,9 +108,9 @@ void main() {
 
 #ifndef DEFERRED
     vec4 finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/, vec4(matDiffuse, opacity), scene.uViewUpSceneTime.xyz, vPosition.xyz, sunDir.xyz, uPixelShaderBlendModev.y);
-#endif
 
-#ifndef DEFERRED
+//    finalColor.rbg = vec3(1, 0, 0);
+
     outColor = finalColor;
 #else
     writeGBuffer(matDiffuse.xyz, vec3(0.0, 0.0, 1.0), vec3(0.0), vPosition.xyz);

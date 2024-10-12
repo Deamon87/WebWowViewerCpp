@@ -108,6 +108,8 @@ void main() {
         }
         ao = texture(aoBuffer, screenUV).x;
     }
+//    matDiffuse.rbg = vec3(0, 0, 1);
+
 
     finalColor = vec4(
         calcLight(
@@ -141,6 +143,7 @@ void main() {
 
 
     finalColor.a = 1.0;
+
 
 #ifndef DEFERRED
     outColor = finalColor;

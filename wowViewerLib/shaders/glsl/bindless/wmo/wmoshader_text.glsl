@@ -83,6 +83,8 @@ void main() {
         accumLight = texture(lightBuffer, (gl_FragCoord.xy / scene.uSceneSize_DisableLightBuffer.xy)).xyz;
     }
 
+//    matDiffuse.rbg = vec3(0, 0, 1);
+
     finalColor = vec4(
         calcLight(
             matDiffuse,

@@ -23,6 +23,7 @@
 #include "../../algorithms/mathHelper_culling.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include "../../../renderer/frame/FrameProfile.h"
+#include "map_load_max_contants.h"
 
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
@@ -950,7 +951,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadGeom(sceneRenderer);
                 m2ProcessedThisFrame++;
-                if (m2ProcessedThisFrame > 100) break;
+                if (m2ProcessedThisFrame > MAX_LOAD_M2_PER_FRAME) break;
             }
         }
     }
@@ -989,7 +990,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
                 if (wmoGroupObject == nullptr) continue;
                 wmoGroupObject->doPostLoad(sceneRenderer);
                 wmoGroupsProcessedThisFrame++;
-                if (wmoGroupsProcessedThisFrame > 20) break;
+                if (wmoGroupsProcessedThisFrame > MAX_LOAD_WMOGROUP_PER_FRAME) break;
             }
         }
     }
@@ -999,7 +1000,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         int adtProcessed = 0;
         for (auto &adtObject: renderPlan->adtArray) {
             adtProcessed += (adtObject.adtObject->doPostLoad(sceneRenderer)) ? 1 : 0;
-            if (adtProcessed >= 2) break;
+            if (adtProcessed >= MAX_LOAD_ADT_PER_FRAME) break;
         }
     }
 

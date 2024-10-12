@@ -559,6 +559,9 @@ void M2Object::createAABB() {
     status->m_hasAABB = true;
 }
 
+void M2Object::setSize(float newSize) {
+
+}
 
 CAaBox M2Object::getColissionAABB() {
     CAaBox result;

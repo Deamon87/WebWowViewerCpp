@@ -272,6 +272,10 @@ VkBuffer GBufferVLK::getGPUBuffer() {
     return m_gpuBuffer->getBuffer();
 }
 
+size_t GBufferVLK::getGPUBufferSize() {
+    return m_gpuBuffer->size();
+}
+
 //----------------------------------------------------------------
 //  SubBuffer thing
 //----------------------------------------------------------------

@@ -340,6 +340,9 @@ std::unordered_set<std::string> GDeviceVLK::get_enabled_extensions() {
 }
 
 void GDeviceVLK::initialize() {
+    for (auto &val : firstTimeRender)
+        val = true;
+
     setupDebugMessenger();
 
     pickPhysicalDevice();
@@ -413,7 +416,7 @@ void GDeviceVLK::initialize() {
     m_ringBuffer = std::make_shared<GStagingRingBuffer>(shared_from_this());
 }
 
-void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const char *name)
+void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const std::string &name)
 {
     // Check for valid function pointer (may not be present if not running in a debugging application)
 
@@ -424,7 +427,7 @@ void GDeviceVLK::setObjectName(uint64_t object, VkObjectType objectType, const c
         nameInfo.pNext = nullptr;
         nameInfo.objectType = objectType;
         nameInfo.objectHandle = object;
-        nameInfo.pObjectName = name;
+        nameInfo.pObjectName = name.c_str();
         vkSetDebugUtilsObjectNameEXT(device, &nameInfo);
     }
 }
@@ -1048,13 +1051,18 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
             }
         }
         if (!frameRenderFuncs.renderFuncs.empty()) {
+            ZoneScopedN("flushRingBuffer");
             flushRingBuffer();
         }
         {
+           std::vector<VkSemaphore> waitSemaphores = {};
+//           if (!firstTimeRender[currentDrawFrame])
+//               waitSemaphores = {frameBufSemaphores[currentDrawFrame]->getNativeSemaphore()};
+
             submitQueue(
                 uploadQueue,
-                {},
-                {},
+                waitSemaphores,
+                {VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT},
                 {uploadCmdBuf->getNativeCmdBuffer()},
                 {uploadSemaphores[currentDrawFrame]->getNativeSemaphore()},
                 uploadFences[currentDrawFrame]->getNativeFence()
@@ -1095,7 +1103,7 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
         {
             uploadSemaphores[currentDrawFrame]->getNativeSemaphore()
         },
-        {VK_PIPELINE_STAGE_TRANSFER_BIT},
+        {VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT},
         {frameBufCmdBuf->getNativeCmdBuffer()},
         {frameBufSemaphores[currentDrawFrame]->getNativeSemaphore()},
         frameBufFences[currentDrawFrame]->getNativeFence()
@@ -1129,6 +1137,8 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
     }
 
     executeDeallocators();
+
+    firstTimeRender[currentDrawFrame] = false;
 }
 
 RenderPassHelper GDeviceVLK::beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd) {

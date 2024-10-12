@@ -63,6 +63,11 @@ static const ShaderConfig bindlessShaderConfig = {
         }},
     }};
 
+static const ShaderConfig m2ParticlesBindlessGBufferShaderConfig = {
+    "bindless/m2Particle/forward",
+    "bindless/m2Particle/deferred",
+    bindlessShaderConfig.typeOverrides
+};
 
 static const ShaderConfig m2WaterfallBindlessShaderConfig = {
     "bindless/waterfall/forward",
@@ -144,6 +149,58 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         return name + rendererIdStr;
     };
 
+    
+    this->allBuffers = {
+        this->uboBuffer,
+        this->uboStaticBuffer,
+
+        this->pointLightBuffer,
+        this->spotLightBuffer,
+
+        this->vboM2Buffer,
+        this->vboPortalBuffer,
+        this->vboM2ParticleBuffer,
+        this->vboM2RibbonBuffer,
+        this->vboAdtBuffer,
+        this->vboWMOBuffer,
+        this->vboWaterBuffer,
+        this->vboSkyBuffer,
+
+        this->m2Buffers.placementMatrix,
+        this->m2Buffers.boneMatrix,
+        this->m2Buffers.m2Colors,
+        this->m2Buffers.textureWeights,
+        this->m2Buffers.textureMatrices,
+        this->m2Buffers.modelFragmentDatas,
+        this->m2Buffers.m2InstanceData,
+        this->m2Buffers.meshWideBlocks,
+        this->m2Buffers.meshWideBlocksBindless,
+
+        this->m2WaterfallBuffer.waterfallCommon,
+        this->m2WaterfallBuffer.waterfallBindless,
+
+        this->adtBuffers.adtMeshWidePSes,
+        this->adtBuffers.adtMeshWideVSPSes,
+        this->adtBuffers.adtInstanceDatas,
+
+        this->wmoBuffers.wmoPlacementMats,
+        this->wmoBuffers.wmoMeshWideVSes,
+        this->wmoBuffers.wmoMeshWidePSes,
+        this->wmoBuffers.wmoMeshWideBindless,
+        this->wmoBuffers.wmoGroupAmbient,
+        this->wmoBuffers.wmoPerMeshData,
+
+        this->waterBuffer.waterDataBuffer,
+        this->waterBuffer.waterBindlessBuffer,
+
+        this->iboBuffer,
+        this->m_vboQuad,
+        this->m_iboQuad,
+        this->m_particleIndexBuffer,
+        this->m_vboSpot,
+        this->m_iboSpot,
+    };
+    
     iboBuffer   = m_device->createIndexBuffer(un("Scene_IBO"), 1024*1024);
 
 
@@ -828,6 +885,7 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderBindlessVLK::createM2Particle
 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Particle/forward/m2ParticleShader", "m2Particle/forward/m2ParticleShader"}, bindlessShaderConfig, {{0, sceneWideDS}})
         .createPipeline(m_emptyM2ParticleVAO, m_forwardRenderPass, pipelineTemplate)
+        .createGBufferPipeline(m_emptyM2ParticleVAO, {"m2ParticleShader", "m2ParticleShader"}, m2ParticlesBindlessGBufferShaderConfig, m_gBufferPass)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -1101,7 +1159,7 @@ private:
     framebased::vector<DrawCommand> adtDrawVec;
     framebased::vector<HGMesh> commonMeshes;
 
-    inline static void fillDrawCommand(DrawCommand &drawCommand, GMeshVLK *meshVlk) {
+     static void fillDrawCommand(DrawCommand &drawCommand, GMeshVLK *meshVlk) {
         auto const matId = meshVlk->material()->getMaterialId();
 
         drawCommand.matId = matId;
@@ -1118,7 +1176,7 @@ private:
         }
     }
 
-    inline static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
+    static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
         const auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
 //        const auto &meshVlk = (GMeshVLK*) mesh.get();
@@ -1376,55 +1434,19 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
         if (stepBufferUpdates)
         {
 //            ZoneScopedN("submit buffers");
-//            VkZone(uploadCmd, "submit buffers")
-            uploadCmd.submitBufferUploads(l_this->uboBuffer);
-            uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
+            VkZone(uploadCmd, "submit buffers")
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitFullMemoryBarrierPreWrite(buffer);
+            }
 
-            uploadCmd.submitBufferUploads(l_this->pointLightBuffer);
-            uploadCmd.submitBufferUploads(l_this->spotLightBuffer);
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitBufferUploads(buffer);
+            }
 
-            uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
-            uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
-            uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitFullMemoryBarrierPostWrite(buffer);
+            }
 
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.placementMatrix);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.boneMatrix);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.m2Colors);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.textureWeights);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.textureMatrices);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.modelFragmentDatas);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.m2InstanceData);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.meshWideBlocks);
-            uploadCmd.submitBufferUploads(l_this->m2Buffers.meshWideBlocksBindless);
-
-            uploadCmd.submitBufferUploads(l_this->m2WaterfallBuffer.waterfallCommon);
-            uploadCmd.submitBufferUploads(l_this->m2WaterfallBuffer.waterfallBindless);
-
-            uploadCmd.submitBufferUploads(l_this->adtBuffers.adtMeshWidePSes);
-            uploadCmd.submitBufferUploads(l_this->adtBuffers.adtMeshWideVSPSes);
-            uploadCmd.submitBufferUploads(l_this->adtBuffers.adtInstanceDatas);
-
-            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoPlacementMats);
-            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoMeshWideVSes);
-            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoMeshWidePSes);
-            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoMeshWideBindless);
-            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoGroupAmbient);
-            uploadCmd.submitBufferUploads(l_this->wmoBuffers.wmoPerMeshData);
-
-            uploadCmd.submitBufferUploads(l_this->waterBuffer.waterDataBuffer);
-            uploadCmd.submitBufferUploads(l_this->waterBuffer.waterBindlessBuffer);
-
-            uploadCmd.submitBufferUploads(l_this->iboBuffer);
-            uploadCmd.submitBufferUploads(l_this->m_vboQuad);
-            uploadCmd.submitBufferUploads(l_this->m_iboQuad);
-            uploadCmd.submitBufferUploads(l_this->m_particleIndexBuffer);
-            uploadCmd.submitBufferUploads(l_this->m_vboSpot);
-            uploadCmd.submitBufferUploads(l_this->m_iboSpot);
         }
     }, [transparentMeshes, l_opaqueMeshes = std::move(u_collector),
                            l_skyOpaqueMeshes = std::move(u_skyCollector),

@@ -210,6 +210,8 @@ public:
     const CAaBox &getAABB() { return *aabb; };
     CAaBox getColissionAABB();
 
+    void setSize(float newSize);
+
     void setLoadParams(int skinNum, std::vector<uint8_t> meshIds,
                        std::vector<HBlpTexture> replaceTextures);
 

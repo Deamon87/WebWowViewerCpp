@@ -63,8 +63,8 @@ public:
     }
 
     void selectShaderId();
-    void Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix);
-    void prepearBuffers(mathfu::mat4 &viewMatrix);
+    void Update(animTime_t delta, const mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, const mathfu::mat4 &viewMatrix);
+    void prepearBuffers(const mathfu::mat4 &viewMatrix);
     CParticleGenerator * getGenerator(){
         return generator;
     }
@@ -134,6 +134,7 @@ private:
 
     ParticleBuffStructQuad *szVertexBuf = nullptr;
     int szVertexCnt = 0;
+    int m_temp_maxFutureSize = 0;
 private:
 
     struct ParticlePreRenderData
@@ -162,7 +163,7 @@ private:
 
     bool UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces);
 
-    void calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &a3);
+    void calculateQuadToViewEtc(mathfu::mat4 *a1, const mathfu::mat4 &a3);
 
     void CalculateForces(ParticleForces &forces, animTime_t delta);
 

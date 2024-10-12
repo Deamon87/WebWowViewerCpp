@@ -11,7 +11,7 @@ inline void CmdBufRecorder::bindPipeline(const std::shared_ptr<GPipelineVLK> &pi
     auto *pPipelineVlk = pipeline.get();
     if (m_currentPipeline == pPipelineVlk) return;
 
-    vkCmdBindPipeline(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pPipelineVlk->getPipeline());
+    vkCmdBindPipeline(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->getPipeline());
 
     m_currentPipeline = pPipelineVlk;
     m_currentPipelineLayout = pipeline->getLayout()->getLayout();

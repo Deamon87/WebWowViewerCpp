@@ -345,7 +345,7 @@ void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, par
 bool ParticleEmitter::randTableInited = false;
 float ParticleEmitter::RandTable[128] = {};
 
-void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &translatedViewMat) {
+void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, const mathfu::mat4 &translatedViewMat) {
     if ((this->m_data->old.flags & 0x10)) {
         s_particleToView = translatedViewMat * m_emitterModelMatrix ;
     } else {
@@ -413,7 +413,8 @@ void ParticleEmitter::InternalUpdate(animTime_t delta) {
 
     this->StepUpdate(delta);
 }
-void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix) {
+void ParticleEmitter::Update(animTime_t delta, const mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl,
+                             mathfu::mat4 *frameOfReference, const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
 //    if (this->particles.size() <= 0 && !isEnabled) return;
@@ -608,7 +609,7 @@ CParticle2& ParticleEmitter::BirthParticle() {
     return p;
 }
 
-void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
+void ParticleEmitter::prepearBuffers(const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
     if (particles.size() == 0 && this->generator != nullptr) {
@@ -627,6 +628,7 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
     );
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
+    TracyMessageStr(("prepearBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
 
     int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % (IDevice::MAX_FRAMES_IN_FLIGHT + 1);
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
@@ -645,9 +647,15 @@ void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
             }
         }
     }
+
+    if ((szVertexCnt * sizeof(ParticleBuffStructQuad)) > vboBufferDynamic->getSize()){
+        std::cout << "buffer overrun detected" << std::endl;
+    }
 }
 
 void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
+    TracyMessageStr(("fitBuffersToSize, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+
     if (particles.size() == 0) {
         return;
     }
@@ -658,6 +666,8 @@ void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRendere
     }
     int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % (IDevice::MAX_FRAMES_IN_FLIGHT + 1);
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
+
+    m_temp_maxFutureSize = maxFutureSize;
 
     if (maxFutureSize > vboBufferDynamic->getSize()) {
         createMesh(sceneRenderer, frame[frameNum], maxFutureSize);
@@ -1060,14 +1070,16 @@ ParticleEmitter::BuildQuadT3(
 
     ParticleBuffStructQuad &record = szVertexBuf[szVertexCnt++];
 
-//    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();
+    static_assert(sizeof(ParticleBuffStructQuad) == (sizeof(ParticleBuffStruct) * 4));
+    static_assert(sizeof(ParticleBuffStruct) == 56);
+
     mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
         auto &particleData = record.particle[i];
-        particleData.position = ( inverseLookAt * mathfu::vec4(
-                m0 * vxs[i] + m1 * vys[i] + viewPos,
-                1.0
+        particleData.position = (inverseLookAt * mathfu::vec4(
+            m0 * vxs[i] + m1 * vys[i] + viewPos,
+            1.0
         )).xyz();
         particleData.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
 
@@ -1086,11 +1098,12 @@ ParticleEmitter::BuildQuadT3(
 
         particleData.alphaCutoff = alphaCutoff;
     }
-
 }
 
 void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
+
+    TracyMessageStr(("collectMeshes, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
 
     auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % (IDevice::MAX_FRAMES_IN_FLIGHT + 1)];
     if (!currentFrame.active)
@@ -1110,25 +1123,15 @@ void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, t
 void ParticleEmitter::updateBuffers() {
     if (getGenerator() == nullptr) return;
 
+    TracyMessageStr(("updateBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+
     auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % (IDevice::MAX_FRAMES_IN_FLIGHT + 1)];
     currentFrame.active = szVertexCnt > 0;
 
     if (!currentFrame.active)
         return;
-//
-//    if (szVertexCnt * sizeof(ParticleBuffStructQuad) > currentFrame.m_bufferVBO->getSize()) {
-//        std::cout << "Buffer miss match " <<
-//            szVertexCnt * sizeof(ParticleBuffStructQuad) <<
-//            " < " <<
-//            currentFrame.m_bufferVBO->getSize()
-//            << std::endl;
-//    }
 
-//    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
     currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
-
-
-
 
     currentFrame.m_mesh->setEnd(szVertexCnt * 6);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);

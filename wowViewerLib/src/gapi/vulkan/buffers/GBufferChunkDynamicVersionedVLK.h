@@ -49,6 +49,10 @@ public:
         auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return subBufferVersions[m_currentVersion][index]->getGPUBuffer();
     }
+    size_t getGPUBufferSize() override {
+        auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+        return subBufferVersions[m_currentVersion][index]->getGPUBufferSize();
+    }
     size_t getOffset() override {
         auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return subBufferVersions[m_currentVersion][index]->getOffset();
