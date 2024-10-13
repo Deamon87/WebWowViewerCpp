@@ -205,6 +205,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     chunkData.readValues(object.newLights, object.newLightsLen);
                 }
             }
+        },
+        {
+            'MOUV', {
+                [](WmoMainGeom &object, ChunkData &chunkData) {
+                    debuglog("Entered MOUV");
+                    object.materialUVSpeedLen = chunkData.chunkLen / sizeof(C4Vector);
+                    chunkData.readValues(object.materialUVSpeed, object.materialUVSpeedLen);
+                }
+            }
         }
     }
 };

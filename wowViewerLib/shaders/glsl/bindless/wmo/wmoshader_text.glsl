@@ -37,7 +37,7 @@ layout(location = 0) out vec4 outColor;
 void main() {
     WMOPerMeshData perMeshData = perMeshDatas[nonuniformEXT(vMeshIndex)];
     WmoMeshWideBindless meshWideBindless = wmoMeshWideBindlesses[nonuniformEXT(perMeshData.meshWideBindlessIndex_wmoAmbientIndex.x)];
-    WmoMeshWide wmoMeshWide = wmoMeshWides[nonuniformEXT(meshWideBindless.placementMat_meshWideIndex_blockVSIndex_texture9.y)];
+    WmoFragMeshWide wmoMeshWide = wmoFragMeshWides[nonuniformEXT(meshWideBindless.placementMat_meshWideIndex_blockVSIndex_texture9.y)];
 
     int uPixelShader = wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.z;
 

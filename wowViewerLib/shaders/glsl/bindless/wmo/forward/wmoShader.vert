@@ -59,9 +59,17 @@ void main() {
     vColorSecond = aColorSecond;
     vTexCoord4 = aTexCoord4;
 
-    int uVertexShader = VertexShader_UseLitColors[blockVSIndex].x;
+    WmoVertMeshWide meshWide = wmoVertMeshWide[blockVSIndex];
 
-    calcWMOVertMat(uVertexShader, vPosition.xyz, vNormal, aTexCoord, aTexCoord2, aTexCoord3, vTexCoord, vTexCoord2, vTexCoord3);
+    int uVertexShader = meshWide.VertexShader_UseLitColors.x;
+
+    calcWMOVertMat(uVertexShader,
+        vPosition.xyz, vNormal,
+        aTexCoord, aTexCoord2, aTexCoord3,
+        scene.uViewUpSceneTime.w,
+        meshWide.translationSpeedXY,
+        vTexCoord, vTexCoord2, vTexCoord3
+    );
 
     vMeshIndex = gl_InstanceIndex;
 }

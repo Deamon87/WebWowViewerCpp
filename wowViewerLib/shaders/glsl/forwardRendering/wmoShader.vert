@@ -29,7 +29,7 @@ layout(std140, set=1, binding=0) uniform modelWideBlockVS {
 };
 
 layout(std140, set=1, binding=1) uniform meshWideBlockVS {
-    ivec4 VertexShader_UseLitColor;
+    WmoVertMeshWide vertMeshWide;
 };
 
 layout(location=0) out vec2 vTexCoord;
@@ -61,9 +61,15 @@ void main() {
     vColorSecond = aColorSecond;
     vTexCoord4 = aTexCoord4;
 
-    int uVertexShader = VertexShader_UseLitColor.x;
+    int uVertexShader = vertMeshWide.VertexShader_UseLitColors.x;
 
-    calcWMOVertMat(uVertexShader, vPosition.xyz, vNormal, aTexCoord, aTexCoord2, aTexCoord3, vTexCoord, vTexCoord2, vTexCoord3);
+    calcWMOVertMat(uVertexShader,
+        vPosition.xyz, vNormal,
+        aTexCoord, aTexCoord2, aTexCoord3,
+        scene.uViewUpSceneTime.w,
+        vertMeshWide.translationSpeedXY,
+        vTexCoord, vTexCoord2, vTexCoord3
+    );
 
     vWmoAmbient = wmoAmbient;
 }

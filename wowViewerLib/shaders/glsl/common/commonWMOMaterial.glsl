@@ -4,6 +4,17 @@
 #include "commonLightFunctions.glsl"
 #include "commonFunctions.glsl"
 
+struct WmoVertMeshWide {
+    ivec4 VertexShader_UseLitColors;
+    vec4 translationSpeedXY;
+};
+
+struct WmoFragMeshWide {
+    ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
+    vec4 FogColor_AlphaTest;
+};
+
+
 void caclWMOFragMat(in int pixelShader, bool enableAlpha,
     in sampler2D s_texture, in sampler2D s_texture2, in sampler2D s_texture3, in sampler2D s_texture4, in sampler2D s_texture5,
     in sampler2D s_texture6, in sampler2D s_texture7, in sampler2D s_texture8, in sampler2D s_texture9,
@@ -261,50 +272,75 @@ void caclWMOFragMat(in int pixelShader, bool enableAlpha,
     }
 }
 
+float makeWmoUVAnim(float sceneTimeInSec, float value) {
+    if (value == 0.0f) return 0.0f;
+
+    float animPeriod = 1000.0f / value;
+    if (animPeriod > 0.0f) {
+        return (int(sceneTimeInSec) % int(animPeriod)) / animPeriod;
+    } else {
+        return 1.0f - (int(sceneTimeInSec) % int(-animPeriod)) / -animPeriod;
+    }
+}
+
+vec2 makeWmoUVAnimVec(float sceneTimeInSec, vec2 value){
+    return vec2(
+        makeWmoUVAnim(sceneTimeInSec,value.x),
+        makeWmoUVAnim(sceneTimeInSec,value.y)
+    );
+}
+
 void calcWMOVertMat(in int vertexShader,
                     in vec3 vertexPosInView,
                     in vec3 normalInView,
                     in vec2 aTexCoord, in vec2 aTexCoord2, in vec2 aTexCoord3,
+                    float sceneTime,
+                    in vec4 uvTransl,
                     out vec2 vTexCoord, out vec2 vTexCoord2, out vec2 vTexCoord3) {
+
+    float sceneTimeInSec = sceneTime;
+    vec2 texCoordAnim = aTexCoord + makeWmoUVAnimVec(sceneTimeInSec, uvTransl.xy);
+    vec2 texCoordAnim2 = aTexCoord2 + makeWmoUVAnimVec(sceneTimeInSec, uvTransl.zw);
+
     if ( vertexShader == -1 ) {
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2;
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2;
         vTexCoord3 = aTexCoord3;
     } else if (vertexShader == 0) { //MapObjDiffuse_T1
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2; //not used
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2; //not used
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 1) { //MapObjDiffuse_T1_Refl
-        vTexCoord = aTexCoord;
+        vTexCoord = texCoordAnim;
         vTexCoord2 = reflect(normalize(vertexPosInView.xyz), normalInView).xy;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 2) { //MapObjDiffuse_T1_Env_T2
-        vTexCoord = aTexCoord;
+        vTexCoord = texCoordAnim;
         vTexCoord2 = posToTexCoord(vertexPosInView.xyz, normalInView);
-        vTexCoord3 = aTexCoord3;
+        vTexCoord3 = texCoordAnim2;
     } else if (vertexShader == 3) { //MapObjSpecular_T1
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2; //not used
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2; //not used
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 4) { //MapObjDiffuse_Comp
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2; //not used
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2; //not used
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 5) { //MapObjDiffuse_Comp_Refl
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2;
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2;
         vTexCoord3 = reflect(normalize(vertexPosInView.xyz), normalInView).xy;
     } else if (vertexShader == 6) { //MapObjDiffuse_Comp_Terrain
-        vTexCoord = aTexCoord;
+        vTexCoord = texCoordAnim;
         vTexCoord2 = vertexPosInView.xy * 0.239999995;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 7) { //MapObjDiffuse_CompAlpha
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2;
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 8) { //MapObjParallax
-        vTexCoord = aTexCoord;
-        vTexCoord2 = aTexCoord2;
+        vTexCoord = texCoordAnim;
+        vTexCoord2 = texCoordAnim2;
         vTexCoord3 = aTexCoord3;
     }
 }

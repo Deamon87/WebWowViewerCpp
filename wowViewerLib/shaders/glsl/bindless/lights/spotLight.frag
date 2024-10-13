@@ -57,10 +57,11 @@ void main() {
     float distanceToLightInv = inversesqrt(distanceToLightSqr);
     float diffuseTerm = max((dot(vectorToLight, viewNormal.xyz) * distanceToLightInv), 0.0);
 
-    //Ld is distance from spot light center
-    //ld = lightDir * normalize(-(vectorToLight)) * length(vectorToLight) =
-    //     cos(angle_between_lightDir_and_vectorToLight) * length(vectorToLight) = dist_r
-    //
+/*
+//Ld is distance from spot light center
+//ld = lightDir * normalize(-(vectorToLight)) * length(vectorToLight) =
+//     cos(angle_between_lightDir_and_vectorToLight) * length(vectorToLight) = dist_r
+//
 //                |\
 //                | \
 //                |  \
@@ -74,6 +75,7 @@ void main() {
 //                |__________\
 //                     ^
 //                   dist_r
+*/
 
     float ld = max(dot(lightDir, -(vectorToLight)), 0.0);
     float attenuation = (1.0 - clamp(((ld - lightAtten.x) * lightAtten.z), 0.0, 1.0));

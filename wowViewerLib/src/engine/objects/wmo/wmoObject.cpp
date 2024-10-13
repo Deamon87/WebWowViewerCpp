@@ -1311,6 +1311,10 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, 
                                                                   pipelineTemplate, materialTemplate);
     m_materialCache[materialIndex] = materialInstance;
 
+    C4Vector matUVAnim = C4Vector(mathfu::vec4(0.0f,0.0f,0.0f,0.0f));
+    if (mainGeom->materialUVSpeedLen > 0 && (materialIndex < mainGeom->materialUVSpeedLen)) {
+        matUVAnim = mainGeom->materialUVSpeed[materialIndex];
+    }
     {
         float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
 
@@ -1318,6 +1322,7 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, 
         auto &blockVS = materialInstance->m_materialVS->getObject();
         blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
         blockVS.VertexShader = vertexShader;
+        blockVS.translationSpeedXY = matUVAnim;
         materialInstance->m_materialVS->save();
 
         //Update PS block

@@ -208,8 +208,8 @@ namespace WMO {
     struct meshWideBlockVS {
         int VertexShader;
         int UseLitColor;
-
         int padding[2];
+        mathfu::vec4_packed translationSpeedXY;
     };
 
     struct meshWideBlockPS {

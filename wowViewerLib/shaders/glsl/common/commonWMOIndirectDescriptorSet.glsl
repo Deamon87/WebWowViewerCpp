@@ -1,21 +1,18 @@
 #ifndef COMMON_WMO_INDIRECT_DS
 #define COMMON_WMO_INDIRECT_DS
 
+#include "commonWmoMaterial.glsl"
+
 layout(std430, set=1, binding=1) buffer readonly modelWideBlockVS {
     mat4 uPlacementMats[];
 };
 
 layout(std430, set=1, binding=2) buffer readonly meshWideBlockVS {
-    ivec4 VertexShader_UseLitColors[];
-};
-
-struct WmoMeshWide {
-    ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
-    vec4 FogColor_AlphaTest;
+    WmoVertMeshWide wmoVertMeshWide[];
 };
 
 layout(std430, set=1, binding=3) buffer readonly meshWideBlockPS {
-    WmoMeshWide wmoMeshWides[];
+    WmoFragMeshWide wmoFragMeshWides[];
 };
 
 struct WmoMeshWideBindless {

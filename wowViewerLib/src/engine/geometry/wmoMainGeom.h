@@ -76,6 +76,9 @@ public:
     PointerChecker<mapobject_new_light_def> newLights = (newLightsLen);
     int newLightsLen = 0;
 
+    PointerChecker<C4Vector> materialUVSpeed = (materialUVSpeedLen);
+    int materialUVSpeedLen = 0;
+
     int skyboxM2FileId = 0;
 };
 
