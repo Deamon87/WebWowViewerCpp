@@ -4118,10 +4118,16 @@ void ImGui::Initialize()
         ini_handler.TypeName = "Window";
         ini_handler.TypeHash = ImHashStr("Window");
         ini_handler.ClearAllFn = WindowSettingsHandler_ClearAll;
-        ini_handler.ReadOpenFn = WindowSettingsHandler_ReadOpen;
-        ini_handler.ReadLineFn = WindowSettingsHandler_ReadLine;
+        ini_handler.ReadOpenFn = [](ImGuiContext* g, ImGuiSettingsHandler* gg, const char* name) -> void* {
+            return WindowSettingsHandler_ReadOpen(g, gg, name);
+        };
+        ini_handler.ReadLineFn = [](ImGuiContext* ctx, ImGuiSettingsHandler* handler, void* entry, const char* line) -> void {
+            WindowSettingsHandler_ReadLine(ctx, handler, entry, line);
+        };
+        ini_handler.WriteAllFn = [](ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) -> void {
+            WindowSettingsHandler_WriteAll(ctx, handler, buf);
+        };
         ini_handler.ApplyAllFn = WindowSettingsHandler_ApplyAll;
-        ini_handler.WriteAllFn = WindowSettingsHandler_WriteAll;
         AddSettingsHandler(&ini_handler);
     }
     TableSettingsAddSettingsHandler();
@@ -6910,6 +6916,11 @@ static int ImGui::UpdateWindowManualResize(ImGuiWindow* window, const ImVec2& si
         g.WindowResizeBorderExpectedRect = GetResizeBorderRect(window, *border_held, grip_hover_inner_size, WINDOWS_HOVER_PADDING);
 
     return ret_auto_fit_mask;
+}
+float ImGui::GetWindowContentRegionHeight()
+{
+    ImGuiWindow* window = GImGui->CurrentWindow;
+    return window->ContentRegionRect.GetHeight();
 }
 
 static inline void ClampWindowPos(ImGuiWindow* window, const ImRect& visibility_rect)
@@ -15153,8 +15164,10 @@ void ImGui::AddSettingsHandler(const ImGuiSettingsHandler* handler)
 void ImGui::RemoveSettingsHandler(const char* type_name)
 {
     ImGuiContext& g = *GImGui;
-    if (ImGuiSettingsHandler* handler = FindSettingsHandler(type_name))
-        g.SettingsHandlers.erase(handler);
+    if (ImGuiSettingsHandler* handler = FindSettingsHandler(type_name)) {
+        auto index = (handler - g.SettingsHandlers.data());
+        g.SettingsHandlers.erase(g.SettingsHandlers.begin() + index);
+    }
 }
 
 ImGuiSettingsHandler* ImGui::FindSettingsHandler(const char* type_name)
@@ -21297,7 +21310,7 @@ void ImGui::ShowMetricsWindow(bool* p_open)
             TextUnformatted("<NULL>");
         Checkbox("io.ConfigDebugIniSettings", &io.ConfigDebugIniSettings);
         Text("SettingsDirtyTimer %.2f", g.SettingsDirtyTimer);
-        if (TreeNode("SettingsHandlers", "Settings handlers: (%d)", g.SettingsHandlers.Size))
+        if (TreeNode("SettingsHandlers", "Settings handlers: (%d)", g.SettingsHandlers.size()))
         {
             for (ImGuiSettingsHandler& handler : g.SettingsHandlers)
                 BulletText("\"%s\"", handler.TypeName);
