@@ -80,8 +80,8 @@ void WdlObject::loadM2s() {
                 constexpr float degreeToRad = M_PI/180.0f;
 
                 auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInDegree.z*degreeToRad);
-                rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInDegree.y*degreeToRad);
-                rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInDegree.x*degreeToRad);
+                rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInDegree.y*degreeToRad);
+                rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInDegree.x*degreeToRad);
 
                 m2Object->createPlacementMatrix(
                     mathfu::vec3(msso_rec.translateVec.x, msso_rec.translateVec.y, msso_rec.translateVec.z),
