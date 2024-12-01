@@ -227,7 +227,7 @@ void CmdBufRecorder::submitBufferUploads(const std::shared_ptr<GBufferVLK> &buff
             barrierVec[0] = {
                 VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
                 nullptr,
-                0,
+                VK_ACCESS_NONE,
                 VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_QUEUE_FAMILY_IGNORED,
                 VK_QUEUE_FAMILY_IGNORED,

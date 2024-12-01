@@ -27,17 +27,20 @@ struct ParticleForces {
 };
 
 struct ParticleBuffStruct {
-    C3Vector position; //0
-    C4Vector color;    //12
+    C3Vector position;   //0
+    C4Vector color;      //12
     C2Vector textCoord0; //28
     C2Vector textCoord1; //36
     C2Vector textCoord2; //44
-    float alphaCutoff;
+    float   alphaCutoff; //52
 };
 
 struct ParticleBuffStructQuad {
     ParticleBuffStruct particle[4];
 };
+
+static_assert(sizeof(ParticleBuffStructQuad) == (sizeof(ParticleBuffStruct) * 4));
+static_assert(sizeof(ParticleBuffStruct) == 56);
 
 struct CParticleMaterialFlags {
     union {
@@ -55,6 +58,8 @@ struct CParticleMaterialFlags {
     };
 };
 
+typedef std::vector<CParticle2> ParticleBuffer;
+
 class ParticleEmitter {
 public:
     ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, Exp2Record *exp2, M2Object *m2Object, HM2Geom geom, int txac_val_raw);
@@ -64,12 +69,11 @@ public:
 
     void selectShaderId();
     void Update(animTime_t delta, const mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, const mathfu::mat4 &viewMatrix);
-    void prepearBuffers(const mathfu::mat4 &viewMatrix);
+    void prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix);
     CParticleGenerator * getGenerator(){
         return generator;
     }
     void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder);
-    void updateBuffers();
 
     void fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
 
@@ -107,7 +111,7 @@ private:
 
     CParticleGenerator *generator;
 
-    std::vector<CParticle2> particles;
+    std::array<std::vector<CParticle2>, 2> particlesPingPong;
 
     int m_particleType = 0;
     int shaderId = 0;
@@ -132,34 +136,27 @@ private:
     float texScaleX;
     float texScaleY;
 
-    ParticleBuffStructQuad *szVertexBuf = nullptr;
-    int szVertexCnt = 0;
     int m_temp_maxFutureSize = 0;
 private:
 
     struct ParticlePreRenderData
     {
-        mathfu::vec3 m_particleCenter;
+        mathfu::vec3 m_particleCenter = mathfu::vec3(0,0,0);
         struct
         {
-            mathfu::vec3 m_timedColor;
-            float m_alpha;
-            mathfu::vec2 m_particleScale;
-            uint32_t timedHeadCell;
-            uint32_t timedTailCell;
-            float alphaCutoff;
+            mathfu::vec3 m_timedColor = mathfu::vec3(0,0,0);;
+            float m_alpha = 0.0f;
+            mathfu::vec2 m_particleScale = mathfu::vec2(0,0);
+            uint32_t timedHeadCell = 0;
+            uint32_t timedTailCell = 0;
+            float alphaCutoff = 0.0;
         } m_ageDependentValues;
         int field_24;
         int field_28;
         int field_2C;
         int field_30;
-        float invertDiagonalLen;
+        float invertDiagonalLen = 0.0;
     };
-
-    CParticle2 &BirthParticle();
-
-
-    void KillParticle(int index);
 
     bool UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces);
 
@@ -167,23 +164,27 @@ private:
 
     void CalculateForces(ParticleForces &forces, animTime_t delta);
 
-    void CreateParticle(animTime_t delta);
+    void CreateParticle(ParticleBuffer &particlesCurr, animTime_t delta);
 
-    void EmitNewParticles(animTime_t delta);
+    void EmitNewParticles(ParticleBuffer &particlesCurr, animTime_t delta);
 
-    void StepUpdate(animTime_t delta);
+    void StepUpdate(ParticleBuffer &particlesCurr, ParticleBuffer &particlesLast, animTime_t delta);
+
+    ParticleBuffer& GetLastPBuffer();
+    ParticleBuffer& GetCurrentPBuffer();
 
 
     void fillTimedParticleData(CParticle2 &p, ParticlePreRenderData &particlePreRenderData, uint16_t seed);
     int CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRenderData &ParticlePreRenderData);
-    int buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData);
-    int buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData);
+    int buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData, ParticleBuffStruct *szVertexBuf, int &szVertexCnt);
+    int buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData, ParticleBuffStruct *szVertexBuf, int &szVertexCnt);
 
-    void InternalUpdate(animTime_t delta);
+    void InternalUpdate(ParticleBuffer &particlesCurr, ParticleBuffer &particlesLast, animTime_t delta);
     void UpdateXform(const mathfu::mat4 &viewModelBoneMatrix, mathfu::vec3 &invMatTranslation, mathfu::mat4 *parentModelMatrix);
 
     void
     BuildQuadT3(
+            ParticleBuffStruct *szVertexBuf, int &szVertexCnt,
             mathfu::vec3 &m0, mathfu::vec3 &m1, mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
             float alphaCutoff,
             float texStartX,
@@ -194,17 +195,20 @@ private:
 
 		HGVertexBufferBindings m_bindings = nullptr;
 		HGParticleMesh m_mesh = nullptr;
+        int particlesUploaded = 0;
 		bool active = false;
 	} ;
+
     std::shared_ptr<IM2ParticleMaterial> m_material = nullptr;
-    std::array<particleFrame, IDevice::MAX_FRAMES_IN_FLIGHT + 1> frame;
+    std::array<particleFrame, PARTICLES_BUFF_NUM> frame;
+
 
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
 
     HGIndexBuffer m_indexVBO = nullptr;
 
     void GetSpin(CParticle2 &p, float &baseSpin, float &deltaSpin) const;
-    void createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int size);
+    void createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &frame, int frameIndex, int size);
 
 };
 

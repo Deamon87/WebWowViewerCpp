@@ -159,7 +159,6 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
 
         this->vboM2Buffer,
         this->vboPortalBuffer,
-        this->vboM2ParticleBuffer,
         this->vboM2RibbonBuffer,
         this->vboAdtBuffer,
         this->vboWMOBuffer,
@@ -200,13 +199,17 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         this->m_vboSpot,
         this->m_iboSpot,
     };
+    for (auto &vboM2ParticleBuff : this->vboM2ParticleBuffers) {
+        allBuffers.push_back(vboM2ParticleBuff);
+    }
     
     iboBuffer   = m_device->createIndexBuffer(un("Scene_IBO"), 1024*1024);
 
 
     vboM2Buffer         = m_device->createVertexBuffer(un("Scene_VBO_M2"),1024*1024, sizeof(M2Vertex));
     vboPortalBuffer     = m_device->createVertexBuffer(un("Scene_VBO_Portal"),1024*1024);
-    vboM2ParticleBuffer = m_device->createVertexBuffer(un("Scene_VBO_M2Particle"),1024*1024, 64);
+    for (int k = 0; k < PARTICLES_BUFF_NUM; k++)
+        vboM2ParticleBuffers[k] = m_device->createVertexBuffer(un("Scene_VBO_M2Particle_fr_"+std::to_string(k)),1024*1024, 64);
     vboM2RibbonBuffer   = m_device->createVertexBuffer(un("Scene_VBO_M2Ribbon"),1024*1024, 64);
     vboAdtBuffer        = m_device->createVertexBuffer(un("Scene_VBO_ADT"),3*1024*1024, sizeof(AdtVertex));
     vboWMOBuffer        = m_device->createVertexBuffer(un("Scene_VBO_WMO"),1024*1024, sizeof(WMOVertex));
@@ -362,7 +365,8 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     }
 
     defaultView = std::make_shared<RendererViewClass>(m_device, uboBuffer,
-                                                      pointLightBuffer, sceneWideDS,
+                                                      pointLightBuffer, spotLightBuffer,
+                                                      sceneWideDS,
                                                       m_drawQuadVao,
                                                       m_drawSpotVao,
                                                       false);
@@ -654,8 +658,17 @@ HGVertexBuffer MapSceneRenderBindlessVLK::createM2VertexBuffer(int sizeInBytes) 
     return vboM2Buffer->getSubBuffer(sizeInBytes);
 }
 
-HGVertexBuffer MapSceneRenderBindlessVLK::createM2ParticleVertexBuffer(int sizeInBytes) {
-    return vboM2ParticleBuffer->getSubBuffer(sizeInBytes);
+HGVertexBuffer MapSceneRenderBindlessVLK::createM2ParticleVertexBuffer(int sizeInBytes, int frameIndex) {
+    if (frameIndex >= PARTICLES_BUFF_NUM) return nullptr;
+
+//    auto currentProcessingFrameNumber = m_device->getCurrentProcessingFrameNumber();
+//    std::cout << "createM2ParticleVertexBuffer"
+//        << " frameIndex="<<frameIndex
+//        <<" currentProcessingFrameNumber ="<<currentProcessingFrameNumber
+//        <<" sizeInBytes ="<<sizeInBytes
+//        <<std::endl;
+
+    return vboM2ParticleBuffers[frameIndex]->getSubBuffer(sizeInBytes);
 }
 HGVertexBuffer MapSceneRenderBindlessVLK::createM2RibbonVertexBuffer(int sizeInBytes) {
     return vboM2RibbonBuffer->getSubBuffer(sizeInBytes);
@@ -1622,6 +1635,17 @@ MapSceneRenderBindlessVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::
 
     return mesh;
 }
+HGM2Mesh
+MapSceneRenderBindlessVLK::createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) {
+//    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
+//    meshTemplate.bindings = m_emptyM2ParticleVAO;
+//    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
+//    mesh->instanceIndex = 1;
+//    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
+
+    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
+    return mesh;
+}
 
 HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
                                                 const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
@@ -1658,7 +1682,9 @@ HGM2Mesh MapSceneRenderBindlessVLK::createM2WaterfallMesh(gMeshTemplate &meshTem
 }
 
 std::shared_ptr<IRenderView> MapSceneRenderBindlessVLK::createRenderView(bool createOutput) {
-    return std::make_shared<RendererViewClass>(m_device, uboBuffer, pointLightBuffer, sceneWideDS,
+    return std::make_shared<RendererViewClass>(m_device, uboBuffer,
+                                               pointLightBuffer, spotLightBuffer,
+                                               sceneWideDS,
                                                m_drawQuadVao,
                                                m_drawSpotVao,
                                                createOutput);

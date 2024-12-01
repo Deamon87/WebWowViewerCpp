@@ -1372,33 +1372,19 @@ void FrontendUI::showSettingsDialog() {
         }
         ImGui::Separator();
 
-//        {
-//            std::string currentMode = std::to_string(m_api->getConfig()->diffuseColorHack);
-//            ImGui::Text("Diffuse hack selection");
-//            ImGui::SameLine();
-//            if (ImGui::BeginCombo("##diffuseCombo", currentMode.c_str())) // The second parameter is the label previewed before opening the combo.
-//            {
-//
-//                for (int n = 0; n < 6; n++)
-//                {
-//                    bool is_selected = (m_api->getConfig()->diffuseColorHack == n); // You can store your selection however you want, outside or inside your objects
-//                    std::string caption =std::to_string(n);
-//                    if (ImGui::Selectable(caption.c_str(), is_selected)) {
-//                        m_api->getConfig()->diffuseColorHack = n;
-//                    }
-//
-//                    if (is_selected)
-//                        ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
-//                }
-//                ImGui::EndCombo();
-//            }
-//        }
-        if (ImGui::SliderFloat("fov", &fov, 10, 150)) {
+        {
+            float fov = m_api->getConfig()->fov;
+            if (ImGui::SliderFloat("fov", &fov, 10, 150)) {
+                m_api->getConfig()->fov = fov;
+            }
         }
 
-        if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
-            m_api->getConfig()->farPlane = farPlane;
-            m_api->getConfig()->farPlaneForCulling = farPlane+50;
+        {
+            float farPlane = m_api->getConfig()->farPlane;
+            if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
+                m_api->getConfig()->farPlane = farPlane;
+                m_api->getConfig()->farPlaneForCulling = farPlane + 50;
+            }
         }
 
         ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
@@ -1789,7 +1775,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         }
 
         m_backgroundScene->render(
-            deltaTime, fov, scenario,
+            deltaTime, m_api->getConfig()->fov, scenario,
             /*
             m_debugRenderView,
             debugWidth,
@@ -1808,7 +1794,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         //----------------------
 
         if (needToMakeScreenshot) {
-            m_backgroundScene->makeScreenshot(fov,
+            m_backgroundScene->makeScreenshot(m_api->getConfig()->fov,
                                         screenShotWidth, screenShotHeight,
                                         screenshotFilename,
                                         scenario,

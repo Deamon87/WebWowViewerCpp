@@ -1161,8 +1161,7 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
     for (int i = minParticle; i < maxParticle; i++) {
-        particleEmitters[i]->prepearBuffers(viewMat);
-        particleEmitters[i]->updateBuffers();
+        particleEmitters[i]->prepearAndUpdateBuffers(viewMat);
     }
 
     for (int i = 0; i < ribbonEmitters.size(); i++) {

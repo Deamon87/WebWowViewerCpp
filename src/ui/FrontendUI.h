@@ -42,6 +42,7 @@ public:
     ~FrontendUI() override {
         fileDialog.Close();
         createFileDialog.Close();
+
         ImGui::DestroyContext(this->imguiContext);
     };
 
@@ -135,9 +136,8 @@ private:
     int windowWidth = 640;
     int windowHeight = 480;
 
-    float fov = 45;
+
     float minimapZoom = 1;
-    float farPlane = 200;
     int currentTime = 0;
 
     int  threadCount = 4;

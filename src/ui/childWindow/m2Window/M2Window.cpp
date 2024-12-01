@@ -71,11 +71,9 @@ bool M2Window::draw() {
             ImGui::PopStyleColor(3);
             ImGui::PopStyleVar(3);
         }
-
-
-
-        ImGui::End();
     }
+    ImGui::End();
+
 
     return m_showWindow;
 }
@@ -89,7 +87,7 @@ void M2Window::render(double deltaTime, const HFrameScenario &scenario,
         {m_width, m_height}
     };
 
-    SceneWindow::render(deltaTime, 60, scenario, nullptr, updateFrameNumberLambda);
+    SceneWindow::render(deltaTime, m_api->getConfig()->fov, scenario, nullptr, updateFrameNumberLambda);
 }
 
 bool M2Window::isActive() const {return m_isActive;}

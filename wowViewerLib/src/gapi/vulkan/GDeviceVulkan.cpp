@@ -550,6 +550,7 @@ void GDeviceVLK::createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSu
         std::cerr << "Your GPU doesnt support 2 swapchain images inFlight, which is required by app" << std::endl << std::flush;
     }
     imageCount = swapChainSupport.capabilities.minImageCount;
+    auto maxImageCount = swapChainSupport.capabilities.maxImageCount;
 
 
 
@@ -566,7 +567,7 @@ void GDeviceVLK::createSwapChain(SwapChainSupportDetails &swapChainSupport, VkSu
         createInfo.surface = vkSurface;
         createInfo.flags = 0;
 
-        createInfo.minImageCount = imageCount;
+        createInfo.minImageCount = std::min<uint32_t>(3, maxImageCount);
         createInfo.imageFormat = surfaceFormat.format;
         createInfo.imageColorSpace = surfaceFormat.colorSpace;
         createInfo.imageExtent = extent;
@@ -1026,6 +1027,7 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
             uploadFences[currentDrawFrame]->reset();
 
         }
+
 
         {
             auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);

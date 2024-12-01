@@ -12,7 +12,8 @@
 class RenderViewDeferredVLK : public IRenderView {
 public:
     RenderViewDeferredVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer,
-                          const HGBufferVLK &lightDataBuffer,
+                          const HGBufferVLK &pointLightBuffer,
+                          const HGBufferVLK &spotLightBuffer,
                           const std::shared_ptr<GDescriptorSet> &sceneWideDS,
                           const HGVertexBufferBindings &quadVAO,
                           const HGVertexBufferBindings &spotVAO,
@@ -44,8 +45,8 @@ private:
     uint32_t m_width = 640;
     uint32_t m_height = 480;
 
-    uint32_t m_pointLightCount;
-    uint32_t m_spotLightCount;
+    std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightCounts;
+    std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightCounts;
 
     std::shared_ptr<GDescriptorSet> m_sceneWideDS;
 
@@ -57,7 +58,8 @@ private:
     HGVertexBufferBindings m_quadVAO;
     HGVertexBufferBindings m_spotVAO;
 
-    HGBufferVLK m_lightDataBuffer;
+    HGBufferVLK m_pointLightDataBuffer;
+    HGBufferVLK m_spotLightDataBuffer;
     std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> m_lightScreenSize;
 
     std::shared_ptr<GRenderPassVLK> m_gBufferRenderPass;

@@ -40,11 +40,35 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
 
     std::cout << "Create Forward scene renderer " << std::endl;
 
+    allBuffers = {
+        iboBuffer,
+        vboM2Buffer,
+        vboPortalBuffer,
+        vboM2RibbonBuffer,
+        vboAdtBuffer,
+        vboWMOBuffer,
+        vboWaterBuffer,
+        vboSkyBuffer,
+        vboWMOGroupAmbient,
+        m_vboQuad,
+        m_iboQuad,
+        m_particleIndexBuffer,
+        uboBuffer,
+        uboStaticBuffer,
+        uboM2BoneMatrixBuffer
+    };
+    for (auto &vboM2ParticleBuff : this->vboM2ParticleBuffers) {
+        allBuffers.push_back(vboM2ParticleBuff);
+    }
+
+
     iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
     vboM2Buffer         = m_device->createVertexBuffer("Scene_VBO_M2",1024*1024);
     vboPortalBuffer     = m_device->createVertexBuffer("Scene_VBO_Portal",1024*1024);
-    vboM2ParticleBuffer = m_device->createVertexBuffer("Scene_VBO_M2Particle",1024*1024);
+    for (int k = 0; k < PARTICLES_BUFF_NUM; k++)
+        vboM2ParticleBuffers[k] = m_device->createVertexBuffer("Scene_VBO_M2Particle_fr_"+std::to_string(k),1024*1024, 64);
+
     vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024);
     vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024);
     vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
@@ -215,8 +239,10 @@ HGVertexBuffer MapSceneRenderForwardVLK::createM2VertexBuffer(int sizeInBytes) {
     return vboM2Buffer->getSubBuffer(sizeInBytes);
 }
 
-HGVertexBuffer MapSceneRenderForwardVLK::createM2ParticleVertexBuffer(int sizeInBytes) {
-    return vboM2ParticleBuffer->getSubBuffer(sizeInBytes);
+HGVertexBuffer MapSceneRenderForwardVLK::createM2ParticleVertexBuffer(int sizeInBytes, int frameIndex) {
+    if (frameIndex >= PARTICLES_BUFF_NUM) return nullptr;
+
+    return vboM2ParticleBuffers[frameIndex]->getSubBuffer(sizeInBytes);
 }
 HGVertexBuffer MapSceneRenderForwardVLK::createM2RibbonVertexBuffer(int sizeInBytes) {
     return vboM2RibbonBuffer->getSubBuffer(sizeInBytes);
@@ -732,24 +758,17 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
         {
            ZoneScopedN("submit buffers");
            VkZone(uploadCmd, "submit buffers")
-           uploadCmd.submitBufferUploads(l_this->uboBuffer);
-           uploadCmd.submitBufferUploads(l_this->uboStaticBuffer);
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitFullMemoryBarrierPreWrite(buffer);
+            }
 
-           uploadCmd.submitBufferUploads(l_this->uboM2BoneMatrixBuffer);
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitBufferUploads(buffer);
+            }
 
-           uploadCmd.submitBufferUploads(l_this->vboM2Buffer);
-           uploadCmd.submitBufferUploads(l_this->vboPortalBuffer);
-           uploadCmd.submitBufferUploads(l_this->vboM2ParticleBuffer);
-           uploadCmd.submitBufferUploads(l_this->vboM2RibbonBuffer);
-           uploadCmd.submitBufferUploads(l_this->vboAdtBuffer);
-           uploadCmd.submitBufferUploads(l_this->vboWMOBuffer);
-           uploadCmd.submitBufferUploads(l_this->vboWMOGroupAmbient);
-           uploadCmd.submitBufferUploads(l_this->vboWaterBuffer);
-           uploadCmd.submitBufferUploads(l_this->vboSkyBuffer);
-
-           uploadCmd.submitBufferUploads(l_this->iboBuffer);
-           uploadCmd.submitBufferUploads(l_this->m_vboQuad);
-           uploadCmd.submitBufferUploads(l_this->m_iboQuad);
+            for (const auto& buffer : l_this->allBuffers) {
+                uploadCmd.submitFullMemoryBarrierPostWrite(buffer);
+            }
         }
    }, [transparentMeshes, l_opaqueMeshes = std::move(u_collector),
         l_skyOpaqueMeshes = std::move(u_skyCollector),
@@ -872,6 +891,11 @@ MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::s
                                        int layer, int priorityPlane) {
 
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
+    return mesh;
+}
+HGM2Mesh
+MapSceneRenderForwardVLK::createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) {
+    auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
 HGM2Mesh MapSceneRenderForwardVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,

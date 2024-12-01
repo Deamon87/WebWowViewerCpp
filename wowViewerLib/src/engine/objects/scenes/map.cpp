@@ -1252,7 +1252,8 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
 
 
 
-//        for (auto &m2Object: renderPlan->m2Array.getDrawn()) {
+//        for (auto &m2ObjectId: renderPlan->m2Array.getDrawn()) {
+//            auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
 //            if (m2Object != nullptr) {
 //                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
 //                                                 renderPlan->frameDependentData);

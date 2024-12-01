@@ -10,8 +10,6 @@
 #include "../../GFrameBufferVLK.h"
 #include "../../../../renderer/frame/FrameProfile.h"
 
-
-
 class ISimpleMaterialVLK;
 class CmdBufRecorder;
 class RenderPassHelper;

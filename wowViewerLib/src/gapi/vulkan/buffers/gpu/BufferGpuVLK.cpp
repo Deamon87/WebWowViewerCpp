@@ -24,7 +24,7 @@ BufferGpuVLK::BufferGpuVLK(const HGDeviceVLK &device, int size, VkBufferUsageFla
     device->setObjectName((uint64_t) m_hBuffer, VK_OBJECT_TYPE_BUFFER, obj_name);
 
 #ifdef DUMP_SELECTION_OF_MEMTYPE
-    std::cout << "GPU Buff "<< obj_name <<", memtype = " << allocationInfo.memoryType << std::endl;
+    std::cout << "GPU Buff "<< obj_name <<", size = " << size << ", memtype = " << allocationInfo.memoryType << std::endl;
 #endif
 
 }

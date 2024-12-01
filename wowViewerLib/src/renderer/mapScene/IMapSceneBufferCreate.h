@@ -43,6 +43,9 @@ PACK(
 
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
+//    static const int PARTICLES_BUFF_NUM = IDevice::MAX_FRAMES_IN_FLIGHT + 1;
+static const int PARTICLES_BUFF_NUM = 2;
+
 class IMapSceneBufferCreate {
 public:
     virtual ~IMapSceneBufferCreate() = default;
@@ -69,7 +72,7 @@ public:
 
     virtual HGIndexBuffer  getOrCreateM2ParticleIndexBuffer() = 0;
 
-    virtual HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) = 0;
+    virtual HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes, int frameIndex) = 0;
     virtual HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) = 0;
 
     virtual HGVertexBuffer createADTVertexBuffer(int sizeInBytes) = 0;
@@ -130,6 +133,7 @@ public:
     virtual HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;
     virtual HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) = 0;
     virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
+    virtual HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
     virtual HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;
     virtual HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) = 0;
     virtual HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) = 0;

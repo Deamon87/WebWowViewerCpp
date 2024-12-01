@@ -7,13 +7,15 @@
 BufferStagingVLK::BufferStagingVLK(const HGDeviceVLK &device, int size) : m_device(device) {
     {
         VkBufferCreateInfo vbInfo = {VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
+        vbInfo.pNext = nullptr;
         vbInfo.size = size;
         vbInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         vbInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        vbInfo.queueFamilyIndexCount = 0;
 
         VmaAllocationCreateInfo stagingAllocInfo = {};
         stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_HOST;
-        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT; //TODO:
+        stagingAllocInfo.flags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT; //TODO:
 
         ERR_GUARD_VULKAN(vmaCreateBuffer(device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
                                          &m_stagingBuffer,
@@ -37,6 +39,10 @@ BufferStagingVLK::~BufferStagingVLK() {
     );
 }
 
-void *BufferStagingVLK::getPointer() {
-    return m_stagingBufferAllocInfo.pMappedData;
+void BufferStagingVLK::writeData(void *ptr, uint32_t size) {
+    vmaCopyMemoryToAllocation(m_device->getVMAAllocator(), ptr, m_stagingBufferAlloc, 0, size);
 }
+//
+//void *BufferStagingVLK::getPointer() {
+//    return m_stagingBufferAllocInfo.pMappedData;
+//}

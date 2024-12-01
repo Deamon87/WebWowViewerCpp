@@ -67,6 +67,9 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
         std::cerr << startOffset << " " << o_size << std::endl;
         throw "OOOOSP";
     }
+    if ((((uint64_t)allocatedPtr) % cache_align) > 0 ) {
+        std::cerr << " ptr is not aligned, allocatedPtr =  " << (uint64_t)allocatedPtr << std::endl;
+    }
     o_staging = bufferAndCPU.staging->getBuffer();
     o_offset = startOffset;
 
@@ -84,11 +87,11 @@ void GStagingRingBuffer::flushBuffers() {
 
     for (int i = 0; i < maxIndex; i++) {
         auto &stagingRec = vec[i];
-        memcpy(stagingRec.staging->getPointer(), stagingRec.cpuBuffer.data(), STAGE_BUFFER_SIZE);
+        stagingRec.staging->writeData(stagingRec.cpuBuffer.data(), STAGE_BUFFER_SIZE);
     }
     if (currentOffset > 0) {
         auto &stagingRec = vec[maxIndex];
-        memcpy(stagingRec.staging->getPointer(), stagingRec.cpuBuffer.data(), currentOffset % STAGE_BUFFER_SIZE);
+        stagingRec.staging->writeData(stagingRec.cpuBuffer.data(), currentOffset % STAGE_BUFFER_SIZE);
     }
 
     uint32_t prevMaxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;

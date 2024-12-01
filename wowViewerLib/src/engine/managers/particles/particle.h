@@ -14,7 +14,7 @@ public:
     mathfu::vec3 position = {0,0,0};
     animTime_t age = 0.0f;
     mathfu::vec3 velocity = {0,0,0};
-    int16_t state;
+    int16_t state = 0;
     uint16_t seed = 0;
     mathfu::vec2 texPos[2] = {{0,0}, {0,0}};
     mathfu::vec2 texVel[2] = {{0,0}, {0,0}};

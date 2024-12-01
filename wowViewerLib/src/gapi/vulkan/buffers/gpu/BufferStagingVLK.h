@@ -18,7 +18,7 @@ private:
     VmaAllocation m_stagingBufferAlloc = VK_NULL_HANDLE;
     VmaAllocationInfo m_stagingBufferAllocInfo;
 public:
-    void *getPointer();
+    void writeData(void *ptr, uint32_t size);
     VkBuffer getBuffer() {return m_stagingBuffer;};
 };
 

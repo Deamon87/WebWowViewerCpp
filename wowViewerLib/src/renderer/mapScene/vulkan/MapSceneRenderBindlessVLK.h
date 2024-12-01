@@ -51,7 +51,7 @@ public:
 
     HGIndexBuffer  getOrCreateM2ParticleIndexBuffer() override;
 
-    HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes) override;
+    HGVertexBuffer createM2ParticleVertexBuffer(int sizeInBytes, int frameIndex) override;
     HGVertexBuffer createM2RibbonVertexBuffer(int sizeInBytes) override;
 
     HGVertexBuffer createADTVertexBuffer(int sizeInBytes) override;
@@ -108,6 +108,7 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
+    HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
@@ -142,7 +143,7 @@ protected:
     int m_height = 480;
 
     HGBufferVLK vboM2Buffer;
-    HGBufferVLK vboM2ParticleBuffer;
+    std::array<HGBufferVLK, PARTICLES_BUFF_NUM> vboM2ParticleBuffers;
     HGBufferVLK vboM2RibbonBuffer;
     HGBufferVLK vboPortalBuffer;
 

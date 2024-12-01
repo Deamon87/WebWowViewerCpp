@@ -249,6 +249,8 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
             executeOnChangeForBufAndSubBuf();
         }
 
+        //TracyMessageStr(("getSubmitRecords, CurrentProcessingFrameNumber =" + std::to_string(m_device->getCurrentProcessingFrameNumber())));
+
         auto& stagingRecords = uploadRegionsPerStaging[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
         for (auto &stagingRecord : stagingRecords) {
             auto &intervals = stagingRecord.second;
@@ -299,7 +301,7 @@ void GBufferVLK::GSubBufferVLK::uploadData(const void *data, int length) {
         std::cerr << "invalid dataSize" << std::endl;
     }
 
-    void * dataPointer = m_parentBuffer->allocatePtr(m_alloc.offset, m_size);
+    void * dataPointer = m_parentBuffer->allocatePtr(m_alloc.offset, length);
     memcpy(dataPointer, data, length);
 }
 

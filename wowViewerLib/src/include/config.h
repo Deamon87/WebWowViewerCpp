@@ -91,6 +91,7 @@ public:
 
     bool useWotlkLogic = false;
 
+    float fov = 45;
     float nearPlane = 1;
     float farPlane = 1000;
     float farPlaneForCulling = 400;

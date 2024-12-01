@@ -34,6 +34,7 @@ float CRndSeed::Uniform() {
     return result;
 }
 
+//Return  [0, 1]
 float CRndSeed::UniformPos() {
     union {
         float f;
