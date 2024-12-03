@@ -1,6 +1,9 @@
+#include "../../common/animation.glsl"
+
 bool feq(const float a, const float b)
 {
     const float ROUNDING_ERROR_f32 = 0.001f;
+    const float tolerance = ROUNDING_ERROR_f32;
 
     return (a + tolerance >= b) && (a - tolerance <= b);
 }
@@ -28,7 +31,6 @@ struct ParticleM2Data {
     vec2 scaleVary;
     float tailLength;
     float TwinkleSpeed;
-    float TwinklePercent;
     float TwinklePercent;
     vec2 twinkleScale; //min, max
     float BurstMultiplier;
@@ -69,6 +71,7 @@ struct GeneratorAniProp {
     float verticalRange;
     //Longitude in 4.1.0
     float horizontalRange;
+    int isEnabled;
 };
 
 //Intermediate data for each particle instance

@@ -13,9 +13,18 @@ void CreateParticle(
     inout CParticle2 p,
     in float delta
 ) {
+    p.isDead = 0;
 
-    //TODO: Generator Create particle
-    //this->generator->CreateParticle(p, delta);
+    if (m_particleData.emitterType == 1) {
+        // Plane
+        PlaneGenerator__CreateParticle(aniProp, m_particleData, m_seed, p, delta);
+    } else if (m_particleData.emitterType == 2) {
+        //Sphere
+        CSphereGenerator__CreateParticle(aniProp, m_particleData, m_seed, p, delta);
+    } else if (m_particleData.emitterType == 3) {
+        //TODO: Spline
+    }
+
 
     if (!((m_data.flags & 0x10) > 0)) {
         p.position = (m_emitterModelMatrix * vec4(p.position, 1.0f)).xyz();
@@ -40,6 +49,7 @@ void CreateParticle(
         }
     }
 }
+
 void StepUpdate_emit(
     // State of emitter
     in GeneratorAniProp aniProp,

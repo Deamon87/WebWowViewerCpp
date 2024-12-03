@@ -100,7 +100,7 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs destDir destDirGL20 de
 
     foreach(shaderDir ${shaderDirs})
         set(srcDir "${rootDir}/${shaderDir}")
-        file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert)
+        file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert ${srcDir}/*.comp)
         file(MAKE_DIRECTORY ${spirvNonOptDir}/${shaderDir})
         file(MAKE_DIRECTORY ${destDir}/${shaderDir})
 

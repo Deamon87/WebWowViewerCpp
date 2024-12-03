@@ -25,7 +25,7 @@ float calcAlpha(in float ftime,
 //fTime is in ms
 void getAnimationKeys(in float ftime,
                  in int elemSize,
-                 in M2PartTrackElement[] elems,
+                 in const M2PartTrackElement elems[],
                  out float alpha,
                  out int valueIdx1,
                  out int valueIdx2) {
