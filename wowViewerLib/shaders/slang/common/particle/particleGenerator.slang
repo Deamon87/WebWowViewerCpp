@@ -1,4 +1,5 @@
-#include "particleCommon.glsl"
+#include "particleCommon.slang"
+#include "rndSeed.slang"
 
 float GetEmissionRate(in GeneratorAniProp aniProp, in ParticleM2Data m_particleData, inout CRndSeed seed) {
     float rate = aniProp.emissionRate;
@@ -68,16 +69,16 @@ void PlaneGenerator__CreateParticle(
             seed.Uniform() * aniProp.emissionAreaY * 0.5f,
             0
     );
-    float velocity = CalcVelocity(aniProp, m_particleData);
+    float velocity = CalcVelocity(aniProp, m_particleData, seed);
     float zSource = aniProp.zSource;
 
     if (zSource < 0.001) {
         float polar = aniProp.verticalRange * seed.Uniform();
         float azimuth = aniProp.horizontalRange * seed.Uniform();
-        float sinPolar = sinf(polar);
-        float sinAzimuth = sinf(azimuth);
-        float cosPolar = cosf(polar);
-        float cosAzimuth = cosf(azimuth);
+        float sinPolar = sin(polar);
+        float sinAzimuth = sin(azimuth);
+        float cosPolar = cos(polar);
+        float cosAzimuth = cos(azimuth);
         p.velocity = vec3(
             cosAzimuth * sinPolar * velocity,
             sinAzimuth * sinPolar * velocity,
@@ -86,8 +87,8 @@ void PlaneGenerator__CreateParticle(
     }
     else {
         vec3 r0 = p.position - vec3(0, 0, zSource);
-        if (r0.Length() > 0.0001) {
-            r0 = r0.Normalized();
+        if (length(r0) > 0.0001) {
+            r0 = normalize(r0);
             p.velocity = r0 * velocity;
         }
     }
@@ -146,7 +147,7 @@ void CSphereGenerator__CreateParticle(
     );
 
     p.position = emissionDirection * radius;
-    float velocity = CalcVelocity();
+    float velocity = CalcVelocity(aniProp, m_particleData, seed);
     float zSource = aniProp.zSource;
 
     vec3 r0 = vec3(0.5,0.5,0.5);
@@ -160,8 +161,8 @@ void CSphereGenerator__CreateParticle(
     else {
         r0 = vec3(0, 0, zSource);
         r0 = p.position - r0;
-        if (r0.Length() > 0.0001) {
-            r0 = r0.Normalized();
+        if (length(r0) > 0.0001) {
+            r0 = normalize(r0);
         }
     }
     vec3 velocityCandidate = r0 * velocity;

@@ -107,7 +107,7 @@ private:
     mathfu::vec3 m_prevPosition;
     float m_currentBonePos;
     mathfu::vec3 m_deltaPosition;
-    mathfu::vec3 m_deltaPosition1;
+    mathfu::vec3 m_fullPosDeltaSinceLastUpdate;
 
     CParticleGenerator *generator;
 

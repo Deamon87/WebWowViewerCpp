@@ -389,7 +389,7 @@ void ParticleEmitter::UpdateXform(const mathfu::mat4 &viewModelBoneMatrix, mathf
 void ParticleEmitter::InternalUpdate(ParticleBuffer &particlesCurr, ParticleBuffer &particlesLast, animTime_t delta) {
     delta = fmaxf(delta, 0.0f);
     if (delta < 0.1) {
-        m_deltaPosition = m_deltaPosition1;
+        m_deltaPosition = m_fullPosDeltaSinceLastUpdate;
     } else {
 
         float temp0 = floorf(delta / 0.1f);
@@ -405,7 +405,7 @@ void ParticleEmitter::InternalUpdate(ParticleBuffer &particlesCurr, ParticleBuff
             divider = temp3;
         }
 
-        m_deltaPosition = m_deltaPosition1 * (1.0f / divider);
+        m_deltaPosition = m_fullPosDeltaSinceLastUpdate * (1.0f / divider);
 
         for (int i = 0; i < numberOfStepUpdates; i++) {
             this->StepUpdate(particlesCurr, particlesLast, 0.1f);
@@ -432,6 +432,7 @@ void ParticleEmitter::Update(animTime_t delta, const mathfu::mat4 &transformMat,
     m_currentBonePos = (viewMatrix * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
 
     mathfu::vec3 viewMatVec = viewMatrix.GetColumn(3).xyz();
+    //Updates m_emitterModelMatrix and others
     this->UpdateXform(transformMat, viewMatVec, frameOfReference);
 
     auto &particlesLast = GetLastPBuffer();
@@ -439,22 +440,23 @@ void ParticleEmitter::Update(animTime_t delta, const mathfu::mat4 &transformMat,
 
     if (delta > 0) {
         if (this->m_data->old.flags & 0x4000) {
-            m_deltaPosition1 = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
-            float x = this->followMult * (m_deltaPosition1.Length() / delta) + this->followBase;
+            m_fullPosDeltaSinceLastUpdate = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
+            float x = this->followMult * (m_fullPosDeltaSinceLastUpdate.Length() / delta) + this->followBase;
             if (x >= 0.0)
                 x = fmin(x, 1.0f);
 
-            this->m_deltaPosition =  m_deltaPosition1 * x;
+            this->m_deltaPosition = m_fullPosDeltaSinceLastUpdate * x;
         }
 
         if (this->m_data->old.flags & 0x40) {
             this->burstTime += delta;
             animTime_t frameTime = 30.0 / 1000.0;
-            if (this->burstTime > frameTime) {
+            float burstTime = this->burstTime;
+            if (burstTime > frameTime) {
                 this->burstTime = 0;
 
                 if (particlesLast.size() == 0) {
-                    animTime_t frameAmount = frameTime / this->burstTime;
+                    animTime_t frameAmount = frameTime / burstTime;
                     mathfu::vec3 dPos = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
 
                     this->burstVec = dPos * mathfu::vec3(frameAmount * this->m_data->old.BurstMultiplier);

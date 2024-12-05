@@ -1,4 +1,8 @@
-#include "../../common/animation.glsl"
+#ifndef PARICLE_PARTICLE_COMMON_SLANG
+#define PARICLE_PARTICLE_COMMON_SLANG
+
+#include "../../common/animation.slang"
+#include "./rndSeed.slang"
 
 bool feq(const float a, const float b)
 {
@@ -88,3 +92,39 @@ struct ParticlePreRenderData {
     } m_ageDependentValues;
 };
 
+struct CParticle2 {
+    vec3 position;
+    float age;
+    vec3 velocity;
+    int state;
+    int seed;
+    int isDead;
+    vec2 texPos[2];
+    vec2 texVel[2];
+};
+
+struct ParticleEmitterGPUState {
+    float emission; 
+    CRndSeed m_seed;
+    vec3 m_prevPosition;
+    float burstTime;
+    vec3 burstVec;
+    vec3 m_fullPosDeltaSinceLastUpdate;
+    float m_inheritedScale;
+
+    vec3 m_deltaPosition;
+    mat4 m_emitterModelMatrix;
+    
+    uint numberOf10msStepUpdates;
+    float endDeltaTime;
+
+    int particlesCount; //current amount of particles
+};
+
+struct ParticleEmitterCPUState {
+    GeneratorAniProp aniProp;
+    uint maxAmount;                 // max amount of particles
+    uint particleM2DataIndex;
+}
+
+#endif //PARICLE_PARTICLE_COMMON_SLANG

@@ -1,3 +1,5 @@
+import glsl;
+
 struct M2PartTrackElement {
     int time;
     int valueIndx; // Index into one of the arrays (vec3, vec2, float)
@@ -25,7 +27,7 @@ float calcAlpha(in float ftime,
 //fTime is in ms
 void getAnimationKeys(in float ftime,
                  in int elemSize,
-                 in const M2PartTrackElement elems[],
+                 in const StructuredBuffer<M2PartTrackElement, ScalarDataLayout> elems,
                  out float alpha,
                  out int valueIdx1,
                  out int valueIdx2) {
@@ -60,8 +62,8 @@ void getAnimationKeys(in float ftime,
 
 vec3 animatePartTrack(in float age,
                       in int elemSize,
-                      in M2PartTrackElement[] elems,
-                      in vec3[] values,
+                      in StructuredBuffer<M2PartTrackElement, ScalarDataLayout> elems,
+                      in StructuredBuffer<vec3, ScalarDataLayout> values,
                       in vec3 defaultValue
 ) {
     int valueIdx1, valueIdx2;
@@ -76,8 +78,8 @@ vec3 animatePartTrack(in float age,
 
 vec2 animatePartTrack(in float age,
                       in int elemSize,
-                      in M2PartTrackElement[] elems,
-                      in vec2[] values,
+                      in StructuredBuffer<M2PartTrackElement, ScalarDataLayout> elems,
+                      in StructuredBuffer<vec2, ScalarDataLayout> values,
                       in vec2 defaultValue
 ) {
     int valueIdx1, valueIdx2;
@@ -92,8 +94,8 @@ vec2 animatePartTrack(in float age,
 
 float animatePartTrack(in float age,
                       in int elemSize,
-                      in M2PartTrackElement[] elems,
-                      in float[] values,
+                      in StructuredBuffer<M2PartTrackElement, ScalarDataLayout> elems,
+                      in StructuredBuffer<float, ScalarDataLayout> values,
                       in float defaultValue
 ) {
     int valueIdx1, valueIdx2;

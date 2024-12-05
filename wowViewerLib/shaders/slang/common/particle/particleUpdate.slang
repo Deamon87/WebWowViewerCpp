@@ -1,4 +1,4 @@
-#include "particleGenerator.glsl"
+#include "particleGenerator.slang"
 
 struct ParticleForces {
     vec3 drift; // 0
@@ -7,31 +7,18 @@ struct ParticleForces {
     float drag; // 9
 };
 
-struct CParticle2 {
-    vec3 position;
-    float age;
-    vec3 velocity;
-    int state;
-    int seed;
-    int isDead;
-    vec2 texPos[2];
-    vec2 texVel[2];
-};
-
 void StepUpdate_age(
     // State of emitter
     in GeneratorAniProp aniProp,
     in ParticleM2Data m_particleData,
 
     // Actual paramaters
-    in CParticle2[] particlesLast,  // Buffer for last frame
+    in StructuredBuffer<CParticle2, ScalarDataLayout> particlesLast,  // Buffer for last frame
     uint pAmount,                   // current amount of particles
     uint maxAmount,                 // max amount of particles
     float delta,                    // deltaTime
-    out CParticle2[] particlesCurr  // Buffer for this frame
+    out RWStructuredBuffer<CParticle2, ScalarDataLayout> particlesCurr  // Buffer for this frame
 ) {
-    ParticleForces forces;
-
     int pAliveIdx = 0;
 
     for (int i = 0; i < pAmount; i++) {
@@ -48,7 +35,7 @@ void StepUpdate_age(
 void CalculateForces(
     // State of emitter
     in GeneratorAniProp aniProp,
-    in ParticleM2Data m_particleData,
+    in const ParticleM2Data m_particleData,
     // Actual paramaters
     out ParticleForces forces,
     in float delta
@@ -78,10 +65,10 @@ bool UpdateParticle(
         for (int i = 0; i < 2; i++) {
             // s = frac(s + v * dt)
             float val = (p.texPos[i].x + delta * p.texVel[i].x);
-            p.texPos[i].x = (val - floorf(val));
+            p.texPos[i].x = (val - floor(val));
 
             val = (p.texPos[i].y + delta * p.texVel[i].y);
-            p.texPos[i].y = (val - floorf(val));
+            p.texPos[i].y = (val - floor(val));
         }
     }
 
@@ -120,9 +107,17 @@ bool UpdateParticle(
 
     //StepUpdate_update
 void StepUpdate_update(
-    inout CParticle2 p //particle that's being updated
+    // State of emitter
+    in GeneratorAniProp aniProp,
+    in ParticleM2Data m_particleData,
+    in mat4 m_emitterModelMatrix,
+    in vec3 m_deltaPosition,
+    in ParticleForces forces,
+
+    inout CParticle2 p, //particle that's being updated
+    in float delta,
 ) {
-    if (!UpdateParticle(p, delta, forces)) {
+    if (!UpdateParticle(aniProp, m_particleData, m_emitterModelMatrix, m_deltaPosition, p, delta, forces)) {
         p.isDead = 1;
     }
 }
