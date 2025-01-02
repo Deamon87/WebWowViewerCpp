@@ -96,6 +96,20 @@ const std::string getLightSQL = R"===(
     ORDER BY l.ID desc
 )===";
 
+const std::string getAllMapLightSQL = R"===(
+        select
+        l.id as LightId, l.GameCoords_0, l.GameCoords_1, l.GameCoords_2,
+        l.GameFalloffStart, l.GameFalloffEnd,
+        l.ContinentID,
+
+        l.LightParamsID_0, l.LightParamsID_1, l.LightParamsID_2, l.LightParamsID_3, l.LightParamsID_4,
+        l.LightParamsID_5, l.LightParamsID_6, l.LightParamsID_7
+    from Light l
+    where
+        (l.ContinentID = ?1)
+    ORDER BY l.ID desc
+)===";
+
 const std::string liquidObjectInfoSQL = R"===(
     select lo.LiquidTypeID, lo.FlowDirection, lo.FlowSpeed, lo.Reflection from LiquidObject lo
     where lo.ID = ?;
@@ -135,6 +149,7 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
         "select at.AreaName_lang, at.ID, at.ParentAreaID, at.Ambient_multiplier from AreaTable at where at.ID = ?"),
 
     getLightStatement(m_sqliteDatabase, getLightSQL),
+    getAllMapLightStatement(m_sqliteDatabase, getAllMapLightSQL),
     getLightByIdStatement(m_sqliteDatabase, getLightByIdSQL),
 
     getLightData(m_sqliteDatabase, generateSimpleSelectSQL("LightData",
@@ -355,6 +370,28 @@ void CSqliteDB::getLightById(int lightId, LightResult &lightResult) {
         return;
     }
 };
+void CSqliteDB::getAllLightByMap(int mapId, std::vector<LightResult> &lightResults) {
+    getAllMapLightStatement.setInputs(mapId );
+
+      while (getAllMapLightStatement.execute()) {
+        auto &ilr = lightResults.emplace_back();
+        ilr.id = getAllMapLightStatement.getField("LightId").getInt();
+        ilr.pos[0] = getAllMapLightStatement.getField("GameCoords_0").getDouble();
+        ilr.pos[1] = getAllMapLightStatement.getField("GameCoords_1").getDouble();
+        ilr.pos[2] = getAllMapLightStatement.getField("GameCoords_2").getDouble();
+        ilr.fallbackStart = getAllMapLightStatement.getField("GameFalloffStart").getDouble();
+        ilr.fallbackEnd = getAllMapLightStatement.getField("GameFalloffEnd").getDouble();
+        ilr.continentId = getAllMapLightStatement.getField("ContinentID").getInt();
+        ilr.lightParamId[0] = getAllMapLightStatement.getField("LightParamsID_0").getInt();
+        ilr.lightParamId[1] = getAllMapLightStatement.getField("LightParamsID_1").getInt();
+        ilr.lightParamId[2] = getAllMapLightStatement.getField("LightParamsID_2").getInt();
+        ilr.lightParamId[3] = getAllMapLightStatement.getField("LightParamsID_3").getInt();
+        ilr.lightParamId[4] = getAllMapLightStatement.getField("LightParamsID_4").getInt();
+        ilr.lightParamId[5] = getAllMapLightStatement.getField("LightParamsID_5").getInt();
+        ilr.lightParamId[6] = getAllMapLightStatement.getField("LightParamsID_6").getInt();
+        ilr.lightParamId[7] = getAllMapLightStatement.getField("LightParamsID_7").getInt();
+    }
+}
 void CSqliteDB::getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) {
     getLightStatement.setInputs(x, y, z, mapId );
 

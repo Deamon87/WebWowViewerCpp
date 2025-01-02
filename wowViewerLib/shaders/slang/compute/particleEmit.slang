@@ -11,15 +11,17 @@ void main(void)
     //ParticleEmitter index
     uint peIdx = gl_GlobalInvocationID.x;
     
-    float deltaTime = 0.1;
-    vec3 burstVec;
+    float deltaTime = particleCpuStates[peIdx].deltaTime;
 
-    StepUpdate_emit(
-        particleCpuStates[peIdx],
-        particleM2Data[particleCpuStates[peIdx].particleM2DataIndex],
-        particleGpuStates[peIdx],
-        0.1,
-        particlesBuffer
-    );
-
+    uint simCount = particleGpuStates[peIdx].numberOf10msStepUpdates;
+    
+    for (uint i = 0; i < simCount; i++) {
+        StepUpdate_emit(
+            particleCpuStates[peIdx],
+            particleM2Data[particleCpuStates[peIdx].particleM2DataIndex],
+            particleGpuStates[peIdx],
+            0.1,
+            currParticlesBuffer
+        );
+    }
 }

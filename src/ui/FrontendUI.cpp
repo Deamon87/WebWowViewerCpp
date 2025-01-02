@@ -116,7 +116,7 @@ void FrontendUI::composeUI() {
     }
 
 
-    static bool show_demo_window = false;
+    static bool show_demo_window = true;
     if (show_demo_window)
         ImGui::ShowDemoWindow(&show_demo_window);
 
@@ -580,6 +580,61 @@ void FrontendUI::showAdtSelectionMinimap() {
     ImGui::PopStyleVar();
     ImGui::PopStyleVar();
 
+    //Draw
+    {
+        const float zoomConstant = prevZoomedSize;
+        const auto windowPos = ImGui::GetWindowPos();
+        const auto scrollX = ImGui::GetScrollX();
+        const auto scrollY = ImGui::GetScrollY();
+        //To Window Space
+        const auto toWS = [&zoomConstant](float value) -> float {
+            return worldCoordinateToAdtIndexF(value) * zoomConstant;
+        };
+        //To Window Space Translated
+        const auto toWST = [&toWS, windowPos, scrollX, scrollY](float value, int index) -> float {
+            return toWS(value) + (index == 0 ? (windowPos.x - scrollX) : (windowPos.y - scrollY));
+        };
+
+        if (drawZoneLights) {
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            for (const auto &zoneLight: m_zoneLights) {
+                if (limitZoneLight != -1 && zoneLight.ID != limitZoneLight) continue;
+
+                if (!zoneLight.points.empty()) {
+                    for (int n = 0; n < zoneLight.points.size() - 1; n++)
+                        draw_list->AddLine(
+                            ImVec2(toWST(zoneLight.points[n].y, 0), toWST(zoneLight.points[n].x, 1)),
+                            ImVec2(toWST(zoneLight.points[n + 1].y, 0), toWST(zoneLight.points[n + 1].x, 1)),
+                            IM_COL32(255, 255, 0, 255),
+                            2.0f
+                        );
+                    uint32_t maxIdx = zoneLight.points.size() - 1;
+                    draw_list->AddLine(
+                        ImVec2(toWST(zoneLight.points[0].y, 0), toWST(zoneLight.points[0].x, 1)),
+                        ImVec2(toWST(zoneLight.points[maxIdx].y, 0), toWST(zoneLight.points[maxIdx].x, 1)),
+                        IM_COL32(255, 255, 0, 255),
+                        2.0f
+                    );
+                }
+            }
+        }
+        if (drawAreaLights) {
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            for (auto const &light: m_mapLights) {
+                draw_list->AddCircle(
+                    ImVec2(toWST(light.pos[1], 0), toWST(light.pos[0], 1)),
+                    light.fallbackEnd * prevZoomedSize / MathHelper::TILESIZE,
+                    IM_COL32(3, 186, 252, 255)
+                );
+                draw_list->AddCircle(
+                    ImVec2(toWST(light.pos[1], 0), toWST(light.pos[0], 1)),
+                    light.fallbackStart * prevZoomedSize / MathHelper::TILESIZE,
+                    IM_COL32(58, 138, 126, 255)
+                );
+            }
+        }
+    }
+
 
     if (ImGui::BeginPopup("AdtWorldCoordsTest", ImGuiWindowFlags_NoMove)) {
         ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
@@ -742,6 +797,9 @@ void FrontendUI::showMapSelectionDialog() {
                             adtMinimapFilled = false;
                             prevMapRec = mapRec;
 
+                            limitZoneLight = -1;
+                            m_zoneLights = {};
+
                             isWmoMap = false;
                             adtSelectionMinimapTextures = {};
                             adtSelectionMinimapMaterials = {};
@@ -752,6 +810,9 @@ void FrontendUI::showMapSelectionDialog() {
                                     "world/maps/" + mapRec.MapDirectory + "/" + mapRec.MapDirectory + ".wdt");
                             }
 
+                            m_zoneLights = loadZoneLightRecs(m_api->databaseHandler, mapRec.ID);
+                            m_mapLights.clear();
+                            m_api->databaseHandler->getAllLightByMap(mapRec.ID, m_mapLights);
                         }
                         prevMapId = mapRec.ID;
                         selected = i;
@@ -782,6 +843,34 @@ void FrontendUI::showMapSelectionDialog() {
                     ImGui::Text("WDT file either does not exist in CASC repository or is encrypted");
                 } else if (!isWmoMap) {
                     ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
+                    ImGui::Checkbox("Draw Area lights", &drawAreaLights);
+                    ImGui::Checkbox("Draw ZoneLights", &drawZoneLights);
+                    ImGui::SameLine();
+                    ImGui::Text("Limit ZoneLights");
+                    ImGui::SameLine();
+                    std::string zoneLightIdStr = limitZoneLight >= 0 ? std::to_string(limitZoneLight) : "None";
+                    if (ImGui::BeginCombo("##combo", zoneLightIdStr.c_str())) // The second parameter is the label previewed before opening the combo.
+                    {
+                        {
+                            const std::string caption = "First None";
+                            if (ImGui::Selectable(caption.c_str(), limitZoneLight == -1)) {
+                                limitZoneLight = -1;
+                            }
+                        }
+
+                        for (int n = 0; n < m_zoneLights.size(); n++)
+                        {
+                            bool is_selected = (m_zoneLights[n].ID == limitZoneLight); // You can store your selection however you want, outside or inside your objects
+                            std::string caption = std::to_string(m_zoneLights[n].ID);
+                            if (ImGui::Selectable(caption.c_str(), is_selected)) {
+                                limitZoneLight = m_zoneLights[n].ID;
+                            }
+
+                            if (is_selected)
+                                ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
+                        }
+                        ImGui::EndCombo();
+                    }
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
                     showAdtSelectionMinimap();
                 } else {

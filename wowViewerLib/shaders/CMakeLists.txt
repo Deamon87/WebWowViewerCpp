@@ -81,9 +81,12 @@ endif()
 
 
 
-macro(configure_filesVLK rootDir srcCommonDirs shaderDirs destDir destDirGL20 destDirGL33 )
+macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputType destDir)
     message(STATUS "Configuring directory ${destDir}")
     set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spriv_raw)
+
+
+
 
     file(MAKE_DIRECTORY ${spirvNonOptDir})
 
@@ -100,7 +103,15 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs destDir destDirGL20 de
 
     foreach(shaderDir ${shaderDirs})
         set(srcDir "${rootDir}/${shaderDir}")
-        file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${srcDir}/*.frag ${srcDir}/*.vert ${srcDir}/*.comp)
+
+        set(shaderfileExtTemplate "")
+        foreach(shaderFileExt ${shaderFileExts})
+           list(APPEND shaderfileExtTemplate ${srcDir}/*${shaderFileExt})
+        endforeach (shaderFileExt)
+        #message("shaderfileExtTemplate = ${shaderfileExtTemplate}")
+
+        file(GLOB_RECURSE templateFiles RELATIVE ${srcDir} ${shaderfileExtTemplate})
+        #message("templateFiles = ${templateFiles}")
         file(MAKE_DIRECTORY ${spirvNonOptDir}/${shaderDir})
         file(MAKE_DIRECTORY ${destDir}/${shaderDir})
 
@@ -132,83 +143,61 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs destDir destDirGL20 de
 #                message(SPIRV_NonOpt = ${SPIRV_NonOpt})
 #                message(SPIRVOpt = ${SPIRVOpt})
 
-                add_custom_command(
+#                message("inputType = ${inputType}")
+                if (${inputType} STREQUAL "glsl")
+#                    message("glsl SPIRV_NonOpt = ${SPIRV_NonOpt}")
+                    add_custom_command(
+                            OUTPUT ${SPIRV_NonOpt}
+                            COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
+                            COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${SHADER_DEBUG_FLAG} ${srcTemplatePath} -o ${SPIRV_NonOpt}
+                            DEPENDS ${srcTemplatePath} glslangValidator ${commonFiles})
+                elseif (${inputType} STREQUAL "slang")
+#                    message("slang SPIRV_NonOpt = ${SPIRV_NonOpt}")
+                    add_custom_command(
                         OUTPUT ${SPIRV_NonOpt}
                         COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                        COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${SHADER_DEBUG_FLAG} ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                        DEPENDS ${srcTemplatePath} glslangValidator ${commonFiles})
+                        COMMAND ${APP_RUN_PREFIX} ${SLANG_COMPILER} ${srcTemplatePath} -obfuscate -matrix-layout-row-major -target spirv -entry main -o ${SPIRV_NonOpt}
+#                        COMMAND ${APP_RUN_PREFIX} ${SLANG_COMPILER} ${srcTemplatePath} -matrix-layout-column-major -target glsl -entry main -o ${SPIRV_NonOpt}.glsl
+                        DEPENDS ${srcTemplatePath} ${commonFiles})
+                endif ()
 
                 if(SPIRV_OPT_APP)
                     add_custom_command(
                             OUTPUT ${SPIRVOpt}
-                            COMMAND ${SPIRV_OPT_APP} -O -Os -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                            COMMAND ${SPIRV_OPT_APP} -O -Os --strip-nonsemantic -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
                 list(APPEND SPIRV_BINARY_FILES_NON_OPT ${SPIRV_NonOpt})
                 list(APPEND SPIRV_BINARY_FILES_OPT ${SPIRVOpt})
 
-                #Generate GLSL for ogl33 and ogl20 from spirv
-                set(GLSL20_FILE ${destDirGL20}/${shaderDir}/${SHADER_SUB_DIR}/${FILE_NAME})
-                set(GLSL33_FILE ${destDirGL33}/${shaderDir}/${SHADER_SUB_DIR}/${FILE_NAME})
-
-                get_filename_component(GLSL20_FILE_FULLPATH "${GLSL20_FILE}"
-                        REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
-
-                SET(OGL3_GLSL_OPTION "")
-                if (ANDROID)
-                    SET(OGL3_GLSL_OPTION "-glslEs310")
-                elseif(EMSCRIPTEN)
-                    SET(OGL3_GLSL_OPTION "-glslEs300")
-                else()
-                    SET(OGL3_GLSL_OPTION "-glsl330")
-                endif()
-
-                SET(OGL2_GLSL_OPTION "")
-                if (ANDROID OR EMSCRIPTEN)
-                    SET(OGL2_GLSL_OPTION "-glsl100")
-                else()
-                    SET(OGL2_GLSL_OPTION "-glsl100")
-                endif()
-
-
-                add_custom_command(
-                        OUTPUT ${GLSL20_FILE}
-                        COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL20}"
-                        COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} ${OGL2_GLSL_OPTION} ${SPIRV_NonOpt} > ${GLSL20_FILE_FULLPATH}
-                        DEPENDS ${SPIRV_NonOpt} spirv_reflection)
-
-                list(APPEND GLSL20Files ${GLSL20_FILE})
-
-                get_filename_component(GLSL30_FILE_FULLPATH "${GLSL33_FILE}"
-                        REALPATH BASE_DIR "${CMAKE_BINARY_DIR}")
-
-                add_custom_command(
-                        OUTPUT ${GLSL33_FILE}
-                        COMMAND ${CMAKE_COMMAND} -E make_directory "${destDirGL33}"
-                        COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} ${OGL3_GLSL_OPTION} ${SPIRV_NonOpt} > ${GLSL30_FILE_FULLPATH}
-                        DEPENDS spirv_reflection ${SPIRV_NonOpt})
-
-                list(APPEND GLSL30Files ${GLSL33_FILE})
-
             endif(NOT IS_DIRECTORY ${srcTemplatePath})
         endforeach(templateFile)
     endforeach(shaderDir)
-
-    if (NOT SPIRV_OPT_APP)
-        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
-    else()
-        SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
-    endif()
 endmacro(configure_filesVLK)
 
 configure_filesVLK(
         ${PROJECT_SOURCE_DIR}/shaders/glsl/
         "${PROJECT_SOURCE_DIR}/shaders/glsl/common;${PROJECT_SOURCE_DIR}/shaders/glsl/bindless"
         "."
-        ${GLSL_TARGET_FOLDER}/spirv
-        ${GLSL_TARGET_FOLDER}/glsl/glsl20/
-        ${GLSL_TARGET_FOLDER}/glsl/glsl3.3/)
+        ".vert;.frag"
+        "glsl"
+        ${GLSL_TARGET_FOLDER}/spirv)
+
+configure_filesVLK(
+        "${PROJECT_SOURCE_DIR}/shaders/slang/compute"
+        "${PROJECT_SOURCE_DIR}/shaders/slang/common"
+        "."
+        ".slang"
+        "slang"
+        ${GLSL_TARGET_FOLDER}/spirv)
+
+#Select the list for spirv files
+if (NOT SPIRV_OPT_APP)
+    SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
+else()
+    SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
+endif()
 
 #message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}")
 

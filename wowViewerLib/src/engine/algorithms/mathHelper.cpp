@@ -545,14 +545,14 @@ void MathHelper::sortVec3ArrayAgainstPlane(framebased::vector<mathfu::vec3> &thi
     });
 }
 
-bool MathHelper::isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p) {
+bool MathHelper::isPointInsideAABB(const CAaBox &aabb, const mathfu::vec3 &p) {
     bool result = p[0] > aabb.min.x && p[0] < aabb.max.x &&
              p[1] > aabb.min.y && p[1] < aabb.max.y &&
              p[2] > aabb.min.z && p[2] < aabb.max.z;
     return result;
 }
 
-bool MathHelper::isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p) {
+bool MathHelper::isPointInsideAABB(const mathfu::vec2 aabb[2], const mathfu::vec2 &p) {
     bool result = p[0] > aabb[0].x && p[0] < aabb[1].x &&
              p[1] > aabb[0].y && p[1] < aabb[1].y;
     return result;
@@ -693,7 +693,7 @@ int areIntersecting(
     return YES;
 }
 
-bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points) {
+bool MathHelper::isPointInsideNonConvex(const mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points) {
     if (!MathHelper::isPointInsideAABB(aabb, p)) return false;
 
     //Select point outside of convex;
@@ -740,24 +740,26 @@ inline float minimum_distance(const mathfu::vec2 &v, const mathfu::vec2 &w, cons
   return (p - projection).Length();
 }
 
-float MathHelper::findLeastDistanceToBorder(mathfu::vec3 &p, const std::vector<mathfu::vec2> &points) {
+float MathHelper::findLeastDistanceToBorder(const mathfu::vec3 &p, const std::vector<mathfu::vec2> &points, bool &isInsideConvex) {
     auto const calcDistance = [p](const mathfu::vec2 &a, const mathfu::vec2 &b) -> float {
 
         float distance = minimum_distance(a, b, p.xy());
-//            mathfu::CrossProductHelper(
-//                mathfu::vec3(p.xy()-a, 0.0f),
-//                mathfu::vec3(p.xy()-b, 0.0f)
-//            ).Length() / (a-b).Length();
 
         return distance;
     };
 
+    auto const flipIsInside = [p](const mathfu::vec2 &v, const mathfu::vec2 &w) -> bool {
+        return (w.x - v.x) * (p.y - v.y) / (w.y - v.y) + v.x < p.x;
+    };
+
     float dist = 999999.f;
+    isInsideConvex = false;
     for (int i = 0; i < points.size() - 1; i++) {
         dist = std::min(dist, calcDistance(points[i], points[i+1]));
+        isInsideConvex = isInsideConvex ^ flipIsInside(points[i], points[i+1]);
     }
-    dist = std::min(dist, calcDistance(points[0], points[points.size()-1]));
-
+    dist = std::min(dist, calcDistance(points[points.size()-1], points[0]));
+    isInsideConvex = isInsideConvex ^ flipIsInside(points[points.size()-1], points[0]);
     return dist;
 }
 

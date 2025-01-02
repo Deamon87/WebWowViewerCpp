@@ -365,7 +365,6 @@ void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, const mathfu::mat
             p_quadToView = p_quadToView * (1.0f / m_inheritedScale);
         }
 
-        mathfu::vec3 v28(0,0,1.0);
         p_quadToViewZVector = p_quadToView.GetColumn(2);
         if (p_quadToViewZVector.LengthSquared() <= 0.00000023841858f) {
             p_quadToViewZVector =  mathfu::vec3(0,0,1.0);
@@ -559,7 +558,7 @@ void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta)
     auto g = this->generator->GetGravity();
     forces.velocity = g * mathfu::vec3(delta);
     forces.position = g * mathfu::vec3(delta * delta * 0.5f);
-    forces.drag = this->m_data->old.drag * delta;
+    forces.drag = std::min<float>(this->m_data->old.drag * delta, 1.0);
 }
 
 bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces) {
@@ -622,12 +621,6 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     inverseViewMatrix = viewMatrix.Inverse();
 
     mathfu::mat3 rotation = mathfu::mat3::ToRotationMatrix(viewMatrix);
-    mathfu::mat4 someMat = mathfu::mat4(
-        rotation[0],rotation[1],rotation[2], 0.0,
-        rotation[3],rotation[4],rotation[5], 0.0,
-        rotation[6],rotation[7],rotation[8], 0.0,
-        0, 0, 0, 1.0
-    );
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
@@ -1109,8 +1102,6 @@ ParticleEmitter::BuildQuadT3(
 
 //    ParticleBuffStruct &record = szVertexBuf[szVertexCnt++];
 
-
-
     mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
@@ -1135,9 +1126,6 @@ ParticleEmitter::BuildQuadT3(
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].y);
 
         particleData.alphaCutoff = alphaCutoff;
-
-        if (particleData.color.x > 2 || particleData.color.y > 2 || particleData.color.z > 2 || particleData.color.w > 2)
-            std::cout << "gottem" << std::endl;
     }
 }
 

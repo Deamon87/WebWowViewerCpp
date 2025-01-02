@@ -21,6 +21,7 @@ public:
     AreaRecord getArea(int areaId) override;
     bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) override;
 
+    void getAllLightByMap(int mapId, std::vector<LightResult> &lightResults) override;
     void getLightById(int lightId, LightResult &lightResult) override;
     void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) override;
 
@@ -89,6 +90,7 @@ private:
     StatementFieldHolder getWmoAreaAreaName;
     StatementFieldHolder getAreaNameStatement;
     StatementFieldHolder getLightStatement;
+    StatementFieldHolder getAllMapLightStatement;
     StatementFieldHolder getLightByIdStatement;
     StatementFieldHolder getLightParamDataStatement;
     StatementFieldHolder getLightSkyStatement;

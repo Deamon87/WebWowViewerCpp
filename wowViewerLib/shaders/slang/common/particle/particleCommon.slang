@@ -1,6 +1,7 @@
 #ifndef PARICLE_PARTICLE_COMMON_SLANG
 #define PARICLE_PARTICLE_COMMON_SLANG
 
+import glsl;
 #include "../../common/animation.slang"
 #include "./rndSeed.slang"
 
@@ -119,12 +120,20 @@ struct ParticleEmitterGPUState {
     float endDeltaTime;
 
     int particlesCount; //current amount of particles
+
+    //Matrices and vectors for emitter
+    mat4 s_particleToView;
+    mat3 p_quadToView;
+    vec4 p_quadToViewZVector;
 };
 
 struct ParticleEmitterCPUState {
     GeneratorAniProp aniProp;
+    float deltaTime;
     uint maxAmount;                 // max amount of particles
     uint particleM2DataIndex;
-}
+    uint instanceIndex; //instanceIndex of m2 instance
+    mat4 viewMatrix;
+};
 
 #endif //PARICLE_PARTICLE_COMMON_SLANG

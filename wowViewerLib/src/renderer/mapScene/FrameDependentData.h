@@ -48,6 +48,15 @@ struct SkyColors {
     mathfu::vec4 SkyBand2Color;
     mathfu::vec4 SkySmogColor;
     mathfu::vec4 SkyFogColor;
+
+    void assignZeros() {
+        SkyTopColor = {0,0,0,0};
+        SkyMiddleColor = {0,0,0,0};
+        SkyBand1Color = {0,0,0,0};
+        SkyBand2Color = {0,0,0,0};
+        SkySmogColor = {0,0,0,0};
+        SkyFogColor = {0,0,0,0};
+    }
 };
 
 struct SkyBodyData {
@@ -55,6 +64,11 @@ struct SkyBodyData {
     mathfu::vec3 celestialBodyOverride2;
 
     SkyBoxInfo skyBoxInfo;
+
+    void assignZeros() {
+        celestialBodyOverride = {0,0,0};
+        celestialBodyOverride2 = {0,0,0};
+    }
 };
 
 struct LiquidColors {
@@ -63,12 +77,26 @@ struct LiquidColors {
 
     mathfu::vec4 closeOceanColor_shallowAlpha = mathfu::vec4(0,0,0,0);
     mathfu::vec4 farOceanColor_deepAlpha = mathfu::vec4(0,0,0,0);
+
+    void assignZeros() {
+        closeRiverColor_shallowAlpha =  {0, 0, 0, 0};
+        farRiverColor_deepAlpha =  {0, 0, 0, 0};
+        closeOceanColor_shallowAlpha =  {0, 0, 0, 0};
+        farOceanColor_deepAlpha =  {0, 0, 0, 0};
+    }
 };
 struct ExteriorColors {
     mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
+
+    void assignZeros() {
+        exteriorAmbientColor =  {0, 0, 0, 0};
+        exteriorHorizontAmbientColor =  {0, 0, 0, 0};
+        exteriorGroundAmbientColor =  {0, 0, 0, 0};
+        exteriorDirectColor =  {0, 0, 0, 0};
+    }
 };
 
 struct IdAndBlend{
@@ -76,12 +104,19 @@ struct IdAndBlend{
     float blend;
 };
 
+struct IdAndBlendAndPriority{
+    int id;
+    float blend;
+    int priority ;
+};
+
+
 struct StateForConditions {
     int currentAreaId = 0;
     int currentParentAreaId = 0;
     std::vector<IdAndBlend> currentSkyboxIds = {};
     std::vector<IdAndBlend> currentLightIds = {};
-    std::vector<IdAndBlend> currentLightParams = {};
+    std::vector<IdAndBlendAndPriority> currentLightParams = {};
     std::vector<IdAndBlend> currentZoneLights = {};
 };
 

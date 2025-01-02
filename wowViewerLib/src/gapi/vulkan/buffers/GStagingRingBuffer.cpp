@@ -53,25 +53,24 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
     constexpr uint8_t cache_align = std::hardware_destructive_interference_size;
     uint32_t buffPtrAlign = buffPtr % cache_align;
     uint32_t offsetAlign = startOffset % cache_align;
-    uint32_t alignAdd = 0;
-    if (buffPtrAlign > offsetAlign) {
-        alignAdd = (cache_align-buffPtrAlign) + (buffPtrAlign - offsetAlign);
-    } else {
-        alignAdd = (cache_align-buffPtrAlign) + ((cache_align - offsetAlign) + buffPtrAlign);
-    }
-    alignAdd %= cache_align;
-    startOffset += alignAdd;
 
-    auto allocatedPtr = ((uint8_t *)bufferAndCPU.cpuBuffer.data()) + startOffset;
-    if ((startOffset + o_size) > bufferAndCPU.cpuBuffer.size()) {
+    uint32_t alignAdd = cache_align - ((buffPtrAlign+startOffset) % cache_align);
+
+    uint32_t startOffsetAligned = startOffset + alignAdd;
+
+    auto allocatedPtr = ((uint8_t *)bufferAndCPU.cpuBuffer.data()) + startOffsetAligned;
+    if ((startOffsetAligned + o_size) > bufferAndCPU.cpuBuffer.size()) {
         std::cerr << startOffset << " " << o_size << std::endl;
         throw "OOOOSP";
     }
     if ((((uint64_t)allocatedPtr) % cache_align) > 0 ) {
-        std::cerr << " ptr is not aligned, allocatedPtr =  " << (uint64_t)allocatedPtr << std::endl;
+        std::cerr << " ptr is not aligned, allocatedPtr =  " << (uint64_t)allocatedPtr
+            << " startOffset = " << startOffset
+            << " startOffsetAligned = " << startOffsetAligned
+            << std::endl;
     }
     o_staging = bufferAndCPU.staging->getBuffer();
-    o_offset = startOffset;
+    o_offset = startOffsetAligned;
 
     return allocatedPtr;
 }

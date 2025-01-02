@@ -15,6 +15,8 @@ public:
     virtual bool getMapById(int mapId, MapRecord &mapRecord) = 0;
     virtual AreaRecord getArea(int areaId) = 0;
     virtual bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) = 0;
+
+    virtual void getAllLightByMap(int mapId, std::vector<LightResult> &lightResults) = 0;
     virtual void getLightById(int lightId, LightResult &lightResult) = 0;
     virtual void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) = 0;
 

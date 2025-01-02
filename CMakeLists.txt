@@ -449,3 +449,18 @@ if( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
 endif( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
 
 include(CPack)
+
+add_executable(TEST_LIGHT_BLENDING
+    testApps/TestLightBlending.cpp
+    wowViewerLib/src/engine/algorithms/mathHelper.cpp
+    wowViewerLib/src/engine/algorithms/grahamScan.cpp
+#    wowViewerLib/src/engine/custom_allocators/FrameBasedStackAllocator.cpp
+#    wowViewerLib/3rdparty/OffsetAllocator/offsetAllocator.cpp
+	src/database/CSqliteDB.cpp src/database/CSqliteDB.h
+)
+target_include_directories(TEST_LIGHT_BLENDING PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
+target_include_directories(TEST_LIGHT_BLENDING PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
+target_link_libraries(TEST_LIGHT_BLENDING TBB::tbb )
+target_link_libraries(TEST_LIGHT_BLENDING TBB::tbbmalloc )
+target_link_libraries(TEST_LIGHT_BLENDING SQLiteCpp sqlite3)
+target_compile_definitions(TEST_LIGHT_BLENDING PUBLIC -DTEST_APP_ALLOCATION)

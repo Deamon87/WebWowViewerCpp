@@ -13,6 +13,8 @@
 #include "tbb/tbb.h"
 #include "tbb/scalable_allocator.h"
 
+#ifndef TEST_APP_ALLOCATION
+
 void * frameLinearAllocate(size_t size);
 void frameDeAllocate(void *p, size_t size);
 void allocatorBeginFrame(unsigned int frameNum);
@@ -84,5 +86,14 @@ namespace framebased {
     using unordered_map = std::unordered_map<Key, Value, Hash, KeyEqual, FrameBasedStackAllocator<std::pair<const Key, Value>>>;
 #endif
 }
+#else
+namespace framebased {
+    template <class T>
+    using vector = std::vector<T>;
+
+    template <class Key, class Value, class Hash = std::hash<Key>, class KeyEqual = std::equal_to<Key>>
+    using unordered_map = std::unordered_map<Key, Value, Hash, KeyEqual>;
+}
+#endif
 
 #endif //AWEBWOWVIEWERCPP_FRAMEBASEDSTACKALLOCATOR_H

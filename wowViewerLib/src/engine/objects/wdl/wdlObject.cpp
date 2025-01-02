@@ -143,6 +143,12 @@ bool hasId(const std::vector<IdAndBlend> &vec, int id) {
     });
 }
 
+bool hasId(const std::vector<IdAndBlendAndPriority> &vec, int id) {
+    return std::any_of(vec.begin(), vec.end(), [id](const IdAndBlendAndPriority &val) {
+        return val.id == id;
+    });
+}
+
 void WdlObject::checkSkyScenes(const StateForConditions &state,
                                M2ObjectListContainer &m2ObjectsCandidates,
                                const mathfu::vec4 &cameraPos,

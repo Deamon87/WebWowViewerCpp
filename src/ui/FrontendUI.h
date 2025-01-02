@@ -97,6 +97,9 @@ private:
 
     std::array<std::array<HGSamplableTexture, 64>, 64> adtSelectionMinimapTextures;
     std::array<std::array<std::shared_ptr<IUIMaterial>, 64>, 64> adtSelectionMinimapMaterials;
+    std::vector<mapInnerZoneLightRecord> m_zoneLights = {};
+    std::vector<LightResult> m_mapLights = {};
+    int limitZoneLight = -1;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {
@@ -138,6 +141,9 @@ private:
 
 
     float minimapZoom = 1;
+    bool drawZoneLights = false;
+    bool drawAreaLights = false;
+
     int currentTime = 0;
 
     int  threadCount = 4;

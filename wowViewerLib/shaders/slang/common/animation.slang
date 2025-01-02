@@ -1,3 +1,6 @@
+#ifndef ANIMATION_SLANG
+#define ANIMATION_SLANG
+
 import glsl;
 
 struct M2PartTrackElement {
@@ -107,3 +110,5 @@ float animatePartTrack(in float age,
 
     return defaultValue;
 }
+
+#endif //ANIMATION_SLANG

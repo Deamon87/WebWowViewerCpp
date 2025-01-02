@@ -10,20 +10,15 @@
 #include "../../../persistance/header/commonFileStructs.h"
 #include "../../../ApiContainer.h"
 #include "../../../../renderer/mapScene/MapScenePlan.h"
+#include "../../../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
+#include "LightParamCalculate.h"
+
 
 class DayNightLightHolder {
 public:
     DayNightLightHolder(const HApiContainer &api, int mapId);
 
 private:
-    struct mapInnerZoneLightRecord {
-        int ID;
-        std::string name;
-        int LightID;
-        CAaBox aabb;
-        std::vector<mathfu::vec2> points;
-        std::vector<mathfu::vec2> lines;
-    };
 
     struct SkyBoxCollector {
         public:
@@ -92,6 +87,8 @@ private:
 
     void processSkyBoxes(const HMapRenderPlan &mapRenderPlan, const StateForConditions &stateForConditions,
                          const Config *config) const;
+
+
 };
 
 

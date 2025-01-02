@@ -33,14 +33,17 @@ struct ParticleBuffStruct {
     C2Vector textCoord1; //36
     C2Vector textCoord2; //44
     float   alphaCutoff; //52
+    float   padding[2];
 };
+
+static_assert(sizeof(ParticleBuffStruct) % 16 == 0, "ParticleBuffStruct must be aligned at 16 bytes");
 
 struct ParticleBuffStructQuad {
     ParticleBuffStruct particle[4];
 };
 
 static_assert(sizeof(ParticleBuffStructQuad) == (sizeof(ParticleBuffStruct) * 4));
-static_assert(sizeof(ParticleBuffStruct) == 56);
+//static_assert(sizeof(ParticleBuffStruct) == 56);
 
 struct CParticleMaterialFlags {
     union {
