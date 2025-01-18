@@ -198,6 +198,20 @@ inline void drawColumnColorVec3(const std::string &text, const std::string &name
     ImGui::SameLine();
     ImGui::ColorButton(varName.c_str(), ImVec4(value.x, value.y, value.z, 0));
 }
+inline void drawColumnVec3(const std::string &text, const std::string &name, const mathfu::vec3 &value) {
+    ImGui::TableNextRow();
+
+    const std::string message = "(%.3f, %.3f, %.3f)";
+    const std::string varName = name + "##b";
+    ImGui::TableNextColumn();
+    ImGui::Text(text.c_str());
+
+    ImGui::TableNextColumn();
+    ImGui::Text(message.c_str(),
+                value.x,
+                value.y,
+                value.z);
+}
 
 void FrontendUI::showCurrentStatsDialog() {
     static float f = 0.0f;
@@ -407,6 +421,7 @@ void FrontendUI::showCurrentStatsDialog() {
                         drawColumnColorVec3("Exterior Horizon Ambient:", "ExteriorHorizonAmbient", frameDependentData->colors.exteriorHorizontAmbientColor.xyz());
                         drawColumnColorVec3("Exterior Ground Ambient:", "ExteriorGroundAmbient", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
                         drawColumnColorVec3("Exterior Direct Color:", "ExteriorDirectColor", frameDependentData->colors.exteriorDirectColor.xyz());
+                        drawColumnVec3("Exterior Direct Dir:", "ExteriorDirectDir", frameDependentData->exteriorDirectColorDir);
                         drawColumnF("Glow:", cullStageData->frameDependentData->currentGlow);
                         ImGui::EndTable();
                     }

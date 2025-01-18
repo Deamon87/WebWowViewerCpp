@@ -191,8 +191,8 @@ ParticleEmitter::ParticleEmitter(const HApiContainer &api, const HMapSceneBuffer
         uint64_t defCellLong = (textureIndexMask + 1) * (uint64_t)this->m_seed.uint32t();
         this->m_randomizedTextureIndexMask = static_cast<uint16_t>(defCellLong>> 32);
     }
-    this->texScaleX = 1.0f / cols;
-    this->texScaleY = 1.0f / rows;
+    this->texScaleX = 1.0f / (float)cols;
+    this->texScaleY = 1.0f / (float)rows;
 
     //TODO: particle selection is not entirely proper because of strange freaking flag
     if ( (m_data->old.flags & 0x10100000) == 0) {
@@ -308,8 +308,8 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             } else {
                 blockPS.uAlphaTest = 0.0039215689f;
             }
-            blockPS.alphaMult = (m_exp2Data == nullptr) ? 1.0 : m_exp2Data->alphaMult;
-            blockPS.colorMult = (m_exp2Data == nullptr) ? 1.0 : m_exp2Data->colorMult;
+            blockPS.alphaMult = (m_exp2Data == nullptr) ? 1.0f : m_exp2Data->alphaMult;
+            blockPS.colorMult = (m_exp2Data == nullptr) ? 1.0f : m_exp2Data->colorMult;
 
             int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
 

@@ -60,7 +60,7 @@ void RenderViewDeferredVLK::createFrameBuffers() {
         };
 
         auto const lightBufferFormat = {
-            ITextureFormat::itRGBA   //Color
+            ITextureFormat::itRGBA16   //Color
         };
 
 

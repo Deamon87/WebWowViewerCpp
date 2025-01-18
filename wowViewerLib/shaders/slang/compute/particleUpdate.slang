@@ -22,6 +22,4 @@ void main() {
         particleCpuStates[peIdx].deltaTime,
         currParticlesBuffer[particleIdx]
     );
-
-
 }

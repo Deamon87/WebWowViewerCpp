@@ -937,6 +937,7 @@ mathfu::vec3 MathHelper::calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int
 
     mathfu::vec4 sunDirWorld = mathfu::vec4(getVector<SkyDataType::SK_DIR_LIGHT>(time), 0.0f);
     sunDirWorld = mathfu::vec4(sunDirWorld.xyz().Normalized(), 0.0f);
+    sunDirWorld = mathfu::vec4(0.000, -0.687, -0.688, 0.0f);
 
     return (lookAtMat.Inverse().Transpose() * sunDirWorld).xyz().Normalized();
 }

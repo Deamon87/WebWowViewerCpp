@@ -1213,8 +1213,6 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
                 auto l_device = m_api->hDevice;
                 auto oldProcessingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
                 auto processingFrame = oldProcessingFrame;
-                oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
-                arena.execute([&] {
                     tbb::affinity_partitioner ap;
                     tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
                         [&](tbb::blocked_range<size_t> r) {
@@ -1226,7 +1224,6 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
                                 }
                             }
                         }, ap);
-                });
                 //Restore processing frame
                 l_device->setCurrentProcessingFrameNumber(oldProcessingFrame);
             }

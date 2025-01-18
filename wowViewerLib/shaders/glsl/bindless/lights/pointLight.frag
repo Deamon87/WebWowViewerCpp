@@ -64,7 +64,7 @@ void main() {
     float colorLerp = smoothstep(blendParams.y, blendParams.x, distanceToLight);
     vec3 lerp = mix(lightRec.outerColor.xyz, lightRec.innerColor.xyz, vec3(colorLerp));
 
-    vec3 attenuatedColor = attenuation * lerp;
+    vec3 attenuatedColor = attenuation * lerp * attenuationRec.y;
     vec3 lightColor = vec3(attenuatedColor * attenuatedColor * diffuseTerm1 );
 
     outColor = vec4(vec3(lightColor), 1.0);

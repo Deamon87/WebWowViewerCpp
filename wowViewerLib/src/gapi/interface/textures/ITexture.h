@@ -11,6 +11,7 @@
 enum class ITextureFormat {
     itNone,
     itRGBA,
+    itRGBA16,
     itInt,
     itFloat32,
     itRGBAFloat32,

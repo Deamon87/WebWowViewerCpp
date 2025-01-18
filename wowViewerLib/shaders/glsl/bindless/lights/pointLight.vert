@@ -48,7 +48,8 @@ void main() {
     vec4 pointLightClip = scene.uPMatrix * vec4(lightPosView.xyz, 1.0);
     pointLightClip.z = pointLightClip.w - (sign(pointLightClip.w) * 0.0001);
     //clamp it against screen bounderies
-//    pointLightClip.xy = clamp(pointLightClip.xy, -vec2(abs(pointLightClip.w)), vec2(abs(pointLightClip.w)));
+
+    pointLightClip.xy = clamp(pointLightClip.xy, -vec2(abs(pointLightClip.w)), vec2(abs(pointLightClip.w)));
 
     gl_Position = pointLightClip;
     lightIndex = gl_InstanceIndex;

@@ -262,6 +262,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         std::vector<mathfu::vec2_packed> vertexBuffer;
         std::vector<uint16_t> indexBuffer;
 
+        auto const firstPointIdx = vertexBuffer.size();
         vertexBuffer.push_back(mathfu::vec2_packed(mathfu::vec2(0,0)));
 
         for (uint32_t i = 0; i < spotLightSegments; i++) {
@@ -270,16 +271,17 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
                 mathfu::vec2(cos(angle),sin(angle))
             ));
         }
+        auto const secondPointIdx = vertexBuffer.size();
         vertexBuffer.push_back(mathfu::vec2_packed(mathfu::vec2(0,0)));
 
         for (uint32_t i = 0; i < spotLightSegments; i++) {
-            indexBuffer.push_back(0);
+            indexBuffer.push_back(firstPointIdx);
             indexBuffer.push_back(((i+1) % spotLightSegments) + 1);
             indexBuffer.push_back(((i) % spotLightSegments) + 1);
         }
 
         for (uint32_t i = 2; i < spotLightSegments; i++) {
-            indexBuffer.push_back(1);
+            indexBuffer.push_back(secondPointIdx);
             indexBuffer.push_back(((i+1) % spotLightSegments) + 1);
             indexBuffer.push_back(((i) % spotLightSegments) + 1);
         }

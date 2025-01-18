@@ -183,10 +183,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         blockPSVS.closeRiverColor = fdd->liquidColors.closeRiverColor_shallowAlpha;
         blockPSVS.farRiverColor = fdd->liquidColors.farRiverColor_deepAlpha;
 
-        blockPSVS.extLight.uExteriorAmbientColor = fdd->colors.exteriorAmbientColor * 0.5f;
-        blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->colors.exteriorHorizontAmbientColor * 0.5f;
-        blockPSVS.extLight.uExteriorGroundAmbientColor = fdd->colors.exteriorGroundAmbientColor * 0.5f;
-        blockPSVS.extLight.uExteriorDirectColor = fdd->colors.exteriorDirectColor * 0.5f;
+        blockPSVS.extLight.uExteriorAmbientColor = fdd->colors.exteriorAmbientColor;
+        blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->colors.exteriorHorizontAmbientColor;
+        blockPSVS.extLight.uExteriorGroundAmbientColor = fdd->colors.exteriorGroundAmbientColor;
+        blockPSVS.extLight.uExteriorDirectColor = fdd->colors.exteriorDirectColor;
         blockPSVS.extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
         blockPSVS.extLight.uAdtSpecMult_FogCount = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
 

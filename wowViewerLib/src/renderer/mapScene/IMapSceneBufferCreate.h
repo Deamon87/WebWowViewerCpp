@@ -44,7 +44,7 @@ PACK(
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
 //    static const int PARTICLES_BUFF_NUM = IDevice::MAX_FRAMES_IN_FLIGHT + 1;
-static const int PARTICLES_BUFF_NUM = 2;
+static const int PARTICLES_BUFF_NUM = 1;
 
 class IMapSceneBufferCreate {
 public:

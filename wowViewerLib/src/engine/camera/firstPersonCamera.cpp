@@ -139,13 +139,15 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     this->lookAt = camera + dir;
 
-    lookAtMat = mathfu::mat4(
-        right_move.x, up.x, -dir.x, 0.0f,
-        right_move.y, up.y, -dir.y, 0.0f,
-        right_move.z, up.z, -dir.z, 0.0f,
-        0,0,0,1.0f //translation
-    );
-    lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
+//    lookAtMat = mathfu::mat4(
+//        right_move.x, up.x, -dir.x, 0.0f,
+//        right_move.y, up.y, -dir.y, 0.0f,
+//        right_move.z, up.z, -dir.z, 0.0f,
+//        0,0,0,1.0f //translation
+//    );
+//    lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
+    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), 1.0f);
+
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 
     this->camera = mathfu::vec4(camera, 1.0);//(lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();

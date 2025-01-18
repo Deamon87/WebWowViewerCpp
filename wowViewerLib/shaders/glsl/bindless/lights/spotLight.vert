@@ -39,6 +39,10 @@ void main() {
     //And world to view transform
     vec4 viewPos = scene.uLookAtMat * vertPos;
 
-    gl_Position = scene.uPMatrix * viewPos;
+     vec4 spotPointClip = scene.uPMatrix * viewPos;
+
+//    spotPointClip.xy = clamp(spotPointClip.xy, -vec2(abs(spotPointClip.w)), vec2(abs(spotPointClip.w)));
+
+    gl_Position = spotPointClip;
     lightIndex = gl_InstanceIndex;
 }
