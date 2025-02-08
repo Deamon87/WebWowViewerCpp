@@ -25,8 +25,11 @@ private:
     std::mutex m_mutex;
 
     std::array<std::atomic<uint64_t>, IDevice::MAX_FRAMES_IN_FLIGHT> offsets = {0};
+
+    typedef std::array<uint8_t, STAGE_BUFFER_SIZE> CPUBufferAccum;
+
     struct BufferAndCPU {
-        std::array<uint8_t, STAGE_BUFFER_SIZE> cpuBuffer;
+        std::unique_ptr<CPUBufferAccum> cpuBuffer;
         std::shared_ptr<BufferStagingVLK> staging;
     };
 

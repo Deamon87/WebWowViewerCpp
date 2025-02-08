@@ -76,7 +76,7 @@ public:
         auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         return *(T*)subBufferVersions[version][index]->getPointer();
     };
-    void saveVersion(int version) {
+    void saveVersion(int version) override {
         auto index = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
         subBufferVersions[version][index]->save(m_realSize);
     }

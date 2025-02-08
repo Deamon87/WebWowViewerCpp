@@ -14,7 +14,9 @@ class IMapApi;
 class LiquidInstance;
 
 enum class LiquidInstId : uintptr_t;
-extern EntityFactory<1000, LiquidInstId, LiquidInstance> liquidInstanceFactory;
+
+typedef EntityFactory<1000, LiquidInstId, LiquidInstance> LiquidInstanceEntityFactory;
+extern std::shared_ptr<LiquidInstanceEntityFactory> liquidInstanceFactory;
 
 class LiquidInstance : public ObjectWithId<LiquidInstId> {
 public:

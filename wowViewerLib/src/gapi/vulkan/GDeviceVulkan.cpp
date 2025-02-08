@@ -204,10 +204,10 @@ std::set<std::string> get_supported_extensions() {
     return extensions;
 }
 
+bool vulkanEnableValidationLayers = true ;
+
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
-    enableValidationLayers = false;
-
     _putenv("VK_LOADER_DRIVERS_DISABLE=*dzn*");
 
     if (volkInitialize()) {
@@ -217,7 +217,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
 
     this->threadCount = std::max<int>((int)std::thread::hardware_concurrency() - 3, 1);
 
-    if (enableValidationLayers && !checkValidationLayerSupport()) {
+    if (vulkanEnableValidationLayers && !checkValidationLayerSupport()) {
         throw std::runtime_error("validation layers requested, but not available!");
     }
 
@@ -269,7 +269,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     std::cout << std::endl;
 
     std::vector<const char *> extensionsVec(extensions, extensions+extensionCnt);
-    if (enableValidationLayers) {
+    if (vulkanEnableValidationLayers) {
         extensionsVec.push_back("VK_EXT_debug_report");
     }
 
@@ -282,7 +282,7 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
 
     //Request validation layers
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo;
-    if (enableValidationLayers) {
+    if (vulkanEnableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
 
@@ -532,7 +532,7 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
 }
 
 void GDeviceVLK::setupDebugMessenger() {
-    if (!enableValidationLayers) return;
+    if (!vulkanEnableValidationLayers) return;
 
     VkDebugUtilsMessengerCreateInfoEXT createInfo;
     populateDebugMessengerCreateInfo(createInfo);
@@ -814,7 +814,7 @@ void GDeviceVLK::createLogicalDevice() {
     createInfo.enabledExtensionCount = enabledDeviceExtensions.size();
     createInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
 
-    if (enableValidationLayers) {
+    if (vulkanEnableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
     } else {

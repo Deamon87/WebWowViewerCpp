@@ -360,12 +360,17 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
     if (pointLightCount > 0) {
         frameBufCmd.bindVertexBindings(m_quadVAO);
         frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
-        frameBufCmd.drawIndexed(6, pointLightCount, 0, 0, 0);
+        for (int i = 0; i < pointLightCount; i++)
+            frameBufCmd.drawIndexed(6, 1, 0, i, 0);
     }
     if (spotLightCount > 0) {
         frameBufCmd.bindVertexBindings(m_spotVAO);
         frameBufCmd.bindMaterial(m_spotLightMats[frameNum]);
-        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
+//        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
+
+        for (int i = 0; i < pointLightCount; i++)
+            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
+
     }
 }
 

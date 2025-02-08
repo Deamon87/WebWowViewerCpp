@@ -23,6 +23,7 @@ public:
     GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
                          const std::vector<const shaderMetaData*> &metaData,
                          int setIndex,
+                         const std::string &shaderName,
                          const DescTypeOverride &typeOverrides);
 
     ~GDescriptorSetLayout();
@@ -58,7 +59,10 @@ private:
 
     bool m_isBindless = false;
 
+
     std::shared_ptr<IDeviceVulkan> m_device;
+    std::string m_shaderSourceName;
+    int m_sourceSetIndex;
 
     void fillUbo(int setIndex, const DescTypeOverride &typeOverrides,
                  std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,

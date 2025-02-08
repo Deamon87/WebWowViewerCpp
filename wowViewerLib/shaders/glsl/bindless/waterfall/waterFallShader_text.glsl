@@ -24,8 +24,11 @@ layout(location = 0) out vec4 outColor;
 #include "../../common/commonM2WaterfallDescriptorSet.glsl"
 
 const InteriorLightParam intLightWaterfall = {
-vec4(0,0,0,0),
-vec4(0,0,0,1)
+    vec4(0,0,0,0),
+    vec4(0,0,0,0),
+    vec4(0,0,0,0),
+    vec4(0,0,0,1),
+    vec4(0,0,0,0)
 };
 
 // For references:

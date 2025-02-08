@@ -37,6 +37,7 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
                 while (currentIndexAfter >= vec.size()) {
                     auto &bufferAndCPU = vec.emplace_back();
                     bufferAndCPU.staging = std::make_shared<BufferStagingVLK>(m_device, STAGE_BUFFER_SIZE);
+                    bufferAndCPU.cpuBuffer = std::make_unique<CPUBufferAccum>();
                 }
             }
 
@@ -47,8 +48,15 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
     if (bufferIndex >= vec.size()) {
         throw "OOOOSP";
     }
-    auto &bufferAndCPU = vec[bufferIndex];
-    auto buffPtr = reinterpret_cast<intptr_t>(bufferAndCPU.cpuBuffer.data());
+
+    intptr_t buffPtr = 0;
+    {
+        std::unique_lock l(m_mutex);//
+        auto &bufferAndCPU = vec[bufferIndex];
+        buffPtr = reinterpret_cast<intptr_t>(bufferAndCPU.cpuBuffer->data());
+
+        o_staging = bufferAndCPU.staging->getBuffer();
+    }
 
     constexpr uint8_t cache_align = std::hardware_destructive_interference_size;
     uint32_t buffPtrAlign = buffPtr % cache_align;
@@ -58,8 +66,8 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
 
     uint32_t startOffsetAligned = startOffset + alignAdd;
 
-    auto allocatedPtr = ((uint8_t *)bufferAndCPU.cpuBuffer.data()) + startOffsetAligned;
-    if ((startOffsetAligned + o_size) > bufferAndCPU.cpuBuffer.size()) {
+    auto allocatedPtr = ((uint8_t *)buffPtr) + startOffsetAligned;
+    if ((startOffsetAligned + o_size) > STAGE_BUFFER_SIZE) {
         std::cerr << startOffset << " " << o_size << std::endl;
         throw "OOOOSP";
     }
@@ -69,7 +77,7 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
             << " startOffsetAligned = " << startOffsetAligned
             << std::endl;
     }
-    o_staging = bufferAndCPU.staging->getBuffer();
+
     o_offset = startOffsetAligned;
 
     return allocatedPtr;
@@ -86,11 +94,11 @@ void GStagingRingBuffer::flushBuffers() {
 
     for (int i = 0; i < maxIndex; i++) {
         auto &stagingRec = vec[i];
-        stagingRec.staging->writeData(stagingRec.cpuBuffer.data(), STAGE_BUFFER_SIZE);
+        stagingRec.staging->writeData(stagingRec.cpuBuffer->data(), STAGE_BUFFER_SIZE);
     }
     if (currentOffset > 0) {
         auto &stagingRec = vec[maxIndex];
-        stagingRec.staging->writeData(stagingRec.cpuBuffer.data(), currentOffset % STAGE_BUFFER_SIZE);
+        stagingRec.staging->writeData(stagingRec.cpuBuffer->data(), currentOffset % STAGE_BUFFER_SIZE);
     }
 
     uint32_t prevMaxIndex =  ( currentOffset ) / STAGE_BUFFER_SIZE;

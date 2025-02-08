@@ -315,4 +315,4 @@ mathfu::mat4 LiquidInstance::GetTexScrollMtx(int time, mathfu::vec2 scrollVec) {
     return mathfu::mat4::FromTranslationVector(mathfu::vec3(scrollX, scrollY, 0.0f));
 }
 
-EntityFactory<1000, LiquidInstId, LiquidInstance> liquidInstanceFactory;
+std::shared_ptr<LiquidInstanceEntityFactory> liquidInstanceFactory = std::make_shared<LiquidInstanceEntityFactory>();

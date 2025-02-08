@@ -10,7 +10,8 @@
 GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
                                            const std::vector<const shaderMetaData*> &metaDatas,
                                            int setIndex,
-                                           const DescTypeOverride &typeOverrides) : m_device(device) {
+                                           const std::string &shaderName,
+                                           const DescTypeOverride &typeOverrides) : m_device(device), m_shaderSourceName(shaderName), m_sourceSetIndex(setIndex) {
     for (auto &size : m_arraySizes) size = 0;
 
     //Create Layout

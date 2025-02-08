@@ -200,7 +200,11 @@ struct SMODoodadDef
     /*003h*/  uint32_t flag_0x2 : 1;            // MapStaticEntity::field_34 |= 1 (if set, MapStaticEntity::AdjustLighting is _not_ called)
     /*003h*/  uint32_t flag_0x4 : 1;
     /*003h*/  uint32_t flag_0x8 : 1;
-    /*003h*/  uint32_t unused: 4;               // unused as of 7.0.1.20994
+    /*003h*/  uint32_t flag_0x10 : 1;
+    /*003h*/  uint32_t flag_0x20 : 1;
+    /*003h*/  uint32_t flag_0x40 : 1;
+    /*003h*/  uint32_t flag_0x80 : 1;
+
     /*004h*/  C3Vector position;                // (X,Z,-Y)
     /*010h*/  C4Quaternion orientation;         // (X, Y, Z, W)
     /*020h*/  float scale;                      // scale factor

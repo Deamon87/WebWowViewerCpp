@@ -107,6 +107,7 @@ void *GBufferVLK::allocatePtr(int offset, int length) {
     auto *ptr = m_ringBuff->allocateNext(length, staging, stage_offset);
 
     auto frameIndex = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    if (length > 0)
     {
 //        std::unique_lock<std::mutex> lock(m_mutex);
         uploadRegionsPerStaging[frameIndex][staging].push_back({
@@ -114,6 +115,8 @@ void *GBufferVLK::allocatePtr(int offset, int length) {
            .dstOffset = static_cast<VkDeviceSize>(offset),
            .size = static_cast<VkDeviceSize>(length)
        });
+    } else {
+        //TODO: debug?
     }
 
     return ptr;

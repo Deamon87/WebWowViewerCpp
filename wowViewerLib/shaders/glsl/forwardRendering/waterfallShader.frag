@@ -40,7 +40,10 @@ layout(std140, set=2, binding=0) uniform meshWideBlockVS {
 
 const InteriorLightParam intLightWaterfall = {
     vec4(0,0,0,0),
-    vec4(0,0,0,1)
+    vec4(0,0,0,0),
+    vec4(0,0,0,0),
+    vec4(0,0,0,1),
+    vec4(0,0,0,0)
 };
 
 // For references:

@@ -146,7 +146,11 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig, {})
         .createDescriptorSet(0, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo_dynamic(0, sceneWideChunk).delayUpdate();
+                .ubo_dynamic(0, sceneWideChunk)
+                .texture(1, hDevice->getBlackTexturePixel())
+                .texture(2, hDevice->getWhiteTexturePixel())
+                .delayUpdate();
+
             sceneWideDS = ds;
         });
 }

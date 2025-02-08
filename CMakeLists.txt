@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-project(AWebWoWViewerCpp)
+project(WoWStudio)
 include(ExternalProject)
 
 enable_language( C CXX ASM )
@@ -71,7 +71,7 @@ endif()
 
 
 if(WIN32)
-	link_libraries(wsock32 ws2_32)
+	link_libraries(wsock32 ws2_32 -ldbghelp winmm)
 endif()
 
 # DB Importer
@@ -110,10 +110,13 @@ check_include_file("limits.h" HAVE_LIMITS_H)
 add_compile_definitions(HAVE_LIMITS_H)
 SET(CMAKE_USE_LIBSSH2 0)
 SET(CPR_BUILD_TESTS 0)
+SET(CURL_USE_LIBPSL 0)
+SET(BUILD_LIBCURL_DOCS 0)
+SET(ENABLE_CURL_MANUAL 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
 FetchContent_Declare(cpr
 		GIT_REPOSITORY https://github.com/libcpr/cpr.git
-		GIT_TAG 2553fc41450301cd09a9271c8d2c3e0cf3546b73 # the commit hash for 1.8.3
+		GIT_TAG 2b2b16989708d81d4fe062240e085a2f5a61f74a # the commit hash for 1.9.9
 		EXCLUDE_FROM_ALL
 )
 
@@ -153,7 +156,9 @@ set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
 add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
 
 # Protobuf
-set(protobuf_BUILD_TESTS OFF)
+set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Build tests")
+set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "Build conformance tests")
 add_subdirectory(3rdparty/protobuf-cpp/protobuf-3.21.5 EXCLUDE_FROM_ALL)
 
 
@@ -205,8 +210,7 @@ set(SOURCE_FILES
         src/ui/imguiLib/groupPanel/groupPanel.cpp
 		src/ui/imguiLib/groupPanel/groupPanel.h
 
-		src/main.cpp
-        src/ui/imguiLib/disablableButton/disablableButton.cpp
+		src/ui/imguiLib/disablableButton/disablableButton.cpp
 		src/ui/imguiLib/disablableButton/disablableButton.h
 		src/minimapGenerator/storage/CMinimapDataDB.cpp
 		src/minimapGenerator/storage/CMinimapDataDB.h
@@ -225,7 +229,7 @@ set(SOURCE_FILES
 		src/ui/imguiLib/stateSaver/stateSaver.cpp
 		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp
 		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h
-		src/ui/imguiLib/fileBrowser/buildDefinition.h
+		src/database/buildInfoParser/buildDefinition.h
 		src/database/product_db_parser/productDbParser.cpp
 		src/database/product_db_parser/productDbParser.h
 		src/database/buildInfoParser/buildInfoParser.cpp
@@ -293,13 +297,14 @@ set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package( Threads REQUIRED )
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/SQLiteCpp EXCLUDE_FROM_ALL)
-
-
 if (NOT Vulkan_FOUND)
 	set(SOURCE_FILES_VULKAN "")
 endif()
 
-add_executable(AWebWoWViewerCpp ${SOURCE_FILES} ${SOURCE_FILES_VULKAN})
+add_library(WoWFrontendLib STATIC ${SOURCE_FILES} ${SOURCE_FILES_VULKAN})
+add_executable(WowStudio src/main.cpp)
+
+target_link_libraries(WowStudio WoWFrontendLib)
 
 if (Vulkan_FOUND)
 	add_definitions(-DLINK_VULKAN)
@@ -307,21 +312,21 @@ endif()
 
 
 message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
-target_include_directories(AWebWoWViewerCpp PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
-target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
-target_include_directories(AWebWoWViewerCpp PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
+target_include_directories(WoWFrontendLib PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
+target_include_directories(WoWFrontendLib PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
+target_include_directories(WoWFrontendLib PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
 
-#target_compile_options(AWebWoWViewerCpp PRIVATE "-static")
-target_compile_definitions(AWebWoWViewerCpp PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
-target_include_directories(AWebWoWViewerCpp PUBLIC src/ui/imguiLib)
-target_include_directories(AWebWoWViewerCpp PUBLIC 3rdparty/imgui-notify/example/src)
+#target_compile_options(WoWFrontendLib PRIVATE "-static")
+target_compile_definitions(WoWFrontendLib PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
+target_include_directories(WoWFrontendLib PUBLIC src/ui/imguiLib)
+target_include_directories(WoWFrontendLib PUBLIC 3rdparty/imgui-notify/example/src)
 
-add_dependencies(AWebWoWViewerCpp WoWViewerLib)
-#add_dependencies(AWebWoWViewerCpp storm)
-add_dependencies(AWebWoWViewerCpp casc_static)
+add_dependencies(WoWFrontendLib WoWViewerLib)
+#add_dependencies(WoWFrontendLib storm)
+add_dependencies(WoWFrontendLib casc_static)
 
 #TODO: platform dependant!!
-add_dependencies(AWebWoWViewerCpp glfw)
+add_dependencies(WoWFrontendLib glfw)
 if (NOT MSVC)
 	check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
 	if(HAVE_FLAG_STD_CXX17)
@@ -350,29 +355,29 @@ if (MSVC)
 	message("MSVC Is on")
 	if (_cpp_17_flag_supported)
 		message("/std:c++17 is supported")
-		#target_compile_options(AWebWoWViewerCpp "/std:c++17")
+		#target_compile_options(WoWFrontendLib "/std:c++17")
 		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
 		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
 		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
-		#target_compile_options(AWebWoWViewerCpp /std:c++17)
+		#target_compile_options(WoWFrontendLib /std:c++17)
 	endif()
 endif()
 
-target_link_libraries(AWebWoWViewerCpp ${GLEW_LIBRARIES})
-target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIBRARIES})
-target_link_libraries(AWebWoWViewerCpp ${OPENGL_LIB})
-#target_link_libraries(AWebWoWViewerCpp zlibstatic)
-target_link_libraries(AWebWoWViewerCpp libprotobuf-lite)
+target_link_libraries(WoWFrontendLib ${GLEW_LIBRARIES})
+target_link_libraries(WoWFrontendLib ${OPENGL_LIBRARIES})
+target_link_libraries(WoWFrontendLib ${OPENGL_LIB})
+#target_link_libraries(WoWFrontendLib zlibstatic)
+target_link_libraries(WoWFrontendLib libprotobuf-lite)
 
 
-target_link_libraries(AWebWoWViewerCpp SQLiteCpp sqlite3)
+target_link_libraries(WoWFrontendLib SQLiteCpp sqlite3)
 target_link_libraries(DBImporterLib SQLiteCpp)
 if (NOT MSVC)
 	find_library(DL_EXISTS dl)
 	message("DL_EXISTS = ${DL_EXISTS}")
 	if (NOT DL_EXISTS STREQUAL "DL_EXISTS-NOTFOUND")
 		message("Linking against DL")
-		target_link_libraries(AWebWoWViewerCpp dl)
+		target_link_libraries(WoWFrontendLib dl)
 	else()
 
 		#    find_library(SSP_EXISTS ssp)
@@ -380,48 +385,48 @@ if (NOT MSVC)
         if (SSP_EXISTS STREQUAL "SSP_EXISTS-NOTFOUND" )
             message("Linking against SSP")
             message("SSP_EXISTS = ${SSP_EXISTS}")
-            target_compile_options(AWebWoWViewerCpp PUBLIC -fstack-protector)
-            target_link_libraries(AWebWoWViewerCpp ssp)
+            target_compile_options(WoWFrontendLib PUBLIC -fstack-protector)
+            target_link_libraries(WoWFrontendLib ssp)
         endif()
 	endif()
 endif(NOT MSVC)
 
-target_link_libraries(AWebWoWViewerCpp WoWViewerLib)
+target_link_libraries(WoWFrontendLib WoWViewerLib)
 
-target_link_libraries(AWebWoWViewerCpp Threads::Threads)
+target_link_libraries(WoWFrontendLib Threads::Threads)
 if (NOT CMAKE_NDK_BUILD MATCHES 1)
-	target_link_libraries(AWebWoWViewerCpp glfw)
+	target_link_libraries(WoWFrontendLib glfw)
 else()
-	target_link_libraries(AWebWoWViewerCpp EGL)
-	target_link_libraries(AWebWoWViewerCpp GLESv2)
-	target_link_libraries(AWebWoWViewerCpp android)
-	target_link_libraries(AWebWoWViewerCpp log)
+	target_link_libraries(WoWFrontendLib EGL)
+	target_link_libraries(WoWFrontendLib GLESv2)
+	target_link_libraries(WoWFrontendLib android)
+	target_link_libraries(WoWFrontendLib log)
 endif()
 
-#target_link_libraries(AWebWoWViewerCpp storm)
-target_link_libraries(AWebWoWViewerCpp casc_static)
-target_link_libraries(AWebWoWViewerCpp DBImporterLib)
-target_link_libraries(AWebWoWViewerCpp cpr::cpr)
+#target_link_libraries(WoWFrontendLib storm)
+target_link_libraries(WoWFrontendLib casc_static)
+target_link_libraries(WoWFrontendLib DBImporterLib)
+target_link_libraries(WoWFrontendLib cpr::cpr)
 
-target_link_libraries(AWebWoWViewerCpp ${glew_lib})
+target_link_libraries(WoWFrontendLib ${glew_lib})
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-	include_directories(AWebWoWViewerCpp "./wowViewerLib/src/opengl")
-	target_link_libraries(AWebWoWViewerCpp opengl32)
-	target_link_libraries(AWebWoWViewerCpp -lm)
-	target_link_libraries(AWebWoWViewerCpp -lwininet)
+	include_directories(WoWFrontendLib "./wowViewerLib/src/opengl")
+	target_link_libraries(WoWFrontendLib opengl32)
+	target_link_libraries(WoWFrontendLib -lm)
+	target_link_libraries(WoWFrontendLib -lwininet)
 elseif(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 	FIND_LIBRARY(OpenGL_LIBRARY OpenGL)
 	MARK_AS_ADVANCED(OpenGL_LIBRARY)
 
-	target_link_libraries(AWebWoWViewerCpp ${OpenGL_LIBRARY})
+	target_link_libraries(WoWFrontendLib ${OpenGL_LIBRARY})
 else()
-	target_link_libraries(AWebWoWViewerCpp GL)
+	target_link_libraries(WoWFrontendLib GL)
 endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
-#target_link_options(AWebWoWViewerCpp PUBLIC "SHELL: -llibg")
+#target_link_options(WoWFrontendLib PUBLIC "SHELL: -llibg")
 
-install(TARGETS AWebWoWViewerCpp
+install(TARGETS WoWFrontendLib
 		EXPORT ${PROJECT_NAME}Targets
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
@@ -441,12 +446,21 @@ if( MINGW )
 endif( MINGW )
 include( InstallRequiredSystemLibraries )
 
-
 # Actually install it when make install is called.
 # Note, this works with CPack
 if( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
 	install( PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT System )
 endif( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
+
+add_subdirectory(test)
+target_link_libraries(wow_viewer_tests_run WoWFrontendLib)
+target_include_directories(wow_viewer_tests_run
+    PRIVATE
+    "$<TARGET_PROPERTY:WoWFrontendLib,INTERFACE_INCLUDE_DIRECTORIES>"
+)
+
+
+
 
 include(CPack)
 

@@ -41,7 +41,7 @@ public:
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
 
-        auto wmoObject = wmoFactory.createObject(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(m_wmoModel);
 
@@ -61,7 +61,7 @@ public:
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
 
-        auto wmoObject = wmoFactory.createObject(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 

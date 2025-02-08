@@ -27,7 +27,8 @@ typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)>
 
 class AdtObject;
 enum class AdtObjectId : uintptr_t;
-extern EntityFactory<50, AdtObjectId, AdtObject> adtObjectFactory;
+typedef EntityFactory<50, AdtObjectId, AdtObject> ADTObjectEntityFactory;
+extern std::shared_ptr<ADTObjectEntityFactory> adtObjectFactory;
 class AdtObject : public ObjectWithId<AdtObjectId> {
 public:
     AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, bool useWeightedBlend, HWdtFile wdtfile);

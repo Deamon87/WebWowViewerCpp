@@ -198,7 +198,7 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
 
     std::vector<SMOFog_Data> wmoFogData = {};
     if (mapRenderPlan->m_currentWMO != emptyWMO) {
-        auto l_currentWmoObject = wmoFactory.getObjectById<0>(mapRenderPlan->m_currentWMO);
+        auto l_currentWmoObject = wmoFactory->getObjectById<0>(mapRenderPlan->m_currentWMO);
         if (l_currentWmoObject != nullptr) {
             l_currentWmoObject->checkFog(frustumData.cameraPos, wmoFogData);
         }
@@ -754,7 +754,7 @@ void DayNightLightHolder::SkyBoxCollector::addSkyBox(StateForConditions &stateFo
 
     //3. Otherwise create
     if (skyBoxModel == nullptr) {
-        skyBoxModel = m2Factory.createObject(m_api, true);
+        skyBoxModel = m2Factory->createObject(m_api, true);
         skyBoxModel->setLoadParams(0, {}, {});
 
         skyBoxModel->setModelFileId(skyBoxInfo.skyBoxFdid);

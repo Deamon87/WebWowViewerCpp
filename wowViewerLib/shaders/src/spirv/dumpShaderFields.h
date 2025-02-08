@@ -11,8 +11,9 @@
 #include <iostream>
 #include <sstream>
 #include "fileHelpers.h"
-#include "webGLSLCompiler.h"
 #include "../../../src/include/string_utils.h"
+#include "webGLSLCompiler.h"
+
 
 constexpr const int MAX_SHADER_DESC_SETS = 8;
 
@@ -363,7 +364,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
 
                 dumpMembers(glsl, fieldVectorDef, uboType.member_types[j],
 //                            "_" + std::to_string(resource.id) + "_" + memberName, offset, memberSize);
-                glsl.to_name(resource.id) + "_" + memberName, offset, memberSize);
+                glsl.get_name(resource.id) + "_" + memberName, offset, memberSize);
             }
         }
         for (auto &data: metaInfo.uboBindingAmountsPerSet ) {
@@ -408,7 +409,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
 
                 dumpMembers(glsl, fieldVectorDef, ssboType.member_types[j],
 //                            "_" + std::to_string(resource.id) + "_" + memberName, offset, memberSize);
-                            glsl.to_name(resource.id) + "_" + memberName, offset, memberSize);
+                            glsl.get_name(resource.id) + "_" + memberName, offset, memberSize);
             }
         }
 

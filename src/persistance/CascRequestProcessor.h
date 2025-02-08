@@ -6,15 +6,14 @@
 #define WEBWOWVIEWERCPP_CASCREQUESTPROCESSOR_H
 
 #include "RequestProcessor.h"
+#include "../database/buildInfoParser/buildDefinition.h"
 #include <iostream>
-
-#include "fileBrowser/buildDefinition.h"
 
 const std::string CASC_KEYS_FILE = "KnownCascKeys.txt";
 
 class CascRequestProcessor : public RequestProcessor {
 public:
-    CascRequestProcessor(std::string &path, BuildDefinition &buildDef);
+    CascRequestProcessor(const std::string &path, const BuildDefinition &buildDef);
     ~CascRequestProcessor() override;
 
     void updateKeys();

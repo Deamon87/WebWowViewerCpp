@@ -61,7 +61,7 @@ namespace EntityMemoryPool {
 
 
 template<uint16_t MemoryBlockSize, typename ObjIdType, typename MainClass, typename... Types>
-class EntityFactory {
+class EntityFactory : public std::enable_shared_from_this<EntityFactory<MemoryBlockSize, ObjIdType, MainClass, Types...>> {
     static_assert(sizeof(ObjIdType) == sizeof(uintptr_t));
 
 
@@ -139,7 +139,7 @@ public:
             entity->setId((ObjIdType)offsetData.offset);
         }
 
-        auto l_this = this;
+        auto l_this = this->shared_from_this();
         return std::shared_ptr<MainClass>(entity, [offsetData, l_this](MainClass *ls) -> void {
             addEntityDeallocationRecord([offsetData, l_this]() {
                 l_this->deallocate(offsetData);

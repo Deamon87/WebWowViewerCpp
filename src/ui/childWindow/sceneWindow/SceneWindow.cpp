@@ -93,8 +93,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
         auto height = renderTargetParams[0].dimensions.maxs[1];
         float canvasAspect = (float) width / (float) height;
 
-        result->matricesForCulling = camera->getCameraMatrices(fovR, canvasAspect, nearPlane,
-                                                                            farPlaneCulling);
+        result->matricesForCulling = camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
     }
 
     bool isInfZSupported = camera->isCompatibleWithInfiniteZ();
@@ -439,7 +438,7 @@ SceneWindow::makeScreenshot(float fov,
 
 void SceneWindow::createMaterials() {
     materials = {};
-    if (m_renderView) {
+    if (m_renderView && m_uiRenderer) {
         m_renderView->iterateOverOutputTextures(
             [&](const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures,
                 const std::string &name, ITextureFormat textureFormat) {

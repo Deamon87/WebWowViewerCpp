@@ -135,7 +135,7 @@ static const ShaderConfig waterBindlessShaderConfig = {
         }}
     }};
 
-EntityFactory<10000, GMeshId, GMeshVLK> bindlessMeshFactoryVlk;
+auto bindlessMeshFactoryVlk = std::make_shared<EntityFactory<10000, GMeshId, GMeshVLK>>();
 
 MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
@@ -1193,7 +1193,7 @@ private:
 
     static void fillMapWithMesh(MeshMap &meshMap, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
-        const auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
+        const auto meshVlk = bindlessMeshFactoryVlk->getObjectById<0>(meshId);
 //        const auto &meshVlk = (GMeshVLK*) mesh.get();
         auto const &pipeline = meshVlk->material()->getPipeline();
 
@@ -1207,14 +1207,14 @@ private:
 
     inline void addDrawCommand(framebased::vector<DrawCommand> &drawVec, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
-        auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
+        auto meshVlk = bindlessMeshFactoryVlk->getObjectById<0>(meshId);
 
         auto &drawCommand = drawVec.emplace_back();
         fillDrawCommand(drawCommand, meshVlk);
     }
     inline void addDrawCommand(tbb::concurrent_vector<DrawCommand> &drawVec, const HGMesh &mesh) {
         auto meshId = mesh->getObjectId();
-        auto meshVlk = bindlessMeshFactoryVlk.getObjectById<0>(meshId);
+        auto meshVlk = bindlessMeshFactoryVlk->getObjectById<0>(meshId);
 
         DrawCommand drawCommand;
         fillDrawCommand(drawCommand, meshVlk);
@@ -1238,7 +1238,7 @@ public:
         commonMeshes.push_back(mesh);
     };
 
-    virtual COpaqueMeshCollector * clone() {
+    virtual COpaqueMeshCollector * clone() override {
         return new COpaqueMeshCollectorBindlessVLK(m_renderer);
     }
 
@@ -1588,11 +1588,11 @@ std::shared_ptr<MapRenderPlan> MapSceneRenderBindlessVLK::getLastCreatedPlan() {
 }
 
 HGMesh MapSceneRenderBindlessVLK::createMesh(gMeshTemplate &meshTemplate, const HMaterial &material) {
-    return bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
+    return bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0,0);
 }
 
 HGSortableMesh MapSceneRenderBindlessVLK::createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) {
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
 
@@ -1601,7 +1601,7 @@ HGSortableMesh MapSceneRenderBindlessVLK::createWaterMesh(gMeshTemplate &meshTem
     meshTemplate.bindings = m_emptyWaterVAO;
 
     auto _material = std::dynamic_pointer_cast<IWaterMaterialBindless>(material);
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
 
     mesh->instanceIndex = _material->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
@@ -1617,7 +1617,7 @@ MapSceneRenderBindlessVLK::createAdtMesh(gMeshTemplate &meshTemplate, const std:
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyADTVAO;
 
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
     mesh->instanceIndex = std::dynamic_pointer_cast<IADTMaterialVis>(material)->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
@@ -1630,7 +1630,7 @@ MapSceneRenderBindlessVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::
     ZoneScoped;
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyM2VAO;
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialVis>(material)->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
@@ -1645,7 +1645,7 @@ MapSceneRenderBindlessVLK::createM2ParticleMesh(gMeshTemplate &meshTemplate, con
 //    mesh->instanceIndex = 1;
 //    mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
 
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
 
@@ -1669,7 +1669,7 @@ HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTempl
         c_perMeshData->save();
     }
 
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(newMat), 0, 0);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(newMat), 0, 0);
     mesh->instanceIndex = c_perMeshData->getIndex();
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
@@ -1678,7 +1678,7 @@ HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTempl
 HGM2Mesh MapSceneRenderBindlessVLK::createM2WaterfallMesh(gMeshTemplate &meshTemplate,
                                                           const std::shared_ptr<IM2WaterFallMaterial> &material,
                                                           int layer, int priorityPlane) {
-    auto mesh = bindlessMeshFactoryVlk.createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
     mesh->instanceIndex = std::dynamic_pointer_cast<IM2WaterFallMaterialBindless>(material)->instanceIndex;
     return mesh;
 }

@@ -16,7 +16,7 @@
 #endif
 
 #include "../../../../wowViewerLib/src/include/string_utils.h"
-#include "buildDefinition.h"
+#include "../../../database/buildInfoParser/buildDefinition.h"
 #include "../../../database/buildInfoParser/buildInfoParser.h"
 #include "../../../database/product_db_parser/productDbParser.h"
 

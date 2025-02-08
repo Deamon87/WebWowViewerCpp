@@ -43,11 +43,11 @@ static DWORD GetLocaleValue_Copy(const std::string &szTag)
     return 0;
 }
 
-CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &buildDef) {
+CascRequestProcessor::CascRequestProcessor(const std::string &path, const BuildDefinition &buildDef) {
 
     m_cascDir = path;
     if (!buildDef.productName.empty()) {
-        path = path + "*"+buildDef.productName+"**"+buildDef.region;
+        m_cascDir = path + "*"+buildDef.productName+"**"+buildDef.region;
     }
 
     uint32_t localMask = 0xFFFFFFFF;
@@ -59,12 +59,12 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
 
     bool openResult = false;
     bool openOnlineResult = false;
-    openResult = CascOpenStorage(path.c_str(), localMask, &this->m_storage);
+    openResult = CascOpenStorage(m_cascDir.c_str(), localMask, &this->m_storage);
     if (openResult) {
-        std::cout << "Opened local Casc Storage at "<< path << std::endl;
+        std::cout << "Opened local Casc Storage at "<< m_cascDir << std::endl;
         updateKeys();
     } else {
-        std::cout << "Could not open local Casc Storage at "<< path << std::endl;
+        std::cout << "Could not open local Casc Storage at "<< m_cascDir << std::endl;
     }
 
     //Disable online feature for now

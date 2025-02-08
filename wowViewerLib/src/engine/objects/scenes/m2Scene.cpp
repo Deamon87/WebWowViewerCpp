@@ -104,7 +104,7 @@ M2Scene::M2Scene(const HApiContainer &api, const std::string &m2Model) {
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
 
-    auto  m2Object = m2Factory.createObject(m_api);
+    auto  m2Object = m2Factory->createObject(m_api);
     std::vector<HBlpTexture> replaceTextures = {};
     std::vector<uint8_t> meshIds = {};
     m2Object->setLoadParams(0, meshIds, replaceTextures);
@@ -123,7 +123,7 @@ M2Scene::M2Scene(const HApiContainer &api, int fileDataId)  {
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
 
-    auto m2Object = m2Factory.createObject(m_api);
+    auto m2Object = m2Factory->createObject(m_api);
     std::vector<HBlpTexture> replaceTextures = {};
     std::vector<uint8_t> meshIds = {};
     m2Object->setLoadParams(0, meshIds, replaceTextures);

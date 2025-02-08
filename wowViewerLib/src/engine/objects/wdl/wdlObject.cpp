@@ -73,7 +73,7 @@ void WdlObject::loadM2s() {
                     }
                 }
 
-                auto m2Object = m2Factory.createObject(m_api, false, false);
+                auto m2Object = m2Factory->createObject(m_api, false, false);
                 m2Object->setLoadParams(0, {}, {});
                 m2Object->setModelFileId(msso_rec.fileDataID);
 

@@ -9,8 +9,6 @@
 #include <unordered_map>
 #include <mutex>
 
-
-
 class GVertexBufferBindingsVLK;
 class GBlpTextureVLK;
 class GTextureVLK;
@@ -275,7 +273,7 @@ protected:
     QueueFamilyIndices indices;
     VkInstance vkInstance;
     VkSurfaceKHR vkSurface;
-    bool enableValidationLayers = true ;
+
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
 
@@ -411,7 +409,7 @@ protected:
     void getNextSwapImageIndex(uint32_t &imageIndex);
 };
 
-
+extern bool vulkanEnableValidationLayers;
 
 
 #endif //AWEBWOWVIEWERCPP_GDEVICEVULKAN_H

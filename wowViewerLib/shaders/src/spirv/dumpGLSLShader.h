@@ -16,7 +16,7 @@ void dumpGLSLText(std::vector<std::string> &shaderFilePaths, int glslVersion, bo
 
     if (glslVersion < 300) {
         options.force_flattened_io_blocks = true;
-        options.webgl10 = true;
+//        options.webgl10 = true;
 //                glsl.flatten_buffer_block(resource.id);
     }
 

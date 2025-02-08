@@ -71,6 +71,7 @@ void GShaderPermutationVLK::createSetDescriptorLayouts() {
             if (setLayout.imageBindings.length == 0 && setLayout.uboBindings.length == 0) continue;
 
             descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i,
+                                                                             m_shaderNameVert + " " + m_shaderNameFrag,
                                                                              m_shaderConf.typeOverrides);
         }
     }

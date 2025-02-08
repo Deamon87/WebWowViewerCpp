@@ -87,7 +87,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         fileIdMode = true;
     }
 
-    auto m2Object = m2Factory.createObject(m_api);
+    auto m2Object = m2Factory->createObject(m_api);
 
     m2Object->setLoadParams(0, {},{});
     if (fileIdMode) {
@@ -102,6 +102,12 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
 
         auto &light = this->mainGeom->lights[doodadDef->color.a];
         m2Object->setDiffuseColor(light.color, light.intensity);
+
+        auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
+        auto sunDirVec = m2Object->getWorldPosition() - MOLTWorldPos.xyz();
+        if (sunDirVec.LengthSquared() > 0) {
+            m2Object->setSunDirOverride(sunDirVec.Normalized());
+        }
 
 
 //        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
@@ -306,7 +312,7 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
             m_modelWideChunk = sceneRenderer->createWMOWideChunk();
 
             if ((mainGeom->skyBoxM2FileName != nullptr && mainGeom->skyBoxM2FileNameLen > 0) || mainGeom->skyboxM2FileId != 0) {
-                skyBox = m2Factory.createObject(m_api, true);
+                skyBox = m2Factory->createObject(m_api, true);
                 skyBox->setLoadParams(0, {},{});
 
                 if ( mainGeom->skyboxM2FileId != 0) {
@@ -1400,4 +1406,4 @@ std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
     return m_newLights[index];
 }
 
-EntityFactory<2000, WMOObjId, WmoObject> wmoFactory;
+std::shared_ptr<WMOEntityFactory> wmoFactory = std::make_shared<WMOEntityFactory>();

@@ -25,7 +25,6 @@ void ParticleEmitter__InternalUpdate(
         gpuState.numberOf10msStepUpdates = numberOfStepUpdates;
     }
 
-
     //Step_Update calls are divided into separate shader calls
 }
 __generic<T : __BuiltinFloatingPointType, let N:int>
@@ -143,6 +142,7 @@ struct M2InstanceRecordBindless {
     ivec4 placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd;
     ivec4 textureMatricesInd_modelFragmentDatasInd;
 };
+
 [[vk::binding(7,1)]]
 StructuredBuffer<M2InstanceRecordBindless, Std430DataLayout> instances;
 
@@ -158,9 +158,9 @@ mat4 BuildTranslation(vec3 delta)
 
 
 const static mat4 particleCoordinatesFix = mat4(
-    0,1,0,0,
+     0,1,0,0,
     -1,0,0,0,
-    0,0,1,0,
+     0,0,1,0,
     0,0,0,1
 );
 
@@ -171,7 +171,6 @@ void main(void)
     //ParticleEmitter index
     uint peIdx = gl_GlobalInvocationID.x;
 
- 
     //TODO: create a transform matrix from m2 data, that's already present on GPU 
 
     uint instanceIndex = particleCpuStates[peIdx].instanceIndex;

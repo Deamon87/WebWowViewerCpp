@@ -188,7 +188,7 @@ void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
             for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
                 SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
 
-                auto l_liquidInstance = liquidInstanceFactory.createObject(
+                auto l_liquidInstance = liquidInstanceFactory->createObject(
                     m_api, sceneRenderer, liquidInstance,
                     m_waterPlacementChunk, liquidBasePos, m_adtFile->mH2OBlob,
                     waterTileAabb[i]
@@ -1369,4 +1369,4 @@ void AdtObject::createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer) 
     m_holesIgnored = m_api->getConfig()->ignoreADTHoles;
 }
 
-EntityFactory<50, AdtObjectId, AdtObject> adtObjectFactory;
+std::shared_ptr<ADTObjectEntityFactory> adtObjectFactory = std::make_shared<ADTObjectEntityFactory>();;

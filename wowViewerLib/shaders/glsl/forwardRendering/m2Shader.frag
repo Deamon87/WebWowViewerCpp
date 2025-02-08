@@ -63,6 +63,7 @@ void main() {
     vec3 meshResColor = vMeshColorAlpha.rgb;
 
     vec3 accumLight = vec3(0.0);
+#if 0 //the lights are no longer supported in this way
     if ((vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y == 1)) {
         vec3 vPos3 = vPosition_EdgeFade.xyz;
         vec3 vNormal3 = normalize(l_Normal.xyz);
@@ -91,6 +92,7 @@ void main() {
         accumLight = mix(lightColor.rgb, meshResColor.rgb, lightCountAndBcHack.y);
         //finalColor.rgb =  finalColor.rgb * lightColor;
     }
+#endif
 
 //----------------------
 // Calc Diffuse and Specular

@@ -162,7 +162,7 @@ public:
 
         m_lockedMap = true;
         std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-        auto adtObject = adtObjectFactory.createObject(m_api, adtFileTemplate, mapName, i, j, false, m_wdtfile);
+        auto adtObject = adtObjectFactory->createObject(m_api, adtFileTemplate, mapName, i, j, false, m_wdtfile);
 
         adtObject->setMapApi(this);
         this->mapTiles[i][j] = adtObject;

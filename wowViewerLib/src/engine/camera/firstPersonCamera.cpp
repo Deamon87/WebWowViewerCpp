@@ -86,10 +86,10 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     delta_y = 0;
 
 
-    if (av < -89.99999f) {
-        av = -89.99999f;
-    } else if (av > 89.99999f) {
-        av = 89.99999f;
+    if (av < -89) {
+        av = -89;
+    } else if (av > 89) {
+        av = 89;
     }
 
 

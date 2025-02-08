@@ -31,12 +31,13 @@ if(NOT ANDROID)
     #GLSL Compiler
     add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross EXCLUDE_FROM_ALL)
     set(BUILD_EXTERNAL OFF)
+    set(ENABLE_OPT OFF)
     add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang EXCLUDE_FROM_ALL)
     if(EMSCRIPTEN)
-        target_link_options(glslangValidator PUBLIC -s NODERAWFS=1)
+        target_link_options(glslang-standalone PUBLIC -s NODERAWFS=1)
     endif()
     set(BUILD_EXTERNAL OFF)
-    set_target_properties(glslangValidator PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
+    set_target_properties(glslang-standalone PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     #SPIRV_Reflections
     set(SPIRV_REF_SOURCES
@@ -54,10 +55,10 @@ if(NOT ANDROID)
     endif()
     set_target_properties(spirv_reflection PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
-#    set(PATH_TO_NATIVE_GLSL_VALIDATOR "${CMAKE_BINARY_DIR}/glslangValidator${CMAKE_EXECUTABLE_SUFFIX}")
+#    set(PATH_TO_NATIVE_GLSL_VALIDATOR "${CMAKE_BINARY_DIR}/glslang{CMAKE_EXECUTABLE_SUFFIX}")
 #    set(PATH_TO_NATIVE_SPIRV_REFLECTION "${CMAKE_BINARY_DIR}/spirv_reflection${CMAKE_EXECUTABLE_SUFFIX}")
     if (NOT PATH_TO_NATIVE_GLSL_VALIDATOR)
-        set(PATH_TO_NATIVE_GLSL_VALIDATOR $<TARGET_FILE:glslangValidator>)
+        set(PATH_TO_NATIVE_GLSL_VALIDATOR $<TARGET_FILE:glslang-standalone>)
     else()
         MESSAGE(WARNING "PATH_TO_NATIVE_GLSL_VALIDATOR = ${PATH_TO_NATIVE_GLSL_VALIDATOR}")
     endif()
@@ -75,7 +76,7 @@ else()
         return()
     endif()
 
-    add_custom_target(glslangValidator)
+    add_custom_target(glslang-standalone)
     add_custom_target(spirv_reflection)
 endif()
 
@@ -84,9 +85,6 @@ endif()
 macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputType destDir)
     message(STATUS "Configuring directory ${destDir}")
     set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spriv_raw)
-
-
-
 
     file(MAKE_DIRECTORY ${spirvNonOptDir})
 
@@ -150,7 +148,7 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
                             OUTPUT ${SPIRV_NonOpt}
                             COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
                             COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${SHADER_DEBUG_FLAG} ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                            DEPENDS ${srcTemplatePath} glslangValidator ${commonFiles})
+                            DEPENDS ${srcTemplatePath} glslang-standalone ${commonFiles})
                 elseif (${inputType} STREQUAL "slang")
 #                    message("slang SPIRV_NonOpt = ${SPIRV_NonOpt}")
                     add_custom_command(
@@ -164,7 +162,7 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
                 if(SPIRV_OPT_APP)
                     add_custom_command(
                             OUTPUT ${SPIRVOpt}
-                            COMMAND ${SPIRV_OPT_APP} -O -Os --strip-nonsemantic -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                            COMMAND ${SPIRV_OPT_APP} -O -Os -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
@@ -199,12 +197,12 @@ else()
     SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
 endif()
 
-#message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}")
+message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}")
 
 add_custom_command(
         OUTPUT ${SPIRV_META_FILE}
         COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
-        DEPENDS ${SPIRV_BINARY_FILES} spirv_reflection glslangValidator ShadersVulkanNonOpt
+        DEPENDS ${SPIRV_BINARY_FILES_NON_OPT} spirv_reflection glslang-standalone ShadersVulkanNonOpt
 )
 
 add_custom_target(SPIRV_EXTRACT_META DEPENDS ${SPIRV_META_FILE})

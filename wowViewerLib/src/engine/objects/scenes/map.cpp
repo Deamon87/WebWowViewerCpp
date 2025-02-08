@@ -389,7 +389,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
         for (auto &wmoId: potentialWmo.getCandidates()) {
             WmoGroupResult groupResult;
-            auto checkingWmoObj = wmoFactory.getObjectById<0>(wmoId);
+            auto checkingWmoObj = wmoFactory->getObjectById<0>(wmoId);
             if (checkingWmoObj == nullptr) continue;
 
             bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
@@ -417,7 +417,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     AreaRecord wmoAreaRecord;
     bool wmoAreaFound = false;
     if (mapRenderPlan->m_currentWMO != emptyWMO) {
-        auto l_currentWmoObject = wmoFactory.getObjectById<0>(mapRenderPlan->m_currentWMO);
+        auto l_currentWmoObject = wmoFactory->getObjectById<0>(mapRenderPlan->m_currentWMO);
         if (l_currentWmoObject != nullptr) {
             auto nameId = l_currentWmoObject->getNameSet();
             auto wmoId = l_currentWmoObject->getWmoId();
@@ -459,7 +459,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     ///-----------------------------------
 
 
-    auto lcurrentWMO = wmoFactory.getObjectById<0>(mapRenderPlan->m_currentWMO);
+    auto lcurrentWMO = wmoFactory->getObjectById<0>(mapRenderPlan->m_currentWMO);
     auto currentWmoGroup = mapRenderPlan->m_currentWmoGroup;
 
     if ((lcurrentWMO != nullptr) && (!mapRenderPlan->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
@@ -620,7 +620,7 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
             }
         } else {
             if (wmoMap == nullptr) {
-                wmoMap = wmoFactory.createObject(m_api);
+                wmoMap = wmoFactory->createObject(m_api);
                 wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
                 wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
             }
@@ -687,7 +687,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     //Frustum cull
     for (auto &wmoId : mapRenderPlan->wmoArray.getCandidates()) {
-        auto wmoCandidate = wmoFactory.getObjectById<0>(wmoId);
+        auto wmoCandidate = wmoFactory->getObjectById<0>(wmoId);
         if (wmoCandidate!= nullptr && !wmoCandidate->isLoaded()) continue;
 
         if (wmoCandidate->startTraversingWMOGroup(
@@ -739,7 +739,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
         for (int i = 0; i < candidates.size(); i++) {
             if (!results[i]) {
-//                auto m2ObjectCandidate = m2Factory.getObjectById<0>(candidates[i]);
+//                auto m2ObjectCandidate = m2Factory->getObjectById<0>(candidates[i]);
                 exteriorView->m2List.addToDraw(candidates[i]);
             }
         }
@@ -802,7 +802,7 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
                 checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], frustumData, cameraPos, mapRenderPlan, m2ObjectsCandidates, wmoCandidates);
             }
 
-        } else {
+        } else if (wmoMap) {
             wmoCandidates.addCand(wmoMap);
         }
     }
@@ -871,7 +871,7 @@ void Map::checkADTCulling(int i, int j,
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
             auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
             if (mapFileIds.rootADT > 0) {
-                adtObject = adtObjectFactory.createObject(m_api, i, j,
+                adtObject = adtObjectFactory->createObject(m_api, i, j,
                                                         m_wdtfile->mapFileDataIDs[j * 64 + i],
                                                         useWeightedBlend,
                                                         m_wdtfile);
@@ -882,7 +882,7 @@ void Map::checkADTCulling(int i, int j,
             std::string adtFileTemplate =
                 "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
                 std::to_string(j);
-            adtObject = adtObjectFactory.createObject(m_api, adtFileTemplate, mapName, i, j,
+            adtObject = adtObjectFactory->createObject(m_api, adtFileTemplate, mapName, i, j,
                                                       useWeightedBlend,
                                                       m_wdtfile);
         }
@@ -937,7 +937,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         ZoneScopedN("Load m2 main");
         if (m_api->getConfig()->renderM2) {
             for (auto &m2ObjectId: renderPlan->m2Array.getToLoadMain()) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadMainFile();
             }
@@ -947,7 +947,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         ZoneScopedN("Load m2 geom");
         if (m_api->getConfig()->renderM2) {
             for (auto &m2ObjectId: renderPlan->m2Array.getToLoadGeom()) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadGeom(sceneRenderer);
                 m2ProcessedThisFrame++;
@@ -959,12 +959,12 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     if (m_api->getConfig()->renderSkyDom) {
         if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId: skyboxView->m2List.getToLoadMain()) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadMainFile();
             }
             for (auto &m2ObjectId: skyboxView->m2List.getToLoadGeom()) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadGeom(sceneRenderer);
             }
@@ -976,7 +976,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         ZoneScopedN("Load wmoObject");
         if (m_api->getConfig()->renderWMO) {
             for (auto wmoId: renderPlan->wmoArray.getToLoad()) {
-                auto wmoObject = wmoFactory.getObjectById<0>(wmoId);
+                auto wmoObject = wmoFactory->getObjectById<0>(wmoId);
                 if (wmoObject != nullptr) {
                     wmoObject->doPostLoad(sceneRenderer);
                 }
@@ -1057,7 +1057,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
                         std::vector<LocalLight> localLights;
 
                         for (size_t i = r.begin(); i != r.end(); ++i) {
-                            auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
+                            auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
                             if (m2Object == nullptr) continue;
                             m2Object->update(deltaTime, cameraVec3, lookAtMat);\
 
@@ -1075,7 +1075,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId : skyBoxView->m2List.getDrawn()) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
             }
@@ -1086,7 +1086,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         ZoneScopedN("wmoUpdate");
 
         for (const auto &wmoId: renderPlan->wmoArray.getToDrawn()) {
-            auto wmoObject = wmoFactory.getObjectById<0>(wmoId);
+            auto wmoObject = wmoFactory->getObjectById<0>(wmoId);
             if (wmoObject == nullptr) continue;
             wmoObject->update();
         }
@@ -1121,7 +1121,7 @@ void Map::update(const HMapRenderPlan &renderPlan) {
             tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
                               [&](tbb::blocked_range<size_t> r) {
                                   for (size_t i = r.begin(); i != r.end(); ++i) {
-                                      auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
+                                      auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
                                       if (m2Object == nullptr) continue;
                                       m2Object->calcDistance(cameraVec3);
                                   }
@@ -1201,7 +1201,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
             ZoneScopedN("fitParticleAndRibbonBuffersToSize");
             auto &drawnM2s = renderPlan->m2Array.getDrawn();
             for (auto &m2ObjectId: drawnM2s) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object != nullptr) {
                     m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
                 }
@@ -1218,7 +1218,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
                         [&](tbb::blocked_range<size_t> r) {
                             l_device->setCurrentProcessingFrameNumber(processingFrame);
                             for (size_t i = r.begin(); i != r.end(); ++i) {
-                                auto m2Object = m2Factory.getObjectById<0>(m2ToDraw[i]);
+                                auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
                                 if (m2Object != nullptr) {
                                     callback(m2Object);
                                 }
@@ -1250,7 +1250,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
 
 
 //        for (auto &m2ObjectId: renderPlan->m2Array.getDrawn()) {
-//            auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+//            auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
 //            if (m2Object != nullptr) {
 //                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
 //                                                 renderPlan->frameDependentData);
@@ -1261,7 +1261,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         ZoneScopedN("m2SkyboxBuffersUpdate");
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
-                auto m2Object = m2Factory.getObjectById<0>(m2ObjectId);
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
                                                  renderPlan->frameDependentData);
             }
@@ -1293,7 +1293,7 @@ std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &do
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto m2Object = m2Factory.createObject(m_api);
+        auto m2Object = m2Factory->createObject(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
@@ -1311,7 +1311,7 @@ std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDe
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto m2Object = m2Factory.createObject(m_api);
+        auto m2Object = m2Factory->createObject(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);
         m2Object->createPlacementMatrix(doodadDef);
@@ -1327,7 +1327,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = wmoFactory.createObject(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
 
@@ -1342,7 +1342,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObj
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = wmoFactory.createObject(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 
@@ -1357,7 +1357,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefOb
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = wmoFactory.createObject(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
 
@@ -1372,7 +1372,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = wmoFactory.createObject(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 

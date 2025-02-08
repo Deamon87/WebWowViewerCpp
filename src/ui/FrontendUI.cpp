@@ -273,7 +273,7 @@ void FrontendUI::showCurrentStatsDialog() {
                         int modelFdid = 0;
                         std::string modelFileName = "";
                         if (mapPlan->m_currentWMO != emptyWMO) {
-                            auto l_currentWmo = wmoFactory.getObjectById<0>(mapPlan->m_currentWMO);
+                            auto l_currentWmo = wmoFactory->getObjectById<0>(mapPlan->m_currentWMO);
 
                             if (l_currentWmo != nullptr) {
                                 modelFdid = l_currentWmo->getModelFileId();

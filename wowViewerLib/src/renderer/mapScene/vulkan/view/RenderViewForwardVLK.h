@@ -25,7 +25,7 @@ public:
     void doPostFinal(CmdBufRecorder &bufCmd);
 
     void iterateOverOutputTextures(std::function<void (const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures, const std::string &name, ITextureFormat textureFormat)> callback) override;
-    void readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata);
+    void readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata) override;
 
     std::shared_ptr<GRenderPassVLK> getRenderPass() {return m_mainRenderPass;}
 private:

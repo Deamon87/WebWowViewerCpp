@@ -38,7 +38,7 @@ struct M2LoadedStatus {
     bool m_hasAABB = false;
 };
 
-extern EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus> m2Factory;
+extern std::shared_ptr<EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus>> m2Factory;
 
 class M2Object : public ObjectWithId<M2ObjId> {
 public:
@@ -107,7 +107,12 @@ private:
     HGSortableMesh boundingBoxMesh = nullptr;
     
     mathfu::vec4 m_ambientColorOverride;
+    mathfu::vec4 m_ambientHorizontColorOverride;
+    mathfu::vec4 m_ambientGroundColorOverride;
     bool m_setAmbientColor = false;
+
+    mathfu::vec3 m_interiorSunDir = mathfu::vec3(0,0,0);
+    bool m_setInteriorSunDir = false;
 
     float m_alpha = 1.0f;
 
@@ -130,7 +135,7 @@ private:
     mathfu::vec4 m_sunAddColor = mathfu::vec4(0, 0, 0, 0);
     mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
     int m_useLocalDiffuseColor = -1;
-    bool hasModf0x2Flag = false;
+
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
     bool particleColorReplacementIsSet = false;
@@ -249,6 +254,9 @@ public:
     void calcWorldPosition(){
         m_worldPosition = (m_placementMatrix * mathfu::vec4(0,0,0,1)).xyz();
     }
+    mathfu::vec3 getWorldPosition(){
+        return m_worldPosition;
+    }
     void calcDistance(mathfu::vec3 cameraPos);
     float getCurrentDistance();
     mathfu::vec3 getLocalPosition() {
@@ -278,7 +286,6 @@ public:
 
         return m_useLocalDiffuseColor == 1;
     };
-    bool getUseLocalLighting() { return m_useLocalDiffuseColor == 1; };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const MathHelper::FrustumCullingData &frustumData);
 
@@ -313,6 +320,10 @@ public:
             m_ambientColorOverride = ambientColor;
             m_modelWideDataChanged = true;
         }
+    }
+    void setSunDirOverride(const mathfu::vec3 &sunDir) {
+        m_interiorSunDir = sunDir;
+        m_setInteriorSunDir = true;
     }
 
     void drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes,  int renderOrder);
@@ -355,7 +366,7 @@ static const CAaBox nonexitsting = CAaBox(
 
 template<>
 inline const CAaBox &retrieveAABB<>(const M2ObjId &objectId) {
-    auto * ptr = m2Factory.getObjectById<1>(objectId);
+    auto * ptr = m2Factory->getObjectById<1>(objectId);
     return ptr ? *ptr : nonexitsting;
 }
 
@@ -417,7 +428,7 @@ public:
 //        if (m_locked) {
 //            throw "oops";
 //        }
-        auto status = m2Factory.getObjectById<2>(cand);
+        auto status = m2Factory->getObjectById<2>(cand);
         if (status->m_hasAABB) {
             candidates.push_back(cand);
             candCanHaveDuplicates = true;
@@ -449,12 +460,12 @@ public:
             throw "oops";
         }
 
-        auto status = m2Factory.getObjectById<2>(toDrawId);
+        auto status = m2Factory->getObjectById<2>(toDrawId);
         if (status->m_loaded) {
             drawn.push_back(toDrawId);
             drawnCanHaveDuplicates = true;
         } else {
-            auto toDraw = m2Factory.getObjectById<0>(toDrawId);
+            auto toDraw = m2Factory->getObjectById<0>(toDrawId);
             if (!toDraw->isMainDataLoaded()) {
                 toLoadMain.push_back(toDrawId);
                 toLoadMainCanHaveDuplicates = true;

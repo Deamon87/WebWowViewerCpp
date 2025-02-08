@@ -48,7 +48,10 @@ struct SceneWideParams {
 
 struct InteriorLightParam {
     vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorGroundAmbientColor;
+    vec4 uInteriorHorizontAmbientColor;
     vec4 uInteriorDirectColorAndApplyExteriorLight;
+    vec4 uPersonalInteriorSunDirAndApplyPersonalSunDir;
 };
 
 vec3 Slerp(vec3 p0, vec3 p1, float t)
@@ -110,7 +113,12 @@ vec3 calcLight(
             currColor = mix(groundColor, skyColor, (0.5f + vec3(0.5f * nDotL)));
         }
         if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0) {
-            float nDotL = clamp(dot(normalizedN, -(sceneParams.uInteriorSunDir.xyz)), 0.0, 1.0);
+            vec3 interiorSunDir = mix(
+                sceneParams.uInteriorSunDir.xyz,
+                intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.xyz,
+                intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.w);
+
+            float nDotL = clamp(dot(normalizedN, interiorSunDir), 0.0, 1.0);
             vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL;
             vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
 

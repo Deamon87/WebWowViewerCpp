@@ -606,7 +606,7 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
 
     m_localUpVector = (invertPlacementMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
 
-    hasModf0x2Flag = def.flag_0x2;
+
 }
 
 void M2Object::createPlacementMatrix(SMDoodadDef &def) {
@@ -763,8 +763,8 @@ void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::ve
     this->m_skinNum = skinNum;
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
-    this->aabb = m2Factory.getObjectById<1>(this->getObjectId());
-    this->status = m2Factory.getObjectById<2>(this->getObjectId());
+    this->aabb = m2Factory->getObjectById<1>(this->getObjectId());
+    this->status = m2Factory->getObjectById<2>(this->getObjectId());
     *this->status = M2LoadedStatus();
 }
 
@@ -1119,7 +1119,7 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
         m_modelWideDataBuff->m_textureMatrices->save();
     }
 
-    if (m_firstUpdate || m_modelWideDataChanged)
+    if (m_firstUpdate || m_modelWideDataChanged || m_setInteriorSunDir)
     {
         auto &modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
@@ -1135,6 +1135,11 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
             mathfu::vec4_packed(mathfu::vec4(
                 m_localDiffuseColorV.xyz(),
                 m_useLocalDiffuseColor == 1 ? 0.0 : 1
+            ));
+        modelFragmentData.intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir =
+            mathfu::vec4_packed(mathfu::vec4(
+                (viewMat * mathfu::vec4(-m_interiorSunDir, 0.0)).xyz(),
+                m_setInteriorSunDir ? 1.0f : 0.f
             ));
 
         modelFragmentData.interiorExteriorBlend =
@@ -2139,4 +2144,5 @@ int M2Object::getCurrentAnimationIndex() {
     return m_animationManager->getCurrentAnimationIndex();
 }
 
-EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus> m2Factory;
+std::shared_ptr<EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus>> m2Factory =
+    std::make_shared<EntityFactory<10000, M2ObjId, M2Object, CAaBox, M2LoadedStatus>>();

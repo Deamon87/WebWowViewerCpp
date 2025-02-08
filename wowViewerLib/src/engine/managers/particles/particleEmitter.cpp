@@ -610,7 +610,7 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
 void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
-    TracyMessageStr(("prepearBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("prepearBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
 
     auto &particles = GetCurrentPBuffer();
 
@@ -627,8 +627,10 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
-    auto *szVertexBuf = (ParticleBuffStruct *) vboBufferDynamic->getPointer();
+//    auto *szVertexBuf = (ParticleBuffStruct *) vboBufferDynamic->getPointer();
     int szVertexCnt = 0;
+    std::vector<ParticleBuffStruct> tempBuffer = std::vector<ParticleBuffStruct>(particles.size() * 2 * 4);
+
     for (int i = 0; i < particles.size(); i++) {
         CParticle2 &p = particles[i];
         if (p.isDead) continue;
@@ -636,34 +638,40 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
         ParticlePreRenderData particlePreRenderData;
         if (this->CalculateParticlePreRenderData(p, particlePreRenderData) != 0) {
             if (m_data->old.flags & 0x20000) {
-                this->buildVertex1(p, particlePreRenderData, szVertexBuf, szVertexCnt);
+                this->buildVertex1(p, particlePreRenderData, tempBuffer.data(), szVertexCnt);
             }
             if ( m_data->old.flags & 0x40000 ) {
-                this->buildVertex2(p, particlePreRenderData, szVertexBuf, szVertexCnt);
+                this->buildVertex2(p, particlePreRenderData, tempBuffer.data(), szVertexCnt);
             }
         }
     }
+     if (szVertexCnt > tempBuffer.size()) {
+        std::cout << "temp buffer overrun detected" << std::endl;
+    }
 
-    szVertexCnt = szVertexCnt >> 2;
+    vboBufferDynamic->uploadData(tempBuffer.data(), szVertexCnt * sizeof(ParticleBuffStruct));
 
-    if ((szVertexCnt * sizeof(ParticleBuffStructQuad)) > vboBufferDynamic->getSize()){
+
+    //szVertexCnt = szVertexCnt >> 2;
+
+    if ((szVertexCnt * sizeof(ParticleBuffStruct)) > vboBufferDynamic->getSize()){
         std::cout << "buffer overrun detected" << std::endl;
     }
-    if (m_temp_maxFutureSize < (szVertexCnt * sizeof(ParticleBuffStructQuad))) {
+    if (m_temp_maxFutureSize < (szVertexCnt * sizeof(ParticleBuffStruct))) {
         std::cout << "buffer overrun detected 2" << std::endl;
     }
     if (m_temp_maxFutureSize > vboBufferDynamic->getSize()) {
         std::cout << "buffer overrun detected 3" << std::endl;
     }
 
-    frame[frameNum].particlesUploaded = szVertexCnt;
+    frame[frameNum].particlesUploaded = szVertexCnt >> 2;
 
-    TracyMessageStr(
-        (std::string("updateBuffers, CurrentProcessingFrameNumber =") +
-        std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())+
-        std::string(", szVertexCnt = ")+
-        std::to_string(szVertexCnt)
-        ));
+//    TracyMessageStr(
+//        (std::string("updateBuffers, CurrentProcessingFrameNumber =") +
+//        std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())+
+//        std::string(", szVertexCnt = ")+
+//        std::to_string(szVertexCnt)
+//        ));
 
     auto &currentFrame = frame[frameNum];
     currentFrame.active = szVertexCnt > 0;
@@ -671,14 +679,14 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     if (!currentFrame.active)
         return;
 
-    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
+    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStruct));
 
-    currentFrame.m_mesh->setEnd(szVertexCnt * 6);
+    currentFrame.m_mesh->setEnd((szVertexCnt >> 2) * 6);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);
 }
 
 void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
-    TracyMessageStr(("fitBuffersToSize, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("fitBuffersToSize, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
 
     auto &particles = GetCurrentPBuffer();
 
@@ -1132,7 +1140,7 @@ ParticleEmitter::BuildQuadT3(
 void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
-    TracyMessageStr(("collectMeshes, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("collectMeshes, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
 
     const auto frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
     auto &currentFrame = frame[frameNum];
@@ -1140,7 +1148,7 @@ void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, t
     if (!currentFrame.active)
         return;
 
-    TracyMessageStr(("collectMeshes 2, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("collectMeshes 2, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
 
     HGParticleMesh mesh = currentFrame.m_mesh;
 
