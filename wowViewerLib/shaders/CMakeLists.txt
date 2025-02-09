@@ -5,8 +5,9 @@ else()
 endif()
 
 message( Shader SPIRV_OPT_APP = ${SPIRV_OPT_APP})
+message( COMPILE_SHADER_WITH_DEBUG = ${COMPILE_SHADER_WITH_DEBUG})
 
-if (COMPILE_SHADER_WITH_DEBUG)
+if (COMPILE_SHADER_WITH_DEBUG EQUAL 1)
     set(SHADER_DEBUG_FLAG "-g")
     set(APP_RUN_PREFIX "")
     set (SPIRV_OPT_APP "")
@@ -81,10 +82,15 @@ else()
 endif()
 
 
+set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spirv_raw)
+set(spirvOptDir ${CMAKE_BINARY_DIR}/spirv)
+
+if (NOT SPIRV_OPT_APP)
+    set(spirvNonOptDir ${spirvOptDir})
+endif ()
 
 macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputType destDir)
     message(STATUS "Configuring directory ${destDir}")
-    set(spirvNonOptDir ${CMAKE_BINARY_DIR}/spriv_raw)
 
     file(MAKE_DIRECTORY ${spirvNonOptDir})
 
@@ -162,7 +168,7 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
                 if(SPIRV_OPT_APP)
                     add_custom_command(
                             OUTPUT ${SPIRVOpt}
-                            COMMAND ${SPIRV_OPT_APP} -O -Os -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                            COMMAND ${SPIRV_OPT_APP} --preserve-bindings -O -Os -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
@@ -180,32 +186,34 @@ configure_filesVLK(
         "."
         ".vert;.frag"
         "glsl"
-        ${GLSL_TARGET_FOLDER}/spirv)
+        ${spirvOptDir})
 
-configure_filesVLK(
-        "${PROJECT_SOURCE_DIR}/shaders/slang/compute"
-        "${PROJECT_SOURCE_DIR}/shaders/slang/common"
-        "."
-        ".slang"
-        "slang"
-        ${GLSL_TARGET_FOLDER}/spirv)
+#configure_filesVLK(
+#        "${PROJECT_SOURCE_DIR}/shaders/slang/compute"
+#        "${PROJECT_SOURCE_DIR}/shaders/slang/common"
+#        "."
+#        ".slang"
+#        "slang"
+#        ${GLSL_TARGET_FOLDER}/spirv)
 
 #Select the list for spirv files
+
 if (NOT SPIRV_OPT_APP)
     SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_NON_OPT})
 else()
     SET(SPIRV_BINARY_FILES ${SPIRV_BINARY_FILES_OPT})
 endif()
 
-message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}")
+message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv_raw ${SPIRV_BINARY_FILES_NON_OPT} > ${SPIRV_META_FILE}")
 
 add_custom_command(
         OUTPUT ${SPIRV_META_FILE}
-        COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GLSL_TARGET_FOLDER}/spirv ${SPIRV_BINARY_FILES} > ${SPIRV_META_FILE}
+        COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${spirvNonOptDir} ${SPIRV_BINARY_FILES_NON_OPT} > ${SPIRV_META_FILE}
         DEPENDS ${SPIRV_BINARY_FILES_NON_OPT} spirv_reflection glslang-standalone ShadersVulkanNonOpt
 )
 
 add_custom_target(SPIRV_EXTRACT_META DEPENDS ${SPIRV_META_FILE})
+add_custom_target(SPIRV_BUILD_SHADERS DEPENDS ${SPIRV_BINARY_FILES})
 
 
 add_custom_target(
@@ -249,7 +257,7 @@ if (NOT EMSCRIPTEN)
                     DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
             )
         else()
-            install(DIRECTORY ${CMAKE_BINARY_DIR}/spriv_raw/
+            install(DIRECTORY ${CMAKE_BINARY_DIR}/spirv_raw/
                     DESTINATION ${CMAKE_INSTALL_BINDIR}/spirv
             )
         endif()

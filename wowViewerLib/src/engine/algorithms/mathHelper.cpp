@@ -7,6 +7,11 @@
 #include <cmath>
 #include <array>
 
+#ifdef _WIN32
+#define WIN32_MEAN_AND_LEAN
+#define NOMINMAX
+#endif
+
 #if (__AVX__ && __SSE2__)
 #include <emmintrin.h>
 #include <immintrin.h>

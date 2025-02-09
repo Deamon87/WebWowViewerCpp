@@ -781,6 +781,7 @@ if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
+    add_dependencies(WoWViewerLib SPIRV_BUILD_SHADERS)
     message("SPIRV_META_DIR (include) = ${SPIRV_META_DIR}")
     target_include_directories(WoWViewerLib PUBLIC ${SPIRV_META_DIR})
 

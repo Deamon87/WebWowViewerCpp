@@ -242,10 +242,9 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
                                filePath.substr(basePath.size()+1, filePath.size()-basePath.size()) :
                                basename(filePath);
 
-        std::string shaderName = basename(filePath);
-        auto tokens = split(shaderName, '.');
-        shaderName = tokens[0];
-
+        std::string shaderName = fileName;
+        auto tokens = split( basename(filePath), '.');
+        std::string shortShaderName = tokens[0];
 
 
         spirv_cross::WebGLSLCompiler glsl(std::move(spirv_binary));
@@ -302,11 +301,11 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
         }();
 
         if (glsl.get_entry_points_and_stages()[0].execution_model == spv::ExecutionModel::ExecutionModelVertex) {
-            auto it = attributesPerShaderName.find(shaderName);
+            auto it = attributesPerShaderName.find(shortShaderName);
             if (it == attributesPerShaderName.end()) {
-                attributesPerShaderName[shaderName] = {};
+                attributesPerShaderName[shortShaderName] = {};
             }
-            auto &shaderAttributeVector = attributesPerShaderName.at(shaderName);
+            auto &shaderAttributeVector = attributesPerShaderName.at(shortShaderName);
 
 
             auto inputAttributes = glsl.get_shader_resources();
@@ -333,11 +332,12 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
         //Record data for UBO
         for (auto &resource : resources.uniform_buffers) {
             auto uboType = glsl.get_type(resource.type_id);
-
-            auto typeId_size = glsl.get_declared_struct_size(uboType);
+            // glsl.get
 
             unsigned set = glsl.get_decoration(resource.id, spv::DecorationDescriptorSet);
             unsigned binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
+
+            auto typeId_size = glsl.get_declared_struct_size(uboType);
 
             metaInfo.m_uboBindings.push_back({set, binding, typeId_size});
 
