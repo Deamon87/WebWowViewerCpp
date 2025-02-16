@@ -293,7 +293,9 @@ public:
     bool getHasBoundingBox() const {return status->m_hasAABB;}
 
     void doLoadMainFile();
+    bool isFailedToLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
+    bool isFailedToLoadGeomFile();
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void collectLights(std::vector<LocalLight> &pointLights);
     void fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
@@ -419,6 +421,11 @@ public:
             candidates.push_back(cand->getObjectId());
             candCanHaveDuplicates = true;
         } else {
+            if (!cand->isFailedToLoadMainFile() || !cand->isFailedToLoadGeomFile()) {
+                //Do not accept such files. Maybe add those to separate vector?
+                return;
+            }
+
             toLoadMain.push_back(cand->getObjectId());
             toLoadMainCanHaveDuplicates = true;
         }
@@ -433,6 +440,12 @@ public:
             candidates.push_back(cand);
             candCanHaveDuplicates = true;
         } else {
+            auto candObj = m2Factory->getObjectById<0>(cand);
+            if (!candObj || !candObj->isFailedToLoadMainFile() || !candObj->isFailedToLoadGeomFile()) {
+                //Do not accept such files. Maybe add those to separate vector?
+                return;
+            }
+
             toLoadMain.push_back(cand);
             toLoadMainCanHaveDuplicates = true;
         }
@@ -466,6 +479,12 @@ public:
             drawnCanHaveDuplicates = true;
         } else {
             auto toDraw = m2Factory->getObjectById<0>(toDrawId);
+
+            if (!toDraw || !toDraw->isFailedToLoadMainFile() || !toDraw->isFailedToLoadGeomFile()) {
+                //Do not accept such files. Maybe add those to separate vector?
+                return;
+            }
+
             if (!toDraw->isMainDataLoaded()) {
                 toLoadMain.push_back(toDrawId);
                 toLoadMainCanHaveDuplicates = true;
@@ -481,6 +500,11 @@ public:
     void addToDraw(M2Object * toDraw) {
         if (m_locked) {
             throw "oops";
+        }
+
+        if (!toDraw->isFailedToLoadMainFile() || !toDraw->isFailedToLoadGeomFile()) {
+            //Do not accept such files. Maybe add those to separate vector?
+            return;
         }
 
         if (toDraw->getGetIsLoaded()) {

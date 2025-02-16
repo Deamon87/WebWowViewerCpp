@@ -111,6 +111,7 @@ public:
 
     void startLoading();
     bool isLoaded() override { return m_loaded;}
+    bool isFailedToLoadGeom() { return mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSRejected; }
     bool hasPortals();
     int getNameSet() {
         return m_nameSet;
@@ -247,6 +248,9 @@ public:
             wmoCandidates.push_back(toDraw->getObjectId());
             candCanHaveDuplicates = true;
         } else {
+            if (toDraw->isFailedToLoadGeom())
+                return;
+
             wmoToLoad.push_back(toDraw->getObjectId());
             toLoadCanHaveDuplicates = true;
         }

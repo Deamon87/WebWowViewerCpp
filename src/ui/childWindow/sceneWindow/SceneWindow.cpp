@@ -372,7 +372,7 @@ SceneWindow::render(double deltaTime,
         }
     };
 
-    if (m_api->getConfig()->doubleCameraDebug) {
+    if (m_api->getConfig()->doubleCameraDebug && debugWindow) {
         auto &debugParams = renderTargetParams.emplace_back();
         debugParams.camera = debugWindow->getCamera();
         debugParams.dimensions = debugViewDimension;

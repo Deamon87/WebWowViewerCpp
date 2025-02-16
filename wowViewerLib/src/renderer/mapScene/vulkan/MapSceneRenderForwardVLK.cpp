@@ -139,7 +139,6 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
 //                                          VK_SAMPLE_COUNT_1_BIT,
                                           sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
                                           true, false, true, true);
-
     defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, false);
 
     sceneWideChunk = std::make_shared<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>>(hDevice, 3, uboBuffer);

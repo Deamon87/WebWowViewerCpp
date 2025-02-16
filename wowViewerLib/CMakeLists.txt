@@ -665,6 +665,10 @@ if (LINK_VULKAN)
     endif()
 endif()
 
+if(MSVC)
+  set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD /NODEFAULTLIB:LIBCPMT")
+endif()
 if (NOT MSVC)
     check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
     if(HAVE_FLAG_STD_CXX17)

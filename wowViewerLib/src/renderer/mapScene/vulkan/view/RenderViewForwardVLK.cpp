@@ -13,18 +13,6 @@ RenderViewForwardVLK::RenderViewForwardVLK(const HGDeviceVLK &device,
                                                                      const HGVertexBufferBindings &quadVAO,
                                                                      bool createOutputFBO) : m_device(device), m_createOutputFBO(createOutputFBO) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
-
-    createFrameBuffers();
-    {
-        std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
-        for (int i = 0; i < m_colorFrameBuffers.size(); i++) {
-            inputColorTextures.emplace_back(m_colorFrameBuffers[i]->getAttachment(0));
-        }
-
-        glowPass->updateDimensions(m_width, m_height,
-                                   inputColorTextures,
-                                   !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_outputRenderPass);
-    }
 }
 
 void RenderViewForwardVLK::createFrameBuffers() {

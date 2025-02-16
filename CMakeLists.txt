@@ -452,8 +452,9 @@ if( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
 	install( PROGRAMS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT System )
 endif( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS )
 
-add_subdirectory(test)
+add_subdirectory(test EXCLUDE_FROM_ALL)
 target_link_libraries(wow_viewer_tests_run WoWFrontendLib)
+set_target_properties(wow_viewer_tests_run PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 target_include_directories(wow_viewer_tests_run
     PRIVATE
     "$<TARGET_PROPERTY:WoWFrontendLib,INTERFACE_INCLUDE_DIRECTORIES>"

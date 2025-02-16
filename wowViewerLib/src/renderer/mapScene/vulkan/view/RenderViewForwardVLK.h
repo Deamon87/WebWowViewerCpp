@@ -29,8 +29,8 @@ public:
 
     std::shared_ptr<GRenderPassVLK> getRenderPass() {return m_mainRenderPass;}
 private:
-    uint32_t m_width = 640;
-    uint32_t m_height = 480;
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
 
     HGDeviceVLK m_device;
     bool m_createOutputFBO;

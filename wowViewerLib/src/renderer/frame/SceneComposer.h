@@ -39,7 +39,7 @@ private:
     ProdConsumerIOConnector<HFrameScenario> updateInput = {m_isTerminating};
     ProdConsumerIOConnector<std::shared_ptr<FrameRenderFuncs>> drawInput = {m_isTerminating};
 public:
-    SceneComposer(HApiContainer apiContainer);
+    SceneComposer(HApiContainer apiContainer, bool supportThreads = true);
     ~SceneComposer() {
         m_isTerminating = true;
 
@@ -49,9 +49,11 @@ public:
             decltype(drawInput)::value_type nullParam = nullptr;
             drawInput.pushInput(nullParam);
         }
-        cullingThread.join();
-        updateThread.join();
-        loadingResourcesThread.join();
+        if (m_supportThreads) {
+            cullingThread.join();
+            updateThread.join();
+            loadingResourcesThread.join();
+        }
     }
 
     void draw(const HFrameScenario &frameScenario, bool windowSizeChanged);

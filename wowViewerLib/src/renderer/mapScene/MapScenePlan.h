@@ -36,7 +36,6 @@ struct MapRenderPlan {
 
     HFrameDependantData frameDependentData = std::make_shared<FrameDependantData>();
 
-
     //Objects for update and rendering
     std::vector<ADTObjRenderRes> adtArray = {};
 
@@ -46,8 +45,6 @@ struct MapRenderPlan {
 
     std::vector<LocalLight> pointLights;
     std::vector<SpotLight> spotLights;
-
-
 };
 typedef std::shared_ptr<MapRenderPlan> HMapRenderPlan;
 #endif //AWEBWOWVIEWERCPP_MAPSCENEPLAN_H

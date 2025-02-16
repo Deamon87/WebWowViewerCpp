@@ -12,7 +12,8 @@
 #include <emscripten.h>
 #endif
 
-SceneComposer::SceneComposer(HApiContainer apiContainer) : m_apiContainer(apiContainer) {
+SceneComposer::SceneComposer(HApiContainer apiContainer, bool supportThreads) : m_apiContainer(apiContainer) {
+    m_supportThreads = supportThreads;
 #ifdef __EMSCRIPTEN__
     m_supportThreads = false;
 //    m_supportThreads = emscripten_run_script_int("(SharedArrayBuffer != null) ? 1 : 0") == 1;

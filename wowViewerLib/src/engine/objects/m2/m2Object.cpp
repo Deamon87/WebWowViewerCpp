@@ -855,6 +855,12 @@ void M2Object::doLoadMainFile(){
     if (m_m2Geom->getStatus() != FileStatus::FSLoaded) return;
     this->createAABB();
 }
+bool M2Object::isFailedToLoadMainFile() {
+    return m_m2Geom != nullptr && m_m2Geom->getStatus() == FileStatus::FSRejected;
+}
+bool M2Object::isFailedToLoadGeomFile() {
+    return m_skinGeom != nullptr && m_skinGeom->getStatus() == FileStatus::FSRejected;
+}
 
 void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     //0. If loading procedures were already done - exit

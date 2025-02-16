@@ -204,7 +204,9 @@ std::set<std::string> get_supported_extensions() {
     return extensions;
 }
 
-bool vulkanEnableValidationLayers = true ;
+bool vulkanEnableValidationLayers = false;
+
+extern bool forceDisableBindlessSupport = false;
 
 GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::make_shared<TextureManagerVLK>(*this)),
                                                         m_descriptorSetUpdater(std::make_shared<GDescriptorSetUpdater>()){
@@ -467,6 +469,15 @@ std::vector<std::string> VkFormatFeatureFlagBitsGetStrings(VkFormatFeatureFlags 
 }
 
 void GDeviceVLK::createSwapChainAndFramebuffer() {
+    uint32_t imageCount = 0;
+    swapChainFramebuffers.resize(0);
+    swapchainRenderPass = nullptr;
+
+    if (vkSurface == VK_NULL_HANDLE) {
+        swapChain = nullptr;
+        return;
+    }
+
     SwapChainSupportDetails swapChainSupport = querySwapChainSupport(physicalDevice);
     VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
     VkExtent2D extent = chooseSwapExtent(swapChainSupport.capabilities);
@@ -496,8 +507,8 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
 
 
     createSwapChain(swapChainSupport, surfaceFormat, extent);
+    swapChainExtent = extent;
 
-    uint32_t imageCount = 0;
     if (swapChain != VK_NULL_HANDLE) {
         vkGetSwapchainImagesKHR(device, swapChain, &imageCount, nullptr);
     }
@@ -510,12 +521,9 @@ void GDeviceVLK::createSwapChainAndFramebuffer() {
         ERR_GUARD_VULKAN(vkGetSwapchainImagesKHR(device, swapChain, &imageCount, swapChainImages.data()));
     }
 
-    swapChainExtent = extent;
-
     //Create imageView
     std::vector<VkImageView> swapChainImageViews;
     createSwapChainImageViews(swapChainImages, swapChainImageViews, surfaceFormat.format);
-
 
     //Create swapchain renderPass
     createSwapChainRenderPass(surfaceFormat.format);
@@ -758,7 +766,8 @@ void GDeviceVLK::pickPhysicalDevice() {
 
 void GDeviceVLK::createLogicalDevice() {
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value(), indices.transferFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.transferFamily.value()};
+    if (vkSurface != VK_NULL_HANDLE) uniqueQueueFamilies.insert(indices.presentFamily.value());
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -793,7 +802,8 @@ void GDeviceVLK::createLogicalDevice() {
             indexing_features.runtimeDescriptorArray &&
             indexing_features.descriptorBindingVariableDescriptorCount &&
             indexing_features.descriptorBindingPartiallyBound &&
-            ext_feature.shaderDrawParameters == VK_TRUE;
+            ext_feature.shaderDrawParameters == VK_TRUE &&
+            !forceDisableBindlessSupport;
 
         if (!bindless_supported)
             std::cout << "Bindless is not supported on this device" << std::endl;
@@ -856,7 +866,7 @@ void GDeviceVLK::createLogicalDevice() {
 
 bool GDeviceVLK::isDeviceSuitable(VkPhysicalDevice device) {
     findQueueFamilies(device);
-    return indices.isComplete();
+    return vkSurface == nullptr || indices.isComplete();
 }
 
 void GDeviceVLK::findQueueFamilies(VkPhysicalDevice device) {
@@ -885,8 +895,9 @@ void GDeviceVLK::findQueueFamilies(VkPhysicalDevice device) {
         }
 
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vkSurface, &presentSupport);
-
+        if (vkSurface != VK_NULL_HANDLE) {
+            vkGetPhysicalDeviceSurfaceSupportKHR(device, i, vkSurface, &presentSupport);
+        }
         if (queueFamily.queueCount > 0 && presentSupport) {
             indices.presentFamily = i;
         }
@@ -1058,8 +1069,6 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
         }
         {
            std::vector<VkSemaphore> waitSemaphores = {};
-//           if (!firstTimeRender[currentDrawFrame])
-//               waitSemaphores = {frameBufSemaphores[currentDrawFrame]->getNativeSemaphore()};
 
             submitQueue(
                 uploadQueue,
@@ -1070,7 +1079,6 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
                 uploadFences[currentDrawFrame]->getNativeFence()
             );
         }
-
 
         {
             ZoneScopedN("DescriptorSet update");

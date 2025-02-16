@@ -272,7 +272,7 @@ protected:
 
     QueueFamilyIndices indices;
     VkInstance vkInstance;
-    VkSurfaceKHR vkSurface;
+    VkSurfaceKHR vkSurface = VK_NULL_HANDLE;
 
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
