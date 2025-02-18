@@ -421,7 +421,7 @@ public:
             candidates.push_back(cand->getObjectId());
             candCanHaveDuplicates = true;
         } else {
-            if (!cand->isFailedToLoadMainFile() || !cand->isFailedToLoadGeomFile()) {
+            if (cand->isFailedToLoadMainFile() || cand->isFailedToLoadGeomFile()) {
                 //Do not accept such files. Maybe add those to separate vector?
                 return;
             }
@@ -441,7 +441,7 @@ public:
             candCanHaveDuplicates = true;
         } else {
             auto candObj = m2Factory->getObjectById<0>(cand);
-            if (!candObj || !candObj->isFailedToLoadMainFile() || !candObj->isFailedToLoadGeomFile()) {
+            if (!candObj || candObj->isFailedToLoadMainFile() || candObj->isFailedToLoadGeomFile()) {
                 //Do not accept such files. Maybe add those to separate vector?
                 return;
             }
@@ -480,7 +480,7 @@ public:
         } else {
             auto toDraw = m2Factory->getObjectById<0>(toDrawId);
 
-            if (!toDraw || !toDraw->isFailedToLoadMainFile() || !toDraw->isFailedToLoadGeomFile()) {
+            if (!toDraw || toDraw->isFailedToLoadMainFile() || toDraw->isFailedToLoadGeomFile()) {
                 //Do not accept such files. Maybe add those to separate vector?
                 return;
             }
@@ -502,7 +502,7 @@ public:
             throw "oops";
         }
 
-        if (!toDraw->isFailedToLoadMainFile() || !toDraw->isFailedToLoadGeomFile()) {
+        if (toDraw->isFailedToLoadMainFile() || toDraw->isFailedToLoadGeomFile()) {
             //Do not accept such files. Maybe add those to separate vector?
             return;
         }

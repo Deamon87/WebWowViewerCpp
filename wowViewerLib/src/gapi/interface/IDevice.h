@@ -32,6 +32,7 @@ class gMeshTemplate;
 
 #include "../vulkan/context/vulkan_context.h"
 #include "textures/ISamplableTexture.h"
+#include "../renderdoc_app.h"
 
 typedef std::shared_ptr<IBuffer> HGVertexBufferDynamic;
 typedef std::shared_ptr<IBuffer> HGVertexBuffer;
@@ -146,6 +147,11 @@ enum class GDeviceType {
     GOpenGL2, GOpenGL3, GVulkan,
 };
 
+class IRenderDocCaptureHandler {
+public:
+    virtual ~IRenderDocCaptureHandler() = default;
+};
+
 class IDevice {
     public:
         static const constexpr uint8_t MAX_FRAMES_IN_FLIGHT = 3;
@@ -185,8 +191,6 @@ class IDevice {
         virtual bool getIsVulkanAxisSystem() {return false;}
         virtual bool getIsRenderbufferSupported() {return false;}
 
-        virtual double getWaitForUpdate() {return 0;}
-
     public:
         virtual HGPUFence createFence() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
@@ -202,9 +206,11 @@ class IDevice {
 
         static std::string insertAfterVersion(std::string &glslShaderString, std::string stringToPaste);
         virtual void addDeallocationRecord(std::function<void()> callback) {};
-        virtual void addBufferDeallocationRecord(std::function<void()> callback) {};
 
         virtual int getCurrentTextureAllocated() {return 0;}
+
+        virtual void waitForAllWorkToComplete() = 0;
+        virtual std::shared_ptr<IRenderDocCaptureHandler> getRenderDocHelper() = 0;
 };
 
 typedef std::shared_ptr<IDevice> HGDevice;
@@ -228,5 +234,6 @@ typedef std::shared_ptr<IDevice> HGDevice;
 
 #define ERR_GUARD_VULKAN(expr) TEST((expr) >= 0)
 
+extern RENDERDOC_API_1_1_2 *rdoc_api;
 
 #endif //AWEBWOWVIEWERCPP_IDEVICE_H

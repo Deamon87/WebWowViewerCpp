@@ -534,7 +534,10 @@ int main(int argc, char *argv[]) {
 //    std::cout << "something happened" << std::endl;
 //}
 
-    std::cout << "program ended" << std::endl;
+    hdevice->waitForAllWorkToComplete();
+    frontendUI->shutDown();
+
+    // std::cout << "program ended" << std::endl;
 #ifdef WIN32
     timeEndPeriod(3);
 #endif

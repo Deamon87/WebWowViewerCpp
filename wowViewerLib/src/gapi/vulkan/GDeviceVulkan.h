@@ -195,6 +195,8 @@ public:
     VkFormat findDepthFormat();
 
     void singleExecuteAndWait(std::function<void(VkCommandBuffer commandBuffer)> callback);
+    void waitForAllWorkToComplete() override;
+    std::shared_ptr<IRenderDocCaptureHandler> getRenderDocHelper() override;
 private:
 //    void internalDrawStageAndDeps(HDrawStage drawStage);
 

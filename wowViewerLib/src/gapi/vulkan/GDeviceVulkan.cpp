@@ -14,24 +14,24 @@
 
 #include "meshes/GMeshVLK.h"
 #include "textures/GTextureVLK.h"
-#include "textures/GBlpTextureVLK.h"
 #include "GVertexBufferBindingsVLK.h"
 #include "pipeline/GPipelineVLK.h"
-#include "../../engine/algorithms/hashString.h"
 #include "GFrameBufferVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
 #include "GRenderPassVLK.h"
-#include "../../engine/algorithms/FrameCounter.h"
 #include "buffers/GBufferVLK.h"
 #include "synchronization/GFenceVLK.h"
 #include "../../renderer/vulkan/IRenderFunctionVLK.h"
 #include "commandBuffer/commandBufferRecorder/TextureUploadHelper.h"
 #include "../../renderer/frame/FrameProfile.h"
 #include "../../engine/objects/scenes/EntityActorsFactory.h"
+#include "../renderdoc_app.h"
 #include <tbb/tbb.h>
 
 const int WIDTH = 1900;
 const int HEIGHT = 1000;
+
+//#define VERBOSE_LOGGING
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
@@ -331,12 +331,17 @@ std::unordered_set<std::string> GDeviceVLK::get_enabled_extensions() {
 
      std::unordered_set<std::string> extensions;
 
+#ifdef VERBOSE_LOGGING
     std::cout << "enabled extensions : " << std::endl;
     for (auto & extension : extensionProperties) {
         extensions.insert(extension.extensionName);
         std::cout << "- " << extension.extensionName << std::endl;
     }
     std::cout << "enabled extensions end" << std::endl;
+#endif
+    for (auto & extension : extensionProperties) {
+        extensions.insert(extension.extensionName);
+    }
 
     return extensions;
 }
@@ -745,6 +750,7 @@ void GDeviceVLK::pickPhysicalDevice() {
     VkPhysicalDeviceMemoryProperties deviceMemoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &deviceMemoryProperties);
 
+#ifdef VERBOSE_LOGGING
     std::cout << "deviceMemoryProperties.memoryHeapCount = " << deviceMemoryProperties.memoryHeapCount << std::endl;
     for (int i = 0; i < deviceMemoryProperties.memoryHeapCount; i++) {
         std::cout << "memoryHeaps["<<i<<"] " << std::endl;
@@ -761,6 +767,9 @@ void GDeviceVLK::pickPhysicalDevice() {
                    << VkMemoryPropertyFlagBitsGetString(memType.propertyFlags) << std::endl;
     }
     std::cout << std::endl;
+#endif
+
+
 }
 
 
@@ -1101,6 +1110,11 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
             this->getNextSwapImageIndex(imageIndex);
             auto swapChainRenderPass = this->beginSwapChainRenderPass(imageIndex, swapChainCmd);
 
+            auto const &renderFuncs = frameRenderFuncs.renderFuncs;
+            for (int i = 0; i < renderFuncs.size(); i++) {
+                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeRender(*this, frameBufCmd, swapChainCmd);
+            }
+        } else {
             auto const &renderFuncs = frameRenderFuncs.renderFuncs;
             for (int i = 0; i < renderFuncs.size(); i++) {
                 dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeRender(*this, frameBufCmd, swapChainCmd);
@@ -1635,6 +1649,43 @@ void GDeviceVLK::singleExecuteAndWait(std::function<void(VkCommandBuffer)> callb
 
     vkFreeCommandBuffers(device, commandPool, 1, &copyCmd);
 }
+void GDeviceVLK::waitForAllWorkToComplete() {
+    vkDeviceWaitIdle(device);
+
+    for (auto &fence : frameBufFences) fence->wait(0); // trigger post events
+    for (auto &fence : uploadFences) fence->wait(0); // trigger post events
+}
+
+
+class RenderDocCaptureHandlerVLK : public IRenderDocCaptureHandler {
+private:
+    VkInstance m_instance;
+public:
+    RenderDocCaptureHandlerVLK(VkInstance instance) : m_instance(instance) {
+        if (rdoc_api) {
+            // rdoc_api->TriggerCapture();
+            // rdoc_api->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(m_instance), NULL);
+            rdoc_api->StartFrameCapture(nullptr, NULL);
+            // rdoc_api->SetCaptureTitle("Hello_capturing");
+            // std::cout << "capture started" << std::endl;
+        }
+    }
+
+    ~RenderDocCaptureHandlerVLK() override {
+        if (rdoc_api) {
+            // auto errorcode = rdoc_api->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(m_instance), NULL);
+            auto errorcode = rdoc_api->EndFrameCapture(nullptr, NULL);
+            // std::cout << "capture errorcode: " << errorcode << std::endl;
+        }
+    }
+};
+
+std::shared_ptr<IRenderDocCaptureHandler> GDeviceVLK::getRenderDocHelper() {
+    if (rdoc_api)
+        return std::make_shared<RenderDocCaptureHandlerVLK>(this->vkInstance);
+
+    return nullptr;
+};
 VkSampleCountFlagBits sampleCountToVkSampleCountFlagBits(uint8_t sampleCount) {
     switch (sampleCount) {
         case 1:

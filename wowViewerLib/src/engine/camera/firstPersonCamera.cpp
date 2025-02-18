@@ -200,7 +200,8 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
         fov,
         canvasAspect,
         nearPlane,
-        farPlane);
+        farPlane,
+        1.0f);
     cameraMatrices->lookAtMat = lookAtMat;
     cameraMatrices->invTranspViewMat = invTranspViewMat;
 

@@ -42,8 +42,8 @@ public:
     void iterateOverOutputTextures(std::function<void (const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures, const std::string &name, ITextureFormat textureFormat)> callback) override;
     void readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata) override;
 private:
-    uint32_t m_width = 640;
-    uint32_t m_height = 480;
+    uint32_t m_width = 0;
+    uint32_t m_height = 0;
 
     std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightCounts;
     std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightCounts;

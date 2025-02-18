@@ -123,6 +123,9 @@ void RenderViewForwardVLK::iterateOverOutputTextures(
     std::function<void(const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &,
                        const std::string &, ITextureFormat)> callback) {
 
+    for (auto &frameBuff : m_outputFrameBuffers)
+        if (frameBuff == nullptr) return;
+
     //1. Color output
     if (m_createOutputFBO) {
         std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> colorTextures;

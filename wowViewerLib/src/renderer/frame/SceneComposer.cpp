@@ -79,7 +79,6 @@ SceneComposer::SceneComposer(HApiContainer apiContainer, bool supportThreads) : 
                 std::shared_ptr<FrameRenderFuncs> frameRenderFuncs = std::make_shared<decltype(frameRenderFuncs)::element_type>();
                 if (frameScenario != nullptr) {
                     consumeUpdate(frameScenario, *frameRenderFuncs);
-                    frameRenderFuncs->onFinish = frameScenario->onFinish;
                 }
 
                 //Pass the culling result down the pipeline
@@ -117,6 +116,7 @@ void SceneComposer::consumeUpdate(const HFrameScenario &frameScenario, FrameRend
     for (int i = 0; i < frameScenario->drawUpdateFunction.size(); i++) {
         renderFuncs.push_back(std::move(frameScenario->drawUpdateFunction[i]()));
     }
+    frameRenderFunctions.onFinish = frameScenario->onFinish;
 }
 
 void SceneComposer::consumeDraw(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) {

@@ -26,16 +26,18 @@ FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &ubo
     }
 
     {
-        //Set constant values
-        auto &ffxGlowVs = m_ffxGlowVs->getObject();
-        ffxGlowVs = {1, 1, 0, 0};
-        m_ffxGlowVs->save();
+
 
         updateFsUBO(1, 1);
     }
 }
 
 void FFXGlowPassVLK::updateFsUBO(int width, int height) {
+    //Set constant values
+    auto &ffxGlowVs = m_ffxGlowVs->getObject();
+    ffxGlowVs = {1.0f, 1.0f, 0.0f, 0.0f};
+    m_ffxGlowVs->save();
+
     static const std::array<mathfu::vec4, 6> texOffsets = {{
         //X & Y
         {-1.5f, 0.5f, 2.667f, -1.5f},

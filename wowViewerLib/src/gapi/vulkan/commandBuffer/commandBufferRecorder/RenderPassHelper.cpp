@@ -19,7 +19,6 @@ RenderPassHelper::RenderPassHelper(CmdBufRecorder &cmdBufRecorder,
                                    const std::array<uint32_t, 2> &areaSize,
                                    const std::array<float,3> &colorClearColor
 ) : m_cmdBufRecorder(cmdBufRecorder) {
-
     auto clearValues = renderPassVlk->produceClearColorVec(colorClearColor);
 
     VkRenderPassBeginInfo renderPassInfo = {};
@@ -31,6 +30,11 @@ RenderPassHelper::RenderPassHelper(CmdBufRecorder &cmdBufRecorder,
     renderPassInfo.renderArea.extent = {areaSize[0], areaSize[1]};
     renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
     renderPassInfo.pClearValues = clearValues.data();
+
+    // {
+    //     VkImage srcImage = std::dynamic_pointer_cast<GTextureVLK>(frameBuffer->getAttachment(0)->getTexture())->texture.image;
+    //     std::cout << "renderTo: " << srcImage << std::endl;
+    // }
 
     auto &gCmdBuffer = m_cmdBufRecorder.m_gCmdBuffer;
 

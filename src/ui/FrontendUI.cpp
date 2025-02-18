@@ -1084,6 +1084,9 @@ void FrontendUI::newFrame() {
     io.uiScale = this->uiScale;
     io.DisplaySize = ImVec2((float)io.DisplaySize.x / io.uiScale, (float)io.DisplaySize.y / io.uiScale);
 }
+void FrontendUI::shutDown() {
+    ImGui_ImplGlfw_Shutdown();
+}
 
 bool FrontendUI::getStopMouse() {
     ImGuiIO &io = ImGui::GetIO();
@@ -1897,8 +1900,9 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         // Screenshot part
         //----------------------
 
-        if (needToMakeScreenshot) {
-            m_backgroundScene->makeScreenshot(m_api->getConfig()->fov,
+        auto activeScene = getCurrentActiveScene();
+        if (needToMakeScreenshot && activeScene) {
+            activeScene->makeScreenshot(m_api->getConfig()->fov,
                                         screenShotWidth, screenShotHeight,
                                         screenshotFilename,
                                         scenario,

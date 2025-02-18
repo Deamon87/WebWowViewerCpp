@@ -225,6 +225,7 @@ public:
 #endif
 );
 #endif
+    void shutDown();
 
     void composeUI();
     void newFrame();

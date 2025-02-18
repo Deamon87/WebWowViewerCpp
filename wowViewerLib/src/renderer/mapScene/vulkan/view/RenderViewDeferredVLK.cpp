@@ -34,16 +34,6 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
     }
 
     createFrameBuffers();
-    {
-        std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
-        for (int i = 0; i < m_forwardFrameBuffers.size(); i++) {
-            inputColorTextures.emplace_back(m_forwardFrameBuffers[i]->getAttachment(0));
-        }
-
-        glowPass->updateDimensions(m_width, m_height,
-                                   inputColorTextures,
-                                   !this->m_createOutputFBO ? m_device->getSwapChainRenderPass() : this->m_outputRenderPass);
-    }
 
     m_lightScreenSize = std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(uboBuffer);
 }

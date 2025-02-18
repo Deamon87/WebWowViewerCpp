@@ -5,6 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include "IDevice.h"
+#include "../renderdoc_app.h"
 
 int compressedTexturesSupported = -1;
 int anisFiltrationSupported = -1;
@@ -12,6 +13,8 @@ int anisFiltrationSupported = -1;
 #ifdef __EMSCRIPTEN__
 #include <emscripten/html5.h>
 #endif
+
+RENDERDOC_API_1_1_2 *rdoc_api = NULL;
 
 /*
 bool IDevice::getIsDTXCompressedTexturesSupported() {

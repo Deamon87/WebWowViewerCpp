@@ -272,7 +272,10 @@ void GPipelineVLK::createPipeline(
     pipelineInfo.subpass = 0;
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
 
-    auto res = vkCreateGraphicsPipelines(m_device.getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
+    auto res = vkCreateGraphicsPipelines(
+        m_device.getVkDevice(),
+        VK_NULL_HANDLE, 1,
+        &pipelineInfo, nullptr,
         &graphicsPipeline);
 
     if (res != VK_SUCCESS) {

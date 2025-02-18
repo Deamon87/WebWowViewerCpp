@@ -65,11 +65,12 @@ void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std:
     }
 }
 
-mathfu::mat4 getInfZMatrix(float f, float aspect) {
+//Handness = -1 or 1
+inline mathfu::mat4 getInfZMatrix(float f, float aspect, float handness) {
     return mathfu::mat4(
         f / aspect, 0.0f,  0.0f,  0.0f,
         0.0f,    f,  0.0f,  0.0f,
-        0.0f, 0.0f,  1, -1.0f,
+        0.0f, 0.0f,  1 * handness, -1.0f * handness,
         0.0f, 0.0f, 1,  0.0f);
 }
 
@@ -99,7 +100,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
     bool isInfZSupported = camera->isCompatibleWithInfiniteZ();
     auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
         float f = 1.0f / tan(fovR / 2.0f);
-        renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect);
+        renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect, 1.0f);
     };
 
     for (auto &targetParam : renderTargetParams) {
@@ -421,13 +422,6 @@ SceneWindow::makeScreenshot(float fov,
     scenario->cullFunctions.push_back(
         m_sceneRenderer->createCullUpdateRenderChain(wowSceneScreenshotFrameInput, updateFrameNumberLambda)
     );
-
-    scenario->onFinish.push_back([screenShotRenderView, screenShotWidth, screenShotHeight, screenshotFilename, processingFrame]() {
-        saveDataFromDrawStage([screenShotRenderView, processingFrame](int x, int y, int width, int height, uint8_t* data){
-            screenShotRenderView->readRGBAPixels(processingFrame, x, y, width, height, data);
-        }, screenshotFilename, screenShotWidth, screenShotHeight);
-    });
-
 
     scenario->onFinish.push_back([screenShotRenderView, screenShotWidth, screenShotHeight, screenshotFilename, processingFrame]() {
         saveDataFromDrawStage([screenShotRenderView, processingFrame](int x, int y, int width, int height, uint8_t* data){

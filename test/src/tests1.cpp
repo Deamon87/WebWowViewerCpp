@@ -1,7 +1,11 @@
 #include "gtest/gtest.h"
 #include <memory>
+#include <unistd.h>
+#include <filesystem>
+
 #include "../../src/persistance/CascRequestProcessor.h"
 #include "../../src/database/CEmptySqliteDB.h"
+#include "../../src/database/CSqliteDB.h"
 #include "../../wowViewerLib/src/engine/WowFilesCacheStorage.h"
 #include "../../src/database/buildInfoParser/buildDefinition.h"
 #include "../../src/ui/childWindow//sceneWindow/SceneWindow.h"
@@ -9,6 +13,8 @@
 #include "../../wowViewerLib/src/renderer/frame/SceneComposer.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../../wowViewerLib/src/gapi/vulkan/GDeviceVulkan.h"
+
+#include "../../wowViewerLib/src/gapi/renderdoc_app.h"
 
 #ifdef _WIN32
 void beforeCrash() {
@@ -34,7 +40,37 @@ static LONG WINAPI windows_exception_handler(EXCEPTION_POINTERS * ExceptionInfo)
 }
 #endif
 
+void initRenderDoc() {
+#ifdef _WIN32
+    // At init, on windows
+    {
+        rdoc_api = nullptr;
+        HMODULE mod = LoadLibraryA("renderdoc.dll");
+        // HMODULE mod = GetModuleHandleA("renderdoc.dll");
+        if (mod)
+        {
+            pRENDERDOC_GetAPI RENDERDOC_GetAPI =
+                (pRENDERDOC_GetAPI)GetProcAddress(mod, "RENDERDOC_GetAPI");
+            int ret = RENDERDOC_GetAPI(eRENDERDOC_API_Version_1_1_2, (void **)&rdoc_api);
+            assert(ret == 1);
+        }
+    }
+    if (rdoc_api && false) {
+        int secondsToWaitMax = 15;
+        std::cout << "Waiting for RenderDoc to within 15 sec" << std::endl;
+        while (!rdoc_api->IsRemoteAccessConnected() && secondsToWaitMax > 0) {
+            sleep(1);
+            secondsToWaitMax--;
+        }
 
+        if (!rdoc_api->IsRemoteAccessConnected()) {
+            std::cout << "RenderDoc failed to Connect within timeout" << std::endl;
+        } else {
+            std::cout << "RenderDoc connected!" << std::endl;
+        }
+    }
+#endif
+}
 
 struct GAPI_config {
     std::string gapiName = "";
@@ -43,6 +79,8 @@ struct GAPI_config {
 };
 
 std::string CASC_PATH = "";
+
+extern RENDERDOC_API_1_1_2 *rdoc_api;
 
 extern bool forceDisableBindlessSupport;
 
@@ -54,7 +92,11 @@ class RenderScenesTestFixture : public ::testing::TestWithParam<GAPI_config> {
 
     void SetUp() override {
 
-        const auto CASC_PATH = std::getenv("CASC_PATH");
+        if (CASC_PATH == "") {
+            CASC_PATH = std::getenv("CASC_PATH");
+        }
+
+        initRenderDoc();
 
 #ifdef LINK_VULKAN
         vkCallInitCallback callback;
@@ -88,7 +130,8 @@ class RenderScenesTestFixture : public ::testing::TestWithParam<GAPI_config> {
         apiContainer->cacheStorage = std::make_shared<WoWFilesCacheStorage>(apiContainer->requestProcessor.get());
 
         //2. Create database
-        apiContainer->databaseHandler = std::make_shared<CEmptySqliteDB>();
+        // apiContainer->databaseHandler = std::make_shared<CEmptySqliteDB>();
+        apiContainer->databaseHandler = std::make_shared<CSqliteDB>("./export.db3");
 
         //3. Create device
         apiContainer->hDevice = IDeviceFactory::createDevice(param.gapiName, &callback);
@@ -101,17 +144,25 @@ class RenderScenesTestFixture : public ::testing::TestWithParam<GAPI_config> {
         sceneWindow->setViewPortDimensions({{0,0}, {1024,1024}});
     }
 
-public:
-    void create() {
-        sceneWindow->openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260, -1);
-        sceneWindow->getCamera()
+    bool isFrameLoaded(std::shared_ptr<MapRenderPlan> lastPlan) {
+        return !(
+            !apiContainer->requestProcessor->completedAllJobs() ||
+            !lastPlan ||
+            !lastPlan->wmoArray.getToLoad().empty() ||
+            !lastPlan->wmoGroupArray.getToLoad().empty() ||
+            !lastPlan->m2Array.getToLoadGeom().empty() ||
+            !lastPlan->m2Array.getToLoadMain().empty()
+        );
     }
 
+public:
     void process() {
         auto l_device = apiContainer->hDevice;
 
         int framesToContinue = IDevice::MAX_FRAMES_IN_FLIGHT+1;
+        bool makeScreenshot = false;
         while (framesToContinue-- > 0) {
+            bool captureWithRenderDoc = false;
             auto processingFrame = l_device->getFrameNumber();
             std::function<uint32_t()> updateFrameNumberLambda = [l_device, frame = processingFrame]() -> uint32_t {
                 l_device->setCurrentProcessingFrameNumber(frame);
@@ -119,32 +170,73 @@ public:
             };
 
             HFrameScenario scenario = std::make_shared<HFrameScenario::element_type>();
-            sceneWindow->render(0, 60*0.5f/M_PI, scenario, nullptr, updateFrameNumberLambda);
+
+            {
+                auto plan = sceneWindow->getLastPlan();
+                if (framesToContinue == 0 && !makeScreenshot && isFrameLoaded(plan)) {
+                    const testing::TestInfo* const test_info =
+                          testing::UnitTest::GetInstance()->current_test_info();
+
+
+                    std::filesystem::path pngFilePath =
+                        "testResults/" +
+                        std::string(test_info->test_suite_name()) +
+                        "/" +
+                        test_info->name() +
+                        ".png";
+                    pngFilePath = std::filesystem::absolute(pngFilePath);
+
+                    auto folderPathForPng = pngFilePath.parent_path();
+                    std::filesystem::create_directories(folderPathForPng);
+
+                    std::string pngFileName = pngFilePath.u8string();
+
+                    sceneWindow->makeScreenshot(60,
+                        1024, 1024,
+                        pngFileName,
+                        scenario, updateFrameNumberLambda
+                    );
+                    framesToContinue = IDevice::MAX_FRAMES_IN_FLIGHT+1;
+                    makeScreenshot = true;
+                    captureWithRenderDoc = true;
+                } else {
+                    sceneWindow->render(0, 60, scenario, nullptr, updateFrameNumberLambda);
+                }
+            }
+
+            std::shared_ptr<IRenderDocCaptureHandler> captureHandler = nullptr;
+            if (captureWithRenderDoc && rdoc_api)
+                captureHandler = apiContainer->hDevice->getRenderDocHelper();
+
             sceneComposer->draw(scenario, false);
 
             auto lastPlan = sceneWindow->getLastPlan();
-            if (!apiContainer->requestProcessor->completedAllJobs() ||
-                !lastPlan ||
-                !lastPlan->wmoArray.getToLoad().empty() ||
-                !lastPlan->wmoGroupArray.getToLoad().empty() ||
-                !lastPlan->m2Array.getToLoadGeom().empty() ||
-                !lastPlan->m2Array.getToLoadMain().empty()
-            ) {
+            if (!isFrameLoaded(lastPlan)) {
                 framesToContinue = IDevice::MAX_FRAMES_IN_FLIGHT+1;
             }
+
+            captureHandler = nullptr;
         }
+
+        l_device->waitForAllWorkToComplete();
     }
 };
 
 TEST_P(RenderScenesTestFixture, fooTest) {
-    create();
+    sceneWindow->openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260, -1);
+
     process();
 }
 
 INSTANTIATE_TEST_SUITE_P(
-    MeenyMinyMoe,
+    VulkanWithBindless,
     RenderScenesTestFixture,
-    testing::Values(GAPI_config{"vulkan", false, false }));
+    testing::Values(GAPI_config{"vulkan", true, true }));
+
+INSTANTIATE_TEST_SUITE_P(
+    VulkanForward,
+    RenderScenesTestFixture,
+    testing::Values(GAPI_config{"vulkan", false, true }));
 
 GTEST_API_ int main(int argc, char *argv[]) {
 #ifdef _WIN32
