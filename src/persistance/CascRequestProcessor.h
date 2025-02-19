@@ -5,7 +5,7 @@
 #ifndef WEBWOWVIEWERCPP_CASCREQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_CASCREQUESTPROCESSOR_H
 
-#include "RequestProcessor.h"
+#include "../../wowViewerLib/src/persistence/RequestProcessor.h"
 #include "../database/buildInfoParser/buildDefinition.h"
 #include <iostream>
 

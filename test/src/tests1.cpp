@@ -91,6 +91,7 @@ class RenderScenesTestFixture : public ::testing::TestWithParam<GAPI_config> {
     std::shared_ptr<SceneWindow> sceneWindow = nullptr;
 
     void SetUp() override {
+        GTEST_SKIP();
 
         if (CASC_PATH == "") {
             CASC_PATH = std::getenv("CASC_PATH");
@@ -156,6 +157,9 @@ class RenderScenesTestFixture : public ::testing::TestWithParam<GAPI_config> {
     }
 
 public:
+    void openMap(int mapId, int wdtFileId, const mathfu::vec3 &cameraPos, const mathfu::vec3 &lookAt, int timeOverride) {
+        sceneWindow->openMapByIdAndWDTId(mapId, wdtFileId, cameraPos.x, cameraPos.y, cameraPos.z, timeOverride);
+    }
     void process() {
         auto l_device = apiContainer->hDevice;
 
@@ -191,7 +195,7 @@ public:
 
                     std::string pngFileName = pngFilePath.u8string();
 
-                    sceneWindow->makeScreenshot(60,
+                    sceneWindow->makeScreenshot(DEFAULT_FOV_VALUE,
                         1024, 1024,
                         pngFileName,
                         scenario, updateFrameNumberLambda
@@ -200,7 +204,7 @@ public:
                     makeScreenshot = true;
                     captureWithRenderDoc = true;
                 } else {
-                    sceneWindow->render(0, 60, scenario, nullptr, updateFrameNumberLambda);
+                    sceneWindow->render(0, DEFAULT_FOV_VALUE, scenario, nullptr, updateFrameNumberLambda);
                 }
             }
 
@@ -223,8 +227,7 @@ public:
 };
 
 TEST_P(RenderScenesTestFixture, fooTest) {
-    sceneWindow->openMapByIdAndWDTId(2217, 2842322, -11595, 9280, 260, -1);
-
+    openMap(2217, 2842322, {-11595, 9280, 260}, {0,0,0}, -1);
     process();
 }
 

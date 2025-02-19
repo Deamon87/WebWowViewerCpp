@@ -7,6 +7,8 @@
 #include "firstPersonCamera.h"
 #include "math.h"
 
+constexpr float LOOKAT_MAT_HANDNESS = -1.0f;
+
 void FirstPersonCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
 }
@@ -107,15 +109,15 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     this->depthDiff = 0;
 
     /* Calc look at position */
+    //Spherical to Cartesian formula
+    dir = mathfu::vec3(
+        1 * sinf(toRadian(90 - av)) * cosf(toRadian(ah)),
+        1 * sinf(toRadian(90 - av)) * sinf(toRadian(ah)),
+        1 * cosf(toRadian(90 - av))
+    );
 
-    dir = mathfu::mat3::RotationY((float) (this->av * M_PI / 180.0f)) * dir;
-    dir = mathfu::mat3::RotationZ((float) (-this->ah * M_PI / 180.0f)) * dir;
 
-    dir = mathfu::normalize(dir);
-
-
-    mathfu::vec3 right_move = mathfu::mat3::RotationZ((float) (-90.0f * M_PI / 180.0f)) * dir;
-    right_move[2] = 0;
+    mathfu::vec3 right_move = mathfu::vec3(dir.y, -dir.x, 0);
     right_move = mathfu::normalize(right_move);
 
     up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
@@ -137,16 +139,10 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
         camera[2] = camera[2] + verticalDiff;
     }
 
-    this->lookAt = camera + dir;
+    auto dirNorm = dir.Normalized();
+    this->lookAt = camera + dirNorm;
 
-//    lookAtMat = mathfu::mat4(
-//        right_move.x, up.x, -dir.x, 0.0f,
-//        right_move.y, up.y, -dir.y, 0.0f,
-//        right_move.z, up.z, -dir.z, 0.0f,
-//        0,0,0,1.0f //translation
-//    );
-//    lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
-    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), 1.0f);
+    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), LOOKAT_MAT_HANDNESS);
 
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 
@@ -164,18 +160,32 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 }
 void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera
-    this->camera[0] = x;
-    this->camera[1] = y;
-    this->camera[2] = z;
+    this->camera = {x, y, z, 1.0f};
 
-    this->lookAt[0] = 0;
-    this->lookAt[1] = 0;
-    this->lookAt[2] = 0;
-
-    this->av = 0;
-    this->ah = 0;
+    // setCameraLookAt(lookAt.x, lookAt.y, lookAt.z);
 }
+void FirstPersonCamera::setCameraLookAt(float x, float y, float z) {
+    this->lookAt = {x, y, z};
 
+    auto cartesianNorm = (this->lookAt - this->camera.xyz()).Normalized();
+
+    //ah is phi
+    //90-av is theta
+
+    ah = fromRadian(atanf(cartesianNorm.y / cartesianNorm.x)) + 180.0f;
+    av = -fromRadian(acosf(cartesianNorm.z / cartesianNorm.Length())) - 90.0f + 180;
+
+    while (av < -180.0f) { av += 360.0f; }
+    while (av > 180.0f) { av -= 360.0f; }
+
+    if (av > 90) {
+        av = 90 - (av - 90);
+        ah += 180;
+    } else if (av < -90) {
+        av = -90 - (av + 90)  ;
+        ah += 180;
+    }
+}
 void FirstPersonCamera::zoomInFromTouch(float val) {
     addForwardDiff(val);
 }
@@ -206,6 +216,7 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
     cameraMatrices->invTranspViewMat = invTranspViewMat;
 
     cameraMatrices->cameraPos = camera;
+    cameraMatrices->lookAt = mathfu::vec4(lookAt, 1.0f);
     cameraMatrices->viewUp = mathfu::vec4(upVector, 0);
     cameraMatrices->interiorDirectLightDir = this->interiorDirectLightDir;
 

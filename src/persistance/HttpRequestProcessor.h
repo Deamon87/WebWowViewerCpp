@@ -6,7 +6,7 @@
 #define WEBWOWVIEWERCPP_HTTPREQUESTPROCESSOR_H
 
 #include "httpFile/httpFile.h"
-#include "RequestProcessor.h"
+#include "../../wowViewerLib/src/persistence/RequestProcessor.h"
 
 class HttpRequestProcessor : public RequestProcessor {
 public:

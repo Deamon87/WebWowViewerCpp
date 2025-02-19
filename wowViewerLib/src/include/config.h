@@ -12,6 +12,8 @@
 #include <mathfu/glsl_mappings.h>
 #include "../renderer/mapScene/FrameDependentData.h"
 
+constexpr float DEFAULT_FOV_VALUE = 53.9726294579437f;
+
 struct RiverColorOverride {
     int liquidObjectId;
     int liquidType;
@@ -91,7 +93,7 @@ public:
 
     bool useWotlkLogic = false;
 
-    float fov = 45;
+    float fov = DEFAULT_FOV_VALUE;
     float nearPlane = 1;
     float farPlane = 1000;
     float farPlaneForCulling = 400;

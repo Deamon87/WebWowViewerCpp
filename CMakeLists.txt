@@ -179,8 +179,6 @@ include_directories(${GLEW_INCLUDE_DIRS})
 set(SOURCE_FILES
 		src/persistance/httpFile/httpFile.cpp
 		src/persistance/httpFile/httpFile.h
-		src/persistance/RequestProcessor.cpp
-		src/persistance/RequestProcessor.h
 		src/persistance/ZipRequestProcessor.cpp
 		src/persistance/ZipRequestProcessor.h
 #		src/persistance/HttpZipRequestProcessor.cpp

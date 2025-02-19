@@ -174,6 +174,8 @@ endif(LINK_GLEW)
 
 
 set(SOURCE_FILES
+        src/persistence/RequestProcessor.cpp
+		src/persistence/RequestProcessor.h
         3rdparty/OffsetAllocator/offsetAllocator.cpp
         3rdparty/OffsetAllocator/offsetAllocator.hpp
         src/engine/shader/ShaderRuntimeData.cpp

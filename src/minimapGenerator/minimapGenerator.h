@@ -6,7 +6,7 @@
 #define AWEBWOWVIEWERCPP_MINIMAPGENERATOR_H
 
 #include "../../wowViewerLib/src/engine/ApiContainer.h"
-#include "../persistance/RequestProcessor.h"
+#include "../../wowViewerLib/src/persistence/RequestProcessor.h"
 #include "entities.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
 #include "../../wowViewerLib/src/renderer/mapScene/MapScenePlan.h"

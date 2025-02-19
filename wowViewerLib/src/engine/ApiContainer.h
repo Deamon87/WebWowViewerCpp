@@ -14,7 +14,7 @@ typedef std::shared_ptr<ApiContainer> HApiContainer;
 #include "camera/CameraInterface.h"
 #include "../include/config.h"
 #include "../include/databaseHandler.h"
-#include "../../../src/persistance/RequestProcessor.h"
+#include "../persistence/RequestProcessor.h"
 
 
 class ApiContainer {

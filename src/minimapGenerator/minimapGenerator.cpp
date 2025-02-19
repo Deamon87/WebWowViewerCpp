@@ -7,7 +7,7 @@
 #include "minimapGenerator.h"
 #include "../../wowViewerLib/src/engine/algorithms/mathHelper.h"
 #include "../../wowViewerLib/src/engine/objects/scenes/map.h"
-#include "../persistance/RequestProcessor.h"
+#include "../../wowViewerLib/src/persistence/RequestProcessor.h"
 #include "../screenshots/screenshotMaker.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonOrthoStaticCamera.h"
 #include "../../wowViewerLib/src/engine/camera/firstPersonOrthoStaticTopDownCamera.h"

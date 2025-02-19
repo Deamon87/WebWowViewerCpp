@@ -17,6 +17,11 @@ inline constexpr T toRadian(T x) {
 }
 
 template<typename T>
+inline constexpr T fromRadian(T x) {
+    return (x * 180.0) / M_PI;
+}
+
+template<typename T>
 inline const CAaBox &retrieveAABB(T &object);
 
 
