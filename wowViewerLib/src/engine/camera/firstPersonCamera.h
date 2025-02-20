@@ -31,7 +31,7 @@ private:
     float MDVerticalMinus = 0;
 
     float depthDiff = 0;
-    float m_moveSpeed = 1.0;
+    float m_moveSpeed =  1.0f / 30.0f;
 
     bool staticCamera = false;
     bool updatedAtLeastOnce = false;

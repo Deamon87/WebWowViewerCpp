@@ -76,7 +76,14 @@ public:
     static framebased::vector<mathfu::vec3> getHullPoints(framebased::vector<mathfu::vec3> &points);
     static framebased::vector<mathfu::vec3> getHullLines(framebased::vector<mathfu::vec3> &points);
 
-
+    //Handness = -1 or 1
+    static inline mathfu::mat4 getInfZMatrix(float f, float aspect, float handness) {
+        return mathfu::mat4(
+            f / aspect, 0.0f,  0.0f,  0.0f,
+            0.0f,    f,  0.0f,  0.0f,
+            0.0f, 0.0f,  1 * handness, -1.0f * handness,
+            0.0f, 0.0f, 1,  0.0f);
+    }
 
     static inline mathfu::mat4 RotationX(float angle) {
         return mathfu::quat::FromAngleAxis(angle, mathfu::vec3(1,0,0)).ToMatrix4();

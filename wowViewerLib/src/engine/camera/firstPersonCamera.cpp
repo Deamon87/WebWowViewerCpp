@@ -73,7 +73,7 @@ float FirstPersonCamera::getMovementSpeed() {
     return this->m_moveSpeed;
 }
 void FirstPersonCamera::setMovementSpeed(float value) {
-    this->m_moveSpeed = value;
+    this->m_moveSpeed = value * 1.0f / 30.0f ;
 };
 
 float springiness = 300; // tweak to taste.
@@ -97,7 +97,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
 
     mathfu::vec3 dir = {1, 0, 0};
     mathfu::vec3 up = {0, 0, 1};
-    float moveSpeed = m_moveSpeed * 1.0f / 30.0f;
+    float moveSpeed = m_moveSpeed;
     mathfu::vec3 camera = this->camera.xyz();
 
     double dTime = timeDelta;

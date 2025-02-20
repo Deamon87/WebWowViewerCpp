@@ -65,15 +65,6 @@ void updateCameraPosOnLoad(const std::shared_ptr<M2Object> &m2Object, const std:
     }
 }
 
-//Handness = -1 or 1
-inline mathfu::mat4 getInfZMatrix(float f, float aspect, float handness) {
-    return mathfu::mat4(
-        f / aspect, 0.0f,  0.0f,  0.0f,
-        0.0f,    f,  0.0f,  0.0f,
-        0.0f, 0.0f,  1 * handness, -1.0f * handness,
-        0.0f, 0.0f, 1,  0.0f);
-}
-
 inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
                                      const std::shared_ptr<ICamera> &camera,
                                      float fov,
@@ -100,7 +91,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
     bool isInfZSupported = camera->isCompatibleWithInfiniteZ();
     auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
         float f = 1.0f / tan(fovR / 2.0f);
-        renderTarget.cameraMatricesForRendering->perspectiveMat = getInfZMatrix(f, canvasAspect, 1.0f);
+        renderTarget.cameraMatricesForRendering->perspectiveMat = MathHelper::getInfZMatrix(f, canvasAspect, 1.0f);
     };
 
     for (auto &targetParam : renderTargetParams) {
