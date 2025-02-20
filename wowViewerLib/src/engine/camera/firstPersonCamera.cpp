@@ -172,19 +172,26 @@ void FirstPersonCamera::setCameraLookAt(float x, float y, float z) {
     //ah is phi
     //90-av is theta
 
-    ah = fromRadian(atanf(cartesianNorm.y / cartesianNorm.x)) + 180.0f;
-    av = -fromRadian(acosf(cartesianNorm.z / cartesianNorm.Length())) - 90.0f + 180;
+    av = -fromRadian(acosf(cartesianNorm.z)) + 90.0f;
+
+    if (!feq(cartesianNorm.x, 0.0)) {
+        ah = fromRadian(atanf(cartesianNorm.y / cartesianNorm.x));
+        if (cartesianNorm.x < 0.0)
+            ah = ah + 180.0f;
+    } else {
+        ah = (cartesianNorm.y > 0.0) ? 90 : -90;
+    }
 
     while (av < -180.0f) { av += 360.0f; }
     while (av > 180.0f) { av -= 360.0f; }
 
-    if (av > 90) {
-        av = 90 - (av - 90);
-        ah += 180;
-    } else if (av < -90) {
-        av = -90 - (av + 90)  ;
-        ah += 180;
-    }
+    // if (av > 90) {
+    //     av = 90 - (av - 90);
+    //     ah += 180;
+    // } else if (av < -90) {
+    //     av = -90 - (av + 90)  ;
+    //     ah += 180;
+    // }
 }
 void FirstPersonCamera::zoomInFromTouch(float val) {
     addForwardDiff(val);
@@ -211,7 +218,7 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
         canvasAspect,
         nearPlane,
         farPlane,
-        1.0f);
+        -1.0f);
     cameraMatrices->lookAtMat = lookAtMat;
     cameraMatrices->invTranspViewMat = invTranspViewMat;
 

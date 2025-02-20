@@ -59,7 +59,7 @@ TEST_P(CameraTestFixture, shouldKeepLookAt) {
 
     float dist = calcLookAtDist(camera, lookAt);
 
-    EXPECT_TRUE(dist < 0.0001f);
+    EXPECT_LE(dist, 0.0001f);
 }
 
 TEST_P(CameraTestFixture, shouldKeepLookAt2) {
@@ -91,6 +91,25 @@ TEST_P(CameraTestFixture, shouldKeepLookAt4) {
 
     EXPECT_LE(dist, 0.0001f);
 }
+TEST_P(CameraTestFixture, shouldKeepLookAt5) {
+    mathfu::vec3 camera = {0, 0, 0};
+    mathfu::vec3 lookAt = {-1, 0, 0};
+    setCamera(camera, lookAt);
+
+    float dist = calcLookAtDist(camera, lookAt);
+
+    EXPECT_LE(dist, 0.0001f);
+}
+
+TEST_P(CameraTestFixture, shouldKeepLookAt6) {
+    mathfu::vec3 camera = {0, 0, 0};
+    mathfu::vec3 lookAt = {0, -1, 0};
+    setCamera(camera, lookAt);
+
+    float dist = calcLookAtDist(camera, lookAt);
+
+    EXPECT_LE(dist, 0.0001f);
+}
 
 TEST_P(CameraTestFixture, shouldIncreaseDepthWithDistance) {
     setCamera({0,0,0}, {1.0f, 0, 0});
@@ -116,11 +135,11 @@ TEST_P(CameraTestFixture, shouldIncreaseDepthWithDistance2) {
     EXPECT_LE(pointNear.z, pointFar.z);
 }
 
-TEST_P(CameraTestFixture, shouldDecreaseDepthWithDistance) {
+TEST_P(CameraTestFixture, infZ_ShouldDecreaseDepthWithDistance) {
     setCamera({0,0,0}, {1.0f, 0, 0});
     auto cameraMatrices = getCameraMatrices();
 
-    auto MVP = MathHelper::getInfZMatrix(1.0f / tan(DEFAULT_FOV_VALUE / 2.0f), 1.0f, 1.0f) * cameraMatrices->lookAtMat;
+    auto MVP = MathHelper::getInfZMatrix(1.0f / tan(DEFAULT_FOV_VALUE / 2.0f), 1.0f, -1.0f) * cameraMatrices->lookAtMat;
 
     auto pointNear = MVP * mathfu::vec4(1,0,0,1); pointNear /= pointNear.w;
     auto pointFar  = MVP * mathfu::vec4(2,0,0,1); pointFar /= pointFar.w;
@@ -128,11 +147,11 @@ TEST_P(CameraTestFixture, shouldDecreaseDepthWithDistance) {
     EXPECT_GE(pointNear.z, pointFar.z);
 }
 
-TEST_P(CameraTestFixture, shouldDecreaseDepthWithDistance2) {
+TEST_P(CameraTestFixture, infZ_shouldDecreaseDepthWithDistance2) {
     setCamera({0,0,0}, {0.0f, 1.0f, 0});
     auto cameraMatrices = getCameraMatrices();
 
-    auto MVP = MathHelper::getInfZMatrix(1.0f / tan(DEFAULT_FOV_VALUE / 2.0f), 1.0f, 1.0f) * cameraMatrices->lookAtMat;
+    auto MVP = MathHelper::getInfZMatrix(1.0f / tan(DEFAULT_FOV_VALUE / 2.0f), 1.0f, -1.0f) * cameraMatrices->lookAtMat;
 
     auto pointNear = MVP * mathfu::vec4(0, 1.0f, 0, 1); pointNear /= pointNear.w;
     auto pointFar  = MVP * mathfu::vec4(0, 2.0f, 0, 1); pointFar /= pointFar.w;
