@@ -4,6 +4,8 @@
 
 #include "FrontendUIRenderer.h"
 
+#include "../../../../wowViewerLib/src/engine/algorithms/mathHelper.h"
+
 //This should be called during Update/Draw stage, cause this stuff allocates buffers
 void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams, std::vector<HGMesh> &meshes) {
 
@@ -33,11 +35,7 @@ void FrontendUIRenderer::consumeFrameInput(const std::shared_ptr<FrameInputParam
         };
 
     if (m_device->getIsVulkanAxisSystem()) {
-        static const mathfu::mat4 vulkanMatrixFix1 = mathfu::mat4(1, 0, 0, 0,
-                                                                  0, -1, 0, 0,
-                                                                  0, 0, 1.0/2.0, 1/2.0,
-                                                                  0, 0, 0, 1).Transpose();
-        ortho_projection = vulkanMatrixFix1 * ortho_projection;
+        ortho_projection = MathHelper::getVulkanMat4Fix() * ortho_projection;
     }
 
     //UBO update start

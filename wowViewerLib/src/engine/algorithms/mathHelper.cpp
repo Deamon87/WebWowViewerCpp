@@ -34,6 +34,24 @@ float MathHelper::fp69ToFloat(uint16_t x) {
 mathfu::vec2 MathHelper::convertV69ToV2(vector_2fp_6_9 &fp69) {
     return mathfu::vec2(MathHelper::fp69ToFloat(fp69.x), MathHelper::fp69ToFloat(fp69.y));
 }
+mathfu::mat4 MathHelper::getVulkanMat4Fix() {
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
+                                                          0, -1, 0, 0,
+                                                          0, 0, 1.0/2.0, 1/2.0,
+                                                          0, 0, 0, 1).Transpose();
+
+    return vulkanMatrixFix;
+}
+mathfu::mat4 MathHelper::createPerspectiveMat(float fovy, float aspect, float zNear, float zFar) {
+    const float y = 1.0f / std::tan(fovy * 0.5f);
+    const float x = y / aspect;
+    const float zdist = (zFar - zNear);
+    const float zfar_per_zdist = (zNear + zFar) / zdist;
+    return mathfu::mat4(x, 0, 0, 0,
+                        0, y, 0, 0,
+                        0, 0, zfar_per_zdist, 1,
+                        0, 0, -2.0f * zNear * zFar / zdist, 0);
+}
 
 CAaBox MathHelper::transformAABBWithMat4(const mathfu::mat4 &mat4, const mathfu::vec4 &min, const mathfu::vec4 &max) {
     //Adapted from http://dev.theomader.com/transform-bounding-boxes/
@@ -84,7 +102,7 @@ framebased::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mat
     //The order of planes is changed to make it easier to get intersections in getIntersectionPointsFromPlanes
     //And to be in line of how planes are created for portal verticies in portal culling
     framebased::vector<mathfu::vec4> planes(6);
-    // Right clipping plane.
+    //Right clipping plane.
     planes[0] = mathfu::vec4(mat[el(1,4)] + mat[el(1,1)],
                              mat[el(2,4)] + mat[el(2,1)],
                              mat[el(3,4)] + mat[el(3,1)],

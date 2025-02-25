@@ -43,7 +43,7 @@ FrontendUI::FrontendUI(HApiContainer api) {
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
-    //this->createDefaultprocessor();
+    this->createDefaultprocessor();
 
     m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer);
 }
@@ -54,6 +54,9 @@ void FrontendUI::composeUI() {
     {
         auto processingFrame = m_api->hDevice->getFrameNumber();
         m_api->hDevice->setCurrentProcessingFrameNumber(processingFrame);
+    }
+    if (!m_backgroundScene) {
+        getOrCreateWindow()->openM2SceneByfdid(194418, {});
     }
 
     if (m_dataExporter != nullptr) {
@@ -222,11 +225,11 @@ void FrontendUI::showCurrentStatsDialog() {
                      &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
         if (ImGui::CollapsingHeader("Camera position")) {
-            static float cameraPosition[3] = {0, 0, 0};
-            getCameraPos(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
+            mathfu::vec3 cameraPos, lookAt;
+            getCameraPos(cameraPos, lookAt);
 
-            ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPosition[0], cameraPosition[1],
-                        cameraPosition[2]);
+            ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPos[0], cameraPos[1], cameraPos[2]);
+            ImGui::Text("Current camera lookAt: (%.1f,%.1f,%.1f)", lookAt[0], lookAt[1], lookAt[2]);
 
             if (m_api->getConfig()->doubleCameraDebug) {
                 static float debugCameraPosition[3] = {0, 0, 0};
@@ -1954,19 +1957,19 @@ void FrontendUI::resetAnimationCallback() {
 //    currentScene->resetAnimation();
 }
 
-void FrontendUI::getCameraPos(float &cameraX, float &cameraY, float &cameraZ) {
+void FrontendUI::getCameraPos(mathfu::vec3 &cameraPos, mathfu::vec3 &lookAt) {
     auto activeScene = m_lastActiveScene.lock();
     auto camera = activeScene ? activeScene->getCamera() : nullptr;
 
     if (camera == nullptr) {
-        cameraX = 0; cameraY = 0; cameraZ = 0;
+        cameraPos = {0,0,0};
+        lookAt = {0,0,0};
         return;
     }
-    float currentCameraPos[4] = {0,0,0,0};
-    camera->getCameraPosition(&currentCameraPos[0]);
-    cameraX = currentCameraPos[0];
-    cameraY = currentCameraPos[1];
-    cameraZ = currentCameraPos[2];
+
+    auto camMatrices = camera->getCameraMatrices(0,0,0,0);
+    cameraPos = camMatrices->cameraPos.xyz();
+    lookAt = camMatrices->lookAt.xyz();
 }
 
 
@@ -2013,8 +2016,9 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-    m_api->requestProcessor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
-//    m_processor = std::make_shared<CascRequestProcessor>("e:\\games\\wow beta\\World of Warcraft Beta\\:wowt");
+    // m_api->requestProcessor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+    BuildDefinition buildDef;
+    m_api->requestProcessor = std::make_shared<CascRequestProcessor>("f:\\games\\World Of Warcraft\\:wowt", buildDef);
 ////        processor->setThreaded(false);
 ////
     m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_api->requestProcessor.get());

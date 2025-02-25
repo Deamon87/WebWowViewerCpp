@@ -146,11 +146,6 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                                             ) {
     ZoneScoped;
 
-    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
-                                                              0, -1, 0, 0,
-                                                              0, 0, 1.0/2.0, 1/2.0,
-                                                              0, 0, 0, 1).Transpose();
-
     const static mathfu::vec4 zUp = {0,0,1.0,0};
 
     if (fdd->fogResults.empty()) fdd->fogResults.emplace_back();
@@ -162,7 +157,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         auto &blockPSVS = sceneWideChunk->getObject(i);
         blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
         if (isVulkan) {
-            blockPSVS.uPMatrix = vulkanMatrixFix * renderingMatrices->perspectiveMat;
+            blockPSVS.uPMatrix = MathHelper::getVulkanMat4Fix() * renderingMatrices->perspectiveMat;
         } else {
             blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
         }

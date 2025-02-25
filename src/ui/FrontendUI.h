@@ -81,7 +81,7 @@ private:
 
 
 
-    void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);
+    void getCameraPos(mathfu::vec3 &camera, mathfu::vec3 &lookAt);
     void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
 

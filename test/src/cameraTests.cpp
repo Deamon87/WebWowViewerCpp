@@ -2,8 +2,13 @@
 #include "../../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../../wowViewerLib/src/engine/algorithms/mathHelper.h"
 #include "gtest/gtest.h"
+#include "gmock/gmock.h"
+
+#define EXPECT_FEQ(a, b) EXPECT_THAT(a, ::testing::AllOf(testing::Ge(b-0.01f), testing::Le(b+0.01f)))
 
 constexpr float DEFAULT_FOV_VALUE = 53.9726294579437f;
+constexpr float DEFAULT_NEAR_PLANE = 1.0f;
+constexpr float DEFAULT_FAR_PLANE = 1000.0f;
 
 typedef std::shared_ptr<ICamera> HCamera;
 auto firstPersonCameraFactory = +[]() -> HCamera {
@@ -12,12 +17,67 @@ auto firstPersonCameraFactory = +[]() -> HCamera {
 
 typedef decltype(firstPersonCameraFactory) CameraFactory;
 
-class CameraTestFixture : public ::testing::TestWithParam<CameraFactory> {
+// (factory, isInverseZ, isVulkanDepth)
+typedef std::tuple<CameraFactory, bool, bool> CamTestParams;
+
+auto firstPersonCameraVulkanFactory = +[]() -> HCamera {
+    class FirstPersonCameraVulkan : public FirstPersonCamera {
+    public:
+        HCameraMatrices getCameraMatrices(float fov, float canvasAspect, float nearPlane, float farPlane) {
+            auto matrices = FirstPersonCamera::getCameraMatrices(fov, canvasAspect, nearPlane, farPlane);
+            matrices->perspectiveMat = MathHelper::getVulkanMat4Fix() * matrices->perspectiveMat;
+
+            return matrices;
+        }
+    };
+    return std::make_shared<FirstPersonCameraVulkan>();
+};
+auto firstPersonCameraInvZFactory = +[]() -> HCamera {
+    class FirstPersonCameraInvZ : public FirstPersonCamera {
+    public:
+        HCameraMatrices getCameraMatrices(float fov, float canvasAspect, float nearPlane, float farPlane) {
+            auto matrices = FirstPersonCamera::getCameraMatrices(fov, canvasAspect, nearPlane, farPlane);
+            matrices->perspectiveMat = MathHelper::getInfZMatrix(
+                DEFAULT_FOV_VALUE,
+                1.0f,
+                MathHelper::INFZ_MAT4_HANDNESS
+            );
+
+            return matrices;
+        }
+    };
+    return std::make_shared<FirstPersonCameraInvZ>();
+};
+auto firstPersonCameraInvZVulkanFactory = +[]() -> HCamera {
+    class FirstPersonCameraInvZVulkan : public FirstPersonCamera {
+    public:
+        HCameraMatrices getCameraMatrices(float fov, float canvasAspect, float nearPlane, float farPlane) {
+            auto matrices = FirstPersonCamera::getCameraMatrices(fov, canvasAspect, nearPlane, farPlane);
+            matrices->perspectiveMat = MathHelper::getVulkanMat4Fix() * MathHelper::getInfZMatrix(
+                DEFAULT_FOV_VALUE,
+                1.0f,
+                MathHelper::INFZ_MAT4_HANDNESS
+            );
+
+            return matrices;
+        }
+    };
+    return std::make_shared<FirstPersonCameraInvZVulkan>();
+};
+
+
+
+class CameraTestFixture : public ::testing::TestWithParam<CamTestParams> {
 private:
     HCamera m_camera;
+    bool m_isInverseZ;
+    bool m_isVulkanDepth;
 public:
+    bool isInverseZ() { return m_isInverseZ; }
+    bool isVulkanDepth() { return m_isVulkanDepth; }
+
     HCameraMatrices getCameraMatrices() {
-        return m_camera->getCameraMatrices(DEFAULT_FOV_VALUE, 1.0f, 1.0f, 1000.f);
+        return m_camera->getCameraMatrices(DEFAULT_FOV_VALUE, 1.0f, DEFAULT_NEAR_PLANE, DEFAULT_FAR_PLANE);
     }
 
     void setCamera(const mathfu::vec3 &cameraPos, const mathfu::vec3 &lookAt) {
@@ -29,11 +89,30 @@ public:
 
     //Returns delta of path
     float stepForward() {
+        constexpr float deltaTime = 0.5f;
         m_camera->startMovingForward();
-        m_camera->tick(0.5);
+        m_camera->tick(deltaTime);
+        m_camera->stopMovingForward();
 
-        return m_camera->getMovementSpeed() * 0.5;
+        float pathDelta = m_camera->getMovementSpeed() * deltaTime;
+        EXPECT_GE(pathDelta, 0.0f);
+
+        return pathDelta;
     }
+
+    //Returns delta of path
+    float stepRight() {
+        constexpr float deltaTime = 0.5f;
+        m_camera->startStrafingRight();
+        m_camera->tick(deltaTime);
+        m_camera->stopStrafingRight();
+
+        float pathDelta = m_camera->getMovementSpeed() * deltaTime;
+        EXPECT_GE(pathDelta, 0.0f);
+
+        return pathDelta;
+    }
+
 
     float calcLookAtDist(const mathfu::vec3 &camera, const mathfu::vec3 &lookAt) {
         auto cameraMatrices = getCameraMatrices();
@@ -48,7 +127,9 @@ public:
     }
 
     void SetUp() override {
-        m_camera = GetParam()();
+        m_camera = std::get<0>(GetParam())();
+        m_isInverseZ = std::get<1>(GetParam());
+        m_isVulkanDepth = std::get<2>(GetParam());
     }
 };
 
@@ -111,52 +192,53 @@ TEST_P(CameraTestFixture, shouldKeepLookAt6) {
     EXPECT_LE(dist, 0.0001f);
 }
 
-TEST_P(CameraTestFixture, shouldIncreaseDepthWithDistance) {
+TEST_P(CameraTestFixture, shouldMatchDepthBoundariesViewPersp) {
     setCamera({0,0,0}, {1.0f, 0, 0});
     auto cameraMatrices = getCameraMatrices();
 
-    auto MVP = cameraMatrices->perspectiveMat * cameraMatrices->lookAtMat;
+    auto viewPerspective = cameraMatrices->perspectiveMat * cameraMatrices->lookAtMat;
 
-    auto pointNear = MVP * mathfu::vec4(1,0,0,1); pointNear /= pointNear.w;
-    auto pointFar  = MVP * mathfu::vec4(2,0,0,1); pointFar /= pointFar.w;
+    auto pointNear = viewPerspective * mathfu::vec4(DEFAULT_NEAR_PLANE,0,0,1); pointNear /= pointNear.w;
+    auto pointInTheMiddle  = viewPerspective * mathfu::vec4(
+        (DEFAULT_NEAR_PLANE + DEFAULT_FAR_PLANE) * 0.5f,0,0,1); pointInTheMiddle /= pointInTheMiddle.w;
+    auto pointFar  = viewPerspective * mathfu::vec4(DEFAULT_FAR_PLANE,0,0,1); pointFar /= pointFar.w;
 
-    EXPECT_LE(pointNear.z, pointFar.z);
+    float lowDepth = -1.0f, highDepth = 1.0f;
+    if (isVulkanDepth()) {
+        lowDepth = 0.0f, highDepth = 1.0f;
+    }
+    if (isInverseZ()) {
+        std::swap(lowDepth, highDepth);
+    }
+
+    EXPECT_FEQ(pointNear.z, lowDepth);
+    EXPECT_FEQ(pointFar.z, highDepth);
+    //EXPECT_EQ(pointInTheMiddle.z, highDepth);
 }
 
-TEST_P(CameraTestFixture, shouldIncreaseDepthWithDistance2) {
-    setCamera({0,0,0}, {0.0f, 1.0f, 0});
-    auto cameraMatrices = getCameraMatrices();
-
-    auto MVP = cameraMatrices->perspectiveMat * cameraMatrices->lookAtMat;
-
-    auto pointNear = MVP * mathfu::vec4(0, 1.0f, 0, 1); pointNear /= pointNear.w;
-    auto pointFar  = MVP * mathfu::vec4(0, 2.0f, 0, 1); pointFar /= pointFar.w;
-
-    EXPECT_LE(pointNear.z, pointFar.z);
-}
-
-TEST_P(CameraTestFixture, infZ_ShouldDecreaseDepthWithDistance) {
+TEST_P(CameraTestFixture, shouldMatchDepthBoundariesPersp) {
     setCamera({0,0,0}, {1.0f, 0, 0});
     auto cameraMatrices = getCameraMatrices();
 
-    auto MVP = MathHelper::getInfZMatrix(1.0f / tan(DEFAULT_FOV_VALUE / 2.0f), 1.0f, -1.0f) * cameraMatrices->lookAtMat;
+    auto perspective = cameraMatrices->perspectiveMat;
 
-    auto pointNear = MVP * mathfu::vec4(1,0,0,1); pointNear /= pointNear.w;
-    auto pointFar  = MVP * mathfu::vec4(2,0,0,1); pointFar /= pointFar.w;
+    auto pointNear =
+        perspective * mathfu::vec4(0,0,DEFAULT_NEAR_PLANE,1); pointNear /= pointNear.w;
+    auto pointInTheMiddle  =
+        perspective * mathfu::vec4(0,0,(DEFAULT_NEAR_PLANE + DEFAULT_FAR_PLANE) * 0.5f, 1); pointInTheMiddle /= pointInTheMiddle.w;
+    auto pointFar  = perspective * mathfu::vec4(0,0,DEFAULT_FAR_PLANE,1); pointFar /= pointFar.w;
 
-    EXPECT_GE(pointNear.z, pointFar.z);
-}
+    float lowDepth = -1.0f, highDepth = 1.0f;
+    if (isVulkanDepth()) {
+        lowDepth = 0.0f, highDepth = 1.0f;
+    }
+    if (isInverseZ()) {
+        std::swap(lowDepth, highDepth);
+    }
 
-TEST_P(CameraTestFixture, infZ_shouldDecreaseDepthWithDistance2) {
-    setCamera({0,0,0}, {0.0f, 1.0f, 0});
-    auto cameraMatrices = getCameraMatrices();
-
-    auto MVP = MathHelper::getInfZMatrix(1.0f / tan(DEFAULT_FOV_VALUE / 2.0f), 1.0f, -1.0f) * cameraMatrices->lookAtMat;
-
-    auto pointNear = MVP * mathfu::vec4(0, 1.0f, 0, 1); pointNear /= pointNear.w;
-    auto pointFar  = MVP * mathfu::vec4(0, 2.0f, 0, 1); pointFar /= pointFar.w;
-
-    EXPECT_GE(pointNear.z, pointFar.z);
+    EXPECT_FEQ(pointNear.z, lowDepth);
+    EXPECT_FEQ(pointFar.z, highDepth);
+    //EXPECT_EQ(pointInTheMiddle.z, highDepth);
 }
 
 TEST_P(CameraTestFixture, shouldGoForwardToLookAtTarget) {
@@ -175,8 +257,40 @@ TEST_P(CameraTestFixture, shouldGoForwardToLookAtTarget) {
     EXPECT_LE(dist, 0.0001f);
 }
 
+TEST_P(CameraTestFixture, shouldStrafeRight) {
+    mathfu::vec3 cameraPos = {0,0,0};
+    mathfu::vec3 lookAt = {0.0f, 1.0f, 0};
+    setCamera({0,0,0}, {0.0f, 1.0f, 0});
+
+    auto cameraDataOld = getCameraMatrices();
+
+    auto delta = stepRight();
+    auto expectedCamPos = cameraPos + mathfu::vec3(-1,0,0) * delta;
+
+    auto cameraData = getCameraMatrices();
+    float dist = (expectedCamPos - cameraData->cameraPos.xyz()).Length();
+
+    EXPECT_LE(dist, 0.0001f);
+}
+
+
 INSTANTIATE_TEST_SUITE_P(
     FirstPersonCamera,
     CameraTestFixture,
-    testing::Values(firstPersonCameraFactory)
+    testing::Values(std::make_tuple(firstPersonCameraFactory, false, false))
+);
+INSTANTIATE_TEST_SUITE_P(
+    firstPersonCameraVulkan,
+    CameraTestFixture,
+    testing::Values(std::make_tuple(firstPersonCameraVulkanFactory, false, true))
+);
+INSTANTIATE_TEST_SUITE_P(
+    firstPersonCameraInfZ,
+    CameraTestFixture,
+    testing::Values(std::make_tuple(firstPersonCameraInvZFactory, true, false))
+);
+INSTANTIATE_TEST_SUITE_P(
+    firstPersonCameraInfZVulkan,
+    CameraTestFixture,
+    testing::Values(std::make_tuple(firstPersonCameraInvZVulkanFactory, true, true))
 );

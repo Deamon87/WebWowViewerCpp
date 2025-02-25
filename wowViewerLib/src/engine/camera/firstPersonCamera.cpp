@@ -7,8 +7,6 @@
 #include "firstPersonCamera.h"
 #include "math.h"
 
-constexpr float LOOKAT_MAT_HANDNESS = -1.0f;
-
 void FirstPersonCamera::addForwardDiff(float val) {
     this->depthDiff = this->depthDiff + val;
 }
@@ -82,7 +80,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     double d = 1.0f-exp(log(0.5f)*springiness*timeDelta);
 
     ah += delta_x*d;
-    av += delta_y*d;
+    av += -delta_y*d;
 
     delta_x = 0;
     delta_y = 0;
@@ -109,7 +107,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     this->depthDiff = 0;
 
     /* Calc look at position */
-    //Spherical to Cartesian formula
+    //Spherical to Cartesian conversion formula
     dir = mathfu::vec3(
         1 * sinf(toRadian(90 - av)) * cosf(toRadian(ah)),
         1 * sinf(toRadian(90 - av)) * sinf(toRadian(ah)),
@@ -117,7 +115,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     );
 
 
-    mathfu::vec3 right_move = mathfu::vec3(dir.y, -dir.x, 0);
+    mathfu::vec3 right_move = mathfu::vec3(-dir.y, dir.x, 0);
     right_move = mathfu::normalize(right_move);
 
     up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
@@ -142,11 +140,12 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     auto dirNorm = dir.Normalized();
     this->lookAt = camera + dirNorm;
 
-    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), LOOKAT_MAT_HANDNESS);
+    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), MathHelper::INFZ_MAT4_HANDNESS);
 
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 
-    this->camera = mathfu::vec4(camera, 1.0);//(lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
+    auto cameraForDebug = (lookAtMat.Inverse() * mathfu::vec4(0,0,0,1.0)).xyz();
+    this->camera = mathfu::vec4(camera, 1.0);
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
     interiorSunDir = invTranspViewMat * interiorSunDir;
@@ -213,12 +212,11 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
         tick(0.0f);
 
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
-    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(
+    cameraMatrices->perspectiveMat = MathHelper::createPerspectiveMat(
         fov,
         canvasAspect,
         nearPlane,
-        farPlane,
-        -1.0f);
+        farPlane);
     cameraMatrices->lookAtMat = lookAtMat;
     cameraMatrices->invTranspViewMat = invTranspViewMat;
 

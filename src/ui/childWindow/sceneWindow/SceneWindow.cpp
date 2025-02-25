@@ -90,8 +90,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
 
     bool isInfZSupported = camera->isCompatibleWithInfiniteZ();
     auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
-        float f = 1.0f / tan(fovR / 2.0f);
-        renderTarget.cameraMatricesForRendering->perspectiveMat = MathHelper::getInfZMatrix(f, canvasAspect, 1.0f);
+        renderTarget.cameraMatricesForRendering->perspectiveMat = MathHelper::getInfZMatrix(fovR, canvasAspect, -1.0f);
     };
 
     for (auto &targetParam : renderTargetParams) {
