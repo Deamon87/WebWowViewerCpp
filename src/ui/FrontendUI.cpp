@@ -1507,9 +1507,10 @@ void FrontendUI::showSettingsDialog() {
             auto activeScene = m_lastActiveScene.lock();
             auto camera = (activeScene) ? activeScene->getCamera() : nullptr;
             float movementSpeed = (camera) ? camera->getMovementSpeed() : 1.0;
+            movementSpeed *= 30.0f;
             if (ImGui::SliderFloat("Movement Speed", &movementSpeed, 0.3, 100)) {
                 if (camera) {
-                    camera->setMovementSpeed(movementSpeed);
+                    camera->setMovementSpeed(movementSpeed * 1.0f/30.0f);
                 }
             }
         }

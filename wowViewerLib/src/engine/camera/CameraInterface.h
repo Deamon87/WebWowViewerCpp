@@ -26,7 +26,7 @@ public:
     virtual void setCameraOffset(float x, float y, float z) {};
 
     virtual bool isCompatibleWithInfiniteZ() {
-        return true;
+        return false;
     }
 
     static inline mathfu::mat4 persectiveInvertZ(float aspectRatio, float fovy, float n, float f)

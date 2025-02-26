@@ -31,7 +31,8 @@ public:
     static const constexpr float CHUNKSIZE = TILESIZE / 16.0f;
     static const constexpr float UNITSIZE =  CHUNKSIZE / 8.0f;
 
-    static const constexpr float INFZ_MAT4_HANDNESS = -1.0f;
+    static const constexpr float INFZ_MAT4_HANDNESS = 1.0f;
+    static const constexpr float LOOKAT_MAT_HANDNESS = -1.0f;
 
     struct PlanesUndPoints {
         framebased::vector<mathfu::vec4> planes;
@@ -60,7 +61,7 @@ public:
 
     static mathfu::mat4 getVulkanMat4Fix();
     static mathfu::mat4 createPerspectiveMat(float fovy, float aspect, float zNear, float zFar);
-
+    static mathfu::mat4 createLookAtMat(mathfu::vec3 cameraPos, mathfu::vec3 cameraTarget, mathfu::vec3 cameraUp);
     static mathfu::vec2 convertV69ToV2(vector_2fp_6_9 &fp69);
 
     static CAaBox transformAABBWithMat4(const mathfu::mat4 &matrix, const mathfu::vec4 &min, const mathfu::vec4 &max);
@@ -82,13 +83,13 @@ public:
     static framebased::vector<mathfu::vec3> getHullLines(framebased::vector<mathfu::vec3> &points);
 
     //Handness = -1 or 1
-    static inline mathfu::mat4 getInfZMatrix(float fovR, float aspect, float handness) {
+    static inline mathfu::mat4 getInfZMatrix(float fovR, float aspect) {
         float f = 1.0f / tan(fovR / 2.0f);
         return mathfu::mat4(
             f / aspect, 0.0f,  0.0f,  0.0f,
             0.0f,    f,  0.0f,  0.0f,
-            0.0f, 0.0f,  1 * handness, -2.0f * handness,
-            0.0f, 0.0f, 1,  0.0f);
+            0.0f, 0.0f,  -1, 1.0f,
+            0.0f, 0.0f, 2.0f,  0.0f);
     }
 
     static inline mathfu::mat4 RotationX(float angle) {

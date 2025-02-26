@@ -49,8 +49,11 @@ mathfu::mat4 MathHelper::createPerspectiveMat(float fovy, float aspect, float zN
     const float zfar_per_zdist = (zNear + zFar) / zdist;
     return mathfu::mat4(x, 0, 0, 0,
                         0, y, 0, 0,
-                        0, 0, zfar_per_zdist, 1,
+                        0, 0, zfar_per_zdist, -1,
                         0, 0, -2.0f * zNear * zFar / zdist, 0);
+}
+mathfu::mat4 MathHelper::createLookAtMat(mathfu::vec3 cameraPos, mathfu::vec3 cameraTarget, mathfu::vec3 cameraUp) {
+    return mathfu::mat4();
 }
 
 CAaBox MathHelper::transformAABBWithMat4(const mathfu::mat4 &mat4, const mathfu::vec4 &min, const mathfu::vec4 &max) {

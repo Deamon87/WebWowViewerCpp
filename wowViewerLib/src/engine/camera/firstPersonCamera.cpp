@@ -71,7 +71,7 @@ float FirstPersonCamera::getMovementSpeed() {
     return this->m_moveSpeed;
 }
 void FirstPersonCamera::setMovementSpeed(float value) {
-    this->m_moveSpeed = value * 1.0f / 30.0f ;
+    this->m_moveSpeed = value;
 };
 
 float springiness = 300; // tweak to taste.
@@ -79,7 +79,7 @@ float springiness = 300; // tweak to taste.
 void FirstPersonCamera::tick (animTime_t timeDelta) {
     double d = 1.0f-exp(log(0.5f)*springiness*timeDelta);
 
-    ah += delta_x*d;
+    ah += -delta_x*d;
     av += -delta_y*d;
 
     delta_x = 0;
@@ -115,7 +115,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     );
 
 
-    mathfu::vec3 right_move = mathfu::vec3(-dir.y, dir.x, 0);
+    mathfu::vec3 right_move = mathfu::vec3(dir.y, -dir.x, 0);
     right_move = mathfu::normalize(right_move);
 
     up = mathfu::normalize(mathfu::vec3::CrossProduct(right_move,dir));
@@ -140,7 +140,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     auto dirNorm = dir.Normalized();
     this->lookAt = camera + dirNorm;
 
-    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), MathHelper::INFZ_MAT4_HANDNESS);
+    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), -1.0f);
 
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 
@@ -157,7 +157,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     this->upVector = ((invTranspViewMat * upVector).xyz()).Normalized();
     updatedAtLeastOnce = true;
 }
-void FirstPersonCamera :: setCameraPos (float x, float y, float z) {
+void FirstPersonCamera::setCameraPos (float x, float y, float z) {
     //Reset camera
     this->camera = {x, y, z, 1.0f};
 

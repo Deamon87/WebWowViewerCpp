@@ -19,6 +19,7 @@ void RenderViewForwardVLK::createFrameBuffers() {
     {
         auto const dataFormat = {ITextureFormat::itRGBA};
         auto depthFormat = ITextureFormat::itDepth32;
+        //WoW always uses invertZ
         bool invertZ = true;
 
         m_mainRenderPass = m_device->getRenderPass(dataFormat,

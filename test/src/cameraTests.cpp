@@ -17,7 +17,7 @@ auto firstPersonCameraFactory = +[]() -> HCamera {
 
 typedef decltype(firstPersonCameraFactory) CameraFactory;
 
-// (factory, isInverseZ, isVulkanDepth)
+// (factory, isInfiniteZ, isVulkanDepth)
 typedef std::tuple<CameraFactory, bool, bool> CamTestParams;
 
 auto firstPersonCameraVulkanFactory = +[]() -> HCamera {
@@ -39,8 +39,7 @@ auto firstPersonCameraInvZFactory = +[]() -> HCamera {
             auto matrices = FirstPersonCamera::getCameraMatrices(fov, canvasAspect, nearPlane, farPlane);
             matrices->perspectiveMat = MathHelper::getInfZMatrix(
                 DEFAULT_FOV_VALUE,
-                1.0f,
-                MathHelper::INFZ_MAT4_HANDNESS
+                1.0f
             );
 
             return matrices;
@@ -55,8 +54,7 @@ auto firstPersonCameraInvZVulkanFactory = +[]() -> HCamera {
             auto matrices = FirstPersonCamera::getCameraMatrices(fov, canvasAspect, nearPlane, farPlane);
             matrices->perspectiveMat = MathHelper::getVulkanMat4Fix() * MathHelper::getInfZMatrix(
                 DEFAULT_FOV_VALUE,
-                1.0f,
-                MathHelper::INFZ_MAT4_HANDNESS
+                1.0f
             );
 
             return matrices;
@@ -70,10 +68,9 @@ auto firstPersonCameraInvZVulkanFactory = +[]() -> HCamera {
 class CameraTestFixture : public ::testing::TestWithParam<CamTestParams> {
 private:
     HCamera m_camera;
-    bool m_isInverseZ;
+    bool m_isInfiniteZ;
     bool m_isVulkanDepth;
 public:
-    bool isInverseZ() { return m_isInverseZ; }
     bool isVulkanDepth() { return m_isVulkanDepth; }
 
     HCameraMatrices getCameraMatrices() {
@@ -128,7 +125,7 @@ public:
 
     void SetUp() override {
         m_camera = std::get<0>(GetParam())();
-        m_isInverseZ = std::get<1>(GetParam());
+        m_isInfiniteZ = std::get<1>(GetParam());
         m_isVulkanDepth = std::get<2>(GetParam());
     }
 };
@@ -207,9 +204,9 @@ TEST_P(CameraTestFixture, shouldMatchDepthBoundariesViewPersp) {
     if (isVulkanDepth()) {
         lowDepth = 0.0f, highDepth = 1.0f;
     }
-    if (isInverseZ()) {
-        std::swap(lowDepth, highDepth);
-    }
+
+    //WoW uses inverted depth for perspective matrix
+    std::swap(lowDepth, highDepth);
 
     EXPECT_FEQ(pointNear.z, lowDepth);
     EXPECT_FEQ(pointFar.z, highDepth);
@@ -232,9 +229,9 @@ TEST_P(CameraTestFixture, shouldMatchDepthBoundariesPersp) {
     if (isVulkanDepth()) {
         lowDepth = 0.0f, highDepth = 1.0f;
     }
-    if (isInverseZ()) {
-        std::swap(lowDepth, highDepth);
-    }
+
+    //WoW uses inverted depth for perspective matrix
+    std::swap(lowDepth, highDepth);
 
     EXPECT_FEQ(pointNear.z, lowDepth);
     EXPECT_FEQ(pointFar.z, highDepth);
@@ -265,7 +262,7 @@ TEST_P(CameraTestFixture, shouldStrafeRight) {
     auto cameraDataOld = getCameraMatrices();
 
     auto delta = stepRight();
-    auto expectedCamPos = cameraPos + mathfu::vec3(-1,0,0) * delta;
+    auto expectedCamPos = cameraPos + mathfu::vec3(1,0,0) * delta;
 
     auto cameraData = getCameraMatrices();
     float dist = (expectedCamPos - cameraData->cameraPos.xyz()).Length();
@@ -292,5 +289,4 @@ INSTANTIATE_TEST_SUITE_P(
 INSTANTIATE_TEST_SUITE_P(
     firstPersonCameraInfZVulkan,
     CameraTestFixture,
-    testing::Values(std::make_tuple(firstPersonCameraInvZVulkanFactory, true, true))
-);
+    testing::Values(std::make_tuple(firstPersonCameraInvZVulkanFactory, true, true)));
