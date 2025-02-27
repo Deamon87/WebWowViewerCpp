@@ -140,7 +140,7 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     auto dirNorm = dir.Normalized();
     this->lookAt = camera + dirNorm;
 
-    lookAtMat = mathfu::mat4::LookAt(this->lookAt, camera, mathfu::vec3(0,0,1), -1.0f);
+    lookAtMat = MathHelper::createLookAtMat(camera, this->lookAt, mathfu::vec3(0,0,1));
 
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 

@@ -84,7 +84,7 @@ private:
     typedef std::list<std::function<void()>>::const_iterator OnUpdateIter;
     std::unique_ptr<OnUpdateIter> iteratorUnique = nullptr;
 protected:
-    float movementSpeed = 1;
+    float movementSpeed = 0.3;
     HApiContainer m_api;
     ViewPortDimensions m_dimension = {{0,0}, {0,0}};
     std::shared_ptr<ICamera> m_camera = nullptr;

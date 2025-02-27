@@ -161,6 +161,9 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         } else {
             blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
         }
+        // blockPSVS.uPMatrix = blockPSVS.uPMatrix.Transpose();
+        // blockPSVS.uLookAtMat = blockPSVS.uLookAtMat.Transpose();
+
         blockPSVS.uInteriorSunDir = mathfu::vec4_packed(
             mathfu::vec4(renderingMatrices->interiorDirectLightDir.xyz(), 0)
         );

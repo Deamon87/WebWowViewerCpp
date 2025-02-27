@@ -189,6 +189,29 @@ TEST_P(CameraTestFixture, shouldKeepLookAt6) {
     EXPECT_LE(dist, 0.0001f);
 }
 
+TEST_P(CameraTestFixture, shouldViewPointsBeOnSameLine) {
+    mathfu::vec3 lookAtPos = {1.0f, 0, 0};
+    setCamera({0,0,0}, lookAtPos);
+    auto cameraMatrices = getCameraMatrices();
+
+    auto lookAtMatInv = cameraMatrices->lookAtMat.Inverse();
+
+    //The Z axis is targeted from LookAt position towards Camera position.
+    //Henhe Z coordinate is -1
+    auto minusRight = mathfu::vec3(-0.5, 0, 1);
+    auto right = mathfu::vec3(0.5, 0, 1);
+
+    auto point1 = (lookAtMatInv * mathfu::vec4(minusRight, 1)).xyz();
+    auto point2 = (lookAtMatInv * mathfu::vec4(right, 1)).xyz();
+
+    float cosAlpha = mathfu::vec3::DotProduct(
+        (point1 - point2).Normalized(),
+        (point1 - lookAtPos).Normalized()
+    );
+
+    EXPECT_FLOAT_EQ(cosAlpha, 1.0f);
+}
+
 TEST_P(CameraTestFixture, shouldMatchDepthBoundariesViewPersp) {
     setCamera({0,0,0}, {1.0f, 0, 0});
     auto cameraMatrices = getCameraMatrices();
