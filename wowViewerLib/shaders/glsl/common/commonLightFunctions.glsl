@@ -13,7 +13,7 @@ struct LocalLight
 struct SpotLight
 {
 //    vec4 rotQuaternion;
-    mat4 rotMat;
+    mat4 lightModelMat;
     vec4 spotLightLen;
     vec4 colorAndFalloff;
     vec4 positionAndcosInnerAngle;

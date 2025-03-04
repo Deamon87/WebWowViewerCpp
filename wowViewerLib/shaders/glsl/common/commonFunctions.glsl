@@ -4,12 +4,12 @@
 vec2 posToTexCoord(const vec3 vertexPosInView, const vec3 normal){
     //Blizz seems to have vertex in view space as vector from "vertex to eye", while in this implementation, it's
     //vector from "eye to vertex". So the minus here is not needed
-    vec3 viewVecNormalized = -normalize(vertexPosInView.xyz);
+    vec3 viewVecNormalized = normalize(vertexPosInView.xyz);
 //    vec3 viewVecNormalized = normalize(vertexPosInView.xyz);
     vec3 reflection = reflect(viewVecNormalized, normalize(normal));
     vec3 temp_657 = vec3(reflection.x, reflection.y, (reflection.z + 1.0));
 
-    return ((normalize(temp_657).xy * 0.5) + vec2(0.5));
+    return (-(normalize(temp_657).xy * 0.5) + vec2(0.5));
 }
 
 float edgeScan(const vec3 position, const vec3 normal){
