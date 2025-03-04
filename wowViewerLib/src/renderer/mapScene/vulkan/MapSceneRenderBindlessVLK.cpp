@@ -261,6 +261,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     {
         std::vector<mathfu::vec2_packed> vertexBuffer;
         std::vector<uint16_t> indexBuffer;
+        std::vector<uint16_t> lineIndexBuffer; // index buffer for debug lines
 
         auto const firstPointIdx = vertexBuffer.size();
         vertexBuffer.push_back(mathfu::vec2_packed(mathfu::vec2(0,0)));
@@ -274,16 +275,42 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         auto const secondPointIdx = vertexBuffer.size();
         vertexBuffer.push_back(mathfu::vec2_packed(mathfu::vec2(0,0)));
 
-        for (uint32_t i = 0; i < spotLightSegments; i++) {
-            indexBuffer.push_back(firstPointIdx);
-            indexBuffer.push_back(((i+1) % spotLightSegments) + 1);
-            indexBuffer.push_back(((i) % spotLightSegments) + 1);
+        {
+            // Cone with triangles
+            //Top segment of cone is clockwise
+            for (int32_t i = spotLightSegments-1; i >= 0 ; i--) {
+                indexBuffer.push_back(((i+1) % spotLightSegments) + 1);
+                indexBuffer.push_back(((i) % spotLightSegments) + 1);
+                indexBuffer.push_back(firstPointIdx);
+            }
+
+            //Lower segment of cone is counter clock-wise: reverse order for points, but same for segments
+            for (int32_t i = spotLightSegments-1; i >= 0 ; i--) {
+                indexBuffer.push_back(secondPointIdx);
+                indexBuffer.push_back(((i) % spotLightSegments) + 1);
+                indexBuffer.push_back(((i+1) % spotLightSegments) + 1);
+            }
         }
 
-        for (uint32_t i = 2; i < spotLightSegments; i++) {
-            indexBuffer.push_back(secondPointIdx);
-            indexBuffer.push_back(((i+1) % spotLightSegments) + 1);
-            indexBuffer.push_back(((i) % spotLightSegments) + 1);
+        {
+            // Cone with lines
+            for (uint32_t i = 0; i < spotLightSegments; i++) {
+                lineIndexBuffer.push_back(firstPointIdx);
+                lineIndexBuffer.push_back(((i+1) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(((i+1) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(((i) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(((i) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(firstPointIdx);
+            }
+
+            for (uint32_t i = 0; i < spotLightSegments; i++) {
+                lineIndexBuffer.push_back(secondPointIdx);
+                lineIndexBuffer.push_back(((i+1) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(((i+1) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(((i) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(((i) % spotLightSegments) + 1);
+                lineIndexBuffer.push_back(secondPointIdx);
+            }
         }
 
         m_vboSpot = m_device->createVertexBuffer(un("Scene_VBO_Spot"), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
@@ -291,10 +318,18 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         m_vboSpot->uploadData(vertexBuffer.data(), vertexBuffer.size() * sizeof(mathfu::vec2_packed));
         m_iboSpot->uploadData(indexBuffer.data(), indexBuffer.size() * sizeof(uint16_t));
 
+        m_iboSpotLine = m_device->createIndexBuffer(un("Scene_IBO_Spot_line"), lineIndexBuffer.size() * sizeof(uint16_t));
+        m_iboSpotLine->uploadData(lineIndexBuffer.data(), lineIndexBuffer.size() * sizeof(uint16_t));
+
         m_drawSpotVao = m_device->createVertexBufferBindings();
         m_drawSpotVao->addVertexBufferBinding(m_vboSpot, std::vector(fullScreenQuad.begin(), fullScreenQuad.end()));
         m_drawSpotVao->setIndexBuffer(m_iboSpot);
         m_drawSpotVao->save();
+
+        m_drawSpotVaoLine = m_device->createVertexBufferBindings();
+        m_drawSpotVaoLine->addVertexBufferBinding(m_vboSpot, std::vector(fullScreenQuad.begin(), fullScreenQuad.end()));
+        m_drawSpotVaoLine->setIndexBuffer(m_iboSpotLine);
+        m_drawSpotVaoLine->save();
     }
 
     //Create m2 shaders
@@ -371,6 +406,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
                                                       sceneWideDS,
                                                       m_drawQuadVao,
                                                       m_drawSpotVao,
+                                                      m_drawSpotVaoLine,
                                                       false);
 
     m_forwardRenderPass = defaultView->getForwardPass();
@@ -1507,6 +1543,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
 
                         l_this->drawOpaque(frameBufCmd, l_opaqueMeshes);
 
+                        //currentView->doDebugLightPass(frameBufCmd);
+
                         {
                             //Sky opaque
                             if (renderSky && skyMesh)
@@ -1689,5 +1727,6 @@ std::shared_ptr<IRenderView> MapSceneRenderBindlessVLK::createRenderView(bool cr
                                                sceneWideDS,
                                                m_drawQuadVao,
                                                m_drawSpotVao,
+                                               m_drawSpotVaoLine,
                                                createOutput);
 }

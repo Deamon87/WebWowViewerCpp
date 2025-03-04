@@ -8,11 +8,11 @@ struct WaterData {
 };
 
 //Individual meshes
-layout(std430, set=1, binding=0) buffer waterData {
+layout(std430, set=1, binding=0) readonly buffer waterData {
     WaterData waterDatas[];
 };
 
-layout(std430, set=1, binding=1) buffer placementMats {
+layout(std430, set=1, binding=1) readonly buffer placementMats {
     mat4 uPlacementMats[];
 };
 
@@ -20,7 +20,7 @@ struct WaterBindless {
     ivec4 waterDataInd_placementMatInd_textureInd;
 };
 
-layout(std430, set=1, binding=2) buffer waterBindless {
+layout(std430, set=1, binding=2) readonly buffer waterBindless {
     WaterBindless waterBindlesses[];
 };
 

@@ -17,9 +17,11 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                              const std::shared_ptr<GDescriptorSet> &sceneWideDS,
                                              const HGVertexBufferBindings &quadVAO,
                                              const HGVertexBufferBindings &spotVAO,
+                                             const HGVertexBufferBindings &spotLineVAO,
                                              bool createOutputFBO) : m_device(device),
                                              m_quadVAO(quadVAO),
                                              m_spotVAO(spotVAO),
+                                             m_spotLineVAO(spotLineVAO),
                                              m_pointLightDataBuffer(pointLightBuffer),
                                              m_spotLightDataBuffer(spotLightBuffer),
                                              m_sceneWideDS(sceneWideDS),
@@ -156,9 +158,19 @@ static const PipelineTemplate s_lightBufferPipelineT = {
 
 static const PipelineTemplate s_lightBufferPipelineSpot = {
     DrawElementMode::TRIANGLES,
-    false,
+    true,
     true,
     EGxBlendEnum::GxBlend_Add,
+    false,
+    false,
+    0xFF
+};
+
+static const PipelineTemplate s_spotLightDebug = {
+    DrawElementMode::LINE,
+    false,
+    true,
+    EGxBlendEnum::GxBlend_Opaque,
     false,
     false,
     0xFF
@@ -209,6 +221,27 @@ void RenderViewDeferredVLK::createLightBufferMats() {
         })
         .toMaterial();
     }
+
+    for (int i = 0; i < m_spotLightDebugMats.size(); i++) {
+        m_spotLightDebugMats[i] = MaterialBuilderVLK::fromShader(m_device, {"spotLight", "lightDebugDraw"}, {
+                .vertexShaderFolder = "bindless/lights",
+                .fragmentShaderFolder = "bindless/lights",
+                .typeOverrides = {
+                    {0, {
+                        {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+                    }}
+                }
+            }, {{0, m_sceneWideDS}})
+            .createPipeline(m_spotLineVAO, m_forwardRenderPass, s_spotLightDebug)
+            .bindDescriptorSet(0, m_sceneWideDS)
+            .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                    ds->beginUpdate()
+                        .ssbo(0, m_spotLightBuffers[i])
+                        .delayUpdate();
+            })
+            .toMaterial();
+    }
+
 
     m_lightMatsCreated = true;
 }
@@ -358,7 +391,29 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
         frameBufCmd.bindMaterial(m_spotLightMats[frameNum]);
 //        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
 
-        for (int i = 0; i < pointLightCount; i++)
+        for (int i = 0; i < spotLightCount; i++)
+            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
+
+    }
+}
+
+void RenderViewDeferredVLK::doDebugLightPass(CmdBufRecorder &frameBufCmd) {
+    auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+
+    auto const pointLightCount = m_pointLightCounts[frameNum];
+    auto const spotLightCount = m_spotLightCounts[frameNum];
+    // if (pointLightCount > 0) {
+    //     frameBufCmd.bindVertexBindings(m_quadVAO);
+    //     frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
+    //     for (int i = 0; i < pointLightCount; i++)
+    //         frameBufCmd.drawIndexed(6, 1, 0, i, 0);
+    // }
+    if (spotLightCount > 0) {
+        frameBufCmd.bindVertexBindings(m_spotVAO);
+        frameBufCmd.bindMaterial(m_spotLightDebugMats[frameNum]);
+        //        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
+
+        for (int i = 0; i < spotLightCount; i++)
             frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
 
     }

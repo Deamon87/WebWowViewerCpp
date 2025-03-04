@@ -79,7 +79,7 @@ struct LocalLight
 
 struct SpotLight
 {
-    mathfu::mat4 rotMat;
+    mathfu::mat4 lightModelMat;
 //    mathfu::vec4_packed rotQuaternion;
     mathfu::vec4_packed spotLightLen;
     mathfu::vec4_packed colorAndFalloff;

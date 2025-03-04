@@ -65,20 +65,24 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_
     m_intensity = newLightDef.intensity * unpackedIntensityMult ;
     m_outerColor = newLightDef.outerColor;
     m_falloffStart = newLightDef.falloffStart;
-    m_falloff = newLightDef.falloff;
+    m_falloff = 1.0f;//newLightDef.falloff;
     m_spotlightRadius = newLightDef.spotlightRadius;
     m_innerAngle = newLightDef.innerAngle;
     m_outerAngle = newLightDef.outerAngle;
 
-    rot_mat =
-        mathfu::mat4::RotationZ(m_rotation.z) *
-        mathfu::mat4::RotationY(m_rotation.y) *
-        mathfu::mat4::RotationX(m_rotation.x);
+    lightModelMat =
+        modelMatrix *
+        mathfu::mat4::FromTranslationVector(mathfu::vec3(newLightDef.position)) *
+        mathfu::mat4::FromRotationMatrix(
+            mathfu::mat4::RotationZ(m_rotation.z) *
+            mathfu::mat4::RotationY(m_rotation.y) *
+            mathfu::mat4::RotationX(m_rotation.x)
+        );
 
-    calcedLightDir = ((rot_mat).Inverse().Transpose()*mathfu::vec3(0,0,-1));
+    calcedLightDir = ((lightModelMat).Inverse().Transpose()*mathfu::vec3(0,0,1));
 }
 
-CWmoNewLight::CWmoNewLight(const WdtLightFile::MapSpotLight &mapSpotLight ) {
+CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const WdtLightFile::MapSpotLight &mapSpotLight ) {
     isPointLight = false;
     isSpotLight = true;
     isWmoNewLight = false;
@@ -90,20 +94,22 @@ CWmoNewLight::CWmoNewLight(const WdtLightFile::MapSpotLight &mapSpotLight ) {
     m_outerAngle = mapSpotLight.outerAngle;
     m_innerColor = mapSpotLight.color;
     m_outerColor = mapSpotLight.color;
-    m_pos = mapSpotLight.position;
+    m_pos = (modelMatrix * mathfu::vec4(mathfu::vec3(mapSpotLight.position), 1.0f)).xyz();
     m_attenuationStart = mapSpotLight.attenuationStart;
     m_attenuationEnd = mapSpotLight.attenuationEnd;
     m_intensity = mapSpotLight.intensity;
     m_rotation = mapSpotLight.rotation;
 
-    rot_mat =
-        mathfu::mat4::RotationZ(m_rotation.z) *
-        mathfu::mat4::RotationY(m_rotation.y) *
-        mathfu::mat4::RotationX(m_rotation.x);
+    lightModelMat =
+        modelMatrix *
+        mathfu::mat4::FromTranslationVector(mathfu::vec3(mapSpotLight.position)) *
+        mathfu::mat4::FromRotationMatrix(
+            mathfu::mat3::RotationZ(m_rotation.z) *
+            mathfu::mat3::RotationY(m_rotation.y) *
+            mathfu::mat3::RotationX(m_rotation.x)
+        );
 
-
-
-    calcedLightDir = ((rot_mat).Inverse().Transpose()*mathfu::vec3(0,0,-1));
+    calcedLightDir = ((lightModelMat).Inverse().Transpose()*mathfu::vec3(0,0,1));
 }
 
 void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights) {
@@ -121,21 +127,9 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
 
     } else if (isSpotLight) {
         auto &spotLight = spotLights.emplace_back();
-//        auto rotQuat = mathfu::quat::FromEulerAngles(m_rotation.x, m_rotation.y, m_rotation.z);
 
-        if (true) {
-            auto rotQuatD = mathfu::quat::FromMatrix(
-            rot_mat
-            );
+        spotLight.lightModelMat = lightModelMat;
 
-//            assert(rotQuatD.vector() == rotQuat.vector() && rotQuatD.scalar() == rotQuat.scalar());
-//            rotQuat = rotQuatD;
-        }
-
-        spotLight.rotMat = mathfu::mat4::FromRotationMatrix(rot_mat);
-//        spotLight.rotQuaternion = mathfu::vec4(
-//            rotQuat[1], rotQuat[2],rotQuat[3], rotQuat[0]
-//        );
         spotLight.spotLightLen = mathfu::vec4(
             tanf(m_outerAngle * 0.5f) * m_attenuationEnd + 0.8f,0,0,0
         );
@@ -147,7 +141,7 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
             l_falloffStart = m_falloffStart;
         } else {
             spotLight.colorAndFalloff = mathfu::vec4(
-                ImVectorToVec4(m_innerColor).xyz() * m_intensity, m_attenuationEnd
+                ImVectorToVec4(m_innerColor).xyz() * m_intensity, m_falloff
             );
             l_falloffStart = m_attenuationStart;
         }
@@ -168,6 +162,5 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
             0.0f,
             0.0f
         );
-
     }
 }

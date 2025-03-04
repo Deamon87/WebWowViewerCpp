@@ -25,16 +25,17 @@ void main() {
     SpotLight lightRec = lights[gl_InstanceIndex];
 
     vec3 lightAtten = lightRec.attenuationAndcosOuterAngle.xyz;
-    vec4 vertPos = vec4(position * lightAtten.y, 0.0, 1.0);
+    vec4 vertPos = vec4(position, gl_VertexIndex > 0 ? 1.0 : 0.0, 1.0);
 
-    if (gl_VertexIndex > 0) {
-        vertPos.z += lightRec.spotLightLen.x;
-    }
+    vertPos = vertPos * vec4(
+        lightRec.spotLightLen.x,
+        lightRec.spotLightLen.x,
+        lightRec.attenuationAndcosOuterAngle.y,
+        1.0
+    );
 
-    //Do rotation of cone
-//    vertPos.xyz = quat_transform(lightRec.rotQuaternion, vertPos.xyz);
-    vertPos.xyz = (lightRec.rotMat * vec4(vertPos.xyz, 0.0)).xyz;
-    vertPos.xyz = vertPos.xyz + lightRec.positionAndcosInnerAngle.xyz;
+    //Do rotation of cone and positioning
+    vertPos.xyz = (lightRec.lightModelMat * vec4(vertPos.xyz, 1.0)).xyz;
 
     //And world to view transform
     vec4 viewPos = scene.uLookAtMat * vertPos;

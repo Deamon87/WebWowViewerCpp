@@ -140,7 +140,10 @@ void FirstPersonCamera::tick (animTime_t timeDelta) {
     auto dirNorm = dir.Normalized();
     this->lookAt = camera + dirNorm;
 
-    lookAtMat = MathHelper::createLookAtMat(camera, this->lookAt, mathfu::vec3(0,0,1));
+    lookAtMat = mathfu::mat4::LookAt(
+      this->lookAt,
+        camera,
+        mathfu::vec3(0,0,1), 1);
 
     invTranspViewMat = lookAtMat.Inverse().Transpose();
 
@@ -212,11 +215,12 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
         tick(0.0f);
 
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
-    cameraMatrices->perspectiveMat = MathHelper::createPerspectiveMat(
-        fov,
-        canvasAspect,
-        nearPlane,
-        farPlane);
+    cameraMatrices->perspectiveMat = persectiveInvertZ(canvasAspect, fov, nearPlane, farPlane);
+    // cameraMatrices->perspectiveMat = MathHelper::createPerspectiveMat(
+    //     fov,
+    //     canvasAspect,
+    //     nearPlane,
+    //     farPlane);
     cameraMatrices->lookAtMat = lookAtMat;
     cameraMatrices->invTranspViewMat = invTranspViewMat;
 

@@ -74,6 +74,7 @@ void WdtLightsObject::createLightArray() {
 
     //Create Spot Lights
     {
+        mathfu::mat4 m = mathfu::mat4::Identity();
 //    std::unordered_map<uint32_t, WdtLightFile::MapPointLight3*> processedLightIds;
         for (int i = 0; i < m_wdtLightFile->mapSpotLightLen; i++) {
             auto &spotLight = m_wdtLightFile->mapSpotLights[i];
@@ -89,7 +90,7 @@ void WdtLightsObject::createLightArray() {
 
 
             m_spotLights[spotLight.tileX][spotLight.tileY].emplace_back() =
-                CWmoNewLight(spotLight);
+                CWmoNewLight(m, spotLight);
 
 //        processedLightIds[pointLight3.lightIndex] = &pointLight3;
         }

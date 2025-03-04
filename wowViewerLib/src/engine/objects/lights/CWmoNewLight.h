@@ -15,7 +15,7 @@ class CWmoNewLight {
 public:
     CWmoNewLight(){};
     CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_light_def &newLightDef );
-    CWmoNewLight(const WdtLightFile::MapSpotLight &mapSpotLight );
+    CWmoNewLight(const mathfu::mat4 &modelMatrix, const WdtLightFile::MapSpotLight &mapSpotLight );
 
     void collectLight(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights);
 
@@ -50,7 +50,7 @@ private:
     float m_innerAngle;
     float m_outerAngle;
 
-    mathfu::mat3 rot_mat;
+    mathfu::mat4 lightModelMat;
     mathfu::vec3 calcedLightDir;
 
 };

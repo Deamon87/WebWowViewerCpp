@@ -17,6 +17,7 @@ public:
                           const std::shared_ptr<GDescriptorSet> &sceneWideDS,
                           const HGVertexBufferBindings &quadVAO,
                           const HGVertexBufferBindings &spotVAO,
+                          const HGVertexBufferBindings &spotLineVAO,
                           bool createOutputFBO);
     ~RenderViewDeferredVLK() override = default;
 
@@ -34,6 +35,7 @@ public:
 
     void doGBufferBarrier(CmdBufRecorder &frameBufCmd);
     void doLightPass(CmdBufRecorder &frameBufCmd);
+    void doDebugLightPass(CmdBufRecorder &frameBufCmd);
     void doOutputPass(CmdBufRecorder &frameBufCmd);
 
     void doPostGlow(CmdBufRecorder &frameBufCmd);
@@ -57,6 +59,7 @@ private:
 
     HGVertexBufferBindings m_quadVAO;
     HGVertexBufferBindings m_spotVAO;
+    HGVertexBufferBindings m_spotLineVAO;
 
     HGBufferVLK m_pointLightDataBuffer;
     HGBufferVLK m_spotLightDataBuffer;
@@ -76,6 +79,7 @@ private:
     std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightBuffers;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightMats;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightMats;
+    std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightDebugMats;
 
 
     std::unique_ptr<FFXGlowPassVLK> glowPass;

@@ -135,6 +135,9 @@ void GPipelineVLK::createPipeline(
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
 
     switch (m_element) {
+        case DrawElementMode::LINE:
+            inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+            break;
         case DrawElementMode::TRIANGLES:
             inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
             break;
@@ -179,8 +182,8 @@ void GPipelineVLK::createPipeline(
     rasterizer.rasterizerDiscardEnable = VK_FALSE;
     rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
     rasterizer.lineWidth = 1.0f;
-    rasterizer.cullMode = VK_CULL_MODE_NONE;//backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
-    rasterizer.frontFace = !triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
+    rasterizer.cullMode = backFaceCulling ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE;
+    rasterizer.frontFace = triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
     VkPipelineMultisampleStateCreateInfo multisampling = {};
@@ -241,7 +244,7 @@ void GPipelineVLK::createPipeline(
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
     depthStencil.pNext = NULL;
     depthStencil.flags = 0;
-    depthStencil.depthTestEnable = VK_FALSE; //depthCulling ? VK_TRUE : VK_FALSE;
+    depthStencil.depthTestEnable = depthCulling ? VK_TRUE : VK_FALSE;
     depthStencil.depthWriteEnable = depthWrite ? VK_TRUE : VK_FALSE;
     depthStencil.depthCompareOp = renderPass->getInvertZ() ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;

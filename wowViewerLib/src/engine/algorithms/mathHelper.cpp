@@ -35,10 +35,10 @@ mathfu::vec2 MathHelper::convertV69ToV2(vector_2fp_6_9 &fp69) {
     return mathfu::vec2(MathHelper::fp69ToFloat(fp69.x), MathHelper::fp69ToFloat(fp69.y));
 }
 mathfu::mat4 MathHelper::getVulkanMat4Fix() {
-    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1, 0, 0, 0,
-                                                          0, -1, 0, 0,
-                                                          0, 0, -1.0/3.0, 1/2.0,
-                                                          0, 0, 0, 1).Transpose();
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1,  0,    0, 0,
+                                                             0, -1,    0, 0,
+                                                             0,  0, 1.0f/3.0f, 0,
+                                                             0,  0, 1.0f/2.0f, 1);
 
     return vulkanMatrixFix;
 }
@@ -53,7 +53,7 @@ mathfu::mat4 MathHelper::createPerspectiveMat(float fovy, float aspect, float zN
                         0, 0, -2.0f * zNear * zFar / zdist, 0);
 }
 mathfu::mat4 MathHelper::createLookAtMat(mathfu::vec3 cameraPos, mathfu::vec3 cameraTarget, mathfu::vec3 cameraUp) {
-    auto forwardVector = (cameraTarget-cameraPos).Normalized();
+    auto forwardVector = -(cameraTarget-cameraPos).Normalized();
     auto rightVector = mathfu::vec3::CrossProduct(cameraUp, forwardVector).Normalized();
     auto upVector = mathfu::vec3::CrossProduct(forwardVector, rightVector).Normalized();
 
@@ -61,9 +61,9 @@ mathfu::mat4 MathHelper::createLookAtMat(mathfu::vec3 cameraPos, mathfu::vec3 ca
     float translationY = mathfu::vec3::DotProduct(cameraPos, upVector);
     float translationZ = mathfu::vec3::DotProduct(cameraPos, forwardVector);
     auto lookAtMatrix = mathfu::mat4(
-        rightVector[0], upVector[0],   forwardVector[0], 0,
-        rightVector[1], upVector[1],   forwardVector[1], 0,
-        rightVector[2], upVector[2],   forwardVector[2], 0,
+        rightVector[0],  upVector[0],   forwardVector[0], 0,
+        rightVector[1],  upVector[1],   forwardVector[1], 0,
+        rightVector[2],  upVector[2],   forwardVector[2], 0,
         -translationX,  -translationY, -translationZ,    1
     );
 

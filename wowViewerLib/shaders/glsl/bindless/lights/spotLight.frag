@@ -39,7 +39,7 @@ void main() {
 //    vec3 viewRay = vec3((in_viewPos.xy / vec2(in_viewPos.z)), 1.0);
 //    vec3 viewPos = (viewRay * sceneDepth);
     
-    vec3 lightDir = normalize(-(transpose(inverse(scene.uLookAtMat)) * vec4(lightRec.directionAndcosAngleDiff.xyz, 0.0)).xyz);
+    vec3 lightDir = normalize((transpose(inverse(scene.uLookAtMat)) * vec4(lightRec.directionAndcosAngleDiff.xyz, 0.0)).xyz);
     vec3 lightAtten = lightRec.attenuationAndcosOuterAngle.xyz;
 
     vec3 color = lightRec.colorAndFalloff.xyz;
