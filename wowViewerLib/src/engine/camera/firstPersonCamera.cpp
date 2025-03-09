@@ -215,7 +215,8 @@ HCameraMatrices FirstPersonCamera::getCameraMatrices(float fov,
         tick(0.0f);
 
     HCameraMatrices cameraMatrices = std::make_shared<CameraMatrices>();
-    cameraMatrices->perspectiveMat = persectiveInvertZ(canvasAspect, fov, nearPlane, farPlane);
+    cameraMatrices->perspectiveMat = mathfu::mat4::Perspective(fov, canvasAspect, nearPlane, farPlane, 1.0f);
+    // cameraMatrices->perspectiveMat = persectiveInvertZ(canvasAspect, fov, nearPlane, farPlane);
     // cameraMatrices->perspectiveMat = MathHelper::createPerspectiveMat(
     //     fov,
     //     canvasAspect,

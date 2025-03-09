@@ -139,7 +139,7 @@ framebased::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mat
                              mat[el(2,4)] + mat[el(2,2)],
                              mat[el(3,4)] + mat[el(3,2)],
                              mat[el(4,4)] + mat[el(4,2)]);
-    // Near clipping plane.
+    // Near clipping plane
     planes[4] = mathfu::vec4(mat[el(1,4)] + mat[el(1,3)],
                              mat[el(2,4)] + mat[el(2,3)],
                              mat[el(3,4)] + mat[el(3,3)],

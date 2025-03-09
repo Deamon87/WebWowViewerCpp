@@ -56,7 +56,6 @@ public:
     virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
     virtual void collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights);
     void collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
-    virtual void setM2Lights(M2Object *m2Object);
 
     void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
                                         const std::vector<std::vector<mathfu::vec3>> &portalsVerts, bool isAntiportal = false);
@@ -67,7 +66,6 @@ class InteriorView : public GeneralView {
 public:
     std::vector<int> portalIndexes;
     std::shared_ptr<WmoGroupObject> ownerGroupWMO = {}; //Wmos which portals belong to
-    void setM2Lights(M2Object *m2Object) override;
 };
 
 class ExteriorView : public GeneralView {

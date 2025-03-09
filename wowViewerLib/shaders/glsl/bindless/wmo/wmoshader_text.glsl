@@ -73,8 +73,12 @@ void main() {
 #endif
 
     InteriorLightParam intLight;
-    intLight.uInteriorAmbientColorAndApplyInteriorLight = s_wmoAmbient[perMeshData.meshWideBindlessIndex_wmoAmbientIndex.y];
-    intLight.uInteriorDirectColorAndApplyExteriorLight = vec4(0, 0, 0, 1.0f);
+    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(
+        s_wmoAmbient[perMeshData.meshWideBindlessIndex_wmoAmbientIndex.y].xyz,
+        vColor.w
+    );
+
+    intLight.uInteriorDirectColor = vec4(0, 0, 0, 1.0f);
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
 #ifndef DEFERRED
@@ -90,7 +94,6 @@ void main() {
             matDiffuse,
             vNormal,
             wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.x == 1,
-            vColor.w,
             scene,
             intLight,
             accumLight /*accumLight*/,

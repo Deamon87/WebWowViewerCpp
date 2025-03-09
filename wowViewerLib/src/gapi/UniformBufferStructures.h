@@ -61,10 +61,10 @@ struct sceneWideBlockVSPS {
 };
 
 struct InteriorLightParam {
-    mathfu::vec4_packed uInteriorAmbientColorAndApplyInteriorLight;
+    mathfu::vec4_packed uInteriorAmbientColorAndInteriorExteriorBlend;
     mathfu::vec4_packed uInteriorGroundAmbientColor;
     mathfu::vec4_packed uInteriorHorizontAmbientColor;
-    mathfu::vec4_packed uInteriorDirectColorAndApplyExteriorLight;
+    mathfu::vec4_packed uInteriorDirectColor;
     mathfu::vec4_packed uPersonalInteriorSunDirAndApplyPersonalSunDir;
 };
 
@@ -151,7 +151,6 @@ namespace M2 {
         int bcHack;
         int notUsed2;
         int notUsed3;
-        mathfu::vec4_packed interiorExteriorBlend;
     };
 
     namespace WaterfallData {

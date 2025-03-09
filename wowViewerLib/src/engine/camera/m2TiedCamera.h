@@ -60,10 +60,6 @@ public:
     void setMovementSpeed(float value) override {};
     void setCameraOffset(float x, float y, float z) override {};
 
-    bool isCompatibleWithInfiniteZ() override {
-        return false;
-    }
-
     void setCameraLookAt(float x, float y, float z) override {};
 
 };

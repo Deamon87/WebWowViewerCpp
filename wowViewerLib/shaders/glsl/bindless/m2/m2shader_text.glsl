@@ -148,7 +148,6 @@ void main() {
                 matDiffuse,
                 l_Normal,
                 meshWide.vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y > 0,
-                modelWide.interiorExteriorBlend.x,
                 scene,
                 modelWide.intLight,
                 accumLight,
@@ -169,11 +168,12 @@ void main() {
 #ifndef DEFERRED
     int uUnFogged = meshWide.PixelShader_UnFogged_blendMode.y;
     if (uUnFogged == 0) {
+        float interiorExteriorBlend = modelWide.intLight.uInteriorAmbientColorAndInteriorExteriorBlend.w;
         vec3 sunDir =
             mix(
                 scene.uInteriorSunDir,
                 scene.extLight.uExteriorDirectColorDir,
-                modelWide.interiorExteriorBlend.x
+                interiorExteriorBlend
             ).xyz;
 
         finalColor = makeFog2(fogData/*, int(scene.extLight.adtSpecMult_fogCount.y)*/,

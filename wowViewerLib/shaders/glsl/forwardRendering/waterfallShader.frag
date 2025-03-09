@@ -39,7 +39,7 @@ layout(std140, set=2, binding=0) uniform meshWideBlockVS {
 };
 
 const InteriorLightParam intLightWaterfall = {
-    vec4(0,0,0,0),
+    vec4(0,0,0,1.0f),
     vec4(0,0,0,0),
     vec4(0,0,0,0),
     vec4(0,0,0,1),
@@ -98,7 +98,6 @@ void main() {
         whiteWater_val_baseColor_mix.rgb,
         perturbedNormal,
         true,
-        0.0,
         scene,
         intLightWaterfall,
         vec3(0.0), /* accumLight */

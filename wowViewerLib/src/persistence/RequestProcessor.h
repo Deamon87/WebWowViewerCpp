@@ -5,9 +5,9 @@
 #ifndef WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 #define WEBWOWVIEWERCPP_REQUESTPROCESSOR_H
 
-#include "../../wowViewerLib/src/include/sharedFile.h"
-#include "../../wowViewerLib/src/include/iostuff.h"
-#include "../../wowViewerLib/src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h"
+#include "../include/sharedFile.h"
+#include "../include/iostuff.h"
+#include "../renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h"
 #include <thread>
 #include <list>
 #include <vector>

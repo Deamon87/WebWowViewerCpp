@@ -107,9 +107,6 @@ void WmoGroupObject::startLoading() {
 }
 
 void WmoGroupObject::postLoad(const HMapSceneBufferCreate &sceneRenderer) {
-
-    this->m_useLocalLightingForM2 =
-        ((m_geom->mogp->flags.INTERIOR) > 0) && ((m_geom->mogp->flags.EXTERIOR_LIT) == 0);
     m_localGroupBorder = m_geom->mogp->boundingBox;
     this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
     this->loadDoodads();
@@ -252,10 +249,17 @@ void WmoGroupObject::loadDoodads() {
     m_doodads = {};
     m_doodads.reserve(this->m_geom->doodadRefsLen);
 
+    bool wmoGroupUsesExteriorLighting = m_geom->mogp->flags.EXTERIOR_LIT || m_geom->mogp->flags.EXTERIOR;
+
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
         m_doodads.push_back(newDoodad);
+
+        if (wmoGroupUsesExteriorLighting) {
+            newDoodad->setInteriorExteriorBlend(1.0f);
+        }
+
         if (newDoodad != nullptr) {
             std::function<void()> event = [&]() -> void {
                 this->m_recalcBoundries = true;
@@ -764,20 +768,8 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
 void WmoGroupObject::checkDoodads(M2ObjectListContainer &wmoM2Candidates) {
     if (!m_loaded) return;
 
-    mathfu::vec4 ambientColor = getAmbientColor();
-
-
     for (auto &doodad : this->m_doodads) {
-        if (doodad != nullptr) {
-            if (this->getDontUseLocalLightingForM2()) {
-                doodad->setUseLocalLighting(false);
-            } else {
-                doodad->setUseLocalLighting(true);
-                doodad->setAmbientColorOverride(ambientColor, true);
-            }
-
-            wmoM2Candidates.addCandidate(doodad);
-        }
+        wmoM2Candidates.addCandidate(doodad);
     }
 }
 
@@ -869,10 +861,8 @@ void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint
 void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
     mathfu::vec4 ambientColor = getAmbientColor();
 
-    if (!m2Object->setUseLocalLighting(true)) return;
 
-    if (!m2Object->getInteriorAmbientWasSet()) {
-        if (m_geom->colorArray != nullptr) {
+    if (m_geom->colorArray != nullptr) {
             int nodeId = 0;
             auto &nodes = this->m_geom->bsp_nodes;
             MOGP *groupInfo = this->m_geom->mogp;
@@ -912,10 +902,9 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 
 //                ambientColor += mocvColor;
             }
-        }
 
         m2Object->setAmbientColorOverride(ambientColor, true);
-        m2Object->setInteriorAmbientWasSet(true);
+        // m2Object->setInteriorAmbientWasSet(true);
     }
 
 //    mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);

@@ -32,7 +32,7 @@ layout(location = 0) out vec4 outColor;
 #endif
 
 const InteriorLightParam intLight = {
-    vec4(0,0,0,0),
+    vec4(0,0,0,1.0f),
     vec4(0,0,0,0),
     vec4(0,0,0,0),
     vec4(0,0,0,1),
@@ -119,7 +119,6 @@ void main() {
             matDiffuse,
             vNormal,
             true,
-            0.0,
             scene,
             intLight,
             accumLight, /* accumLight */

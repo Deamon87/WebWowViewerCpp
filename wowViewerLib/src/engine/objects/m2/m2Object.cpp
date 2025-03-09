@@ -723,41 +723,12 @@ uint8_t miniLogic(const CImVector *a2) {
     return v10;
 }
 
-void M2Object::setDiffuseColor(CImVector& value, float intensity) {
-    if (ImVectorToVec4(value) * intensity != this->m_localDiffuseColorV) {
+void M2Object::setDirectColor(const mathfu::vec4 &interiorDirectColor) {
+    if (interiorDirectColor != this->m_interiorDirectColor) {
         m_modelWideDataChanged = true;
     }
-    this->m_localDiffuseColor = value;
-    this->m_localDiffuseColorV = ImVectorToVec4(value) * intensity;
 
-    if (value.a != 255) {
-//        std::cout << "Found index into MOLT = " << (int)value.a << std::endl;
-    }
-
-    /*
-    uint8_t result = miniLogic(&value);
-    if (result < 0xA8) {
-        hsv hsv1 = rgb2hsv(m_localDiffuseColorV.xyz());
-        hsv1.v = (((float)0xA8) / ((float)result)) * hsv1.v;
-        this->m_localDiffuseColorV = mathfu::vec4(hsv2rgb(hsv1), 0);
-    }
-
-    int a6 = 0x60;
-    m_ambientAddColor = m_localDiffuseColorV;
-    if ( result > a6 )
-    {
-        float v14 = (float)((float)a6 * 255.0) / (float)result;
-        uint8_t green = (uint8_t)m_localDiffuseColor.g;
-        uint32_t newImColor = ((uint16_t)(((uint16_t)green * (signed int)v14 + 255) & 0xFF00) | ((uint8_t)((uint16_t)((signed int)v14 * (uint8_t)m_localDiffuseColor.r + 255) >> 8) << 16) | *(uint16_t *)&m_localDiffuseColor & 0xFF000000 | ((uint16_t)((signed int)v14 * (uint8_t)m_localDiffuseColor.b + 255) >> 8));
-        CImVector newValue = *(CImVector *)&newImColor;
-
-        this->m_ambientAddColor = mathfu::vec4(
-            newValue.r / 255.0f,
-            newValue.g / 255.0f,
-            newValue.b / 255.0f,
-            newValue.a / 255.0f);
-    }
-     */
+    this->m_interiorDirectColor = interiorDirectColor;
 }
 void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::vector<HBlpTexture> replaceTextures) {
     this->m_skinNum = skinNum;
@@ -1131,16 +1102,16 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 
-        modelFragmentData.intLight.uInteriorAmbientColorAndApplyInteriorLight =
+        modelFragmentData.intLight.uInteriorAmbientColorAndInteriorExteriorBlend =
             mathfu::vec4_packed(mathfu::vec4(
                 m_ambientColorOverride.xyz(),
-                m_useLocalDiffuseColor == 1 ? 1.0 : 0
+                m_interiorExteriorBlend
             ));
 
-        modelFragmentData.intLight.uInteriorDirectColorAndApplyExteriorLight =
+        modelFragmentData.intLight.uInteriorDirectColor =
             mathfu::vec4_packed(mathfu::vec4(
-                m_localDiffuseColorV.xyz(),
-                m_useLocalDiffuseColor == 1 ? 0.0 : 1
+                m_interiorDirectColor.xyz(),
+                0.0f
             ));
         modelFragmentData.intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir =
             mathfu::vec4_packed(mathfu::vec4(
@@ -1148,14 +1119,9 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
                 m_setInteriorSunDir ? 1.0f : 0.f
             ));
 
-        modelFragmentData.interiorExteriorBlend =
-            mathfu::vec4_packed(mathfu::vec4(
-                (m_useLocalDiffuseColor == 1) ? 1.0 : 0.0,
-                0,0,0));
-
         //Lights
-
         bool BCLoginScreenHack = m_api->getConfig()->BCLightHack;
+        modelFragmentData.LightCount = 0;
         modelFragmentData.bcHack = BCLoginScreenHack ? 1 : 0;
 
         m_modelWideDataBuff->m_modelFragmentData->save();

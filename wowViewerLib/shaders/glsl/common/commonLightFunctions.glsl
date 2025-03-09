@@ -22,7 +22,6 @@ struct SpotLight
     vec4 interior;
 };
 
-
 struct SceneExteriorLight {
      vec4 uExteriorAmbientColor;
      vec4 uExteriorHorizontAmbientColor;
@@ -47,10 +46,10 @@ struct SceneWideParams {
 };
 
 struct InteriorLightParam {
-    vec4 uInteriorAmbientColorAndApplyInteriorLight;
+    vec4 uInteriorAmbientColorAndInteriorExteriorBlend;
     vec4 uInteriorGroundAmbientColor;
     vec4 uInteriorHorizontAmbientColor;
-    vec4 uInteriorDirectColorAndApplyExteriorLight;
+    vec4 uInteriorDirectColor;
     vec4 uPersonalInteriorSunDirAndApplyPersonalSunDir;
 };
 
@@ -74,7 +73,6 @@ vec3 calcLight(
     const in vec3 matDiffuse,
     const in vec3 vNormal,
     const in bool applyLight,
-    const in float interiorExteriorBlend,
     const in SceneWideParams sceneParams,
     const in InteriorLightParam intLight,
     const in vec3 accumLight, const in vec3 precomputedLight, const in vec3 specular,
@@ -88,7 +86,8 @@ vec3 calcLight(
         vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
         vec3 normalizedN = normalize(vNormal);
 
-        if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0) {
+        float interiorExteriorBlend = intLight.uInteriorAmbientColorAndInteriorExteriorBlend.w;
+        if (interiorExteriorBlend > 0) {
             float nDotL = clamp(dot(normalizedN, normalize(-(sceneParams.extLight.uExteriorDirectColorDir.xyz))), 0.0, 1.0);
             float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUpSceneTime.xyz));
 
@@ -112,17 +111,17 @@ vec3 calcLight(
             lDiffuse = (sceneParams.extLight.uExteriorDirectColor.xyz * nDotL);
             currColor = mix(groundColor, skyColor, (0.5f + vec3(0.5f * nDotL)));
         }
-        if (intLight.uInteriorAmbientColorAndApplyInteriorLight.w > 0) {
+        if (interiorExteriorBlend < 1.0) {
             vec3 interiorSunDir = mix(
                 sceneParams.uInteriorSunDir.xyz,
                 intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.xyz,
                 intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.w);
 
             float nDotL = clamp(dot(normalizedN, interiorSunDir), 0.0, 1.0);
-            vec3 lDiffuseInterior = intLight.uInteriorDirectColorAndApplyExteriorLight.xyz * nDotL;
-            vec3 interiorAmbient = intLight.uInteriorAmbientColorAndApplyInteriorLight.xyz + precomputedLight;
+            vec3 lDiffuseInterior = intLight.uInteriorDirectColor.xyz * nDotL;
+            vec3 interiorAmbient = intLight.uInteriorAmbientColorAndInteriorExteriorBlend.xyz + precomputedLight;
 
-            if (intLight.uInteriorDirectColorAndApplyExteriorLight.w > 0) {
+            if (interiorExteriorBlend > 0) {
                 lDiffuse = mix(lDiffuseInterior, lDiffuse, interiorExteriorBlend);
                 currColor = mix(interiorAmbient, currColor, interiorExteriorBlend);
             } else {

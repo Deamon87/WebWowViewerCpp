@@ -147,7 +147,6 @@ void main() {
             matDiffuse,
             l_Normal,
             vertexShader_IsAffectedByLight_TextureMatIndex1_TextureMatIndex2.y > 0,
-            interiorExteriorBlend.x,
             scene,
             intLight,
             accumLight,
@@ -165,11 +164,12 @@ void main() {
 
     int uUnFogged = PixelShader_UnFogged_blendMode.y;
     if (uUnFogged == 0) {
+        float interiorExteriorBlend = intLight.uInteriorAmbientColorAndInteriorExteriorBlend.w;
         vec3 sunDir =
             mix(
                 scene.uInteriorSunDir,
                 scene.extLight.uExteriorDirectColorDir,
-                interiorExteriorBlend.x
+                interiorExteriorBlend
             )
             .xyz;
 

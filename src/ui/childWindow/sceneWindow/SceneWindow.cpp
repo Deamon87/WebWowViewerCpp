@@ -90,7 +90,7 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
 
     bool isInfZSupported = camera->isCompatibleWithInfiniteZ();
     auto assignInfiniteZ = [&](auto renderTarget, auto canvasAspect) {
-        renderTarget.cameraMatricesForRendering->perspectiveMat = MathHelper::getInfZMatrix(fovR, canvasAspect);
+        renderTarget.cameraMatricesForRendering->perspectiveMat = ICamera::persectiveInvertZ(canvasAspect, fovR, nearPlane, farPlaneCulling);
     };
 
     for (auto &targetParam : renderTargetParams) {
@@ -102,7 +102,9 @@ inline HMapSceneParams createMapSceneParams(const HApiContainer &apiContainer,
         renderTarget.cameraMatricesForRendering = targetParam.camera->getCameraMatrices(fovR, canvasAspect, nearPlane, farPlaneCulling);
         renderTarget.viewPortDimensions = targetParam.dimensions;
         renderTarget.target = targetParam.target;
-        if (isInfZSupported) assignInfiniteZ(renderTarget, canvasAspect);
+        if (isInfZSupported) {
+            assignInfiniteZ(renderTarget, canvasAspect);
+        }
     }
 
     result->clearColor = apiContainer->getConfig()->clearColor;

@@ -65,8 +65,11 @@ void main() {
         discard;
 
     InteriorLightParam intLight;
-    intLight.uInteriorAmbientColorAndApplyInteriorLight = vWmoAmbient;
-    intLight.uInteriorDirectColorAndApplyExteriorLight = vec4(0, 0, 0, 1.0f);
+    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(
+        vWmoAmbient.xyz,
+        vColor.w
+    );
+    intLight.uInteriorDirectColor = vec4(0, 0, 0, 1.0f);
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     finalColor = vec4(
@@ -74,7 +77,6 @@ void main() {
             matDiffuse,
             vNormal,
             UseLitColor_EnableAlpha_PixelShader_BlendMode.x == 1,
-            vColor.w,
             scene,
             intLight,
             vec3(0.0) /*accumLight*/,

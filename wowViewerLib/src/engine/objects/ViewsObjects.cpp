@@ -73,15 +73,10 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
     for (int i = 0; i < candCullRes.size(); i++) {
         if (!candCullRes[i]) {
             const auto m2ObjectCandidate = m2Factory->getObjectById<0>(candidatesArr[i]);
-            setM2Lights(m2ObjectCandidate);
             if (m2ObjectCandidate != nullptr)
                 this->m2List.addToDraw(m2ObjectCandidate);
         }
     }
-}
-
-void GeneralView::setM2Lights(M2Object *m2Object) {
-    m2Object->setUseLocalLighting(false);
 }
 
 void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
@@ -170,16 +165,6 @@ void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sc
 void GeneralView::collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes) {
     for (auto const &mesh : m_portalMeshes) {
         transparentMeshes.push_back(mesh);
-    }
-}
-
-void InteriorView::setM2Lights(M2Object *m2Object) {
-    if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
-
-    if (ownerGroupWMO->getDontUseLocalLightingForM2()) {
-        m2Object->setUseLocalLighting(false);
-    } else {
-        ownerGroupWMO->assignInteriorParams(m2Object);
     }
 }
 

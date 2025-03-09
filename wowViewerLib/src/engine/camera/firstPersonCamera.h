@@ -79,6 +79,10 @@ public:
                                       float nearPlane,
                                       float farPlane) override;
 
+    bool isCompatibleWithInfiniteZ() override {
+        return true;
+    }
+
 public:
     void tick(animTime_t timeDelta) override;
     void setCameraPos(float x, float y, float z) override;

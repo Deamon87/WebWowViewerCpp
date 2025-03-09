@@ -53,7 +53,6 @@ public:
     const std::vector<CPointLight> &getPointLights();
     const std::vector<std::shared_ptr<CWmoNewLight>> &getWmoNewLights();
 
-    bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
     void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime);
@@ -98,8 +97,6 @@ private:
     std::vector<CPointLight> m_pointLights = {};
     std::vector<CSpotLight> m_spotLights = {};
     std::vector<std::shared_ptr<CWmoNewLight>> m_wmoNewLights = {};
-
-    bool m_useLocalLightingForM2 = false;
 
     bool m_loading = false;
     bool m_loaded = false;

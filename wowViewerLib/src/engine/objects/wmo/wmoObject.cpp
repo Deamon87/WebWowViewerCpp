@@ -73,6 +73,16 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
 
     SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
+    // if (doodadDef->flag_AcceptProjTex) std::cout << "doodadDef->flag_AcceptProjTex" << std::endl;
+    // if (doodadDef->flag_0x2) std::cout << "doodadDef->flag_0x2" << std::endl;
+    // if (doodadDef->flag_0x4) std::cout << "doodadDef->flag_0x4" << std::endl;
+    // if (doodadDef->flag_0x8) std::cout << "doodadDef->flag_0x8" << std::endl;
+    // if (doodadDef->flag_0x10) std::cout << "doodadDef->flag_0x10" << std::endl;
+    // if (doodadDef->flag_0x20) std::cout << "doodadDef->flag_0x20" << std::endl;
+    // if (doodadDef->flag_0x40) std::cout << "doodadDef->flag_0x40" << std::endl;
+    // if (doodadDef->flag_0x80) std::cout << "doodadDef->flag_0x80" << std::endl;
+
+
     bool fileIdMode = false;
     int doodadfileDataId = 0;
     std::string fileName;
@@ -90,6 +100,9 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     auto m2Object = m2Factory->createObject(m_api);
 
     m2Object->setLoadParams(0, {},{});
+
+    //Initial state for doodads in WMO is interior lighting. Unless there is exterior group WMO that references it
+    m2Object->setInteriorExteriorBlend(0.0f);
     if (fileIdMode) {
         m2Object->setModelFileId(doodadfileDataId);
     } else {
@@ -98,21 +111,20 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
+
     if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
 
         auto &light = this->mainGeom->lights[doodadDef->color.a];
-        m2Object->setDiffuseColor(light.color, light.intensity);
+        m2Object->setAmbientColorOverride(ImVectorToVec4(light.color), true);
 
         auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
         auto sunDirVec = m2Object->getWorldPosition() - MOLTWorldPos.xyz();
         if (sunDirVec.LengthSquared() > 0) {
             m2Object->setSunDirOverride(sunDirVec.Normalized());
         }
-
-
 //        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
     } else {
-        m2Object->setDiffuseColor(doodadDef->color, 1.0f);
+        // m2Object->setDiffuseColor(doodadDef->color, 1.0f);
     }
 
     this->m_doodadsUnorderedMap[index] = m2Object;
@@ -546,14 +558,7 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
         mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
 
         for (auto &m2Object : groupWmoObject->getDoodads()) {
-
             if (!m2Object) continue;
-            if (groupWmoObject->getDontUseLocalLightingForM2()) {
-                m2Object->setUseLocalLighting(false);
-            } else {
-                m2Object->setUseLocalLighting(true);
-                m2Object->setAmbientColorOverride(ambientColor, true);
-            }
 
             m2Candidates.addCandidate(m2Object);
         }

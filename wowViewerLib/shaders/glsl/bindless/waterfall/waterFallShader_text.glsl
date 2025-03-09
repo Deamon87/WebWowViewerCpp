@@ -24,7 +24,7 @@ layout(location = 0) out vec4 outColor;
 #include "../../common/commonM2WaterfallDescriptorSet.glsl"
 
 const InteriorLightParam intLightWaterfall = {
-    vec4(0,0,0,0),
+    vec4(0,0,0,1.0),
     vec4(0,0,0,0),
     vec4(0,0,0,0),
     vec4(0,0,0,1),
@@ -92,7 +92,6 @@ void main() {
         whiteWater_val_baseColor_mix.rgb,
         perturbedNormal,
         true,
-        0.0,
         scene,
         intLightWaterfall,
         vec3(0.0), /* accumLight */

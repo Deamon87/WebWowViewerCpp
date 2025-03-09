@@ -45,7 +45,7 @@ layout(std140, set=1, binding=1) uniform meshWideBlockPS {
 layout(location = 0) out vec4 outColor;
 
 const InteriorLightParam intLight = {
-    vec4(0,0,0,0),
+    vec4(0,0,0,1.0),
     vec4(0,0,0,1),
     vec4(0,0,0,1),
     vec4(0,0,0,1),
@@ -91,7 +91,6 @@ void main() {
             matDiffuse,
             vNormal,
             true,
-            0.0,
             scene,
             intLight,
             vVertexLighting.rgb, /* accumLight */

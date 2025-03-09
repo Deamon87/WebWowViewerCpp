@@ -26,7 +26,7 @@ layout(std140, set=1, binding=1) uniform meshWideBlockPS {
 };
 
 const InteriorLightParam intLight = {
-    vec4(0,0,0,0),
+    vec4(0,0,0,1.0f),
     vec4(0,0,0,0),
     vec4(0,0,0,0),
     vec4(0,0,0,1),
@@ -117,7 +117,6 @@ void main() {
                 matDiffuse,
                 vNormal,
                 true,
-                0,
                 scene,
                 intLight,
                 vec3(0.0) /*accumLight*/,

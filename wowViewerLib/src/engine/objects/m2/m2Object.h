@@ -130,11 +130,7 @@ private:
     std::vector<std::function<void()>> m_postLoadEvents;
 
     int m_skinNum = 0;
-    CImVector m_localDiffuseColor = {0, 0, 0, 0};
-    mathfu::vec4 m_ambientAddColor = mathfu::vec4(0, 0, 0, 0);
-    mathfu::vec4 m_sunAddColor = mathfu::vec4(0, 0, 0, 0);
-    mathfu::vec4 m_localDiffuseColorV = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
-    int m_useLocalDiffuseColor = -1;
+    mathfu::vec4 m_interiorDirectColor = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
 
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
@@ -163,7 +159,9 @@ private:
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, IDevice::MAX_FRAMES_IN_FLIGHT>> dynamicMeshes;
 
-    bool m_interiorAmbientWasSet = false; // For static only
+    //0.0 for full interior
+    //1.0 for full exterior
+    float m_interiorExteriorBlend = 1.0f; //exterior by default
     bool m_boolSkybox = false;
     bool m_overrideSkyModelMat = true;
 
@@ -201,12 +199,9 @@ public:
         return m_boolSkybox;
     }
 
-    bool getInteriorAmbientWasSet() {
-        return m_interiorAmbientWasSet;
-    }
-    void setInteriorAmbientWasSet(bool value) {
-        m_interiorAmbientWasSet = value;
-    }
+    void setInteriorExteriorBlend(float val) {
+        m_interiorExteriorBlend = val;
+    };
 
     void addPostLoadEvent(const std::function<void()> &value) {
         m_postLoadEvents.push_back(value);
@@ -274,18 +269,6 @@ public:
     bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
     void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes);
 
-    bool setUseLocalLighting(bool value) {
-        if (m_useLocalDiffuseColor == -1) {
-            m_useLocalDiffuseColor = value ? 1 : 0;
-            m_modelWideDataChanged = true;
-        }
-        if (value && m_useLocalDiffuseColor == 0) {
-            m_useLocalDiffuseColor = 1;
-            m_modelWideDataChanged = true;
-        }
-
-        return m_useLocalDiffuseColor == 1;
-    };
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const MathHelper::FrustumCullingData &frustumData);
 
@@ -309,20 +292,19 @@ public:
 
     void drawBB(mathfu::vec3 &color);
 
-    void setDiffuseColor(CImVector& value, float intensity);
-
     HBlpTexture getBlpTextureData(int textureInd);
     HGSamplableTexture getTexture(int textureInd);
     HBlpTexture getHardCodedTexture(int textureInd);
 
     mathfu::vec4 getM2SceneAmbientLight();
-    void setAmbientColorOverride(mathfu::vec4 &ambientColor, bool override) {
+    void setAmbientColorOverride(const mathfu::vec4 &ambientColor, bool override) {
         if (m_setAmbientColor != override && m_ambientColorOverride != ambientColor) {
             m_setAmbientColor = override;
             m_ambientColorOverride = ambientColor;
             m_modelWideDataChanged = true;
         }
     }
+    void setDirectColor(const mathfu::vec4 &interiorDirectColor);
     void setSunDirOverride(const mathfu::vec3 &sunDir) {
         m_interiorSunDir = sunDir;
         m_setInteriorSunDir = true;
