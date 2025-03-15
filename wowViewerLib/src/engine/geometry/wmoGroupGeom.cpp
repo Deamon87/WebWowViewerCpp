@@ -295,9 +295,13 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     unsigned char v36;
     unsigned char v37;
 
+    CImVector * mocv = (CImVector *) &colorArray[0];
+
+    bool usesExteriorLighting = (mogp->flags.EXTERIOR > 0) || (mogp->flags.EXTERIOR_LIT > 0) ;
+
     if (mohd->flags.flag_lighten_interiors) {
         for (int i(begin_second_fixup); i < cvLen; ++i) {
-            colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR > 0) ? 0xFF : 0x00);
+            mocv[i].a = (unsigned char) (usesExteriorLighting ? 0xFF : 0x00);
         }
     } else {
         if (mohd->flags.flag_skip_base_color) {
@@ -317,37 +321,37 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
-            colorArray[mocv_index].r -= v36;
-            colorArray[mocv_index].g -= v37;
-            colorArray[mocv_index].b -= v35;
+            mocv[mocv_index].r -= v36;
+            mocv[mocv_index].g -= v37;
+            mocv[mocv_index].b -= v35;
 
             float v38 = colorArray[mocv_index].a / 255.0f;
 
             float v11 = colorArray[mocv_index].r - v38 * colorArray[mocv_index].r;
             assert (v11 > -0.5f);
             assert (v11 < 255.5f);
-            colorArray[mocv_index].r = (unsigned char) std::max(0.0f, floorf(v11 / 2.0f));
+            mocv[mocv_index].r = (unsigned char) std::max(0.0f, floorf(v11 / 2.0f));
             float v13 = colorArray[mocv_index].g - v38 * colorArray[mocv_index].g;
             assert (v13 > -0.5f);
             assert (v13 < 255.5f);
-            colorArray[mocv_index].g = (unsigned char) std::max(0.0f, floorf(v13 / 2.0f));
+            mocv[mocv_index].g = (unsigned char) std::max(0.0f, floorf(v13 / 2.0f));
             float v14 = colorArray[mocv_index].b - v38 * colorArray[mocv_index].b;
             assert (v14 > -0.5f);
             assert (v14 < 255.5f);
-            colorArray[mocv_index++].b = (unsigned char) std::max(0.0f, floorf(v14 / 2.0f));
+            mocv[mocv_index++].b = (unsigned char) std::max(0.0f, floorf(v14 / 2.0f));
         }
 
         for (int i(begin_second_fixup); i < cvLen; ++i) {
             float v19 = (colorArray[i].r * colorArray[i].a) / 64 + colorArray[i].r - v36;
-            colorArray[i].r = (unsigned char) std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
+            mocv[i].r = (unsigned char) std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
 
             float v30 = (colorArray[i].g * colorArray[i].a) / 64 + colorArray[i].g - v37;
-            colorArray[i].g = (unsigned char) std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
+            mocv[i].g = (unsigned char) std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
 
             float v33 = (colorArray[i].a * colorArray[i].b) / 64 + colorArray[i].b - v35;
-            colorArray[i].b = (unsigned char) std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
+            mocv[i].b = (unsigned char) std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
-            colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR ) > 0 ? 0xFF : 0x00);
+            mocv[i].a = (unsigned char) (usesExteriorLighting ? 0xFF : 0x00);
         }
     }
 }
@@ -433,8 +437,7 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     return indexVBO;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd,
-                                                       const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd) {
     if (vertexBufferBindings == nullptr) {
         //Do postLoading stuff here
         if (mohd) {
@@ -443,7 +446,7 @@ HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCrea
                 this->m_attenuateFunc(*this);
             }
         }
-        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer), ambientBuffer);
+        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer));
     }
 
     return vertexBufferBindings;

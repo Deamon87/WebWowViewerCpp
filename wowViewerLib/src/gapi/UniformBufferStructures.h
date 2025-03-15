@@ -9,6 +9,8 @@
 #include <mathfu/glsl_mappings.h>
 #include "mathfu/glsl_mappings.h"
 
+#define MAX_WMO_GROUPS 512
+
 #define MAX_MATRIX_NUM 256
 #define MAX_M2COLORS_NUM 256
 #define MAX_TEXTURE_WEIGHT_NUM 64
@@ -202,6 +204,16 @@ namespace Ribbon {
 }
 
 namespace WMO {
+    struct InteriorBlockData {
+        mathfu::vec4_packed uAmbientColor;
+        mathfu::vec4_packed uHorizontAmbientColor;
+        mathfu::vec4_packed uGroundAmbientColor;
+    };
+
+    struct GroupInteriorData {
+        InteriorBlockData interiorData[MAX_WMO_GROUPS];
+    };
+
     //WMO VertexBuffer format
     struct modelWideBlockVS {
         mathfu::mat4 uPlacementMat;

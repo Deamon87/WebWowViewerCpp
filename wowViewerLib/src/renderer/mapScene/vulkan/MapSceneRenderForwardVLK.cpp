@@ -167,13 +167,11 @@ HGVertexBufferBindings MapSceneRenderForwardVLK::createADTVAO(HGVertexBuffer ver
     return adtVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGVertexBufferBindings MapSceneRenderForwardVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto wmoVAO = m_device->createVertexBufferBindings();
 
     wmoVAO->addVertexBufferBinding(vertexBuffer, std::vector(staticWMOBindings.begin(), staticWMOBindings.end()));
-    wmoVAO->addVertexBufferBinding(ambientBuffer ? BufferChunkHelperVLK::cast(ambientBuffer) : nullptr,
-                                   std::vector(staticWmoGroupAmbient.begin(), staticWmoGroupAmbient.end()), true);
     wmoVAO->setIndexBuffer(indexBuffer);
 
     return wmoVAO;
@@ -444,15 +442,22 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderForwardVLK::createM2RibbonMater
 
     return material;
 };
-
-std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderForwardVLK::createWMOWideChunk() {
+std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderForwardVLK::createWmoModelMatrixChunk() {
     return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(uboBuffer);
+};
+
+std::shared_ptr<IWmoModelData> MapSceneRenderForwardVLK::createWMOWideChunk(int groupNum)  {
+    auto wmoModelData = std::make_shared<IWmoModelData>();
+    wmoModelData->m_placementMatrix = createWmoModelMatrixChunk();
+    BufferChunkHelperVLK::create(uboBuffer, wmoModelData->m_groupInteriorData, sizeof(WMO::GroupInteriorData) * groupNum);
+
+    return wmoModelData;
 }
-std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> MapSceneRenderForwardVLK::createWMOGroupAmbientChunk() {
-    return std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(vboWMOGroupAmbient);
+std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> MapSceneRenderForwardVLK::createWMOGroupAmbientChunk() {
+    return std::make_shared<CBufferChunkVLK<WMO::GroupInteriorData>>(vboWMOGroupAmbient);
 }
 
-std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                                           const PipelineTemplate &pipelineTemplate,
                                                                           const WMOMaterialTemplate &wmoMaterialTemplate) {
     auto l_vertexData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockVS>>(uboStaticBuffer); ;
@@ -462,9 +467,9 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
     auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, forwardShaderConfig, {})
         .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(1, [l_sceneWideChunk, &wmoModelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(0, BufferChunkHelperVLK::cast(wmoModelWide->m_placementMatrix))
                 .ubo(1, *l_vertexData)
                 .ubo(2, *l_fragmentData).delayUpdate();
         })
@@ -912,7 +917,7 @@ HGSortableMesh MapSceneRenderForwardVLK::createWaterMesh(gMeshTemplate &meshTemp
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
-HGSortableMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGSortableMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) {
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
     return mesh;
 }

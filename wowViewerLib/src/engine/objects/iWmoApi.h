@@ -311,7 +311,7 @@ class IWmoApi {
 public:
     virtual std::shared_ptr<M2Object> getDoodad(int index) = 0;
     virtual SMOHeader *getWmoHeader() = 0;
-    virtual mathfu::vec3 getAmbientColor() = 0;
+    virtual std::array<mathfu::vec3,3> getAmbientColors() = 0;
     virtual PointerChecker<SMOMaterial> &getMaterials() = 0;
     virtual std::shared_ptr<IWMOMaterial> getMaterialInstance(int index, const HMapSceneBufferCreate &sceneRenderer) = 0;
     virtual bool isLoaded() = 0;
@@ -321,7 +321,11 @@ public:
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
     virtual int getActiveDoodadSet() = 0;
     virtual std::shared_ptr<CWmoNewLight> getNewLight(int index) = 0;
-
+    virtual void setInteriorAmbientColor(int groupIndex,
+        const mathfu::vec3 &ambient,
+        const mathfu::vec3 &horizontAmbient,
+        const mathfu::vec3 &groundAmbient
+    ) = 0;
 
     virtual HGSamplableTexture getTexture(int textureId, bool isSpec) = 0;
     virtual void updateBB() = 0;

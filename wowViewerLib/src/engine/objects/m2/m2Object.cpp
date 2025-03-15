@@ -586,7 +586,7 @@ CAaBox M2Object::getColissionAABB() {
     return result;
 }
 
-void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat) {
+void M2Object::createPlacementMatrix(const SMODoodadDef &def, mathfu::mat4 &wmoPlacementMat) {
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
     placementMatrix = placementMatrix * wmoPlacementMat;
     placementMatrix = placementMatrix * mathfu::mat4::FromTranslationVector(mathfu::vec3(def.position));
@@ -609,7 +609,7 @@ void M2Object:: createPlacementMatrix(SMODoodadDef &def, mathfu::mat4 &wmoPlacem
 
 }
 
-void M2Object::createPlacementMatrix(SMDoodadDef &def) {
+void M2Object::createPlacementMatrix(const SMDoodadDef &def) {
     float posx = def.position.x;
     float posy = def.position.y;
     float posz = def.position.z;

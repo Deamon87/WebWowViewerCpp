@@ -1288,7 +1288,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
     }
 }
 
-std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
+std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, const SMDoodadDef &doodadDef) {
     auto it = m_m2MapObjects[doodadDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
@@ -1306,7 +1306,7 @@ std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &do
 }
 
 
-std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
+std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, const SMDoodadDef &doodadDef) {
     auto it = m_m2MapObjects[doodadDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
@@ -1322,7 +1322,7 @@ std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDe
     }
     return nullptr;
 }
-std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
@@ -1337,7 +1337,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
@@ -1352,7 +1352,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObj
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
@@ -1367,7 +1367,7 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefOb
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
     if (!it.expired()) {
         return it.lock();

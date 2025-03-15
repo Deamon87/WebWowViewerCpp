@@ -8,7 +8,7 @@ CPointLight::CPointLight() {
 
 }
 
-CPointLight::CPointLight(WdtLightFile::MapPointLight3 &lightRecord) {
+CPointLight::CPointLight(const WdtLightFile::MapPointLight3 &lightRecord) {
 
     mathfu::vec4 attenVec = mathfu::vec4(lightRecord.attenuationStart, lightRecord.intensity, lightRecord.attenuationEnd, 0);
 

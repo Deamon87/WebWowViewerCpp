@@ -128,22 +128,12 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     HGDevice device = m_api->hDevice;
 
-    m_ambientChunk = sceneRenderer->createWMOGroupAmbientChunk();
-    {
-        auto &localAmbient = m_ambientChunk->getObject();
-        localAmbient = mathfu::vec4(
-            this->getAmbientColor().xyz(),
-            ((this->m_geom->mogp->flags.INTERIOR > 0) && (!this->m_geom->mogp->flags.EXTERIOR_LIT)) ? 1.0f : 0.0f
-        );
-        m_ambientChunk->save();
-    }
-
-    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader(), m_ambientChunk);
+    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader());
 
     MOGP *mogp = m_geom->mogp;
 
     for (int j = minBatch; j < maxBatch; j++) {
-        SMOBatch &renderBatch = m_geom->batches[j];
+        const SMOBatch &renderBatch = m_geom->batches[j];
 
         int materialIndex;
         if (renderBatch.flag_use_material_id_large) {
@@ -164,7 +154,7 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         meshTemplate.end = renderBatch.num_indices;
 
         //Make mesh
-        auto hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_ambientChunk);
+        auto hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_groupNumber);
         if (!hmesh->getIsTransparent()) {
             this->m_meshArray.push_back(hmesh);
         } else {
@@ -315,7 +305,7 @@ void WmoGroupObject::loadLights() {
     }
 }
 
-void WmoGroupObject::createWorldGroupBB(CAaBox &bbox, mathfu::mat4 &placementMatrix) {
+void WmoGroupObject::createWorldGroupBB(const CAaBox &bbox, mathfu::mat4 &placementMatrix) {
 //            groupInfo = this.groupInfo;
 //            bb1 = groupInfo.bb1;
 //            bb2 = groupInfo.bb2;
@@ -324,8 +314,8 @@ void WmoGroupObject::createWorldGroupBB(CAaBox &bbox, mathfu::mat4 &placementMat
 //            bb1 = groupInfo.BoundBoxCorner1;
 //            bb2 = groupInfo.BoundBoxCorner2;
 //        }
-    C3Vector &bb1 = bbox.min;
-    C3Vector &bb2 = bbox.max;
+    const C3Vector &bb1 = bbox.min;
+    const C3Vector &bb2 = bbox.max;
 
     mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
     mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
@@ -497,11 +487,11 @@ bool WmoGroupObject::getTopAndBottomTriangleFromBsp(
     std::vector<PortalInfo_t> &portalGeoms = this->m_wmoApi->getPortalInfos();
 
     for (int j = moprIndex; j < moprIndex + numItems; j++) {
-        SMOPortalRef *relation = &portalRels[j];
-        SMOPortal *portalInfo = &portalInfos[relation->portal_index];
+        const SMOPortalRef *relation = &portalRels[j];
+        const SMOPortal *portalInfo = &portalInfos[relation->portal_index];
 
         int nextGroup = relation->group_index;
-        C4Plane *plane = &portalInfo->plane;
+        const C4Plane *plane = &portalInfo->plane;
 
         int base_index = portalInfo->base_index;
 
@@ -569,7 +559,7 @@ void WmoGroupObject::getBottomVertexesFromBspResult(
 
     //1. Loop through bsp results
     for (int i = 0; i < bspLeafList.size(); i++) {
-        t_BSP_NODE *node = &nodes[bspLeafList[i]];
+        const t_BSP_NODE *node = &nodes[bspLeafList[i]];
 
         for (int j = node->firstFace; j < node->firstFace + node->numFaces; j++) {
             int vertexInd1 = m_geom->indicies[3 * m_geom->bpsIndicies[j] + 0];
@@ -627,15 +617,10 @@ void WmoGroupObject::getBottomVertexesFromBspResult(
                     bottomZ = z;
                     if (m_geom->colorArray != nullptr) {
                         auto &colorArr = m_geom->colorArray;
-                        colorUnderneath = mathfu::vec4(
-                            bary[0] * colorArr[vertexInd1].r + bary[1] * colorArr[vertexInd2].r +
-                            bary[2] * colorArr[vertexInd3].r,
-                            bary[0] * colorArr[vertexInd1].g + bary[1] * colorArr[vertexInd2].g +
-                            bary[2] * colorArr[vertexInd3].g,
-                            bary[0] * colorArr[vertexInd1].b + bary[1] * colorArr[vertexInd2].b +
-                            bary[2] * colorArr[vertexInd3].b,
-                            0
-                        ) * (1 / 255.0f);
+                        colorUnderneath =
+                            bary[0] * ImVectorToVec4(colorArr[vertexInd1]) +
+                            bary[1] * ImVectorToVec4(colorArr[vertexInd2]) +
+                            bary[3] * ImVectorToVec4(colorArr[vertexInd3]);
                     }
                 }
 
@@ -812,23 +797,19 @@ const std::vector<std::shared_ptr<CWmoNewLight>> &WmoGroupObject::getWmoNewLight
     return m_wmoNewLights;
 }
 
-mathfu::vec4 WmoGroupObject::getAmbientColor() {
+std::array<mathfu::vec3, 3> WmoGroupObject::getAmbientColors() {
+    std::array<mathfu::vec3, 3> ambColors;
     if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
-        mathfu::vec4 ambColor;
-
-        ambColor = mathfu::vec4(m_wmoApi->getAmbientColor(), 1.0);
+        ambColors = m_wmoApi->getAmbientColors();
         if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
-            ambColor = mathfu::vec4(
-                ((float) m_geom->replacement_for_header_color.r / 255.0f),
-                ((float) m_geom->replacement_for_header_color.g / 255.0f),
-                ((float) m_geom->replacement_for_header_color.b / 255.0f),
-                ((float) m_geom->replacement_for_header_color.a / 255.0f)
-            );
+            ambColors[0] = ImVectorToVec4(m_geom->replacement_for_header_color).xyz();
+            ambColors[1] = ambColors[0];
+            ambColors[2] = ambColors[0];
         }
 
-        return ambColor;
+        return ambColors;
     }
-    return mathfu::vec4(0,0,0,0);
+    return ambColors;
 }
 
 void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint8_t a4, mathfu::vec3 &color_out_1, uint8_t a6)
@@ -859,9 +840,9 @@ void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint
 }
 
 void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
-    mathfu::vec4 ambientColor = getAmbientColor();
+    auto ambientColors = getAmbientColors();
 
-
+    auto ambientColor = ambientColors[0];
     if (m_geom->colorArray != nullptr) {
             int nodeId = 0;
             auto &nodes = this->m_geom->bsp_nodes;
@@ -893,17 +874,17 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
                 mocvColor = mathfu::vec4(mocvColor.x, mocvColor.y, mocvColor.z, 0);
 
                 mathfu::vec3 someColor;
-                mathfu::vec3 colorCombined = (2.0f * mocvColor.xyz()) + ambientColor.xyz();
+                mathfu::vec3 colorCombined = (2.0f * mocvColor.xyz()) + ambientColor;
                 colorCombined = mathfu::vec3::Min(mathfu::vec3(1.0f, 1.0f, 1.0f), colorCombined);
                 mathfu::vec3 ambientOut = {0,0,0};
                 AdjustLighting(colorCombined, someColor, 0xA8u, ambientOut, 0x60u);
 
-                ambientColor = mathfu::vec4(ambientOut.x, ambientOut.y, ambientOut.z, ambientColor.w);
+                ambientColor = mathfu::vec3(ambientOut.x, ambientOut.y, ambientOut.z);
 
 //                ambientColor += mocvColor;
             }
 
-        m2Object->setAmbientColorOverride(ambientColor, true);
+        // m2Object->setAmbientColorOverride(ambientColor, true);
         // m2Object->setInteriorAmbientWasSet(true);
     }
 

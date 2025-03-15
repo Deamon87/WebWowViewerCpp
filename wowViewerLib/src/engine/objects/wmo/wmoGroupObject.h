@@ -21,7 +21,7 @@ class WMOGroupListContainer;
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, const SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
@@ -60,7 +60,7 @@ public:
                            mathfu::vec4 &cameraVec4,
                            const MathHelper::FrustumCullingData &frustumData);
 
-    mathfu::vec4 getAmbientColor();
+    std::array<mathfu::vec3, 3> getAmbientColors();
     void assignInteriorParams(M2Object *m2Object);
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
@@ -85,13 +85,11 @@ private:
     mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
-
-    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> m_ambientChunk;
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGSortableMesh> m_sortableMeshArray = {};
     std::vector<std::shared_ptr<LiquidInstance>> m_liquidInstances = {};
 
-    SMOGroupInfo *m_main_groupInfo;
+    const SMOGroupInfo *m_main_groupInfo;
 
     std::vector <std::shared_ptr<M2Object>> m_doodads = {};
     std::vector<CPointLight> m_pointLights = {};
@@ -105,7 +103,7 @@ private:
     LiquidTypes liquid_type = LiquidTypes::LIQUID_NONE;
 
     void startLoading();
-    void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
+    void createWorldGroupBB (const CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
     void checkDoodads(M2ObjectListContainer &wmoM2Candidates);

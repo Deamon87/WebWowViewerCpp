@@ -53,8 +53,8 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         return nullptr;
     }
 
-    SMODoodadSet *defaultDooodadSetDef = &this->mainGeom->doodadSets[0];
-    SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
+    const SMODoodadSet *defaultDooodadSetDef = &this->mainGeom->doodadSets[0];
+    const SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
 
     bool isInDefaultDoodadSetDef =
         (index >= defaultDooodadSetDef->firstinstanceindex) &&
@@ -71,7 +71,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     if (iterator != this->m_doodadsUnorderedMap.end())
         return iterator->second;
 
-    SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
+    const SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
     // if (doodadDef->flag_AcceptProjTex) std::cout << "doodadDef->flag_AcceptProjTex" << std::endl;
     // if (doodadDef->flag_0x2) std::cout << "doodadDef->flag_0x2" << std::endl;
@@ -149,6 +149,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatChanged = true;
 
     //BBox is in ADT coordinates. We need to transform it first
     C3Vector &bb1 = mapObjDef.extents.min;
@@ -181,6 +182,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatChanged = true;
 
     //BBox is in ADT coordinates. We need to transform it first
 //    C3Vector &bb1 = mapObjDef.extents.min;
@@ -252,7 +254,7 @@ void WmoObject::createWorldPortals() {
     geometryPerPortal = std::vector<PortalInfo_t>(portalCnt);
 
     for (int j = 0; j < portalCnt; j++) {
-        SMOPortal *portalInfo = &portals[j];
+        const SMOPortal *portalInfo = &portals[j];
 
 
         int base_index = portalInfo->base_index;
@@ -319,9 +321,10 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
             this->createMaterialCache();
             this->createNewLights();
             this->createGroupObjects();
+            this->calculateAmbient();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
-            m_modelWideChunk = sceneRenderer->createWMOWideChunk();
+            m_wmoModelChunk = sceneRenderer->createWMOWideChunk(mainGeom->groupsLen);
 
             if ((mainGeom->skyBoxM2FileName != nullptr && mainGeom->skyBoxM2FileNameLen > 0) || mainGeom->skyboxM2FileId != 0) {
                 skyBox = m2Factory->createObject(m_api, true);
@@ -352,9 +355,20 @@ bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
 void WmoObject::update() {
     if (!m_loaded) return;
 
-    auto &modelWide = m_modelWideChunk->getObject();
-    modelWide.uPlacementMat = m_placementMatrix;
-    m_modelWideChunk->save();
+    if (m_placementMatChanged) {
+        auto &placementMat = m_wmoModelChunk->m_placementMatrix->getObject();
+        placementMat.uPlacementMat = m_placementMatrix;
+        m_wmoModelChunk->m_placementMatrix->save();
+
+        m_placementMatChanged = false;
+    }
+    if (m_interiorAmbientsChanged) {
+        auto &groupInteriorData = m_wmoModelChunk->m_groupInteriorData->getObject();
+        int interCount = (int) std::min(m_groupInteriorData.size(), (size_t) MAX_WMO_GROUPS);
+        std::copy(m_groupInteriorData.data(), m_groupInteriorData.data() + interCount, groupInteriorData.interiorData);
+
+        m_wmoModelChunk->m_groupInteriorData->save();
+    }
 
     for (int i= 0; i < groupObjects.size(); i++) {
         if(groupObjects[i] != nullptr) {
@@ -555,7 +569,6 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   M2ObjectListContainer &m2Candidates) {
     std::shared_ptr<WmoGroupObject> groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
-        mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
 
         for (auto &m2Object : groupWmoObject->getDoodads()) {
             if (!m2Object) continue;
@@ -818,11 +831,11 @@ void WmoObject::traverseGroupWmo(
     }
 
     for (int j = moprIndex; j < moprIndex+numItems; j++) {
-        SMOPortalRef * relation = &mainGeom->portalReferences[j];
-        SMOPortal * portalInfo = &mainGeom->portals[relation->portal_index];
+        const SMOPortalRef * relation = &mainGeom->portalReferences[j];
+        const SMOPortal * portalInfo = &mainGeom->portals[relation->portal_index];
 
         int nextGroup = relation->group_index;
-        C4Plane &plane = portalInfo->plane;
+        const C4Plane &plane = portalInfo->plane;
 
         //Skip portals we already visited
         if (traverseTempData.transverseVisitedPortals[relation->portal_index]) continue;
@@ -983,7 +996,7 @@ void WmoObject::traverseGroupWmo(
 
         //5. Traverse next
         std::shared_ptr<WmoGroupObject> &nextGroupObject = groupObjects[nextGroup];
-        SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
+        const SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
         if ((nextGroupInfo.flags.EXTERIOR) == 0) {
             auto &interiorView = traverseTempData.ivPerWMOGroup[nextGroup];
             //5.1 The portal is into interior wmo group. So go on.
@@ -1032,19 +1045,19 @@ void WmoObject::traverseGroupWmo(
 }
 
 bool WmoObject::isGroupWmoInterior(int groupId) {
-    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
     bool result = ((groupInfo->flags.EXTERIOR) == 0);
     return result;
 }
 
 bool WmoObject::isGroupWmoExteriorLit(int groupId) {
-    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
     bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1);
     return result;
 }
 
 bool WmoObject::isGroupWmoExtSkybox(int groupId) {
-    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
     bool result = ((groupInfo->flags.SHOW_EXTERIOR_SKYBOX) == 1);
     return result;
 }
@@ -1086,7 +1099,7 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
         bool result = false;
         for (int i = 0; i < candidateGroups.size(); i++) {
             WmoGroupResult *candidate = &candidateGroups[i];
-            SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupIndex];
+            const SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupIndex];
             /*if ((candidate.topBottom.bottomZ < 99999) && (candidate.topBottom.topZ > -99999)){
                 if ((cameraLocal[2] < candidateGroups[i].topBottom.bottomZ) || (cameraLocal[2] > candidateGroups[i].topBottom.topZ))
                     continue
@@ -1235,10 +1248,10 @@ std::function<void(WmoGroupGeom &wmoGroupGeom)> WmoObject::getAttenFunction() {
     } ;
 }
 
-void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &fogResults) {
+void WmoObject::checkFog(const mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &fogResults) {
     mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
     for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
-        SMOFog &fogRecord = mainGeom->fogs[i];
+        const SMOFog &fogRecord = mainGeom->fogs[i];
         mathfu::vec3 fogPosVec = mathfu::vec3(fogRecord.pos);
 
         float distanceToFog = (fogPosVec - cameraLocal).Length();
@@ -1318,8 +1331,7 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, 
         materialTemplate.textures[8] = getTexture(material.runTimeData[3], false);
     }
 
-    materialInstance = sceneRenderer->createWMOMaterial(m_modelWideChunk,
-                                                                  pipelineTemplate, materialTemplate);
+    materialInstance = sceneRenderer->createWMOMaterial(m_wmoModelChunk, pipelineTemplate, materialTemplate);
     m_materialCache[materialIndex] = materialInstance;
 
     C4Vector matUVAnim = C4Vector(mathfu::vec4(0.0f,0.0f,0.0f,0.0f));
@@ -1369,30 +1381,8 @@ int WmoObject::getWmoGroupId(int groupNum) {
     return groupObjects[groupNum]->getWmoGroupGeom()->mogp->wmoGroupID;
 }
 
-mathfu::vec3 WmoObject::getAmbientColor() {
-    CImVector ambientColor = mainGeom->header->ambColor;
-    if (mainGeom->mavgs != nullptr) {
-        int recordIndex = 0;
-        for (int i = 0; i < mainGeom->mavgsLen; i++) {
-            if (mainGeom->mavgs[i].doodadSetID == m_doodadSet) {
-                recordIndex = i;
-                break;
-            }
-        }
-        auto &record = mainGeom->mavgs[recordIndex];
-        if (record.flags & 1) {
-            ambientColor = record.color3;
-        } else {
-            ambientColor = record.color1;
-        }
-    }
-    mathfu::vec3 ambColor = mathfu::vec3(
-        ((float) ambientColor.r / 255.0f),
-        ((float) ambientColor.g / 255.0f),
-        ((float) ambientColor.b / 255.0f)
-    );
-
-    return ambColor;
+std::array<mathfu::vec3,3> WmoObject::getAmbientColors() {
+    return m_ambientColors;
 }
 
 void WmoObject::createNewLights() {
@@ -1406,9 +1396,78 @@ void WmoObject::createNewLights() {
         m_newLights[i] = std::make_shared<CWmoNewLight>(m_placementMatrix, mainGeom->newLights[i]);
     }
 }
+void WmoObject::calculateAmbient() {
+    mathfu::vec3 ambientColor;
+    mathfu::vec3 horizontAmbientColor;
+    mathfu::vec3 groundAmbientColor;
+
+    if (mainGeom->mavgsLen > 0) {
+        //Take ambient from MAVG
+        int recordIndex = 0;
+        for (int i = 0; i < mainGeom->mavgsLen; i++) {
+            if (mainGeom->mavgs[i].doodadSetID == m_doodadSet) {
+                recordIndex = i;
+                break;
+            }
+        }
+        auto &record = mainGeom->mavgs[recordIndex];
+        if ((record.flags & 1) != 0) {
+            ambientColor = ImVectorToVec4(record.color1).xyz();
+            horizontAmbientColor = ImVectorToVec4(record.color2).xyz();
+            groundAmbientColor = ImVectorToVec4(record.color3).xyz();
+        } else {
+            auto amb = ImVectorToVec4(record.color1).xyz();
+            ambientColor = amb;
+            horizontAmbientColor = amb;
+            groundAmbientColor = amb;
+        }
+    } if (mainGeom->mavdsLen > 0) {
+        //Take ambient from MAVD
+        auto const &mavds = mainGeom->mavds;
+        if ((mavds->flags & 1) != 0) {
+            ambientColor = ImVectorToVec4(mavds->color1).xyz();
+            horizontAmbientColor = ImVectorToVec4(mavds->color2).xyz();
+            groundAmbientColor = ImVectorToVec4(mavds->color3).xyz();
+        } else {
+            auto amb = ImVectorToVec4(mavds->color1).xyz();
+            ambientColor = amb;
+            horizontAmbientColor = amb;
+            groundAmbientColor = amb;
+        }
+    } else if (mainGeom->header) {
+        auto amb = ImVectorToVec4(mainGeom->header->ambColor).xyz();
+        ambientColor = amb;
+        horizontAmbientColor = amb;
+        groundAmbientColor = amb;
+    }
+
+    m_ambientColors = {ambientColor, horizontAmbientColor, groundAmbientColor};
+    m_groupInteriorData = decltype(m_groupInteriorData)(groupObjects.size());
+    for (auto &interiorAmbientBlock : m_groupInteriorData) {
+         interiorAmbientBlock.uAmbientColor = mathfu::vec4(ambientColor, 1.0f);
+         interiorAmbientBlock.uHorizontAmbientColor = mathfu::vec4(horizontAmbientColor, 1.0f);
+         interiorAmbientBlock.uGroundAmbientColor = mathfu::vec4(groundAmbientColor, 1.0f);
+    }
+    m_interiorAmbientsChanged = true;
+}
 
 std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
     return m_newLights[index];
 }
+void WmoObject::setInteriorAmbientColor(int groupIndex,
+                                        const mathfu::vec3 &ambient,
+                                        const mathfu::vec3 &horizontAmbient,
+                                        const mathfu::vec3 &groundAmbient)
+{
+    assert(groupIndex < m_groupInteriorData.size());
+
+    auto &interiorAmbientBlock = m_groupInteriorData[groupIndex];
+    interiorAmbientBlock.uAmbientColor         = mathfu::vec4(ambient, 1.0f);
+    interiorAmbientBlock.uHorizontAmbientColor = mathfu::vec4(horizontAmbient, 1.0f);
+    interiorAmbientBlock.uGroundAmbientColor   = mathfu::vec4(groundAmbient, 1.0f);
+
+    m_interiorAmbientsChanged = true;
+}
+
 
 std::shared_ptr<WMOEntityFactory> wmoFactory = std::make_shared<WMOEntityFactory>();

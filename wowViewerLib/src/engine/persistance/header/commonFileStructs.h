@@ -75,26 +75,18 @@ public:
     }
 #endif
 
-    inline T* operator=(T* other) {
+    inline const T* operator=(T* other) {
         this->elementOffset = other;
         return other;
     }
-    inline  T* operator->() {
+    inline const T* operator->() const{
 #ifdef DEBUGPOINTER
         assert(elementOffset != nullptr);
 #endif
         return this->elementOffset;
     }
 
-    inline T& operator[](size_t index) {
-#ifdef DEBUGPOINTER
-        if (index >= maxLenPtr) {
-            assert(index < maxLenPtr);
-        }
-#endif
-        return elementOffset[index];
-    }
-    inline T& operator[](size_t index) const {
+    inline const T& operator[](size_t index) const{
 #ifdef DEBUGPOINTER
         if (index >= maxLenPtr) {
             assert(index < maxLenPtr);

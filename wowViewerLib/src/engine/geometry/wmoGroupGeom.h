@@ -41,7 +41,7 @@ public:
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
     bool hasWater() const {return m_mliq != nullptr; };
 
-    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer);
+    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd);
     HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type, CAaBox &waterAaBB);
 
     int getFileDataId() const {return m_fileDataId;}
@@ -87,6 +87,8 @@ public:
 
     PointerChecker<CImVector> colorArray = cvLen;
     int cvLen = 0;
+
+
 
     PointerChecker<CImVector> colorArray2 = cvLen2;
     int cvLen2 = 0;

@@ -123,12 +123,20 @@ public:
     std::shared_ptr<IBufferChunk<DnSky::meshWideBlockVS>> m_skyColors = nullptr;
 };
 
+class IWmoModelData {
+public:
+    virtual ~IWmoModelData() = default;
+
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_placementMatrix = nullptr;
+    std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> m_groupInteriorData = nullptr;
+};
+
 class IWMOMaterial : public IMaterial {
 public:
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockVS>> m_materialVS= nullptr;
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockPS>> m_materialPS = nullptr;
 };
-class IWMOMaterialVis : public IWMOMaterial {
+class IWMOMaterialBindless : public IWMOMaterial {
 public:
     std::shared_ptr<IBufferChunk<WMO::meshWideBlockBindless>> m_meshBindless = nullptr;
     std::shared_ptr<IBufferChunk<WMO::perMeshData>> m_perMeshData = nullptr;

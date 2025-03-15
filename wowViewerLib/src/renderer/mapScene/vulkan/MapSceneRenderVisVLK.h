@@ -46,10 +46,10 @@ public:
                                                               const PipelineTemplate &pipelineTemplate,
                                                               const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) override;
 
-    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWMOWideChunk() override;
-    std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> createWMOGroupAmbientChunk() override;
+    std::shared_ptr<IWmoModelData> createWMOWideChunk(int groupNum)  override;
+    std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> createWMOGroupAmbientChunk() override;
 
-    std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+    std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                     const PipelineTemplate &pipelineTemplate,
                                                     const WMOMaterialTemplate &wmoMaterialTemplate) override;
     std::shared_ptr<IWaterMaterial> createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,

@@ -379,7 +379,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptyM2RibbonVAO = createM2RibbonVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
-    m_emptyWMOVAO = createWmoVAO(vboWMOBuffer, iboBuffer, nullptr);
+    m_emptyWMOVAO = createWmoVAO(vboWMOBuffer, iboBuffer);
     m_emptyWaterVAO = createWaterVAO(vboWaterBuffer, iboBuffer);
     m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
@@ -623,7 +623,7 @@ HGVertexBufferBindings MapSceneRenderBindlessVLK::createADTVAO(HGVertexBuffer ve
     return adtVAO;
 };
 
-HGVertexBufferBindings MapSceneRenderBindlessVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer, const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGVertexBufferBindings MapSceneRenderBindlessVLK::createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) {
     //VAO doesn't exist in Vulkan, but it's used to hold proper reading rules as well as buffers
     auto wmoVAO = m_device->createVertexBufferBindings();
 
@@ -981,14 +981,14 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderBindlessVLK::createM2RibbonMate
     return material;
 };
 
-std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderBindlessVLK::createWMOWideChunk() {
+std::shared_ptr<IWmoModelData> MapSceneRenderBindlessVLK::createWMOWideChunk(int groupNum)  {
     return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(wmoBuffers.wmoPlacementMats);
 }
-std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> MapSceneRenderBindlessVLK::createWMOGroupAmbientChunk() {
-    return std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(wmoBuffers.wmoGroupAmbient);
+std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> MapSceneRenderBindlessVLK::createWMOGroupAmbientChunk() {
+    return std::make_shared<CBufferChunkVLK<WMO::GroupInteriorData>>(wmoBuffers.wmoGroupAmbient);
 }
 
-std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                                            const PipelineTemplate &pipelineTemplate,
                                                                            const WMOMaterialTemplate &wmoMaterialTemplate) {
     auto l_vertexData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockVS>>(wmoBuffers.wmoMeshWideVSes); ;
@@ -998,7 +998,7 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const
     auto staticMaterial = getWMOStaticMaterial(pipelineTemplate);
 
     auto material = MaterialBuilderVLK::fromMaterial(m_device, staticMaterial)
-        .toMaterial<IWMOMaterialVis>([&l_vertexData, &l_fragmentData, &l_bindless](IWMOMaterialVis *instance) -> void {
+        .toMaterial<IWMOMaterialBindless>([&l_vertexData, &l_fragmentData, &l_bindless](IWMOMaterialBindless *instance) -> void {
             instance->m_materialPS = l_fragmentData;
             instance->m_materialVS = l_vertexData;
             instance->m_meshBindless = l_bindless;
@@ -1017,7 +1017,7 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const
         auto &bindless = l_bindless->getObject();
         bindless.blockVSIndex = l_vertexData->getIndex();
         bindless.meshWideIndex = l_fragmentData->getIndex();
-        bindless.placementMat = BufferChunkHelperVLK::cast(modelWide)->getIndex();
+        bindless.placementMat = BufferChunkHelperVLK::cast(wmoModelWide->m_placementMatrix)->getIndex();
 
         bindless.texture1 = material->m_bindlessText[0]->getIndex();
         bindless.texture2 = material->m_bindlessText[1]->getIndex();
@@ -1687,16 +1687,15 @@ MapSceneRenderBindlessVLK::createM2ParticleMesh(gMeshTemplate &meshTemplate, con
     return mesh;
 }
 
-HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material,
-                                                const std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> &ambientBuffer) {
+HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) {
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyWMOVAO;
 
-    auto originalMat = std::dynamic_pointer_cast<IWMOMaterialVis>(material);
+    auto originalMat = std::dynamic_pointer_cast<IWMOMaterialBindless>(material);
     auto c_perMeshData = std::make_shared<CBufferChunkVLK<WMO::perMeshData>>(wmoBuffers.wmoPerMeshData);
 
     auto newMat = MaterialBuilderVLK::fromMaterial(m_device, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material))
-    .toMaterial<IWMOMaterialVis>([&c_perMeshData](IWMOMaterialVis *instance) -> void {
+    .toMaterial<IWMOMaterialBindless>([&c_perMeshData](IWMOMaterialBindless *instance) -> void {
         instance->m_perMeshData = c_perMeshData;
     });
 

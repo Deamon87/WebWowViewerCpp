@@ -189,6 +189,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
             }
         },
         {
+            'MAVD', {
+                [](WmoMainGeom &object, ChunkData &chunkData) {
+                    debuglog("Entered MAVD");
+                    object.mavdsLen = chunkData.chunkLen / sizeof(MAVD);
+                    chunkData.readValues(object.mavds, object.mavdsLen);
+                }
+            }
+        },
+        {
             'MCVP', {
                 [](WmoMainGeom &object, ChunkData &chunkData) {
                     debuglog("Entered MCVP");

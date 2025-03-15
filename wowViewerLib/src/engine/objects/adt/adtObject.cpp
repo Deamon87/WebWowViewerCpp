@@ -48,7 +48,7 @@ void AdtObject::loadM2s() {
     objectLods[0].m2Objects = std::vector<std::shared_ptr<M2Object>>(length, nullptr);
     objectLods[0].m2ObjectIds = std::vector<M2ObjId>(length);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
-        SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
+        const SMDoodadDef &doodadDef = m_adtFileObj->doodadDef[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id) {
             //2. Get model
             int fileDataId = doodadDef.nameId;
@@ -77,7 +77,7 @@ void AdtObject::loadM2s() {
     objectLods[1].m2ObjectIds = std::vector<M2ObjId>(length);
     for (int j = 0, i = offset; i < offset+length; i++, j++) {
         //1. Get filename
-        SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
+        const SMDoodadDef &doodadDef = m_adtFileObjLod->doodadDefObj1[i];
         if (doodadDef.flags.mddf_entry_is_filedata_id == 1) {
             //2. Get model
             int fileDataId = doodadDef.nameId;
@@ -157,7 +157,7 @@ void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
     ZoneScoped;
     if (m_adtFile->mH2OHeader == nullptr) return;
 
-    m_waterPlacementChunk = sceneRenderer->createWMOWideChunk();
+    m_waterPlacementChunk = sceneRenderer->createWMOWideChunk(0)->m_placementMatrix;
     m_waterPlacementChunk->getObject().uPlacementMat = mathfu::mat4::Identity();
     m_waterPlacementChunk->save();
 

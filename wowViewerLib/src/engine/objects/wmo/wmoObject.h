@@ -64,6 +64,7 @@ private:
 
     std::vector<PortalInfo_t> geometryPerPortal;
 
+    bool m_placementMatChanged = false;
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
 
@@ -87,10 +88,17 @@ private:
     robin_hood::unordered_flat_map<int, HGSamplableTexture> diffuseTextures;
     robin_hood::unordered_flat_map<int, HGSamplableTexture> specularTextures;
 
-    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_modelWideChunk;
+    std::shared_ptr<IWmoModelData> m_wmoModelChunk;
+
+    bool m_interiorAmbientsChanged = false;
+    std::vector<WMO::InteriorBlockData> m_groupInteriorData;
+
     std::vector<std::shared_ptr<IWMOMaterial>> m_materialCache;
 
     HGMesh transformedAntiPortals;
+
+    //Ambient, GroundAmbient, HorizontalAmbient
+    std::array<mathfu::vec3, 3> m_ambientColors;
 
     void createPlacementMatrix(SMMapObjDef &mapObjDef);
     void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
@@ -129,7 +137,7 @@ public:
     int getActiveDoodadSet() override {
         return m_doodadSet;
     }
-    mathfu::vec3 getAmbientColor() override;
+    std::array<mathfu::vec3, 3> getAmbientColors() override;
 
     PointerChecker<SMOMaterial> &getMaterials() override;
     std::shared_ptr<IWMOMaterial> getMaterialInstance(int index, const HMapSceneBufferCreate &sceneRenderer) override;
@@ -139,14 +147,14 @@ public:
         return geometryPerPortal;
     };
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> getPlacementBuffer() override {
-        return m_modelWideChunk;
+        return m_wmoModelChunk->m_placementMatrix;
     }
 
     std::shared_ptr<M2Object> getSkyBoxForGroup (int groupNum);;
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
     void createGroupObjects();
-    void checkFog(mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &wmoFogData);
+    void checkFog(const mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &wmoFogData);
 
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
@@ -197,7 +205,13 @@ public:
 
     void createWorldPortals();
     void createNewLights();
+    void calculateAmbient();
     std::shared_ptr<CWmoNewLight> getNewLight(int index) override;
+    void setInteriorAmbientColor(int groupIndex,
+        const mathfu::vec3 &ambient,
+        const mathfu::vec3 &horizontAmbient,
+        const mathfu::vec3 &groundAmbient
+    ) override;
 };
 
 typedef EntityFactory<2000, WMOObjId, WmoObject> WMOEntityFactory;

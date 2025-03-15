@@ -70,6 +70,9 @@ public:
     PointerChecker<MAVG> mavgs = (mavgsLen);
     int mavgsLen = 0;
 
+    PointerChecker<MAVD> mavds = (mavdsLen);
+    int mavdsLen = 0;
+
     PointerChecker<mathfu::vec4_packed> convexVolumePlanes = (convexVolumePlanesLen);
     int convexVolumePlanesLen = 0;
 
