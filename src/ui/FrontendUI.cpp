@@ -1167,6 +1167,9 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("Hearthstone Tavern", ImVec2(-1, 0))) {
         getOrCreateWindow()->openWMOSceneByfdid(2756726);
     }
+    if (ImGui::Button("Halls of Awakening", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openWMOSceneByfdid(5373469);
+    }
     if (ImGui::Button("Original WVF1 model", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(2445860, replacementTextureFDids);
     }
@@ -1535,6 +1538,10 @@ void FrontendUI::showSettingsDialog() {
             if (ImGui::Checkbox("Enable lightBuffer", &enableLightBuffer)) {
                 m_api->getConfig()->enableLightBuffer = enableLightBuffer;
             }
+            bool drawDebugLights = m_api->getConfig()->drawDebugLights;
+            if (ImGui::Checkbox("Draw Debug lights", &drawDebugLights)) {
+                m_api->getConfig()->drawDebugLights = drawDebugLights;
+            }
 
             bool renderADT = m_api->getConfig()->renderAdt;
             if (ImGui::Checkbox("Render ADT", &renderADT)) {
@@ -1583,6 +1590,7 @@ void FrontendUI::showSettingsDialog() {
             if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
                 m_api->getConfig()->drawM2BB = drawM2BB;
             }
+
 
             bool discardInvisibleMeshes = m_api->getConfig()->discardInvisibleMeshes;
             if (ImGui::Checkbox("Discard invisible M2 meshes", &discardInvisibleMeshes)) {

@@ -15,8 +15,6 @@
 #define __PRETTY_FUNCTION__ __FUNCSIG__
 #endif
 
-//#define debuglog(x) std::cout<< x <<std::endl;
-#define debuglog(x)
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;

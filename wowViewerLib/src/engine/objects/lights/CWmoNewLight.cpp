@@ -44,8 +44,11 @@ float unpackPackedFloat_light(uint16_t a1)
 }
 
 CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_light_def &newLightDef) {
+    assert(newLightDef.type <= 1);
+
     isPointLight = newLightDef.type == 0;
     isSpotLight = newLightDef.type == 1;
+
     isWmoNewLight = true;
 
     flags_raw = 0;
@@ -109,7 +112,7 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const WdtLightFile::
             mathfu::mat3::RotationX(m_rotation.x)
         );
 
-    calcedLightDir = ((lightModelMat).Inverse().Transpose()*mathfu::vec3(0,0,1));
+    calcedLightDir = ((lightModelMat).Inverse().Transpose()*mathfu::vec3(0,0,1)).Normalized();
 }
 
 void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights) {

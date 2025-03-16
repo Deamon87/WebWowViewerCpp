@@ -39,7 +39,7 @@ void main() {
 //    vec3 viewRay = vec3((in_viewPos.xy / vec2(in_viewPos.z)), 1.0);
 //    vec3 viewPos = (viewRay * sceneDepth);
     
-    vec3 lightDir = normalize((transpose(inverse(scene.uLookAtMat)) * vec4(lightRec.directionAndcosAngleDiff.xyz, 0.0)).xyz);
+    vec3 lightDir = normalize((transpose(inverse(scene.uLookAtMat * lightRec.lightModelMat)) * vec4(0,0,1, 0.0)).xyz);
     vec3 lightAtten = lightRec.attenuationAndcosOuterAngle.xyz;
 
     vec3 color = lightRec.colorAndFalloff.xyz;
@@ -51,7 +51,7 @@ void main() {
 
     float cosAngleDiffInv = lightRec.directionAndcosAngleDiff.w;
 
-    vec3 vectorToLight = (lightPos.xyz - viewPos.xyz);
+    vec3 vectorToLight = -(viewPos.xyz - lightPos.xyz);
 
     float distanceToLightSqr = dot(vectorToLight, vectorToLight);
     float distanceToLightInv = inversesqrt(distanceToLightSqr);
@@ -77,9 +77,9 @@ void main() {
 //                   dist_r
 */
 
-    float ld = max(dot(lightDir, -(vectorToLight)), 0.0);
+    float ld = max(dot(lightDir, (-vectorToLight)), 0.0);
     float attenuation = (1.0 - clamp(((ld - lightAtten.x) * lightAtten.z), 0.0, 1.0));
-    ld = max(dot(lightDir, (-(vectorToLight) * distanceToLightInv)), 0.0);
+    ld = max(dot(lightDir, ((-vectorToLight) * distanceToLightInv)), 0.0);
     
     float spotLightEffect;
     if ((ld < cosOuterAngle))

@@ -78,6 +78,9 @@ void initM2Event(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLo
 
 void initM2Light(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t lightCount = m2Header->lights.size;
+    if (lightCount > 0) {
+        debuglog("lightCount > 0");
+    }
     for (int i = 0; i < lightCount; i++) {
         M2Light *light = m2Header->lights.getElement(i);
         light->ambient_color.initTrack(m2Header, sequences, cm2SequenceLoad);

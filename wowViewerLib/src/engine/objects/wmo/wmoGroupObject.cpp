@@ -265,32 +265,33 @@ void WmoGroupObject::loadLights() {
     auto &modelMatrix = *m_modelMatrix;
     //Create Point Lights
     {
-        auto doodadSet = m_wmoApi->getActiveDoodadSet();
-        if (doodadSet < 0) {
-            doodadSet = 0;
-        };
+        auto doodadSets = m_wmoApi->getActiveDoodadSet();
 
-        if (doodadSet < m_geom->map_object_lightset_pointlightsLen) {
-            auto lightPointSet = m_geom->map_object_lightset_pointlights[doodadSet];
-            for (int i = 0; i < lightPointSet.count; i++) {
-                const auto lightIndex = lightPointSet.offset + i;
-                if (lightIndex > m_geom->map_object_point_lightLen) break;
+        for (int doodadSet = 0; doodadSet < doodadSets.size() ; doodadSet++) {
+            if (!doodadSets[doodadSet]) continue;
 
-                auto &lightRecord = m_geom->map_object_point_lights[lightIndex];
+            if (doodadSet < m_geom->map_object_lightset_pointlightsLen) {
+                auto lightPointSet = m_geom->map_object_lightset_pointlights[doodadSet];
+                for (int i = 0; i < lightPointSet.count; i++) {
+                    const auto lightIndex = lightPointSet.offset + i;
+                    if (lightIndex > m_geom->map_object_point_lightLen) break;
 
-                m_pointLights.emplace_back() = CPointLight(modelMatrix, lightRecord);
+                    auto &lightRecord = m_geom->map_object_point_lights[lightIndex];
+
+                    m_pointLights.emplace_back() = CPointLight(modelMatrix, lightRecord);
+                }
             }
-        }
 
-        if (doodadSet < m_geom->mapobject_pointlight_animsetsLen) {
-            auto lightPointSet = m_geom->mapobject_pointlight_animsets[doodadSet];
-            for (int i = 0; i < lightPointSet.count; i++) {
-                const auto lightIndex = lightPointSet.offset + i;
-                if (lightIndex > m_geom->map_object_pointlight_animLen) break;
+            if (doodadSet < m_geom->mapobject_pointlight_animsetsLen) {
+                auto lightPointSet = m_geom->mapobject_pointlight_animsets[doodadSet];
+                for (int i = 0; i < lightPointSet.count; i++) {
+                    const auto lightIndex = lightPointSet.offset + i;
+                    if (lightIndex > m_geom->map_object_pointlight_animLen) break;
 
-                auto &lightRecord = m_geom->map_object_pointlight_anims[lightIndex];
+                    auto &lightRecord = m_geom->map_object_pointlight_anims[lightIndex];
 
-                m_pointLights.emplace_back() = CPointLight(modelMatrix, lightRecord);
+                    m_pointLights.emplace_back() = CPointLight(modelMatrix, lightRecord);
+                }
             }
         }
     }

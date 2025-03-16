@@ -44,32 +44,25 @@ void WmoObject::startLoading() {
 }
 
 std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
-    int doodadsSet = this->m_doodadSet;
-
-    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
-        doodadsSet = 0;
-    }
-    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
-        return nullptr;
-    }
-
-    const SMODoodadSet *defaultDooodadSetDef = &this->mainGeom->doodadSets[0];
-    const SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
-
-    bool isInDefaultDoodadSetDef =
-        (index >= defaultDooodadSetDef->firstinstanceindex) &&
-        (index < defaultDooodadSetDef->firstinstanceindex + defaultDooodadSetDef->numDoodads);
-
-    bool isInCurrentDoodadSetDef =
-        (index >= doodadSetDef->firstinstanceindex) &&
-        (index < doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads);
-
-    if (!isInCurrentDoodadSetDef && !isInDefaultDoodadSetDef)
-        return nullptr;
-
     auto iterator = this->m_doodadsUnorderedMap.find(index);
     if (iterator != this->m_doodadsUnorderedMap.end())
         return iterator->second;
+
+    bool existsInActiveDoodadSets = false;
+    for (int i = 0; i < this->mainGeom->doodadSetsLen; i++) {
+        if (!m_activeDoodadSets[i]) continue;;
+
+        if (
+            index >= this->mainGeom->doodadSets[i].firstinstanceindex &&
+            index <= this->mainGeom->doodadSets[i].firstinstanceindex + this->mainGeom->doodadSets[i].numDoodads
+            ) {
+            existsInActiveDoodadSets = true;
+            break;
+        }
+    }
+
+    if (!existsInActiveDoodadSets)
+        return nullptr;
 
     const SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
@@ -466,13 +459,13 @@ void WmoObject::drawDebugLights(){
 void WmoObject::setLoadingParam(const SMMapObjDef &mapObjDef) {
     createPlacementMatrix(mapObjDef);
 
-    this->m_doodadSet = mapObjDef.doodadSet;
+    m_activeDoodadSets.set(mapObjDef.doodadSet);
     this->m_nameSet = mapObjDef.nameSet;
 }
 void WmoObject::setLoadingParam(const SMMapObjDefObj1 &mapObjDef) {
     createPlacementMatrix(mapObjDef);
 
-    this->m_doodadSet = mapObjDef.doodadSet;
+    m_activeDoodadSets.set(mapObjDef.doodadSet);
     this->m_nameSet = mapObjDef.nameSet;
 }
 
@@ -1389,7 +1382,7 @@ void WmoObject::createNewLights() {
     m_newLights.resize(mainGeom->newLightsLen);
     for (int i = 0; i < mainGeom->newLightsLen; i++) {
         auto &newLightRec = mainGeom->newLights[i];
-        if (m_doodadSet != newLightRec.doodadSet) {
+        if (!m_activeDoodadSets[newLightRec.doodadSet]) {
             m_newLights[i] = nullptr;
             continue;
         }
@@ -1405,7 +1398,7 @@ void WmoObject::calculateAmbient() {
         //Take ambient from MAVG
         int recordIndex = 0;
         for (int i = 0; i < mainGeom->mavgsLen; i++) {
-            if (mainGeom->mavgs[i].doodadSetID == m_doodadSet) {
+            if (m_activeDoodadSets[mainGeom->mavgs[i].doodadSetID]) {
                 recordIndex = i;
                 break;
             }
@@ -1421,7 +1414,7 @@ void WmoObject::calculateAmbient() {
             horizontAmbientColor = amb;
             groundAmbientColor = amb;
         }
-    } if (mainGeom->mavdsLen > 0) {
+    } else if (mainGeom->mavdsLen > 0) {
         //Take ambient from MAVD
         auto const &mavds = mainGeom->mavds;
         if ((mavds->flags & 1) != 0) {
@@ -1452,6 +1445,8 @@ void WmoObject::calculateAmbient() {
 }
 
 std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
+    if (index > m_newLights.size()) return nullptr;
+
     return m_newLights[index];
 }
 void WmoObject::setInteriorAmbientColor(int groupIndex,

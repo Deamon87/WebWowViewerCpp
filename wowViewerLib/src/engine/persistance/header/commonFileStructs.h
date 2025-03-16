@@ -12,6 +12,7 @@
 #include <cstdint>
 #include <array>
 #include <string>
+#include <iostream>
 #include <mathfu/glsl_mappings.h>
 
 // Check windows
@@ -102,7 +103,8 @@ public:
     }
 };
 
-
+// #define debuglog(x) std::cout << x <<std::endl;
+#define debuglog(x)
 
 
 using fixed16 = int16_t;

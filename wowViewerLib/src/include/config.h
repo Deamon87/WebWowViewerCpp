@@ -66,6 +66,7 @@ public:
     bool disableFog = false;
 
 
+    bool drawDebugLights = false;
     bool drawWmoBB = false;
     bool drawM2BB = false;
 

@@ -5,6 +5,7 @@
 #ifndef WOWVIEWERLIB_IWMOAPI_H
 #define WOWVIEWERLIB_IWMOAPI_H
 
+#include <bitset>
 #include <functional>
 #include "../engineClassList.h"
 #include "m2/m2Object.h"
@@ -307,6 +308,8 @@ static const struct {
     },
 };
 
+typedef std::bitset<255> ActiveDoodadSets;
+
 class IWmoApi {
 public:
     virtual std::shared_ptr<M2Object> getDoodad(int index) = 0;
@@ -319,7 +322,7 @@ public:
     virtual PointerChecker<SMOLight> &getLightArray() = 0;
 
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
-    virtual int getActiveDoodadSet() = 0;
+    virtual ActiveDoodadSets getActiveDoodadSet() = 0;
     virtual std::shared_ptr<CWmoNewLight> getNewLight(int index) = 0;
     virtual void setInteriorAmbientColor(int groupIndex,
         const mathfu::vec3 &ambient,

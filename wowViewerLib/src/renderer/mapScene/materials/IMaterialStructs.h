@@ -142,6 +142,7 @@ public:
     std::shared_ptr<IBufferChunk<WMO::perMeshData>> m_perMeshData = nullptr;
     std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
     int meshWideBindlessIndex = 0;
+    int interiorDataIndex = 0;
 };
 
 class IADTMaterial : public IMaterial {

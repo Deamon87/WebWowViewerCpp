@@ -1038,6 +1038,7 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const
     }
 
     material->meshWideBindlessIndex = l_bindless->getIndex();
+    material->interiorDataIndex = BufferChunkHelperVLK::cast(wmoModelWide->m_groupInteriorData)->getIndex();
 
     return material;
 }
@@ -1548,7 +1549,9 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
 
                         l_this->drawOpaque(frameBufCmd, l_opaqueMeshes);
 
-                        //currentView->doDebugLightPass(frameBufCmd);
+                        if (l_this->m_config->drawDebugLights) {
+                            currentView->doDebugLightPass(frameBufCmd);
+                        }
 
                         {
                             //Sky opaque
@@ -1707,7 +1710,7 @@ HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTempl
     {
         auto &perMeshData = c_perMeshData->getObject();
         perMeshData.meshWideBindlessIndex = originalMat->meshWideBindlessIndex;
-        perMeshData.groupNum = groupNum;
+        perMeshData.interiorDataIndex = originalMat->interiorDataIndex + groupNum;
         c_perMeshData->save();
     }
 

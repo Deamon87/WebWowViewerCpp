@@ -4,6 +4,7 @@
 
 #ifndef WEBWOWVIEWERCPP_WMOOBJECT_H
 #define WEBWOWVIEWERCPP_WMOOBJECT_H
+#include <bitset>
 
 struct WmoGroupResult;
 class WmoGroupObject;
@@ -31,7 +32,9 @@ constexpr WMOObjId emptyWMO = static_cast<const WMOObjId>(0xFFFFFFF);
 class WmoObject : public IWmoApi, public ObjectWithId<WMOObjId>{
 
 public:
-    WmoObject(HApiContainer &api/*, int id*/) : /*SceneObjectWithId(id),*/ m_api(api) {
+    WmoObject(const HApiContainer &api/*, int id*/) : /*SceneObjectWithId(id),*/ m_api(api) {
+        //DoodadSet 0 is always active
+        m_activeDoodadSets.set(0);
     }
 
 	~WmoObject();
@@ -60,7 +63,7 @@ private:
     CAaBox m_bbox;
 
     int m_nameSet;
-    int m_doodadSet = -1;
+    ActiveDoodadSets m_activeDoodadSets;
 
     std::vector<PortalInfo_t> geometryPerPortal;
 
@@ -134,8 +137,8 @@ public:
 
     std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
     SMOHeader *getWmoHeader() override;
-    int getActiveDoodadSet() override {
-        return m_doodadSet;
+    ActiveDoodadSets getActiveDoodadSet() override {
+        return m_activeDoodadSets;
     }
     std::array<mathfu::vec3, 3> getAmbientColors() override;
 

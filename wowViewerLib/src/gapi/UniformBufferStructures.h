@@ -255,7 +255,7 @@ namespace WMO {
     };
     struct perMeshData {
         int meshWideBindlessIndex;
-        int groupNum;
+        int interiorDataIndex;
         int unused0;
         int unused1;
     };
