@@ -20,7 +20,6 @@ layout (location = 5) in vec2 aTexCoord4;
 layout (location = 6) in vec4 aColor;
 layout (location = 7) in vec4 aColor2;
 layout (location = 8) in vec4 aColorSecond;
-layout (location = 9) in vec4 wmoAmbient;
 
 #include "../common/commonUboSceneData.glsl"
 
@@ -41,7 +40,7 @@ layout(location=5) out vec4 vColor2;
 layout(location=6) out vec4 vColorSecond;
 layout(location=7) out vec4 vPosition;
 layout(location=8) out vec3 vNormal;
-layout(location=9) out vec4 vWmoAmbient;
+layout(location=9) out flat int groupNum;
 
 
 void main() {
@@ -71,5 +70,5 @@ void main() {
         vTexCoord, vTexCoord2, vTexCoord3
     );
 
-    vWmoAmbient = wmoAmbient;
+    groupNum = gl_InstanceIndex;
 }

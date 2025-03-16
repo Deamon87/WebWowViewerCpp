@@ -49,7 +49,6 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
         vboWMOBuffer,
         vboWaterBuffer,
         vboSkyBuffer,
-        vboWMOGroupAmbient,
         m_vboQuad,
         m_iboQuad,
         m_particleIndexBuffer,
@@ -74,7 +73,6 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
     vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
     vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
-    vboWMOGroupAmbient  = m_device->createVertexBuffer("Scene_VBO_WMOAmbient",16*200);
 
     {
         const float epsilon = 0.f;
@@ -128,7 +126,7 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     m_emptyM2ParticleVAO = createM2ParticleVAO(nullptr, nullptr);
     m_emptyM2RibbonVAO = createM2RibbonVAO(nullptr, nullptr);
     m_emptySkyVAO = createSkyVAO(nullptr, nullptr);
-    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr, nullptr);
+    m_emptyWMOVAO = createWmoVAO(nullptr, nullptr);
     m_emptyWaterVAO = createWaterVAO(nullptr, nullptr);
     m_emptyPortalVAO = createPortalVAO(nullptr, nullptr);
 
@@ -449,12 +447,9 @@ std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderForwardVLK::c
 std::shared_ptr<IWmoModelData> MapSceneRenderForwardVLK::createWMOWideChunk(int groupNum)  {
     auto wmoModelData = std::make_shared<IWmoModelData>();
     wmoModelData->m_placementMatrix = createWmoModelMatrixChunk();
-    BufferChunkHelperVLK::create(uboBuffer, wmoModelData->m_groupInteriorData, sizeof(WMO::GroupInteriorData) * groupNum);
+    BufferChunkHelperVLK::create(uboBuffer, wmoModelData->m_groupInteriorData, sizeof(WMO::InteriorBlockData) * groupNum);
 
     return wmoModelData;
-}
-std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> MapSceneRenderForwardVLK::createWMOGroupAmbientChunk() {
-    return std::make_shared<CBufferChunkVLK<WMO::GroupInteriorData>>(vboWMOGroupAmbient);
 }
 
 std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
@@ -471,7 +466,9 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
             ds->beginUpdate()
                 .ubo(0, BufferChunkHelperVLK::cast(wmoModelWide->m_placementMatrix))
                 .ubo(1, *l_vertexData)
-                .ubo(2, *l_fragmentData).delayUpdate();
+                .ubo(2, *l_fragmentData)
+                .ubo(3, BufferChunkHelperVLK::cast(wmoModelWide->m_groupInteriorData))
+                .delayUpdate();
         })
         .createDescriptorSet(2, [&wmoMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -616,7 +613,7 @@ inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGM
     }
 
     //7. Draw the mesh
-    cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, 0);
+    cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, meshVlk->instanceIndex);
 }
 
 class COpaqueMeshCollectorForwardVLK : public COpaqueMeshCollector{
@@ -919,6 +916,7 @@ HGSortableMesh MapSceneRenderForwardVLK::createWaterMesh(gMeshTemplate &meshTemp
 }
 HGSortableMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) {
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
+    mesh->instanceIndex = groupNum;
     return mesh;
 }
 

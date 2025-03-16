@@ -25,12 +25,12 @@ layout(std430, set=1, binding=4) buffer readonly meshWideBlockBindlessPS {
     WmoMeshWideBindless wmoMeshWideBindlesses[];
 };
 
-layout(std430, set=1, binding=5) buffer readonly wmoLocalAmbient {
-    vec4 s_wmoAmbient[];
+layout(std430, set=1, binding=5) buffer readonly groupInteriorData {
+    WmoInteriorBlockData interiorData[];
 };
 
 struct WMOPerMeshData {
-    ivec4 meshWideBindlessIndex_wmoAmbientIndex;
+    ivec4 meshWideBindlessIndex_groupNum;
 };
 
 layout(std430, set=1, binding=6) buffer readonly _wmoPerMeshData {

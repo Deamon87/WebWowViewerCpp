@@ -186,8 +186,8 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         this->wmoBuffers.wmoMeshWideVSes,
         this->wmoBuffers.wmoMeshWidePSes,
         this->wmoBuffers.wmoMeshWideBindless,
-        this->wmoBuffers.wmoGroupAmbient,
         this->wmoBuffers.wmoPerMeshData,
+        this->wmoBuffers.wmoGroupInteriorData,
 
         this->waterBuffer.waterDataBuffer,
         this->waterBuffer.waterBindlessBuffer,
@@ -357,7 +357,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         wmoBuffers.wmoMeshWidePSes = m_device->createSSBOBuffer(un("WMO MeshWidePS"), 1024*1024, sizeof(WMO::meshWideBlockPS));
         wmoBuffers.wmoMeshWideBindless = m_device->createSSBOBuffer(un("WMO MeshWideBindless"), 1024*1024, sizeof(WMO::meshWideBlockBindless));
         wmoBuffers.wmoPerMeshData = m_device->createSSBOBuffer(un("WMO PerMeshData"), 1024*1024, sizeof(WMO::perMeshData));
-        wmoBuffers.wmoGroupAmbient = m_device->createSSBOBuffer(un("Scene_VBO_WMOAmbient"),16*200, sizeof(mathfu::vec4_packed));
+        wmoBuffers.wmoGroupInteriorData = m_device->createSSBOBuffer(un("WMO Group Interior Data"),1024*1024, sizeof(WMO::InteriorBlockData));
     }
     //Create water buffs
     {
@@ -500,7 +500,7 @@ void MapSceneRenderBindlessVLK::createWMOGlobalMaterialData() {
                 .ssbo(2, wmoBuffers.wmoMeshWideVSes)
                 .ssbo(3, wmoBuffers.wmoMeshWidePSes)
                 .ssbo(4, wmoBuffers.wmoMeshWideBindless)
-                .ssbo(5, wmoBuffers.wmoGroupAmbient)
+                .ssbo(5, wmoBuffers.wmoGroupInteriorData)
                 .ssbo(6, wmoBuffers.wmoPerMeshData);
 
             wmoBufferOneDS = ds;
@@ -981,11 +981,16 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderBindlessVLK::createM2RibbonMate
     return material;
 };
 
-std::shared_ptr<IWmoModelData> MapSceneRenderBindlessVLK::createWMOWideChunk(int groupNum)  {
+std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> MapSceneRenderBindlessVLK::createWmoModelMatrixChunk() {
     return std::make_shared<CBufferChunkVLK<WMO::modelWideBlockVS>>(wmoBuffers.wmoPlacementMats);
-}
-std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> MapSceneRenderBindlessVLK::createWMOGroupAmbientChunk() {
-    return std::make_shared<CBufferChunkVLK<WMO::GroupInteriorData>>(wmoBuffers.wmoGroupAmbient);
+};
+
+std::shared_ptr<IWmoModelData> MapSceneRenderBindlessVLK::createWMOWideChunk(int groupNum)  {
+    auto wmoModelData = std::make_shared<IWmoModelData>();
+    wmoModelData->m_placementMatrix = createWmoModelMatrixChunk();
+    BufferChunkHelperVLK::create(wmoBuffers.wmoGroupInteriorData, wmoModelData->m_groupInteriorData, sizeof(WMO::InteriorBlockData) * groupNum);
+
+    return wmoModelData;
 }
 
 std::shared_ptr<IWMOMaterial> MapSceneRenderBindlessVLK::createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
@@ -1702,7 +1707,7 @@ HGSortableMesh MapSceneRenderBindlessVLK::createWMOMesh(gMeshTemplate &meshTempl
     {
         auto &perMeshData = c_perMeshData->getObject();
         perMeshData.meshWideBindlessIndex = originalMat->meshWideBindlessIndex;
-        perMeshData.wmoAmbientIndex = BufferChunkHelperVLK::castToChunk(ambientBuffer)->getIndex();
+        perMeshData.groupNum = groupNum;
         c_perMeshData->save();
     }
 

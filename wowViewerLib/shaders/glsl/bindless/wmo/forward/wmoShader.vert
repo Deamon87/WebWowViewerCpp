@@ -38,7 +38,7 @@ layout(location=9) out flat int vMeshIndex;
 
 void main() {
     WMOPerMeshData perMeshData = perMeshDatas[gl_InstanceIndex];
-    WmoMeshWideBindless meshWideBindless = wmoMeshWideBindlesses[perMeshData.meshWideBindlessIndex_wmoAmbientIndex.x];
+    WmoMeshWideBindless meshWideBindless = wmoMeshWideBindlesses[perMeshData.meshWideBindlessIndex_groupNum.x];
     int placementMatInd = meshWideBindless.placementMat_meshWideIndex_blockVSIndex_texture9.x;
     int blockVSIndex = meshWideBindless.placementMat_meshWideIndex_blockVSIndex_texture9.y;
 

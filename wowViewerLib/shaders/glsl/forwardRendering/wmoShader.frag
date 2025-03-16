@@ -12,8 +12,6 @@ precision highp int;
 #include "../common/commonWMOMaterial.glsl"
 #include "../common/commonUboSceneData.glsl"
 
-
-
 layout(location=0) in vec2 vTexCoord;
 layout(location=1) in vec2 vTexCoord2;
 layout(location=2) in vec2 vTexCoord3;
@@ -23,11 +21,14 @@ layout(location=5) in vec4 vColor2;
 layout(location=6) in vec4 vColorSecond;
 layout(location=7) in vec4 vPosition;
 layout(location=8) in vec3 vNormal;
-layout(location=9) in vec4 vWmoAmbient;
+layout(location=9) in flat int groupNum;
 
 layout(std140, set=1, binding=2) uniform meshWideBlockPS {
     ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
     vec4 FogColor_AlphaTest;
+};
+layout(std140, set=1, binding=2) uniform groupWmoInteriorData {
+    WmoInteriorBlockData interiorData[MAX_WMO_GROUPS];
 };
 
 layout(set=2, binding=0) uniform sampler2D uTexture;
@@ -64,12 +65,15 @@ void main() {
     if (doDiscard)
         discard;
 
+    WmoInteriorBlockData currentInteriorData = interiorData[groupNum];
+
     InteriorLightParam intLight;
-    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(
-        vWmoAmbient.xyz,
-        vColor.w
-    );
+    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(currentInteriorData.uAmbientColor.xyz, vColor.w);
+    intLight.uInteriorGroundAmbientColor =                   vec4(currentInteriorData.uGroundAmbientColor.xyz, 0);
+    intLight.uInteriorHorizontAmbientColor =                 vec4(currentInteriorData.uHorizontAmbientColor.xyz, 0);
+
     intLight.uInteriorDirectColor = vec4(0, 0, 0, 1.0f);
+    intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir = vec4(0, 0, 0, 0.0f);
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
     finalColor = vec4(

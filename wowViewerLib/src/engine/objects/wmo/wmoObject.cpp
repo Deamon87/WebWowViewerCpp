@@ -131,7 +131,7 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
 
     return m2Object;
 }
-void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
+void WmoObject::createPlacementMatrix(const SMMapObjDef &mapObjDef){
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
@@ -152,8 +152,8 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
     m_placementMatChanged = true;
 
     //BBox is in ADT coordinates. We need to transform it first
-    C3Vector &bb1 = mapObjDef.extents.min;
-    C3Vector &bb2 = mapObjDef.extents.max;
+    const C3Vector &bb1 = mapObjDef.extents.min;
+    const C3Vector &bb2 = mapObjDef.extents.max;
     mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
     mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
 
@@ -162,7 +162,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
     createBB(worldAABB);
 }
-void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
+void WmoObject::createPlacementMatrix(const SMMapObjDefObj1 &mapObjDef){
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
@@ -463,13 +463,13 @@ void WmoObject::drawDebugLights(){
  */
 }
 
-void WmoObject::setLoadingParam(SMMapObjDef &mapObjDef) {
+void WmoObject::setLoadingParam(const SMMapObjDef &mapObjDef) {
     createPlacementMatrix(mapObjDef);
 
     this->m_doodadSet = mapObjDef.doodadSet;
     this->m_nameSet = mapObjDef.nameSet;
 }
-void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
+void WmoObject::setLoadingParam(const SMMapObjDefObj1 &mapObjDef) {
     createPlacementMatrix(mapObjDef);
 
     this->m_doodadSet = mapObjDef.doodadSet;

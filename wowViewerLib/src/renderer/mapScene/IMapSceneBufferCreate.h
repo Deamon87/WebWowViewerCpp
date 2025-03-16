@@ -115,7 +115,6 @@ public:
 
     virtual std::shared_ptr<IWmoModelData> createWMOWideChunk(int groupNum) = 0;
     virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWmoModelMatrixChunk() = 0;
-    virtual std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> createWMOGroupAmbientChunk() = 0;
 
     virtual std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                             const PipelineTemplate &pipelineTemplate,

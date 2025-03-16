@@ -246,11 +246,11 @@ void WmoGroupObject::loadDoodads() {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
         m_doodads.push_back(newDoodad);
 
-        if (wmoGroupUsesExteriorLighting) {
-            newDoodad->setInteriorExteriorBlend(1.0f);
-        }
-
         if (newDoodad != nullptr) {
+            if (wmoGroupUsesExteriorLighting) {
+                newDoodad->setInteriorExteriorBlend(1.0f);
+            }
+
             std::function<void()> event = [&]() -> void {
                 this->m_recalcBoundries = true;
             };

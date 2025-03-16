@@ -87,7 +87,8 @@ public:
                                                               const M2RibbonMaterialTemplate &m2RibbonMaterialTemplate) override;
 
     std::shared_ptr<IWmoModelData> createWMOWideChunk(int groupNum)  override;
-    std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> createWMOGroupAmbientChunk() override;
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWmoModelMatrixChunk() override;
+
 
     std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                     const PipelineTemplate &pipelineTemplate,
@@ -186,13 +187,12 @@ protected:
     } adtBuffers;
 
     struct {
-        HGBufferVLK wmoInteriorAmbients;
+        HGBufferVLK wmoGroupInteriorData;
         HGBufferVLK wmoPlacementMats;
         HGBufferVLK wmoMeshWideVSes;
         HGBufferVLK wmoMeshWidePSes;
         HGBufferVLK wmoMeshWideBindless;
         HGBufferVLK wmoPerMeshData;
-        HGBufferVLK wmoGroupAmbient;
     } wmoBuffers;
 
     HGBufferVLK uboBuffer;

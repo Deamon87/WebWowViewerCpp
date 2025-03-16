@@ -547,8 +547,11 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     }
     {
         ZoneScopedN("process new lights");
+        //Delete duplicates for new wmo lights
         std::sort(newWmoLights.begin(), newWmoLights.end());
         newWmoLights.erase(std::unique(newWmoLights.begin(), newWmoLights.end()), newWmoLights.end());
+
+        //Collect spotLights and point lights from new WMO lights
         for (auto &newWmoLight: newWmoLights) {
             newWmoLight->collectLight(mapRenderPlan->pointLights, mapRenderPlan->spotLights);
         }

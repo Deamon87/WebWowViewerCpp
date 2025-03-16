@@ -36,7 +36,7 @@ layout(location = 0) out vec4 outColor;
 
 void main() {
     WMOPerMeshData perMeshData = perMeshDatas[nonuniformEXT(vMeshIndex)];
-    WmoMeshWideBindless meshWideBindless = wmoMeshWideBindlesses[nonuniformEXT(perMeshData.meshWideBindlessIndex_wmoAmbientIndex.x)];
+    WmoMeshWideBindless meshWideBindless = wmoMeshWideBindlesses[nonuniformEXT(perMeshData.meshWideBindlessIndex_groupNum.x)];
     WmoFragMeshWide wmoMeshWide = wmoFragMeshWides[nonuniformEXT(meshWideBindless.placementMat_meshWideIndex_blockVSIndex_texture9.y)];
 
     int uPixelShader = wmoMeshWide.UseLitColor_EnableAlpha_PixelShader_BlendMode.z;
@@ -72,13 +72,17 @@ void main() {
         discard;
 #endif
 
+    int wmoGroupNum = perMeshData.meshWideBindlessIndex_groupNum.y;
+
+    WmoInteriorBlockData currentInteriorData = interiorData[wmoGroupNum];
+
     InteriorLightParam intLight;
-    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(
-        s_wmoAmbient[perMeshData.meshWideBindlessIndex_wmoAmbientIndex.y].xyz,
-        vColor.w
-    );
+    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(currentInteriorData.uAmbientColor.xyz, vColor.w);
+    intLight.uInteriorGroundAmbientColor =                   vec4(currentInteriorData.uGroundAmbientColor.xyz, 0);
+    intLight.uInteriorHorizontAmbientColor =                 vec4(currentInteriorData.uHorizontAmbientColor.xyz, 0);
 
     intLight.uInteriorDirectColor = vec4(0, 0, 0, 1.0f);
+    intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir = vec4(0, 0, 0, 0.0f);
 
     vec4 finalColor = vec4(0.0, 0.0, 0.0, 1.0);
 #ifndef DEFERRED

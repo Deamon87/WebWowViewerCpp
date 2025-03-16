@@ -4,6 +4,10 @@
 #include "commonLightFunctions.glsl"
 #include "commonFunctions.glsl"
 
+#ifndef MAX_WMO_GROUPS
+#define MAX_WMO_GROUPS 512
+#endif
+
 struct WmoVertMeshWide {
     ivec4 VertexShader_UseLitColors;
     vec4 translationSpeedXY;
@@ -14,6 +18,11 @@ struct WmoFragMeshWide {
     vec4 FogColor_AlphaTest;
 };
 
+struct WmoInteriorBlockData {
+    vec4 uAmbientColor;
+    vec4 uHorizontAmbientColor;
+    vec4 uGroundAmbientColor;
+};
 
 void caclWMOFragMat(in int pixelShader, bool enableAlpha,
     in sampler2D s_texture, in sampler2D s_texture2, in sampler2D s_texture3, in sampler2D s_texture4, in sampler2D s_texture5,

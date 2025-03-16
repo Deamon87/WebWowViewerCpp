@@ -82,7 +82,6 @@ public:
 
     std::shared_ptr<IWmoModelData> createWMOWideChunk(int groupNum) override;
     std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWmoModelMatrixChunk() override;
-    std::shared_ptr<IBufferChunk<WMO::GroupInteriorData>> createWMOGroupAmbientChunk() override;
 
     std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                     const PipelineTemplate &pipelineTemplate,
@@ -127,7 +126,6 @@ private:
 
     HGBufferVLK vboAdtBuffer;
     HGBufferVLK vboWMOBuffer;
-    HGBufferVLK vboWMOGroupAmbient;
     HGBufferVLK vboWaterBuffer;
     HGBufferVLK vboSkyBuffer;
 

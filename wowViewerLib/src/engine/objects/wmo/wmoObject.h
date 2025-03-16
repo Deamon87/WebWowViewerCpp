@@ -100,8 +100,8 @@ private:
     //Ambient, GroundAmbient, HorizontalAmbient
     std::array<mathfu::vec3, 3> m_ambientColors;
 
-    void createPlacementMatrix(SMMapObjDef &mapObjDef);
-    void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
+    void createPlacementMatrix(const SMMapObjDef &mapObjDef);
+    void createPlacementMatrix(const SMMapObjDefObj1 &mapObjDef);
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
     void fillLodGroup(mathfu::vec3 &cameraLocal);
@@ -109,8 +109,8 @@ private:
 public:
     std::shared_ptr<M2Object> getDoodad(int index) override ;
     HGSamplableTexture getTexture(int materialId, bool isSpec) override;
-    void setLoadingParam( SMMapObjDef &mapObjDef);
-    void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
+    void setLoadingParam(const SMMapObjDef &mapObjDef);
+    void setLoadingParam(const SMMapObjDefObj1 &mapObjDef);
 
     std::string getModelFileName();
     void setModelFileName(std::string modelName);
