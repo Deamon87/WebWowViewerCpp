@@ -124,6 +124,12 @@ private:
         const PointerChecker<SMOPortalRef> &portalRels
     );
 
+    inline bool isInteriorLightingLit() const {
+        bool wmoGroupUsesExteriorLighting = m_geom->mogp->flags.EXTERIOR_LIT || m_geom->mogp->flags.EXTERIOR || !m_geom->mogp->flags.INTERIOR;
+
+        return !wmoGroupUsesExteriorLighting;
+    }
+
 
     template<typename Y>
     static void queryBspTree(CAaBox &bbox, int nodeId, Y &nodes, std::vector<int> &bspLeafIdList);

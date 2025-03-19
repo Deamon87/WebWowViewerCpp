@@ -68,7 +68,11 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_
     m_intensity = newLightDef.intensity * unpackedIntensityMult ;
     m_outerColor = newLightDef.outerColor;
     m_falloffStart = newLightDef.falloffStart;
-    m_falloff = 1.0f;//newLightDef.falloff;
+    if (!isSpotLight) {
+        m_falloff = 1.0f;//newLightDef.falloff;
+    } else {
+        m_falloff = newLightDef.spotlightRadius;
+    }
     m_spotlightRadius = newLightDef.spotlightRadius;
     m_innerAngle = newLightDef.innerAngle;
     m_outerAngle = newLightDef.outerAngle;

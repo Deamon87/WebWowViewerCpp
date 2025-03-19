@@ -223,6 +223,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
                     chunkData.readValues(object.materialUVSpeed, object.materialUVSpeedLen);
                 }
             }
+        },
+        {
+            'MDDI', {
+                [](WmoMainGeom &object, ChunkData &chunkData) {
+                    debuglog("Entered MDDI");
+                    object.m_doodadAdditionalInfoLen = chunkData.chunkLen / sizeof(float);
+                    chunkData.readValues(object.m_doodadAdditionalInfo, object.m_doodadAdditionalInfoLen);
+                }
+            }
         }
     }
 };

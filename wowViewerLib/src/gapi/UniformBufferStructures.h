@@ -205,7 +205,7 @@ namespace Ribbon {
 
 namespace WMO {
     struct InteriorBlockData {
-        mathfu::vec4_packed uAmbientColor;
+        mathfu::vec4_packed uAmbientColorAndIsExteriorLit;
         mathfu::vec4_packed uHorizontAmbientColor;
         mathfu::vec4_packed uGroundAmbientColor;
     };

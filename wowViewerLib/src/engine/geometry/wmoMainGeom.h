@@ -82,6 +82,9 @@ public:
     PointerChecker<C4Vector> materialUVSpeed = (materialUVSpeedLen);
     int materialUVSpeedLen = 0;
 
+    PointerChecker<float> m_doodadAdditionalInfo = (m_doodadAdditionalInfoLen);
+    int m_doodadAdditionalInfoLen = 0;
+
     int skyboxM2FileId = 0;
 };
 

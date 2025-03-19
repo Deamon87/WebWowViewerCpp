@@ -723,7 +723,7 @@ uint8_t miniLogic(const CImVector *a2) {
     return v10;
 }
 
-void M2Object::setDirectColor(const mathfu::vec4 &interiorDirectColor) {
+void M2Object::setInteriorDirectColor(const mathfu::vec3 &interiorDirectColor) {
     if (interiorDirectColor != this->m_interiorDirectColor) {
         m_modelWideDataChanged = true;
     }
@@ -1104,13 +1104,24 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
 
         modelFragmentData.intLight.uInteriorAmbientColorAndInteriorExteriorBlend =
             mathfu::vec4_packed(mathfu::vec4(
-                m_ambientColorOverride.xyz(),
+                m_interiorAmbientColor,
                 m_interiorExteriorBlend
+            ));
+
+        modelFragmentData.intLight.uInteriorGroundAmbientColor =
+            mathfu::vec4_packed(mathfu::vec4(
+                m_interiorAmbientGroundColor,
+                .0f
+            ));
+        modelFragmentData.intLight.uInteriorHorizontAmbientColor =
+            mathfu::vec4_packed(mathfu::vec4(
+                m_interiorAmbientHorizontColor,
+                0.0f
             ));
 
         modelFragmentData.intLight.uInteriorDirectColor =
             mathfu::vec4_packed(mathfu::vec4(
-                m_interiorDirectColor.xyz(),
+                m_interiorDirectColor,
                 0.0f
             ));
         modelFragmentData.intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir =

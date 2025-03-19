@@ -69,6 +69,31 @@ vec3 Slerp(vec3 p0, vec3 p1, float t)
     return P;
 }
 
+
+vec3 applyAndMixAmbients(vec3 ambient, vec3 horizAmbient, vec3 groundAmbient, vec3 precomputedLight, float nDotL, float nDotUp) {
+    vec3 currColor = vec3(0.0, 0.0, 0.0);
+
+    vec3 adjAmbient =       (ambient.rgb       + precomputedLight);
+    vec3 adjHorizAmbient =  (horizAmbient.rgb  + precomputedLight);
+    vec3 adjGroundAmbient = (groundAmbient.rgb + precomputedLight);
+
+    if ((nDotUp >= 0.0))
+    {
+        currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
+    }
+    else
+    {
+        currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
+    }
+
+    vec3 skyColor = (currColor * 1.10000002);
+    vec3 groundColor = (currColor* 0.699999988);
+
+    currColor = mix(groundColor, skyColor, (0.5f + vec3(0.5f * nDotL)));
+
+    return currColor;
+}
+
 vec3 calcLight(
     const in vec3 matDiffuse,
     const in vec3 vNormal,
@@ -85,31 +110,23 @@ vec3 calcLight(
         vec3 currColor = vec3(0.0, 0.0, 0.0);
         vec3 lDiffuse = vec3(0.0, 0.0, 0.0);
         vec3 normalizedN = normalize(vNormal);
+        float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUpSceneTime.xyz));
+
 
         float interiorExteriorBlend = intLight.uInteriorAmbientColorAndInteriorExteriorBlend.w;
         if (interiorExteriorBlend > 0) {
             float nDotL = clamp(dot(normalizedN, normalize(-(sceneParams.extLight.uExteriorDirectColorDir.xyz))), 0.0, 1.0);
-            float nDotUp = dot(normalizedN, normalize(sceneParams.uViewUpSceneTime.xyz));
 
-            vec3 adjAmbient =       (sceneParams.extLight.uExteriorAmbientColor.rgb          + precomputedLight);
-            vec3 adjHorizAmbient =  (sceneParams.extLight.uExteriorHorizontAmbientColor.rgb  + precomputedLight);
-            vec3 adjGroundAmbient = (sceneParams.extLight.uExteriorGroundAmbientColor.rgb    + precomputedLight);
-
-            if ((nDotUp >= 0.0))
-            {
-                currColor = mix(adjHorizAmbient, adjAmbient, vec3(nDotUp));
-            }
-            else
-            {
-                currColor= mix(adjHorizAmbient, adjGroundAmbient, vec3(-(nDotUp)));
-            }
-
-            vec3 skyColor = (currColor * 1.10000002);
-            vec3 groundColor = (currColor* 0.699999988);
-
+            currColor = applyAndMixAmbients(
+                sceneParams.extLight.uExteriorAmbientColor.rgb,
+                sceneParams.extLight.uExteriorHorizontAmbientColor.rgb,
+                sceneParams.extLight.uExteriorGroundAmbientColor.rgb,
+                precomputedLight,
+                nDotL,
+                nDotUp
+            );
 
             lDiffuse = (sceneParams.extLight.uExteriorDirectColor.xyz * nDotL);
-            currColor = mix(groundColor, skyColor, (0.5f + vec3(0.5f * nDotL)));
         }
         if (interiorExteriorBlend < 1.0) {
             vec3 interiorSunDir = mix(
@@ -117,16 +134,25 @@ vec3 calcLight(
                 intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.xyz,
                 intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.w);
 
-            float nDotL = clamp(dot(normalizedN, interiorSunDir), 0.0, 1.0);
+            float nDotL = clamp(dot(normalizedN, -interiorSunDir), 0.0, 1.0);
+
+            vec3 interiorCurrColor = applyAndMixAmbients(
+                intLight.uInteriorAmbientColorAndInteriorExteriorBlend.rgb,
+                intLight.uInteriorHorizontAmbientColor.rgb,
+                intLight.uInteriorGroundAmbientColor.rgb,
+                precomputedLight,
+                nDotL,
+                nDotUp
+            );
+
             vec3 lDiffuseInterior = intLight.uInteriorDirectColor.xyz * nDotL;
-            vec3 interiorAmbient = intLight.uInteriorAmbientColorAndInteriorExteriorBlend.xyz + precomputedLight;
 
             if (interiorExteriorBlend > 0) {
                 lDiffuse = mix(lDiffuseInterior, lDiffuse, interiorExteriorBlend);
-                currColor = mix(interiorAmbient, currColor, interiorExteriorBlend);
+                currColor = mix(interiorCurrColor, currColor, interiorExteriorBlend);
             } else {
                 lDiffuse = lDiffuseInterior;
-                currColor = interiorAmbient;
+                currColor = interiorCurrColor;
             }
         }
 

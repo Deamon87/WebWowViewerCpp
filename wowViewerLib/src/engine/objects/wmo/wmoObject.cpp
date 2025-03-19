@@ -66,16 +66,6 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
 
     const SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
-    // if (doodadDef->flag_AcceptProjTex) std::cout << "doodadDef->flag_AcceptProjTex" << std::endl;
-    // if (doodadDef->flag_0x2) std::cout << "doodadDef->flag_0x2" << std::endl;
-    // if (doodadDef->flag_0x4) std::cout << "doodadDef->flag_0x4" << std::endl;
-    // if (doodadDef->flag_0x8) std::cout << "doodadDef->flag_0x8" << std::endl;
-    // if (doodadDef->flag_0x10) std::cout << "doodadDef->flag_0x10" << std::endl;
-    // if (doodadDef->flag_0x20) std::cout << "doodadDef->flag_0x20" << std::endl;
-    // if (doodadDef->flag_0x40) std::cout << "doodadDef->flag_0x40" << std::endl;
-    // if (doodadDef->flag_0x80) std::cout << "doodadDef->flag_0x80" << std::endl;
-
-
     bool fileIdMode = false;
     int doodadfileDataId = 0;
     std::string fileName;
@@ -104,26 +94,208 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
-
-    if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
-
-        auto &light = this->mainGeom->lights[doodadDef->color.a];
-        m2Object->setAmbientColorOverride(ImVectorToVec4(light.color), true);
-
-        auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
-        auto sunDirVec = m2Object->getWorldPosition() - MOLTWorldPos.xyz();
-        if (sunDirVec.LengthSquared() > 0) {
-            m2Object->setSunDirOverride(sunDirVec.Normalized());
-        }
-//        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
-    } else {
-        // m2Object->setDiffuseColor(doodadDef->color, 1.0f);
+    //Set interior lighting params
+    float mddiVal = 1.0;
+    if (doodadDef->flag_0x10 && index < mainGeom->m_doodadAdditionalInfoLen) {
+        mddiVal = mainGeom->m_doodadAdditionalInfo[index];
     }
+
+    applyLightingParamsToDoodad(doodadDef, m2Object, mddiVal);
+
+    // if (doodadDef->flag_AcceptProjTex) std::cout << "doodadDef->flag_AcceptProjTex" << std::endl;
+    // if (doodadDef->flag_0x2) std::cout << "doodadDef->flag_0x2" << std::endl;
+    // if (doodadDef->flag_0x4) std::cout << "doodadDef->flag_0x4" << std::endl;
+    // if (doodadDef->flag_0x8) std::cout << "doodadDef->flag_0x8" << std::endl;
+    // if (doodadDef->flag_0x10) std::cout << "doodadDef->flag_0x10" << std::endl;
+    // if (doodadDef->flag_0x20) std::cout << "doodadDef->flag_0x20" << std::endl;
+    // if (doodadDef->flag_0x40) std::cout << "doodadDef->flag_0x40" << std::endl;
+    // if (doodadDef->flag_0x80) std::cout << "doodadDef->flag_0x80" << std::endl;
 
     this->m_doodadsUnorderedMap[index] = m2Object;
 
     return m2Object;
 }
+
+mathfu::vec3 addDirectColorAndAmbient(mathfu::vec3 directColor, mathfu::vec3 ambient) {
+    auto sum = ambient + directColor;
+
+    float biggestComponent = std::max(sum.x, std::max(sum.y, sum.z));
+    if (biggestComponent > 1.0f) {
+        sum = sum * (1.0f / biggestComponent);
+    }
+    sum = mathfu::vec3(
+        fminf(sum.x, 1.0f),
+        fminf(sum.y, 1.0f),
+        fminf(sum.z, 1.0f)
+    );
+    return sum;
+}
+
+inline mathfu::vec3 fixDirectColor(const mathfu::vec3 &directColor, uint8_t limit) {
+    float biggestComponent = std::max(directColor.x, std::max(directColor.y, directColor.z));
+
+    if (biggestComponent <= 0.00001f) {
+        biggestComponent = 1.0f/255.0f;
+    }
+
+    const float limitInFloat = limit * (1.0f/255.0f);
+    if (biggestComponent < limitInFloat) {
+        auto hsv = MathHelper::rgb2hsv(directColor);
+        hsv.v = hsv.v * (limitInFloat / biggestComponent);
+        auto rgb = MathHelper::hsv2rgb(hsv);
+        return rgb;
+    }
+
+    return directColor;
+}
+inline mathfu::vec3 fixAmbient1(const mathfu::vec3 &ambient, uint8_t limit) {
+    float biggestComponent = std::max(ambient.x, std::max(ambient.y, ambient.z));
+
+    if (biggestComponent <= 0.00001f) {
+        biggestComponent = 1.0f/255.0f;
+    }
+
+    const float limitInFloat = limit * (1.0f/255.0f);
+    if (biggestComponent > limitInFloat) {
+        return ambient * (limitInFloat / biggestComponent);
+    }
+
+    return ambient;
+}
+
+void WmoObject::applyColorFromMOLT(
+        const SMODoodadDef *doodadDef,
+        const std::shared_ptr<M2Object> &doodad,
+        std::array<mathfu::vec3, 3> &interiorAmbients,
+        mathfu::vec3 &color,
+        bool &hasDoodad0x4Flag)
+{
+
+    interiorAmbients = getAmbientColors();
+    color = ImVectorToVec4(doodadDef->color).xyz();
+
+    hasDoodad0x4Flag = doodadDef->flag_0x4;
+    if (doodadDef->flag_0x40)
+        hasDoodad0x4Flag = true;
+
+    if (doodadDef->flag_0x8) {
+        interiorAmbients[0] = color;
+        interiorAmbients[1] = color;
+        interiorAmbients[2] = color;
+
+        doodad->setAmbientColorOverride(
+            interiorAmbients[0],
+            interiorAmbients[2],
+            interiorAmbients[1]
+        );
+    }
+
+    if (hasDoodad0x4Flag) {
+        if (doodadDef->flag_0x40) {
+            color = mathfu::vec3(0,0,0);
+        } else if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
+            auto &light = this->mainGeom->lights[doodadDef->color.a];
+
+            auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
+            auto sunDirVec = doodad->getWorldPosition() - MOLTWorldPos.xyz();
+            if (sunDirVec.LengthSquared() > 0) {
+                doodad->setSunDirOverride(sunDirVec.Normalized());
+            }
+
+            auto lightColor = ImVectorToVec4(light.color).xyz() * light.intensity;
+            float biggestComponent = std::max(lightColor.x, std::max(lightColor.y, lightColor.z));
+            if (biggestComponent > 1.0f) {
+                float inv = 1.0f / biggestComponent;
+                lightColor = lightColor * inv;
+                color = mathfu::vec3(
+                    fminf(lightColor.x, 1.0f),
+                    fminf(lightColor.y, 1.0f),
+                    fminf(lightColor.z, 1.0f)
+                );
+            }
+
+            if (doodadDef->flag_0x2 == 0) {
+                auto directColor = color;
+                directColor = fixDirectColor(directColor, 0x70);
+                doodad->setInteriorDirectColor(directColor);
+            }
+        }
+    }
+
+    if (!hasDoodad0x4Flag || doodadDef->flag_0x40 || doodadDef->color.a == 255) {
+        if (doodadDef->flag_0x2)
+            return;
+    }
+
+    if (doodadDef->color.a == 255) return;
+
+    auto &light = this->mainGeom->lights[doodadDef->color.a];
+
+    auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
+    auto sunDirVec = doodad->getWorldPosition() - MOLTWorldPos.xyz();
+    if (sunDirVec.LengthSquared() > 0) {
+        doodad->setSunDirOverride(sunDirVec.Normalized());
+    }
+
+}
+
+void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal) {
+    std::array<mathfu::vec3, 3> interiorAmbients;
+    mathfu::Vector<float, 3> color;
+    bool hasDoodad0x4Flag;
+
+    applyColorFromMOLT(doodadDef, doodad, interiorAmbients, color, hasDoodad0x4Flag);
+
+    //If both flag_0x4 and flag_0x8 are set - nothing is applied
+    if (hasDoodad0x4Flag && doodadDef->flag_0x8)
+        return;
+
+    if (doodadDef->flag_0x2) {
+        if (doodadDef->flag_0x10 && !hasDoodad0x4Flag) {
+            mathfu::vec3 directColor = mathfu::vec3(0,0,0);
+            if (doodadDef->flag_0x80) {
+                mddiVal = std::max<float>(mddiVal, 1.0f);
+                directColor = color * mddiVal;
+            }
+            color = addDirectColorAndAmbient(directColor,  interiorAmbients[0]);
+        }
+    } else {
+        if (doodadDef->flag_0x10) {
+            mathfu::vec3 directColor = mathfu::vec3(0,0,0);
+            if (doodadDef->flag_0x80) {
+                mddiVal = std::max<float>(mddiVal, 1.0f);
+                directColor = color * mddiVal;
+            }
+
+            interiorAmbients[0] = addDirectColorAndAmbient(directColor,  interiorAmbients[0]);
+            interiorAmbients[1] = addDirectColorAndAmbient(directColor,  interiorAmbients[1]);
+            interiorAmbients[2] = addDirectColorAndAmbient(directColor,  interiorAmbients[2]);
+            color = interiorAmbients[0];
+        } else {
+            interiorAmbients[0] = color;
+            interiorAmbients[1] = color;
+            interiorAmbients[2] = color;
+        }
+
+        color = fixDirectColor(color, 0x70u);
+        interiorAmbients[0] = fixAmbient1(interiorAmbients[0], 0x70u);
+        interiorAmbients[1] = fixAmbient1(interiorAmbients[1], 0x70u);
+        interiorAmbients[2] = fixAmbient1(interiorAmbients[2], 0x70u);
+    }
+
+    if (!hasDoodad0x4Flag) {
+        doodad->setInteriorDirectColor(color);
+    }
+    if (!doodadDef->flag_0x8) {
+        doodad->setAmbientColorOverride(
+            interiorAmbients[0],
+            interiorAmbients[2],
+            interiorAmbients[1]
+        );
+    }
+
+}
+
 void WmoObject::createPlacementMatrix(const SMMapObjDef &mapObjDef){
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
@@ -1437,7 +1609,7 @@ void WmoObject::calculateAmbient() {
     m_ambientColors = {ambientColor, horizontAmbientColor, groundAmbientColor};
     m_groupInteriorData = decltype(m_groupInteriorData)(groupObjects.size());
     for (auto &interiorAmbientBlock : m_groupInteriorData) {
-         interiorAmbientBlock.uAmbientColor = mathfu::vec4(ambientColor, 1.0f);
+         interiorAmbientBlock.uAmbientColorAndIsExteriorLit = mathfu::vec4(ambientColor, 1.0f);
          interiorAmbientBlock.uHorizontAmbientColor = mathfu::vec4(horizontAmbientColor, 1.0f);
          interiorAmbientBlock.uGroundAmbientColor = mathfu::vec4(groundAmbientColor, 1.0f);
     }
@@ -1450,6 +1622,7 @@ std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
     return m_newLights[index];
 }
 void WmoObject::setInteriorAmbientColor(int groupIndex,
+                                        bool isExteriorLighted,
                                         const mathfu::vec3 &ambient,
                                         const mathfu::vec3 &horizontAmbient,
                                         const mathfu::vec3 &groundAmbient)
@@ -1457,7 +1630,7 @@ void WmoObject::setInteriorAmbientColor(int groupIndex,
     assert(groupIndex < m_groupInteriorData.size());
 
     auto &interiorAmbientBlock = m_groupInteriorData[groupIndex];
-    interiorAmbientBlock.uAmbientColor         = mathfu::vec4(ambient, 1.0f);
+    interiorAmbientBlock.uAmbientColorAndIsExteriorLit = mathfu::vec4(ambient, isExteriorLighted ? 1.0 : 0.0);
     interiorAmbientBlock.uHorizontAmbientColor = mathfu::vec4(horizontAmbient, 1.0f);
     interiorAmbientBlock.uGroundAmbientColor   = mathfu::vec4(groundAmbient, 1.0f);
 

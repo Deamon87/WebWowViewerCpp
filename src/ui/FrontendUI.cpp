@@ -224,9 +224,11 @@ void FrontendUI::showCurrentStatsDialog() {
         ImGui::Begin("Current stats",
                      &showCurrentStats);                          // Create a window called "Hello, world!" and append into it.
 
+        mathfu::vec3 cameraPos, lookAt;
+        getCameraPos(cameraPos, lookAt);
+
         if (ImGui::CollapsingHeader("Camera position")) {
-            mathfu::vec3 cameraPos, lookAt;
-            getCameraPos(cameraPos, lookAt);
+
 
             ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPos[0], cameraPos[1], cameraPos[2]);
             ImGui::Text("Current camera lookAt: (%.1f,%.1f,%.1f)", lookAt[0], lookAt[1], lookAt[2]);
@@ -264,8 +266,13 @@ void FrontendUI::showCurrentStatsDialog() {
             auto mapPlan = activeScene->getLastPlan();
             if (mapPlan) {
                 auto &cullStageData = mapPlan;
+
+                int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+                int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+
                 if (ImGui::CollapsingHeader("Current Scene Data")) {
                     ImGui::Text("Current area id: %d", mapPlan->areaId);
+                    ImGui::Text("Current area file: (%d, %d)", adt_x, adt_y);
                     ImGui::Text("Current parent area id: %d", mapPlan->parentAreaId);
                     ImGui::Text("Current adt area id: %d", mapPlan->adtAreadId);
                     ImGui::Text("Current wmo area name: %s", mapPlan->wmoAreaName.c_str());

@@ -106,10 +106,9 @@ private:
 
     HGSortableMesh boundingBoxMesh = nullptr;
     
-    mathfu::vec4 m_ambientColorOverride;
-    mathfu::vec4 m_ambientHorizontColorOverride;
-    mathfu::vec4 m_ambientGroundColorOverride;
-    bool m_setAmbientColor = false;
+    mathfu::vec3 m_interiorAmbientColor;
+    mathfu::vec3 m_interiorAmbientHorizontColor;
+    mathfu::vec3 m_interiorAmbientGroundColor;
 
     mathfu::vec3 m_interiorSunDir = mathfu::vec3(0,0,0);
     bool m_setInteriorSunDir = false;
@@ -130,7 +129,7 @@ private:
     std::vector<std::function<void()>> m_postLoadEvents;
 
     int m_skinNum = 0;
-    mathfu::vec4 m_interiorDirectColor = mathfu::vec4(0.0, 0.0, 0.0, 0.0);
+    mathfu::vec3 m_interiorDirectColor = mathfu::vec3(0.0, 0.0, 0.0);
 
     std::vector<uint8_t> m_meshIds;
     std::vector<HBlpTexture> m_replaceTextures;
@@ -297,14 +296,18 @@ public:
     HBlpTexture getHardCodedTexture(int textureInd);
 
     mathfu::vec4 getM2SceneAmbientLight();
-    void setAmbientColorOverride(const mathfu::vec4 &ambientColor, bool override) {
-        if (m_setAmbientColor != override && m_ambientColorOverride != ambientColor) {
-            m_setAmbientColor = override;
-            m_ambientColorOverride = ambientColor;
-            m_modelWideDataChanged = true;
-        }
+    void setAmbientColorOverride(
+        const mathfu::vec3 &ambientColor,
+        const mathfu::vec3 &horizontAmbientColor,
+        const mathfu::vec3 &groundAmbientColor
+    ) {
+        m_interiorAmbientColor = ambientColor;
+        m_interiorAmbientHorizontColor = horizontAmbientColor;
+        m_interiorAmbientGroundColor = groundAmbientColor;
+
+        m_modelWideDataChanged = true;
     }
-    void setDirectColor(const mathfu::vec4 &interiorDirectColor);
+    void setInteriorDirectColor(const mathfu::vec3 &interiorDirectColor);
     void setSunDirOverride(const mathfu::vec3 &sunDir) {
         m_interiorSunDir = sunDir;
         m_setInteriorSunDir = true;

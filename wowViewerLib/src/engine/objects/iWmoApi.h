@@ -325,6 +325,7 @@ public:
     virtual ActiveDoodadSets getActiveDoodadSet() = 0;
     virtual std::shared_ptr<CWmoNewLight> getNewLight(int index) = 0;
     virtual void setInteriorAmbientColor(int groupIndex,
+        bool isExteriorLighted,
         const mathfu::vec3 &ambient,
         const mathfu::vec3 &horizontAmbient,
         const mathfu::vec3 &groundAmbient

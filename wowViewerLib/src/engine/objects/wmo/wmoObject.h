@@ -111,6 +111,14 @@ private:
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
     std::shared_ptr<M2Object> getDoodad(int index) override ;
+    void applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal);
+    void applyColorFromMOLT(
+        const SMODoodadDef *doodadDef,
+        const std::shared_ptr<M2Object> &doodad,
+        std::array<mathfu::vec3, 3> &interiorAmbients,
+        mathfu::vec3 &color,
+        bool &hasDoodad0x4Flag);
+
     HGSamplableTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam(const SMMapObjDef &mapObjDef);
     void setLoadingParam(const SMMapObjDefObj1 &mapObjDef);
@@ -211,6 +219,7 @@ public:
     void calculateAmbient();
     std::shared_ptr<CWmoNewLight> getNewLight(int index) override;
     void setInteriorAmbientColor(int groupIndex,
+        bool isExteriorLighted,
         const mathfu::vec3 &ambient,
         const mathfu::vec3 &horizontAmbient,
         const mathfu::vec3 &groundAmbient

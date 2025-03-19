@@ -113,6 +113,15 @@ void WmoGroupObject::postLoad(const HMapSceneBufferCreate &sceneRenderer) {
     this->loadLights();
     this->createMeshes(sceneRenderer);
     this->createWaterMeshes(sceneRenderer);
+
+    auto ambients = getAmbientColors();
+
+    getWmoApi()->setInteriorAmbientColor(m_groupNumber,
+        !isInteriorLightingLit(),
+        ambients[0],
+        ambients[1],
+        ambients[2]
+    );
 }
 
 void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
@@ -239,7 +248,7 @@ void WmoGroupObject::loadDoodads() {
     m_doodads = {};
     m_doodads.reserve(this->m_geom->doodadRefsLen);
 
-    bool wmoGroupUsesExteriorLighting = m_geom->mogp->flags.EXTERIOR_LIT || m_geom->mogp->flags.EXTERIOR;
+    bool wmoGroupUsesExteriorLighting = !isInteriorLightingLit();
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
@@ -800,7 +809,7 @@ const std::vector<std::shared_ptr<CWmoNewLight>> &WmoGroupObject::getWmoNewLight
 
 std::array<mathfu::vec3, 3> WmoGroupObject::getAmbientColors() {
     std::array<mathfu::vec3, 3> ambColors;
-    if (!m_geom->mogp->flags.EXTERIOR && !m_geom->mogp->flags.EXTERIOR_LIT) {
+    if (isInteriorLightingLit()) {
         ambColors = m_wmoApi->getAmbientColors();
         if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
             ambColors[0] = ImVectorToVec4(m_geom->replacement_for_header_color).xyz();

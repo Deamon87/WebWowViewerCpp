@@ -19,7 +19,7 @@ struct WmoFragMeshWide {
 };
 
 struct WmoInteriorBlockData {
-    vec4 uAmbientColor;
+    vec4 uAmbientColorAndIsExteriorLit;
     vec4 uHorizontAmbientColor;
     vec4 uGroundAmbientColor;
 };

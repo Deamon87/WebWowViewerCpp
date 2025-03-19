@@ -68,7 +68,13 @@ void main() {
     WmoInteriorBlockData currentInteriorData = interiorData[groupNum];
 
     InteriorLightParam intLight;
-    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(currentInteriorData.uAmbientColor.xyz, vColor.w);
+
+    //vColor.w = [0, 1]. 0 = full interior, 1.0 = full exterior
+    //currentInteriorData.uAmbientColorAndIsExteriorLit.w 1.0 = use exterior lighting no matter what, 0.0 otherwise
+
+    float interiorExteriorBlend = mix(vColor.w, 1.0, currentInteriorData.uAmbientColorAndIsExteriorLit.w);
+
+    intLight.uInteriorAmbientColorAndInteriorExteriorBlend = vec4(currentInteriorData.uAmbientColorAndIsExteriorLit.xyz, interiorExteriorBlend);
     intLight.uInteriorGroundAmbientColor =                   vec4(currentInteriorData.uGroundAmbientColor.xyz, 0);
     intLight.uInteriorHorizontAmbientColor =                 vec4(currentInteriorData.uHorizontAmbientColor.xyz, 0);
 
