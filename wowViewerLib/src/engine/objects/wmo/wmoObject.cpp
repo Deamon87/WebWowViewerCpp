@@ -43,7 +43,7 @@ void WmoObject::startLoading() {
     }
 }
 
-std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
+std::shared_ptr<M2Object> WmoObject::getDoodad(int index, int fromGroupIndex) {
     auto iterator = this->m_doodadsUnorderedMap.find(index);
     if (iterator != this->m_doodadsUnorderedMap.end())
         return iterator->second;
@@ -95,12 +95,21 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     m2Object->calcWorldPosition();
 
     //Set interior lighting params
-    float mddiVal = 1.0;
+    float mddiVal = 1.0f;
     if (doodadDef->flag_0x10 && index < mainGeom->m_doodadAdditionalInfoLen) {
         mddiVal = mainGeom->m_doodadAdditionalInfo[index];
     }
 
-    applyLightingParamsToDoodad(doodadDef, m2Object, mddiVal);
+    auto l_wmoId = this->getObjectId();
+    m2Object->addPostLoadEvent([l_wmoId, l_doodadDef = *doodadDef, m2Object, mddiVal, fromGroupIndex]() {
+        auto wmoObj = wmoFactory->getObjectById<0>(l_wmoId);
+        if (!wmoObj) return;
+
+        auto wmoFlag = wmoObj->mainGeom->groups[fromGroupIndex].flags;
+        if (wmoFlag.EXTERIOR_LIT || wmoFlag.EXTERIOR || !wmoFlag.INTERIOR) return;
+
+        wmoObj->applyLightingParamsToDoodad(&l_doodadDef, m2Object, mddiVal, fromGroupIndex);
+    });
 
     // if (doodadDef->flag_AcceptProjTex) std::cout << "doodadDef->flag_AcceptProjTex" << std::endl;
     // if (doodadDef->flag_0x2) std::cout << "doodadDef->flag_0x2" << std::endl;
@@ -168,11 +177,9 @@ void WmoObject::applyColorFromMOLT(
         const std::shared_ptr<M2Object> &doodad,
         std::array<mathfu::vec3, 3> &interiorAmbients,
         mathfu::vec3 &color,
-        bool &hasDoodad0x4Flag)
+        bool &hasDoodad0x4Flag,
+        int fromGroupIndex)
 {
-
-    interiorAmbients = getAmbientColors();
-    color = ImVectorToVec4(doodadDef->color).xyz();
 
     hasDoodad0x4Flag = doodadDef->flag_0x4;
     if (doodadDef->flag_0x40)
@@ -193,11 +200,15 @@ void WmoObject::applyColorFromMOLT(
     if (hasDoodad0x4Flag) {
         if (doodadDef->flag_0x40) {
             color = mathfu::vec3(0,0,0);
+            doodad->setInteriorDirectColor(color);
         } else if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
             auto &light = this->mainGeom->lights[doodadDef->color.a];
 
             auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
-            auto sunDirVec = doodad->getWorldPosition() - MOLTWorldPos.xyz();
+
+            const auto doodadAAbb = doodad->getBoundingBox();
+
+            auto sunDirVec = (mathfu::vec3(doodadAAbb.max) + mathfu::vec3(doodadAAbb.min)) * 0.5f - MOLTWorldPos.xyz();
             if (sunDirVec.LengthSquared() > 0) {
                 doodad->setSunDirOverride(sunDirVec.Normalized());
             }
@@ -220,40 +231,49 @@ void WmoObject::applyColorFromMOLT(
                 doodad->setInteriorDirectColor(directColor);
             }
         }
-    }
-
-    if (!hasDoodad0x4Flag || doodadDef->flag_0x40 || doodadDef->color.a == 255) {
-        if (doodadDef->flag_0x2)
+    } else {
+        if (!doodadDef->flag_0x2 && false)
             return;
     }
 
-    if (doodadDef->color.a == 255) return;
+    mathfu::vec3 interiorLightStart;
+    if (doodadDef->color.a == 255) {
+        auto const aabb = this->groupObjects[fromGroupIndex]->getWorldAABB();
+        interiorLightStart = (mathfu::vec3(aabb.max) + mathfu::vec3(aabb.min)) * 0.5f;
+    } else {
+        auto &light = this->mainGeom->lights[doodadDef->color.a];
 
-    auto &light = this->mainGeom->lights[doodadDef->color.a];
+        interiorLightStart = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f).xyz();
+    }
 
-    auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
-    auto sunDirVec = doodad->getWorldPosition() - MOLTWorldPos.xyz();
+    const auto doodadAAbb = doodad->getBoundingBox();
+
+    auto sunDirVec = (mathfu::vec3(doodadAAbb.max) + mathfu::vec3(doodadAAbb.min)) * 0.5f - interiorLightStart;
+
     if (sunDirVec.LengthSquared() > 0) {
         doodad->setSunDirOverride(sunDirVec.Normalized());
     }
 
 }
 
-void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal) {
+void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal, int fromGroupIndex) {
     std::array<mathfu::vec3, 3> interiorAmbients;
     mathfu::Vector<float, 3> color;
     bool hasDoodad0x4Flag;
 
-    applyColorFromMOLT(doodadDef, doodad, interiorAmbients, color, hasDoodad0x4Flag);
+    interiorAmbients = getAmbientColors();
+    color = ImVectorToVec4(doodadDef->color).xyz();
+
+    applyColorFromMOLT(doodadDef, doodad, interiorAmbients, color, hasDoodad0x4Flag, fromGroupIndex);
 
     //If both flag_0x4 and flag_0x8 are set - nothing is applied
     if (hasDoodad0x4Flag && doodadDef->flag_0x8)
         return;
 
-    if (doodadDef->flag_0x2) {
+    if (doodadDef->flag_0x2 || true) { //TODO: Check this stupidity later
         if (doodadDef->flag_0x10 && !hasDoodad0x4Flag) {
             mathfu::vec3 directColor = mathfu::vec3(0,0,0);
-            if (doodadDef->flag_0x80) {
+            if (!doodadDef->flag_0x80) {
                 mddiVal = std::max<float>(mddiVal, 1.0f);
                 directColor = color * mddiVal;
             }
@@ -262,7 +282,7 @@ void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const
     } else {
         if (doodadDef->flag_0x10) {
             mathfu::vec3 directColor = mathfu::vec3(0,0,0);
-            if (doodadDef->flag_0x80) {
+            if (!doodadDef->flag_0x80) {
                 mddiVal = std::max<float>(mddiVal, 1.0f);
                 directColor = color * mddiVal;
             }
@@ -278,9 +298,9 @@ void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const
         }
 
         color = fixDirectColor(color, 0x70u);
-        interiorAmbients[0] = fixAmbient1(interiorAmbients[0], 0x70u);
-        interiorAmbients[1] = fixAmbient1(interiorAmbients[1], 0x70u);
-        interiorAmbients[2] = fixAmbient1(interiorAmbients[2], 0x70u);
+        interiorAmbients[0] = fixAmbient1(interiorAmbients[0], 0x60u);
+        interiorAmbients[1] = fixAmbient1(interiorAmbients[1], 0x60u);
+        interiorAmbients[2] = fixAmbient1(interiorAmbients[2], 0x60u);
     }
 
     if (!hasDoodad0x4Flag) {
@@ -293,6 +313,7 @@ void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const
             interiorAmbients[1]
         );
     }
+
 
 }
 

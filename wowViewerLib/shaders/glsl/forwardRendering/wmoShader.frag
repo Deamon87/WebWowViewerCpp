@@ -27,7 +27,7 @@ layout(std140, set=1, binding=2) uniform meshWideBlockPS {
     ivec4 UseLitColor_EnableAlpha_PixelShader_BlendMode;
     vec4 FogColor_AlphaTest;
 };
-layout(std140, set=1, binding=2) uniform groupWmoInteriorData {
+layout(std140, set=1, binding=3) uniform groupWmoInteriorData {
     WmoInteriorBlockData interiorData[MAX_WMO_GROUPS];
 };
 

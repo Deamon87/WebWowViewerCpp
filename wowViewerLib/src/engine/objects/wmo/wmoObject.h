@@ -110,14 +110,15 @@ private:
     void fillLodGroup(mathfu::vec3 &cameraLocal);
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
-    std::shared_ptr<M2Object> getDoodad(int index) override ;
-    void applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal);
+    std::shared_ptr<M2Object> getDoodad(int index, int fromGroupIndex) override ;
+    void applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal, int fromGroupIndex);
     void applyColorFromMOLT(
         const SMODoodadDef *doodadDef,
         const std::shared_ptr<M2Object> &doodad,
         std::array<mathfu::vec3, 3> &interiorAmbients,
         mathfu::vec3 &color,
-        bool &hasDoodad0x4Flag);
+        bool &hasDoodad0x4Flag,
+        int fromGroupIndex);
 
     HGSamplableTexture getTexture(int materialId, bool isSpec) override;
     void setLoadingParam(const SMMapObjDef &mapObjDef);

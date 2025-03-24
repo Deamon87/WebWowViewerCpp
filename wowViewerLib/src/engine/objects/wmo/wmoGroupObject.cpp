@@ -252,7 +252,7 @@ void WmoGroupObject::loadDoodads() {
 
     //Load all doodad from MOBR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
-        auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i]);
+        auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i], m_groupNumber);
         m_doodads.push_back(newDoodad);
 
         if (newDoodad != nullptr) {

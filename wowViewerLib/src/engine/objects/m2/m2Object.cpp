@@ -467,6 +467,7 @@ void M2Object::createAABB() {
     M2Data *m2Data = m_m2Geom->getM2Data();
 
     //Debug: calc bounding box from verticies
+    if (false)
     {
         auto min = mathfu::vec3(9999, 9999, 9999);
         auto max = mathfu::vec3(-9999, -9999, -9999);
@@ -532,7 +533,7 @@ void M2Object::createAABB() {
     }
 
 
-    if (false)
+    if (true)
     {
         C3Vector min = m2Data->bounding_box.min;
         C3Vector max = m2Data->bounding_box.max;

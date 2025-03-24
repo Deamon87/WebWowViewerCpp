@@ -134,7 +134,7 @@ vec3 calcLight(
                 intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.xyz,
                 intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir.w);
 
-            float nDotL = clamp(dot(normalizedN, -interiorSunDir), 0.0, 1.0);
+            float nDotL = clamp(dot(normalizedN, interiorSunDir), 0.0, 1.0);
 
             vec3 interiorCurrColor = applyAndMixAmbients(
                 intLight.uInteriorAmbientColorAndInteriorExteriorBlend.rgb,

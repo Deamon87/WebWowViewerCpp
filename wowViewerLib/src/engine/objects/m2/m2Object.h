@@ -273,6 +273,7 @@ public:
 
     bool isMainDataLoaded() const;
     bool getHasBoundingBox() const {return status->m_hasAABB;}
+    CAaBox getBoundingBox() const {return *aabb;}
 
     void doLoadMainFile();
     bool isFailedToLoadMainFile();

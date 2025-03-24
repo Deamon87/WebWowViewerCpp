@@ -312,7 +312,7 @@ typedef std::bitset<255> ActiveDoodadSets;
 
 class IWmoApi {
 public:
-    virtual std::shared_ptr<M2Object> getDoodad(int index) = 0;
+    virtual std::shared_ptr<M2Object> getDoodad(int index, int fromGroupIndex) = 0;
     virtual SMOHeader *getWmoHeader() = 0;
     virtual std::array<mathfu::vec3,3> getAmbientColors() = 0;
     virtual PointerChecker<SMOMaterial> &getMaterials() = 0;
