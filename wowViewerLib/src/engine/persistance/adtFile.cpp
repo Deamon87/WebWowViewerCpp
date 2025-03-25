@@ -619,7 +619,10 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
 //    }
 }
 
-static bool isHoleLowRes(int hole, int i, int j) {
+bool isHoleLowRes(int hole, int i, int j) {
+    assert(i >= 0 && i < 8);
+    assert(j >= 0 && j < 8);
+
     static int holetab_h[4] = {0x1111, 0x2222, 0x4444, 0x8888};
     static int holetab_v[4] = {0x000F, 0x00F0, 0x0F00, 0xF000};
 
@@ -628,7 +631,10 @@ static bool isHoleLowRes(int hole, int i, int j) {
 
     return (hole & holetab_h[i] & holetab_v[j]) != 0;
 }
-static bool isHoleHighRes(uint64_t hole, int i, int j) {
+bool isHoleHighRes(uint64_t hole, int i, int j) {
+    assert(i >= 0 && i < 8);
+    assert(j >= 0 && j < 8);
+
     uint8_t * holeAsUint8 = (uint8_t *) &hole;
     return ((holeAsUint8[j] >> i) & 1) > 0;
 

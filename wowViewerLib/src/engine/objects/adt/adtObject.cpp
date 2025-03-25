@@ -1348,6 +1348,32 @@ int AdtObject::getAreaId(int mcnk_x, int mcnk_y) {
     return 0;
 }
 
+void AdtObject::getHeight(const mathfu::vec4 &camera, float &height) {
+    int mcnk_x = worldCoordinateToGlobalAdtChunk(camera.y) % 16;
+    int mcnk_y = worldCoordinateToGlobalAdtChunk(camera.x) % 16;
+    auto index = m_adtFile->mcnkMap[mcnk_x][mcnk_y];
+    if (index > -1) {
+        auto mcnkObj = m_adtFile->mapTile[index];
+
+        int holeLow = mcnkObj.holes_low_res;
+        uint64_t holeHigh = mcnkObj.postMop.holes_high_res;
+
+        auto indexes = (mathfu::vec2(mcnkObj.position.x, mcnkObj.position.y) - camera.xy()) * (1.0f / MathHelper::UNITSIZE);
+
+        int indexX = floor(indexes.y);
+        int indexY = floor(indexes.x);
+
+        bool isHole = (!mcnkObj.flags.high_res_holes) ?
+                                    isHoleLowRes(holeLow, indexX, indexY) :
+                                    isHoleHighRes(holeHigh, indexX, indexY);
+
+        if (!isHole) {
+            int j = indexY * 17 + indexX;
+            height = m_adtFile->mapTile[index].position.z + m_adtFile->mcnkStructs[index].mcvt->height[j];
+        }
+    }
+}
+
 void AdtObject::createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer) {
     ZoneScoped;
 

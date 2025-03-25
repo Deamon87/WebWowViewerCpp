@@ -207,7 +207,7 @@ public:
         int localLevel
     );
 
-    bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
+    bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result, float &bottomBorder);
 
     bool isGroupWmoInterior(int groupId);
     bool isGroupWmoExteriorLit(int groupId);

@@ -112,6 +112,8 @@ protected:
                          M2ObjectListContainer &m2ObjectsCandidates,
                          WMOListContainer &wmoCandidates);
 
+    void getPossibleHeight(const mathfu::vec4 &cameraPos, float &height);
+
     virtual void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
                                           StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 

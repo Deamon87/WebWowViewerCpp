@@ -387,12 +387,23 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
         getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
 
+        float bottomBorder = -99999;
+
+        //Get bottom border from ADT
+        {
+            float adtHeight;
+            getPossibleHeight(cameraPos, adtHeight);
+
+            if (adtHeight < cameraPos.z)
+                bottomBorder = adtHeight;
+        }
+
         for (auto &wmoId: potentialWmo.getCandidates()) {
             WmoGroupResult groupResult;
             auto checkingWmoObj = wmoFactory->getObjectById<0>(wmoId);
             if (checkingWmoObj == nullptr) continue;
 
-            bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
+            bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult, bottomBorder);
 
             if (result) {
                 mapRenderPlan->m_currentWMO = wmoId;
@@ -894,6 +905,23 @@ void Map::checkADTCulling(int i, int j,
         adtObject->setFreeStrategy(zeroStateLambda);
 
         mapTiles[i][j] = adtObject;
+    }
+}
+
+void Map::getPossibleHeight(const mathfu::vec4 &cameraPos, float &height) {
+    if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+            int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+            int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+            if ((adt_x >= 64) || (adt_x < 0)) return;
+            if ((adt_y >= 64) || (adt_y < 0)) return;
+
+            auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
+
+            if (adtObjectCameraAt != nullptr) {
+                adtObjectCameraAt->getHeight(cameraPos, height);
+            }
+        }
     }
 }
 

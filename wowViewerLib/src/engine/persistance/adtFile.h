@@ -39,6 +39,9 @@ struct MCAL_Offsets_Runtime {
     std::array<SMLayer::MCAL_FLAG, 4> alphaFlags = {0,0,0,0};
 };
 
+bool isHoleLowRes(int hole, int i, int j) ;
+bool isHoleHighRes(uint64_t hole, int i, int j);
+
 class AdtFile: public PersistentFile {
 public:
     AdtFile(std::string fileName){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};

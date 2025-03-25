@@ -56,6 +56,7 @@ public:
     bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
 
     int getAreaId(int mcnk_x, int mcnk_y);
+    void getHeight(const mathfu::vec4 &camera, float &height);
 
     int getAdtX() {return adt_x;}
     int getAdtY() {return adt_y;}
