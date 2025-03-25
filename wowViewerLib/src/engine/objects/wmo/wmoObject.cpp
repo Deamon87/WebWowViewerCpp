@@ -1238,7 +1238,7 @@ bool WmoObject::isGroupWmoInterior(int groupId) {
 
 bool WmoObject::isGroupWmoExteriorLit(int groupId) {
     const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
-    bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1);
+    bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1) || ((groupInfo->flags.EXTERIOR) == 1) || ((groupInfo->flags.INTERIOR) == 0);
     return result;
 }
 

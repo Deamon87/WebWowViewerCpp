@@ -568,6 +568,7 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         float blendTimeCoeff = (config->currentTime - lightParamData.lightTimedData[0].time) / (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
         blendTimeCoeff = std::min<float>(std::max<float>(blendTimeCoeff, 0.0f), 1.0f);
 
+        skyBodyData.skyBoxInfo = lightParamData.skyboxInfo;
         skyBodyData.celestialBodyOverride2 = mathfu::vec3(
             lightParamData.celestialBodyOverride2[0],
             lightParamData.celestialBodyOverride2[1],

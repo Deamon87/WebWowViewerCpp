@@ -26,7 +26,7 @@ private:
 
             void addSkyBox(StateForConditions &stateForConditions, const SkyBoxInfo &skyBoxInfo, float alpha);
             const std::vector<std::shared_ptr<M2Object>> &getNewSkyBoxes() const {
-                return m_existingSkyBoxes;
+                return m_newSkyBoxes;
             }
             bool getOverrideValuesWithFinalFog() const  { return m_overrideValuesWithFinalFog; }
 

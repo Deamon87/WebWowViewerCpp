@@ -1265,6 +1265,16 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
                 auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->uploadBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
+        }
+    }
+    {
+        ZoneScopedN("m2SkyboxGenerateBuffersUpdate");
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
                                                  renderPlan->frameDependentData);
             }

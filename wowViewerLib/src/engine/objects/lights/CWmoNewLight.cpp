@@ -97,6 +97,7 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const WdtLightFile::
     flags_raw = 0;
 
     m_spotlightRadius = mapSpotLight.spotlightRadius;
+    m_falloff = m_spotlightRadius;
     m_innerAngle = mapSpotLight.innerAngle;
     m_outerAngle = mapSpotLight.outerAngle;
     m_innerColor = mapSpotLight.color;
