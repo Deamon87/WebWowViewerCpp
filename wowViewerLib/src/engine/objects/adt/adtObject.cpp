@@ -4,7 +4,9 @@
 
 #include <cstring>
 #include <bitset>
-#include <emmintrin.h>
+#if (__AVX__ && __SSE2__)
+// #include <emmintrin.h>
+#endif
 #include "adtObject.h"
 #include <ShaderDefinitions.h>
 #include "../../algorithms/mathHelper.h"
@@ -545,6 +547,7 @@ void AdtObject::loadAlphaTextures() {
 
                         m_adtFileTex->processAlphaTextureRow(chunkMcalRuntime,m_wdtFile->mphd->flags, i, alphaTextureData.data(), 64);
 
+#if (__AVX__ && __SSE2__)
                         __m128i *alpha[4] = {
                             (__m128i *)(alphaTextureData.data() + (0)),
                             (__m128i *)(alphaTextureData.data() + (64)),
@@ -592,6 +595,31 @@ void AdtObject::loadAlphaTextures() {
                             _mm_store_si128(texturePtr++, a_b_c_d_high_low);
                             _mm_store_si128(texturePtr++, a_b_c_d_high_high);
                         }
+#else
+                        //Non intirisic version
+                        uint8_t *alpha[4] = {
+                            (uint8_t *)(alphaTextureData.data() + (0)),
+                            (uint8_t *)(alphaTextureData.data() + (64)),
+                            (uint8_t *)(alphaTextureData.data() + (64 * 2)),
+                            (uint8_t *)(alphaTextureData.data() + (64 * 3)),
+                        };
+
+                        uint8_t* __restrict texturePtr = (uint8_t*) getRowPtr<4>(bigTexture.data(),
+                                                                indexX * 64 + 0, indexY * 64 + y,
+                                                                texWidth, texHeight, 0);
+                        for (int x = 0; x < 64; x++) {
+                            for (int layerIdx = 0; layerIdx < 4; layerIdx++) {
+                                if (layerIdx == chunkMcalRuntime.uncompressedIndex) {
+                                    *texturePtr++ = (255 - *alpha[0] - *alpha[1] - *alpha[2] - *alpha[3]);
+                                } else {
+                                    *texturePtr++ = *alpha[layerIdx];
+                                }
+                            }
+                            for (int layerIdx = 0; layerIdx < 4; layerIdx++) {
+                                alpha[layerIdx]++;
+                            }
+                        }
+#endif
                     }
                 }
 //            }, tbb::auto_partitioner());
