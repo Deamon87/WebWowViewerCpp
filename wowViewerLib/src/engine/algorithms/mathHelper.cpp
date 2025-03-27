@@ -2,16 +2,16 @@
 // Created by deamon on 22.06.17.
 //
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#define NOMINMAX 1
+
 #include "mathHelper.h"
 #include "grahamScan.h"
 #include <cmath>
 #include <array>
-
-#ifndef WIN32_LEAN_AND_MEAN
-  #define WIN32_LEAN_AND_MEAN
-#endif
-
-#define NOMINMAX 1
 
 #if (__AVX__ && __SSE2__)
 #include <emmintrin.h>
