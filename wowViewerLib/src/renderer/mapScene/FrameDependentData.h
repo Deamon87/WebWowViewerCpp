@@ -89,7 +89,7 @@ struct ExteriorColors {
     mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
     mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
+    mathfu::vec4 exteriorDirectColor = {0.3f,0.3f,0.3f, 0.3f};
 
     void assignZeros() {
         exteriorAmbientColor =  {0, 0, 0, 0};
