@@ -207,7 +207,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
             ${{ matrix.config.cmake_defines}} \
-            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
+            -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC} \
+            --target WowStudio 
       - name: Configure emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         shell: bash
