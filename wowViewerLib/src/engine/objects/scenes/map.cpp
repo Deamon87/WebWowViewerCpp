@@ -391,34 +391,45 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
         //Get bottom border from ADT
         {
-            float adtHeight;
+            float adtHeight = -99999;
             getPossibleHeight(cameraPos, adtHeight);
 
             if (adtHeight < cameraPos.z)
                 bottomBorder = adtHeight;
         }
 
+        WmoGroupResult resGroupResult;
+        WMOObjId resWmoId = emptyWMO;
+        bool found = false;
         for (auto &wmoId: potentialWmo.getCandidates()) {
-            WmoGroupResult groupResult;
             auto checkingWmoObj = wmoFactory->getObjectById<0>(wmoId);
             if (checkingWmoObj == nullptr) continue;
 
+            WmoGroupResult groupResult;
             bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult, bottomBorder);
 
-            if (result) {
-                mapRenderPlan->m_currentWMO = wmoId;
-                mapRenderPlan->m_currentWmoGroup = groupResult.groupIndex;
-                if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                    mapRenderPlan->m_currentInteriorGroups.push_back(groupResult);
-                    interiorGroupNum = groupResult.groupIndex;
+            if (!result) continue;
+
+            found = true;
+            resGroupResult = groupResult;
+            resWmoId = wmoId; //
+        }
+
+        if (found) {
+            auto checkingWmoObj = wmoFactory->getObjectById<0>(resWmoId);
+            if (checkingWmoObj) {
+                mapRenderPlan->m_currentWMO = resWmoId;
+                mapRenderPlan->m_currentWmoGroup = resGroupResult.groupIndex;
+                if (checkingWmoObj->isGroupWmoInterior(resGroupResult.groupIndex)) {
+                    mapRenderPlan->m_currentInteriorGroups.push_back(resGroupResult);
+                    interiorGroupNum = resGroupResult.groupIndex;
                     mapRenderPlan->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(
-                        groupResult.groupIndex);
+                        resGroupResult.groupIndex);
                     mapRenderPlan->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(
-                        groupResult.groupIndex);
+                        resGroupResult.groupIndex);
                 } else {
                 }
-                bspNodeId = groupResult.nodeId;
-                break;
+                bspNodeId = resGroupResult.nodeId;
             }
         }
     }
@@ -500,7 +511,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, mapRenderPlan);
     }
 
-    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupIsExtLit || mapRenderPlan->currentWmoGroupShowExtSkybox)) {
+    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupShowExtSkybox)) {
         ZoneScopedN("Skybox");
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
 
@@ -569,7 +580,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
     }
 
     mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom &&
-        (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupIsExtLit));
+        (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupShowExtSkybox));
 
 //    if (m_skyConeAlpha > 0) {
         mapRenderPlan->skyMesh = skyMesh;
@@ -909,7 +920,7 @@ void Map::checkADTCulling(int i, int j,
 }
 
 void Map::getPossibleHeight(const mathfu::vec4 &cameraPos, float &height) {
-    if (m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+    if (m_wdtfile && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
             int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
@@ -1287,6 +1298,15 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
 //                                                 renderPlan->frameDependentData);
 //            }
 //        }
+    }
+    {
+        ZoneScopedN("m2SkyboxBuffersUpdate");
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
+            }
+        }
     }
     {
         ZoneScopedN("m2SkyboxBuffersUpdate");

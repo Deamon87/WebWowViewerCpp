@@ -1360,8 +1360,8 @@ void AdtObject::getHeight(const mathfu::vec4 &camera, float &height) {
 
         auto indexes = (mathfu::vec2(mcnkObj.position.x, mcnkObj.position.y) - camera.xy()) * (1.0f / MathHelper::UNITSIZE);
 
-        int indexX = floor(indexes.y);
-        int indexY = floor(indexes.x);
+        int indexX = std::max<int>(floor(indexes.y), 0);
+        int indexY = std::max<int>(floor(indexes.x), 0);
 
         bool isHole = (!mcnkObj.flags.high_res_holes) ?
                                     isHoleLowRes(holeLow, indexX, indexY) :

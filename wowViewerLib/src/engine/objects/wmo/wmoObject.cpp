@@ -780,24 +780,37 @@ bool WmoObject::startTraversingWMOGroup(
     uint32_t portalCount = (uint32_t) std::max(0, this->mainGeom->portalsLen);
 
     if (portalCount == 0) {
-        auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
-        bool result = false;
-        for (int i = 0; i< mainGeom->groupsLen; i++) {
-            if ((mainGeom->groups[i].flags.EXTERIOR) > 0 || !m_api->getConfig()->usePortalCulling) { //exterior
-                if (this->groupObjects[i] != nullptr) {
-                    bool drawDoodads, drawGroup;
-                    this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumDataGlobal);
-                    if (drawDoodads) {
-                        exteriorView->wmoGroupArray.addToCheckM2(this->groupObjects[i]);
+        if (groupId > -1 && groupId < mainGeom->groupsLen &&
+            mainGeom->groups[groupId].flags.INTERIOR && !mainGeom->groups[groupId].flags.EXTERIOR_CULL)
+        {
+            auto nextGroupObject = groupObjects[groupId];
+
+            auto interiorView = viewsHolder.createInterior(frustumDataGlobal);
+            interiorView->ownerGroupWMO = groupObjects[groupId];
+            interiorView->wmoGroupArray.addToDraw(nextGroupObject);
+            interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
+
+            return true;
+        } else {
+            auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
+            bool result = false;
+            for (int i = 0; i< mainGeom->groupsLen; i++) {
+                if ((mainGeom->groups[i].flags.EXTERIOR) > 0 || (mainGeom->groups[i].flags.EXTERIOR_CULL) > 0 || !m_api->getConfig()->usePortalCulling) { //exterior
+                    if (this->groupObjects[i] != nullptr) {
+                        bool drawDoodads, drawGroup;
+                        this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumDataGlobal);
+                        if (drawDoodads) {
+                            exteriorView->wmoGroupArray.addToCheckM2(this->groupObjects[i]);
+                        }
+                        if (drawGroup) {
+                            exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
+                        }
+                        result |= drawGroup;
                     }
-                    if (drawGroup) {
-                        exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
-                    }
-                    result |= drawGroup;
                 }
             }
+            return result;
         }
-        return result;
     }
     framebased::vector<HInteriorView> ivPerWMOGroup = framebased::vector<HInteriorView>(mainGeom->groupsLen);
 
@@ -1256,10 +1269,11 @@ bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroup
     float localBorder = (this->m_placementInvertMatrix * mathfu::vec4(0,0,bottomBorder, 1.0f)).z;
 
     //Check if camera inside wmo
+    const auto &mainGeomBB = this->mainGeom->header->bounding_box;
     bool isInsideWMOBB = (
-    cameraLocal[0] > this->mainGeom->header->bounding_box.min.x && cameraLocal[0] < this->mainGeom->header->bounding_box.max.x &&
-    cameraLocal[1] > this->mainGeom->header->bounding_box.min.y && cameraLocal[1] < this->mainGeom->header->bounding_box.max.y &&
-    cameraLocal[2] > this->mainGeom->header->bounding_box.min.z && cameraLocal[2] < this->mainGeom->header->bounding_box.max.z
+        cameraLocal[0] > mainGeomBB.min.x && cameraLocal[0] < mainGeomBB.max.x &&
+        cameraLocal[1] > mainGeomBB.min.y && cameraLocal[1] < mainGeomBB.max.y &&
+        cameraLocal[2] > mainGeomBB.min.z && cameraLocal[2] < mainGeomBB.max.z
     );
     if (!isInsideWMOBB) return false;
 
