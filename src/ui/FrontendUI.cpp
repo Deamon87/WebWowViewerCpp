@@ -43,7 +43,7 @@ FrontendUI::FrontendUI(HApiContainer api) {
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
-    this->createDefaultprocessor();
+    // this->createDefaultprocessor();
 
     m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer);
 }
