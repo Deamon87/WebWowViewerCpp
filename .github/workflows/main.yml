@@ -24,7 +24,7 @@ jobs:
   build:
     # The type of runner that the job will run on
     name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }} # будет запускаться по очереди на всех типах машин
+    runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -37,7 +37,7 @@ jobs:
             cmake_defines: "",
             cc: "cl",
             cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
+            environment_script: ".github/workflows/find_and_exec_msvc_env.bat",
             archiver: "7z a",
             generators: "Ninja"
           }
@@ -113,7 +113,7 @@ jobs:
           choco install ninja cmake
           ninja --version
           cmake --version
-        # cmd "${{ matrix.config.environment_script }}"
+          cmd "${{ matrix.config.environment_script }}"
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
@@ -233,7 +233,7 @@ jobs:
       - name: Build
         shell: bash
         working-directory: build
-        run: cmake --build . --config ${{ matrix.config.build_type }} --target WowStudio
+        run: cmake --build . --debug-output --config ${{ matrix.config.build_type }} --target WowStudio
 
       - name: Install Strip
         shell: bash
