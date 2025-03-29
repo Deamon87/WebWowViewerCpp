@@ -37,7 +37,7 @@ jobs:
             cmake_defines: "",
             cc: "cl",
             cxx: "cl",
-            environment_script: ".github/workflows/find_and_exec_msvc_env.bat",
+            environment_script: "./find_and_exec_msvc_env.bat",
             archiver: "7z a",
             generators: "Ninja"
           }
