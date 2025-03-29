@@ -15,6 +15,8 @@ if(COMMAND cmake_policy)
 endif(COMMAND cmake_policy)
 cmake_policy(SET CMP0079 NEW)
 
+set(INCLUDE_PROTOBUF_LIB 0)
+
 set(USE_NEON 0)
 if (CMAKE_NDK_BUILD MATCHES 1)
 	include_directories(BEFORE SYSTEM "${NDK_PATH}/include/c++/4.9.x/" "${NDK_PATH}/sysroot/usr/include/")
@@ -156,10 +158,12 @@ set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
 add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
 
 # Protobuf
-set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
-set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Build tests")
-set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "Build conformance tests")
-add_subdirectory(3rdparty/protobuf-cpp/protobuf-3.21.5 EXCLUDE_FROM_ALL)
+if (INCLUDE_PROTOBUF_LIB)
+	set(protobuf_BUILD_TESTS OFF CACHE BOOL "Build tests" FORCE)
+	set(protobuf_BUILD_PROTOC_BINARIES OFF CACHE BOOL "Build tests")
+	set(protobuf_BUILD_CONFORMANCE OFF CACHE BOOL "Build conformance tests")
+	add_subdirectory(3rdparty/protobuf-cpp/protobuf-3.21.5 EXCLUDE_FROM_ALL)
+endif ()
 
 
 if (CMAKE_NDK_BUILD MATCHES 1)
@@ -219,8 +223,6 @@ set(SOURCE_FILES
 		src/ui/imguiLib/imageButton2/imageButton2.h
 		src/exporters/dataExporter/DataExporterClass.cpp
 		src/exporters/dataExporter/DataExporterClass.h
-		src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.cc
-		src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.h
 		src/database/CEmptySqliteDB.cpp
 		src/database/CEmptySqliteDB.h
 		src/ui/imguiLib/stateSaver/stateSaver.h
@@ -228,8 +230,6 @@ set(SOURCE_FILES
 		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.cpp
 		src/ui/childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h
 		src/database/buildInfoParser/buildDefinition.h
-		src/database/product_db_parser/productDbParser.cpp
-		src/database/product_db_parser/productDbParser.h
 		src/database/buildInfoParser/buildInfoParser.cpp
 		src/database/buildInfoParser/buildInfoParser.h
 		src/ui/childWindow/minimapGeneratonWindow/MinimapGenerationWindow.cpp
@@ -258,6 +258,14 @@ set(SOURCE_FILES
 		src/ui/imguiLib/hasFocus/imguiHasFocus.h
 )
 
+set(PROTOBUF_FILES_ "")
+if (INCLUDE_PROTOBUF_LIB)
+	set(PROTOBUF_FILES_
+			src/database/product_db_parser/productDbParser.cpp
+			src/database/product_db_parser/productDbParser.h
+			src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.cc
+			src/database/product_db_parser/protobuf_out/ProtoDatabase.pb.h)
+endif()
 
 set(SOURCE_FILES_VULKAN
 		src/ui/renderer/uiScene/vulkan/FrontendUIRenderForwardVLK.cpp
@@ -299,7 +307,7 @@ if (NOT Vulkan_FOUND)
 	set(SOURCE_FILES_VULKAN "")
 endif()
 
-add_library(WoWFrontendLib STATIC ${SOURCE_FILES} ${SOURCE_FILES_VULKAN})
+add_library(WoWFrontendLib STATIC ${SOURCE_FILES} ${SOURCE_FILES_VULKAN} ${PROTOBUF_FILES_})
 add_executable(WowStudio src/main.cpp)
 
 target_link_libraries(WowStudio WoWFrontendLib)
@@ -365,7 +373,9 @@ target_link_libraries(WoWFrontendLib ${GLEW_LIBRARIES})
 target_link_libraries(WoWFrontendLib ${OPENGL_LIBRARIES})
 target_link_libraries(WoWFrontendLib ${OPENGL_LIB})
 #target_link_libraries(WoWFrontendLib zlibstatic)
-target_link_libraries(WoWFrontendLib libprotobuf-lite)
+if(INCLUDE_PROTOBUF_LIB)
+	target_link_libraries(WoWFrontendLib libprotobuf-lite)
+endif ()
 
 
 target_link_libraries(WoWFrontendLib SQLiteCpp sqlite3)
