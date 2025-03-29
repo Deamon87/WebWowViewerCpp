@@ -334,6 +334,8 @@ int main(int argc, char *argv[]) {
 //    std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
 //    std::cerr.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
 
+std::ios_base::Init a;
+
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);

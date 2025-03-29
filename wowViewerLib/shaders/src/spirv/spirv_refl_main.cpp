@@ -61,6 +61,7 @@ int main(int argc, char **argv)
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 //    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
+    std::ios_base::Init a;
     signal(SIGABRT, &my_function_to_handle_aborts);
 
     std::string mode(argv[1]);
