@@ -9,7 +9,7 @@ if exist "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" (
   call "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" amd64
   @echo on
   echo "Exporting PATH to ADDPATH_ENV"
-  echo "ADDPATH_ENV=%PATH%" >> $env:GITHUB_ENV
-  set ADDPATH_ENV=%PATH%
+  echo "ADDPATH_ENV=%PATH%" >> %GITHUB_ENV%
+@REM   set ADDPATH_ENV=%PATH%
   echo "Exporting finished"
 )
