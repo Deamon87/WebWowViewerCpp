@@ -106,7 +106,7 @@ jobs:
           ninja --version
           cmake --version
           cmd /c ${{ matrix.config.get_add_path }}
-          echo %ADDPATH_ENV%
+          echo "ADDPATH_ENV = %ADDPATH_ENV%"
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
