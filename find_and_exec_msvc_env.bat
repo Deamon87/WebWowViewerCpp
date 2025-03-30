@@ -9,6 +9,6 @@ if exist "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" (
   call "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" amd64
   @echo on
   echo "Exporting PATH to ADDPATH_ENV"
-  echo "{ADDPATH_ENV}={%PATH%}" >> "$GITHUB_ENV"
+  echo "GENERATOR_PLATFORM=%PATH%" >> $env:GITHUB_ENV
   echo "Exporting finished"
 )
