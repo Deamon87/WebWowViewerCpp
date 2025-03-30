@@ -105,7 +105,7 @@ jobs:
           choco install ninja
           ninja --version
           cmake --version
-          Start-Process -FilePath "${{ matrix.config.get_add_path }}" -Wait -NoNewWindow
+          Invoke-BatchFile "${{ matrix.config.get_add_path }}"
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
