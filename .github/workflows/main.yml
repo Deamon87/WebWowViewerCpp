@@ -106,7 +106,10 @@ jobs:
           ninja --version
           cmake --version
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          echo "filesizecounter : $InstallDir"
+          Invoke-BatchFile "$InstallDir$\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          echo "ADD_PATH_ENV=%PATH%" > $env:GITHUB_ENV
+          run: echo "var=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
+
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
