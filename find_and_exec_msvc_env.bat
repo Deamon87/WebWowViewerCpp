@@ -10,6 +10,5 @@ if exist "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" (
   @echo on
   echo "Exporting PATH to ADDPATH_ENV"
   echo ADDPATH_ENV=%PATH% >> %GITHUB_ENV%
-  set ADDPATH_ENV=%PATH%
   echo "Exporting finished"
 )
