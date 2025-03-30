@@ -5,6 +5,6 @@ for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Micros
   set InstallDir=%%i
 )
 
-if exist "%InstallDir%\VC\Auxiliary\Build\vcvars64.bat" (
-  "%InstallDir%\VC\Auxiliary\Build\vcvars64.bat" amd64
+if exist "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" (
+  call "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" amd64
 )

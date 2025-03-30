@@ -105,7 +105,7 @@ jobs:
           choco install ninja cmake
           ninja --version
           cmake --version
-          cmd /c "${{ matrix.config.environment_script }}"
+          call ${{ matrix.config.environment_script }}
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
