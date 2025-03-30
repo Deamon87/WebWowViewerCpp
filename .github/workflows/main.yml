@@ -37,7 +37,7 @@ jobs:
             cmake_defines: "",
             cc: "cl",
             cxx: "cl",
-            environment_script: "find_and_exec_msvc_env.bat",
+            get_add_path: "find_and_exec_msvc_env.bat",
             archiver: "7z a",
             generators: "Ninja"
           }
@@ -105,9 +105,7 @@ jobs:
           choco install ninja cmake
           ninja --version
           cmake --version
-          ADD_PATH="$(cmd /c ${{ matrix.config.environment_script }})"
-          echo $ADD_PATH
-          PATH="${PATH}:${ADD_PATH}"
+          cmd /c ${{ matrix.config.get_add_path }} > path.txt
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
@@ -198,6 +196,7 @@ jobs:
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
         run: |
+          [ -f path.txt ] && PATH=$PATH:$(cat path.txt)
           mkdir build
           mkdir instdir
           cd instdir
