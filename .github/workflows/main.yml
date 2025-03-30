@@ -102,7 +102,7 @@ jobs:
       - name: Install dependencies on windows
         if: startsWith(matrix.config.os, 'windows')
         run: |
-          choco install ninja cmake
+          choco install ninja
           ninja --version
           cmake --version
           cmd /c ${{ matrix.config.get_add_path }} > path.txt
