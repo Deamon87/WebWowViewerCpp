@@ -9,6 +9,6 @@ if exist "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" (
   call "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" amd64
   @echo on
   echo "Exporting PATH to path.txt"
-@REM   echo %Path% > path.txt
+  echo %Path% > path.txt
   echo "Exporting finished"
 )
