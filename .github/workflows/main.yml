@@ -105,7 +105,8 @@ jobs:
           choco install ninja
           ninja --version
           cmake --version
-          Invoke-BatchFile "${{ matrix.config.get_add_path }}"
+          $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          echo "filesizecounter : $InstallDir"
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
