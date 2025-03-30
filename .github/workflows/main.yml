@@ -107,7 +107,7 @@ jobs:
           cmake --version
           ADD_PATH="$(cmd /c ${{ matrix.config.environment_script }})"
           echo $ADD_PATH
-          PATH="${PATH:+${PATH}:}${$ADD_PATH:+${$ADD_PATH}}"
+          PATH="${PATH}:${ADD_PATH}"
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
