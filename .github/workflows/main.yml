@@ -106,7 +106,7 @@ jobs:
           ninja --version
           cmake --version
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          Invoke-BatchFile "$InstallDir$\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          cmd /c "$InstallDir$\VC\Auxiliary\Build\vcvarsall.bat amd64 > nul 2>&1 && set" | .{process{ if ($_ -match '^([^=]+)=(.*)') { [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2]) } }}
           echo "ADD_PATH_ENV=%PATH%" > $env:GITHUB_ENV
           run: echo "var=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
 
