@@ -196,6 +196,7 @@ jobs:
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
         run: |
+          echo "$ADDPATH_ENV"
           [[ -z "${ADDPATH_ENV}" ]] && PATH=$PATH || PATH=$PATH:$ADDPATH_ENV
           mkdir build
           mkdir instdir
