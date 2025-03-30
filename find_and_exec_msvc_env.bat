@@ -8,7 +8,7 @@ for /f "usebackq tokens=*" %%i in (`vswhere -latest -products * -requires Micros
 if exist "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" (
   call "%InstallDir%\VC\Auxiliary\Build\vcvarsall.bat" amd64
   @echo on
-  echo "Exporting PATH to path.txt"
-@REM   echo %Path% > path.txt
+  echo "Exporting PATH to ADDPATH_ENV"
+  echo "{ADDPATH_ENV}={%PATH%}" >> "$GITHUB_ENV"
   echo "Exporting finished"
 )
