@@ -105,6 +105,7 @@ jobs:
           choco install ninja
           ninja --version
           cmake --version
+          echo "PREV_ENVPATH = $env:PATH"
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           cmd /c "$InstallDir$\VC\Auxiliary\Build\vcvarsall.bat amd64 > nul 2>&1 && set" | .{process{ if ($_ -match '^([^=]+)=(.*)') { [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2]) } }}
           echo "ENVPATH = $env:PATH"
