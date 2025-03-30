@@ -198,8 +198,8 @@ jobs:
         env:
           ADD_PATH_ENV: ${{ env.ADD_PATH_ENV }}
         run: |
-          echo "ADDPATH_ENV=$ADDPATH_ENV"
-          [[ -z "${ADDPATH_ENV}" ]] && PATH=$PATH || PATH=$PATH:$ADDPATH_ENV
+          echo "ADDPATH_ENV=ADD_PATH_ENV"
+          [[ -z "${ADDPATH_ENV}" ]] && PATH=$PATH || PATH=$PATH:ADD_PATH_ENV
           mkdir build
           mkdir instdir
           cd instdir
