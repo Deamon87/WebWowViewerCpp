@@ -106,6 +106,7 @@ jobs:
           ninja --version
           cmake --version
           cmd /c ${{ matrix.config.get_add_path }}
+          echo %ADDPATH_ENV%
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
@@ -195,8 +196,10 @@ jobs:
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
+        env:
+          $ADDPATH_ENV: ${{ env.ADDPATH_ENV }}
         run: |
-          echo "$ADDPATH_ENV"
+          echo "ADDPATH_ENV=$ADDPATH_ENV"
           [[ -z "${ADDPATH_ENV}" ]] && PATH=$PATH || PATH=$PATH:$ADDPATH_ENV
           mkdir build
           mkdir instdir
