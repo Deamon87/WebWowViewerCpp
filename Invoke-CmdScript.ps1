@@ -54,12 +54,12 @@ if (!(Test-Path $Path)) {
 
 ## Store the output of cmd.exe.  We also ask cmd.exe to output
 ## the environment table after the batch file completes
-$result = (cmd /c "`"$Path`" $argumentList && set")
-echo "result = $result"
+$result = (cmd /c "`"$Path`" $argumentList > nul && set PATH")
+# echo "result = $result"
 
 ## Go through the environment variables in the temp file.
 ## For each of them, set the variable in our local environment.
-result | Foreach-Object {
+$result | Foreach-Object {
     if($_ -match "^(.*?)=(.*)$")
     {
         Set-Content "env:\$($matches[1])" $matches[2]
