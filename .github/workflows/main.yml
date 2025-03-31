@@ -107,7 +107,8 @@ jobs:
           cmake --version
           echo "PREV_ENVPATH = $env:PATH"
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          . ./Invoke-CmdScript.ps1 "$InstallDir$\VC\Auxiliary\Build\vcvarsall.bat" amd64
+          echo "InstallDir = $InstallDir"
+          . ./Invoke-CmdScript.ps1 "$InstallDir$\VC\Auxiliary\Build\vcvars64.bat"
           echo "ENVPATH = $env:PATH"
           echo "ADD_PATH_ENV=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           exit 0
