@@ -45,6 +45,8 @@ Set-StrictMode -Version 3
 
 $tempFile = [IO.Path]::GetTempFileName()
 
+echo "tempFile = $tempFile"
+
 ## Store the output of cmd.exe.  We also ask cmd.exe to output
 ## the environment table after the batch file completes
 cmd /c " `"$Path`" $argumentList && set > `"$tempFile`" "
