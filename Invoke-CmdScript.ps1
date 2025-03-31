@@ -49,15 +49,14 @@ echo "tempFile = $tempFile"
 
 ## Store the output of cmd.exe.  We also ask cmd.exe to output
 ## the environment table after the batch file completes
-cmd /c " `"$Path`" $argumentList && set > `"$tempFile`" "
+$result = (cmd /c "`"$Path`" $argumentList && set")
+echo "result = $result"
 
 ## Go through the environment variables in the temp file.
 ## For each of them, set the variable in our local environment.
-Get-Content $tempFile | Foreach-Object {
+result | Foreach-Object {
     if($_ -match "^(.*?)=(.*)$")
     {
         Set-Content "env:\$($matches[1])" $matches[2]
     }
 }
-
-Remove-Item $tempFile
