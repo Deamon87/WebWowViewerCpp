@@ -187,14 +187,14 @@ jobs:
           ninja --version
           cmake --version
 
-#      - name: Prepare Vulkan SDK
-##       Disable Vulkan for MacOS for now, as it requires MoltenVK
-#        if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'macOS') }}
-#        uses: humbletim/setup-vulkan-sdk@v1.2.1
-#        with:
-#          vulkan-query-version: 1.4.309.0
-#          vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
-#          vulkan-use-cache: true
+      - name: Prepare Vulkan SDK
+#       Disable Vulkan for MacOS for now, as it requires MoltenVK
+        if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'macOS') }}
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.309.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
+          vulkan-use-cache: true
 
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
@@ -237,7 +237,7 @@ jobs:
       - name: Build
         shell: bash
         working-directory: build
-        run: cmake --build . --log-level=TRACE --config ${{ matrix.config.build_type }} --target WowStudio
+        run: cmake --build . -v --config ${{ matrix.config.build_type }} --target WowStudio
 
       - name: Install Strip
         shell: bash
