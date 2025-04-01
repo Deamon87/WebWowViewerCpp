@@ -70,7 +70,7 @@ foreach ($key in $envAfterHash.Keys) {
 if ($added.Count -gt 0) {
     $added.GetEnumerator() | Foreach-Object {
 #         echo "Key: $($_.Key), Value: $($_.Value)" | Out-File -Append -FilePath added_env.txt -Encoding utf8
-        echo "$($_.Key)=$($_.Value)" | Out-File -Append -FilePath $env.GITHUB_ENV -Encoding utf8
+        echo "$($_.Key)=$($_.Value)" | Out-File -Append -FilePath $env:GITHUB_ENV -Encoding utf8
     }
 }
 
