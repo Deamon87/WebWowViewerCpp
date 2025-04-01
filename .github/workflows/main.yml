@@ -35,8 +35,8 @@ jobs:
             artifact: "windows_msvc.7z",
             build_type: "Release",
             cmake_defines: "",
-            cc: "cl",
-            cxx: "cl",
+            cc: "cl.exe",
+            cxx: "cl.exe",
             get_add_path: "find_and_exec_msvc_env.bat",
             archiver: "7z a",
             generators: "Ninja"
