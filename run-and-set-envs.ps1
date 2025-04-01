@@ -76,7 +76,7 @@ if ($added.Count -gt 0) {
 
 if ($modified.Count -gt 0) {
     $modified.GetEnumerator() | Foreach-Object {
-        echo "Key: $($_.Key)"
+#         echo "Key: $($_.Key)"
         if ($($_.Key) -eq "path") {
             Compare-Object -ReferenceObject ($_.Value.Before -split ';') -DifferenceObject ($_.Value.After -split ';') |
                 Where-Object { $_.SideIndicator -eq '=>' } |

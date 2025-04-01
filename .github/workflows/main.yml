@@ -229,7 +229,6 @@ jobs:
           cd ..
           cd build
           cmake \
-            --debug-output \
             -S ../emscripten_port \
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
@@ -238,7 +237,7 @@ jobs:
       - name: Build
         shell: bash
         working-directory: build
-        run: cmake --build . --debug-output --config ${{ matrix.config.build_type }} --target WowStudio
+        run: cmake --build . --log-level=TRACE --config ${{ matrix.config.build_type }} --target WowStudio
 
       - name: Install Strip
         shell: bash
