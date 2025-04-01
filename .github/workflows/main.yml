@@ -105,12 +105,9 @@ jobs:
           choco install ninja
           ninja --version
           cmake --version
-          echo "PREV_ENVPATH = $env:PATH"
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           echo "InstallDir = $InstallDir"
-          . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvarsall.bat" x64
-          echo "ENVPATH = $env:PATH"
-          $env:Path -split ";" | ForEach-Object { echo "$_" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8 }
+          . ./run-and-set-envs.ps1 "$InstallDir\VC\Auxiliary\Build\vcvarsall.bat" x64
           exit 0
 
       - name: Install deps for Emscripten
@@ -203,7 +200,6 @@ jobs:
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
         run: |
-          echo "PATH=$PATH"
           mkdir build
           mkdir instdir
           cd instdir
