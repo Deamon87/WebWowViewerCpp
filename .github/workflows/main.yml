@@ -211,8 +211,8 @@ jobs:
         run: |
           echo "CC_PATH=$CC_PATH"
           echo "CXX_PATH=$CXX_PATH"
-          [[ -z "${CC_PATH}" ]] && CC=$CC_PATH || CC=${{ matrix.config.cc }}
-          [[ -z "${CXX_PATH}" ]] && CXX=$CXX_PATH || CXX=${{ matrix.config.cxx }}
+          [[ -z "$CC_PATH" ]] && CC=$CC_PATH || CC=${{ matrix.config.cc }}
+          [[ -z "$CXX_PATH" ]] && CXX=$CXX_PATH || CXX=${{ matrix.config.cxx }}
           mkdir build
           mkdir instdir
           cd instdir
@@ -224,8 +224,8 @@ jobs:
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
-            -D CMAKE_C_COMPILER=${CC}\
-            -D CMAKE_CXX_COMPILER=${CXX}\
+            -D CMAKE_C_COMPILER="${CC}"\
+            -D CMAKE_CXX_COMPILER="${CXX}"\
             ${{ matrix.config.cmake_defines}} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
