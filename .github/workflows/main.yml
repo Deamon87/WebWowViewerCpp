@@ -208,8 +208,8 @@ jobs:
           echo "ADD_PATH_ENV=$ADD_PATH_ENV"
           [[ -z "${ADD_PATH_ENV}" ]] && export PATH=$PATH || export PATH=$ADD_PATH_ENV:$PATH
           echo "PATH=$PATH"
-          CC_FULL_PATH="$(realpath ${{ matrix.config.cc }})"
-          CCX_FULL_PATH="$(realpath ${{ matrix.config.cxx }})"
+          CC_FULL_PATH="$(find ${PATH//:/\/ } -name '${{ matrix.config.cc }})'"
+          CCX_FULL_PATH="$(find ${PATH//:/\/ } -name '${{ matrix.config.cxx }})'"
           echo "CC_FULL_PATH=$CC_FULL_PATH"
           echo "CCX_FULL_PATH=$CCX_FULL_PATH"
           mkdir build
