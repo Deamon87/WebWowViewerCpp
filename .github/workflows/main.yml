@@ -109,8 +109,8 @@ jobs:
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           echo "InstallDir = $InstallDir"
           . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvars64.bat"
-          $CC_PATH = . Get-EnvPath.ps1 ${{ matrix.config.cc }}
-          $CXX_PATH = . Get-EnvPath.ps1 ${{ matrix.config.cxx }}
+          $CC_PATH = . ./Get-EnvPath.ps1 ${{ matrix.config.cc }}
+          $CXX_PATH = . ./Get-EnvPath.ps1 ${{ matrix.config.cxx }}
           echo "CC_PATH=$CC_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "CXX_PATH=$CXX_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           exit 0
