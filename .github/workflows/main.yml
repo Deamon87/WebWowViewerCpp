@@ -105,10 +105,6 @@ jobs:
           choco install ninja
           ninja --version
           cmake --version
-          $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          echo "InstallDir = $InstallDir"
-          . ./run-and-set-envs.ps1 "$InstallDir\VC\Auxiliary\Build\vcvarsall.bat" x64
-          exit 0
 
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
@@ -195,6 +191,15 @@ jobs:
           vulkan-query-version: 1.4.309.0
           vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
           vulkan-use-cache: true
+
+      - name: Setup MSVC envs on windows
+        if: ${{ startsWith(matrix.config.os, 'windows') && startsWith(matrix.config.cc, 'cl.exe')}}
+        shell: pwsh
+        run: |
+          $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          echo "InstallDir = $InstallDir"
+          . ./run-and-set-envs.ps1 "$InstallDir\VC\Auxiliary\Build\vcvarsall.bat" x64
+          exit 0
 
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
