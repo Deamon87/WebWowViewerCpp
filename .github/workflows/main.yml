@@ -109,11 +109,8 @@ jobs:
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           echo "InstallDir = $InstallDir"
           . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvars64.bat"
-          $CC_PATH = . ./Get-EnvPath.ps1 ${{ matrix.config.cc }}
-          $CXX_PATH = . ./Get-EnvPath.ps1 ${{ matrix.config.cxx }}
-          echo "CC_PATH=$CC_PATH"
-          echo "CC_PATH=$CC_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
-          echo "CXX_PATH=$CXX_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "ENVPATH = $env:PATH"
+          $env:Path -split ";" | ForEach-Object { echo "$_" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8 }
           exit 0
 
       - name: Install deps for Emscripten
@@ -205,16 +202,8 @@ jobs:
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
-        env:
-          CC_PATH: ${{ env.CC_PATH }}
-          CXX_PATH: ${{ env.CXX_PATH }}
         run: |
-          echo "CC_PATH=$CC_PATH"
-          echo "CXX_PATH=$CXX_PATH"
-          [[ -z "$CC_PATH" ]] && CC=${{ matrix.config.cc }} || CC=$CC_PATH
-          [[ -z "$CXX_PATH" ]] && CXX=${{ matrix.config.cxx }} || CXX=$CXX_PATH 
-          echo "CC=$CC"
-          echo "CXX=$CXX"
+          echo "PATH=$PATH"
           mkdir build
           mkdir instdir
           cd instdir
@@ -226,8 +215,8 @@ jobs:
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
-            -D CMAKE_C_COMPILER="${CC}"\
-            -D CMAKE_CXX_COMPILER="${CXX}"\
+            -D CMAKE_C_COMPILER=${{ matrix.config.cc }}\
+            -D CMAKE_CXX_COMPILER=${{ matrix.config.cxx }}\
             ${{ matrix.config.cmake_defines}} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
