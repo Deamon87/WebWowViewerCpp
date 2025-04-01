@@ -108,7 +108,7 @@ jobs:
           echo "PREV_ENVPATH = $env:PATH"
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           echo "InstallDir = $InstallDir"
-          . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvars64.bat"
+          . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvarsall.bat" x64
           echo "ENVPATH = $env:PATH"
           $env:Path -split ";" | ForEach-Object { echo "$_" | Out-File -Append -FilePath $env:GITHUB_PATH -Encoding utf8 }
           exit 0
