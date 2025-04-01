@@ -109,8 +109,10 @@ jobs:
           $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           echo "InstallDir = $InstallDir"
           . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvars64.bat"
-          echo "ENVPATH = $env:PATH"
-          echo "ADD_PATH_ENV=$env:PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
+          $CC_PATH = . Get-EnvPath.ps1 ${{ matrix.config.cc }}
+          $CXX_PATH = . Get-EnvPath.ps1 ${{ matrix.config.cxx }}
+          echo "CC_PATH=$CC_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
+          echo "CXX_PATH=$CXX_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           exit 0
 
       - name: Install deps for Emscripten
@@ -203,15 +205,12 @@ jobs:
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
         env:
-          ADD_PATH_ENV: ${{ env.ADD_PATH_ENV }}
+          CC_PATH: ${{ env.CC_PATH }}
+          CXX_PATH: ${{ env.CXX_PATH }}
         run: |
           echo "ADD_PATH_ENV=$ADD_PATH_ENV"
-          [[ -z "${ADD_PATH_ENV}" ]] && export PATH=$PATH || export PATH=$ADD_PATH_ENV:$PATH
-          echo "PATH=$PATH"
-          CC_FULL_PATH="$(find ${PATH//:/\/ } -name '${{ matrix.config.cc }}')"
-          CCX_FULL_PATH="$(find ${PATH//:/\/ } -name '${{ matrix.config.cxx }}')"
-          echo "CC_FULL_PATH=$CC_FULL_PATH"
-          echo "CCX_FULL_PATH=$CCX_FULL_PATH"
+          [[ -z "${CC_PATH}" ]] && CC=CC_PATH || CC=${{ matrix.config.cc }}
+          [[ -z "${CXX_PATH}" ]] && CXX=CXX_PATH || CXX=${{ matrix.config.cxx }}
           mkdir build
           mkdir instdir
           cd instdir
@@ -223,8 +222,8 @@ jobs:
             -B . \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
-            -D CMAKE_C_COMPILER=${{ matrix.config.cc }}\
-            -D CMAKE_CXX_COMPILER=${{ matrix.config.cxx }}\
+            -D CMAKE_C_COMPILER=${CC}\
+            -D CMAKE_CXX_COMPILER=${CXX}\
             ${{ matrix.config.cmake_defines}} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
