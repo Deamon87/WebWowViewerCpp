@@ -211,8 +211,10 @@ jobs:
         run: |
           echo "CC_PATH=$CC_PATH"
           echo "CXX_PATH=$CXX_PATH"
-          [[ -z "$CC_PATH" ]] && CC=$CC_PATH || CC=${{ matrix.config.cc }}
-          [[ -z "$CXX_PATH" ]] && CXX=$CXX_PATH || CXX=${{ matrix.config.cxx }}
+          [[ -z "$CC_PATH" ]] && CC=${{ matrix.config.cc }} || CC=$CC_PATH
+          [[ -z "$CXX_PATH" ]] && CXX=${{ matrix.config.cxx }} || CXX=$CXX_PATH 
+          echo "CC=$CC"
+          echo "CXX=$CXX"
           mkdir build
           mkdir instdir
           cd instdir
