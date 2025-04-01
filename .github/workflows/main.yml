@@ -111,6 +111,7 @@ jobs:
           . ./Invoke-CmdScript.ps1 "$InstallDir\VC\Auxiliary\Build\vcvars64.bat"
           $CC_PATH = . ./Get-EnvPath.ps1 ${{ matrix.config.cc }}
           $CXX_PATH = . ./Get-EnvPath.ps1 ${{ matrix.config.cxx }}
+          echo "CC_PATH=$CC_PATH"
           echo "CC_PATH=$CC_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           echo "CXX_PATH=$CXX_PATH" | Out-File -FilePath $env:GITHUB_ENV -Append
           exit 0
@@ -208,9 +209,10 @@ jobs:
           CC_PATH: ${{ env.CC_PATH }}
           CXX_PATH: ${{ env.CXX_PATH }}
         run: |
-          echo "ADD_PATH_ENV=$ADD_PATH_ENV"
-          [[ -z "${CC_PATH}" ]] && CC=CC_PATH || CC=${{ matrix.config.cc }}
-          [[ -z "${CXX_PATH}" ]] && CXX=CXX_PATH || CXX=${{ matrix.config.cxx }}
+          echo "CC_PATH=$CC_PATH"
+          echo "CXX_PATH=$CXX_PATH"
+          [[ -z "${CC_PATH}" ]] && CC=$CC_PATH || CC=${{ matrix.config.cc }}
+          [[ -z "${CXX_PATH}" ]] && CXX=$CXX_PATH || CXX=${{ matrix.config.cxx }}
           mkdir build
           mkdir instdir
           cd instdir
