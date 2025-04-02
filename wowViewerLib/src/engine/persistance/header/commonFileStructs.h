@@ -176,7 +176,7 @@ struct M2Array {
     int32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
 
     void initM2Array(void * m2File) {
-        static_assert(std::is_pod<M2Array<T> >::value, "M2Array<> is not POD");
+        static_assert(std::is_standard_layout<M2Array<T> >::value, "M2Array<> is not standard layout");
 #ifdef ENVIRONMENT64
         offset = (uint32_t) (((uint64_t)m2File)+(uint64_t)offset - (uint64_t)this);
 #else
@@ -240,7 +240,7 @@ struct M2Sequence {
 
 template <typename T>
 void initAnimationArray(M2Array<M2Array<T> > &array2D, void *m2File, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad){
-    static_assert(std::is_pod<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not POD");
+    static_assert(std::is_standard_layout<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not standard layout");
     if (cm2SequenceLoad == nullptr) {
         array2D.initM2Array(m2File);
         int count = array2D.size;
