@@ -50,23 +50,6 @@ if (WIN32 AND MSVC)
  endif()
 message(CMAKE_BUILD_TYPE = ${CMAKE_BUILD_TYPE})
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	message("This is clang")
-
-	#Do not force libstdc++ on MacOS system
-	if (NOT CMAKE_SYSTEM_NAME STREQUAL "Darwin")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libstdc++")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -stdlib=libstdc++")
-	endif()
-
-	#set(_GLIBCXX_USE_C99_CHECK 0)
-	#set(_GLIBCXX_USE_C99_DYNAMIC 0)
-	#set(_GLIBCXX_USE_C99_LONG_LONG_CHECK 0)
-	#set(_GLIBCXX_USE_C99_LONG_LONG_DYNAMIC 0)
-#	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
-#	set(CMAKE_C_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_DEBUG} -stdlib=libc++")
-#	set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -stdlib=libc++")
-endif()
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 	link_libraries(stdc++fs)
 endif()
