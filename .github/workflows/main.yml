@@ -47,8 +47,8 @@ jobs:
               artifact: "windows_mingw.7z",
               build_type: "Release",
               cmake_defines: "",
-              cc: "gcc",
-              cxx: "g++",
+              cc: "clang",
+              cxx: "clang++",
               archiver: "7z a",
               generators: "Ninja"
             }
