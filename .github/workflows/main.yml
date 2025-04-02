@@ -29,29 +29,29 @@ jobs:
       fail-fast: false
       matrix:
         config:
+#          - {
+#            name: "Windows Latest MSVC",
+#            os: windows-latest,
+#            artifact: "windows_msvc.7z",
+#            build_type: "Release",
+#            cmake_defines: "",
+#            cc: "cl.exe",
+#            cxx: "cl.exe",
+#            get_add_path: "find_and_exec_msvc_env.bat",
+#            archiver: "7z a",
+#            generators: "Ninja"
+#          }
           - {
-            name: "Windows Latest MSVC",
-            os: windows-latest,
-            artifact: "windows_msvc.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "cl.exe",
-            cxx: "cl.exe",
-            get_add_path: "find_and_exec_msvc_env.bat",
-            archiver: "7z a",
-            generators: "Ninja"
-          }
-          #        - {
-          #            name: "Windows Latest MinGW",
-          #            os: windows-latest,
-          #            artifact: "windows_mingw.7z",
-          #            build_type: "Release",
-          #            cmake_defines: "",
-          #            cc: "gcc",
-          #            cxx: "g++",
-          #            archiver: "7z a",
-          #            generators: "Ninja"
-          #          }
+              name: "Windows Latest MinGW",
+              os: windows-latest,
+              artifact: "windows_mingw.7z",
+              build_type: "Release",
+              cmake_defines: "",
+              cc: "gcc",
+              cxx: "g++",
+              archiver: "7z a",
+              generators: "Ninja"
+            }
 #          - {
 #            name: "Ubuntu_Latest_GCC",
 #            os: ubuntu-latest,
