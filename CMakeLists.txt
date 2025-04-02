@@ -381,22 +381,23 @@ endif ()
 target_link_libraries(WoWFrontendLib SQLiteCpp sqlite3)
 target_link_libraries(DBImporterLib SQLiteCpp)
 if (NOT MSVC)
-	find_library(DL_EXISTS dl)
-	message("DL_EXISTS = ${DL_EXISTS}")
-	if (NOT DL_EXISTS STREQUAL "DL_EXISTS-NOTFOUND")
-		message("Linking against DL")
-		target_link_libraries(WoWFrontendLib dl)
-	else()
-
-		#    find_library(SSP_EXISTS ssp)
-		#    message("SSP_EXISTS = ${SSP_EXISTS}")
-        if (SSP_EXISTS STREQUAL "SSP_EXISTS-NOTFOUND" )
+    find_library(DL_EXISTS dl)
+    message("DL_EXISTS = ${DL_EXISTS}")
+    if (NOT DL_EXISTS STREQUAL "DL_EXISTS-NOTFOUND")
+        message("Linking against DL")
+        target_link_libraries(WoWFrontendLib dl)
+        target_compile_options(WoWFrontendLib PRIVATE "-fstack-protector")
+    else()
+        find_library(SSP_EXISTS ssp)
+        message("SSP_EXISTS = ${SSP_EXISTS}")
+        if (NOT SSP_EXISTS STREQUAL "SSP_EXISTS-NOTFOUND")
             message("Linking against SSP")
-            message("SSP_EXISTS = ${SSP_EXISTS}")
-            target_compile_options(WoWFrontendLib PUBLIC -fstack-protector)
             target_link_libraries(WoWFrontendLib ssp)
+            target_compile_options(WoWFrontendLib PRIVATE "-fstack-protector")
         endif()
-	endif()
+
+        message( "Neither DL nor SSP was found" )
+    endif()
 endif(NOT MSVC)
 
 target_link_libraries(WoWFrontendLib WoWViewerLib)
@@ -434,7 +435,7 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Windows")
 
 #target_link_options(WoWFrontendLib PUBLIC "SHELL: -llibg")
 
-install(TARGETS WoWFrontendLib
+install(TARGETS WowStudio
 		EXPORT ${PROJECT_NAME}Targets
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
