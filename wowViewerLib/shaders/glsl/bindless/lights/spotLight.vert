@@ -42,10 +42,15 @@ void main() {
 
      vec4 spotPointClip = scene.uPMatrix * viewPos;
 
-//    float tol = 0.0001;
+//    float tol = 0.000f;
+//
 //    spotPointClip.x = clamp(spotPointClip.x, -abs(spotPointClip.w)+tol, abs(spotPointClip.w)-tol);
 //    spotPointClip.y = clamp(spotPointClip.y, -abs(spotPointClip.w)+tol, abs(spotPointClip.w)-tol);
-//    spotPointClip.z = clamp(spotPointClip.z, 0+tol, abs(spotPointClip.w)-tol);
+////
+//
+//    float least = min(0, spotPointClip.w);
+//    float most = max(0, spotPointClip.w);
+//    spotPointClip.z = clamp(spotPointClip.z, least+tol, most-tol);
 
     gl_Position = spotPointClip;
     lightIndex = gl_InstanceIndex;

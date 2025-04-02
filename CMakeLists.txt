@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.10)
 
 project(WoWStudio)
 include(ExternalProject)
@@ -127,12 +127,12 @@ FetchContent_GetProperties(cpr)
 message("cpr_POPULATED = ${cpr_POPULATED}")
 if(NOT cpr_POPULATED)
 #	 Fetch the content using previously declared details
-	FetchContent_Populate(cpr)
+	FetchContent_MakeAvailable(cpr)
 	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
 	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
 #	 Bring the populated content into the build
 	set(BUILD_SHARED_LIBS ON CACHE BOOL "")
-	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
+#	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
 	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
 endif()
 

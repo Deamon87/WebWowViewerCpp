@@ -258,7 +258,7 @@ inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
 
     SetOfBuildDefs buildDefs;
 
-    std::string buildFile = GetSelected() / ".build.info";
+    std::string buildFile = (GetSelected() / ".build.info").string();
     if (fileExistsNotNull1(buildFile)) {
         std::string buildFileContent;
         readWholeFileToString(buildFile, buildFileContent);

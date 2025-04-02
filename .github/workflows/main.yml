@@ -214,6 +214,7 @@ jobs:
           cmake \
             -S ../ \
             -B . \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
             -D CMAKE_C_COMPILER=${{ matrix.config.cc }}\
@@ -236,6 +237,7 @@ jobs:
           cmake \
             -S ../emscripten_port \
             -B . \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
@@ -258,7 +260,7 @@ jobs:
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          path: ./${{ matrix.config.artifact }}
+          path: ./instdir/
           name: ${{ matrix.config.artifact }}
 
       - name: Upload release asset

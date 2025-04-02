@@ -1051,7 +1051,7 @@ void FrontendUI::initImgui(
                    }
                },
                [&fileDialog, &windowWidth, &windowHeight](ImGuiTextBuffer* buf) -> void {
-                   std::string currPath = fileDialog.GetSelected();
+                   std::string currPath = fileDialog.GetSelected().string();
                    buf->appendf("lastCascDir=%s\n", currPath.c_str());
                    buf->appendf("windowWidth=%s\n", std::to_string(windowWidth).c_str());
                    buf->appendf("windowHeight=%s\n", std::to_string(windowHeight).c_str());

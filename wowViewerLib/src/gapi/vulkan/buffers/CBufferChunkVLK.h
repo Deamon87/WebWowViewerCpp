@@ -11,7 +11,7 @@
 #include <type_traits>
 
 template<typename T>
-class CBufferChunkVLK : public IBufferChunk<T> {
+class CBufferChunkVLK final : public IBufferChunk<T> {
 public:
     CBufferChunkVLK(const std::shared_ptr<GBufferVLK> &mainBuffer, int realSize = -1) {
         m_realSize = realSize;
