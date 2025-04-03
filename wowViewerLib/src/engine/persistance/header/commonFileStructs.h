@@ -33,10 +33,11 @@
 #endif
 #endif
 
-#ifndef _MSC_VER
-#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
-#else
+#if defined(_MSC_VER)
+#pragma message("Detected MSVC version")
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+#else
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
 #endif
 
 #ifdef _MSC_VER
