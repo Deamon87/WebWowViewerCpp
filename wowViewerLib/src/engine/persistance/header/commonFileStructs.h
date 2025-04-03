@@ -54,6 +54,8 @@
 #endif
 #endif
 
+#define NOMINMAX 1
+
 //#define DEBUGPOINTER 1
 
 template<class T>
