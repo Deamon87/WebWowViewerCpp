@@ -49,7 +49,7 @@
 #if defined(_MSC_VER) && !defined(__clang__)
 #define ALIGNED_(x) __declspec(align(x))
 #else
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #define ALIGNED_(x) __attribute__ ((aligned(x)))
 #endif
 #endif
