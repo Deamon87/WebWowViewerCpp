@@ -204,7 +204,7 @@ std::set<std::string> get_supported_extensions() {
     return extensions;
 }
 
-bool vulkanEnableValidationLayers = false;
+bool vulkanEnableValidationLayers = true;
 
 extern bool forceDisableBindlessSupport = false;
 

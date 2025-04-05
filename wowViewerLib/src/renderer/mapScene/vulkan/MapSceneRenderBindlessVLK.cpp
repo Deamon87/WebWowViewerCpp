@@ -1463,7 +1463,8 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
                     renderTarget.viewPortDimensions.maxs[1],
                     framePlan->frameDependentData->currentGlow,
                     framePlan->pointLights,
-                    framePlan->spotLights
+                    framePlan->spotLights,
+                    framePlan->insideSpotLights
                 );
             }
         }

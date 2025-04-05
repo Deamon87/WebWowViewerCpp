@@ -45,6 +45,7 @@ struct MapRenderPlan {
 
     std::vector<LocalLight> pointLights;
     std::vector<SpotLight> spotLights;
+    std::vector<SpotLight> insideSpotLights;
 };
 typedef std::shared_ptr<MapRenderPlan> HMapRenderPlan;
 #endif //AWEBWOWVIEWERCPP_MAPSCENEPLAN_H

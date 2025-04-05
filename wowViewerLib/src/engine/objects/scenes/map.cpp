@@ -575,7 +575,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
 
         //Collect spotLights and point lights from new WMO lights
         for (auto &newWmoLight: newWmoLights) {
-            newWmoLight->collectLight(mapRenderPlan->pointLights, mapRenderPlan->spotLights);
+            newWmoLight->collectLight(cameraVec3, mapRenderPlan->pointLights, mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
         }
     }
 
@@ -889,7 +889,10 @@ void Map::checkADTCulling(int i, int j,
                 for (auto &pointLight : pointLightsOfAdt) pointLights.push_back(pointLight.getLightRec());
 
                 //Get spotLights
-                m_wdtLightObject->collectSpotLights(i, j, mapRenderPlan->spotLights);
+                m_wdtLightObject->collectSpotLights(
+                    cameraPos.xyz(),
+                    i, j,
+                    mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
             }
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {

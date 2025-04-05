@@ -16,7 +16,7 @@ public:
     explicit WdtLightsObject(HApiContainer api, int wdtLgtFileDataId);
 
     const std::vector<CPointLight> &getPointLights(uint8_t tileX, uint8_t tileY);
-    void collectSpotLights(uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights);
+    void collectSpotLights(mathfu::vec3 camera, uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights, std::vector<SpotLight> &insideSpotLights);
 private:
     void createLightArray();
 private:

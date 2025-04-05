@@ -85,8 +85,9 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const mapobject_new_
             mathfu::mat4::RotationY(m_rotation.y) *
             mathfu::mat4::RotationX(m_rotation.x)
         );
+    invLightModelMat = (lightModelMat).Inverse();
 
-    calcedLightDir = ((lightModelMat).Inverse().Transpose()*mathfu::vec3(0,0,1));
+    calcedLightDir = (invLightModelMat.Transpose()*mathfu::vec3(0,0,1));
 }
 
 CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const WdtLightFile::MapSpotLight &mapSpotLight ) {
@@ -116,11 +117,12 @@ CWmoNewLight::CWmoNewLight(const mathfu::mat4 &modelMatrix, const WdtLightFile::
             mathfu::mat3::RotationY(m_rotation.y) *
             mathfu::mat3::RotationX(m_rotation.x)
         );
+    invLightModelMat = (lightModelMat).Inverse();
 
-    calcedLightDir = ((lightModelMat).Inverse().Transpose()*mathfu::vec3(0,0,1)).Normalized();
+    calcedLightDir = (invLightModelMat.Transpose()*mathfu::vec3(0,0,1)).Normalized();
 }
 
-void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights) {
+void CWmoNewLight::collectLight(mathfu::vec3 camera, std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<SpotLight> &insideSpotLights) {
     if (isPointLight) {
         auto &pointLight = pointLights.emplace_back();
         //TODO: implement flickering animation
@@ -134,7 +136,21 @@ void CWmoNewLight::collectLight(std::vector<LocalLight> &pointLights, std::vecto
         pointLight.position = mathfu::vec4(mathfu::vec3(m_pos), 1.0);
 
     } else if (isSpotLight) {
-        auto &spotLight = spotLights.emplace_back();
+        auto localCamera = invLightModelMat * mathfu::vec4(camera, 1);
+        auto localDir = (localCamera.xyz() - mathfu::vec3(0,0,-1));
+
+        //This dot product in local space is simplified to just taking z component:
+        //float ld = mathfu::dot(localDir, mathfu::vec3(0,0,-1));
+        float ld = localDir.z;
+        float ld_norm = localDir.Normalized().z;
+
+        float localAtten = 1.0 - ((ld - m_attenuationStart) / (m_attenuationEnd - m_attenuationStart));
+
+        bool isCameraInsideSpotlight =
+            // localAtten > 0.0f &&
+            ld_norm >= cosf(m_outerAngle * 0.5f);
+
+        auto &spotLight = isCameraInsideSpotlight ? insideSpotLights.emplace_back() : spotLights.emplace_back();
 
         spotLight.lightModelMat = lightModelMat;
 

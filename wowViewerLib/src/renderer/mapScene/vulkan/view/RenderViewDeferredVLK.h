@@ -23,7 +23,8 @@ public:
 
     void update(int width, int height, float glow,
                 const std::vector<LocalLight> &pointLights,
-                const std::vector<SpotLight> &spotLights);
+                const std::vector<SpotLight> &spotLights,
+                const std::vector<SpotLight> &insideSpotLights);
 
     void setLightBuffers(const std::shared_ptr<GDescriptorSet> &sceneWideDS);
 
@@ -49,6 +50,7 @@ private:
 
     std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightCounts;
     std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightCounts;
+    std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_insideSpotLightCounts;
 
     std::shared_ptr<GDescriptorSet> m_sceneWideDS;
 
@@ -77,8 +79,10 @@ private:
 
     std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightBuffers;
     std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightBuffers;
+    std::array<std::shared_ptr<IBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_insideSpotLightBuffers;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_pointLightMats;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightMats;
+    std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_insideSpotLightMats;
     std::array<std::shared_ptr<ISimpleMaterialVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_spotLightDebugMats;
 
 
@@ -91,7 +95,7 @@ private:
     void createLightBufferMats();
     std::vector<std::function<void ()>> onUpdates;
 
-    void updateLightBuffers(const std::vector<LocalLight> &pointLights, const std::vector<SpotLight> &spotLights);
+    void updateLightBuffers(const std::vector<LocalLight> &pointLights, const std::vector<SpotLight> &spotLights, const std::vector<SpotLight> &insideSpotLights);
 };
 
 #endif //AWEBWOWVIEWERCPP_RENDERVIEWDEFERREDVLK_H

@@ -29,7 +29,7 @@ const std::vector<CPointLight> &WdtLightsObject::getPointLights(uint8_t tileX, u
     return m_pointLights[tileX][tileY];
 }
 
-void WdtLightsObject::collectSpotLights(uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights) {
+void WdtLightsObject::collectSpotLights(mathfu::vec3 camera, uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights, std::vector<SpotLight> &insideSpotLights) {
     if (m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
         return;
 
@@ -41,7 +41,7 @@ void WdtLightsObject::collectSpotLights(uint8_t tileX, uint8_t tileY, std::vecto
     std::vector<LocalLight> dummyPointLight;
     auto &lights = m_spotLights[tileX][tileY];
     for (auto &spotLight : lights) {
-        spotLight.collectLight(dummyPointLight, spotLights);
+        spotLight.collectLight(camera, dummyPointLight, spotLights, insideSpotLights);
     }
 }
 

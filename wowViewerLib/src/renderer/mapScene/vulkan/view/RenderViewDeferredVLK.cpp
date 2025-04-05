@@ -34,6 +34,9 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
     for (auto &spotLightBuff : m_spotLightBuffers) {
         spotLightBuff = m_spotLightDataBuffer->getSubBuffer(100*sizeof(SpotLight));
     }
+    for (auto &spotLightBuff : m_insideSpotLightBuffers) {
+        spotLightBuff = m_spotLightDataBuffer->getSubBuffer(3*sizeof(SpotLight));
+    }
 
     createFrameBuffers();
 
@@ -221,6 +224,28 @@ void RenderViewDeferredVLK::createLightBufferMats() {
         })
         .toMaterial();
     }
+    for (int i = 0; i < m_insideSpotLightMats.size(); i++) {
+        m_insideSpotLightMats[i] = MaterialBuilderVLK::fromShader(m_device, {"spotLightFullScreen", "spotLight"}, {
+            .vertexShaderFolder = "bindless/lights",
+            .fragmentShaderFolder = "bindless/lights",
+            .typeOverrides = {
+                {0, {
+                    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+                }}
+            }
+        }, {{0, m_sceneWideDS}})
+        .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineSpot)
+        .bindDescriptorSet(0, m_sceneWideDS)
+        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ssbo(0, m_insideSpotLightBuffers[i])
+                .texture(1, m_gBufferFrameBuffers[i]->getAttachment(1))
+                .texture(2, m_gBufferFrameBuffers[i]->getAttachment(0))
+                .ubo(3, BufferChunkHelperVLK::cast(m_lightScreenSize))
+                .delayUpdate();
+        })
+        .toMaterial();
+    }
 
     for (int i = 0; i < m_spotLightDebugMats.size(); i++) {
         m_spotLightDebugMats[i] = MaterialBuilderVLK::fromShader(m_device, {"spotLight", "lightDebugDraw"}, {
@@ -248,7 +273,8 @@ void RenderViewDeferredVLK::createLightBufferMats() {
 
 void RenderViewDeferredVLK::update(int width, int height, float glow,
                                    const std::vector<LocalLight> &pointLights,
-                                   const std::vector<SpotLight> &spotLights
+                                   const std::vector<SpotLight> &spotLights,
+                                   const std::vector<SpotLight> &insideSpotLights
                                    ) {
     width = std::max<int>(1, width);
     height = std::max<int>(1, height);
@@ -283,7 +309,7 @@ void RenderViewDeferredVLK::update(int width, int height, float glow,
         this->createLightBufferMats();
     }
 
-    updateLightBuffers(pointLights, spotLights);
+    updateLightBuffers(pointLights, spotLights, insideSpotLights);
     glowPass->assignFFXGlowUBOConsts(glow);
 }
 
@@ -380,6 +406,7 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
 
     auto const pointLightCount = m_pointLightCounts[frameNum];
     auto const spotLightCount = m_spotLightCounts[frameNum];
+    auto const insideSpotLightCount = m_insideSpotLightCounts[frameNum];
     if (pointLightCount > 0) {
         frameBufCmd.bindVertexBindings(m_quadVAO);
         frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
@@ -394,6 +421,14 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
         for (int i = 0; i < spotLightCount; i++)
             frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
 
+    }
+    if (insideSpotLightCount > 0) {
+        frameBufCmd.bindVertexBindings(m_quadVAO);
+        frameBufCmd.bindMaterial(m_insideSpotLightMats[frameNum]);
+//        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
+
+        for (int i = 0; i < insideSpotLightCount; i++)
+            frameBufCmd.drawIndexed(6, 1, 0, i, 0);
     }
 }
 
@@ -493,7 +528,9 @@ RenderViewDeferredVLK::readRGBAPixels(int frameNumber, int x, int y, int width, 
 }
 
 void RenderViewDeferredVLK::updateLightBuffers(const std::vector<LocalLight> &pointLights,
-                                               const std::vector<SpotLight> &spotLights) {
+                                               const std::vector<SpotLight> &spotLights,
+                                               const std::vector<SpotLight> &insideSpotLights
+                                               ) {
     bool recreateLightMat = false;
 
     auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
@@ -519,6 +556,17 @@ void RenderViewDeferredVLK::updateLightBuffers(const std::vector<LocalLight> &po
         spotLightBuffer->uploadData(spotLights.data(), spotLights.size()*sizeof(SpotLight));
 
         m_spotLightCounts[frameNum] = spotLights.size();
+    }
+    {
+        auto &insideSpotLightBuffer = m_insideSpotLightBuffers[frameNum];
+        if (insideSpotLightBuffer->getSize() < insideSpotLights.size()*sizeof(SpotLight)) {
+            insideSpotLightBuffer = m_spotLightDataBuffer->getSubBuffer((insideSpotLights.size() + 100) * sizeof(SpotLight));
+            recreateLightMat = true;
+        }
+
+        insideSpotLightBuffer->uploadData(insideSpotLights.data(), insideSpotLights.size()*sizeof(SpotLight));
+
+        m_insideSpotLightCounts[frameNum] = insideSpotLights.size();
     }
 
     if (recreateLightMat) {
