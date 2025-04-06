@@ -281,4 +281,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           upload_url: ${{ github.event.release.upload_url }}
-          files: ${{ matrix.config.artifact }}.zip
+          files: ${{ matrix.config.artifact }}.7z
