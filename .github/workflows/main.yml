@@ -29,22 +29,21 @@ jobs:
       fail-fast: false
       matrix:
         config:
-#          - {
-#            name: "Windows Latest MSVC",
-#            os: windows-latest,
-#            artifact: "windows_msvc.7z",
-#            build_type: "Release",
-#            cmake_defines: "",
-#            cc: "cl.exe",
-#            cxx: "cl.exe",
-#            get_add_path: "find_and_exec_msvc_env.bat",
-#            archiver: "7z a",
-#            generators: "Ninja"
-#          }
           - {
-              name: "Windows Latest MinGW",
+            name: "Windows Latest MSVC",
+            os: windows-latest,
+            artifact: "windows_msvc",
+            build_type: "Release",
+            cmake_defines: "",
+            cc: "cl.exe",
+            cxx: "cl.exe",
+            archiver: "7z a",
+            generators: "Ninja"
+          }
+          - {
+              name: "Windows Clang MSVC",
               os: windows-latest,
-              artifact: "windows_mingw.7z",
+              artifact: "windows_clang",
               build_type: "Release",
               cmake_defines: "",
               cc: "clang",
@@ -52,6 +51,17 @@ jobs:
               archiver: "7z a",
               generators: "Ninja"
             }
+#          - {
+#              name: "Windows Latest MinGW",
+#              os: windows-latest,
+#              artifact: "windows_clang_mingw.7z",
+#              build_type: "Release",
+#              cmake_defines: "",
+#              cc: "clang",
+#              cxx: "clang++",
+#              archiver: "7z a",
+#              generators: "Ninja"
+#            }
 #          - {
 #            name: "Ubuntu_Latest_GCC",
 #            os: ubuntu-latest,
@@ -251,17 +261,19 @@ jobs:
         working-directory: build
         run: cmake --install . --strip
 
-      - name: Pack
-        shell: bash
-        working-directory: instdir
-        run: |
-          ls -laR
-          ${{ matrix.config.archiver }} ../${{ matrix.config.artifact }} .
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           path: ./instdir/
           name: ${{ matrix.config.artifact }}
+
+      - name: Pack release asset
+        if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
+        shell: bash
+        working-directory: instdir
+        run: |
+          ls -laR
+          ${{ matrix.config.archiver }} ../${{ matrix.config.artifact }} .
 
       - name: Upload release asset
         if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
