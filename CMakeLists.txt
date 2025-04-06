@@ -292,7 +292,6 @@ endif()
 
 add_library(WoWFrontendLib STATIC ${SOURCE_FILES} ${SOURCE_FILES_VULKAN} ${PROTOBUF_FILES_})
 add_executable(WowStudio src/main.cpp)
-
 target_link_libraries(WowStudio WoWFrontendLib)
 
 if (Vulkan_FOUND)
@@ -426,7 +425,7 @@ install(TARGETS WowStudio
 INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Libraries)
 
 if( MINGW )
-	message( STATUS "    Installing system-libraries: MinGW DLLs." )
+	message( STATUS "Installing system-libraries: MinGW DLLs." )
 	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
 	set( CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS}
 			${Mingw_Path}/libgcc_s_seh-1.dll
