@@ -156,13 +156,15 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
 
         auto &blockPSVS = sceneWideChunk->getObject(i);
         blockPSVS.uLookAtMat = renderingMatrices->lookAtMat;
+        blockPSVS.uInvLookAtMat = renderingMatrices->lookAtMat.Inverse();
         if (isVulkan) {
-            blockPSVS.uPMatrix = MathHelper::getVulkanMat4Fix() * renderingMatrices->perspectiveMat;
+            auto perspMat = MathHelper::getVulkanMat4Fix() * renderingMatrices->perspectiveMat;
+            blockPSVS.uPMatrix = perspMat;
+            blockPSVS.uInvPMatrix = perspMat.Inverse();
         } else {
             blockPSVS.uPMatrix = renderingMatrices->perspectiveMat;
+            blockPSVS.uInvPMatrix = renderingMatrices->perspectiveMat.Inverse();
         }
-        // blockPSVS.uPMatrix = blockPSVS.uPMatrix.Transpose();
-        // blockPSVS.uLookAtMat = blockPSVS.uLookAtMat.Transpose();
 
         blockPSVS.uInteriorSunDir = mathfu::vec4_packed(
             mathfu::vec4(renderingMatrices->interiorDirectLightDir.xyz(), 0)

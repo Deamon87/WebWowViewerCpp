@@ -34,6 +34,8 @@ struct SceneExteriorLight {
 struct SceneWideParams {
     mat4 uLookAtMat;
     mat4 uPMatrix;
+    mat4 uInvLookAtMat;
+    mat4 uInvPMatrix;
     vec4 uViewUpSceneTime;
     vec4 uInteriorSunDir;
     vec4 uSceneSize_DisableLightBuffer;

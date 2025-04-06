@@ -40,10 +40,10 @@ void main() {
 
     float z = (depth - 0.06f) / (1.0f - 0.06f) ;
 
-    vec4 viewPos = inverse(scene.uPMatrix) * vec4(uv.xy * 2.0 - 1.0, z, 1.0);
+    vec4 viewPos = scene.uInvPMatrix * vec4(uv.xy * 2.0 - 1.0, z, 1.0);
     viewPos.xyz = viewPos.xyz / viewPos.w;
 
-    vec4 worldPos = inverse(scene.uLookAtMat) * vec4(viewPos.xyz, 1.0);
+    vec4 worldPos = scene.uInvLookAtMat * vec4(viewPos.xyz, 1.0);
     worldPos.xyz = worldPos.xyz / worldPos.w;
 
 

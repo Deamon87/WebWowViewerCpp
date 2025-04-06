@@ -49,6 +49,8 @@ const constexpr int FOG_MAX_SHADER_COUNT = 1;
 struct sceneWideBlockVSPS {
     mathfu::mat4 uLookAtMat;
     mathfu::mat4 uPMatrix;
+    mathfu::mat4 uInvLookAtMat;
+    mathfu::mat4 uInvPMatrix;
     mathfu::vec4_packed uViewUpSceneTime;
     mathfu::vec4_packed uInteriorSunDir;
     mathfu::vec4_packed uSceneSize_DisableLightBuffer;

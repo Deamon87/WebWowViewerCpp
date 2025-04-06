@@ -395,6 +395,8 @@ void RenderViewDeferredVLK::doGBufferBarrier(CmdBufRecorder &frameBufCmd) {
     }
 }
 void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
+    ZoneScopedN("Light Pass");
+
 
     auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
@@ -403,32 +405,39 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
                                 {0,0},
                                 {m_width, m_height},
                                 {0,0,0});
-
     auto const pointLightCount = m_pointLightCounts[frameNum];
     auto const spotLightCount = m_spotLightCounts[frameNum];
     auto const insideSpotLightCount = m_insideSpotLightCounts[frameNum];
     if (pointLightCount > 0) {
+        VkZone(frameBufCmd, "Point Lights")
+
         frameBufCmd.bindVertexBindings(m_quadVAO);
         frameBufCmd.bindMaterial(m_pointLightMats[frameNum]);
-        for (int i = 0; i < pointLightCount; i++)
-            frameBufCmd.drawIndexed(6, 1, 0, i, 0);
+        frameBufCmd.drawIndexed(6, pointLightCount, 0, 0, 0);
+
+        // for (int i = 0; i < pointLightCount; i++)
+            // frameBufCmd.drawIndexed(6, 1, 0, i, 0);
     }
-    if (spotLightCount > 0) {
-        frameBufCmd.bindVertexBindings(m_spotVAO);
-        frameBufCmd.bindMaterial(m_spotLightMats[frameNum]);
-//        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
 
-        for (int i = 0; i < spotLightCount; i++)
-            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
+    {
+        VkZone(frameBufCmd, "Spot Lights")
 
-    }
-    if (insideSpotLightCount > 0) {
-        frameBufCmd.bindVertexBindings(m_quadVAO);
-        frameBufCmd.bindMaterial(m_insideSpotLightMats[frameNum]);
-//        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
+        if (spotLightCount > 0) {
+            frameBufCmd.bindVertexBindings(m_spotVAO);
+            frameBufCmd.bindMaterial(m_spotLightMats[frameNum]);
+            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
 
-        for (int i = 0; i < insideSpotLightCount; i++)
-            frameBufCmd.drawIndexed(6, 1, 0, i, 0);
+            // for (int i = 0; i < spotLightCount; i++)
+                // frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
+        }
+        if (insideSpotLightCount > 0) {
+            frameBufCmd.bindVertexBindings(m_quadVAO);
+            frameBufCmd.bindMaterial(m_insideSpotLightMats[frameNum]);
+            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, insideSpotLightCount, 0, 0, 0);
+
+            // for (int i = 0; i < insideSpotLightCount; i++)
+                // frameBufCmd.drawIndexed(6, 1, 0, i, 0);
+        }
     }
 }
 

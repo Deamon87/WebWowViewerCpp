@@ -33,7 +33,7 @@ void main() {
 
     float z = (sceneDepth - 0.06f) / (1.0f - 0.06f) ;
 
-    vec4 viewPos = inverse(scene.uPMatrix) * vec4(uv.xy * 2.0 - 1.0, z, 1.0);
+    vec4 viewPos = uInvPMatrix * vec4(uv.xy * 2.0 - 1.0, z, 1.0);
     viewPos.xyz = viewPos.xyz / viewPos.w;
 
 //    vec3 viewRay = vec3((in_viewPos.xy / vec2(in_viewPos.z)), 1.0);
