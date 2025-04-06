@@ -254,7 +254,7 @@ jobs:
       - name: Build
         shell: bash
         working-directory: build
-        run: cmake --build . -v --config ${{ matrix.config.build_type }} --target WowStudio
+        run: cmake --build . --config ${{ matrix.config.build_type }} --target WowStudio
 
       - name: Install Strip
         shell: bash
