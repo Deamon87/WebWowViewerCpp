@@ -10,6 +10,7 @@
 #include <iostream>
 
 #include "../IDevice.h"
+#include "../../../engine/objects/SceneObjectWithID.h"
 
 enum class MeshType {
     eGeneralMesh = 0,
@@ -47,99 +48,67 @@ struct BlendModeDesc {
 };
 
 enum class DrawElementMode {
+    LINE,
     TRIANGLES,
     TRIANGLE_STRIP
 };
 
 class gMeshTemplate {
 public:
-    gMeshTemplate(HGVertexBufferBindings bindings, HGShaderPermutation shader) : bindings(bindings), shader(shader) {}
+    gMeshTemplate(HGVertexBufferBindings bindings) : bindings(bindings) {}
     HGVertexBufferBindings bindings;
-    HGShaderPermutation shader;
     MeshType meshType = MeshType::eGeneralMesh;
-
-    int8_t triCCW = 1; //counter-clockwise
-    bool depthWrite = true;
-    bool depthCulling = true;
-    bool backFaceCulling = true;
-    EGxBlendEnum blendMode;
-    bool skybox = false;
-
-    uint8_t colorMask = 0xFF;
 
     int start;
     int end;
-    DrawElementMode element;
-    unsigned int textureCount;
-    std::vector<HGTexture> texture = std::vector<HGTexture>(6, nullptr);
-    std::array<HGUniformBufferChunk, 6> ubo = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
 
     bool scissorEnabled = false;
     std::array<int, 2> scissorOffset = {0,0};
-    std::array<int, 2> scissorSize = {0,0};
+    std::array<uint32_t, 2> scissorSize = {0,0};
 };
 
+enum class GMeshId : uintptr_t;
 
-class IMesh {
+class IMesh : public ObjectWithId<GMeshId> {
     friend class IDevice;
 
 public:
-    auto renderOrder()       -> int& { return m_renderOrder; }
-    auto sortDistance()       -> float { return m_sortDistance; }
-    auto priorityPlane()       -> int { return m_priorityPlane; }
-    auto layer()       -> int& { return m_layer; }
-    auto isSkyBox()       -> bool& { return m_isSkyBox; }
-    auto start()       -> int& { return m_start; }
-    auto end()       -> int& { return m_end; }
-    auto textureCount()       -> int& { return m_textureCount; }
+    auto start()       -> uint32_t& { return m_start; }
+    auto end()       -> uint32_t& { return m_end; }
+//    auto textureCount()       -> int { return m_texture.size(); }
 
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
-    auto texture() const -> const std::vector<HGTexture>& { return m_texture; }
 
-//    auto texture() const -> const HGVertexBufferBindings& { return m_bindings; }
+
+    int vertexStart = 0;
+    int instanceIndex = -1;
 protected:
-    int m_renderOrder = 0;
-
-    float m_sortDistance = 0;
-
-    int m_priorityPlane = 0;
-    int m_layer = 0;
-    void *m_m2Object = nullptr;
-
-    bool m_isSkyBox = false;
-
     HGVertexBufferBindings m_bindings;
-    int m_start;
-    int m_end;
-
-    std::vector<HGTexture> m_texture = {};
-    int m_textureCount;
-
-    std::array<HGUniformBufferChunk,6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+    uint32_t m_start;
+    uint32_t  m_end;
 
 public:
-    virtual ~IMesh(){
-//        std::cout << "Mesh destroyed" << std::endl;
+    ~IMesh() override = default ;
 
-    };
-    virtual HGUniformBufferChunk getUniformBuffer(int slot) = 0;
-    virtual EGxBlendEnum getGxBlendMode() = 0;
     virtual bool getIsTransparent() = 0;
     virtual MeshType getMeshType() = 0;
-    virtual void setRenderOrder(int renderOrder) = 0;
-    virtual bool getIsSkyBox() { return m_isSkyBox; }
 
-    virtual void setStart(int start)  = 0;
-    virtual void setEnd(int end)  = 0;
+    void setStart(int start) {m_start = start; }
+    void setEnd(int end) {m_end = end; }
+};
 
+
+class COpaqueMeshCollector {
 public:
-    virtual void * getM2Object() = 0;
-    virtual void setM2Object(void * m2Object) = 0;
-    virtual void setLayer(int layer)  = 0;
-    virtual void setPriorityPlane(int priorityPlane) = 0;
-    virtual void setQuery(const HGOcclusionQuery &query) = 0;
-    virtual void setSortDistance(float distance) = 0;
-    virtual float getSortDistance() = 0;
+    virtual ~COpaqueMeshCollector() {};
+    virtual void addM2Mesh(const HGM2Mesh &mesh) = 0;
+    virtual void addWMOMesh(const HGMesh &mesh) = 0;
+    virtual void addWaterMesh(const HGMesh &mesh) = 0;
+    virtual void addADTMesh(const HGMesh &mesh) = 0;
 
+    virtual void addMesh(const HGMesh &mesh) = 0;
+
+    virtual void merge(COpaqueMeshCollector & collector) = 0;
+    virtual COpaqueMeshCollector * clone() = 0;
 };
 #endif //AWEBWOWVIEWERCPP_IMESH_H

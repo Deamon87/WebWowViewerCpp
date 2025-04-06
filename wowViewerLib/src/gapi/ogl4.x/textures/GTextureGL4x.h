@@ -17,7 +17,7 @@ public:
 
     void loadData(int width, int height, void *data) override;
     bool getIsLoaded() override;
-    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override {
+    void createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override {
         throw "Not Implemented in this class";
     }
     bool postLoad() override {return false;};

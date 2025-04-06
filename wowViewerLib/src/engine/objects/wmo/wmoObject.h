@@ -4,6 +4,7 @@
 
 #ifndef WEBWOWVIEWERCPP_WMOOBJECT_H
 #define WEBWOWVIEWERCPP_WMOOBJECT_H
+#include <bitset>
 
 struct WmoGroupResult;
 class WmoGroupObject;
@@ -21,11 +22,19 @@ class WmoGroupObject;
 #include "../iWmoApi.h"
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../ViewsObjects.h"
+#include "../../../include/database/dbStructs.h"
+#include "../SceneObjectWithID.h"
+#include "../lights/CWmoNewLight.h"
 
-class WmoObject : public IWmoApi {
+enum class WMOObjId : uintptr_t;
+constexpr WMOObjId emptyWMO = static_cast<const WMOObjId>(0xFFFFFFF);
+
+class WmoObject : public IWmoApi, public ObjectWithId<WMOObjId>{
 
 public:
-    WmoObject(HApiContainer api) : m_api(api) {
+    WmoObject(const HApiContainer &api/*, int id*/) : /*SceneObjectWithId(id),*/ m_api(api) {
+        //DoodadSet 0 is always active
+        m_activeDoodadSets.set(0);
     }
 
 	~WmoObject();
@@ -34,25 +43,31 @@ private:
         FrameViewsHolder &viewsHolder;
         bool exteriorWasCreatedBeforeTraversing;
         mathfu::vec4 farPlane;
-        std::vector<HInteriorView> &ivPerWMOGroup;
+        framebased::vector<HInteriorView> &ivPerWMOGroup;
         mathfu::vec4 &cameraVec4;
         mathfu::vec4 &cameraLocal;
         mathfu::mat4 &transposeInverseModelMat;
-        std::vector<bool> &transverseVisitedPortals;
+        mathfu::mat4 &MVPMat;
+        mathfu::mat4 &MVPMatInv;
+        framebased::vector<bool> &transverseVisitedPortals;
+
+        bool atLeastOneGroupIsDrawn = false;
     };
 
     HApiContainer m_api;
 
     HWmoMainGeom mainGeom = nullptr;
+
     bool m_loading = false;
     bool m_loaded = false;
     CAaBox m_bbox;
 
     int m_nameSet;
-    int m_doodadSet = -1;
+    ActiveDoodadSets m_activeDoodadSets;
 
     std::vector<PortalInfo_t> geometryPerPortal;
 
+    bool m_placementMatChanged = false;
     mathfu::mat4 m_placementMatrix;
     mathfu::mat4 m_placementInvertMatrix;
 
@@ -65,34 +80,58 @@ private:
     std::vector<std::shared_ptr<WmoGroupObject>> groupObjectsLod2 = std::vector<std::shared_ptr<WmoGroupObject>>(0);
     std::vector<BlpTexture> blpTextures;
 
+    std::vector<std::shared_ptr<CWmoNewLight>> m_newLights;
+
     std::vector<bool> drawGroupWMO;
     std::vector<int> lodGroupLevelWMO;
-    std::unordered_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
+    robin_hood::unordered_flat_map<int, std::shared_ptr<M2Object>> m_doodadsUnorderedMap;
 
     std::shared_ptr<M2Object> skyBox = nullptr;
 
-    std::unordered_map<int, HGTexture> diffuseTextures;
-    std::unordered_map<int, HGTexture> specularTextures;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> diffuseTextures;
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> specularTextures;
+
+    std::shared_ptr<IWmoModelData> m_wmoModelChunk;
+
+    bool m_interiorAmbientsChanged = false;
+    std::vector<WMO::InteriorBlockData> m_groupInteriorData;
+
+    std::vector<std::shared_ptr<IWMOMaterial>> m_materialCache;
 
     HGMesh transformedAntiPortals;
 
-    void createPlacementMatrix(SMMapObjDef &mapObjDef);
-    void createPlacementMatrix(SMMapObjDefObj1 &mapObjDef);
+    //Ambient, GroundAmbient, HorizontalAmbient
+    std::array<mathfu::vec3, 3> m_ambientColors;
+
+    void createPlacementMatrix(const SMMapObjDef &mapObjDef);
+    void createPlacementMatrix(const SMMapObjDefObj1 &mapObjDef);
     void createBB(CAaBox bbox);
     void postWmoGroupObjectLoad(int groupId, int lod) override;
     void fillLodGroup(mathfu::vec3 &cameraLocal);
     friend void attenuateTransVerts(HWmoMainGeom &mainGeom, WmoGroupGeom& wmoGroupGeom);
 public:
-    std::shared_ptr<M2Object> getDoodad(int index) override ;
-    HGTexture getTexture(int materialId, bool isSpec) override;
-    void setLoadingParam( SMMapObjDef &mapObjDef);
-    void setLoadingParam( SMMapObjDefObj1 &mapObjDef);
+    std::shared_ptr<M2Object> getDoodad(int index, int fromGroupIndex) override ;
+    void applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal, int fromGroupIndex);
+    void applyColorFromMOLT(
+        const SMODoodadDef *doodadDef,
+        const std::shared_ptr<M2Object> &doodad,
+        std::array<mathfu::vec3, 3> &interiorAmbients,
+        mathfu::vec3 &color,
+        bool &hasDoodad0x4Flag,
+        int fromGroupIndex);
 
+    HGSamplableTexture getTexture(int materialId, bool isSpec) override;
+    void setLoadingParam(const SMMapObjDef &mapObjDef);
+    void setLoadingParam(const SMMapObjDefObj1 &mapObjDef);
+
+    std::string getModelFileName();
     void setModelFileName(std::string modelName);
+    int getModelFileId();
     void setModelFileId(int fileId);
 
     void startLoading();
     bool isLoaded() override { return m_loaded;}
+    bool isFailedToLoadGeom() { return mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSRejected; }
     bool hasPortals();
     int getNameSet() {
         return m_nameSet;
@@ -105,31 +144,35 @@ public:
     }
     int getWmoGroupId (int groupNum);
 
-    virtual std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
-    virtual SMOHeader *getWmoHeader() override;
-    mathfu::vec3 getAmbientColor() override;
+    std::function<void (WmoGroupGeom& wmoGroupGeom)> getAttenFunction() override;
+    SMOHeader *getWmoHeader() override;
+    ActiveDoodadSets getActiveDoodadSet() override {
+        return m_activeDoodadSets;
+    }
+    std::array<mathfu::vec3, 3> getAmbientColors() override;
 
-    virtual PointerChecker<SMOMaterial> &getMaterials() override;
+    PointerChecker<SMOMaterial> &getMaterials() override;
+    std::shared_ptr<IWMOMaterial> getMaterialInstance(int index, const HMapSceneBufferCreate &sceneRenderer) override;
 
-    virtual PointerChecker<SMOLight> &getLightArray() override;
-    virtual std::vector<PortalInfo_t> &getPortalInfos() override {
+    PointerChecker<SMOLight> &getLightArray() override;
+    std::vector<PortalInfo_t> &getPortalInfos() override {
         return geometryPerPortal;
     };
+    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> getPlacementBuffer() override {
+        return m_wmoModelChunk->m_placementMatrix;
+    }
 
     std::shared_ptr<M2Object> getSkyBoxForGroup (int groupNum);;
-
     void collectMeshes(std::vector<HGMesh> &renderedThisFrame);
 
     void createGroupObjects();
+    void checkFog(const mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &wmoFogData);
 
-
-    void checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults);
-
-    bool doPostLoad();
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
     void uploadGeneratorBuffers();
 
-    void createM2Array();
+    void createMaterialCache();
     void updateBB() override ;
 
     CAaBox getAABB();
@@ -159,47 +202,54 @@ public:
         int groupId,
         bool traversingStartedFromInterior,
         PortalTraverseTempData &traverseTempData,
-        std::vector<mathfu::vec4> &localFrustumPlanes,
+        framebased::vector<mathfu::vec4> &localFrustumPlanes,
         int globalLevel,
         int localLevel
     );
 
-    bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result);
+    bool getGroupWmoThatCameraIsInside(mathfu::vec4 cameraVec4, WmoGroupResult &result, float &bottomBorder);
 
     bool isGroupWmoInterior(int groupId);
     bool isGroupWmoExteriorLit(int groupId);
     bool isGroupWmoExtSkybox(int groupId);
 
-    void drawTransformedPortalPoints();
-
     void drawDebugLights();
 
     void createWorldPortals();
-
-    void createTransformedAntiPortalMesh();
-    void updateTransformedAntiPortalPoints();
+    void createNewLights();
+    void calculateAmbient();
+    std::shared_ptr<CWmoNewLight> getNewLight(int index) override;
+    void setInteriorAmbientColor(int groupIndex,
+        bool isExteriorLighted,
+        const mathfu::vec3 &ambient,
+        const mathfu::vec3 &horizontAmbient,
+        const mathfu::vec3 &groundAmbient
+    ) override;
 };
 
-struct WMOObjectHasher
-{
-    size_t operator()(const std::shared_ptr<WmoObject>& val)const
-    {
-        return std::hash<std::shared_ptr<WmoObject>>()(val);
-    }
-};
+typedef EntityFactory<2000, WMOObjId, WmoObject> WMOEntityFactory;
 
-//typedef std::unordered_set<std::shared_ptr<WmoObject>, WMOObjectHasher> WMOObjectSetCont;
+extern std::shared_ptr<WMOEntityFactory> wmoFactory;
+
 class WMOListContainer {
+    using wmoContainer = framebased::vector<WMOObjId>;
+//    using wmoContainer = std::vector<std::shared_ptr<WmoObject>>;
 private:
-    std::vector<std::shared_ptr<WmoObject>> wmoCandidates;
-    std::vector<std::shared_ptr<WmoObject>> wmoToLoad;
+    wmoContainer wmoCandidates;
+    wmoContainer wmoToLoad;
+    wmoContainer wmoToDrawn;
 
     bool candCanHaveDuplicates = false;
     bool toLoadCanHaveDuplicates = false;
+    bool toDrawmCanHaveDuplicates = false;
 
-    void inline removeDuplicates(std::vector<std::shared_ptr<WmoObject>> &array) {
+    bool m_locked = false;
+
+    void inline removeDuplicates(wmoContainer &array) {
         if (array.size() < 1000) {
-            std::sort(array.begin(), array.end());
+            std::sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
+                return a < b;
+            });
         } else {
             tbb::parallel_sort(array.begin(), array.end(), [](auto &a, auto &b) -> bool {
                 return a < b;
@@ -213,26 +263,59 @@ public:
     WMOListContainer() {
         wmoCandidates.reserve(3000);
         wmoToLoad.reserve(3000);
+        wmoToDrawn.reserve(3000);
     }
 
     void addCand(const std::shared_ptr<WmoObject> &toDraw) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toDraw->isLoaded()) {
-            wmoCandidates.push_back(toDraw);
+            wmoCandidates.push_back(toDraw->getObjectId());
             candCanHaveDuplicates = true;
         } else {
-            wmoToLoad.push_back(toDraw);
+            if (toDraw->isFailedToLoadGeom())
+                return;
+
+            wmoToLoad.push_back(toDraw->getObjectId());
             toLoadCanHaveDuplicates = true;
         }
     }
 
     void addToLoad(const std::shared_ptr<WmoObject> &toLoad) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (!toLoad->isLoaded()) {
-            wmoToLoad.push_back(toLoad);
+            wmoToLoad.push_back(toLoad->getObjectId());
             toLoadCanHaveDuplicates = true;
         }
     }
 
-    const std::vector<std::shared_ptr<WmoObject>> &getCandidates() {
+    void addToDrawn(const std::shared_ptr<WmoObject> &toDrawn) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        if (toDrawn->isLoaded()) {
+            wmoToDrawn.push_back(toDrawn->getObjectId());
+            toDrawmCanHaveDuplicates = true;
+        }
+    }
+    void addToDrawn(WmoObject* toDrawn) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        if (toDrawn->isLoaded()) {
+            wmoToDrawn.push_back(toDrawn->getObjectId());
+            toDrawmCanHaveDuplicates = true;
+        }
+    }
+
+    const wmoContainer &getCandidates() {
         if (this->candCanHaveDuplicates) {
             removeDuplicates(wmoCandidates);
             candCanHaveDuplicates = false;
@@ -241,7 +324,7 @@ public:
         return wmoCandidates;
     }
 
-    const std::vector<std::shared_ptr<WmoObject>> &getToLoad() {
+    const wmoContainer &getToLoad() {
         if (this->toLoadCanHaveDuplicates) {
             removeDuplicates(wmoToLoad);
             toLoadCanHaveDuplicates = false;
@@ -249,6 +332,25 @@ public:
 
         return wmoToLoad;
     }
+
+
+    const wmoContainer &getToDrawn() {
+        if (this->toDrawmCanHaveDuplicates) {
+            removeDuplicates(wmoToDrawn);
+            toDrawmCanHaveDuplicates = false;
+        }
+
+        return wmoToDrawn;
+    }
+
+    void lock() {
+        getToDrawn();
+        getToLoad();
+        getCandidates();
+
+        m_locked = true;
+    }
+
 };
 
 

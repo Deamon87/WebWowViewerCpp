@@ -1,6 +1,7 @@
 #ifndef AWEBWOWVIEWERCPP_FILEHELPERS_H
 #define AWEBWOWVIEWERCPP_FILEHELPERS_H
 
+#include <filesystem>
 #include <string>
 #include <vector>
 #include <fstream>
@@ -64,7 +65,9 @@ std::vector<std::string> split(const std::string& s, char seperator)
 }
 
 static std::vector<uint32_t> readFile(const std::string& filename) {
-    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+    auto filePath = std::filesystem::path(filename);
+    auto normalizedFilePath = std::filesystem::canonical(filePath);
+    std::ifstream file(normalizedFilePath, std::ios::ate | std::ios::binary);
 
     if (!file.is_open()) {
         throw std::runtime_error("failed to open file!");

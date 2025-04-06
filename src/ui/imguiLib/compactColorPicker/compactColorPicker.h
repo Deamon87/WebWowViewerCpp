@@ -7,7 +7,7 @@
 
 #include <imgui.h>
 namespace ImGui {
-    void CompactColorPicker(const std::string colorName, mathfu::vec4 &color);
+    void CompactColorPicker(const std::string colorName, mathfu::vec4 &color, bool columnMode);
 }
 
 

@@ -6,9 +6,8 @@
 #include "GShaderPermutationVLK.h"
 #include "../../../engine/stringTrim.h"
 #include "../../../engine/algorithms/hashString.h"
-#include "../../../engine/shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../UniformBufferStructures.h"
-#include "../buffers/GUniformBufferVLK.h"
 #include "../../interface/IDevice.h"
 #include <unordered_map>
 
@@ -41,191 +40,199 @@ VkShaderModule GShaderPermutationVLK::createShaderModule(const std::vector<char>
         throw std::runtime_error("failed to create shader module!");
     }
 
+    m_device->setObjectName((uint64_t) shaderModule, VK_OBJECT_TYPE_SHADER_MODULE, m_combinedName.c_str());
+
     return shaderModule;
 }
 
-GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, IDevice * device) :
-    m_device(dynamic_cast<GDeviceVLK *>(device)), m_shaderName(shaderName), m_shaderNameVert(shaderName), m_shaderNameFrag(shaderName){
-
-}
-
-GShaderPermutationVLK::GShaderPermutationVLK(std::string &shaderName, std::string &shaderVertName, std::string &shaderFragName,
-                                             IDevice *device) :
-    m_device(dynamic_cast<GDeviceVLK *>(device)), m_shaderName(shaderName), m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName){
+GShaderPermutationVLK::GShaderPermutationVLK(const std::string &shaderVertName, const std::string &shaderFragName,
+                                             const std::shared_ptr<GDeviceVLK> &device,
+                                             const ShaderConfig &shaderConf,
+                                             const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides
+                                             ) :
+    m_device(device), m_combinedName(shaderVertName + " "+ shaderFragName), m_shaderConf(shaderConf),
+    m_shaderNameVert(shaderVertName), m_shaderNameFrag(shaderFragName),
+    m_dsLayoutOverrides(dsLayoutOverrides) {
                                              
 
 }
 
-void GShaderPermutationVLK::createUBODescriptorLayout() {
-    std::unordered_map<int,VkDescriptorSetLayoutBinding> shaderLayoutBindings;
-    for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = vertShaderMeta->uboBindings[i];
+std::vector<const shaderMetaData *> GShaderPermutationVLK::createMetaArray() {
+    return {fragShaderMeta, vertShaderMeta};
+}
 
-        auto it = shaderLayoutBindings.find(uboVertBinding.binding);
-        if (it != std::end( shaderLayoutBindings )) {
-            it->second.stageFlags |= VK_SHADER_STAGE_VERTEX_BIT;
+void GShaderPermutationVLK::createSetDescriptorLayouts() {
+    std::vector<const shaderMetaData *> metas = createMetaArray();
+    for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
+        if (m_dsLayoutOverrides.find(i) != m_dsLayoutOverrides.end()) {
+            descriptorSetLayouts[i] = m_dsLayoutOverrides.at(i);
         } else {
-            VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-            uboLayoutBinding.binding = uboVertBinding.binding;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+            auto &setLayout = combinedShaderLayout.setLayouts[i];
+            if (setLayout.imageBindings.length == 0 && setLayout.uboBindings.length == 0) continue;
 
-            shaderLayoutBindings.insert({uboVertBinding.binding, uboLayoutBinding});
+            descriptorSetLayouts[i] = std::make_shared<GDescriptorSetLayout>(m_device, metas, i,
+                                                                             m_shaderNameVert + " " + m_shaderNameFrag,
+                                                                             m_shaderConf.typeOverrides);
         }
-
-        hasBondUBO[uboVertBinding.binding] = true;
-
-    }
-    for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = fragShaderMeta->uboBindings[i];
-
-        auto it = shaderLayoutBindings.find(uboFragBinding.binding);
-        if (it != std::end( shaderLayoutBindings )) {
-            it->second.stageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT;
-        } else {
-            VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-            uboLayoutBinding.binding = uboFragBinding.binding;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            shaderLayoutBindings.insert({uboFragBinding.binding, uboLayoutBinding});
-        }
-
-        hasBondUBO[uboFragBinding.binding] = true;
-    }
-
-    std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindingsVec;
-    shaderLayoutBindingsVec.reserve(shaderLayoutBindings.size());
-    for(auto elem : shaderLayoutBindings) {
-        shaderLayoutBindingsVec.push_back(elem.second);
-    }
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.pNext = NULL;
-    layoutInfo.bindingCount = shaderLayoutBindingsVec.size();
-    layoutInfo.pBindings = &shaderLayoutBindingsVec[0];
-
-    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &uboDescriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
-}
-
-void GShaderPermutationVLK::createImageDescriptorLayout() {
-    std::vector<VkDescriptorSetLayoutBinding> shaderLayoutBindings;
-
-    for (int i = 0; i < getTextureCount(); i++) {
-        VkDescriptorSetLayoutBinding imageLayoutBinding = {};
-        imageLayoutBinding.binding = getTextureBindingStart()+i;
-        imageLayoutBinding.descriptorCount = 1;
-        imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        imageLayoutBinding.pImmutableSamplers = nullptr;
-        imageLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT  | VK_SHADER_STAGE_VERTEX_BIT;
-
-        shaderLayoutBindings.push_back(imageLayoutBinding);
-    }
-
-    VkDescriptorSetLayoutCreateInfo layoutInfo = {};
-    layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    layoutInfo.bindingCount = shaderLayoutBindings.size();
-    layoutInfo.pBindings = (shaderLayoutBindings.size() > 0) ? &shaderLayoutBindings[0] : nullptr;
-
-    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &imageDescriptorSetLayout) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create descriptor set layout!");
-    }
-}
-
-void GShaderPermutationVLK::updateDescriptorSet(int index) {
-    std::vector<VkDescriptorBufferInfo> bufferInfos;
-    std::vector<VkWriteDescriptorSet> descriptorWrites;
-
-    auto *uploadBuffer = ((GUniformBufferVLK *) m_device->getUploadBuffer(index).get());
-    if (uploadBuffer == nullptr) return;
-
-    for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = vertShaderMeta->uboBindings[i];
-
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = uploadBuffer->g_buf;
-        bufferInfo.offset = 0;
-        bufferInfo.range = uboVertBinding.size;
-        bufferInfos.push_back(bufferInfo);
-    }
-    for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = fragShaderMeta->uboBindings[i];
-
-        VkDescriptorBufferInfo bufferInfo = {};
-        bufferInfo.buffer = uploadBuffer->g_buf;
-        bufferInfo.offset = 0;
-        bufferInfo.range = uboFragBinding.size;
-        bufferInfos.push_back(bufferInfo);
-    }
-
-    int buffInd = 0;
-    for (int i = 0; i < vertShaderMeta->uboBindings.size(); i++) {
-        auto &uboVertBinding = vertShaderMeta->uboBindings[i];
-
-        VkWriteDescriptorSet writeDescriptor;
-        writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptor.dstSet = uboDescriptorSets[index]->getDescSet();
-        writeDescriptor.pNext = nullptr;
-        writeDescriptor.dstBinding = uboVertBinding.binding;
-        writeDescriptor.dstArrayElement = 0;
-        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptor.descriptorCount = 1;
-        writeDescriptor.pBufferInfo = &bufferInfos[buffInd++];
-        writeDescriptor.pImageInfo = nullptr;
-        writeDescriptor.pTexelBufferView = nullptr;
-        descriptorWrites.push_back(writeDescriptor);
-
-    }
-    for (int i = 0; i < fragShaderMeta->uboBindings.size(); i++) {
-        auto &uboFragBinding = fragShaderMeta->uboBindings[i];
-
-        VkWriteDescriptorSet writeDescriptor;
-        writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-        writeDescriptor.dstSet = uboDescriptorSets[index]->getDescSet();
-        writeDescriptor.pNext = nullptr;
-        writeDescriptor.dstBinding = uboFragBinding.binding;
-        writeDescriptor.dstArrayElement = 0;
-        writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
-        writeDescriptor.descriptorCount = 1;
-        writeDescriptor.pBufferInfo = &bufferInfos[buffInd++];
-        writeDescriptor.pImageInfo = nullptr;
-        writeDescriptor.pTexelBufferView = nullptr;
-        descriptorWrites.push_back(writeDescriptor);
-    }
-
-    uboDescriptorSets[index]->writeToDescriptorSets(descriptorWrites);
-}
-
-void GShaderPermutationVLK::createUboDescriptorSets() {
-    uboDescriptorSets = std::vector<std::shared_ptr<GDescriptorSets>>(4, NULL);
-
-    for (int j = 0; j < 4; j++) {
-        std::vector<VkWriteDescriptorSet> descriptorWrites;
-        uboDescriptorSets[j] = m_device->createDescriptorSet(uboDescriptorSetLayout, 5, 0);
-        updateDescriptorSet(j);
     }
 }
 
 void GShaderPermutationVLK::compileShader(const std::string &vertExtraDef, const std::string &fragExtraDef) {
-    auto vertShaderCode = readFile("spirv/" + m_shaderNameVert + ".vert.spv");
-    auto fragShaderCode = readFile("spirv/" + m_shaderNameFrag + ".frag.spv");
+    vertShaderName = m_shaderConf.vertexShaderFolder +"/" + m_shaderNameVert;
+    vertShaderFrag = m_shaderConf.fragmentShaderFolder +"/" + m_shaderNameFrag;
+
+    auto vertShaderCode = readFile("spirv/" + vertShaderName + ".vert.spv");
+    auto fragShaderCode = readFile("spirv/" + vertShaderFrag + ".frag.spv");
 
     vertShaderModule = createShaderModule(vertShaderCode);
     fragShaderModule = createShaderModule(fragShaderCode);
 
-    vertShaderMeta = &shaderMetaInfo.at(m_shaderNameVert + ".vert.spv");
-    fragShaderMeta = &shaderMetaInfo.at(m_shaderNameFrag + ".frag.spv");
+    vertShaderMeta = &shaderMetaInfo.at("./"+vertShaderName + ".vert.spv");
+    fragShaderMeta = &shaderMetaInfo.at("./"+vertShaderFrag + ".frag.spv");
+
+    this->createShaderLayout();
+
+    this->createSetDescriptorLayouts();
+
+    this->createPipelineLayout();
+}
+
+inline void makeMin(unsigned int &a, const unsigned int b) {
+    a = std::min<unsigned int>(a, b);
+}
+inline void makeMax(unsigned int &a, const unsigned int b) {
+    a = std::max<unsigned int>(a, b);
+}
+
+void GShaderPermutationVLK::createShaderLayout() {
+    //UBO stuff
+    auto metaArray = createMetaArray();
+
+    for (auto const &shaderMeta : metaArray) {
+
+        for (int i = 0; i < shaderMeta->uboBindings.size(); i++) {
+            auto &uboBinding = shaderMeta->uboBindings[i];
+
+            auto &setLayout = combinedShaderLayout.setLayouts[uboBinding.set];
+
+            auto it = setLayout.uboSizesPerBinding.find(uboBinding.binding);
+            if (it != std::end(setLayout.uboSizesPerBinding)) {
+                if (it->second != uboBinding.size) {
+
+//                    std::cerr << "UBO sizes mismatch for set = " << uboBinding.set
+//                              << " binding = " << uboBinding.binding
+//                              << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
+//                              << std::endl;
+                    makeMax(it->second, uboBinding.size);
+                }
+            } else {
+                setLayout.uboSizesPerBinding[uboBinding.binding] = uboBinding.size;
+
+                makeMin(setLayout.uboBindings.start, uboBinding.binding);
+                makeMax(setLayout.uboBindings.end, uboBinding.binding);
+            }
+        }
+
+        for (int i = 0; i < shaderMeta->m_ssboBindings.size(); i++) {
+            auto &ssboBinding = shaderMeta->m_ssboBindings[i];
+
+            auto &setLayout = combinedShaderLayout.setLayouts[ssboBinding.set];
+
+            auto it = setLayout.ssboSizesPerBinding.find(ssboBinding.binding);
+            if (it != std::end(setLayout.ssboSizesPerBinding)) {
+                if (it->second != ssboBinding.size) {
+                    std::cerr << "SSBO sizes mismatch for set = " << ssboBinding.set
+                              << " binding = " << ssboBinding.binding
+                              << " between " << m_shaderNameVert << " and " << m_shaderNameFrag
+                              << std::endl;
+                }
+            } else {
+                setLayout.ssboSizesPerBinding[ssboBinding.binding] = ssboBinding.size;
+
+                makeMin(setLayout.ssboBindings.start, ssboBinding.binding);
+                makeMax(setLayout.ssboBindings.end, ssboBinding.binding);
+            }
+        }
+
+        for (int i = 0; i < shaderMeta->imageBindings.size(); i++) {
+            auto &imageBinding = shaderMeta->imageBindings[i];
+            auto &setLayout = combinedShaderLayout.setLayouts[imageBinding.set];
+
+            if (setLayout.uboSizesPerBinding.find(imageBinding.binding) != std::end(setLayout.uboSizesPerBinding)) {
+                std::cerr << "types mismatch. image slot is used for UBO. for set = " << imageBinding.set
+                          << " binding = " << imageBinding.binding
+                          << " in " << m_shaderNameVert << " and " << m_shaderNameFrag
+                          << std::endl;
+                throw std::runtime_error("types mismatch");
+            }
+
+            makeMin(setLayout.imageBindings.start, imageBinding.binding);
+            makeMax(setLayout.imageBindings.end, imageBinding.binding);
+        }
+    }
 
 
-    this->createUBODescriptorLayout();
-    this->createImageDescriptorLayout();
-    this->createUboDescriptorSets();
+    //Cleanup
+    for (auto &shaderLayout : combinedShaderLayout.setLayouts) {
+        {
+            auto &data = shaderLayout.uboBindings;
+            if (shaderLayout.uboBindings.start < 100) {
+                data.length = data.end - data.start + 1;
+            } else {
+                data.start = 0;
+            }
+        }
+        {
+            auto &data = shaderLayout.imageBindings;
+            if (shaderLayout.uboBindings.start < 100) {
+                data.length = data.end - data.start + 1;
+            } else {
+                data.start = 0;
+            }
+        }
+    }
+}
+
+std::shared_ptr<GPipelineLayoutVLK>
+GShaderPermutationVLK::createPipelineLayoutOverrided(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses) {
+    std::vector<VkDescriptorSetLayout> descLayouts;
+    descLayouts.reserve(combinedShaderLayout.setLayouts.size());
+    for (int i = 0; i < combinedShaderLayout.setLayouts.size(); i++) {
+
+        if (dses.find(i) != dses.end()) {
+            descLayouts.push_back(dses.at(i)->getDescSetLayout()->getSetLayout());
+        } else {
+            descLayouts.push_back(this->getDescriptorLayout(i)->getSetLayout());
+        }
+    };
+
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo = {};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.pNext = NULL;
+    pipelineLayoutInfo.pushConstantRangeCount = 0;
+    pipelineLayoutInfo.pPushConstantRanges = NULL;
+    pipelineLayoutInfo.setLayoutCount = descLayouts.size();
+    pipelineLayoutInfo.pSetLayouts = descLayouts.data();
+
+    std::cout << "Pipeline layout for "+this->getShaderCombinedName() << std::endl;
+
+    VkPipelineLayout pipelineLayout;
+    if (vkCreatePipelineLayout(m_device->getVkDevice(), &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create pipeline layout!");
+    }
+
+    auto combinedName = this->getShaderCombinedName();
+    m_device->setObjectName(reinterpret_cast<uint64_t>(pipelineLayout), VK_OBJECT_TYPE_PIPELINE_LAYOUT, combinedName.c_str());
+
+    return std::make_shared<GPipelineLayoutVLK>(*m_device, pipelineLayout);
+}
+
+void GShaderPermutationVLK::createPipelineLayout() {
+    m_pipelineLayout = createPipelineLayoutOverrided({});
+}
+
+const std::shared_ptr<GDescriptorSetLayout>
+GShaderPermutationVLK::getDescriptorLayout(int bindPoint) {
+    return descriptorSetLayouts[bindPoint];
 }
 

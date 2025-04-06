@@ -58,7 +58,19 @@ void PlanarCamera::startMovingDown(){
 void PlanarCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
+void PlanarCamera::stopAllMovement() {
+    MDDepthPlus = 0;
+    MDDepthMinus = 0;
+    MDHorizontalPlus = 0;
+    MDHorizontalMinus = 0;
 
+    MDVerticalPlus = 0;
+    MDVerticalMinus = 0;
+}
+
+float PlanarCamera::getMovementSpeed() {
+    return this->m_moveSpeed;
+};
 void PlanarCamera::setMovementSpeed(float value) {
     this->m_moveSpeed = value;
 };
@@ -94,18 +106,21 @@ void PlanarCamera::tick (animTime_t timeDelta) {
         mathfu::mat4::FromTranslationVector(mathfu::vec3(-cameraOffset.x, -cameraOffset.y, -cameraOffset.z)) ;
     //std::cout<<"camera " << camera[0] <<" "<<camera[1] << " " << camera[2] << " " << std::endl;
 
-    this->camera = (lookAtMat.Inverse() * mathfu::vec4(0,0,0,1)).xyz();
+    auto invViewMat = lookAtMat.Inverse();
+    auto invTranspViewMat = invViewMat.Transpose();
+
+    this->camera = (invViewMat * mathfu::vec4(0,0,0,1)).xyz();
     this->lookAt = (lookAtMat * mathfu::vec4(0,1,0,1)).xyz();
 
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
-    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = invTranspViewMat * interiorSunDir;
     interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
 
     this->interiorDirectLightDir = interiorSunDir;
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
-    this->upVector = (lookAtRotation * upVector.xyz());
+
+    this->upVector = (invTranspViewMat * upVector).xyz().Normalized();
 }
 void PlanarCamera::setCameraPos (float x, float y, float z) {
     //Reset camera

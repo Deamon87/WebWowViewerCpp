@@ -53,6 +53,7 @@ public:
     void stopMovingUp() override;
     void startMovingDown() override;
     void stopMovingDown() override;
+    void stopAllMovement() override;
 
     void getCameraPosition(float *position) override {
         position[0] = camera.x;

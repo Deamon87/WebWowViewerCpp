@@ -11,10 +11,8 @@ class GVertexBufferBindingsVLK;
 
 #include <vector>
 #include <cstdint>
-#include "buffers/GVertexBufferVLK.h"
 #include "../interface/IVertexBufferBindings.h"
 #include "../interface/IDevice.h"
-#include "GDeviceVulkan.h"
 
 
 struct vkBufferFormatHolder {
@@ -23,20 +21,12 @@ struct vkBufferFormatHolder {
 };
 
 class GVertexBufferBindingsVLK : public IVertexBufferBindings {
-    friend class GDeviceVLK;
 private:
-    std::vector<GVertexBufferBinding> m_bindings;
     std::vector<vkBufferFormatHolder> m_BufferBindingsVLK;
-    HGIndexBuffer m_indexBuffer = HGIndexBuffer(nullptr);
-
-
-private:
-    IDevice &m_device;
-private:
-
-
+    std::vector<HGVertexBuffer> m_vertexBuffers;
+    HGIndexBuffer m_indexBuffer = nullptr;
 public:
-    explicit GVertexBufferBindingsVLK(IDevice &m_device);
+    explicit GVertexBufferBindingsVLK();
     ~GVertexBufferBindingsVLK() override;
 
 private:
@@ -45,8 +35,12 @@ public:
     void save() override;
 
     void setIndexBuffer(HGIndexBuffer indexBuffer) override;
-    void addVertexBufferBinding(GVertexBufferBinding binding) override;
+    void addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings, bool isInstanceInputRate = false) override;
     std::vector<vkBufferFormatHolder> &getVLKFormat();
+
+
+    const HGIndexBuffer &getIndexBuffer() {return m_indexBuffer;};
+    const std::vector<HGVertexBuffer> &getVertexBuffers() {return m_vertexBuffers;};
 
 };
 

@@ -10,7 +10,9 @@
 #endif
 
 #include <cstdint>
+#include <array>
 #include <string>
+#include <iostream>
 #include <mathfu/glsl_mappings.h>
 
 // Check windows
@@ -31,27 +33,30 @@
 #endif
 #endif
 
-#ifndef _MSC_VER
-#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
-#else
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma message("Detected MSVC version")
 #define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+#else
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
 #endif
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 //#include "../../../include/stdint_msvc.h"
 #else
 #include <stdint.h>
 #endif
 
-#if defined(_MSC_VER)
+#if defined(_MSC_VER) && !defined(__clang__)
 #define ALIGNED_(x) __declspec(align(x))
 #else
-#if defined(__GNUC__)
+#if defined(__GNUC__) || defined(__clang__)
 #define ALIGNED_(x) __attribute__ ((aligned(x)))
 #endif
 #endif
 
-#define DEBUGPOINTER 0
+#define NOMINMAX 1
+
+//#define DEBUGPOINTER 1
 
 template<class T>
 struct PointerChecker {
@@ -74,26 +79,18 @@ public:
     }
 #endif
 
-    inline T* operator=(T* other) {
+    inline const T* operator=(T* other) {
         this->elementOffset = other;
         return other;
     }
-    inline  T* operator->() {
+    inline const T* operator->() const{
 #ifdef DEBUGPOINTER
         assert(elementOffset != nullptr);
 #endif
         return this->elementOffset;
     }
 
-    inline T& operator[](size_t index) {
-#ifdef DEBUGPOINTER
-        if (index >= maxLenPtr) {
-            assert(index < maxLenPtr);
-        }
-#endif
-        return elementOffset[index];
-    }
-    inline T& operator[](size_t index) const {
+    inline const T& operator[](size_t index) const{
 #ifdef DEBUGPOINTER
         if (index >= maxLenPtr) {
             assert(index < maxLenPtr);
@@ -109,7 +106,8 @@ public:
     }
 };
 
-
+// #define debuglog(x) std::cout << x <<std::endl;
+#define debuglog(x)
 
 
 using fixed16 = int16_t;
@@ -181,7 +179,7 @@ struct M2Array {
     int32_t offset; // pointer to T, relative to begin of m2 data block (i.e. MD21 chunk content or begin of file)
 
     void initM2Array(void * m2File) {
-        static_assert(std::is_pod<M2Array<T> >::value, "M2Array<> is not POD");
+        static_assert(std::is_standard_layout<M2Array<T> >::value, "M2Array<> is not standard layout");
 #ifdef ENVIRONMENT64
         offset = (uint32_t) (((uint64_t)m2File)+(uint64_t)offset - (uint64_t)this);
 #else
@@ -236,16 +234,16 @@ struct M2Sequence {
     uint32_t flags;                // See below.
     int16_t frequency;             // This is used to determine how often the animation is played. For all animations of the same type, this adds up to 0x7FFF (32767).
     uint16_t _padding;
-    M2RangeInt replay;                // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
+    M2RangeInt replay;             // May both be 0 to not repeat. Client will pick a random number of repetitions within bounds if given.
     uint32_t blendtime;            // The client blends (lerp) animation states between animations where the end and start values differ. This specifies how long that blending takes. Values: 0, 50, 100, 150, 200, 250, 300, 350, 500.
-    M2Bounds bounds;
+    M2Bounds bounds;               // Bounding box
     int16_t variationNext;         // id of the following animation of this AnimationID, points to an Index or is -1 if none.
     uint16_t aliasNext;            // id in the list of animations. Used to find actual animation if this sequence is an alias (flags & 0x40)
 };
 
 template <typename T>
 void initAnimationArray(M2Array<M2Array<T> > &array2D, void *m2File, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad){
-    static_assert(std::is_pod<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not POD");
+    static_assert(std::is_standard_layout<M2Array<M2Array<T> > >::value, "M2Array<M2Array<T>> array2D is not standard layout");
     if (cm2SequenceLoad == nullptr) {
         array2D.initM2Array(m2File);
         int count = array2D.size;
@@ -317,6 +315,23 @@ struct CImVector
     unsigned char a;
 };
 using CArgb = CImVector;
+
+inline mathfu::vec4 ImVectorToVec4(const CImVector &color) {
+    return mathfu::vec4(
+        ((float)color.r)/255.0f,
+        ((float)color.g)/255.0f,
+        ((float)color.b)/255.0f,
+        ((float)color.a)/255.0f
+    );
+}
+
+inline void ImVectorToArrBGR(std::array<float, 3> &arr, const CImVector &color) {
+    arr = {{
+        ((float) color.b) / 255.0f,
+        ((float) color.g) / 255.0f,
+        ((float) color.r) / 255.0f
+    }};
+}
 
 struct C4Plane
 {

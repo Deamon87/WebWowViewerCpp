@@ -10,11 +10,18 @@ class WMOGroupListContainer;
 
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../iWmoApi.h"
+#include "../m2/m2Object.h"
+#include "../liquid/LiquidInstance.h"
 #include "../../../gapi/interface/meshes/IMesh.h"
+#include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
+#include "../lights/CPointLight.h"
+#include "../lights/CSpotLight.h"
+#include "../lights/CWmoNewLight.h"
+
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, const SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
@@ -42,19 +49,19 @@ public:
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    const std::vector<CPointLight> &getPointLights();
+    const std::vector<std::shared_ptr<CWmoNewLight>> &getWmoNewLights();
 
-
-    bool getDontUseLocalLightingForM2() { return !m_useLocalLightingForM2; };
-    bool doPostLoad();
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
     void update();
-    void uploadGeneratorBuffers();
+    void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime);
     void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
                            mathfu::vec4 &cameraVec4,
                            const MathHelper::FrustumCullingData &frustumData);
 
-    mathfu::vec4 getAmbientColor();
-    void assignInteriorParams(std::shared_ptr<M2Object> m2Object);
+    std::array<mathfu::vec3, 3> getAmbientColors();
+    void assignInteriorParams(M2Object *m2Object);
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,
@@ -74,46 +81,54 @@ private:
     CAaBox m_worldGroupBorder;
     CAaBox m_localGroupBorder;
     CAaBox m_volumeWorldGroupBorder;
+    CAaBox m_waterAaBB;
     mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
-    HGUniformBufferChunk vertexModelWideUniformBuffer = nullptr;
-    HGUniformBufferChunk fragmentModelWideUniformBuffer = nullptr;
     std::vector<HGMesh> m_meshArray = {};
-    std::vector<HGMesh> m_waterMeshArray = {};
+    std::vector<HGSortableMesh> m_sortableMeshArray = {};
+    std::vector<std::shared_ptr<LiquidInstance>> m_liquidInstances = {};
 
-    SMOGroupInfo *m_main_groupInfo;
+    const SMOGroupInfo *m_main_groupInfo;
 
     std::vector <std::shared_ptr<M2Object>> m_doodads = {};
-
-    bool m_useLocalLightingForM2 = false;
+    std::vector<CPointLight> m_pointLights = {};
+    std::vector<CSpotLight> m_spotLights = {};
+    std::vector<std::shared_ptr<CWmoNewLight>> m_wmoNewLights = {};
 
     bool m_loading = false;
     bool m_loaded = false;
 
     bool m_recalcBoundries = false;
-    int liquid_type = -1;
+    LiquidTypes liquid_type = LiquidTypes::LIQUID_NONE;
 
     void startLoading();
-    void createWorldGroupBB (CAaBox &bbox, mathfu::mat4 &placementMatrix);
+    void createWorldGroupBB (const CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
     void updateWorldGroupBBWithM2();
     void checkDoodads(M2ObjectListContainer &wmoM2Candidates);
 
-    void postLoad();
-    void createMeshes();
-    void createWaterMeshes();
+    void postLoad(const HMapSceneBufferCreate &sceneRenderer);
+    void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
+    void createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer);
 
-    int to_wmo_liquid (int x);
+    LiquidTypes to_wmo_liquid (int x);
     void setLiquidType();
 
     void loadDoodads();
+    void loadLights();
 
     bool checkIfInsidePortals(
         mathfu::vec3 point,
         const PointerChecker<SMOPortal> &portalInfos,
         const PointerChecker<SMOPortalRef> &portalRels
     );
+
+    inline bool isInteriorLightingLit() const {
+        bool wmoGroupUsesExteriorLighting = m_geom->mogp->flags.EXTERIOR_LIT || m_geom->mogp->flags.EXTERIOR || !m_geom->mogp->flags.INTERIOR;
+
+        return !wmoGroupUsesExteriorLighting;
+    }
 
 
     template<typename Y>
@@ -141,34 +156,23 @@ enum liquid_basic_types
 
     liquid_basic_types_MASK = 3,
 };
-enum liquid_types
-{
-    // ...
-        LIQUID_WMO_Water = 13,
-    LIQUID_WMO_Ocean = 14,
-    LIQUID_Green_Lava = 15,
-    LIQUID_WMO_Magma = 19,
-    LIQUID_WMO_Slime = 20,
-
-    LIQUID_END_BASIC_LIQUIDS = 20,
-    LIQUID_FIRST_NONBASIC_LIQUID_TYPE = 21,
-
-    LIQUID_NAXX_SLIME = 21,
-    // ...
-};
 
 
 class WMOGroupListContainer {
+using wmoGroupContainer = framebased::vector<std::shared_ptr<WmoGroupObject>>;
+//using wmoGroupContainer = std::vector<std::shared_ptr<WmoGroupObject>>;
 private:
-    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToDraw;
-    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToCheckM2;
-    std::vector<std::shared_ptr<WmoGroupObject>> wmoGroupToLoad;
+    wmoGroupContainer wmoGroupToDraw;
+    wmoGroupContainer wmoGroupToCheckM2;
+    wmoGroupContainer wmoGroupToLoad;
 
     bool toDrawCanHaveDuplicates = false;
     bool toCheckM2CanHaveDuplicates = false;
     bool toLoadCanHaveDuplicates = false;
 
-    void inline removeDuplicates(std::vector<std::shared_ptr<WmoGroupObject>> &array) {
+    bool m_locked = false;
+
+    void inline removeDuplicates(wmoGroupContainer &array) {
         if (array.size() < 1000) {
             std::sort(array.begin(), array.end());
         } else {
@@ -188,6 +192,10 @@ public:
     }
 
     void addToDraw(const std::shared_ptr<WmoGroupObject> &toDraw) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toDraw->getIsLoaded()) {
             wmoGroupToDraw.push_back(toDraw);
             toDrawCanHaveDuplicates = true;
@@ -198,6 +206,10 @@ public:
     }
 
     void addToCheckM2(const std::shared_ptr<WmoGroupObject> &toCheckM2) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (toCheckM2->getIsLoaded()) {
             wmoGroupToCheckM2.push_back(toCheckM2);
             toCheckM2CanHaveDuplicates = true;
@@ -207,13 +219,29 @@ public:
         }
     }
     void addToLoad(const std::shared_ptr<WmoGroupObject> &toLoad) {
+        if (m_locked) {
+            throw "oops";
+        }
+
         if (!toLoad->getIsLoaded()) {
             wmoGroupToLoad.push_back(toLoad);
             toLoadCanHaveDuplicates = true;
         }
     }
 
-    const std::vector<std::shared_ptr<WmoGroupObject>> &getToDraw() {
+    void addToLoadAndDraw(WMOGroupListContainer &otherList) {
+        if (m_locked) {
+            throw "oops";
+        }
+
+        this->wmoGroupToDraw.insert(this->wmoGroupToDraw.end(), otherList.wmoGroupToDraw.begin(), otherList.wmoGroupToDraw.end());
+        this->wmoGroupToLoad.insert(this->wmoGroupToLoad.end(), otherList.wmoGroupToLoad.begin(), otherList.wmoGroupToLoad.end());
+
+        toDrawCanHaveDuplicates = true;
+        toLoadCanHaveDuplicates = true;
+    }
+
+    const wmoGroupContainer &getToDraw() {
         if (this->toDrawCanHaveDuplicates) {
             removeDuplicates(wmoGroupToDraw);
             toDrawCanHaveDuplicates = false;
@@ -222,7 +250,7 @@ public:
         return wmoGroupToDraw;
     }
 
-    const std::vector<std::shared_ptr<WmoGroupObject>> &getToCheckM2() {
+    const wmoGroupContainer &getToCheckM2() {
         if (this->toCheckM2CanHaveDuplicates) {
             removeDuplicates(wmoGroupToCheckM2);
             toCheckM2CanHaveDuplicates = false;
@@ -231,7 +259,7 @@ public:
         return wmoGroupToCheckM2;
     }
 
-    const std::vector<std::shared_ptr<WmoGroupObject>> &getToLoad() {
+    const wmoGroupContainer &getToLoad() {
         if (this->toLoadCanHaveDuplicates) {
             removeDuplicates(wmoGroupToLoad);
             toLoadCanHaveDuplicates = false;
@@ -240,12 +268,13 @@ public:
         return wmoGroupToLoad;
     }
 
-    void addToLoadAndDraw(WMOGroupListContainer &otherList) {
-        this->wmoGroupToDraw.insert(this->wmoGroupToDraw.end(), otherList.wmoGroupToDraw.begin(), otherList.wmoGroupToDraw.end());
-        this->wmoGroupToLoad.insert(this->wmoGroupToLoad.end(), otherList.wmoGroupToLoad.begin(), otherList.wmoGroupToLoad.end());
 
-        toDrawCanHaveDuplicates = true;
-        toLoadCanHaveDuplicates = true;
+    void lock() {
+        getToDraw();
+        getToCheckM2();
+        getToLoad();
+
+        m_locked = true;
     }
 };
 

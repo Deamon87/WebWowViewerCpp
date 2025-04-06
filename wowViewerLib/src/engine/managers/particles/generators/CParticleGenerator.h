@@ -19,7 +19,7 @@ public:
     virtual ~CParticleGenerator() {};
 
 public:
-    virtual float GetEmissionRate();
+    float GetEmissionRate();
     virtual void Update(animTime_t time, mathfu::mat4 &viewMat);
     virtual void CreateParticle(CParticle2 &, animTime_t ) = 0;
 

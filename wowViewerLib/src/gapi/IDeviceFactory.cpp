@@ -5,8 +5,13 @@
 
 #include "IDeviceFactory.h"
 
+#ifdef LINK_OGL2
 #include "ogl2.0/GDeviceGL20.h"
+#endif
+
+#ifdef LINK_OGL3
 #include "ogl3.3/GDeviceGL33.h"
+#endif
 #ifdef LINK_OGL4
 #include "ogl4.x/GDeviceGL4x.h"
 #endif
@@ -14,6 +19,7 @@
 #include "vulkan/GDeviceVulkan.h"
 #endif
 
+#if defined(LINK_OGL2) || defined(LINK_OGL3) || defined(LINK_OGL4)
 void initOGLPointers(){
 #if defined(_WIN32) && (!defined(WITH_GLESv2) && !defined(__EMSCRIPTEN__))
     glewExperimental = true; // Needed in core profile
@@ -24,6 +30,7 @@ void initOGLPointers(){
     }
 #endif
 }
+#endif
 
 HGDevice IDeviceFactory::createDevice(std::string gapiName, void * data) {
 #ifdef LINK_OGL2
@@ -55,7 +62,9 @@ HGDevice IDeviceFactory::createDevice(std::string gapiName, void * data) {
 
 #ifndef SKIP_VULKAN
     if (gapiName == "vulkan") {
-        return std::make_shared<GDeviceVLK>((vkCallInitCallback *) data);
+        auto deviceVlk = std::make_shared<GDeviceVLK>((vkCallInitCallback *) data);
+        deviceVlk->initialize();
+        return deviceVlk;
     } else
 #endif
     {}

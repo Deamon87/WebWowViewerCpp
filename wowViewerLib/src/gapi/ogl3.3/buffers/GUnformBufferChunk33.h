@@ -5,16 +5,16 @@
 #ifndef AWEBWOWVIEWERCPP_GUNFORMBUFFERCHUNK33_H
 #define AWEBWOWVIEWERCPP_GUNFORMBUFFERCHUNK33_H
 
-#include "../../interface/buffers/IUniformBufferChunk.h"
+#include "../../interface/buffers/IBufferChunk.h"
 #include "../../interface/IDevice.h"
 
-class GUniformBufferChunk33 : public IUniformBufferChunk {
+class GUniformBufferChunk33 : public IBufferChunk {
 private:
     HGUniformBuffer m_uniformBuffer = nullptr;
 
 
 public:
-    GUniformBufferChunk33(size_t size, size_t realSize = -1) : IUniformBufferChunk(size, realSize) {}
+    GUniformBufferChunk33(size_t size, size_t realSize = -1) : IBufferChunk(size, realSize) {}
 
     void setUniformBuffer(HGUniformBuffer uniformBuffer) {
         m_uniformBuffer = uniformBuffer;

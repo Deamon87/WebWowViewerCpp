@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_CSQLITEDB_H
 
 #include <vector>
+#include <functional>
 #include <unordered_map>
 #include <SQLiteCpp/Database.h>
 #include "../../wowViewerLib/src/include/databaseHandler.h"
@@ -18,14 +19,25 @@ public:
     void getMapArray(std::vector<MapRecord> &mapRecords) override;
     bool getMapById(int mapId, MapRecord &mapRecord) override;
     AreaRecord getArea(int areaId) override;
-    AreaRecord getWmoArea(int wmoId, int nameId, int groupId) override;
+    bool getWmoArea(int wmoId, int nameId, int groupId, AreaRecord &result) override;
 
-    void getEnvInfo(int mapId, float x, float y, float z, int time, std::vector<LightResult> &lightResults) override;
-    void getLightById(int lightId, int time, LightResult &lightResult) override;
-    void getLiquidObjectData(int liquidObjectId, std::vector<LiquidMat> &loData) override;
-    void getLiquidTypeData(int liquidTypeId,  std::vector<LiquidTypeData > &liquidTypeData) override;
+    void getAllLightByMap(int mapId, std::vector<LightResult> &lightResults) override;
+    void getLightById(int lightId, LightResult &lightResult) override;
+    void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) override;
+
+    bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) override;
+
+
+    void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
+    void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
+    void getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData> &textures);
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override;
+
 private:
+    std::string generateSimpleSelectSQL(const std::string &tableName,
+                                        const std::vector<std::string> &skipColumnNames,
+                                        const std::string &whereClause);
+
     class StatementFieldHolder {
     public:
         StatementFieldHolder(SQLite::Database &database, const std::string &query);
@@ -44,21 +56,48 @@ private:
                 return -1;
             }
         }
+        template<int N, typename T, char const* chars>
+        inline void readArray(std::array<T, N> &data, const std::function<T (SQLite::Column &)> &fieldToValue) {
+            constexpr std::string_view fieldName = std::string(chars) + std::to_string(N);
+            constexpr const char *c_fieldName = fieldName.data();
+            constexpr auto hashedString = HashedString(c_fieldName);
+
+            data[N - 1] = fieldToValue(this->getField(hashedString));
+            if constexpr (N > 0) {
+                this->readArray<N - 1>(data, fieldToValue);
+            } else {
+                this->readArrayZero<chars>(data, fieldToValue);
+            }
+        }
     private:
         SQLite::Statement m_query;
         std::unordered_map<size_t, int> fieldToIndex;
 
-    };
+
+        template<typename T, char... chars>
+        inline void readArrayZero(std::vector<T> &data, const std::function<T (SQLite::Column &)> &fieldToValue) {
+            constexpr std::string_view fieldName = std::string(chars...) + std::to_string(0);
+            constexpr const char *c_fieldName = fieldName.data();
+            constexpr auto hashedString = HashedString(c_fieldName);
+
+            data[0] = fieldToValue(this->getField(hashedString));
+        }
+
+   };
 
     SQLite::Database m_sqliteDatabase;
 
     StatementFieldHolder getWmoAreaAreaName;
     StatementFieldHolder getAreaNameStatement;
     StatementFieldHolder getLightStatement;
+    StatementFieldHolder getAllMapLightStatement;
     StatementFieldHolder getLightByIdStatement;
+    StatementFieldHolder getLightParamDataStatement;
+    StatementFieldHolder getLightSkyStatement;
     StatementFieldHolder getLightData;
     StatementFieldHolder getLiquidObjectInfo;
     StatementFieldHolder getLiquidTypeInfo;
+    StatementFieldHolder getLiquidTextureFileDataIds;
 
     StatementFieldHolder getZoneLightInfo;
     StatementFieldHolder getZoneLightPointsInfo;
@@ -83,67 +122,21 @@ private:
         return m_hasWdtId;
     }
 
-    struct InnerLightResult {
-        float pos[3];
-        float fallbackStart;
-        float fallbackEnd;
-        float blendAlpha = 0;
-        int paramId;
-        int skyBoxFileId;
-        int lightSkyboxId;
-        float glow;
-        int skyBoxFlags ;
-        bool isDefault = false;
-    };
+    std::vector<std::string> getTableFields(SQLite::Database &sqliteDatabase, const std::string &tableName) {
+        std::vector<std::string> result;
+        SQLite::Statement statement(sqliteDatabase, "PRAGMA table_info('"+tableName+"') ");
+        try {
+            while (statement.executeStep()) {
+                result.push_back(statement.getColumn("name").getString());
+            }
+        } catch (...) {
 
-    struct InnerLightDataRes {
-        int ambientLight;
-        int horizontAmbientColor;
-        int groundAmbientColor;
+        }
 
-        int directLight;
-        int closeRiverColor;
-        int farRiverColor;
-        int closeOceanColor;
-        int farOceanColor;
+        return result;
+    }
 
-        int SkyTopColor;
-        int SkyMiddleColor;
-        int SkyBand1Color;
-        int SkyBand2Color;
-        int SkySmogColor;
-        int SkyFogColor;
-
-        float FogEnd;
-        float FogScaler;
-        float FogDensity;
-        float FogHeight;
-        float FogHeightScaler;
-        float FogHeightDensity;
-        float SunFogAngle;
-        int EndFogColor;
-        float EndFogColorDistance;
-        int SunFogColor;
-        float SunFogStrength;
-        int FogHeightColor;
-        float FogHeightCoefficients[4];
-
-        int time;
-    };
-
-    void convertInnerResultsToPublic(int ptime, std::vector<LightResult> &lightResults, std::vector<InnerLightResult> &innerResults);
-
-    void
-    addOnlyOne(LightResult &lightResult, const CSqliteDB::InnerLightDataRes &currLdRes,
-               float innerAlpha) const;
-
-    void
-    blendTwoAndAdd(LightResult &lightResult, const InnerLightDataRes &lastLdRes,
-                   const InnerLightDataRes &currLdRes,
-                   float timeAlphaBlend, float innerAlpha) const;
+    void getTimedLightParamData(int lightParamId, int time, LightParamData &lightParamData);
 };
-
-
-
 
 #endif //AWEBWOWVIEWERCPP_CSQLITEDB_H

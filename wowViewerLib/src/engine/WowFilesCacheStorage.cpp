@@ -4,61 +4,6 @@
 
 #include "WowFilesCacheStorage.h"
 
-void WoWFilesCacheStorage::provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data) {
-//    std::cout << "data.use_count() = " << data.use_count() << std::endl << std::flush;
-    std::string s_fileName(fileName);
-
-    switch (holderType) {
-        case CacheHolderType::CACHE_M2:
-            m2GeomCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_SKIN:
-            skinGeomCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_MAIN_WMO:
-            wmoMainCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_GROUP_WMO:
-            wmoGeomCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_ADT:
-            adtObjectCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_WDT:
-            wdtCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_WDL:
-            wdlCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_BLP:
-            textureCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_ANIM:
-            animCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_SKEL:
-            skelCache.provideFile(s_fileName, data);
-            break;
-        case CacheHolderType::CACHE_DB2:
-            db2Cache.provideFile(s_fileName, data);
-            break;
-    }
-}
-
-void WoWFilesCacheStorage::processCaches(int limit) {
-    this->adtObjectCache.processCacheQueue(limit);
-    this->wdtCache.processCacheQueue(limit);
-    this->wdlCache.processCacheQueue(limit);
-    this->wmoGeomCache.processCacheQueue(limit);
-    this->wmoMainCache.processCacheQueue(limit);
-    this->skinGeomCache.processCacheQueue(limit);
-    this->animCache.processCacheQueue(limit);
-    this->skelCache.processCacheQueue(limit);
-    this->m2GeomCache.processCacheQueue(limit);
-    this->textureCache.processCacheQueue(limit);
-    this->db2Cache.processCacheQueue(limit);
-}
-
 void WoWFilesCacheStorage::rejectFile(CacheHolderType holderType, const char* fileName) {
     std::string s_fileName(fileName);
 
@@ -103,6 +48,7 @@ WoWFilesCacheStorage::WoWFilesCacheStorage(IFileRequest *requestProcessor) :
     wmoMainCache(requestProcessor, CacheHolderType::CACHE_MAIN_WMO),
     wmoGeomCache(requestProcessor, CacheHolderType::CACHE_GROUP_WMO),
     wdtCache(requestProcessor, CacheHolderType::CACHE_WDT),
+    wdtLightCache(requestProcessor, CacheHolderType::CACHE_WDT_LIGHT),
     wdlCache(requestProcessor, CacheHolderType::CACHE_WDL),
     m2GeomCache(requestProcessor, CacheHolderType::CACHE_M2),
     skinGeomCache(requestProcessor, CacheHolderType::CACHE_SKIN),
@@ -159,8 +105,12 @@ Cache<WmoGroupGeom> *WoWFilesCacheStorage::getWmoGroupGeomCache() {
     return &wmoGeomCache;
 };
 
-Cache<WdtFile> *WoWFilesCacheStorage::getWdtFileCache() {
+Cache<WdtFile>* WoWFilesCacheStorage::getWdtFileCache() {
     return &wdtCache;
+}
+
+Cache<WdtLightFile> *WoWFilesCacheStorage::getWdtLightFileCache() {
+    return &wdtLightCache;
 };
 
 Cache<WdlFile> *WoWFilesCacheStorage::getWdlFileCache() {

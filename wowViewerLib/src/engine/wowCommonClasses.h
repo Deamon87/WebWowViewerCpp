@@ -10,6 +10,7 @@
 class AdtFile;
 class SkelFile;
 class WdtFile;
+class WdtLightFile;
 class WdlFile;
 class M2Geom;
 class SkinGeom;
@@ -21,6 +22,7 @@ class DB2Base;
 //Shared pointers for persistance classes
 typedef std::shared_ptr<AdtFile> HAdtFile;
 typedef std::shared_ptr<WdtFile> HWdtFile;
+typedef std::shared_ptr<WdtLightFile> HWdtLightFile;
 typedef std::shared_ptr<WdlFile> HWdlFile;
 typedef std::shared_ptr<M2Geom> HM2Geom;
 typedef std::shared_ptr<SkinGeom> HSkinGeom;

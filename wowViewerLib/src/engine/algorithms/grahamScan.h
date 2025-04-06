@@ -6,10 +6,11 @@
 #define WOWVIEWERLIB_GRAHAMSCAN_H
 
 #include "../persistance/header/commonFileStructs.h"
-#include <stack>
 #include <vector>
+#include <stack>
+#include "../custom_allocators/FrameBasedStackAllocator.h"
 
 typedef mathfu::vec3 Point;
-std::stack<Point> grahamScan(std::vector<Point> &points);
+std::stack<Point> grahamScan(framebased::vector<Point> &points);
 
 #endif //WOWVIEWERLIB_GRAHAMSCAN_H

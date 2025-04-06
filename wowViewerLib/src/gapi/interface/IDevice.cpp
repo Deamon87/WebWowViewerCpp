@@ -5,11 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include "IDevice.h"
-
-
-//inline bool IDevice::sortMeshes(const HGMesh &a, const HGMesh &b) {
-//
-//}
+#include "../renderdoc_app.h"
 
 int compressedTexturesSupported = -1;
 int anisFiltrationSupported = -1;
@@ -18,7 +14,10 @@ int anisFiltrationSupported = -1;
 #include <emscripten/html5.h>
 #endif
 
-bool IDevice::getIsCompressedTexturesSupported() {
+RENDERDOC_API_1_1_2 *rdoc_api = NULL;
+
+/*
+bool IDevice::getIsDTXCompressedTexturesSupported() {
 #ifdef __EMSCRIPTEN__
     if (compressedTexturesSupported == -1){
         auto res = emscripten_webgl_enable_extension(emscripten_webgl_get_current_context(), "WEBGL_compressed_texture_s3tc");
@@ -37,6 +36,8 @@ bool IDevice::getIsCompressedTexturesSupported() {
     return true;
 #endif
 }
+*/
+
 bool IDevice::getIsAnisFiltrationSupported() {
 #ifdef __EMSCRIPTEN__
     if (anisFiltrationSupported == -1){
@@ -47,7 +48,6 @@ bool IDevice::getIsAnisFiltrationSupported() {
         }
     }
       return anisFiltrationSupported == 1;
-
 #else
     return true;
 #endif
@@ -61,6 +61,15 @@ std::string IDevice::insertAfterVersion(std::string &glslShaderString, std::stri
     } else {
         return glslShaderString.insert(0, stringToPaste);
     }
+}
+
+thread_local unsigned int processingFrame = 0;
+unsigned int IDevice::getCurrentProcessingFrameNumber() {
+    return processingFrame;
+}
+
+void IDevice::setCurrentProcessingFrameNumber(unsigned int frameNumber) {
+    processingFrame = frameNumber;
 }
 
 

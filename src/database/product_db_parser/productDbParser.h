@@ -7,7 +7,7 @@
 
 #include <string>
 #include <vector>
-#include "fileBrowser/buildDefinition.h"
+#include "../buildInfoParser/buildDefinition.h"
 
 class ProductDbParser {
 public:

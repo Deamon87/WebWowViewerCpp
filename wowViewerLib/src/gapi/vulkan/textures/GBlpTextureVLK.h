@@ -6,18 +6,21 @@
 #define WEBWOWVIEWERCPP_GBLPTEXTUREVLK_H
 
 #include "GTextureVLK.h"
-#include "../GDeviceVulkan.h"
+#include "../IDeviceVulkan.h"
 
 class GBlpTextureVLK : public GTextureVLK {
-    friend class GDeviceVLK;
-    explicit GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
+    explicit GBlpTextureVLK(IDeviceVulkan &device, const HBlpTexture &texture, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
     ~GBlpTextureVLK() override;
-    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
+    GBlpTextureVLK(const GBlpTextureVLK&) = delete;
+    GBlpTextureVLK(const GBlpTextureVLK&&) = delete;
 
-    bool postLoad() override;
+    void createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
+
+    TextureStatus postLoad() override;
 private:
     void decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps);
+    void freeMipmaps() override {m_texture = nullptr;};
 private:
     HBlpTexture m_texture;
 };

@@ -10,7 +10,7 @@ bool ImGui::ButtonDisablable(const char* label, bool disabled, const struct ImVe
     bool result;
     if (disabled) {
         ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.5f,0.5f,0.5f,1.0));
-        result = ImGui::ButtonEx(label, size_arg, ImGuiButtonFlags_Disabled);
+        result = ImGui::ButtonEx(label, size_arg, ImGuiItemFlags_Disabled);
         ImGui::PopStyleColor(1);
     } else {
         result = ImGui::Button(label, size_arg);

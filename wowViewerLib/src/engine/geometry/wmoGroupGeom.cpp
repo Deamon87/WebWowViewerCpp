@@ -4,9 +4,10 @@
 
 #include "wmoGroupGeom.h"
 #include "../persistance/header/wmoFileHeader.h"
-#include "../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../gapi/interface/IDevice.h"
 #include "../algorithms/mathHelper.h"
+#include "../algorithms/animate.h"
 #include <iostream>
 
 chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
@@ -207,11 +208,64 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MOLP', {
                             [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOLP");
-                                object.molpCnt = chunkData.chunkLen / sizeof(MOLP);
-                                chunkData.readValues(object.molp, object.molpCnt);
+                                object.map_object_point_lightLen = chunkData.chunkLen / sizeof(map_object_point_light);
+                                chunkData.readValues(object.map_object_point_lights, object.map_object_point_lightLen);
                             },
                         }
                     },
+                    {
+                        'MOP2', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MOP2");
+                                object.map_object_pointlight_animLen = chunkData.chunkLen / sizeof(map_object_point_light);
+                                chunkData.readValues(object.map_object_pointlight_anims, object.map_object_pointlight_animLen);
+                            },
+                        }
+                    },
+                    {
+                            'MLSK', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLSK");
+                                object.mapobject_pointlight_animsetsLen = chunkData.chunkLen / sizeof(LightRecPerSet);
+                                chunkData.readValues(object.mapobject_pointlight_animsets, object.mapobject_pointlight_animsetsLen);
+                            },
+                        }
+                    },
+                    {
+                            'MLSO', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLSO");
+                                object.mapobject_spotlight_animsetsLen = chunkData.chunkLen / sizeof(LightRecPerSet);
+                                chunkData.readValues(object.mapobject_spotlight_animsets, object.mapobject_spotlight_animsetsLen);
+                            },
+                        }
+                    },
+                    {
+                            'MLSP', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MLSP");
+                                object.map_object_lightset_pointlightsLen = chunkData.chunkLen / sizeof(LightRecPerSet);
+                                chunkData.readValues(object.map_object_lightset_pointlights, object.map_object_lightset_pointlightsLen);
+                            },
+                        }
+                    },
+                    {
+                        'MNLR', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MNLR");
+                                object.mapobject_new_light_refsLen = chunkData.chunkLen / sizeof(uint16_t);
+                                chunkData.readValues(object.mapobject_new_light_refs, object.mapobject_new_light_refsLen);
+                            },
+                        }
+                    },
+
+//                    {
+//                        'MLSO', {
+//                            [](WmoGroupGeom& object, ChunkData& chunkData){
+//
+//                            }
+//                        }
+//                    }
                 }
             }
         }
@@ -221,13 +275,8 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
 void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileName) {
     m_wmoGroupFile = wmoGroupFile;
 
-    CChunkFileReader reader(*m_wmoGroupFile.get());
+    CChunkFileReader reader(*m_wmoGroupFile.get(), fileName);
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
-
-    fixColorVertexAlpha(mohd);
-    if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
-        this->m_attenuateFunc(*this);
-    }
 
     fsStatus = FileStatus::FSLoaded;
 }
@@ -246,9 +295,13 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
     unsigned char v36;
     unsigned char v37;
 
+    CImVector * mocv = (CImVector *) &colorArray[0];
+
+    bool usesExteriorLighting = (mogp->flags.EXTERIOR > 0) || (mogp->flags.EXTERIOR_LIT > 0) ;
+
     if (mohd->flags.flag_lighten_interiors) {
         for (int i(begin_second_fixup); i < cvLen; ++i) {
-            colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR > 0) ? 0xFF : 0x00);
+            mocv[i].a = (unsigned char) (usesExteriorLighting ? 0xFF : 0x00);
         }
     } else {
         if (mohd->flags.flag_skip_base_color) {
@@ -268,65 +321,53 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
         }
 
         for (int mocv_index(0); mocv_index < begin_second_fixup; ++mocv_index) {
-            colorArray[mocv_index].r -= v36;
-            colorArray[mocv_index].g -= v37;
-            colorArray[mocv_index].b -= v35;
+            mocv[mocv_index].r -= v36;
+            mocv[mocv_index].g -= v37;
+            mocv[mocv_index].b -= v35;
 
             float v38 = colorArray[mocv_index].a / 255.0f;
 
             float v11 = colorArray[mocv_index].r - v38 * colorArray[mocv_index].r;
             assert (v11 > -0.5f);
             assert (v11 < 255.5f);
-            colorArray[mocv_index].r = (unsigned char) std::max(0.0f, floorf(v11 / 2.0f));
+            mocv[mocv_index].r = (unsigned char) std::max(0.0f, floorf(v11 / 2.0f));
             float v13 = colorArray[mocv_index].g - v38 * colorArray[mocv_index].g;
             assert (v13 > -0.5f);
             assert (v13 < 255.5f);
-            colorArray[mocv_index].g = (unsigned char) std::max(0.0f, floorf(v13 / 2.0f));
+            mocv[mocv_index].g = (unsigned char) std::max(0.0f, floorf(v13 / 2.0f));
             float v14 = colorArray[mocv_index].b - v38 * colorArray[mocv_index].b;
             assert (v14 > -0.5f);
             assert (v14 < 255.5f);
-            colorArray[mocv_index++].b = (unsigned char) std::max(0.0f, floorf(v14 / 2.0f));
+            mocv[mocv_index++].b = (unsigned char) std::max(0.0f, floorf(v14 / 2.0f));
         }
 
         for (int i(begin_second_fixup); i < cvLen; ++i) {
             float v19 = (colorArray[i].r * colorArray[i].a) / 64 + colorArray[i].r - v36;
-            colorArray[i].r = (unsigned char) std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
+            mocv[i].r = (unsigned char) std::min(255.0f, std::max(v19 / 2.0f, 0.0f));
 
             float v30 = (colorArray[i].g * colorArray[i].a) / 64 + colorArray[i].g - v37;
-            colorArray[i].g = (unsigned char) std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
+            mocv[i].g = (unsigned char) std::min(255.0f, std::max(v30 / 2.0f, 0.0f));
 
             float v33 = (colorArray[i].a * colorArray[i].b) / 64 + colorArray[i].b - v35;
-            colorArray[i].b = (unsigned char) std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
+            mocv[i].b = (unsigned char) std::min(255.0f, std::max(v33 / 2.0f, 0.0f));
 
-            colorArray[i].a = (unsigned char) ((mogp->flags.EXTERIOR ) > 0 ? 0xFF : 0x00);
+            mocv[i].a = (unsigned char) (usesExteriorLighting ? 0xFF : 0x00);
         }
     }
 }
 
 
-HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
+HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer) {
     if (combinedVBO == nullptr) {
-        combinedVBO = device->createVertexBuffer();
+        combinedVBO = sceneRenderer->createWMOVertexBuffer(verticesLen * sizeof(WMOVertex));
 
-        PACK(
-        struct VboFormat {
-            C3Vector pos;
-            C3Vector normal;
-            C2Vector textCoordinate;
-            C2Vector textCoordinate2;
-            C2Vector textCoordinate3;
-            C2Vector textCoordinate4;
-            CImVector color;
-            CImVector color2;
-            CImVector colorSecond;
-        });
+        WMOVertex * buffer = static_cast<WMOVertex *>(combinedVBO->getPointer());
 
         static const C2Vector c2ones = C2Vector(mathfu::vec2(1.0, 1.0));
         static const C3Vector c3zeros = C3Vector(mathfu::vec3(0, 0, 0));
 
-        std::vector<VboFormat> buffer (verticesLen);
         for (int i = 0; i < verticesLen; i++) {
-            VboFormat &format = buffer[i];
+            WMOVertex &format = buffer[i];
             format.pos = verticles[i];
             if (normalsLen > 0) {
                 format.normal = normals[i];
@@ -379,15 +420,15 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HGDevice &device) {
             }
         }
 
-        combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(VboFormat)));
+        //combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(WMOVertex)));
     }
 
     return combinedVBO;
 }
 
-HGIndexBuffer WmoGroupGeom::getIBO(const HGDevice &device) {
+HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     if (indexVBO == nullptr) {
-        indexVBO = device->createIndexBuffer();
+        indexVBO = sceneRenderer->createWMOIndexBuffer(indicesLen * sizeof(uint16_t));
         indexVBO->uploadData(
             &indicies[0],
             indicesLen * sizeof(uint16_t));
@@ -396,106 +437,68 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HGDevice &device) {
     return indexVBO;
 }
 
-static const std::array<GBufferBinding, 9> staticWMOBindings = {{
-    {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 68   , 0 },
-    {+wmoShader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 68, 12},
-    {+wmoShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 68, 24},
-    {+wmoShader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 68, 32},
-    {+wmoShader::Attribute::aTexCoord3, 2, GBindingType::GFLOAT, false, 68, 40},
-    {+wmoShader::Attribute::aTexCoord4, 2, GBindingType::GFLOAT, false, 68, 48},
-    {+wmoShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 56},
-    {+wmoShader::Attribute::aColor2, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 60},
-    {+wmoShader::Attribute::aColorSecond, 4, GBindingType::GUNSIGNED_BYTE, true, 68, 64}
-}};
-
-static GBufferBinding staticWMOWaterBindings[2] = {
-    {+waterShader::Attribute::aPositionTransp, 4, GBindingType::GFLOAT, false, 24, 0},
-    {+waterShader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 24, 16}
-};
-
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HGDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd) {
     if (vertexBufferBindings == nullptr) {
-        vertexBufferBindings = device->createVertexBufferBindings();
-        vertexBufferBindings->setIndexBuffer(getIBO(device));
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = getVBO(device);
-
-        vertexBinding.bindings = std::vector<GBufferBinding>(staticWMOBindings.begin(), staticWMOBindings.end());
-
-        vertexBufferBindings->addVertexBufferBinding(vertexBinding);
-        vertexBufferBindings->save();
+        //Do postLoading stuff here
+        if (mohd) {
+            fixColorVertexAlpha(mohd);
+            if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
+                this->m_attenuateFunc(*this);
+            }
+        }
+        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer));
     }
 
     return vertexBufferBindings;
 }
 
-int WmoGroupGeom::getLegacyWaterType(int a) {
+
+LiquidTypes WmoGroupGeom::getLegacyWaterType(int a) {
     a = a + 1;
 
     if ( (a - 1) <= 0x13 )
     {
         int newwater = (a - 1) & 3;
         if ( newwater == 1 ) {
-            a = 14;
-            return a;
+            return LiquidTypes::LIQUID_WMO_Ocean;
         }
             
         if ( newwater >= 1 )
         {
             if ( newwater == 2 )
             {
-                a = 19;
+                return LiquidTypes::LIQUID_WMO_Magma;
             }
             else if ( newwater == 3 )
             {
-                a = 20;
+                return LiquidTypes::LIQUID_WMO_Slime;
             }
-            return a;
         }
-        a = 13;
+        return LiquidTypes::LIQUID_WMO_Water;
     }
-    return a;
+
+    return static_cast<LiquidTypes>(a);
 }
 
-HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &device) {
+HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type, CAaBox &waterAaBB) {
     if (vertexWaterBufferBindings == nullptr) {
+        waterAaBB.min = mathfu::vec3(99999,99999,99999);
+        waterAaBB.max = mathfu::vec3(-99999,-99999,-99999);
+
         if (this->m_mliq == nullptr) return nullptr;
 
-        PACK(
-            struct LiquidVertexFormat {
-                mathfu::vec4_packed pos_transp;
-                mathfu::vec2_packed uv;
-            });
-        std::vector<LiquidVertexFormat> lVertices;
-//        lVertices.reserve((m_mliq->xverts)*(m_mliq->yverts)*3);
+        float minX = 999999;
+        float maxX = -999999;
+        float minY = 999999;
+        float maxY = -999999;
+        float minZ = 999999;
+        float maxZ = -999999;
 
-        mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
-
-        for (int j = 0; j < m_mliq->yverts; j++)
-        {
-            for (int i = 0; i < m_mliq->xverts; i++)
-            {
-                int p = j*m_mliq->xverts + i;
-
-                LiquidVertexFormat lvfVertex;
-                lvfVertex.pos_transp = mathfu::vec4_packed(mathfu::vec4(
-                    pos.x + (MathHelper::UNITSIZE * i),
-                    pos.y + (MathHelper::UNITSIZE * j),
-                    m_liquidVerticles[p].waterVert.height,
-                    1.0
-                ));
-                lvfVertex.uv = mathfu::vec2(0,0);
-
-                lVertices.push_back(lvfVertex);
-            }
-        }
-
-        std::vector<float> vboBuffer;
+        //Make Index Buffer
         std::vector<uint16_t> iboBuffer;
+        iboBuffer.reserve(m_mliq->ytiles*m_mliq->xtiles);
 
-        for (int j = 0; j < m_mliq->ytiles; j++)
-        {
+        for (int j = 0; j < m_mliq->ytiles; j++) {
             for (int i = 0; i < m_mliq->xtiles; i++) {
                 int tileIndex = j*m_mliq->xtiles + i;
                 assert(tileIndex < m_liquidTiles_len);
@@ -503,11 +506,9 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &devi
 
                 if (tile.legacyLiquidType == 15) continue;
 
-                if (liquidType == -1) {
-                    liquidType = getLegacyWaterType(tile.legacyLiquidType);
+                if (m_legacyLiquidType == LiquidTypes::LIQUID_NONE) {
+                    m_legacyLiquidType = getLegacyWaterType(tile.legacyLiquidType);
                 }
-
-
 
                 int16_t vertindexes[4] = {
                     (int16_t) (j * (m_mliq->xverts) + i),
@@ -527,30 +528,62 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HGDevice &devi
             }
         }
 
-        waterIBO = device->createIndexBuffer();
+        //Make Vertex Buffer
+        std::vector<LiquidVertexFormat> lVertices;
+        lVertices.reserve((m_mliq->xverts)*(m_mliq->yverts));
+
+        mathfu::vec3 pos(m_mliq->basePos.x, m_mliq->basePos.y, m_mliq->basePos.z);
+
+        LiquidTypes finalLiquidType = (liquid_type != LiquidTypes::LIQUID_NONE) ? liquid_type : m_legacyLiquidType;
+        for (int j = 0; j < m_mliq->yverts; j++) {
+            for (int i = 0; i < m_mliq->xverts; i++) {
+                int p = j*m_mliq->xverts + i;
+
+                LiquidVertexFormat &lvfVertex = lVertices.emplace_back();
+                lvfVertex.pos_transp = mathfu::vec4_packed(mathfu::vec4(
+                    pos.x + (MathHelper::UNITSIZE * i),
+                    pos.y + (MathHelper::UNITSIZE * j),
+                    m_liquidVerticles[p].waterVert.height,
+                    1.0
+                ));
+                if (finalLiquidType == LiquidTypes::LIQUID_WMO_Magma) {
+                    lvfVertex.uv = mathfu::vec2(
+                        m_liquidVerticles[p].magmaVert.s * 3.0 / 256.0,
+                        m_liquidVerticles[p].magmaVert.t * 3.0 / 256.0
+                    );
+                } else {
+                    lvfVertex.uv = mathfu::vec2(lvfVertex.pos_transp.x / (1600.0 / 3.0 / 16.0),
+                                                lvfVertex.pos_transp.y / (1600.0 / 3.0 / 16.0));
+                }
+
+                minX = std::min(minX, lvfVertex.pos_transp.x);  maxX = std::max(maxX, lvfVertex.pos_transp.x);
+                minY = std::min(minY, lvfVertex.pos_transp.y);  maxY = std::max(maxY, lvfVertex.pos_transp.y);
+                minZ = std::min(minZ, lvfVertex.pos_transp.z);  maxZ = std::max(maxZ, lvfVertex.pos_transp.z);
+            }
+        }
+
+        waterAaBB = CAaBox(
+            C3Vector(mathfu::vec3(minX, minY, minZ)),
+            C3Vector(mathfu::vec3(maxX, maxY, maxZ))
+        );
+
+
+        waterIBO = sceneRenderer->createWaterIndexBuffer(iboBuffer.size() * sizeof(uint16_t));
         waterIBO->uploadData(
             &iboBuffer[0],
             iboBuffer.size() * sizeof(uint16_t));
 
-        waterVBO = device->createVertexBuffer();
+        waterVBO = sceneRenderer->createWaterVertexBuffer(lVertices.size() * sizeof(LiquidVertexFormat));
         waterVBO->uploadData(
             &lVertices[0],
             lVertices.size() * sizeof(LiquidVertexFormat)
         );
 
-        vertexWaterBufferBindings = device->createVertexBufferBindings();
-        vertexWaterBufferBindings->setIndexBuffer(waterIBO);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = waterVBO;
-
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticWMOWaterBindings[0], &staticWMOWaterBindings[1]);
-
-        vertexWaterBufferBindings->addVertexBufferBinding(vertexBinding);
-        vertexWaterBufferBindings->save();
+        vertexWaterBufferBindings = sceneRenderer->createWaterVAO(waterVBO, waterIBO);
 
         waterIndexSize = iboBuffer.size();
     }
 
     return vertexWaterBufferBindings;
+
 }

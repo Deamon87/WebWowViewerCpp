@@ -35,12 +35,18 @@
 #include "../wowViewerLib/src/gapi/interface/IDevice.h"
 #include "../wowViewerLib/src/gapi/IDeviceFactory.h"
 #include "ui/FrontendUI.h"
-#include "../wowViewerLib/src/engine/SceneComposer.h"
+#include "../wowViewerLib/src/renderer/frame/SceneComposer.h"
 #include "../wowViewerLib/src/engine/camera/firstPersonCamera.h"
 #include "../wowViewerLib/src/engine/objects/scenes/map.h"
 #include "screenshots/screenshotMaker.h"
 #include "database/CEmptySqliteDB.h"
 #include <exception>
+#ifdef WIN32
+#include <timeapi.h>
+#endif
+#ifdef LINK_TRACY
+#include "Tracy.hpp"
+#endif
 
 int mleft_pressed = 0;
 int mright_pressed = 0;
@@ -53,14 +59,20 @@ bool stopKeyboard = false;
 std::shared_ptr<FrontendUI> frontendUI = nullptr;
 
 static void cursor_position_callback(GLFWwindow* window, double xpos, double ypos){
-    if (stopMouse) return;
+    if (stopMouse) {
+        mleft_pressed = 0;
+        mright_pressed = 0;
+        return;
+    };
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
-    auto controllable = apiContainer->camera;
-    if (apiContainer->getConfig()->doubleCameraDebug &&
-        apiContainer->getConfig()->controlSecondCamera &&
-        apiContainer->debugCamera != nullptr) {
-        controllable = apiContainer->debugCamera;
-    }
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) {
+        mleft_pressed = 0;
+        mright_pressed = 0;
+        return;
+    };
 
 //    if (!pointerIsLocked) {
         if (mleft_pressed == 1) {
@@ -81,6 +93,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 {
 //    addCameraViewOffset
     if (stopMouse) return;
+
+    HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) {
+        mleft_pressed = 0;
+        mright_pressed = 0;
+        return;
+    };
 
     if (action == GLFW_PRESS) {
         if (button == GLFW_MOUSE_BUTTON_LEFT) {
@@ -107,16 +129,14 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
 
 static void onKey(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (stopKeyboard) return;
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
-    auto controllable = apiContainer->camera;
-    if (apiContainer->getConfig()->doubleCameraDebug &&
-        apiContainer->getConfig()->controlSecondCamera &&
-        apiContainer->debugCamera != nullptr) {
-        controllable = apiContainer->debugCamera;
-    }
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) return;
 
     if ( action == GLFW_PRESS) {
+        if (stopKeyboard) return;
         switch (key) {
             case 'W' :
                 controllable->startMovingForward();
@@ -160,18 +180,6 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
             case 'E':
                 controllable->stopMovingDown();
                 break;
-            case 'H':
-//                scene->switchCameras();
-//                scene->setScene(0, "trash", 0);
-//                scene->setAnimationId(159);
-                break;
-            case 'J':
-//                scene->setAnimationId(0);
-//                testConf->setDoubleCameraDebug(!testConf->getDoubleCameraDebug());
-                break;
-            case 'K':
-//                testConf->setRenderPortals(!testConf->getRenderPortals());
-                break;
             default:
                 break;
         }
@@ -180,15 +188,12 @@ static void onKey(GLFWwindow* window, int key, int scancode, int action, int mod
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    if (stopMouse) return;
+    auto currentActiveScene = frontendUI->getCurrentActiveScene();
+    auto controllable = currentActiveScene ? currentActiveScene->getCamera() : nullptr;
+
+    if (!controllable) return;
 
     HApiContainer apiContainer = *(HApiContainer *)glfwGetWindowUserPointer(window);
-    auto controllable = apiContainer->camera;
-    if (apiContainer->getConfig()->doubleCameraDebug &&
-        apiContainer->getConfig()->controlSecondCamera &&
-        apiContainer->debugCamera != nullptr) {
-        controllable = apiContainer->debugCamera;
-    }
 
     controllable->zoomInFromMouseScroll(-yoffset/2.0f);
 }
@@ -329,6 +334,8 @@ int main(int argc, char *argv[]) {
 //    std::cout.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
 //    std::cerr.rdbuf(out.rdbuf()); //redirect std::cout to out.txt!
 
+std::ios_base::Init a;
+
 #ifdef _WIN32
     SetUnhandledExceptionFilter(windows_exception_handler);
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
@@ -336,8 +343,6 @@ int main(int argc, char *argv[]) {
     const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
 #endif
-
-
     signal(SIGABRT, &my_function_to_handle_aborts);
     signal(SIGSEGV, &my_function_to_handle_aborts);
 
@@ -352,12 +357,12 @@ int main(int argc, char *argv[]) {
 #endif
 
 //    std::string rendererName = "ogl2";
-      std::string rendererName = "ogl3";
-//    std::string rendererName = "vulkan";
+//      std::string rendererName = "ogl3";
+    std::string rendererName = "vulkan";
 
-    if (argc > 1 && std::string(argv[1]) == "-vulkan") {
-        rendererName = "vulkan";
-    }
+//    if (argc > 1 && std::string(argv[1]) == "-vulkan") {
+//        rendererName = "vulkan";
+//    }
 
     //FOR OGL
 
@@ -426,13 +431,10 @@ int main(int argc, char *argv[]) {
     auto hdevice = IDeviceFactory::createDevice(rendererName, &callback);
     apiContainer->databaseHandler = std::make_shared<CEmptySqliteDB>() ;
     apiContainer->hDevice = hdevice;
-    apiContainer->camera = std::make_shared<FirstPersonCamera>();
 
     SceneComposer sceneComposer = SceneComposer(apiContainer);
 
-    //    WoWScene *scene = createWoWScene(testConf, storage, sqliteDB, device, canvWidth, canvHeight);
-
-    frontendUI = std::make_shared<FrontendUI>(apiContainer, nullptr);
+    frontendUI = std::make_shared<FrontendUI>(apiContainer);
 
     glfwSetWindowUserPointer(window, &apiContainer);
     glfwSetKeyCallback(window, onKey);
@@ -467,9 +469,14 @@ int main(int argc, char *argv[]) {
         std::cout << "corrected uiScale for monitor dimensions = " << uiScale << std::endl;
     }
 
+    uiScale = 1.0;
     frontendUI->setUIScale(uiScale);
 
-
+//    auto native_me = std::this_thread::get_id().native_handle();
+#ifdef WIN32
+    SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
+    timeBeginPeriod(3);
+#endif
     //This has to be called after setting all callbacks specific to this app.
     //ImGUI takes care of previous callbacks and calls them before applying it's own logic over data
     //Otherwise keys like backspace, delete etc wont work
@@ -481,56 +488,46 @@ int main(int argc, char *argv[]) {
         glfwSetWindowSize(window, width, height);
         glfwGetFramebufferSize(window, &canvWidth, &canvHeight);
     }
-
-//    frontendUI->createDefaultprocessor();
     glfwSwapInterval(0);
+    tbb::global_control global_limit(oneapi::tbb::global_control::max_allowed_parallelism,
+                                     2*apiContainer->getConfig()->hardwareThreadCount());
 
 //try {
     while (!glfwWindowShouldClose(window)) {
         frontendUI->newFrame();
         stopMouse = frontendUI->getStopMouse();
         stopKeyboard = frontendUI->getStopKeyboard();
-        glfwPollEvents();
 
-        frontendUI->composeUI();
+        glfwPollEvents();
 
         // Render scene
         currentFrame = glfwGetTime(); // seconds
         double deltaTime = currentFrame - lastFrame;
-        {
-            auto processor = frontendUI->getProcessor();
-            if (frontendUI->getProcessor()) {
 
-                if (!processor->getThreaded()) {
-                    processor->processRequests(false);
-                }
-            }
-        }
-
-        apiContainer->camera->tick(deltaTime*(1000.0f));
-        if (apiContainer->debugCamera != nullptr) {
-            apiContainer->debugCamera->tick(deltaTime * (1000.0f));
-        }
-
-        //DrawStage for screenshot
-//        needToMakeScreenshot = true;
-        if (apiContainer->getConfig()->pauseAnimation) {
-            deltaTime = 0.0;
-        }
+        frontendUI->composeUI();
         auto sceneScenario = frontendUI->createFrameScenario(canvWidth, canvHeight, deltaTime);
 
-        sceneComposer.draw(sceneScenario);
+        sceneComposer.draw(sceneScenario, windowSizeChanged);
+        windowSizeChanged = false;
 
-        double currentDeltaAfterDraw = (glfwGetTime() - lastFrame)*(1000.0f);
+        double currentDeltaAfterDraw = (glfwGetTime() - currentFrame)*(1000.0f);
         lastFrame = currentFrame;
         if (currentDeltaAfterDraw < 5.0) {
             using namespace std::chrono_literals;
-            std::this_thread::sleep_for(std::chrono::milliseconds((int)(1.0)));
+#ifdef WIN32
+            sqlite3_sleep(5.0f-currentDeltaAfterDraw);
+#else
+            std::this_thread::sleep_for(std::chrono::milliseconds((int)(5.0-currentDeltaAfterDraw)));
+#endif
         }
 
         if (rendererName == "ogl3" || rendererName == "ogl2") {
             glfwSwapBuffers(window);
         }
+
+#ifdef LINK_TRACY
+        FrameMark;
+#endif
     }
 //} catch(const std::exception &e){
 //    std::cerr << e.what() << std::endl;
@@ -539,7 +536,13 @@ int main(int argc, char *argv[]) {
 //    std::cout << "something happened" << std::endl;
 //}
 
-    std::cout << "program ended" << std::endl;
+    hdevice->waitForAllWorkToComplete();
+    frontendUI->shutDown();
+
+    // std::cout << "program ended" << std::endl;
+#ifdef WIN32
+    timeEndPeriod(3);
+#endif
     //        while (1) {
     //            mainLoop(&myapp);
     //        }

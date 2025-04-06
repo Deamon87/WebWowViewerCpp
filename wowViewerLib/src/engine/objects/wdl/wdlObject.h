@@ -41,8 +41,13 @@ private:
         int conditionType;
         int conditionValue;
     };
+    struct SkyModelRec {
+        std::shared_ptr<M2Object> m_model;
+        bool animateWithTimeOfDay = false;
+    };
     struct SkyObjectScene{
-        std::vector<std::shared_ptr<M2Object>> m2Objects = {};
+
+        std::vector<SkyModelRec> skyModels = {};
         std::vector<SkyObjectCondition> conditions = {};
     };
 

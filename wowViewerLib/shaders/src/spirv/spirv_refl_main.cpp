@@ -61,6 +61,7 @@ int main(int argc, char **argv)
     const bool SET_TERMINATE = std::set_terminate(beforeCrash);
 //    const bool SET_TERMINATE_UNEXP = std::set_unexpected(beforeCrash);
 #endif
+    std::ios_base::Init a;
     signal(SIGABRT, &my_function_to_handle_aborts);
 
     std::string mode(argv[1]);
@@ -71,7 +72,7 @@ int main(int argc, char **argv)
 
 
     if (mode == "-sf") {
-        dumpShaderUniformOffsets(filePaths);
+        dumpShaderUniformOffsets(filePaths[0], decltype(filePaths)(filePaths.begin()+1, filePaths.end()));
     }  else if (mode == "-glsl100") {
         dumpGLSLText(filePaths, 100, false);
     } else if (mode == "-glsl120Es") {

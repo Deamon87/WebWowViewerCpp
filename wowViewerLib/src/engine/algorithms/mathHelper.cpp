@@ -2,6 +2,12 @@
 // Created by deamon on 22.06.17.
 //
 
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#define NOMINMAX 1
+
 #include "mathHelper.h"
 #include "grahamScan.h"
 #include <cmath>
@@ -28,6 +34,41 @@ float MathHelper::fp69ToFloat(uint16_t x) {
 
 mathfu::vec2 MathHelper::convertV69ToV2(vector_2fp_6_9 &fp69) {
     return mathfu::vec2(MathHelper::fp69ToFloat(fp69.x), MathHelper::fp69ToFloat(fp69.y));
+}
+mathfu::mat4 MathHelper::getVulkanMat4Fix() {
+    static const mathfu::mat4 vulkanMatrixFix = mathfu::mat4(1,  0,    0, 0,
+                                                             0, -1,    0, 0,
+                                                             0,  0, 1.0f/3.0f, 0,
+                                                             0,  0, 1.0f/2.0f, 1);
+
+    return vulkanMatrixFix;
+}
+mathfu::mat4 MathHelper::createPerspectiveMat(float fovy, float aspect, float zNear, float zFar) {
+    const float y = 1.0f / std::tan(fovy * 0.5f);
+    const float x = y / aspect;
+    const float zdist = (zFar - zNear);
+    const float zfar_per_zdist = (zNear + zFar) / zdist;
+    return mathfu::mat4(x, 0, 0, 0,
+                        0, y, 0, 0,
+                        0, 0, zfar_per_zdist, -1,
+                        0, 0, -2.0f * zNear * zFar / zdist, 0);
+}
+mathfu::mat4 MathHelper::createLookAtMat(mathfu::vec3 cameraPos, mathfu::vec3 cameraTarget, mathfu::vec3 cameraUp) {
+    auto forwardVector = -(cameraTarget-cameraPos).Normalized();
+    auto rightVector = mathfu::vec3::CrossProduct(cameraUp, forwardVector).Normalized();
+    auto upVector = mathfu::vec3::CrossProduct(forwardVector, rightVector).Normalized();
+
+    float translationX = mathfu::vec3::DotProduct(cameraPos, rightVector);
+    float translationY = mathfu::vec3::DotProduct(cameraPos, upVector);
+    float translationZ = mathfu::vec3::DotProduct(cameraPos, forwardVector);
+    auto lookAtMatrix = mathfu::mat4(
+        rightVector[0],  upVector[0],   forwardVector[0], 0,
+        rightVector[1],  upVector[1],   forwardVector[1], 0,
+        rightVector[2],  upVector[2],   forwardVector[2], 0,
+        -translationX,  -translationY, -translationZ,    1
+    );
+
+    return lookAtMatrix;
 }
 
 CAaBox MathHelper::transformAABBWithMat4(const mathfu::mat4 &mat4, const mathfu::vec4 &min, const mathfu::vec4 &max) {
@@ -63,8 +104,8 @@ CAaBox MathHelper::transformAABBWithMat4(const mathfu::mat4 &mat4, const mathfu:
     return CAaBox(bb_min_packed, bb_max_packed);
 }
 
-std::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const std::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat) {
-    auto newPlanes = std::vector<mathfu::vec4>(planes.size());
+framebased::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const framebased::vector<mathfu::vec4> &planes, const mathfu::mat4 &mat) {
+    auto newPlanes = framebased::vector<mathfu::vec4>(planes.size());
     for (int i = 0; i < planes.size(); i++) {
         newPlanes[i] = (mat) * planes[i];
     }
@@ -72,14 +113,14 @@ std::vector<mathfu::vec4> MathHelper::transformPlanesWithMat(const std::vector<m
     return newPlanes;
 }
 
-std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::mat4 &mat) {
+framebased::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::mat4 &mat) {
 
-#define el(x, y) (y-1) + 4*(x - 1)
+#define el(x, y) (((y)-1) + 4*((x) - 1))
 
     //The order of planes is changed to make it easier to get intersections in getIntersectionPointsFromPlanes
     //And to be in line of how planes are created for portal verticies in portal culling
-    std::vector<mathfu::vec4> planes(6);
-    // Right clipping plane.
+    framebased::vector<mathfu::vec4> planes(6);
+    //Right clipping plane.
     planes[0] = mathfu::vec4(mat[el(1,4)] + mat[el(1,1)],
                              mat[el(2,4)] + mat[el(2,1)],
                              mat[el(3,4)] + mat[el(3,1)],
@@ -99,7 +140,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::ma
                              mat[el(2,4)] + mat[el(2,2)],
                              mat[el(3,4)] + mat[el(3,2)],
                              mat[el(4,4)] + mat[el(4,2)]);
-    // Near clipping plane.
+    // Near clipping plane
     planes[4] = mathfu::vec4(mat[el(1,4)] + mat[el(1,3)],
                              mat[el(2,4)] + mat[el(2,3)],
                              mat[el(3,4)] + mat[el(3,3)],
@@ -119,7 +160,7 @@ std::vector<mathfu::vec4> MathHelper::getFrustumClipsFromMatrix(const mathfu::ma
     return planes;
 }
 
-std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat) {
+framebased::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4 &perspectiveViewMat) {
         mathfu::mat4 perspectiveViewMatInv = perspectiveViewMat.Inverse();
 
         static mathfu::vec4 vertices[] = {
@@ -133,7 +174,7 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
                 {1,  -1,  1, 1}, //7
         };
 
-        std::vector<mathfu::vec3> points(8);
+        framebased::vector<mathfu::vec3> points(8);
         
         for (int i = 0; i < 8; i++) {
             mathfu::vec4 &vert = vertices[i];
@@ -148,7 +189,7 @@ std::vector<mathfu::vec3> MathHelper::calculateFrustumPointsFromMat(mathfu::mat4
         return points;
 }
 
-bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
+bool hullSort(mathfu::vec3 &a, mathfu::vec3 &b, mathfu::vec2 &center) {
     if (a.x - center.x >= 0 && b.x - center.x < 0)
         return true;
     if (a.x - center.x < 0 && b.x - center.x >= 0)
@@ -173,18 +214,17 @@ bool hullSort(mathfu::vec3 a, mathfu::vec3 b, mathfu::vec2 center) {
     return d1 > d2;
 }
 
-std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &points){
+framebased::vector<mathfu::vec3> MathHelper::getHullPoints(framebased::vector<mathfu::vec3> &points){
     if (points.empty())
         return {};
     std::stack<Point> hullPoints = grahamScan(points);
     if (hullPoints.size() <= 2) {
-        return std::vector<mathfu::vec3>(0);
+        return framebased::vector<mathfu::vec3>(0);
     }
 
 //    mathfu::vec3* end   = &hullPoints.top() + 1;
 //    mathfu::vec3* begin = end - hullPoints.size();
-//    std::vector<mathfu::vec3> hullPointsArr(begin, end);
-    std::vector<mathfu::vec3> hullPointsArr;
+    framebased::vector<mathfu::vec3> hullPointsArr;
     hullPointsArr.reserve(hullPoints.size());
     while(!hullPoints.empty()) {
         hullPointsArr.push_back(hullPoints.top());
@@ -199,7 +239,7 @@ std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &p
 
     std::sort(hullPointsArr.begin(),
               hullPointsArr.end(),
-              [&](mathfu::vec3 a, mathfu::vec3 b) -> bool {
+              [&](const mathfu::vec3 &a, const mathfu::vec3 &b) -> bool {
                   if (a.x - centerPoint.x >= 0 && b.x - centerPoint.x < 0)
                       return true;
                   if (a.x - centerPoint.x < 0 && b.x - centerPoint.x >= 0)
@@ -227,10 +267,10 @@ std::vector<mathfu::vec3> MathHelper::getHullPoints(std::vector<mathfu::vec3> &p
     return hullPointsArr;
 }
 
-std::vector<mathfu::vec3> MathHelper::getHullLines(std::vector<Point> &points){
-    std::vector<mathfu::vec3> hullPointsArr = MathHelper::getHullPoints(points);
+framebased::vector<mathfu::vec3> MathHelper::getHullLines(framebased::vector<Point> &points){
+    framebased::vector<mathfu::vec3> hullPointsArr = MathHelper::getHullPoints(points);
 
-    std::vector<mathfu::vec3> hullLines;
+    framebased::vector<mathfu::vec3> hullLines;
     hullLines.reserve(hullPointsArr.size());
     
     if (hullPointsArr.size() > 2) {
@@ -421,9 +461,6 @@ bool MathHelper::checkFrustum(const std::vector<PlanesUndPoints> &frustums, cons
 }
 
 bool MathHelper::checkFrustum2D(const std::vector<PlanesUndPoints> &frustums, const CAaBox &box) {
-
-    //var maxLines = window.lines != null ? window.lines : 1;
-    //for (var i = 0; i < Math.min(num_planes, maxLines); i++) {
     for (auto &planeUndPoints : frustums) {
         auto const &planes = planeUndPoints.hullLines;
 
@@ -464,23 +501,21 @@ mathfu::vec4 MathHelper::planeLineIntersection(mathfu::vec4 &plane, mathfu::vec4
 }
 
 //Points should be sorted against center by this point
-bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu::vec4> &planes) {
+bool MathHelper::planeCull(framebased::vector<mathfu::vec3> &points, framebased::vector<mathfu::vec4> &planes) {
     // check box outside/inside of frustum
-    std::vector<mathfu::vec4> vec4Points(points.size());
+    framebased::vector<mathfu::vec4> vec4Points(points.size());
 
-    const float epsilon = 0;
+    const float epsilon = 0.0001;
 
     for (int j = 0; j < points.size(); j++) {
         vec4Points[j] = mathfu::vec4(points[j].x, points[j].y, points[j].z, 1.0);
     }
 
-
     for (int i = 0; i < planes.size(); i++) {
         int out = 0;
-        float epsilon = 0;
 
         for (int j = 0; j < vec4Points.size(); j++) {
-            out += ((mathfu::vec4::DotProduct(planes[i], vec4Points[j]) + epsilon < 0.0 ) ? 1 : 0);
+            out += (((mathfu::vec4::DotProduct(planes[i], vec4Points[j]) + epsilon) < 0.0 ) ? 1 : 0);
         }
 
         if (out == vec4Points.size()) {
@@ -491,25 +526,12 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
         // Cull by points by current plane
         //---------------------------------
 
-        std::vector<mathfu::vec4> resultPoints;
-
-//        mathfu::vec3 pointO;
-//        if (planes[i][2] != 0) {
-//            pointO = mathfu::vec3(0, 0, -planes[i][3] / planes[i][2]);
-//        } else if (planes[i][1] != 0) {
-//            pointO = mathfu::vec3(0, -planes[i][3] / planes[i][1], 0);
-//        } else if (planes[i][0] != 0) {
-//            pointO = mathfu::vec3(-planes[i][3] / planes[i][0], 0, 0);
-//        } else {
-//            continue;
-//        }
+        framebased::vector<mathfu::vec4> resultPoints;
+        resultPoints.reserve(vec4Points.size() + (vec4Points.size() >> 1));
 
         for (int j = 0; j < vec4Points.size(); j++) {
             mathfu::vec4 p1 = vec4Points[j];
             mathfu::vec4 p2 = vec4Points[(j + 1) % vec4Points.size()];
-
-            mathfu::vec3 p1_xyz = p1.xyz();
-            mathfu::vec3 p2_xyz = p2.xyz();
 
             // InFront = plane.Distance( point ) > 0.0f
             // Behind  = plane.Distance( point ) < 0.0f
@@ -517,24 +539,24 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
             float t1 = mathfu::vec4::DotProduct(p1, planes[i]);
             float t2 = mathfu::vec4::DotProduct(p2, planes[i]);
 
-            if (t1 > 0 && t2 > 0) { //p1 InFront and p2 InFront
+            if ((t1 >= -epsilon) && (t2 >= -epsilon)) { //p1 InFront and p2 InFront
                 resultPoints.push_back(p2);
-            } else if (t1 > 0 && t2 < -epsilon) { //p1 InFront and p2 Behind
+            } else if ((t1 >= -epsilon) && (t2 < -epsilon)) { //p1 InFront and p2 Behind
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
-            } else if (t1 < -epsilon && t2 > 0) { //p1 Behind and p2 InFront
+            } else if ((t1 < -epsilon) && (t2 >= -epsilon)) { //p1 Behind and p2 InFront
 //                float k = std::fabs(t1) / (std::fabs(t1) + std::fabs(t2));
                 resultPoints.push_back(MathHelper::planeLineIntersection( planes[i], p1, p2));
                 resultPoints.push_back(p2);
-            } else if (t2 < epsilon && t2 > -epsilon) { //P2 Inside
+            } else if ((t2 < epsilon) && (t2 > -epsilon)) { //P2 Inside
                 resultPoints.push_back(p2);
             }
         }
 
-        vec4Points = std::vector<mathfu::vec4>(resultPoints.begin(), resultPoints.end());
+        vec4Points = framebased::vector<mathfu::vec4>(resultPoints.begin(), resultPoints.end());
     }
 
-    points = std::vector<mathfu::vec3>(vec4Points.size());
+    points = framebased::vector<mathfu::vec3>(vec4Points.size());
     for (int j = 0; j < vec4Points.size(); j++) {
         points[j] = vec4Points[j].xyz();
     }
@@ -543,7 +565,7 @@ bool MathHelper::planeCull(std::vector<mathfu::vec3> &points, std::vector<mathfu
 
 }
 
-void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortalVertices,
+void MathHelper::sortVec3ArrayAgainstPlane(framebased::vector<mathfu::vec3> &thisPortalVertices,
                                                   const mathfu::vec4 &plane) {
     mathfu::vec3 center(0, 0, 0);
     for (int j = 0; j < thisPortalVertices.size(); j++) {
@@ -564,14 +586,14 @@ void MathHelper::sortVec3ArrayAgainstPlane(std::vector<mathfu::vec3> &thisPortal
     });
 }
 
-bool MathHelper::isPointInsideAABB(const CAaBox &aabb, mathfu::vec3 &p) {
+bool MathHelper::isPointInsideAABB(const CAaBox &aabb, const mathfu::vec3 &p) {
     bool result = p[0] > aabb.min.x && p[0] < aabb.max.x &&
              p[1] > aabb.min.y && p[1] < aabb.max.y &&
              p[2] > aabb.min.z && p[2] < aabb.max.z;
     return result;
 }
 
-bool MathHelper::isPointInsideAABB(const mathfu::vec2 aabb[2], mathfu::vec2 &p) {
+bool MathHelper::isPointInsideAABB(const mathfu::vec2 aabb[2], const mathfu::vec2 &p) {
     bool result = p[0] > aabb[0].x && p[0] < aabb[1].x &&
              p[1] > aabb[0].y && p[1] < aabb[1].y;
     return result;
@@ -620,13 +642,16 @@ mathfu::vec3 MathHelper::getBarycentric(mathfu::vec3 &p, mathfu::vec3 &a, mathfu
     float d20 = mathfu::vec3::DotProduct(v2, v0);
     float d21 = mathfu::vec3::DotProduct(v2, v1);
     float denom = d00 * d11 - d01 * d01;
-    if ((denom < 0.0001) && (denom > -0.0001)) {
+//    float denom = v0.x * v1.y - v1.x * v0.y;
+    if ((denom < 0.0001f) && (denom > -0.0001f)) {
         return mathfu::vec3(-1, -1, -1);
     };
 
     float v = (d11 * d20 - d01 * d21) / denom;
     float w = (d00 * d21 - d01 * d20) / denom;
-    float u = 1.0 - v - w;
+//    float v = (v2.x * v1.y - v1.x * v2.y) / denom;
+//    float w = (v0.x * v2.y - v2.x * v0.y) / denom;
+    float u = 1.0f - v - w;
     return mathfu::vec3(u, v, w);
 }
 
@@ -684,7 +709,7 @@ int areIntersecting(
     // The fact that vector 2 intersected the infinite line 1 above doesn't
     // mean it also intersects the vector 1. Vector 1 is only a subset of that
     // infinite line 1, so it may have intersected that line before the vector
-    // started or after it ended. To know for sure, we have to repeat the
+    // started or after it ended. To know for sure, we have to repeat
     // the same test the other way round. We start by calculating the
     // infinite line 2 in linear equation standard form.
     a2 = v2y2 - v2y1;
@@ -709,7 +734,7 @@ int areIntersecting(
     return YES;
 }
 
-bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points) {
+bool MathHelper::isPointInsideNonConvex(const mathfu::vec3 &p, const CAaBox &aabb, const std::vector<mathfu::vec2> &points) {
     if (!MathHelper::isPointInsideAABB(aabb, p)) return false;
 
     //Select point outside of convex;
@@ -743,6 +768,42 @@ bool MathHelper::isPointInsideNonConvex(mathfu::vec3 &p, const CAaBox &aabb, con
     return false;
 }
 
+inline float minimum_distance(const mathfu::vec2 &v, const mathfu::vec2 &w, const mathfu::vec2 &p) {
+  // Return minimum distance between line segment vw and point p
+  const float l2 = (w - v).LengthSquared();  // i.e. |w-v|^2 -  avoid a sqrt
+  if (l2 == 0.0) return (p-v).Length();   // v == w case
+  // Consider the line extending the segment, parameterized as v + t (w - v).
+  // We find projection of point p onto the line.
+  // It falls where t = [(p-v) . (w-v)] / |w-v|^2
+  // We clamp t from [0,1] to handle points outside the segment vw.
+  const float t = std::max<float>(0, std::min<float>(1, dot(p - v, w - v) / l2));
+  const mathfu::vec2 projection = v + t * (w - v);  // Projection falls on the segment
+  return (p - projection).Length();
+}
+
+float MathHelper::findLeastDistanceToBorder(const mathfu::vec3 &p, const std::vector<mathfu::vec2> &points, bool &isInsideConvex) {
+    auto const calcDistance = [p](const mathfu::vec2 &a, const mathfu::vec2 &b) -> float {
+
+        float distance = minimum_distance(a, b, p.xy());
+
+        return distance;
+    };
+
+    auto const flipIsInside = [p](const mathfu::vec2 &v, const mathfu::vec2 &w) -> bool {
+        return (w.x - v.x) * (p.y - v.y) / (w.y - v.y) + v.x < p.x;
+    };
+
+    float dist = 999999.f;
+    isInsideConvex = false;
+    for (int i = 0; i < points.size() - 1; i++) {
+        dist = std::min(dist, calcDistance(points[i], points[i+1]));
+        isInsideConvex = isInsideConvex ^ flipIsInside(points[i], points[i+1]);
+    }
+    dist = std::min(dist, calcDistance(points[points.size()-1], points[0]));
+    isInsideConvex = isInsideConvex ^ flipIsInside(points[points.size()-1], points[0]);
+    return dist;
+}
+
 bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
 
     bool result = (a.min.x <= b.max.x && a.max.x >= b.min.x) &&
@@ -751,72 +812,184 @@ bool MathHelper::isAabbIntersect2d(CAaBox a, CAaBox b) {
     return result;
 }
 
-mathfu::vec3 MathHelper::calcExteriorColorDir(mathfu::mat4 lookAtMat, int time) {
-    // Phi Table
-    static const std::array<std::array<float, 2>, 4> phiTable = {
-        {
-            { 0.0f,  2.2165682f },
-            { 0.25f, 1.9198623f },
-            { 0.5f,  2.2165682f },
-            { 0.75f, 1.9198623f }
-        }
-    };
 
-    // Theta Table
+template<int tableSize>
+constexpr float InterpTable(const std::array<std::array<float, 2>, tableSize> &table, float time) {
 
+    if (time >= 0.0f) {
+        time = std::min(time, 1.0f);
+    }
 
-    static const std::array<std::array<float, 2>, 4> thetaTable = {
-        {
-            {0.0f, 3.926991f},
-            {0.25f, 3.926991f},
-            { 0.5f,  3.926991f },
-            { 0.75f, 3.926991f }
-        }
-    };
-
-//    float phi = DayNight::InterpTable(&DayNight::phiTable, 4u, DayNight::g_dnInfo.dayProgression);
-//    float theta = DayNight::InterpTable(&DayNight::thetaTable, 4u, DayNight::g_dnInfo.dayProgression);
-
-    float phi = phiTable[0][1];
-    float theta = thetaTable[0][1];
-
-    //Find Index
-    float timeF = time / 2880.0f;
-    int firstIndex = -1;
-    for (int i = 0; i < 4; i++) {
-        if (timeF < phiTable[i][0]) {
-            firstIndex = i;
+    int i;
+    int firstIndex = 0;
+    int secondIndex = 0;
+    for (i = 0; i < table.size(); i++) {
+        if (time <= table[i][0]) {
             break;
         }
     }
-    if (firstIndex == -1) {
-        firstIndex = 3;
+
+    firstIndex = 0;
+    if (i != table.size()) {
+        firstIndex = i;
     }
-    {
-        float alpha =  (phiTable[firstIndex][0] -  timeF) / (thetaTable[firstIndex][0] - thetaTable[firstIndex-1][0]);
-        phi = phiTable[firstIndex][1]*(1.0 - alpha) + phiTable[firstIndex - 1][1]*alpha;
+    if (firstIndex) {
+        secondIndex = firstIndex - 1;
+    } else {
+        secondIndex = table.size() - 1;
     }
 
+    float tableTimeDiff = table[firstIndex][0] - table[secondIndex][0];
+    if (fabs(tableTimeDiff) < 0.001f)
+        return table[secondIndex][1];
 
-    // Convert from spherical coordinates to XYZ
-    // x = rho * sin(phi) * cos(theta)
-    // y = rho * sin(phi) * sin(theta)
-    // z = rho * cos(phi)
+    if (tableTimeDiff < 0.0f)
+        tableTimeDiff = tableTimeDiff + 1.0f;
 
-    float sinPhi = (float) sin(phi);
-    float cosPhi = (float) cos(phi);
+    float timeDiff = time - table[secondIndex][0];
+    if (timeDiff < 0.0f)
+        timeDiff = timeDiff + 1.0f;
 
-    float sinTheta = (float) sin(theta);
-    float cosTheta = (float) cos(theta);
+    float alpha = timeDiff / tableTimeDiff;
 
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
+    float firstValue = table[firstIndex][1];
+    float secondValue = table[secondIndex][1];
+    //if (firstValue < secondValue)
+        //return table[secondIndex].y - alpha * (secondValue - firstValue);
+    //else
+    return secondValue + alpha * (firstValue - secondValue);
 
-    mathfu::vec4 sunDirWorld = mathfu::vec4(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi, 0);
-//    mathfu::vec4 sunDirWorld = mathfu::vec4(-0.30822, -0.30822, -0.89999998, 0);
-    return (lookAtRotation * sunDirWorld.xyz());
 }
 
-mathfu::vec3 MathHelper::hsv2rgb(MathHelper::hsv in) {
+float doSomeConvert(float a) {
+    int a1;
+    if ( a <= 0.0f )
+    {
+        a1 = ~(int)(float)-a;
+    }
+    else
+    {
+        a1 = (int)a;
+    }
+
+    float res = (float)((float)((float)((float)(a - (float)a1) * 4.0f) + -6.0f)
+                 * (float)((float)(a - (float)a1) * (float)(a - (float)a1)))
+         + 1.0f;
+    if ( (a1 & 1) != 0 )
+    {
+        res = -res;
+    }
+
+    return res;
+}
+
+namespace SkyConstantsAndFunctions {
+        static constexpr std::array<std::array<float, 2>, 5> sunPhiTable = {
+        {
+            { 0.25f,        1.7453293f },
+            { 0.49652779f,  0.08726646f},
+            { 0.5f,         0.08726646f},
+            { 0.50347221f,  0.08726646f},
+            { 0.79166669f,  1.7453293f }
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 3> sunThetaTable = {
+        {
+            { 0.25f,       0.78539819f},
+            { 0.5f,        0.78539819f},
+            { 0.79166669f, 0.78539819f}
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 5> moonPhiTable = {
+        {
+            { 0,            0.61086524f },
+            { 0.0034722222f,0.61086524 },
+            { 0.16666667f,  1.7453293f },
+            { 0.89583331f,  1.7453293f },
+            { 0.99652779f,  0.61086524f }
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 3> moonThetaTable = {
+        {
+            { 0.0f,        0.78539819f},
+            { 0.16666667f, 0.78539819f},
+            { 0.89583331f, 0.78539819f}
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 4> directionalLightPhiTable = {
+        {
+            { 0,            2.2165682f },
+            { 0.25f,        1.9198622f },
+            { 0.5f,         2.2165682f },
+            { 0.75f,        1.9198622f },
+        }
+    };
+
+    static constexpr std::array<std::array<float, 2>, 4> directionalLightThetaTable = {
+        {
+            { 0,            3.9269907f },
+            { 0.25f,        3.9269907f },
+            { 0.5f,         3.9269907f },
+            { 0.75f,        3.9269907f },
+        }
+    };
+
+    enum class SkyDataType : int { SK_SUN, SK_MOON, SK_DIR_LIGHT };
+
+    template <SkyDataType T>
+    mathfu::vec3 getVector(int time) {
+        float timeF = time / 2880.0f;
+
+        float phi =   0.0f;
+        float theta = 0.0f;
+
+        if constexpr (T == SkyDataType::SK_DIR_LIGHT) {
+            phi = InterpTable<4>(directionalLightPhiTable, timeF);
+            theta = InterpTable<4>(directionalLightThetaTable, timeF);
+        }
+        if constexpr (T == SkyDataType::SK_SUN) {
+            phi = InterpTable<5>(sunPhiTable, timeF);
+            theta = InterpTable<3>(sunThetaTable, timeF);
+        }
+        if constexpr (T == SkyDataType::SK_MOON) {
+            phi = InterpTable<5>(moonPhiTable, timeF);
+            theta = InterpTable<3>(moonThetaTable, timeF);
+        }
+
+        constexpr float INV_PI = 1.0f / M_PI;
+
+        float sinPhi = doSomeConvert(phi * INV_PI - 0.5f);
+        float cosPhi = doSomeConvert(phi * INV_PI);
+
+        float sinTheta = doSomeConvert(theta * INV_PI + -0.5f);
+        float cosTheta = doSomeConvert(theta * INV_PI);
+
+        mathfu::vec3 vec = mathfu::vec3(sinPhi * cosTheta, sinPhi * sinTheta, cosPhi);
+        return vec;
+    }
+}
+
+mathfu::vec3 MathHelper::calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int time) {
+    using namespace SkyConstantsAndFunctions;
+
+    mathfu::vec4 sunDirWorld = mathfu::vec4(getVector<SkyDataType::SK_DIR_LIGHT>(time), 0.0f);
+    sunDirWorld = mathfu::vec4(sunDirWorld.xyz().Normalized(), 0.0f);
+    sunDirWorld = mathfu::vec4(0.000, -0.687, -0.688, 0.0f);
+
+    return (lookAtMat.Inverse().Transpose() * sunDirWorld).xyz().Normalized();
+}
+mathfu::vec3 MathHelper::calcSunPlanetPos(const mathfu::mat4 &lookAtMat, int time) {
+    using namespace SkyConstantsAndFunctions;
+
+    mathfu::vec4 sunPlanetPos = mathfu::vec4(getVector<SkyDataType::SK_SUN>(time), 0.0f);
+    return sunPlanetPos.xyz();
+}
+
+mathfu::vec3 MathHelper::hsv2rgb(const MathHelper::hsv &in) {
     double      hh, p, q, t, ff;
     long        i;
     mathfu::vec3    out;
@@ -873,7 +1046,7 @@ mathfu::vec3 MathHelper::hsv2rgb(MathHelper::hsv in) {
     return out;
 }
 
-MathHelper::hsv MathHelper::rgb2hsv(mathfu::vec3 in) {
+MathHelper::hsv MathHelper::rgb2hsv(const mathfu::vec3 &in) {
     hsv         out;
     double      min, max, delta;
 
@@ -916,9 +1089,9 @@ MathHelper::hsv MathHelper::rgb2hsv(mathfu::vec3 in) {
     return out;
 }
 
-std::vector<mathfu::vec3>
-MathHelper::getIntersectionPointsFromPlanes(const std::vector<mathfu::vec4> &planes) {
-    std::vector<mathfu::vec3> points;
+framebased::vector<mathfu::vec3>
+MathHelper::getIntersectionPointsFromPlanes(const framebased::vector<mathfu::vec4> &planes) {
+    framebased::vector<mathfu::vec3> points;
     //For far and near plane
     for (int x = planes.size()-2; x < planes.size(); x++) {
         //Look for intersection for of any two planes other planes with two planes above

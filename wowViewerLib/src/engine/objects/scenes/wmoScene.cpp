@@ -10,7 +10,7 @@
 
 void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                     const mathfu::vec4 &cameraPos,
-                                    HCullStage &cullStage,
+                                    const HMapRenderPlan &mapRenderPlan,
                                     M2ObjectListContainer &potentialM2,
                                     WMOListContainer &potentialWmo) {
     potentialWmo.addCand(this->m_wmoObject);
@@ -18,114 +18,39 @@ void WmoScene::getPotentialEntities(const MathHelper::FrustumCullingData &frustu
 
 void WmoScene::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                      const mathfu::vec4 &cameraPos,
-                                     HCullStage &cullStage,
+                                     const HMapRenderPlan &mapRenderPlan,
                                      M2ObjectListContainer &m2ObjectsCandidates,
                                      WMOListContainer &wmoCandidates) {
 
     wmoCandidates.addCand(this->m_wmoObject);
 };
 
-void WmoScene::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                                       StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
+void WmoScene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
+                                        StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
     Config* config = this->m_api->getConfig();
     config->globalFog = EParameterSource::eNone;
 
-    Map::updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
+    Map::updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
 
-    mathfu::vec4 ambient = mathfu::vec4(1.0,1.0,1.0,1.0);
+    mathfu::vec4 exteriorAmbient = mathfu::vec4(1.0,1.0,1.0,1.0);
 
-    auto frameDepedantData = cullStage->frameDepedantData;
-
-    frameDepedantData->exteriorAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDepedantData->exteriorHorizontAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDepedantData->exteriorGroundAmbientColor = mathfu::vec4(ambient.x, ambient.y, ambient.z, 1.0);
-    frameDepedantData->exteriorDirectColor = mathfu::vec4(0.3,0.30,0.3,0.3);
-    frameDepedantData->exteriorDirectColorDir = MathHelper::calcExteriorColorDir(
-        cullStage->matricesForCulling->lookAtMat,
+    auto frameDependantData = mapRenderPlan->frameDependentData;
+    frameDependantData->exteriorDirectColorDir = MathHelper::calcExteriorColorDir(
+        mapRenderPlan->renderingMatrices->lookAtMat,
         m_api->getConfig()->currentTime
     );
-}
 
-/*
-void WmoScene::doPostLoad(HCullStage cullStage) {
-    int processedThisFrame = 0;
-    int groupsProcessedThisFrame = 0;
+    if (m_api->getConfig()->globalLighting == EParameterSource::eDatabase) {
+        frameDependantData->colors.exteriorAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
+        frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
+        frameDependantData->colors.exteriorGroundAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
+        frameDependantData->colors.exteriorDirectColor = mathfu::vec4(0.5, 0.5, 0.5, 0.5);
+    } else if (config->globalLighting == EParameterSource::eConfig) {
+        auto fdd = mapRenderPlan->frameDependentData;
 
-    for (int i = 0; i < cullStage->m2Array.size(); i++) {
-        std::shared_ptr<M2Object> m2Object = cullStage->m2Array[i];
-        if (m2Object == nullptr) continue;
-        if (m2Object->doPostLoad()) processedThisFrame++;
-        if (processedThisFrame > 3) return;
-    }
-//    }
-
-    for (auto &wmoObject : cullStage->wmoGroupArray) {
-        if (wmoObject == nullptr) continue;
-        if (wmoObject->doPostLoad(groupsProcessedThisFrame)) processedThisFrame++;
-
-        if (processedThisFrame > 3) return;
+        fdd->colors.exteriorAmbientColor = config->exteriorColors.exteriorAmbientColor;
+        fdd->colors.exteriorGroundAmbientColor = config->exteriorColors.exteriorGroundAmbientColor;
+        fdd->colors.exteriorHorizontAmbientColor = config->exteriorColors.exteriorHorizontAmbientColor;
+        fdd->colors.exteriorDirectColor = config->exteriorColors.exteriorDirectColor;
     }
 }
-*/
-/*
-
-void WmoScene::produceDrawStage(HDrawStage resultDrawStage, HUpdateStage updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
-    auto cullStage = updateStage->cullResult;
-    auto renderedThisFramePreSort = std::vector<HGMesh>();
-
-    //Create meshes
-    resultDrawStage->meshesToRender = std::make_shared<MeshesToRender>();
-
-    //Create scenewide uniform
-    auto renderMats = resultDrawStage->matricesForRendering;
-
-    auto config = m_api->getConfig();
-    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
-
-        blockPSVS->extLight.uExteriorAmbientColor = mathfu::vec4(0.8,0.8,0.8,0.8);
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
-        blockPSVS->extLight.uExteriorGroundAmbientColor = mathfu::vec4(1.0,1.0,1.0,1.0);
-        blockPSVS->extLight.uExteriorDirectColor = mathfu::vec4(0.3,0.3,0.3,1.3);
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(0.0,0.0,0.0,1.0);
-    });
-
-
-    std::vector<GeneralView *> vector;
-    for (auto & interiorView : updateStage->cullResult->interiorViews) {
-        if (interiorView.viewCreated) {
-            vector.push_back(&interiorView);
-        }
-    }
-    if (updateStage->cullResult->exteriorView.viewCreated) {
-        vector.push_back(&updateStage->cullResult->exteriorView);
-    }
-
-    for (auto &view : vector) {
-        view->collectMeshes(resultDrawStage->meshesToRender->meshes);
-    }
-
-    std::vector<std::shared_ptr<M2Object>> m2ObjectsRendered;
-    for (auto &view : vector) {
-        std::copy(view->drawnM2s.begin(),view->drawnM2s.end(), std::back_inserter(m2ObjectsRendered));
-    }
-    std::sort( m2ObjectsRendered.begin(), m2ObjectsRendered.end() );
-    m2ObjectsRendered.erase( unique( m2ObjectsRendered.begin(), m2ObjectsRendered.end() ), m2ObjectsRendered.end() );
-
-    for (auto &m2Object : m2ObjectsRendered) {
-        if (m2Object == nullptr) continue;
-        m2Object->collectMeshes(resultDrawStage->meshesToRender->meshes, m_viewRenderOrder);
-        m2Object->drawParticles(resultDrawStage->meshesToRender->meshes, m_viewRenderOrder);
-    }
-
-    std::sort(resultDrawStage->meshesToRender->meshes.begin(),
-              resultDrawStage->meshesToRender->meshes.end(),
-              IDevice::sortMeshes
-    );
-}
-*/

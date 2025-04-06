@@ -26,7 +26,7 @@ void GBlpTextureGL4x::unbind() {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
+void GBlpTextureGL4x::createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
     GLuint textureGPUFormat = 0;
 //     if (ext) {
     switch (textureFormat) {
@@ -183,7 +183,7 @@ void GBlpTextureGL4x::createGlTexture(TextureFormat textureFormat, const HMipmap
 bool GBlpTextureGL4x::getIsLoaded() {
     if (!m_loaded && m_texture != nullptr && m_texture->getIsLoaded()) {
         m_device.bindTexture(this, 0);
-        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+        this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
         m_device.bindTexture(nullptr, 0);
 
         m_loaded = true;

@@ -35,9 +35,13 @@ public:
     void stopMovingUp() override;
     void startMovingDown() override;
     void stopMovingDown() override;
+    void stopAllMovement() override;
+
+
     void zoomInFromMouseScroll(float val) override {};
     void zoomInFromTouch(float val)  override {};
     void addCameraViewOffset(float x, float y)  override {};
+    float getMovementSpeed() override {return 0.0f;};
     void setMovementSpeed(float value) override {};
 
     void getCameraPosition(float *position) override {

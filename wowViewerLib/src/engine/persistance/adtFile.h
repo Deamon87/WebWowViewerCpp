@@ -33,12 +33,22 @@ struct mcnkStruct_t {
     int mcqlLen = 0;
 };
 
+struct MCAL_Offsets_Runtime {
+    int uncompressedIndex = 0;
+    std::array<uint8_t*, 4> alphaPtrs = {nullptr,nullptr,nullptr, nullptr};
+    std::array<SMLayer::MCAL_FLAG, 4> alphaFlags = {0,0,0,0};
+};
+
+bool isHoleLowRes(int hole, int i, int j) ;
+bool isHoleHighRes(uint64_t hole, int i, int j);
+
 class AdtFile: public PersistentFile {
 public:
     AdtFile(std::string fileName){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
     AdtFile(int fileDataId){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
 
-    void processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer);
+    MCAL_Offsets_Runtime createAlphaTextureRuntime(int i);
+    void processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t* __restrict currentLayer, uint32_t currentLayerSize);
     void process(HFileContent adtFile, const std::string &fileName) override;
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:
@@ -68,8 +78,7 @@ public:
     PointerChecker<SMTextureFlags> mtxf = mtxf_len;
     int mtxf_len = 0;
 
-    PointerChecker<char> mamp = mamp_len;
-    int mamp_len = 0;
+    uint8_t mamp_val = 0;
 
     PointerChecker<SMDoodadDef> doodadDef = doodadDef_len;
     int doodadDef_len = 0;
@@ -120,9 +129,6 @@ public:
     PointerChecker<char> mH2OBlob = mH2OBlob_len;
     int mH2OBlob_len = 0;
 
-
-
-
     int mcnkRead = -1;
     std::array<SMChunk, 16*16> mapTile;
     std::array<mcnkStruct_t, 16*16> mcnkStructs;
@@ -130,6 +136,9 @@ public:
 
     std::vector<int16_t> strips;
     std::vector<int> stripOffsets;
+
+    std::vector<int16_t> stripsNoHoles;
+    std::vector<int> stripOffsetsNoHoles;
 private:
     bool m_mainAdt = false;
 

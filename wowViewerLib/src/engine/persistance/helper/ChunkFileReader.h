@@ -11,8 +11,10 @@
 #include <iostream>
 #include "../header/commonFileStructs.h"
 
-//#define debuglog(x) std::cout<< x <<std::endl;
-#define debuglog(x)
+#if _MSC_VER && !__INTEL_COMPILER
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 
 class CChunkFileReader;
 typedef CChunkFileReader ChunkData;
@@ -28,6 +30,7 @@ class CChunkFileReader {
 protected:
     void *fileData;
     int regionSizeToProcess;
+    std::string fileName;
 
 public:
     unsigned int chunkIdent;
@@ -42,9 +45,10 @@ public:
 public:
     CChunkFileReader() {
       }
-    CChunkFileReader(std::vector<unsigned char> &file){
+    CChunkFileReader(std::vector<unsigned char> &file, const std::string &fileName){
         regionSizeToProcess = (int) file.size();
         fileData = &file[0];
+        this->fileName = fileName;
     }
 
     template <typename T>
@@ -75,6 +79,7 @@ public:
 
     template <typename T>
     void processFile(T &resultObj, chunkDef<T> *sectionReaders) {
+        debuglog("Processing file " + fileName);
         loopOverSubChunks(sectionReaders, 0, regionSizeToProcess, resultObj);
     }
 
@@ -125,16 +130,16 @@ private:
                 char *indentPtr = (char *) &subChunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
                 if (bytesReadAfter - bytesReadBefore > subChunk.chunkLen) {
-                    debuglog("Read out of bounds of chunk "<< indent <<" in "<< __PRETTY_FUNCTION__);
+                    debuglog("Read out of bounds of chunk "<< indent <<" in "<< __PRETTY_FUNCTION__<< " in file "<< this->fileName);
                 }
                 if (bytesReadAfter - bytesReadBefore < subChunk.chunkLen) {
-                    debuglog("Not all data was read from chunk "<< indent <<" in "<< __PRETTY_FUNCTION__);
+                    debuglog("Not all data was read from chunk "<< indent <<" in "<< __PRETTY_FUNCTION__<< " in file "<< this->fileName);
                 }
 
             } else {
                 char *indentPtr = (char *) &subChunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                debuglog("Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__);
+                debuglog("Handler for "<< indent << " was not found in "<< __PRETTY_FUNCTION__ << " in file "<< this->fileName);
             }
 
             //TODO: HACK!
@@ -151,7 +156,7 @@ private:
             if (sectionHandlerProc->subChunks.size() == 0) {
                 char *indentPtr = (char *) &chunk.chunkIdent;
                 char indent[5] = { indentPtr[3], indentPtr[2], indentPtr[1], indentPtr[0], 0x0};
-                debuglog("Not all data was read from "<< indent << " chunk, parsed from "<< __PRETTY_FUNCTION__);
+                debuglog("Not all data was read from "<< indent << " chunk, parsed from "<< __PRETTY_FUNCTION__<< " in file "<< this->fileName);
             } else {
                 int chunkLoadOffset = chunk.dataOffset+chunk.bytesRead;
                 int chunkEndOffset = chunk.dataOffset + chunk.chunkLen;
@@ -179,16 +184,20 @@ public:
     }
     template<typename T> inline void readValues(T* &value, int count) {
         static_assert(!std::is_pointer<T>::value, "T is a pointer");
-        value = (T*)&(((unsigned char *)fileData)[currentOffset]);
-        currentOffset += count*sizeof(T);
-        bytesRead += count*sizeof(T);
+        if (count > 0) {
+            value = (T *) &(((unsigned char *) fileData)[currentOffset]);
+            currentOffset += count * sizeof(T);
+            bytesRead += count * sizeof(T);
+        }
     }
 
     template<typename T> inline void readValues(PointerChecker<T> &value, int count) {
         static_assert(!std::is_pointer<T>::value, "T is a pointer");
-        value = (T*)&(((unsigned char *)fileData)[currentOffset]);
-        currentOffset += count*sizeof(T);
-        bytesRead += count*sizeof(T);
+        if (count > 0) {
+            value = (T *) &(((unsigned char *) fileData)[currentOffset]);
+            currentOffset += count * sizeof(T);
+            bytesRead += count * sizeof(T);
+        }
     }
 
 };

@@ -7,6 +7,8 @@
 #include "../../../wowViewerLib/src/include/string_utils.h"
 #include "../../../wowViewerLib/src/engine/stringTrim.h"
 
+#include "buildDefinition.h"
+
 
 std::string getLangFromTags(const std::string &s) {
     std::vector<std::string> values;

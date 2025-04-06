@@ -51,7 +51,7 @@ namespace GDeviceGL4xNS {
         fflush(stdout);
     }
 }
-void GDeviceGL4x::bindIndexBuffer(IIndexBuffer *buffer) {
+void GDeviceGL4x::bindIndexBuffer(IBuffer *buffer) {
     GIndexBufferGL4x * gBuffer = (GIndexBufferGL4x *) buffer;
     if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {
@@ -704,13 +704,13 @@ void GDeviceGL4x::reset() {
 }
 
 unsigned int GDeviceGL4x::getUpdateFrameNumber() {
-    return (m_frameNumber + 1) & 3;
+    return (m_frameNumber + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL4x::getCullingFrameNumber() {
-    return (m_frameNumber + 3) & 3;
+    return (m_frameNumber + 3) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL4x::getDrawFrameNumber() {
-    return (m_frameNumber) & 3;
+    return (m_frameNumber) % MAX_FRAMES_IN_FLIGHT;
 }
 
 

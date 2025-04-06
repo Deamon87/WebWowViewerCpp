@@ -14,26 +14,41 @@ typedef std::shared_ptr<ApiContainer> HApiContainer;
 #include "camera/CameraInterface.h"
 #include "../include/config.h"
 #include "../include/databaseHandler.h"
+#include "../persistence/RequestProcessor.h"
 
 
 class ApiContainer {
 private:
-    Config config;
+    std::shared_ptr<Config> m_config = nullptr;
 public:
+    ApiContainer() : m_config(std::make_shared<Config>()){
+    };
+
+    HApiContainer clone() {
+        auto newApi = std::make_shared<ApiContainer>();
+        newApi->m_config = this->m_config;
+        newApi->requestProcessor = this->requestProcessor;
+        newApi->cacheStorage = this->cacheStorage;
+        newApi->hDevice = this->hDevice;
+        newApi->databaseHandler = this->databaseHandler;
+
+        return newApi;
+    }
+
+
     HWoWFilesCacheStorage cacheStorage = nullptr;
+    HRequestProcessor requestProcessor = nullptr;
     HGDevice hDevice = nullptr;
     std::shared_ptr<IClientDatabase> databaseHandler = nullptr;
-    std::shared_ptr<ICamera> camera = nullptr;
-    std::shared_ptr<ICamera> debugCamera = nullptr;
 
     Config *getConfig() {
-        return &config;
+        return m_config.get();
     }
 };
 
 typedef std::shared_ptr<ApiContainer> HApiContainer;
 
-typedef std::array<std::array<CAaBox, 64>, 64> ADTBoundingBoxHolder;
-typedef std::shared_ptr<ADTBoundingBoxHolder> HADTBoundingBoxHolder;
+//typedef std::array<std::array<CAaBox, 64>, 64> ADTBoundingBoxHolder;
+//typedef std::shared_ptr<ADTBoundingBoxHolder> HADTBoundingBoxHolder;
 
 #endif //AWEBWOWVIEWERCPP_APICONTAINER_H

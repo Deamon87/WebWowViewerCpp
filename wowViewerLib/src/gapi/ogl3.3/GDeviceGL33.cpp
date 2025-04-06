@@ -78,7 +78,7 @@ namespace GL33 {
     }
 }
 
-void GDeviceGL33::bindIndexBuffer(IIndexBuffer *buffer) {
+void GDeviceGL33::bindIndexBuffer(IBuffer *buffer) {
     GIndexBufferGL33 * gBuffer = (GIndexBufferGL33 *) buffer;
     if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {
@@ -331,7 +331,7 @@ void GDeviceGL33::drawMeshes(std::vector<HGMesh> &meshes) {
 }
 
 #ifdef SINGLE_BUFFER_UPLOAD
-void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
+void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantDataVec) {
     int fullSize = 0;
     int fullTargetSize = 0;
     for (int i = 0; i < bufferChunks.size(); i++) {
@@ -411,7 +411,7 @@ void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> 
 }
 #else
 
-void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
+void GDeviceGL33::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantDataVec) {
     aggregationBufferForUpload.resize(maxUniformBufferSize);
 
     uploadAmountInBytes = 0;
@@ -518,7 +518,7 @@ void GDeviceGL33::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
 #ifndef __EMSCRIPTEN__
     for (int i = 0; i < 5; i++) {
 
-        IUniformBufferChunk *uniformChunk = nullptr;
+        IBufferChunk * uniformChunk = nullptr;
         if (i == 0) {
             uniformChunk = matrixChunk.get();
         } else {
@@ -1030,18 +1030,18 @@ void GDeviceGL33::reset() {
 }
 
 unsigned int GDeviceGL33::getUpdateFrameNumber() {
-    return (m_frameNumber + 1) & 3;
+    return (m_frameNumber + 1) % MAX_FRAMES_IN_FLIGHT;
 //    return 0;
 }
 unsigned int GDeviceGL33::getOcclusionFrameNumber() {
-    return (m_frameNumber + 2) & 3;
+    return (m_frameNumber + 2) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL33::getCullingFrameNumber() {
-    return (m_frameNumber + 3) & 3;
+    return (m_frameNumber + 3) % MAX_FRAMES_IN_FLIGHT;
 //    return 0;
 }
 unsigned int GDeviceGL33::getDrawFrameNumber() {
-    return m_frameNumber & 3;
+    return m_frameNumber % MAX_FRAMES_IN_FLIGHT;
 }
 
 void GDeviceGL33::increaseFrameNumber() {

@@ -4,8 +4,10 @@
 
 #include "m2Geom.h"
 #include "skinGeom.h"
-#include "../shader/ShaderDefinitions.h"
-#include "../../gapi/interface/IDevice.h"
+#include <ShaderDefinitions.h>
+#include <atomic>
+
+std::atomic<int> m2SizeLoaded = 0;
 
 chunkDef<M2Geom> M2Geom::m2FileTable = {
     [](M2Geom& file, ChunkData& chunkData){},
@@ -196,32 +198,48 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                 }
             }
         },
-
+        {
+            'FGDE',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered EDGF");
+                    int arrayLen = chunkData.chunkLen / sizeof(EDGF);
+                    file.edgf_count = arrayLen;
+                    chunkData.readValues(file.edgf, arrayLen);
+                    debuglog("Leaving EDGF");
+                }
+            }
+        },
     }
 };
 
-static GBufferBinding staticM2Bindings[6] = {
-        {+m2Shader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 48, 0 },
-        {+m2Shader::Attribute::boneWeights, 4, GBindingType::GUNSIGNED_BYTE, true, 48, 12},  // bonesWeight
-        {+m2Shader::Attribute::bones, 4, GBindingType::GUNSIGNED_BYTE, false, 48, 16},  // bones
-        {+m2Shader::Attribute::aNormal, 3, GBindingType::GFLOAT, false, 48, 20}, // normal
-        {+m2Shader::Attribute::aTexCoord, 2, GBindingType::GFLOAT, false, 48, 32}, // texcoord
-        {+m2Shader::Attribute::aTexCoord2, 2, GBindingType::GFLOAT, false, 48, 40} // texcoord
-};
 
+void M2Geom::process(HFileContent m2FileC, const std::string &fileName) {
+    this->m2File = m2FileC;
+    auto &m2FileData = *m2FileC.get();
+    if (m2FileData.empty()) {
+        std::cout << "M2 file "+fileName << " " << std::to_string(m_modelFileId)+" is empty" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
 
+    if (m2FileData.size() < 5) {
+        std::cout << "Error: file " << std::to_string(m_modelFileId) << " is smaller than header length" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+    }
 
-void M2Geom::process(HFileContent m2File, const std::string &fileName) {
-    this->m2File = m2File;
+    uint32_t ident = *(uint32_t *)m2FileData.data();
+    if (ident != '12DM' && ident != '02DM') {
+        std::cout << "wrong file header for M2 file " << fileName << " " << std::to_string(m_modelFileId) << " ident = " << std::string((char *)&ident, 4) << std::endl;
+        std::cout << "Content : " << std::hex << (int)m2FileData[0] << " " << (int)m2FileData[1] << " " << (int)m2FileData[2] << " " << (int)m2FileData[3] << std::dec << std::endl;
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
 
-    auto &m2FileData = *m2File.get();
-    if (
-        m2FileData[0] == 'M' &&
-        m2FileData[1] == 'D' &&
-        m2FileData[2] == '2' &&
-        m2FileData[3] == '1'
-            ) {
-        CChunkFileReader reader(*this->m2File.get());
+    m2SizeLoaded.fetch_add(m2File->size());
+
+    if (ident == '12DM') {
+        CChunkFileReader reader(*this->m2File.get(), fileName);
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {
         M2Data *m2Header = (M2Data *) this->m2File->data();
@@ -322,13 +340,13 @@ void M2Geom::initTracks(CM2SequenceLoad * cm2SequenceLoad) {
     initM2Camera(m2Header, &m2Header->sequences, cm2SequenceLoad);
 }
 
-HGVertexBuffer M2Geom::getVBO(const HGDevice &device) {
-    if (vertexVbo.get() == nullptr) {
+HGVertexBuffer M2Geom::getVBO(const HMapSceneBufferCreate &sceneRenderer) {
+    if (vertexVbo == nullptr) {
         if (m_m2Data->vertices.size == 0) {
             return nullptr;
         }
 
-        vertexVbo = device->createVertexBuffer();
+        vertexVbo = sceneRenderer->createM2VertexBuffer(m_m2Data->vertices.size*sizeof(M2Vertex));
         vertexVbo->uploadData(
             m_m2Data->vertices.getElement(0),
             m_m2Data->vertices.size*sizeof(M2Vertex));
@@ -337,8 +355,9 @@ HGVertexBuffer M2Geom::getVBO(const HGDevice &device) {
     return vertexVbo;
 }
 
-std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
-    IDevice &device, std::array<HGVertexBufferDynamic, 4> &dynVBOs,
+std::array<HGVertexBufferBindings, IDevice::MAX_FRAMES_IN_FLIGHT>
+M2Geom::createDynamicVao(const HMapSceneBufferCreate &sceneRenderer,
+                         std::array<HGVertexBufferDynamic, IDevice::MAX_FRAMES_IN_FLIGHT> &dynVBOs,
     SkinGeom *skinGeom, M2SkinSection *skinSection) {
     //1. Create index buffer
     std::vector<uint16_t > indicies(skinSection->indexCount);
@@ -365,58 +384,41 @@ std::array<HGVertexBufferBindings, 4> M2Geom::createDynamicVao(
 //        << std::endl;
 
 
-    auto indexIbo = device.createIndexBuffer();
+    auto indexIbo = sceneRenderer->createM2IndexBuffer(indicies.size() * sizeof(uint16_t));
     indexIbo->uploadData(
         &indicies[0],
         indicies.size() * sizeof(uint16_t));
 
-    std::array<HGVertexBufferBindings, 4> result;
-    for (int i = 0 ; i < 4; i ++) {
+    std::array<HGVertexBufferBindings, IDevice::MAX_FRAMES_IN_FLIGHT> result;
+    for (int i = 0 ; i < IDevice::MAX_FRAMES_IN_FLIGHT; i ++) {
         //2.1. Create vertex buffer
-        auto vertexVboDyn = device.createVertexBufferDynamic(skinSection->vertexCount * sizeof(M2Vertex));
+        auto vertexVboDyn = sceneRenderer->createM2VertexBuffer(skinSection->vertexCount * sizeof(M2Vertex));
         dynVBOs[i] = vertexVboDyn;
 
         //2.2 Create VAO
-        HGVertexBufferBindings bufferBindings = device.createVertexBufferBindings();
-        bufferBindings->setIndexBuffer(indexIbo);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = vertexVboDyn;
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
-
-        bufferBindings->addVertexBufferBinding(vertexBinding);
-        bufferBindings->save();
-
+        HGVertexBufferBindings bufferBindings = sceneRenderer->createM2VAO(vertexVboDyn, indexIbo);
         result[i] = bufferBindings;
     }
+
 
     return result;
 }
 
-HGVertexBufferBindings M2Geom::getVAO(const HGDevice& device, SkinGeom *skinGeom) {
+HGVertexBufferBindings M2Geom::getVAO(const HMapSceneBufferCreate &sceneRenderer, SkinGeom *skinGeom) {
+    ZoneScoped;
     HGVertexBufferBindings bufferBindings = nullptr;
     if (vaoMap.find(skinGeom) != vaoMap.end()) {
         bufferBindings = vaoMap.at(skinGeom);
     } else {
-        HGVertexBuffer vboBuffer = this->getVBO(device);
+        HGVertexBuffer vboBuffer = this->getVBO(sceneRenderer);
         if (vboBuffer == nullptr) {
             vaoMap[skinGeom] = nullptr;
             return nullptr;
         }
 
-        HGIndexBuffer iboBuffer = skinGeom->getIBO(device);
+        HGIndexBuffer iboBuffer = skinGeom->getIBO(sceneRenderer);
 
-        //2. Create buffer binding and fill it
-        bufferBindings = device->createVertexBufferBindings();
-        bufferBindings->setIndexBuffer(iboBuffer);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = vboBuffer;
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2Bindings[0], &staticM2Bindings[6]);
-
-        bufferBindings->addVertexBufferBinding(vertexBinding);
-        bufferBindings->save();
-
+        bufferBindings = sceneRenderer->createM2VAO(vertexVbo, iboBuffer);
         vaoMap[skinGeom] = bufferBindings;
     }
 
@@ -472,4 +474,10 @@ void M2Geom::loadLowPriority(const HApiContainer& m_api, uint32_t animationId, u
         m_m2Data->sequences[animationIndex]->flags |= 0x20;
     });
     loadedAnimationMap[animCacheRecord] = animFile;
+}
+
+M2Geom::~M2Geom() {
+    if (m2File != nullptr) {
+        m2SizeLoaded.fetch_add(-m2File->size());
+    }
 }

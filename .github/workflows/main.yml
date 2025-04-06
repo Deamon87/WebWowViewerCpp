@@ -24,7 +24,7 @@ jobs:
   build:
     # The type of runner that the job will run on
     name: ${{ matrix.config.name }}
-    runs-on: ${{ matrix.config.os }} # будет запускаться по очереди на всех типах машин
+    runs-on: ${{ matrix.config.os }}
     strategy:
       fail-fast: false
       matrix:
@@ -32,77 +32,79 @@ jobs:
           - {
             name: "Windows Latest MSVC",
             os: windows-latest,
-            artifact: "windows_msvc.7z",
+            artifact: "windows_msvc",
             build_type: "Release",
             cmake_defines: "",
-            cc: "cl",
-            cxx: "cl",
-            environment_script: "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat",
-            archiver: "7z a",
-            generators: "Visual Studio 17 2022"
-          }
-          #        - {
-          #            name: "Windows Latest MinGW",
-          #            os: windows-latest,
-          #            artifact: "windows_mingw.7z",
-          #            build_type: "Release",
-          #            cmake_defines: "",
-          #            cc: "gcc",
-          #            cxx: "g++",
-          #            archiver: "7z a",
-          #            generators: "Ninja"
-          #          }
-          - {
-            name: "Ubuntu_Latest_GCC",
-            os: ubuntu-latest,
-            artifact: "ubuntu_gcc.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "gcc",
-            cxx: "g++",
+            cc: "cl.exe",
+            cxx: "cl.exe",
             archiver: "7z a",
             generators: "Ninja"
           }
           - {
-            name: "Emscripten",
-            os: ubuntu-latest,
-            artifact: "emscripten.7z",
-            build_type: "Release",
-            cmake_defines: "",
-            cc: "emcc",
-            cxx: "em++",
-            archiver: "7z a",
-            generators: "Ninja"
-          }
-          - {
-            name: "macOS Latest Clang",
-            os: macos-latest,
-            artifact: "macos_clang.7z",
-            build_type: "Release",
-            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
-            cc: "clang",
-            cxx: "clang++",
-            archiver: "7za a",
-            generators: "Ninja"
-          }
+              name: "Windows Clang MSVC",
+              os: windows-latest,
+              artifact: "windows_clang",
+              build_type: "Release",
+              cmake_defines: "",
+              cc: "clang",
+              cxx: "clang++",
+              archiver: "7z a",
+              generators: "Ninja"
+            }
+#          - {
+#              name: "Windows Latest MinGW",
+#              os: windows-latest,
+#              artifact: "windows_clang_mingw.7z",
+#              build_type: "Release",
+#              cmake_defines: "",
+#              cc: "clang",
+#              cxx: "clang++",
+#              archiver: "7z a",
+#              generators: "Ninja"
+#            }
+#          - {
+#            name: "Ubuntu_Latest_GCC",
+#            os: ubuntu-latest,
+#            artifact: "ubuntu_gcc.7z",
+#            build_type: "Release",
+#            cmake_defines: "",
+#            cc: "gcc",
+#            cxx: "g++",
+#            archiver: "7z a",
+#            generators: "Ninja"
+#          }
+#          - {
+#            name: "Emscripten",
+#            os: ubuntu-latest,
+#            artifact: "emscripten.7z",
+#            build_type: "Release",
+#            cmake_defines: "",
+#            cc: "emcc",
+#            cxx: "em++",
+#            archiver: "7z a",
+#            generators: "Ninja"
+#          }
+#          - {
+#            name: "macOS Latest Clang",
+#            os: macos-latest,
+#            artifact: "macos_clang.7z",
+#            build_type: "Release",
+#            cmake_defines: "-DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\"",
+#            cc: "clang",
+#            cxx: "clang++",
+#            archiver: "7za a",
+#            generators: "Ninja"
+#          }
 
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
         with:
           submodules: 'recursive'
-      # Installs python 3.10
+#       Installs python 3.10
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - name: Prepare Vulkan SDK
-#       Disable Vulkan for MacOS for now, as it requires MoltenVK
-        if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'macOS') }}
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: 1.3.204.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
-          vulkan-use-cache: true
       - name: Print env
         run: |
           echo github.event.action: ${{ github.event.action }}
@@ -110,10 +112,10 @@ jobs:
       - name: Install dependencies on windows
         if: startsWith(matrix.config.os, 'windows')
         run: |
-          choco install ninja cmake
+          choco install ninja
           ninja --version
           cmake --version
-        # cmd "${{ matrix.config.environment_script }}"
+
       - name: Install deps for Emscripten
         if: startsWith(matrix.config.name, 'emscripten')
         run: |
@@ -191,6 +193,24 @@ jobs:
           ninja --version
           cmake --version
 
+      - name: Prepare Vulkan SDK
+#       Disable Vulkan for MacOS for now, as it requires MoltenVK
+        if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'macOS') }}
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        with:
+          vulkan-query-version: 1.4.309.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
+          vulkan-use-cache: true
+
+      - name: Setup MSVC envs on windows
+        if: ${{ startsWith(matrix.config.os, 'windows') && startsWith(matrix.config.cc, 'cl.exe')}}
+        shell: pwsh
+        run: |
+          $InstallDir = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          echo "InstallDir = $InstallDir"
+          . ./run-and-set-envs.ps1 "$InstallDir\VC\Auxiliary\Build\vcvarsall.bat" x64
+          exit 0
+
       - name: Configure standalone
         if: ${{ !startsWith(matrix.config.name, 'emscripten') }}
         shell: bash
@@ -204,8 +224,11 @@ jobs:
           cmake \
             -S ../ \
             -B . \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -G "${{ matrix.config.generators }}" \
+            -D CMAKE_C_COMPILER=${{ matrix.config.cc }}\
+            -D CMAKE_CXX_COMPILER=${{ matrix.config.cxx }}\
             ${{ matrix.config.cmake_defines}} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Configure emscripten
@@ -224,38 +247,38 @@ jobs:
           cmake \
             -S ../emscripten_port \
             -B . \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             -DCMAKE_BUILD_TYPE=${{ matrix.config.build_type }} \
             -DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_LOC} \
             -DCMAKE_INSTALL_PREFIX:PATH=${INSTALL_LOC}
       - name: Build
         shell: bash
         working-directory: build
-        run: cmake --build . --config ${{ matrix.config.build_type }}
+        run: cmake --build . --config ${{ matrix.config.build_type }} --target WowStudio
 
       - name: Install Strip
         shell: bash
         working-directory: build
         run: cmake --install . --strip
 
-      - name: Pack
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          path: ./instdir/
+          name: ${{ matrix.config.artifact }}
+
+      - name: Pack release asset
+        if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
         shell: bash
         working-directory: instdir
         run: |
           ls -laR
           ${{ matrix.config.archiver }} ../${{ matrix.config.artifact }} .
-      - name: Upload
-        uses: actions/upload-artifact@v1
-        with:
-          path: ./${{ matrix.config.artifact }}
-          name: ${{ matrix.config.artifact }}
 
       - name: Upload release asset
         if: github.event_name == 'release' && (github.event.action == 'published' || github.event.action == 'created')
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./${{ matrix.config.artifact }}
-          asset_name: ${{ matrix.config.artifact }}.zip
-          asset_content_type: application/zip
+          files: ${{ matrix.config.artifact }}.zip

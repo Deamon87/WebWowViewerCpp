@@ -45,7 +45,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             'MHID',
             {
                 [](AdtFile& file, ChunkData& chunkData){
-                    debuglog("Entered MDID");
+                    debuglog("Entered MHID");
                     file.mhid_len = chunkData.chunkLen / 4;
                     chunkData.readValues(file.mhid, file.mhid_len);
                 }
@@ -98,8 +98,10 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                 [](AdtFile& file, ChunkData& chunkData){
                     debuglog("Entered MAMP");
 //                    std::cout << "Found MAMP" << std::endl;
-                    file.mamp_len = chunkData.chunkLen / sizeof(char);
-                    chunkData.readValues(file.mamp, file.mamp_len);
+//                    std::cout << "mamp chunkData.chunkLen = " << chunkData.chunkLen << std::endl;
+
+                    chunkData.readValue(file.mamp_val);
+//                    std::cout << "mamp value = " << (int)file.mamp_val << std::endl;
                 }
             }
         },
@@ -230,14 +232,13 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
             {
                 [](AdtFile& file, ChunkData& chunkData){
                     debuglog("Entered MH2O");
-
-                    chunkData.readValue(file.mH2OHeader);
-                    //Read the remaining into blob and parse in ADTObject
+                    //Read everything into blob and parse in ADTObject
                     file.mH2OblobOffset = chunkData.bytesRead;
                     int byteSize = chunkData.chunkLen - chunkData.bytesRead;
                     file.mH2OBlob_len = byteSize;
                     chunkData.readValues(file.mH2OBlob, byteSize);
 
+                    file.mH2OHeader = (M2HOHeader *)(&file.mH2OBlob[0]);
                 }
             }
         },
@@ -396,7 +397,7 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         {
                             [](AdtFile& file, ChunkData& chunkData){
                                 debuglog("Entered MCAL");
-                                chunkData.readValue(file.mcnkStructs[file.mcnkRead].mcal);
+                                chunkData.readValues(file.mcnkStructs[file.mcnkRead].mcal, chunkData.chunkLen);
                             }
                         }
                     },
@@ -487,84 +488,141 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
     }
 };
 
-void AdtFile::processTexture(const MPHDFlags &wdtObjFlags, int i, std::vector<uint8_t> &currentLayer) {
+MCAL_Offsets_Runtime AdtFile::createAlphaTextureRuntime(int mcnkChunkIndex) {
+    mcnkStruct_t &mcnkObj = mcnkStructs[mcnkChunkIndex];
+    uint8_t* mcal = mcnkObj.mcal;
+    auto &layers = mcnkObj.mcly;
+
+    uint32_t uniqueTextureIds[4] = {0,0,0,0};
+    uint32_t uniqTextCnt = 0;
+    if ( mcnkObj.mclyCnt) {
+        uniqueTextureIds[0] = layers[0].textureId;
+        uniqTextCnt = 1;
+    }
+    for (int j = 1; j < mcnkObj.mclyCnt; j++ ) {
+        auto &layerDef = layers[j];
+
+        bool alreadyIncluded = false;
+        for (int k = 0; k < uniqTextCnt; k++) {
+            if (uniqueTextureIds[k] == layerDef.textureId) {
+                alreadyIncluded = true;
+                break;
+            }
+        }
+        if (!alreadyIncluded) {
+            uniqueTextureIds[uniqTextCnt++] = layerDef.textureId;
+        }
+    }
+
+
+    MCAL_Offsets_Runtime result;
+    for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
+        auto &layerDef = layers[j];
+        uint32_t alphaOffs = layerDef.offsetInMCAL;
+
+        for (int k = 0; k < uniqTextCnt; k++) {
+            if (uniqueTextureIds[k] == layerDef.textureId) {
+                if (layerDef.flags.use_alpha_map) {
+                    result.alphaPtrs[k] = &mcal[alphaOffs];
+                } else {
+                    result.uncompressedIndex = k;
+                }
+                result.alphaFlags[k] = layerDef.flags;
+
+                break;
+            }
+        }
+    }
+
+    return result;
+}
+
+const std::array<uint8_t, 64> noAlphaArray = {};
+
+void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t* __restrict currentLayer, uint32_t textureSize) {
     mcnkStruct_t &mcnkObj = mcnkStructs[i];
-    uint8_t* alphaArray = mcnkObj.mcal;
-    PointerChecker<SMLayer> &layers = mcnkObj.mcly;
+    uint8_t* mcal = mcnkObj.mcal;
+    auto &layers = mcnkObj.mcly;
 
-    currentLayer = std::vector<uint8_t>((64*4) * 64, 0);
-    if (layers == nullptr || alphaArray == nullptr) return;
+    assert(mcnkObj.mclyCnt <= 4);
+    if (layers == nullptr || mcal == nullptr) return;
 
-//    for (int j = 0; j < mapTile[i].nLayers; j++ ) {
-    for (int j = 0; j <mcnkObj.mclyCnt; j++ ) {
-        int alphaOffs = layers[j].offsetInMCAL;
-        int offO = j;
+
+    for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
+        auto &layerDef = layers[j];
+
+        auto &alphaArray = mcalRuntime.alphaPtrs[j];
+        auto alphaFlag = mcalRuntime.alphaFlags[j];
+
         int readForThisLayer = 0;
 
-        if (!layers[j].flags.use_alpha_map) {
-            for (int k = 0; k < 4096; k++) {
-                currentLayer[offO+k*4] = 255;
-            }
-        } else if (layers[j].flags.alpha_map_compressed) {
+        if (!alphaFlag.use_alpha_map) {
+            std::copy(noAlphaArray.data(), noAlphaArray.data() + textureSize, currentLayer);
+            currentLayer += textureSize;
+            readForThisLayer += textureSize;
+        } else if (alphaFlag.alpha_map_compressed) {
             //Compressed
             //http://www.pxr.dk/wowdev/wiki/index.php?title=ADT/v18
-            while( readForThisLayer < 4096 )
-            {
+            while (readForThisLayer < textureSize) {
                 // fill or copy mode
-                bool fill = (alphaArray[alphaOffs] & 0x80 ) > 0;
-                int n = alphaArray[alphaOffs] & 0x7F;
-                alphaOffs++;
+                uint8_t codeVal = *alphaArray++;
+                bool fill = (codeVal & 0x80) != 0;
 
-                for ( int k = 0; k < n && readForThisLayer < 4096; k++ )
-                {
-                    currentLayer[offO] = alphaArray[alphaOffs];
-                    readForThisLayer++;
-                    offO += 4;
+                int n = fill ?
+                        codeVal & 0x7F :
+                        codeVal;
 
+                if (fill) {
+                    uint8_t alphaVal = *alphaArray++;
 
-                    if( !fill ) alphaOffs++;
+                    for (int k = 0; (k < n) && (readForThisLayer < textureSize); k++, readForThisLayer++) {
+                        *currentLayer++ = alphaVal;
+                    }
+                } else {
+                    for (int k = 0; (k < n) && (readForThisLayer < textureSize); k++, readForThisLayer++) {
+                        *currentLayer++ = *alphaArray;
+                        alphaArray++;
+                    }
                 }
-                if( fill ) alphaOffs++;
             }
         } else {
             //Uncompressed
             if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
                 //Uncompressed (4096)
-                for (int iX =0; iX < 64; iX++) {
-                    for (int iY = 0; iY < 64; iY++){
-                        currentLayer[offO] = alphaArray[alphaOffs];
-
-                        offO += 4;
-                        readForThisLayer+=1;
-                        alphaOffs++;
-                    }
+                for (int iY = 0; iY < textureSize; iY++) {
+                    *currentLayer++ = *alphaArray++;
                 }
+
             } else {
                 //Uncompressed (2048)
-                for (int iX =0; iX < 64; iX++) {
-                    for (int iY = 0; iY < 32; iY++){
-                        //Old world
-                        currentLayer[offO] = (alphaArray[alphaOffs] & 0x0f ) * 17;
-                        offO += 4;
-                        currentLayer[offO] =  ((alphaArray[alphaOffs] & 0xf0 ) >> 4) * 17;
-                        offO += 4;
-                        readForThisLayer+=2; alphaOffs++;
-                    }
+                for (int iY = 0; iY < textureSize; iY += 2) {
+                    //Old world
+                    uint8_t alphaVal = *alphaArray++;
+                    *currentLayer++ = (alphaVal & 0x0f) * 17;
+                    *currentLayer++ = ((alphaVal & 0xf0) >> 4) * 17;
                 }
             }
         }
-
-        //Fix alpha depending on flag
-//        if (((wdtObjFlags.adt_has_big_alpha) > 0) || ((wdtObjFlags.adt_has_height_texturing) > 0)) {
-//            int offO = j;
-//            for (int k = 0; k < 4096; k++) {
-//                currentLayer[offO+k*4] = (unsigned char) (178 * currentLayer[offO + k * 4] >> 8);
-//            }
-//        }
     }
+
+//    if (mcalRuntime.uncompressedIndex) {
+//        auto pCurrentLayer = currentLayer;
+//        auto pCurrentLayerInt = (uint32_t *)currentLayer;
+//        for ( int i = 0; i < 64; i++ ) {
+//            uint8_t layer0 = *pCurrentLayer++;
+//            uint8_t layer1 = *pCurrentLayer++;
+//            uint8_t layer2 = *pCurrentLayer++;
+//            uint8_t layer3 = *pCurrentLayer++;
+//
+//            *pCurrentLayerInt++ = 255 - layer0 - layer1 - layer2 - layer3;
+//        }
+//    }
 }
 
-static bool isHoleLowRes(int hole, int i, int j) {
+bool isHoleLowRes(int hole, int i, int j) {
+    assert(i >= 0 && i < 8);
+    assert(j >= 0 && j < 8);
+
     static int holetab_h[4] = {0x1111, 0x2222, 0x4444, 0x8888};
     static int holetab_v[4] = {0x000F, 0x00F0, 0x0F00, 0xF000};
 
@@ -573,7 +631,10 @@ static bool isHoleLowRes(int hole, int i, int j) {
 
     return (hole & holetab_h[i] & holetab_v[j]) != 0;
 }
-static bool isHoleHighRes(uint64_t hole, int i, int j) {
+bool isHoleHighRes(uint64_t hole, int i, int j) {
+    assert(i >= 0 && i < 8);
+    assert(j >= 0 && j < 8);
+
     uint8_t * holeAsUint8 = (uint8_t *) &hole;
     return ((holeAsUint8[j] >> i) & 1) > 0;
 
@@ -597,8 +658,11 @@ inline void addSquare(int offset, int x, int y, std::vector<int16_t> &strips) {
 void AdtFile::createTriangleStrip() {
     if (mcnkRead < 0) return;
 
-//    strips = std::vector<int16_t>();
-//    stripOffsets = std::vector<int>();
+    strips = std::vector<int16_t>();
+    stripOffsets = std::vector<int>();
+
+    stripsNoHoles = std::vector<int16_t>();
+    stripOffsetsNoHoles = std::vector<int>();
 
     for (int i = 0; i <= mcnkRead; i++) {
         SMChunk &mcnkObj = mapTile[i];
@@ -606,9 +670,8 @@ void AdtFile::createTriangleStrip() {
         uint64_t holeHigh = mcnkObj.postMop.holes_high_res;
 
         stripOffsets.push_back(strips.size());
+        stripOffsetsNoHoles.push_back(stripsNoHoles.size());
 
-        int j = 0;
-        bool first = true;
         for (int y = 0; y < 8; y++) {
             for (int x = 0; x < 8; x++) {
                 bool isHole = (!mcnkObj.flags.high_res_holes) ?
@@ -617,26 +680,19 @@ void AdtFile::createTriangleStrip() {
                 if (!isHole) {
                     //There are 8 squares in width and 8 square in height.
                     //Each square is 4 triangles
-//
-//
-//                    if (!first) {
-//                        strips.push_back((i * vertCountPerMCNK) + squareIndsStrip[0] + 17 * y + x);
-//                    }
-//                    first = false;
-//                    for (int k = 0; k < stripLenght; k++) {
-//                        strips.push_back((i* vertCountPerMCNK) + squareIndsStrip[k] + 17 * y + x);
-//                    }
                     addSquare(i * vertCountPerMCNK, x, y, strips);
                 }
+                addSquare(i * vertCountPerMCNK, x, y, stripsNoHoles);
             }
         }
     }
     stripOffsets.push_back(strips.size());
+    stripOffsetsNoHoles.push_back(stripsNoHoles.size());
 }
 
 void AdtFile::process(HFileContent adtFile, const std::string &fileName) {
     m_adtFile = adtFile;
-    CChunkFileReader reader(*m_adtFile.get());
+    CChunkFileReader reader(*m_adtFile.get(), fileName);
     reader.processFile(*this, &AdtFile::adtFileTable);
 
     createTriangleStrip();

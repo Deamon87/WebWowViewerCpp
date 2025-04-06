@@ -13,8 +13,7 @@
 
 void saveScreenshotLodePng(const std::string &name, int width, int height, std::vector <uint8_t> &rgbaBuff);
 
-void saveDataFromDrawStage(const HFrameBuffer& fb,
+void saveDataFromDrawStage(std::function<void(int, int, int, int, uint8_t* data)> readRGBAPixels,
                            const std::string& screenshotFileName,
-                           int screenshotWidth, int screenshotHeight,
-                           std::vector <uint8_t> &buffer);
+                           int screenshotWidth, int screenshotHeight);
 #endif //AWEBWOWVIEWERCPP_SCREENSHOTMAKER_H

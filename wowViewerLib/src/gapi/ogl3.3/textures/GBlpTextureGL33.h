@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE_H
 
-#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureGL33.h"
 #include "../GDeviceGL33.h"
 
@@ -14,7 +13,7 @@ class GBlpTextureGL33 : public GTextureGL33 {
     explicit GBlpTextureGL33(HGDevice device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureGL33() override;
-    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override;
+    void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override;
 
     bool getIsLoaded() override;
     bool postLoad() override;

@@ -6,8 +6,7 @@
 #define WEBWOWVIEWERCPP_MPQREQUESTPROCESSOR_H
 
 #include <vector>
-#include "RequestProcessor.h"
-#include "../../wowViewerLib/src/include/wowScene.h"
+#include "../../wowViewerLib/src/persistence/RequestProcessor.h"
 #include "../../3rdparty/stormlib/src/StormLib.h"
 
 static std::string mpqPriorityOrder[] = {

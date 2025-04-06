@@ -14,9 +14,13 @@
 #include "../iScene.h"
 #include "../objectCache.h"
 #include "../wdl/wdlObject.h"
-#include "../../SceneScenario.h"
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
+#include "../../../renderer/frame/FrameInputParams.h"
+#include "../../../renderer/mapScene/MapScenePlan.h"
+#include "../../../renderer/mapScene/MapSceneParams.h"
+#include "../wdt/wdtLightsObject.h"
+#include "dayNightDataHolder/DayNightLightHolder.h"
 
 enum class SceneMode {
    smMap,
@@ -34,39 +38,12 @@ private:
         }
     }
 protected:
-    FrameCounter mapProduceUpdateCounter;
-    FrameCounter interiorViewCollectMeshCounter;
-    FrameCounter exteriorViewCollectMeshCounter;
-    FrameCounter m2CollectMeshCounter;
-    FrameCounter sortMeshCounter;
-    FrameCounter collectBuffersCounter;
-    FrameCounter sortBuffersCounter;
-
-    FrameCounter mapUpdateCounter;
-    FrameCounter m2UpdateframeCounter;
-    FrameCounter m2calcDistanceCounter;
-    FrameCounter adtCleanupCounter;
-    FrameCounter wmoGroupUpdate;
-    FrameCounter adtUpdate;
-
-
-    FrameCounter cullCreateVarsCounter;
-    FrameCounter cullGetCurrentWMOCounter;
-    FrameCounter cullGetCurrentZoneCounter;
-    FrameCounter cullUpdateLightsFromDBCounter;
-    FrameCounter cullExterior;
-    FrameCounter cullExteriorSetDecl;
-    FrameCounter cullExteriorWDLCull;
-    FrameCounter cullExteriorGetCands;
-    FrameCounter cullExterioFrustumWMO;
-    FrameCounter cullExterioFrustumM2;
-    FrameCounter cullSkyDoms;
-    FrameCounter cullCombineAllObjects;
-
     HApiContainer m_api = nullptr;
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::vector<std::array<uint8_t, 2>> m_mandatoryADT;
     std::string mapName;
+
+    std::shared_ptr<IBufferChunk<sceneWideBlockVSPS>> m_sceneWideBlockVSPSChunk;
 
     SceneMode m_sceneMode = SceneMode::smMap;
 
@@ -78,17 +55,19 @@ protected:
     HWdtFile m_wdtfile = nullptr;
     std::shared_ptr<WmoObject> wmoMap = nullptr;
 
-
-    std::vector<std::shared_ptr<M2Object>> m_exteriorSkyBoxes;
+    bool useWeightedBlend = false;
+    bool has0x200000Flag = false;
 
     std::shared_ptr<WdlObject> m_wdlObject = nullptr;
+    std::shared_ptr<WdtLightsObject> m_wdtLightObject = nullptr;
 
     int m_viewRenderOrder = 0;
 
-    HGVertexBufferBindings quadBindings;
-    float m_skyConeAlpha = 0.0;
     HGMesh skyMesh = nullptr;
+    std::shared_ptr<ISkyMeshMaterial> skyMeshMat = nullptr;
+
     HGMesh skyMesh0x4Sky = nullptr;
+    std::shared_ptr<ISkyMeshMaterial> skyMeshMat0x4 = nullptr;
 
     //Map mode
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
@@ -97,7 +76,6 @@ protected:
     //M2 mode
     std::shared_ptr<M2Object> m_m2Object = nullptr;
     std::string m_m2Model;
-    int m_cameraView;
 
     //Wmo mode
     std::shared_ptr<WmoObject> m_wmoObject = nullptr;
@@ -106,94 +84,70 @@ protected:
 
     bool m_suppressDrawingSky = false;
 
-    std::shared_ptr<M2Object> getM2Object(std::string fileName, SMDoodadDef &doodadDef) override ;
-    std::shared_ptr<M2Object> getM2Object(int fileDataId, SMDoodadDef &doodadDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) override ;
+    std::shared_ptr<M2Object> getM2Object(std::string fileName, const SMDoodadDef &doodadDef) override ;
+    std::shared_ptr<M2Object> getM2Object(int fileDataId, const SMDoodadDef &doodadDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef) override ;
 
-    int getCameraNum() override {return 0;};
-    std::shared_ptr<ICamera> createCamera(int cameraNum) override { return nullptr;};
-
-
-    animTime_t getCurrentSceneTime() override ;
 
     virtual void getPotentialEntities(
         const MathHelper::FrustumCullingData &frustumData,
         const mathfu::vec4 &cameraPos,
-        HCullStage &cullStage,
+        const HMapRenderPlan &mapRenderPlan,
         M2ObjectListContainer &potentialM2,
         WMOListContainer &potentialWmo);
 
     virtual void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                        const mathfu::vec4 &cameraPos,
-                                       HCullStage &cullStage,
+                                       const HMapRenderPlan &mapRenderPlan,
                                        M2ObjectListContainer &m2ObjectsCandidates,
                                        WMOListContainer &wmoCandidates);
 
     void checkADTCulling(int i, int j,
                          const MathHelper::FrustumCullingData &frustumData,
                          const mathfu::vec4 &cameraPos,
-                         HCullStage &cullStage,
+                         const HMapRenderPlan &mapRenderPlan,
                          M2ObjectListContainer &m2ObjectsCandidates,
                          WMOListContainer &wmoCandidates);
 
-    virtual void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                                          StateForConditions &stateForConditions, const AreaRecord &areaRecord);
+    void getPossibleHeight(const mathfu::vec4 &cameraPos, float &height);
 
-    struct mapInnerZoneLightRecord {
-        int ID;
-        std::string name;
-        int LightID;
-        CAaBox aabb;
-        std::vector<mathfu::vec2> points;
-        std::vector<mathfu::vec2> lines;
-    };
-    std::vector<mapInnerZoneLightRecord> m_zoneLights;
-    void loadZoneLights();
+    virtual void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
+                                          StateForConditions &stateForConditions, const AreaRecord &areaRecord);
 
     FreeStrategy adtFreeLambda;
     FreeStrategy zeroStateLambda;
 
-    HADTBoundingBoxHolder m_adtBBHolder = nullptr;
+    HADTRenderConfigDataHolder m_adtConfigHolder = nullptr;
 
 protected:
-    explicit Map() {
+    explicit Map() : m_dayNightLightHolder(nullptr, -1) {
     }
+    DayNightLightHolder m_dayNightLightHolder;
 public:
-    explicit Map(HApiContainer api, int mapId, std::string mapName) {
-        initMapTiles();
+    explicit Map(HApiContainer api, int mapId, const std::string &mapName);
 
-        m_mapId = mapId; m_api = api; this->mapName = mapName;
-        m_sceneMode = SceneMode::smMap;
-        createAdtFreeLamdas();
-
-        std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
-        std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
-
-        m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
-        m_wdlObject->setMapApi(this);
-
-        loadZoneLights();
-
-    };
-
-    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) {
+    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) : m_dayNightLightHolder(api, mapId) {
         initMapTiles();
 
         m_mapId = mapId; m_api = api; mapName = "";
         m_sceneMode = SceneMode::smMap;
 
+        MapRecord mapRecord;
+        api->databaseHandler->getMapById(mapId, mapRecord);
+        useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+        has0x200000Flag = (mapRecord.flags0 & 0x200000) > 0;
+
         createAdtFreeLamdas();
 
         m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
 
-        loadZoneLights();
+        m_dayNightLightHolder.loadZoneLights();
     };
 
-    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) {
+    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) : m_dayNightLightHolder(api, 0) {
         initMapTiles();
 
         m_mapId = 0; m_api = api; this->mapName = mapName;
@@ -210,7 +164,7 @@ public:
 
         m_lockedMap = true;
         std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-        auto adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+        auto adtObject = adtObjectFactory->createObject(m_api, adtFileTemplate, mapName, i, j, false, m_wdtfile);
 
         adtObject->setMapApi(this);
         this->mapTiles[i][j] = adtObject;
@@ -219,45 +173,33 @@ public:
     ~Map() override {
 //        std::cout << "Map destroyed " << std::endl;
 	};
+    animTime_t getCurrentSceneTime() override;
 
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
-    void checkCulling(HCullStage &cullStage) override;
+    void makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, const HMapRenderPlan &mapRenderPlan);
 
-    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) override {
+    void setMandatoryADTs(std::vector<std::array<uint8_t, 2>> &mandatoryADTs) {
         m_mandatoryADT = mandatoryADTs;
     }
-    void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) override;
-    void setAnimationId(int animationId) override {};
-    void setMeshIds(std::vector<uint8_t> &meshIds) override {};
+    void getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId);
 
-    void resetAnimation() override {
-
-    }
-    void setAdtBoundingBoxHolder(HADTBoundingBoxHolder &bbHolder) override {
-        m_adtBBHolder = bbHolder;
+    void setAdtConfig(HADTRenderConfigDataHolder &adtConfig) {
+        m_adtConfigHolder = adtConfig;
     }
 
+    void doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan);
 
-
-    void doPostLoad(HCullStage &cullStage) override;
-
-    void update(HUpdateStage &updateStage);
-    void updateBuffers(HUpdateStage &updateStage) override;
-    void produceUpdateStage(HUpdateStage &updateStage) override;
-    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
+    void update(const HMapRenderPlan &renderPlan);
+    void updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan);
 private:
     void checkExterior(mathfu::vec4 &cameraPos,
                        const MathHelper::FrustumCullingData &frustumData,
                        int viewRenderOrder,
-                       HCullStage cullStage);
+                       const HMapRenderPlan &mapRenderPlan);
 
-    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const;
-
-
-    void getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) override;
+//    HDrawStage doGaussBlur(const HDrawStage &parentDrawStage, std::vector<HGUniformBufferChunk> &uniformBufferChunks) const;
 
     void createAdtFreeLamdas();
 };
+typedef std::shared_ptr<Map> HMapScene;
 
 #endif //WEBWOWVIEWERCPP_MAP_H

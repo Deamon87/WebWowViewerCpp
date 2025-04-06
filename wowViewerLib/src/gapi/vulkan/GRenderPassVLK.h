@@ -5,24 +5,48 @@
 #ifndef AWEBWOWVIEWERCPP_GRENDERPASSVLK_H
 #define AWEBWOWVIEWERCPP_GRENDERPASSVLK_H
 
-#include "GDeviceVulkan.h"
+#include "context/vulkan_context.h"
+#include "../interface/textures/ITexture.h"
+#include "../interface/IDevice.h"
 #include <vector>
+#include <array>
 
 class GRenderPassVLK {
 public:
-    GRenderPassVLK(GDeviceVLK &device, std::vector<VkFormat> textureAttachments,
-                   VkFormat depthAttachment, VkSampleCountFlagBits sampleCountBit,
-                   bool isSwapChainPass);
+    GRenderPassVLK(IDevice &device,
+                   const std::vector<ITextureFormat> &textureAttachments,
+                   ITextureFormat depthAttachment,
+                   VkSampleCountFlagBits sampleCountBit,
+                   bool invertZ,
+                   bool isSwapChainPass,
+                   bool clearColor,
+                   bool clearDepth);
 
-    VkSampleCountFlagBits getSampleCountBit();
-    VkRenderPass getRenderPass();
+    GRenderPassVLK(VkDevice vkDevice,
+                   const std::vector<VkFormat> &textureAttachments,
+                   VkFormat depthAttachment,
+                   VkSampleCountFlagBits sampleCountBit,
+                   bool invertZ,
+                   bool isSwapChainPass,
+                   bool clearColor,
+                   bool clearDepth);
 
-    std::vector<VkClearValue> produceClearColorVec(std::array<float,3> colorClearColor, float depthClear);
+    VkSampleCountFlagBits getSampleCountBit() const;
+    uint8_t getColorAttachmentsCount() const;
+    VkRenderPass getRenderPass() const;
+
+    std::vector<VkClearValue> produceClearColorVec(std::array<float,3> colorClearColor);
+    bool getInvertZ() const {
+        return m_invertZ;
+    }
 
 private:
     VkSampleCountFlagBits m_sampleCountBit;
-    GDeviceVLK &mdevice;
     VkRenderPass renderPass;
+
+    uint32_t colorAttachmentCount = 0;
+
+    bool m_invertZ = false;
 
     enum class AttachmentType {
         atColor,
@@ -33,6 +57,13 @@ private:
     //Is used to fill proper clearColor vector
     std::vector<AttachmentType> attachmentTypes;
 
+    void createRenderPass(const ITextureFormat &depthAttachmentFormat,
+                     const VkSampleCountFlagBits &sampleCountBit, bool isSwapChainPass,
+                     VkDevice vkDevice,
+                     const std::vector<VkFormat> &attachmentFormats,
+                     const VkFormat &availableDepth,
+                     bool clearColor,
+                     bool clearDepth);
 };
 
 

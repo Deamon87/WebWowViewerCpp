@@ -6,7 +6,7 @@
 #include "GVertexBufferBindingsVLK.h"
 #include "../interface/IDevice.h"
 
-GVertexBufferBindingsVLK::GVertexBufferBindingsVLK(IDevice &m_device) : m_device(m_device) {
+GVertexBufferBindingsVLK::GVertexBufferBindingsVLK()  {
 
 }
 
@@ -57,6 +57,34 @@ VkFormat gBindingToVkFormat(GBindingType gType, uint32_t size, bool normalized )
                         throw std::runtime_error("unknown gBindingFormat");
                 }
             }
+            case GBindingType::GSIGNED_BYTE :
+            if (normalized) {
+                switch (size) {
+                    case 1:
+                        return VK_FORMAT_R8_SNORM;
+                    case 2:
+                        return VK_FORMAT_R8G8_SNORM;
+                    case 3:
+                        return VK_FORMAT_R8G8B8_SNORM;
+                    case 4:
+                        return VK_FORMAT_R8G8B8A8_SNORM;
+                    default:
+                        throw std::runtime_error("unknown gBindingFormat");
+                }
+            } else {
+                switch (size) {
+                    case 1:
+                        return VK_FORMAT_R8_SINT;
+                    case 2:
+                        return VK_FORMAT_R8G8_SINT;
+                    case 3:
+                        return VK_FORMAT_R8G8B8_SINT;
+                    case 4:
+                        return VK_FORMAT_R8G8B8A8_SINT;
+                    default:
+                        throw std::runtime_error("unknown gBindingFormat");
+                }
+            }
     }
     throw std::runtime_error("unknown gBindingFormat");
     return VK_FORMAT_UNDEFINED;
@@ -67,24 +95,23 @@ void GVertexBufferBindingsVLK::setIndexBuffer(HGIndexBuffer indexBuffer) {
     m_indexBuffer = indexBuffer;
 }
 
-void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding binding) {
-    m_bindings.push_back(binding);
+void GVertexBufferBindingsVLK::addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings, bool isInstanceInputRate) {
 
-    int bindingIdx = 0;
-    for (auto &gVertexBinding : m_bindings) {
+//    for (auto &gVertexBinding : m_bindings) {
         uint32_t stride = 0;
-        if (gVertexBinding.bindings[0].stride != 0) {
-            stride = gVertexBinding.bindings[0].stride;
+        if (bindings[0].stride != 0) {
+            stride = bindings[0].stride;
         } else {
-            stride = gVertexBinding.bindings[0].size * ((gVertexBinding.bindings[0].type == GBindingType::GFLOAT) ? 4 : 1);
+            stride = bindings[0].size * ((bindings[0].type == GBindingType::GFLOAT) ? 4 : 1);
         }
 
+        int bindingIdx = m_BufferBindingsVLK.size();
         vkBufferFormatHolder bufferFormatHolder;
         bufferFormatHolder.bindingDescription.binding = bindingIdx;
         bufferFormatHolder.bindingDescription.stride = stride;
-        bufferFormatHolder.bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        bufferFormatHolder.bindingDescription.inputRate = !isInstanceInputRate ?VK_VERTEX_INPUT_RATE_VERTEX : VK_VERTEX_INPUT_RATE_INSTANCE;
 
-        for (auto &gBinding : gVertexBinding.bindings) {
+        for (auto &gBinding : bindings) {
             VkVertexInputAttributeDescription attributeDescription = {};
             attributeDescription.binding = bindingIdx;
             attributeDescription.location = gBinding.position;
@@ -93,13 +120,14 @@ void GVertexBufferBindingsVLK::addVertexBufferBinding(GVertexBufferBinding bindi
 
             bufferFormatHolder.attributeDescription.push_back(attributeDescription);
         }
-        bindingIdx++;
 
         m_BufferBindingsVLK.push_back(bufferFormatHolder);
-    }
+        m_vertexBuffers.push_back(vertexBuffer);
+//    }
 }
 
 void GVertexBufferBindingsVLK::save() {
+    //Not used in VULKAN
 }
 
 std::vector<vkBufferFormatHolder> &GVertexBufferBindingsVLK::getVLKFormat() {

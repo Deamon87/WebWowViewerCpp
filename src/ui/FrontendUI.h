@@ -15,60 +15,36 @@
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
-#include "childWindow/mapConstructionWindow/mapConstructionWindow.h"
 #include "../minimapGenerator/minimapGenerator.h"
 #include "../persistance/CascRequestProcessor.h"
 #include "../minimapGenerator/storage/CMinimapDataDB.h"
 #include "../exporters/dataExporter/DataExporterClass.h"
 #include "childWindow/databaseUpdateWorkflow/DatabaseUpdateWorkflow.h"
+#include "childWindow/minimapGeneratonWindow/MinimapGenerationWindow.h"
+#include "../../wowViewerLib/src/exporters/IExporter.h"
+#include "renderer/uiScene/IFrontendUIBufferCreate.h"
+#include "renderer/uiScene/FrontendUIRenderer.h"
+#include "../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
+#include "childWindow/BLPViewer.h"
+#include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
+#include "childWindow/textureRenderer/DebugRendererWindow.h"
+#include "childWindow/fileListWindow/FileListWindow.h"
+#include "childWindow/sceneWindow/SceneWindow.h"
+#include "childWindow/m2Window/M2Window.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
-//Implementation of iInnerSceneApi
 public:
     void createDefaultprocessor();
     void createDatabaseHandler();
 
-    FrontendUI(HApiContainer api, HRequestProcessor processor) {
-        m_api = api;
-        m_processor = processor;
-
-        this->createDatabaseHandler();
-        //this->createDefaultprocessor();
-
-    }
+    FrontendUI(HApiContainer api);
     ~FrontendUI() override {
+        fileDialog.Close();
+        createFileDialog.Close();
+
         ImGui::DestroyContext(this->imguiContext);
     };
-    std::shared_ptr<FrontendUI> getShared()
-    {
-        return shared_from_this();
-    }
-
-    HRequestProcessor getProcessor() {
-        return m_processor;
-    }
-
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override {};
-    void setMeshIdArray(std::vector<uint8_t> &meshIds) override {};
-    void setAnimationId(int animationId) override {};
-    void setMeshIds(std::vector<uint8_t> &meshIds) override {};
-
-    void produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) override;
-    void produceUpdateStage(HUpdateStage &updateStage) override;
-
-    void checkCulling(HCullStage &cullStage) override {};
-
-
-    void doPostLoad(HCullStage &cullStage) override {};
-
-    void update(HUpdateStage &updateStage) {};
-    void updateBuffers(HUpdateStage &updateStage) override {};
-
-
-    int getCameraNum() override {return 0;};
-    std::shared_ptr<ICamera> createCamera(int cameraNum) override {return nullptr;};
-    void resetAnimation() override {};
 
     HFrameScenario createFrameScenario(int canvWidth, int canvHeight, double deltaTime);
 
@@ -85,56 +61,51 @@ public:
         windowWidth = width;
         windowHeight = height;
     }
+
+    std::shared_ptr<SceneWindow> getCurrentActiveScene() {
+        return m_currentActiveScene;
+    };
 private:
     ImGuiContext* imguiContext = nullptr;
+    std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
 
-    std::array<HCullStage, 4> m_cullstages = {};
+    std::shared_ptr<IUIMaterial> fontMat;
 
-    std::shared_ptr<CMinimapDataDB> m_minimapDB;
-
-    HMinimapGenerator minimapGenerator;
-    HADTBoundingBoxHolder boundingBoxHolder;
-    std::vector<ScenarioDef> sceneDefList;
-    HRiverColorOverrideHolder riverColorOverrides;
-    ScenarioDef *sceneDef = nullptr;
-    bool editTabOpened;
-    float previewX = 0;
-    float previewY = 0;
-    float previewZoom = 1;
+    std::shared_ptr<SceneWindow> m_backgroundScene = nullptr;
+    std::shared_ptr<SceneWindow> m_currentActiveScene = nullptr;
+    std::weak_ptr<SceneWindow> m_lastActiveScene;
 
     float uiScale = 1;
 
-
-    std::shared_ptr<IScene> currentScene = nullptr;
-
     bool tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef);
 
-    void openWMOSceneByfdid(int WMOFdid);
-    void openM2SceneByfdid(int m2Fdid, std::vector<int> &replacementTextureIds);
-    void openM2SceneByName(std::string m2FileName, std::vector<int> &replacementTextureIds);
 
-    void getCameraPos(float &cameraX,float &cameraY,float &cameraZ);
+
+    void getCameraPos(mathfu::vec3 &camera, mathfu::vec3 &lookAt);
     void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
 
     void getAdtSelectionMinimap(int wdtFileDataId);
     void getAdtSelectionMinimap(std::string wdtFilePath);
     void getMapList(std::vector<MapRecord> &mapList);
-    std::string getCurrentAreaName();
-    bool fillAdtSelectionminimap(std::array<std::array<HGTexture, 64>, 64> &minimap, bool &isWMOMap, bool &wdtFileExists);
 
+    bool fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists);
 
+    std::shared_ptr<SceneWindow> getOrCreateWindow();
     void unloadScene();
-    int getCameraNumCallback();
-    bool setNewCameraCallback(int cameraNum);
     void resetAnimationCallback();
 
-    std::array<std::array<HGTexture, 64>, 64> adtSelectionMinimap;
+    std::array<std::array<HGSamplableTexture, 64>, 64> adtSelectionMinimapTextures;
+    std::array<std::array<std::shared_ptr<IUIMaterial>, 64>, 64> adtSelectionMinimapMaterials;
+    std::vector<mapInnerZoneLightRecord> m_zoneLights = {};
+    std::vector<LightResult> m_mapLights = {};
+    int limitZoneLight = -1;
 
     void emptyMinimap() {
         for (int i = 0; i < 64; i++) {
             for (int j = 0; j < 64; j++) {
-                adtSelectionMinimap[i][j] = nullptr;
+                adtSelectionMinimapTextures[i][j] = nullptr;
+                adtSelectionMinimapMaterials[i][j] = nullptr;
             }
         }
     }
@@ -143,13 +114,13 @@ private:
 
     std::array<char, 128> filterText = {0};
     bool refilterIsNeeded = false;
-    void filterMapList(std::string text);
+    bool resortIsNeeded = false;
+    void filterMapList(const std::string &text);
+    void fillMapListStrings();
 
     ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory, true);
     ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
 
-    bool show_demo_window = true;
-    bool show_another_window = true;
     bool showCurrentStats = true;
     bool showSelectMap = false;
     bool showMakeScreenshot = false;
@@ -168,13 +139,17 @@ private:
     int windowWidth = 640;
     int windowHeight = 480;
 
+
     float minimapZoom = 1;
-    float farPlane = 200;
+    bool drawZoneLights = false;
+    bool drawAreaLights = false;
+
     int currentTime = 0;
-    float movementSpeed = 1;
+
     int  threadCount = 4;
     int  quickSortCutoff = 100;
     float prevMinimapZoom = 1;
+    float prevZoomedSize = 0;
     int prevMapId = -1;
     bool isWmoMap = false;
 
@@ -186,12 +161,7 @@ private:
     int glowSource = 0;
     float customGlow = 0.0;
 
-    int currentCameraNum = -1;
 
-    std::array<float, 3> exteriorAmbientColor = {1, 1, 1};
-    std::array<float, 3> exteriorHorizontAmbientColor = {1, 1, 1};
-    std::array<float, 3> exteriorGroundAmbientColor= {1, 1, 1};
-    std::array<float, 3> exteriorDirectColor = {0, 0, 0};
 
     MapRecord prevMapRec;
 
@@ -200,8 +170,6 @@ private:
     float worldPosZ = 0;
 
     HApiContainer m_api;
-    HRequestProcessor m_processor;
-    HGTexture fontTexture;
 
     HWdtFile m_wdtFile = nullptr;
 
@@ -213,8 +181,12 @@ private:
     int lastHeight = 100;
 
     bool needToMakeScreenshot = false;
+    std::shared_ptr<IRenderView> m_screenShotRenderView = nullptr;
+    std::shared_ptr<IRenderView> m_debugRenderView = nullptr;
+
+
     std::string screenshotFilename = "";
-    HDrawStage screenshotDS = nullptr;
+    HFrameBuffer screenshotFramebuffer = nullptr;
     int screenShotWidth = 100;
     int screenShotHeight = 100;
     int screenshotFrame = -1;
@@ -222,13 +194,20 @@ private:
     std::shared_ptr<IExporter> exporter;
     int exporterFramesReady = 0;
 
-   std::shared_ptr<MapConstructionWindow> m_mapConstructionWindow = nullptr;
+    std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
+    std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
+    std::shared_ptr<BLPViewer> m_blpFileViewerWindow = nullptr;
+    std::vector<std::shared_ptr<M2Window>> m_m2Windows = {};
+
+    std::shared_ptr<FileListWindow> m_fileListWindow = nullptr;
+    std::shared_ptr<DebugRendererWindow> m_debugRenderWindow;
 
 
 //Test export
-    DataExporterClass *dataExporter = nullptr;
+    std::shared_ptr<DataExporter::DataExporterClass> m_dataExporter = nullptr;
 
     std::shared_ptr<DatabaseUpdateWorkflow> m_databaseUpdateWorkflow = nullptr;
+    std::shared_ptr<KeysUpdateWorkflow> m_keyUpdateWorkFlow = nullptr;
 
 public:
     void overrideCascOpened(bool value) {
@@ -246,6 +225,7 @@ public:
 #endif
 );
 #endif
+    void shutDown();
 
     void composeUI();
     void newFrame();
@@ -265,14 +245,21 @@ public:
     void showQuickLinksDialog();
 
     void showCurrentStatsDialog();
+    void showBlpViewer();
+    void showM2Viewer();
+    void showFileList();
 
     void restartMinimapGenPreview();
     void showMinimapGenerationSettingsDialog();
 
-    void openMapByIdAndFilename(int mapId, std::string mapName, float x, float y, float z);
-    void openMapByIdAndWDTId(int mapId, int wdtFileId, float x, float y, float z);
+
 
     void editComponentsForConfig(Config *config);
+
+    //Making the frame
+    void update(HFrontendUIBufferCreate renderer);
+
+    void createFontTexture();
 };
 
 

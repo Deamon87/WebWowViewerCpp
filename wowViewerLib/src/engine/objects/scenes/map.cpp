@@ -13,7 +13,7 @@
 #include "../../../gapi/interface/IDevice.h"
 #include "../../algorithms/quick-sort-omp.h"
 #include "../../../gapi/UniformBufferStructures.h"
-#include "../../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "tbb/tbb.h"
 #include "../../algorithms/FrameCounter.h"
 
@@ -21,16 +21,10 @@
 #include "../../algorithms/mathHelper_culling_sse.h"
 #endif
 #include "../../algorithms/mathHelper_culling.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
+#include "../../../renderer/frame/FrameProfile.h"
+#include "map_load_max_contants.h"
 
-//#include "../../algorithms/quicksort-dualpivot.h"
-
-static GBufferBinding fullScreen[1] = {
-    {+drawQuad::Attribute::position, 2, GBindingType::GFLOAT, false, 0, 0},
-};
-
-static GBufferBinding skyConusBinding[1] = {
-    {+drawQuad::Attribute::position, 4, GBindingType::GFLOAT, false, 0, 0},
-};
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
     {
@@ -262,80 +256,67 @@ std::array<uint16_t,300> skyConusIBO = {
     121 ,  97 ,  121  ,
 };
 
-HGVertexBufferBindings createSkyBindings(IDevice *device) {
-    auto skyIBO = device->createIndexBuffer();
+HGVertexBufferBindings createSkyBindings(const HMapSceneBufferCreate &sceneRenderer) {
+    auto skyIBO = sceneRenderer->createSkyIndexBuffer(skyConusIBO.size() * sizeof(uint16_t));
     skyIBO->uploadData(
         skyConusIBO.data(),
         skyConusIBO.size() * sizeof(uint16_t));
 
-    auto skyVBO = device->createVertexBuffer();
+    auto skyVBO = sceneRenderer->createSkyVertexBuffer(skyConusVBO.size() * sizeof(mathfu::vec4_packed));
     skyVBO->uploadData(
         skyConusVBO.data(),
         skyConusVBO.size() * sizeof(mathfu::vec4_packed)
     );
 
-    auto skyBindings = device->createVertexBufferBindings();
-    skyBindings->setIndexBuffer(skyIBO);
-
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = skyVBO;
-
-    vertexBinding.bindings = std::vector<GBufferBinding>(&skyConusBinding[0], &skyConusBinding[1]);
-
-    skyBindings->addVertexBufferBinding(vertexBinding);
-    skyBindings->save();
+    auto skyBindings = sceneRenderer->createSkyVAO(skyVBO, skyIBO);
 
     return skyBindings;
 }
 
-HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config *config, bool conusFor0x4Sky) {
-    auto skyVs = device->createUniformBufferChunk(sizeof(DnSky::meshWideBlockVS));
-    skyVs->setUpdateHandler([config, conusFor0x4Sky](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<DnSky::meshWideBlockVS>();
+Map::Map(HApiContainer api, int mapId, const std::string &mapName) : m_dayNightLightHolder(api, mapId) {
+    initMapTiles();
 
-        if (!conusFor0x4Sky) {
-            meshblockVS.skyColor[0] = frameDepedantData->SkyTopColor;
-            meshblockVS.skyColor[1] = frameDepedantData->SkyMiddleColor;
-            meshblockVS.skyColor[2] = frameDepedantData->SkyBand1Color;
-            meshblockVS.skyColor[3] = frameDepedantData->SkyBand2Color;
-            meshblockVS.skyColor[4] = frameDepedantData->SkySmogColor;
-            meshblockVS.skyColor[5] = frameDepedantData->SkyFogColor;
-        } else {
-            auto EndFogColorV4_1 = mathfu::vec4(frameDepedantData->EndFogColor, 0.0);
-            auto EndFogColorV4_2 = mathfu::vec4(frameDepedantData->EndFogColor, 1.0);
-            meshblockVS.skyColor[0] = EndFogColorV4_1;
-            meshblockVS.skyColor[1] = EndFogColorV4_1;
-            meshblockVS.skyColor[2] = EndFogColorV4_1;
-            meshblockVS.skyColor[3] = EndFogColorV4_1;
-            meshblockVS.skyColor[4] = EndFogColorV4_1;
-            meshblockVS.skyColor[5] = EndFogColorV4_2;
-        }
-    });
+    m_mapId = mapId; m_api = api; this->mapName = mapName;
+    m_sceneMode = SceneMode::smMap;
+    createAdtFreeLamdas();
 
-    //TODO: Pass m_skyConeAlpha to fragment shader
+    MapRecord mapRecord;
+    api->databaseHandler->getMapById(mapId, mapRecord);
+    useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+    has0x200000Flag = (mapRecord.flags0 & 0x200000) > 0;
 
-    ///2. Create mesh
-    auto shader = device->getShader("skyConus", nullptr);
-    gMeshTemplate meshTemplate(skyBindings, shader);
+
+    std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
+    std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
+    std::string wdtLightFileName = "world/maps/"+mapName+"/"+mapName+"_lgt.wdt";
+
+    m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
+    m_wdtLightObject = std::make_shared<WdtLightsObject>(api, wdtLightFileName);
+
+    m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
+    m_wdlObject->setMapApi(this);
+
+    m_dayNightLightHolder.loadZoneLights();
+
+    m_sceneWideBlockVSPSChunk = nullptr;
+}
+
+std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSceneBufferCreate &sceneRenderer,
+                                                              const HGVertexBufferBindings &skyBindings, bool conusFor0x4Sky) {
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
+    pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+
+    auto material = sceneRenderer->createSkyMeshMaterial(pipelineTemplate);
+
+    gMeshTemplate meshTemplate(skyBindings);
+
     meshTemplate.meshType = MeshType::eGeneralMesh;
-    meshTemplate.depthWrite = false;
-    meshTemplate.depthCulling = true;
-    meshTemplate.backFaceCulling = false;
-    meshTemplate.skybox = true;
-    meshTemplate.blendMode = conusFor0x4Sky ? EGxBlendEnum::GxBlend_Alpha : EGxBlendEnum::GxBlend_Opaque;
 
-    meshTemplate.texture.resize(0);
-
-    meshTemplate.textureCount = 0;
-
-    meshTemplate.ubo[0] = nullptr;
-    meshTemplate.ubo[1] = nullptr;
-    meshTemplate.ubo[2] = skyVs;
-
-    meshTemplate.ubo[3] = nullptr;
-    meshTemplate.ubo[4] = nullptr;
-
-    meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
     if (conusFor0x4Sky) {
         meshTemplate.start = 198 * 2;
         meshTemplate.end = 102;
@@ -345,46 +326,35 @@ HGMesh createSkyMesh(IDevice *device, HGVertexBufferBindings skyBindings, Config
     }
 
     //Make mesh
-    HGMesh hmesh =  device->createMesh(meshTemplate);
-    return hmesh;
+    HGMesh hmesh = sceneRenderer->createMesh(meshTemplate, material);
+    return {hmesh, material};
 }
 
-void Map::checkCulling(HCullStage &cullStage) {
-//    std::cout << "Map::checkCulling finished called" << std::endl;
-//    std::cout << "m_wdtfile->getIsLoaded() = " << m_wdtfile->getIsLoaded() << std::endl;
-    cullCreateVarsCounter.beginMeasurement();
+void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, const HMapRenderPlan &mapRenderPlan) {
+    ZoneScoped ;
+
     Config* config = this->m_api->getConfig();
 
-    mathfu::vec4 cameraPos = cullStage->matricesForCulling->cameraPos;
+    mathfu::vec4 cameraPos = frameInputParams.frameParameters->matricesForCulling->cameraPos;
     mathfu::vec3 cameraVec3 = cameraPos.xyz();
-    mathfu::mat4 &frustumMat = cullStage->matricesForCulling->perspectiveMat;
-    mathfu::mat4 &lookAtMat4 = cullStage->matricesForCulling->lookAtMat;
+    mathfu::mat4 &frustumMat = frameInputParams.frameParameters->matricesForCulling->perspectiveMat;
+    mathfu::mat4 &lookAtMat4 = frameInputParams.frameParameters->matricesForCulling->lookAtMat;
 
-    size_t adtRenderedThisFramePrev = cullStage->adtArray.size();
-    cullStage->adtArray = {};
-    cullStage->adtArray.reserve(adtRenderedThisFramePrev);
+    mapRenderPlan->renderingMatrices = frameInputParams.frameParameters->renderTargets[0].cameraMatricesForRendering;
+    mapRenderPlan->deltaTime = frameInputParams.delta;
 
-//    size_t m2RenderedThisFramePrev = cullStage->m2Array.gesize();
-//    cullStage->m2Array = {};
-//    cullStage->m2Array.reserve(m2RenderedThisFramePrev);
-
-//    size_t wmoRenderedThisFramePrev = cullStage->wmoGroupArray.size();
-//    cullStage->wmoGroupArray = {};
-//    cullStage->wmoGroupArray.reserve(wmoRenderedThisFramePrev);
-
+    size_t adtRenderedThisFramePrev = mapRenderPlan->adtArray.size();
+    mapRenderPlan->adtArray = {};
+    mapRenderPlan->adtArray.reserve(adtRenderedThisFramePrev);
 
     mathfu::mat4 viewPerspectiveMat = frustumMat*lookAtMat4;
-
     mathfu::vec4 &camera4 = cameraPos;
 
-    auto oldPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
-
-
-    auto newPlanes = MathHelper::getFrustumClipsFromMatrix(frustumMat);
-    for (int i = 0; i < newPlanes.size(); i++) {
-        newPlanes[i] = (lookAtMat4.Transpose().Inverse()) * newPlanes[i];
-    }
-
+//    auto oldPlanes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
+//    auto newPlanes = MathHelper::getFrustumClipsFromMatrix(frustumMat);
+//    for (int i = 0; i < newPlanes.size(); i++) {
+//        newPlanes[i] = (lookAtMat4.Transpose().Inverse()) * newPlanes[i];
+//    }
 
     MathHelper::PlanesUndPoints planesUndPoints;
     planesUndPoints.planes = MathHelper::getFrustumClipsFromMatrix(viewPerspectiveMat);
@@ -396,129 +366,156 @@ void Map::checkCulling(HCullStage &cullStage) {
     frustumData.frustums = {planesUndPoints};
     frustumData.perspectiveMat = frustumMat;
     frustumData.viewMat = lookAtMat4;
+    frustumData.cameraPos = cameraVec3;
     frustumData.farPlane = planesUndPoints.planes[planesUndPoints.planes.size() - 2]; //farPlane is always one before last
 
     m_viewRenderOrder = 0;
 
-    cullStage->m_currentInteriorGroups = {};
-    cullStage->m_currentWMO = nullptr;
+    mapRenderPlan->m_currentInteriorGroups = {};
+    mapRenderPlan->m_currentWMO = emptyWMO;
 
     int bspNodeId = -1;
     int interiorGroupNum = -1;
-    cullStage->m_currentWmoGroup = -1;
+    mapRenderPlan->m_currentWmoGroup = -1;
 
     //Get potential WMO
     WMOListContainer potentialWmo;
     M2ObjectListContainer potentialM2;
 
-    cullCreateVarsCounter.endMeasurement();
+    {
+        ZoneScopedN("cullGetCurrentWMOCounter");
+        //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
+        getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
 
+        float bottomBorder = -99999;
 
-    cullGetCurrentWMOCounter.beginMeasurement();
-    //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
-    getPotentialEntities(frustumData, cameraPos, cullStage, potentialM2, potentialWmo);
+        //Get bottom border from ADT
+        {
+            float adtHeight = -99999;
+            getPossibleHeight(cameraPos, adtHeight);
 
-    for (auto &checkingWmoObj : potentialWmo.getCandidates()) {
-        WmoGroupResult groupResult;
-        bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult);
+            if (adtHeight < cameraPos.z)
+                bottomBorder = adtHeight;
+        }
 
-        if (result) {
-            cullStage->m_currentWMO = checkingWmoObj;
-            cullStage->m_currentWmoGroup = groupResult.groupIndex;
-            if (checkingWmoObj->isGroupWmoInterior(groupResult.groupIndex)) {
-                cullStage->m_currentInteriorGroups.push_back(groupResult);
-                interiorGroupNum = groupResult.groupIndex;
-                cullStage->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(groupResult.groupIndex);
-                cullStage->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(groupResult.groupIndex);
-            } else {
+        WmoGroupResult resGroupResult;
+        WMOObjId resWmoId = emptyWMO;
+        bool found = false;
+        for (auto &wmoId: potentialWmo.getCandidates()) {
+            auto checkingWmoObj = wmoFactory->getObjectById<0>(wmoId);
+            if (checkingWmoObj == nullptr) continue;
+
+            WmoGroupResult groupResult;
+            bool result = checkingWmoObj->getGroupWmoThatCameraIsInside(camera4, groupResult, bottomBorder);
+
+            if (!result) continue;
+
+            found = true;
+            resGroupResult = groupResult;
+            resWmoId = wmoId; //
+        }
+
+        if (found) {
+            auto checkingWmoObj = wmoFactory->getObjectById<0>(resWmoId);
+            if (checkingWmoObj) {
+                mapRenderPlan->m_currentWMO = resWmoId;
+                mapRenderPlan->m_currentWmoGroup = resGroupResult.groupIndex;
+                if (checkingWmoObj->isGroupWmoInterior(resGroupResult.groupIndex)) {
+                    mapRenderPlan->m_currentInteriorGroups.push_back(resGroupResult);
+                    interiorGroupNum = resGroupResult.groupIndex;
+                    mapRenderPlan->currentWmoGroupIsExtLit = checkingWmoObj->isGroupWmoExteriorLit(
+                        resGroupResult.groupIndex);
+                    mapRenderPlan->currentWmoGroupShowExtSkybox = checkingWmoObj->isGroupWmoExtSkybox(
+                        resGroupResult.groupIndex);
+                } else {
+                }
+                bspNodeId = resGroupResult.nodeId;
             }
-            bspNodeId = groupResult.nodeId;
-            break;
         }
     }
-    cullGetCurrentWMOCounter.endMeasurement();
 
-    cullGetCurrentZoneCounter.beginMeasurement();
 
     //7. Get AreaId and Area Name
-    StateForConditions stateForConditions;
+    AreaRecord wmoAreaRecord;
+    bool wmoAreaFound = false;
+    if (mapRenderPlan->m_currentWMO != emptyWMO) {
+        auto l_currentWmoObject = wmoFactory->getObjectById<0>(mapRenderPlan->m_currentWMO);
+        if (l_currentWmoObject != nullptr) {
+            auto nameId = l_currentWmoObject->getNameSet();
+            auto wmoId = l_currentWmoObject->getWmoId();
+            auto groupId = l_currentWmoObject->getWmoGroupId(mapRenderPlan->m_currentWmoGroup);
+
+            if (m_api->databaseHandler != nullptr) {
+                wmoAreaFound = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId, wmoAreaRecord);
+            }
+        }
+    }
 
     AreaRecord areaRecord;
-    if (cullStage->m_currentWMO != nullptr) {
-        auto nameId = cullStage->m_currentWMO->getNameSet();
-        auto wmoId = cullStage->m_currentWMO->getWmoId();
-        auto groupId = cullStage->m_currentWMO->getWmoGroupId(cullStage->m_currentWmoGroup);
-
-        if (m_api->databaseHandler != nullptr) {
-            areaRecord = m_api->databaseHandler->getWmoArea(wmoId, nameId, groupId);
-        }
-    }
-
-    if (areaRecord.areaId == 0) {
-        if (cullStage->adtAreadId > 0 && (m_api->databaseHandler != nullptr)) {
-            areaRecord = m_api->databaseHandler->getArea(cullStage->adtAreadId);
+    if ((m_api->databaseHandler != nullptr)) {
+        if (wmoAreaRecord.areaId == 0) {
+            if (mapRenderPlan->adtAreadId > 0) {
+                areaRecord = m_api->databaseHandler->getArea(mapRenderPlan->adtAreadId);
+            }
+        } else {
+            areaRecord = m_api->databaseHandler->getArea(wmoAreaRecord.areaId);
         }
     }
 
 
-    m_api->getConfig()->areaName = areaRecord.areaName;
+    mapRenderPlan->wmoAreaName = wmoAreaRecord.areaName;
+    mapRenderPlan->areaName = areaRecord.areaName;
+
+    auto &stateForConditions = mapRenderPlan->frameDependentData->stateForConditions;
+
     stateForConditions.currentAreaId = areaRecord.areaId;
     stateForConditions.currentParentAreaId = areaRecord.parentAreaId;
 
-    cullStage->areaId = areaRecord.areaId;
-    cullStage->parentAreaId = areaRecord.parentAreaId;
+    mapRenderPlan->areaId = areaRecord.areaId;
+    mapRenderPlan->parentAreaId = areaRecord.parentAreaId;
 
-    cullGetCurrentZoneCounter.endMeasurement();
 
     //Get lights from DB
-    cullUpdateLightsFromDBCounter.beginMeasurement();
-    updateLightAndSkyboxData(cullStage, cameraVec3, stateForConditions, areaRecord);
-    cullUpdateLightsFromDBCounter.endMeasurement();
+    updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
 
     ///-----------------------------------
 
 
-    auto lcurrentWMO = cullStage->m_currentWMO;
-    auto currentWmoGroup = cullStage->m_currentWmoGroup;
+    auto lcurrentWMO = wmoFactory->getObjectById<0>(mapRenderPlan->m_currentWMO);
+    auto currentWmoGroup = mapRenderPlan->m_currentWmoGroup;
 
-    if ((lcurrentWMO != nullptr) && (!cullStage->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
+    if ((lcurrentWMO != nullptr) && (!mapRenderPlan->m_currentInteriorGroups.empty()) && (lcurrentWMO->isLoaded())) {
         if (lcurrentWMO->startTraversingWMOGroup(
             cameraPos,
             frustumData,
-            cullStage->m_currentInteriorGroups[0].groupIndex,
+            mapRenderPlan->m_currentInteriorGroups[0].groupIndex,
             0,
             m_viewRenderOrder,
             true,
-            cullStage->viewsHolder)) {
-            cullStage->wmoArray.addCand(cullStage->m_currentWMO);
+            mapRenderPlan->viewsHolder)) {
+            mapRenderPlan->wmoArray.addToDrawn(lcurrentWMO);
         }
 
-        cullExterior.beginMeasurement();
-        auto exterior = cullStage->viewsHolder.getExterior();
+        auto exterior = mapRenderPlan->viewsHolder.getExterior();
         if ( exterior != nullptr ) {
             //Fix FrustumData for exterior was created after WMO traversal. So we need to fix it
             exterior->frustumData.perspectiveMat = frustumData.perspectiveMat;
             exterior->frustumData.viewMat = frustumData.viewMat;
             exterior->frustumData.farPlane = frustumData.farPlane;
 
-            checkExterior(cameraPos, exterior->frustumData, m_viewRenderOrder, cullStage);
+            checkExterior(cameraPos, exterior->frustumData, m_viewRenderOrder, mapRenderPlan);
         }
-        cullExterior.endMeasurement();
     } else {
         //Cull exterior
-        cullExterior.beginMeasurement();
-        auto exteriorView = cullStage->viewsHolder.getOrCreateExterior(frustumData);
-        checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, cullStage);
-        cullExterior.endMeasurement();
+        auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
+        checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, mapRenderPlan);
     }
 
-    cullSkyDoms.beginMeasurement();
+    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupShowExtSkybox)) {
+        ZoneScopedN("Skybox");
+        auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
 
-
-    if ((cullStage->viewsHolder.getExterior() != nullptr || cullStage->currentWmoGroupIsExtLit || cullStage->currentWmoGroupShowExtSkybox) && (!m_exteriorSkyBoxes.empty())) {
-        auto exteriorView = cullStage->viewsHolder.getOrCreateExterior(frustumData);
-
-        if (m_wdlObject != nullptr) {
+        if (m_wdlObject != nullptr && config->renderSkyScene) {
             m_wdlObject->checkSkyScenes(
                 stateForConditions,
                 exteriorView->m2List,
@@ -526,58 +523,72 @@ void Map::checkCulling(HCullStage &cullStage) {
                 frustumData);
         }
 
-        if (config->renderSkyDom) {
-            for (auto &model : m_exteriorSkyBoxes) {
+        auto &exteriorSkyBoxes = m_dayNightLightHolder.getExteriorSkyBoxes();
+        if (!exteriorSkyBoxes.empty() && config->renderSkyDom) {
+            auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
+
+            for (auto &model: exteriorSkyBoxes) {
                 if (model != nullptr) {
-                    exteriorView->m2List.addToDraw(model);
+                    skyBoxView->m2List.addToDraw(model);
                 }
             }
         }
     }
-    cullSkyDoms.endMeasurement();
 
-    cullCombineAllObjects.beginMeasurement();
+    std::vector<std::shared_ptr<CWmoNewLight>> newWmoLights = {};
     {
-        auto exteriorView = cullStage->viewsHolder.getExterior();
+
+        auto exteriorView = mapRenderPlan->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
-            exteriorView->addM2FromGroups(frustumData, cameraPos);
-            for (auto &adtRes: exteriorView->drawnADTs) {
-                adtRes->adtObject->collectMeshes(*adtRes, exteriorView->m_opaqueMeshes,
-                                                 exteriorView->m_transparentMeshes,
-                                                 exteriorView->renderOrder);
+            {
+                ZoneScopedN("collect m2 from groups");
+                exteriorView->addM2FromGroups(frustumData, cameraPos);
             }
-            cullStage->m2Array.addDrawnAndToLoad(exteriorView->m2List);
-            cullStage->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
+            {
+                ZoneScopedN("m2AndWMOArr merge");
+                mapRenderPlan->m2Array.addDrawnAndToLoad(exteriorView->m2List);
+                mapRenderPlan->wmoGroupArray.addToLoadAndDraw(exteriorView->wmoGroupArray);
+            }
+
+            exteriorView->collectLights(mapRenderPlan->pointLights, mapRenderPlan->spotLights, newWmoLights);
         }
     }
 
     //Fill and collect M2 objects for views from WmoGroups
     {
-        auto &interiorViews = cullStage->viewsHolder.getInteriorViews();
+        ZoneScopedN("collect from interiors");
+        auto &interiorViews = mapRenderPlan->viewsHolder.getInteriorViews();
 
         for (auto &interiorView: interiorViews) {
             interiorView->addM2FromGroups(frustumData, cameraPos);
-            cullStage->m2Array.addDrawnAndToLoad(interiorView->m2List);
-            cullStage->wmoGroupArray.addToLoadAndDraw(interiorView->wmoGroupArray);
+            mapRenderPlan->m2Array.addDrawnAndToLoad(interiorView->m2List);
+            mapRenderPlan->wmoGroupArray.addToLoadAndDraw(interiorView->wmoGroupArray);
+
+            interiorView->collectLights(mapRenderPlan->pointLights, mapRenderPlan->spotLights, newWmoLights);
+        }
+    }
+    {
+        ZoneScopedN("process new lights");
+        //Delete duplicates for new wmo lights
+        std::sort(newWmoLights.begin(), newWmoLights.end());
+        newWmoLights.erase(std::unique(newWmoLights.begin(), newWmoLights.end()), newWmoLights.end());
+
+        //Collect spotLights and point lights from new WMO lights
+        for (auto &newWmoLight: newWmoLights) {
+            newWmoLight->collectLight(cameraVec3, mapRenderPlan->pointLights, mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
         }
     }
 
-    cullCombineAllObjects.endMeasurement();
+    mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom &&
+        (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupShowExtSkybox));
 
+//    if (m_skyConeAlpha > 0) {
+        mapRenderPlan->skyMesh = skyMesh;
+//    }
+    if (mapRenderPlan->frameDependentData->overrideValuesWithFinalFog) {
+        mapRenderPlan->skyMesh0x4 = skyMesh0x4Sky;
+    }
 
-
-    m_api->getConfig()->cullCreateVarsCounter           = cullCreateVarsCounter.getTimePerFrame();
-    m_api->getConfig()->cullGetCurrentWMOCounter        = cullGetCurrentWMOCounter.getTimePerFrame();
-    m_api->getConfig()->cullGetCurrentZoneCounter       = cullGetCurrentZoneCounter.getTimePerFrame();
-    m_api->getConfig()->cullUpdateLightsFromDBCounter   = cullUpdateLightsFromDBCounter.getTimePerFrame();
-    m_api->getConfig()->cullExterior                    = cullExterior.getTimePerFrame();
-    m_api->getConfig()->cullExteriorSetDecl             = cullExteriorSetDecl.getTimePerFrame();
-    m_api->getConfig()->cullExteriorWDLCull             = cullExteriorWDLCull.getTimePerFrame();
-    m_api->getConfig()->cullExteriorGetCands            = cullExteriorGetCands.getTimePerFrame();
-    m_api->getConfig()->cullExterioFrustumWMO           = cullExterioFrustumWMO.getTimePerFrame();
-    m_api->getConfig()->cullExterioFrustumM2            = cullExterioFrustumM2.getTimePerFrame();
-    m_api->getConfig()->cullSkyDoms                     = cullSkyDoms.getTimePerFrame();
-    m_api->getConfig()->cullCombineAllObjects           = cullCombineAllObjects.getTimePerFrame();
 //    //Limit M2 count based on distance/m2 height
 //    for (auto it = this->m2RenderedThisFrameArr.begin();
 //         it != this->m2RenderedThisFrameArr.end();) {
@@ -589,423 +600,15 @@ void Map::checkCulling(HCullStage &cullStage) {
 //    }
 }
 
-mathfu::vec3 blendV3(mathfu::vec3 a, mathfu::vec3 b, float alpha) {
-    return (a - b) * alpha + a;
-}
+void Map::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
+                                   StateForConditions &stateForConditions, const AreaRecord &areaRecord) {
 
-void Map::updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                                   StateForConditions &stateForConditions, const AreaRecord &areaRecord) {///-----------------------------------
-    Config* config = this->m_api->getConfig();
-
-    bool fogRecordWasFound = false;
-    mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
-
-    std::vector<LightResult> wmoFogs = {};
-    if (cullStage->m_currentWMO != nullptr) {
-        cullStage->m_currentWMO->checkFog(cameraVec3, wmoFogs);
-    }
-    std::vector<LightResult> lightResults;
-
-    if ((m_api->databaseHandler != nullptr)) {
-        //Check zoneLight
-        getLightResultsFromDB(cameraVec3, config, lightResults, &stateForConditions);
-
-        //Delete skyboxes that are not in light array
-        std::unordered_map<int, std::shared_ptr<M2Object>> perFdidMap;
-        auto modelIt = m_exteriorSkyBoxes.begin();
-        while (modelIt != m_exteriorSkyBoxes.end()) {
-            bool found = false;
-            for (auto &_light : lightResults) {
-                if (_light.skyBoxFdid == (*modelIt)->getModelFileId()) {
-                    found = true;
-                    break;
-                }
-            }
-
-            if (found) {
-                perFdidMap[(*modelIt)->getModelFileId()] = *modelIt;
-                modelIt++;
-            } else {
-                modelIt = m_exteriorSkyBoxes.erase(modelIt);
-            }
-        }
-
-        m_skyConeAlpha = 1.0;
-        for (auto &_light : lightResults) {
-            if (_light.skyBoxFdid == 0 || _light.lightSkyboxId == 0) continue;
-
-            stateForConditions.currentSkyboxIds.push_back(_light.lightSkyboxId);
-            std::shared_ptr<M2Object> skyBox = nullptr;
-            if (perFdidMap[_light.skyBoxFdid] == nullptr) {
-                skyBox = std::make_shared<M2Object>(m_api, true);
-                skyBox->setLoadParams(0, {}, {});
-
-                skyBox->setModelFileId(_light.skyBoxFdid);
-
-                skyBox->createPlacementMatrix(mathfu::vec3(0, 0, 0), 0, mathfu::vec3(1, 1, 1), nullptr);
-                skyBox->calcWorldPosition();
-                m_exteriorSkyBoxes.push_back(skyBox);
-            } else {
-                skyBox = perFdidMap[_light.skyBoxFdid];
-            }
-
-            skyBox->setAlpha(_light.blendCoef);
-            if ((_light.skyBoxFlags & 4) > 0 ) {
-                //In this case conus is still rendered been, but all values are final fog values.
-                auto fdd = cullStage->frameDepedantData;
-                fdd->overrideValuesWithFinalFog = true;
-            }
-
-            if ((_light.skyBoxFlags & 2) == 0) {
-//                m_skyConeAlpha -= _light.blendCoef;
-                m_skyConeAlpha -= _light.blendCoef;
-            }
-            
-            if (_light.skyBoxFlags & 1) {
-                skyBox->setOverrideAnimationPerc(config->currentTime / 2880.0, true);
-            }
-        }
-
-        //Blend glow and ambient
-        mathfu::vec3 ambientColor = {0, 0, 0};
-        mathfu::vec3 horizontAmbientColor = {0, 0, 0};
-        mathfu::vec3 groundAmbientColor = {0, 0, 0};
-        mathfu::vec3 directColor = {0, 0, 0};
-        mathfu::vec3 closeRiverColor = {0, 0, 0};
-        mathfu::vec3 farRiverColor = {0, 0, 0};
-        mathfu::vec3 closeOceanColor = {0, 0, 0};
-        mathfu::vec3 farOceanColor = {0, 0, 0};
-
-        mathfu::vec3 SkyTopColor = {0, 0, 0};
-        mathfu::vec3 SkyMiddleColor = {0, 0, 0};
-        mathfu::vec3 SkyBand1Color = {0, 0, 0};
-        mathfu::vec3 SkyBand2Color = {0, 0, 0};
-        mathfu::vec3 SkySmogColor = {0, 0, 0};
-        mathfu::vec3 SkyFogColor = {0, 0, 0};
-        float currentGlow = 0;
-
-        for (auto &_light : lightResults) {
-            currentGlow += _light.glow * _light.blendCoef;
-
-            ambientColor += mathfu::vec3(_light.ambientColor) * _light.blendCoef;
-            horizontAmbientColor += mathfu::vec3(_light.horizontAmbientColor) * _light.blendCoef;
-            groundAmbientColor += mathfu::vec3(_light.groundAmbientColor) * _light.blendCoef;
-            directColor += mathfu::vec3(_light.directColor) * _light.blendCoef;
-
-            closeRiverColor += mathfu::vec3(_light.closeRiverColor) * _light.blendCoef;
-            farRiverColor += mathfu::vec3(_light.farRiverColor) * _light.blendCoef;
-            closeOceanColor += mathfu::vec3(_light.closeOceanColor) * _light.blendCoef;
-            farOceanColor += mathfu::vec3(_light.farOceanColor) * _light.blendCoef;
-
-            SkyTopColor += mathfu::vec3(_light.SkyTopColor.data()) * _light.blendCoef;
-            SkyMiddleColor += mathfu::vec3(_light.SkyMiddleColor) * _light.blendCoef;
-            SkyBand1Color += mathfu::vec3(_light.SkyBand1Color) * _light.blendCoef;
-            SkyBand2Color += mathfu::vec3(_light.SkyBand2Color) * _light.blendCoef;
-            SkySmogColor += mathfu::vec3(_light.SkySmogColor) * _light.blendCoef;
-            SkyFogColor += mathfu::vec3(_light.SkyFogColor.data()) * _light.blendCoef;
-        }
-
-        //Database is in BGRA
-        float ambientMult = areaRecord.ambientMultiplier * 2.0f + 1;
-//        ambientColor *= ambientMult;
-//        groundAmbientColor *= ambientMult;
-//        horizontAmbientColor *= ambientMult;
-
-        if (config->glowSource == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->currentGlow = currentGlow;
-        } else if (config->glowSource == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->currentGlow = config->currentGlow;
-        }
-
-
-        if (config->globalLighting == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDepedantData;
-
-            fdd->exteriorAmbientColor = mathfu::vec4(ambientColor[2], ambientColor[1], ambientColor[0], 0);
-            fdd->exteriorGroundAmbientColor = mathfu::vec4(groundAmbientColor[2], groundAmbientColor[1], groundAmbientColor[0],
-                                                  0);
-            fdd->exteriorHorizontAmbientColor = mathfu::vec4(horizontAmbientColor[2], horizontAmbientColor[1],
-                                                    horizontAmbientColor[0], 0);
-            fdd->exteriorDirectColor = mathfu::vec4(directColor[2], directColor[1], directColor[0], 0);
-            auto extDir = MathHelper::calcExteriorColorDir(
-                cullStage->matricesForCulling->lookAtMat,
-                m_api->getConfig()->currentTime
-            );
-            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
-        } else if (config->globalLighting == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDepedantData;
-
-            fdd->exteriorAmbientColor = config->exteriorAmbientColor;
-            fdd->exteriorGroundAmbientColor = config->exteriorGroundAmbientColor;
-            fdd->exteriorHorizontAmbientColor = config->exteriorHorizontAmbientColor;
-            fdd->exteriorDirectColor = config->exteriorDirectColor;
-            auto extDir = MathHelper::calcExteriorColorDir(
-                cullStage->matricesForCulling->lookAtMat,
-                m_api->getConfig()->currentTime
-            );
-            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
-        }
-
-        {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->useMinimapWaterColor = config->useMinimapWaterColor;
-            fdd->useCloseRiverColorForDB = config->useCloseRiverColorForDB;
-        }
-        if (config->waterColorParams == EParameterSource::eDatabase)
-        {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->closeRiverColor = mathfu::vec4(closeRiverColor[2], closeRiverColor[1], closeRiverColor[0], 0);
-            fdd->farRiverColor = mathfu::vec4(farRiverColor[2], farRiverColor[1], farRiverColor[0], 0);
-            fdd->closeOceanColor = mathfu::vec4(closeOceanColor[2], closeOceanColor[1], closeOceanColor[0], 0);
-            fdd->farOceanColor = mathfu::vec4(farOceanColor[2], farOceanColor[1], farOceanColor[0], 0);
-        } else if (config->waterColorParams == EParameterSource::eConfig) {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->closeRiverColor = config->closeRiverColor;
-            fdd->farRiverColor = config->farRiverColor;
-            fdd->closeOceanColor = config->closeOceanColor;
-            fdd->farOceanColor = config->farOceanColor;
-        }
-        if (config->skyParams == EParameterSource::eDatabase) {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->SkyTopColor =      mathfu::vec4(SkyTopColor[2], SkyTopColor[1], SkyTopColor[0], 1.0);
-            fdd->SkyMiddleColor =   mathfu::vec4(SkyMiddleColor[2], SkyMiddleColor[1], SkyMiddleColor[0], 1.0);
-            fdd->SkyBand1Color =    mathfu::vec4(SkyBand1Color[2], SkyBand1Color[1], SkyBand1Color[0], 1.0);
-            fdd->SkyBand2Color =    mathfu::vec4(SkyBand2Color[2], SkyBand2Color[1], SkyBand2Color[0], 1.0);
-            fdd->SkySmogColor =     mathfu::vec4(SkySmogColor[2], SkySmogColor[1], SkySmogColor[0], 1.0);
-            fdd->SkyFogColor =      mathfu::vec4(SkyFogColor[2], SkyFogColor[1], SkyFogColor[0], 1.0);
-        }
-    }
-
-    //Handle fog
-    {
-        float FogEnd = 0;
-        float FogScaler = 0;
-        float FogDensity = 0;
-        float FogHeight = 0;
-        float FogHeightScaler = 0;
-        float FogHeightDensity = 0;
-        float SunFogAngle = 0;
-
-        mathfu::vec3 EndFogColor = {0, 0, 0};
-        float EndFogColorDistance = 0;
-        mathfu::vec3 SunFogColor = {0, 0, 0};
-        float SunFogStrength = 0;
-        mathfu::vec3 FogHeightColor = {0, 0, 0};
-        mathfu::vec4 FogHeightCoefficients = {0, 0, 0, 0};
-
-        std::vector<LightResult> combinedResults = {};
-        float totalSummator = 0.0;
-
-        //Apply fog from WMO
-        {
-            bool fogDefaultExist = false;
-            int fogDefaultIndex = -1;
-            for (int i = 0; i < wmoFogs.size() && totalSummator < 1.0f; i++) {
-                auto &fogRec = wmoFogs[i];
-                if (fogRec.isDefault) {
-                    fogDefaultExist = true;
-                    fogDefaultIndex = i;
-                    continue;
-                }
-                if (totalSummator + fogRec.blendCoef > 1.0f) {
-                    fogRec.blendCoef = 1.0f - totalSummator;
-                    totalSummator = 1.0f;
-                } else {
-                    totalSummator += fogRec.blendCoef;
-                }
-                combinedResults.push_back(fogRec);
-            }
-
-            if (fogDefaultExist && totalSummator < 1.0f) {
-                wmoFogs[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
-                totalSummator = 1.0f;
-                combinedResults.push_back(wmoFogs[fogDefaultIndex]);
-            }
-        }
-
-        //Apply fogs from lights
-        if (totalSummator < 1.0) {
-            if (config->globalFog == EParameterSource::eDatabase) {
-                bool fogDefaultExist = false;
-                int fogDefaultIndex = -1;
-
-                for (int i = 0; i < lightResults.size() && totalSummator < 1.0f; i++) {
-                    auto &fogRec = lightResults[i];
-                    if (fogRec.isDefault) {
-                        fogDefaultExist = true;
-                        fogDefaultIndex = i;
-                        continue;
-                    }
-                    if (totalSummator + fogRec.blendCoef > 1.0f) {
-                        fogRec.blendCoef = 1.0f - totalSummator;
-                        totalSummator = 1.0f;
-                    } else {
-                        totalSummator += fogRec.blendCoef;
-                    }
-                    combinedResults.push_back(fogRec);
-                }
-                if (fogDefaultExist && totalSummator < 1.0f) {
-                    lightResults[fogDefaultIndex].blendCoef = 1.0f - totalSummator;
-                    totalSummator = 1.0f;
-                    combinedResults.push_back(lightResults[fogDefaultIndex]);
-                }
-            } else if (config->globalFog == EParameterSource::eConfig) {
-                LightResult globalFog;
-                globalFog.FogScaler = config->FogScaler;
-                globalFog.FogEnd = config->FogEnd;
-                globalFog.FogDensity = config->FogDensity;
-
-                globalFog.FogHeightScaler = config->FogHeightScaler;
-                globalFog.FogHeightDensity = config->FogHeightDensity;
-                globalFog.SunFogAngle = config->SunFogAngle;
-                globalFog.EndFogColorDistance = config->EndFogColorDistance;
-                globalFog.SunFogStrength = config->SunFogStrength;
-
-                globalFog.blendCoef = 1.0 - totalSummator;
-                globalFog.isDefault = true;
-
-                globalFog.EndFogColor = {config->EndFogColor.z, config->EndFogColor.y, config->EndFogColor.x};
-                globalFog.SunFogColor = {config->SunFogColor.z, config->SunFogColor.y, config->SunFogColor.x};
-                globalFog.FogHeightColor = {config->FogHeightColor.z, config->FogHeightColor.y, config->FogHeightColor.x};
-
-                combinedResults.push_back(globalFog);
-            }
-        }
-        std::sort(combinedResults.begin(), combinedResults.end(), [](const LightResult &a, const LightResult &b) -> bool {
-            return a.blendCoef > b.blendCoef;
-        });
-
-        //Rebalance blendCoefs
-        if (totalSummator < 1.0f && totalSummator > 0.0f) {
-            for (auto &_light : combinedResults) {
-                _light.blendCoef = _light.blendCoef / totalSummator;
-            }
-        }
-
-        for (auto &_light : combinedResults) {
-            FogEnd += _light.FogEnd * _light.blendCoef;
-            FogScaler += _light.FogScaler * _light.blendCoef;
-            FogDensity += _light.FogDensity * _light.blendCoef;
-            FogHeight += _light.FogHeight * _light.blendCoef;
-            FogHeightScaler += _light.FogHeightScaler * _light.blendCoef;
-            FogHeightDensity += _light.FogHeightDensity * _light.blendCoef;
-            SunFogAngle += _light.SunFogAngle * _light.blendCoef;
-
-            EndFogColor += mathfu::vec3(_light.EndFogColor.data()) * _light.blendCoef;
-            EndFogColorDistance += _light.EndFogColorDistance * _light.blendCoef;
-            SunFogColor += mathfu::vec3(_light.SunFogColor.data()) * _light.blendCoef;
-            SunFogStrength += _light.SunFogStrength * _light.blendCoef;
-            FogHeightColor += mathfu::vec3(_light.FogHeightColor.data()) * _light.blendCoef;
-            FogHeightCoefficients += mathfu::vec4(_light.FogHeightCoefficients) * _light.blendCoef;
-        }
-
-        //In case of no data -> disable the fog
-        {
-            auto fdd = cullStage->frameDepedantData;
-            fdd->FogDataFound = !combinedResults.empty();
-//            std::cout << "combinedResults.empty() = " << combinedResults.empty() << std::endl;
-//            std::cout << "combinedResults.size() = " << combinedResults.size() << std::endl;
-            fdd->FogEnd = FogEnd;
-            fdd->FogScaler = FogScaler;
-            fdd->FogDensity = FogDensity;
-            fdd->FogHeight = FogHeight;
-            fdd->FogHeightScaler = FogHeightScaler;
-            fdd->FogHeightDensity = FogHeightDensity;
-            fdd->SunFogAngle = SunFogAngle;
-            if (fdd->overrideValuesWithFinalFog) {
-                fdd->FogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
-            } else {
-                fdd->FogColor = fdd->SkyFogColor.xyz();
-            }
-            fdd->EndFogColor = mathfu::vec3(EndFogColor[2], EndFogColor[1], EndFogColor[0]);
-            fdd->EndFogColorDistance = EndFogColorDistance;
-            fdd->SunFogColor = mathfu::vec3(SunFogColor[2], SunFogColor[1], SunFogColor[0]);
-            fdd->SunFogStrength = SunFogStrength;
-            fdd->FogHeightColor = mathfu::vec3(FogHeightColor[2], FogHeightColor[1], FogHeightColor[0]);
-            fdd->FogHeightCoefficients = mathfu::vec4(FogHeightCoefficients[0], FogHeightCoefficients[1],
-                                             FogHeightCoefficients[2], FogHeightCoefficients[3]);
-        }
-    }
-
-//    this->m_api->getConfig()->setClearColor(0,0,0,0);
-}
-
-void Map::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config, std::vector<LightResult> &lightResults, StateForConditions *stateForConditions) {
-    if (m_api->databaseHandler == nullptr)
-        return ;
-
-    LightResult zoneLightResult;
-
-    bool zoneLightFound = false;
-    int LightId;
-    for (const auto &zoneLight : m_zoneLights) {
-        CAaBox laabb = zoneLight.aabb;
-        auto const vec50 = mathfu::vec3(50.0f,50.0f,0);
-        laabb.min = (mathfu::vec3(laabb.min) - vec50);
-        laabb.max = (mathfu::vec3(laabb.max) + vec50);
-        if (MathHelper::isPointInsideNonConvex(cameraVec3, zoneLight.aabb, zoneLight.points)) {
-            zoneLightFound = true;
-
-            if (stateForConditions != nullptr) {
-                stateForConditions->currentZoneLights.push_back(zoneLight.ID);
-            }
-            LightId = zoneLight.LightID;
-            break;
-        }
-    }
-
-    if (zoneLightFound) {
-        m_api->databaseHandler->getLightById(LightId, config->currentTime, zoneLightResult);
-        if (stateForConditions != nullptr) {
-            stateForConditions->currentZoneLights.push_back(zoneLightResult.lightParamId);
-        }
-    }
-
-    m_api->databaseHandler->getEnvInfo(m_mapId,
-                                       cameraVec3.x,
-                                       cameraVec3.y,
-                                       cameraVec3.z,
-                                       config->currentTime,
-                                       lightResults
-    );
-
-
-    if (stateForConditions != nullptr) {
-        for (auto &_light : lightResults) {
-            stateForConditions->currentZoneLights.push_back(_light.lightParamId);
-        }
-    }
-
-    //Calc final blendcoef for zoneLight;
-    if (zoneLightFound) {
-        float blendCoef = 1.0;
-
-        for (auto &_light : lightResults) {
-            if (!_light.isDefault) {
-                blendCoef -= _light.blendCoef;
-            }
-        }
-        if (blendCoef > 0) {
-            zoneLightResult.blendCoef = blendCoef;
-            lightResults.push_back(zoneLightResult);
-            //Delete default from results;
-            auto it = lightResults.begin();
-            while (it != lightResults.end()) {
-                if (it->isDefault) {
-                    lightResults.erase(it);
-                    break;
-                } else
-                    it++;
-            }
-        }
-    }
+    m_dayNightLightHolder.updateLightAndSkyboxData(mapRenderPlan, frustumData, stateForConditions, areaRecord);
 }
 
 void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
-                               HCullStage &cullStage,
+                               const HMapRenderPlan &mapRenderPlan,
                                M2ObjectListContainer &potentialM2,
                                WMOListContainer &potentialWmo) {
 
@@ -1016,7 +619,7 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
             if ((adt_x >= 64) || (adt_x < 0)) return;
             if ((adt_y >= 64) || (adt_y < 0)) return;
 
-            cullStage->adtAreadId = -1;
+            mapRenderPlan->adtAreadId = -1;
             auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
 
             if (adtObjectCameraAt != nullptr) {
@@ -1038,11 +641,11 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
                 int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y) % 16;
                 int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x) % 16;
 
-                cullStage->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
+                mapRenderPlan->adtAreadId = adtObjectCameraAt->getAreaId(adt_global_x, adt_global_y);
             }
         } else {
             if (wmoMap == nullptr) {
-                wmoMap = std::make_shared<WmoObject>(m_api);
+                wmoMap = wmoFactory->createObject(m_api);
                 wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
                 wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
             }
@@ -1051,6 +654,8 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
         }
     }
 }
+
+
 void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAreaId) {
     areaId = 0;
     parentAreaId = 0;
@@ -1077,12 +682,12 @@ void Map::getAdtAreaId(const mathfu::vec4 &cameraPos, int &areaId, int &parentAr
     }
 }
 
-
 void Map::checkExterior(mathfu::vec4 &cameraPos,
                         const MathHelper::FrustumCullingData &frustumData,
                         int viewRenderOrder,
-                        HCullStage cullStage
+                        const HMapRenderPlan &mapRenderPlan
 ) {
+    ZoneScoped ;
 //    std::cout << "Map::checkExterior finished called" << std::endl;
     if (m_wdlObject == nullptr && m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
@@ -1091,22 +696,24 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         }
     }
 
-    auto exteriorView = cullStage->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
-
-    cullExteriorWDLCull.beginMeasurement();
-    if (m_wdlObject != nullptr) {
-        m_wdlObject->checkFrustumCulling(frustumData, cameraPos, exteriorView->m2List, cullStage->wmoArray);
+    if (m_wdtLightObject == nullptr && m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (m_wdtfile->mphd->flags.wdt_has_maid) {
+            m_wdtLightObject = std::make_shared<WdtLightsObject>(m_api, m_wdtfile->mphd->lgtFileDataID);
+        }
     }
-    cullExteriorWDLCull.endMeasurement();
 
-    cullExteriorGetCands.beginMeasurement();
-    getCandidatesEntities(frustumData, cameraPos, cullStage, exteriorView->m2List, cullStage->wmoArray);
-    cullExteriorGetCands.endMeasurement();
+    auto exteriorView = mapRenderPlan->viewsHolder.getExterior(); //Should not be null, since we called checkExterior
 
-    cullExterioFrustumWMO.beginMeasurement();
+    if (m_wdlObject != nullptr) {
+        m_wdlObject->checkFrustumCulling(frustumData, cameraPos, exteriorView->m2List, mapRenderPlan->wmoArray);
+    }
+
+    getCandidatesEntities(frustumData, cameraPos, mapRenderPlan, exteriorView->m2List, mapRenderPlan->wmoArray);
+
     //Frustum cull
-    for (auto &wmoCandidate : cullStage->wmoArray.getCandidates()) {
-        if (!wmoCandidate->isLoaded()) continue;
+    for (auto &wmoId : mapRenderPlan->wmoArray.getCandidates()) {
+        auto wmoCandidate = wmoFactory->getObjectById<0>(wmoId);
+        if (wmoCandidate!= nullptr && !wmoCandidate->isLoaded()) continue;
 
         if (wmoCandidate->startTraversingWMOGroup(
             cameraPos,
@@ -1115,57 +722,61 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
             0,
             viewRenderOrder,
             false,
-            cullStage->viewsHolder)) {
+            mapRenderPlan->viewsHolder)) {
+
+            mapRenderPlan->wmoArray.addToDrawn(wmoCandidate);
         }
     }
-    cullExterioFrustumWMO.endMeasurement();
 
-    cullExterioFrustumM2.beginMeasurement();
     //3.2 Iterate over all global WMOs and M2s (they have uniqueIds)
     {
-        int numThreads = m_api->getConfig()->threadCount;
+        ZoneScopedN("Cull M2");
         auto results = std::vector<uint32_t>();
 
         auto &candidates = exteriorView->m2List.getCandidates();
         if (candidates.size() > 0) {
             results = std::vector<uint32_t>(candidates.size(), 0xFFFFFFFF);
 
-            oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 1000),
-                                      [&](tbb::blocked_range<size_t> &r) {
-//            for (size_t i = r.begin(); i != r.end(); ++i) {
-//                auto &m2ObjectCandidate = tmpVector[i];
-//                if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
-//                    exteriorView->drawnM2s.insert(m2ObjectCandidate);
-//                    cullStage->m2Array.insert(m2ObjectCandidate);
-//                }
+            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+            arena.execute([&] {
+
+                oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 2000),
+                                          [&](tbb::blocked_range<size_t> &r) {
+    //            for (size_t i = r.begin(); i != r.end(); ++i) {
+    //                auto &m2ObjectCandidate = tmpVector[i];
+    //                if(m2ObjectCandidate->checkFrustumCulling(cameraPos, frustumData)) {
+    //                    exteriorView->drawnM2s.insert(m2ObjectCandidate);
+    //                    cullStage->m2Array.insert(m2ObjectCandidate);
+    //                }
 #if (__AVX__ && __SSE2__)
-                  ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(frustumData,
-                                                                    r.begin(), r.end(), candidates,
-                                                                    results);
+                      ObjectCullingSEE<M2ObjId>::cull(frustumData,
+                                                                        r.begin(), r.end(), candidates,
+                                                                        results);
 #else
-                  ObjectCulling<std::shared_ptr<M2Object>>::cull(frustumData,
-                                                                 r.begin(), r.end(), candidates,
-                                                                 results);
+                      ObjectCulling<M2ObjId>::cull(frustumData,
+                                                                     r.begin(), r.end(), candidates,
+                                                                     results);
 #endif
-//            }
-            }, tbb::auto_partitioner());
+    //            }
+                }, tbb::auto_partitioner());
+            });
         }
 
         for (int i = 0; i < candidates.size(); i++) {
             if (!results[i]) {
-                auto &m2ObjectCandidate = candidates[i];
-                exteriorView->m2List.addToDraw(m2ObjectCandidate);
+//                auto m2ObjectCandidate = m2Factory->getObjectById<0>(candidates[i]);
+                exteriorView->m2List.addToDraw(candidates[i]);
             }
         }
-        cullExterioFrustumM2.endMeasurement();
     }
 }
 
 void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                 const mathfu::vec4 &cameraPos,
-                                HCullStage &cullStage,
+                                const HMapRenderPlan &mapRenderPlan,
                                 M2ObjectListContainer &m2ObjectsCandidates,
                                 WMOListContainer &wmoCandidates) {
+    ZoneScoped;
     if (m_wdtfile != nullptr && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
         //Get visible area that should be checked
         float minx = 99999, maxx = -99999;
@@ -1200,25 +811,23 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
             }
         }
 
-        int adt_x_min = std::max<float>(worldCoordinateToAdtIndex(maxy), 0);
-        int adt_x_max = std::min<float>(worldCoordinateToAdtIndex(miny), 63);
+        int adt_x_min = std::max<int>(std::floor(worldCoordinateToAdtIndexF(maxy)), 0);
+        int adt_x_max = std::min<int>(std::ceil(worldCoordinateToAdtIndexF(miny)), 63);
 
-        int adt_y_min = std::max<float>(worldCoordinateToAdtIndex(maxx), 0);
-        int adt_y_max = std::min<float>(worldCoordinateToAdtIndex(minx), 63);
-
-
+        int adt_y_min = std::max<int>(std::floor(worldCoordinateToAdtIndexF(maxx)), 0);
+        int adt_y_max = std::min<int>(std::ceil(worldCoordinateToAdtIndexF(minx)), 63);
 
         if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
             for (int i = adt_x_min; i <= adt_x_max; i++) {
                 for (int j = adt_y_min; j <= adt_y_max; j++) {
-                    checkADTCulling(i, j, frustumData, cameraPos, cullStage, m2ObjectsCandidates, wmoCandidates);
+                    checkADTCulling(i, j, frustumData, cameraPos, mapRenderPlan, m2ObjectsCandidates, wmoCandidates);
                 }
             }
             for (auto &mandatoryAdt : m_mandatoryADT) {
-                checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], frustumData, cameraPos, cullStage, m2ObjectsCandidates, wmoCandidates);
+                checkADTCulling(mandatoryAdt[0], mandatoryAdt[1], frustumData, cameraPos, mapRenderPlan, m2ObjectsCandidates, wmoCandidates);
             }
 
-        } else {
+        } else if (wmoMap) {
             wmoCandidates.addCand(wmoMap);
         }
     }
@@ -1226,33 +835,41 @@ void Map::getCandidatesEntities(const MathHelper::FrustumCullingData &frustumDat
 
 void Map::checkADTCulling(int i, int j,
                           const MathHelper::FrustumCullingData &frustumData,
-                          const mathfu::vec4 &cameraPos, HCullStage &cullStage,
+                          const mathfu::vec4 &cameraPos,
+                          const HMapRenderPlan &mapRenderPlan,
                           M2ObjectListContainer &m2ObjectsCandidates,
                           WMOListContainer &wmoCandidates) {
     if ((i < 0) || (i > 64)) return;
     if ((j < 0) || (j > 64)) return;
 
-    int adt_global_x = worldCoordinateToGlobalAdtChunk(cameraPos.y);
-    int adt_global_y = worldCoordinateToGlobalAdtChunk(cameraPos.x);
+    if (this->m_adtConfigHolder != nullptr) {
+        mathfu::vec3 min = m_adtConfigHolder->adtMin[i][j];
+        mathfu::vec3 max = m_adtConfigHolder->adtMax[i][j];
 
-    if (this->m_adtBBHolder != nullptr) {
-        bool bbCheck = MathHelper::checkFrustum( frustumData, (*this->m_adtBBHolder)[i][j]);
+        CAaBox box = {
+            C3Vector(min),
+            C3Vector(max)
+
+//            C3Vector({AdtIndexToWorldCoordinate(j + 1) , AdtIndexToWorldCoordinate(i + 1), minZ}),
+//            C3Vector({AdtIndexToWorldCoordinate(j) , AdtIndexToWorldCoordinate(i), maxZ})
+        };
+
+        bool bbCheck = MathHelper::checkFrustum( frustumData, box);
 
         if (!bbCheck)
             return;
     }
 
-    auto adtObject = mapTiles[i][j];
+    auto &adtObject = mapTiles[i][j];
+    auto &adtArray = mapRenderPlan->adtArray;
     if (adtObject != nullptr) {
 
-        std::shared_ptr<ADTObjRenderRes> adtFrustRes = std::make_shared<ADTObjRenderRes>();
-        adtFrustRes->adtObject = adtObject;
+        auto &adtFrustRes = adtArray.emplace_back();
+        adtFrustRes.adtObject = adtObject;
 
         bool result = adtObject->checkFrustumCulling(
-            *adtFrustRes.get(),
+            adtFrustRes,
             cameraPos,
-            adt_global_x,
-            adt_global_y,
             frustumData, m2ObjectsCandidates, wmoCandidates);
 
 //        if (this->m_adtBBHolder != nullptr) {
@@ -1261,16 +878,30 @@ void Map::checkADTCulling(int i, int j,
 //            adtObject->getFreeStrategy()(false, true, this->getCurrentSceneTime());
 //        }
 
-        if (result) {
-            cullStage->viewsHolder.getExterior()->drawnADTs.push_back(adtFrustRes);
-            cullStage->adtArray.push_back(adtFrustRes);
+        if (!result) {
+            adtArray.pop_back();
+        } else {
+            //Add lights from WDTLightObject
+            if (m_wdtLightObject) {
+                auto pointLightsOfAdt = m_wdtLightObject->getPointLights(i, j);
+                auto &pointLights = mapRenderPlan->pointLights;
+                pointLights.reserve(pointLights.size() + pointLightsOfAdt.size());
+                for (auto &pointLight : pointLightsOfAdt) pointLights.push_back(pointLight.getLightRec());
+
+                //Get spotLights
+                m_wdtLightObject->collectSpotLights(
+                    cameraPos.xyz(),
+                    i, j,
+                    mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
+            }
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
             auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
             if (mapFileIds.rootADT > 0) {
-                adtObject = std::make_shared<AdtObject>(m_api, i, j,
+                adtObject = adtObjectFactory->createObject(m_api, i, j,
                                                         m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                        useWeightedBlend,
                                                         m_wdtfile);
             } else {
                 return;
@@ -1279,7 +910,9 @@ void Map::checkADTCulling(int i, int j,
             std::string adtFileTemplate =
                 "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" +
                 std::to_string(j);
-            adtObject = std::make_shared<AdtObject>(m_api, adtFileTemplate, mapName, i, j, m_wdtfile);
+            adtObject = adtObjectFactory->createObject(m_api, adtFileTemplate, mapName, i, j,
+                                                      useWeightedBlend,
+                                                      m_wdtfile);
         }
 
         adtObject->setMapApi(this);
@@ -1289,11 +922,28 @@ void Map::checkADTCulling(int i, int j,
     }
 }
 
+void Map::getPossibleHeight(const mathfu::vec4 &cameraPos, float &height) {
+    if (m_wdtfile && m_wdtfile->getStatus() == FileStatus::FSLoaded) {
+        if (!m_wdtfile->mphd->flags.wdt_uses_global_map_obj) {
+            int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
+            int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
+            if ((adt_x >= 64) || (adt_x < 0)) return;
+            if ((adt_y >= 64) || (adt_y < 0)) return;
+
+            auto &adtObjectCameraAt = mapTiles[adt_x][adt_y];
+
+            if (adtObjectCameraAt != nullptr) {
+                adtObjectCameraAt->getHeight(cameraPos, height);
+            }
+        }
+    }
+}
+
 void Map::createAdtFreeLamdas() {
     FreeStrategy lamda;
     auto *config = m_api->getConfig();
     if (m_api->getConfig()->adtFreeStrategy == EFreeStrategy::eTimeBased) {
-        int l_currentTime = 0;
+        animTime_t l_currentTime = 0;
         lamda = [l_currentTime, config](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
             if (doCheck) {
                 return (currentTime - l_currentTime) > config->adtTTLWithoutUpdate;
@@ -1308,10 +958,10 @@ void Map::createAdtFreeLamdas() {
         auto l_hDevice = m_api->hDevice;
         lamda = [l_currentFrame, config, l_hDevice](bool doCheck, bool doUpdate, animTime_t currentTime) mutable -> bool {
             if (doCheck) {
-                return (l_hDevice->getFrameNumber() - l_currentFrame) > config->adtFTLWithoutUpdate;
+//                return (l_hDevice->getFrameNumber() - l_currentFrame) > config->adtFTLWithoutUpdate;
             }
             if (doUpdate) {
-                l_currentFrame = l_hDevice->getFrameNumber();
+//                l_currentFrame = l_hDevice->getFrameNumber();
             }
             return false;
         };
@@ -1321,191 +971,393 @@ void Map::createAdtFreeLamdas() {
 
 }
 
-void Map::doPostLoad(HCullStage &cullStage) {
+void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
+    ZoneScoped;
     int processedThisFrame = 0;
+    int m2ProcessedThisFrame = 0;
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
-//    if (m_api->getConfig()->getRenderM2()) {
-    for (auto &m2Object : cullStage->m2Array.getToLoadMain()) {
-        if (m2Object == nullptr) continue;
-        m2Object->doLoadMainFile();
+
+    {
+        ZoneScopedN("Load m2 main");
+        if (m_api->getConfig()->renderM2) {
+            for (auto &m2ObjectId: renderPlan->m2Array.getToLoadMain()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadMainFile();
+            }
+        }
     }
-    for (auto &m2Object : cullStage->m2Array.getToLoadGeom()) {
-        if (m2Object == nullptr) continue;
-        m2Object->doLoadGeom();
+    {
+        ZoneScopedN("Load m2 geom");
+        if (m_api->getConfig()->renderM2) {
+            for (auto &m2ObjectId: renderPlan->m2Array.getToLoadGeom()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadGeom(sceneRenderer);
+                m2ProcessedThisFrame++;
+                if (m2ProcessedThisFrame > MAX_LOAD_M2_PER_FRAME) break;
+            }
+        }
+    }
+
+    if (m_api->getConfig()->renderSkyDom) {
+        if (auto skyboxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId: skyboxView->m2List.getToLoadMain()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadMainFile();
+            }
+            for (auto &m2ObjectId: skyboxView->m2List.getToLoadGeom()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadGeom(sceneRenderer);
+            }
+        }
     }
 //    }
 
-    for (auto &wmoObject : cullStage->wmoArray.getToLoad()) {
-        if (wmoObject == nullptr) continue;
-        wmoObject->doPostLoad();
-    }
-    for (auto &wmoGroupObject : cullStage->wmoGroupArray.getToLoad()) {
-        if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->doPostLoad();
-        wmoGroupsProcessedThisFrame++;
-        if (wmoGroupsProcessedThisFrame > 20) break;
-    }
-
-    for (auto &adtObject : cullStage->adtArray) {
-        adtObject->adtObject->doPostLoad();
-    }
-
-    if (quadBindings == nullptr)
     {
-        const float epsilon = 0.f;
-
-        std::array<mathfu::vec2_packed, 4> vertexBuffer = {
-            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon, -1.0f + epsilon)),
-            mathfu::vec2_packed(mathfu::vec2(-1.0f + epsilon,  1.0f - epsilon)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  -1.0f+ epsilon)),
-            mathfu::vec2_packed(mathfu::vec2(1.0f  - epsilon,  1.f  - epsilon))
-        };
-        std::vector<uint16_t > indexBuffer = {
-            0, 1, 2,
-            2, 1, 3
-        };
-
-//        std::cout << "indexBuffer.size = " << indexBuffer.size() << std::endl;
-
-        auto quadIBO = m_api->hDevice->createIndexBuffer();
-        quadIBO->uploadData(
-            indexBuffer.data(),
-            indexBuffer.size() * sizeof(uint16_t));
-
-        auto quadVBO = m_api->hDevice->createVertexBuffer();
-        quadVBO->uploadData(
-            vertexBuffer.data(),
-            vertexBuffer.size() * sizeof(mathfu::vec2_packed)
-        );
-
-        quadBindings = m_api->hDevice->createVertexBufferBindings();
-        quadBindings->setIndexBuffer(quadIBO);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = quadVBO;
-
-        vertexBinding.bindings = std::vector<GBufferBinding>(&fullScreen[0], &fullScreen[1]);
-
-        quadBindings->addVertexBufferBinding(vertexBinding);
-        quadBindings->save();
+        ZoneScopedN("Load wmoObject");
+        if (m_api->getConfig()->renderWMO) {
+            for (auto wmoId: renderPlan->wmoArray.getToLoad()) {
+                auto wmoObject = wmoFactory->getObjectById<0>(wmoId);
+                if (wmoObject != nullptr) {
+                    wmoObject->doPostLoad(sceneRenderer);
+                }
+            }
+        }
     }
+    {
+        ZoneScopedN("Load wmo group");
+        if (m_api->getConfig()->renderWMO) {
+            for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToLoad()) {
+                if (wmoGroupObject == nullptr) continue;
+                wmoGroupObject->doPostLoad(sceneRenderer);
+                wmoGroupsProcessedThisFrame++;
+                if (wmoGroupsProcessedThisFrame > MAX_LOAD_WMOGROUP_PER_FRAME) break;
+            }
+        }
+    }
+
+    {
+        ZoneScopedN("Load adt");
+        int adtProcessed = 0;
+        for (auto &adtObject: renderPlan->adtArray) {
+            adtProcessed += (adtObject.adtObject->doPostLoad(sceneRenderer)) ? 1 : 0;
+            if (adtProcessed >= MAX_LOAD_ADT_PER_FRAME) break;
+        }
+    }
+
     if (skyMesh == nullptr) {
-        auto skyMeshBinding = createSkyBindings(m_api->hDevice.get());
-        skyMesh = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), false);
-        skyMesh0x4Sky = createSkyMesh(m_api->hDevice.get(), skyMeshBinding, m_api->getConfig(), true);
+        auto skyMeshBinding = createSkyBindings(sceneRenderer);
+        std::tie(skyMesh, skyMeshMat) = createSkyMesh(sceneRenderer, skyMeshBinding, false);
+        std::tie(skyMesh0x4Sky, skyMeshMat0x4) = createSkyMesh(sceneRenderer, skyMeshBinding, true);
     }
+    bool renderPortals = m_api->getConfig()->renderPortals;
+    bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
+
+    if (renderPortals) {
+        for (auto &view : renderPlan->viewsHolder.getInteriorViews()) {
+                view->produceTransformedPortalMeshes(sceneRenderer, m_api, view->worldPortalVertices);
+        }
+    }
+
+
+    if (renderAntiPortals) {
+        if(auto const &exterior = renderPlan->viewsHolder.getExterior()) {
+            exterior->produceTransformedPortalMeshes(sceneRenderer, m_api,
+                                                     exterior->worldAntiPortalVertices, true);
+        }
+    }
+
 };
 
+void Map::update(const HMapRenderPlan &renderPlan) {
+    ZoneScoped;
 
-
-void Map::update(HUpdateStage &updateStage) {
-    mapUpdateCounter.beginMeasurement();
-    mathfu::vec3 cameraVec3 = updateStage->cameraMatrices->cameraPos.xyz();
-    mathfu::mat4 &frustumMat = updateStage->cameraMatrices->perspectiveMat;
-    mathfu::mat4 &lookAtMat = updateStage->cameraMatrices->lookAtMat;
-    animTime_t deltaTime = updateStage->delta;
+    mathfu::vec3 cameraVec3   = renderPlan->renderingMatrices->cameraPos.xyz();
+    mathfu::mat4 &frustumMat  = renderPlan->renderingMatrices->perspectiveMat;
+    mathfu::mat4 &lookAtMat   = renderPlan->renderingMatrices->lookAtMat;
+    animTime_t deltaTime      = renderPlan->deltaTime;
 
     Config* config = this->m_api->getConfig();
 
-    auto &m2ToDraw = updateStage->cullResult->m2Array.getDrawn();
+    auto &m2ToDraw = renderPlan->m2Array.getDrawn();
     {
-        m2UpdateframeCounter.beginMeasurement();
+        ZoneScopedN("m2UpdateframeCounter");
 
-        tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 200),
-            [&](tbb::blocked_range<size_t> r) {
-                for (size_t i = r.begin(); i != r.end(); ++i) {
-                    auto& m2Object = m2ToDraw[i];
-                    m2Object->update(deltaTime, cameraVec3, lookAtMat);
+        auto threadsAvailable = m_api->getConfig()->hardwareThreadCount();
+
+        int granSize = m2ToDraw.size() / (2 * threadsAvailable);
+        if (granSize == 0) granSize = m2ToDraw.size();
+
+        std::mutex fillLights;
+        if (granSize > 0) {
+            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+            arena.execute([&] {
+                tbb::affinity_partitioner ap;
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                    [&](tbb::blocked_range<size_t> r) {
+                        std::vector<LocalLight> localLights;
+
+                        for (size_t i = r.begin(); i != r.end(); ++i) {
+                            auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
+                            if (m2Object == nullptr) continue;
+                            m2Object->update(deltaTime, cameraVec3, lookAtMat);\
+
+                            m2Object->collectLights(localLights);
+                        }
+                        if (!localLights.empty()) {
+                            std::unique_lock<std::mutex> lock(fillLights);
+                            renderPlan->pointLights.insert(
+                                renderPlan->pointLights.end(),
+                                localLights.begin(),localLights.end());
+                        }
+                    }, ap);
+            });
+        }
+
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId : skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->update(deltaTime, cameraVec3, lookAtMat);
+            }
+        }
+    }
+
+    {
+        ZoneScopedN("wmoUpdate");
+
+        for (const auto &wmoId: renderPlan->wmoArray.getToDrawn()) {
+            auto wmoObject = wmoFactory->getObjectById<0>(wmoId);
+            if (wmoObject == nullptr) continue;
+            wmoObject->update();
+        }
+    }
+
+    {
+        ZoneScopedN("wmoGroupUpdate");
+        for (const auto &wmoGroupObject: renderPlan->wmoGroupArray.getToDraw()) {
+            if (wmoGroupObject == nullptr) continue;
+            wmoGroupObject->update();
+        }
+    }
+
+    {
+        ZoneScopedN("adtUpdate");
+        {
+            std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
+            for (const auto &adtObjectRes: renderPlan->adtArray) {
+                if (processedADT.find(adtObjectRes.adtObject) != processedADT.end()) {
+                    adtObjectRes.adtObject->update(deltaTime);
+                    processedADT.insert(adtObjectRes.adtObject);
                 }
-            }, tbb::simple_partitioner());
-
-        m2UpdateframeCounter.endMeasurement();
+            }
+        }
     }
-
-    wmoGroupUpdate.beginMeasurement();
-    for (const auto &wmoGroupObject : updateStage->cullResult->wmoGroupArray.getToDraw()) {
-        if (wmoGroupObject == nullptr) continue;
-        wmoGroupObject->update();
-    }
-    wmoGroupUpdate.endMeasurement();
-
-    adtUpdate.beginMeasurement();
-    for (const auto &adtObjectRes : updateStage->cullResult->adtArray) {
-        adtObjectRes->adtObject->update(deltaTime);
-    }
-    adtUpdate.endMeasurement();
 
     //2. Calc distance every 100 ms
-    m2calcDistanceCounter.beginMeasurement();
-    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
-          [&](tbb::blocked_range<size_t> r) {
-              for (size_t i = r.begin(); i != r.end(); ++i) {
-                  auto &m2Object = m2ToDraw[i];
-                  if (m2Object == nullptr) continue;
-                  m2Object->calcDistance(cameraVec3);
-              }
-          }, tbb::auto_partitioner()
-    );
-    m2calcDistanceCounter.endMeasurement();
+    {
+        ZoneScopedN("Calc m2 distance");
+        oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+        arena.execute([&] {
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), 500),
+                              [&](tbb::blocked_range<size_t> r) {
+                                  for (size_t i = r.begin(); i != r.end(); ++i) {
+                                      auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
+                                      if (m2Object == nullptr) continue;
+                                      m2Object->calcDistance(cameraVec3);
+                                  }
+                              }, tbb::auto_partitioner()
+            );
+        });
+    }
 
     //Cleanup ADT every 10 seconds
-    adtCleanupCounter.beginMeasurement();
-    if (adtFreeLambda!= nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                auto adtObj = mapTiles[i][j];
-                //Free obj, if it was unused for 10 secs
-                if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
+    {
+        ZoneScopedN("Cleanup ADT");
+        if (adtFreeLambda != nullptr && adtFreeLambda(true, false, this->m_currentTime)) {
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    auto adtObj = mapTiles[i][j];
+                    //Free obj, if it was unused for 10 secs
+                    if (adtObj != nullptr && adtObj->getFreeStrategy()(true, false, this->m_currentTime)) {
 //                    std::cout << "try to free adtObj" << std::endl;
 
-                    mapTiles[i][j] = nullptr;
+                        mapTiles[i][j] = nullptr;
+                    }
+                }
+            }
+
+            adtFreeLambda(false, true, this->m_currentTime + deltaTime);
+        }
+    }
+
+    this->m_currentTime += deltaTime;
+}
+
+void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan) {
+    ZoneScoped;
+    if (skyMeshMat0x4)
+    {
+        auto &meshblockVS = skyMeshMat0x4->m_skyColors->getObject();
+        auto EndFogColor = !renderPlan->frameDependentData->fogResults.empty() ?
+                           renderPlan->frameDependentData->fogResults[0].EndFogColor:
+                           mathfu::vec3(0,0,0);
+
+        if (EndFogColor.Length() < 0.0001) {
+            EndFogColor = renderPlan->frameDependentData->skyColors.SkyFogColor.xyz();
+        }
+
+
+        auto EndFogColorV4_1 = mathfu::vec4(EndFogColor, 0.0);
+        auto EndFogColorV4_2 = mathfu::vec4(EndFogColor, 1.0);
+        meshblockVS.skyColor[0] = EndFogColorV4_1;
+        meshblockVS.skyColor[1] = EndFogColorV4_1;
+        meshblockVS.skyColor[2] = EndFogColorV4_1;
+        meshblockVS.skyColor[3] = EndFogColorV4_1;
+        meshblockVS.skyColor[4] = EndFogColorV4_1;
+        meshblockVS.skyColor[5] = EndFogColorV4_2;
+        skyMeshMat0x4->m_skyColors->save();
+    }
+    if (skyMeshMat)
+    {
+        auto &meshblockVS = skyMeshMat->m_skyColors->getObject();
+        meshblockVS.skyColor[0] = renderPlan->frameDependentData->skyColors.SkyTopColor;
+        meshblockVS.skyColor[1] = renderPlan->frameDependentData->skyColors.SkyMiddleColor;
+        meshblockVS.skyColor[2] = renderPlan->frameDependentData->skyColors.SkyBand1Color;
+        meshblockVS.skyColor[3] = renderPlan->frameDependentData->skyColors.SkyBand2Color;
+        meshblockVS.skyColor[4] = renderPlan->frameDependentData->skyColors.SkySmogColor;
+        meshblockVS.skyColor[5] = renderPlan->frameDependentData->skyColors.SkyFogColor;
+        skyMeshMat->m_skyColors->save();
+    }
+
+    {
+        ZoneScopedN("m2BuffersUpdate");
+        auto threadsAvailable = m_api->getConfig()->hardwareThreadCount();
+        auto &m2ToDraw = renderPlan->m2Array.getDrawn();
+        int granSize = m2ToDraw.size() / (2 * threadsAvailable);
+        if (granSize == 0) granSize = m2ToDraw.size();
+
+        //Can't be paralleled?
+        {
+            ZoneScopedN("fitParticleAndRibbonBuffersToSize");
+            auto &drawnM2s = renderPlan->m2Array.getDrawn();
+            for (auto &m2ObjectId: drawnM2s) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object != nullptr) {
+                    m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
                 }
             }
         }
 
-        adtFreeLambda(false, true, this->m_currentTime + updateStage->delta);
+        auto updateLambda = [&](const std::function<void(M2Object *)> &callback) {
+            if (granSize > 0) {
+                auto l_device = m_api->hDevice;
+                auto oldProcessingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
+                auto processingFrame = oldProcessingFrame;
+                    tbb::affinity_partitioner ap;
+                    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                        [&](tbb::blocked_range<size_t> r) {
+                            l_device->setCurrentProcessingFrameNumber(processingFrame);
+                            for (size_t i = r.begin(); i != r.end(); ++i) {
+                                auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
+                                if (m2Object != nullptr) {
+                                    callback(m2Object);
+                                }
+                            }
+                        }, ap);
+                //Restore processing frame
+                l_device->setCurrentProcessingFrameNumber(oldProcessingFrame);
+            }
+        };
+
+        {
+            ZoneScopedN("upload Model buffers");
+
+            updateLambda([&renderPlan](M2Object *m2Object) {
+                m2Object->uploadBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            });
+        }
+
+        {
+            ZoneScopedN("upload generators buffers");
+
+            updateLambda([&renderPlan](M2Object *m2Object) {
+                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            });
+        }
+
+
+
+//        for (auto &m2ObjectId: renderPlan->m2Array.getDrawn()) {
+//            auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+//            if (m2Object != nullptr) {
+//                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+//                                                 renderPlan->frameDependentData);
+//            }
+//        }
     }
-    adtCleanupCounter.endMeasurement();
-    this->m_currentTime += updateStage->delta;
-
-    mapUpdateCounter.endMeasurement();
-
-    m_api->getConfig()->mapUpdateTime = mapUpdateCounter.getTimePerFrame();
-    m_api->getConfig()->m2UpdateTime = m2UpdateframeCounter.getTimePerFrame();
-    m_api->getConfig()->wmoGroupUpdateTime = wmoGroupUpdate.getTimePerFrame();
-    m_api->getConfig()->adtUpdateTime = adtUpdate.getTimePerFrame();
-    m_api->getConfig()->m2calcDistanceTime = m2calcDistanceCounter.getTimePerFrame();
-    m_api->getConfig()->adtCleanupTime = adtCleanupCounter.getTimePerFrame();
-    //Collect meshes
-}
-
-void Map::updateBuffers(HUpdateStage &updateStage) {
-    auto cullStage = updateStage->cullResult;
-
-    for (auto &m2Object : cullStage->m2Array.getDrawn()) {
-         if (m2Object != nullptr) {
-            m2Object->uploadGeneratorBuffers(cullStage->matricesForCulling->lookAtMat);
+    {
+        ZoneScopedN("m2SkyboxBuffersUpdate");
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
+            }
+        }
+    }
+    {
+        ZoneScopedN("m2SkyboxBuffersUpdate");
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->uploadBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
+        }
+    }
+    {
+        ZoneScopedN("m2SkyboxGenerateBuffersUpdate");
+        if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
+            for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
         }
     }
 
-//    for (auto &wmoGroupObject : cullStage->wmoGroupArray.getToDraw()) {
-//        if (wmoGroupObject == nullptr) continue;
-//        wmoGroupObject->uploadGeneratorBuffers();
-//    }
+    {
+        ZoneScopedN("wmoBuffersUpdate");
+        for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToDraw()) {
+            if (wmoGroupObject == nullptr) continue;
+            wmoGroupObject->uploadGeneratorBuffers(renderPlan->frameDependentData, getCurrentSceneTime());
+        }
+    }
 
-    for (auto &adtRes: cullStage->adtArray) {
-        if (adtRes == nullptr) continue;
-        adtRes->adtObject->uploadGeneratorBuffers(*adtRes.get());
+    {
+        ZoneScopedN("adtBuffersUpdate");
+        std::unordered_set<std::shared_ptr<AdtObject>> processedADT;
+        for (const auto &adtObjectRes: renderPlan->adtArray) {
+            if (processedADT.find(adtObjectRes.adtObject) != processedADT.end()) {
+                adtObjectRes.adtObject->uploadGeneratorBuffers(renderPlan->frameDependentData);
+                processedADT.insert(adtObjectRes.adtObject);
+            }
+        }
     }
 }
 
-std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &doodadDef) {
+std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, const SMDoodadDef &doodadDef) {
     auto it = m_m2MapObjects[doodadDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto m2Object = std::make_shared<M2Object>(m_api);
+        auto m2Object = m2Factory->createObject(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
@@ -1517,12 +1369,13 @@ std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, SMDoodadDef &do
     return nullptr;
 }
 
-std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDef) {
+
+std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, const SMDoodadDef &doodadDef) {
     auto it = m_m2MapObjects[doodadDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto m2Object = std::make_shared<M2Object>(m_api);
+        auto m2Object = m2Factory->createObject(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);
         m2Object->createPlacementMatrix(doodadDef);
@@ -1533,43 +1386,12 @@ std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, SMDoodadDef &doodadDe
     }
     return nullptr;
 }
-
-
-std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDef &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
-        wmoObject->setLoadingParam(mapObjDef);
-        wmoObject->setModelFileName(fileName);
-
-        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
-        return wmoObject;
-    }
-    return nullptr;
-}
-std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDef &mapObjDef) {
-    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
-    } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
-        wmoObject->setLoadingParam(mapObjDef);
-        wmoObject->setModelFileId(fileDataId);
-
-        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
-        return wmoObject;
-    }
-    return nullptr;
-}
-
-std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefObj1 &mapObjDef) {
-    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
-    } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(fileName);
 
@@ -1579,12 +1401,12 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, SMMapObjDefOb
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
     if (!it.expired()) {
         return it.lock();
     } else {
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 
@@ -1594,487 +1416,35 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, SMMapObjDefObj1 &ma
     return nullptr;
 }
 
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef) {
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto wmoObject = wmoFactory->createObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileName(fileName);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
+    }
+    return nullptr;
+}
+
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef) {
+    auto it = m_wmoMapObjects[mapObjDef.uniqueId];
+    if (!it.expired()) {
+        return it.lock();
+    } else {
+        auto wmoObject = wmoFactory->createObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject->setModelFileId(fileDataId);
+
+        m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
+        return wmoObject;
+    }
+    return nullptr;
+}
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
-}
-void Map::produceUpdateStage(HUpdateStage &updateStage) {
-    mapProduceUpdateCounter.beginMeasurement();
-    this->update(updateStage);
-
-    //Create meshes
-    updateStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-    updateStage->transparentMeshes = std::make_shared<MeshesToRender>();
-
-    auto &opaqueMeshes = updateStage->opaqueMeshes->meshes;
-    auto transparentMeshes = std::vector<HGMesh>();
-
-    opaqueMeshes.reserve(30000);
-    transparentMeshes.reserve(30000);
-
-    auto cullStage = updateStage->cullResult;
-    auto fdd = cullStage->frameDepedantData;
-
-    if (m_api->getConfig()->renderSkyDom && !m_suppressDrawingSky &&
-        (cullStage->viewsHolder.getExterior() || cullStage->currentWmoGroupIsExtLit)) {
-        if (fdd->overrideValuesWithFinalFog) {
-            if (skyMesh0x4Sky != nullptr) {
-                transparentMeshes.push_back(skyMesh0x4Sky);
-                skyMesh0x4Sky->setSortDistance(0);
-
-            }
-        }
-        if ((m_skyConeAlpha > 0) ) {
-            if (skyMesh != nullptr)
-                opaqueMeshes.push_back(skyMesh);
-        }
-    }
-
-    // Put everything into one array and sort
-    interiorViewCollectMeshCounter.beginMeasurement();
-    bool renderPortals = m_api->getConfig()->renderPortals;
-    for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
-        view->collectMeshes(opaqueMeshes, transparentMeshes);
-        if (renderPortals) {
-            view->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
-        }
-    }
-    interiorViewCollectMeshCounter.endMeasurement();
-
-    exteriorViewCollectMeshCounter.beginMeasurement();
-    {
-        auto exteriorView = cullStage->viewsHolder.getExterior();
-        if (exteriorView != nullptr) {
-            exteriorView->collectMeshes(opaqueMeshes, transparentMeshes);
-            if (renderPortals) {
-                exteriorView->produceTransformedPortalMeshes(m_api, opaqueMeshes, transparentMeshes);
-            }
-        }
-    }
-    exteriorViewCollectMeshCounter.endMeasurement();
-
-    m2CollectMeshCounter.beginMeasurement();
-    if (m_api->getConfig()->renderM2) {
-        for (auto &m2Object : cullStage->m2Array.getDrawn()) {
-            if (m2Object == nullptr) continue;
-            m2Object->collectMeshes(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
-            m2Object->drawParticles(opaqueMeshes, transparentMeshes, m_viewRenderOrder);
-        }
-    }
-    m2CollectMeshCounter.endMeasurement();
-
-    //No need to sort array which has only one element
-    sortMeshCounter.beginMeasurement();
-    if (transparentMeshes.size() > 1) {
-        tbb::parallel_sort(transparentMeshes.begin(), transparentMeshes.end(),
-            #include "../../../gapi/interface/sortLambda.h"
-        );
-
-        updateStage->transparentMeshes->meshes = transparentMeshes;
-
-    } else {
-        auto &targetTranspMeshes = updateStage->transparentMeshes->meshes;
-        for (int i = 0; i < transparentMeshes.size(); i++) {
-            targetTranspMeshes.push_back(transparentMeshes[i]);
-        }
-    }
-    sortMeshCounter.endMeasurement();
-
-    //Collect textures for upload
-    auto &textureToUpload = updateStage->texturesForUpload;
-    textureToUpload.reserve(10000);
-    for (auto &mesh: updateStage->transparentMeshes->meshes) {
-        for (auto &text : mesh->texture()) {
-            if (text != nullptr && !text->getIsLoaded()) {
-                textureToUpload.push_back(text);
-            }
-        }
-    }
-    for (auto &mesh: updateStage->opaqueMeshes->meshes) {
-        for (auto &text : mesh->texture()) {
-            if (text != nullptr && !text->getIsLoaded()) {
-                textureToUpload.push_back(text);
-            }
-        }
-    }
-
-    tbb::parallel_sort(textureToUpload.begin(), textureToUpload.end(),
-                       [](auto &first, auto &end) { return first < end; }
-    );
-    textureToUpload.erase(unique(textureToUpload.begin(), textureToUpload.end()), textureToUpload.end());
-
-    //1. Collect buffers
-    collectBuffersCounter.beginMeasurement();
-    std::vector<HGUniformBufferChunk> &bufferChunks = updateStage->uniformBufferChunks;
-    bufferChunks.reserve((opaqueMeshes.size() + updateStage->transparentMeshes->meshes.size()) * 5);
-    int renderIndex = 0;
-    for (const auto &mesh : opaqueMeshes) {
-        for (int i = 0; i < 5; i++ ) {
-            auto bufferChunk = mesh->getUniformBuffer(i);
-
-            if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk);
-            }
-        }
-    }
-    for (const auto &mesh : updateStage->transparentMeshes->meshes) {
-        for (int i = 0; i < 5; i++ ) {
-            auto bufferChunk = mesh->getUniformBuffer(i);
-
-            if (bufferChunk != nullptr) {
-                bufferChunks.push_back(bufferChunk);
-            }
-        }
-    }
-    collectBuffersCounter.endMeasurement();
-
-    sortBuffersCounter.beginMeasurement();
-    tbb::parallel_sort(bufferChunks.begin(), bufferChunks.end(),
-                       [](auto &first, auto &end) { return first < end; }
-    );
-    bufferChunks.erase(unique(bufferChunks.begin(), bufferChunks.end()), bufferChunks.end());
-    sortBuffersCounter.endMeasurement();
-
-    mapProduceUpdateCounter.endMeasurement();
-
-
-    m_api->getConfig()->mapProduceUpdateTime = mapProduceUpdateCounter.getTimePerFrame();
-    m_api->getConfig()->interiorViewCollectMeshTime = interiorViewCollectMeshCounter.getTimePerFrame();
-    m_api->getConfig()->exteriorViewCollectMeshTime = exteriorViewCollectMeshCounter.getTimePerFrame();
-    m_api->getConfig()->m2CollectMeshTime = m2CollectMeshCounter.getTimePerFrame();
-    m_api->getConfig()->sortMeshTime = sortMeshCounter.getTimePerFrame();
-    m_api->getConfig()->collectBuffersTime = collectBuffersCounter.getTimePerFrame();
-    m_api->getConfig()->sortBuffersTime = sortBuffersCounter.getTimePerFrame();
-}
-void Map::produceDrawStage(HDrawStage &resultDrawStage, HUpdateStage &updateStage, std::vector<HGUniformBufferChunk> &additionalChunks) {
-    auto cullStage = updateStage->cullResult;
-
-    //Create scenewide uniform
-    resultDrawStage->frameDepedantData = updateStage->cullResult->frameDepedantData;
-    auto renderMats = resultDrawStage->matricesForRendering;
-
-    resultDrawStage->opaqueMeshes = updateStage->opaqueMeshes;
-    resultDrawStage->transparentMeshes = updateStage->transparentMeshes;
-
-    HDrawStage origResultDrawStage = resultDrawStage;
-    bool frameBufferSupported = m_api->hDevice->getIsRenderbufferSupported();
-
-    auto config = m_api->getConfig();
-    resultDrawStage->sceneWideBlockVSPSChunk = m_api->hDevice->createUniformBufferChunk(sizeof(sceneWideBlockVSPS));
-    resultDrawStage->sceneWideBlockVSPSChunk->setUpdateHandler([renderMats, config](IUniformBufferChunk *chunk, const HFrameDepedantData &fdd) -> void {
-        auto *blockPSVS = &chunk->getObject<sceneWideBlockVSPS>();
-
-        blockPSVS->uLookAtMat = renderMats->lookAtMat;
-        blockPSVS->uPMatrix = renderMats->perspectiveMat;
-        blockPSVS->uInteriorSunDir = renderMats->interiorDirectLightDir;
-        blockPSVS->uViewUp = renderMats->viewUp;
-
-        blockPSVS->extLight.uExteriorAmbientColor = fdd->exteriorAmbientColor;
-        blockPSVS->extLight.uExteriorHorizontAmbientColor = fdd->exteriorHorizontAmbientColor;
-        blockPSVS->extLight.uExteriorGroundAmbientColor = fdd->exteriorGroundAmbientColor;
-        blockPSVS->extLight.uExteriorDirectColor = fdd->exteriorDirectColor;
-        blockPSVS->extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
-        blockPSVS->extLight.uAdtSpecMult = mathfu::vec4(config->adtSpecMult, 0,0,1.0);
-
-//        float fogEnd = std::min(config->getFarPlane(), config->getFogEnd());
-        float fogEnd = config->farPlane;
-        if (config->disableFog || !fdd->FogDataFound) {
-            fogEnd = 100000000.0f;
-            fdd->FogScaler = 0;
-            fdd->FogDensity = 0;
-        }
-
-        float fogStart = std::max<float>(config->farPlane - 250, 0);
-        fogStart = std::max<float>(fogEnd - fdd->FogScaler * (fogEnd - fogStart), 0);
-
-
-        blockPSVS->fogData.densityParams = mathfu::vec4(
-            fogStart,
-            fogEnd ,
-            fdd->FogDensity / 1000,
-            0);
-        blockPSVS->fogData.heightPlane = mathfu::vec4(0,0,0,0);
-        blockPSVS->fogData.color_and_heightRate = mathfu::vec4(fdd->FogColor,fdd->FogHeightScaler);
-        blockPSVS->fogData.heightDensity_and_endColor = mathfu::vec4(
-            fdd->FogHeightDensity,
-            fdd->EndFogColor.x,
-            fdd->EndFogColor.y,
-            fdd->EndFogColor.z
-        );
-        blockPSVS->fogData.sunAngle_and_sunColor = mathfu::vec4(
-            fdd->SunFogAngle,
-            fdd->SunFogColor.x * fdd->SunFogStrength,
-            fdd->SunFogColor.y * fdd->SunFogStrength,
-            fdd->SunFogColor.z * fdd->SunFogStrength
-        );
-        blockPSVS->fogData.heightColor_and_endFogDistance = mathfu::vec4(
-            fdd->FogHeightColor,
-            (fdd->EndFogColorDistance > 0) ?
-            fdd->EndFogColorDistance :
-            1000.0f
-        );
-        blockPSVS->fogData.sunPercentage = mathfu::vec4(
-            (fdd->SunFogColor.Length() > 0) ? 0.5f : 0.0f
-            , 0, 0, 0);
-
-    });
-
-    updateStage->uniformBufferChunks.push_back(resultDrawStage->sceneWideBlockVSPSChunk);
-
-    if (frameBufferSupported ) {
-        //Create a copy of exiting resultDrawStage
-        auto resultDrawStageCpy = std::make_shared<DrawStage>();
-        *resultDrawStageCpy = *resultDrawStage;
-        //Assign a new frame buffer to copy
-        resultDrawStageCpy->target = m_api->hDevice->createFrameBuffer(
-            resultDrawStage->viewPortDimensions.maxs[0],
-            resultDrawStage->viewPortDimensions.maxs[1],
-            {ITextureFormat::itRGBA},
-            ITextureFormat::itDepth32,
-            m_api->hDevice->getMaxSamplesCnt(),
-            4
-        );
-        resultDrawStageCpy->viewPortDimensions.mins = {0,0};
-
-        HDrawStage lastDrawStage = nullptr;
-        HDrawStage prevDrawStage = resultDrawStageCpy;
-
-        if (!config->disableGlow) {
-            lastDrawStage = doGaussBlur(prevDrawStage, updateStage);
-            if (lastDrawStage != nullptr)
-                prevDrawStage = lastDrawStage;
-        }
-
-
-        //End of effects stack
-        //Make last stage to draw to initial resultDrawStage target
-        prevDrawStage->target = resultDrawStage->target;
-        //Replace all data in target drawStage with new data
-        *resultDrawStage = *prevDrawStage;
-    }
-
-
-}
-
-HDrawStage Map::doGaussBlur(const HDrawStage &parentDrawStage, HUpdateStage &updateStage) const {
-    if (quadBindings == nullptr)
-        return nullptr;
-
-    ///2 Rounds of ffxgauss4 (Horizontal and Vertical blur)
-    ///With two frameBuffers
-    ///Size for buffers : is 4 times less than current canvas
-    int targetWidth = parentDrawStage->viewPortDimensions.maxs[0] >> 2;
-    int targetHeight = parentDrawStage->viewPortDimensions.maxs[1] >> 2;
-
-    auto frameB1 = m_api->hDevice->createFrameBuffer(
-        targetWidth,
-        targetHeight,
-        {ITextureFormat::itRGBA},
-        ITextureFormat::itDepth32,
-        1,
-        2
-    );
-    auto frameB2 = m_api->hDevice->createFrameBuffer(
-        targetWidth,
-        targetHeight,
-        {ITextureFormat::itRGBA},
-        ITextureFormat::itDepth32,
-        1,
-        2
-    );
-
-    auto vertexChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-    updateStage->uniformBufferChunks.push_back(vertexChunk);
-    vertexChunk->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-        meshblockVS.x = 1;
-        meshblockVS.y = 1;
-        meshblockVS.z = 0;
-        meshblockVS.w = 0;
-    });
-
-
-    auto ffxGaussFrag = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag);
-    ffxGaussFrag->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-        static const float s_texOffsetX[4] = {-1, 0, 0, -1};
-        static const float s_texOffsetY[4] = {2, 2, -1, -1};;
-
-        for (int i = 0; i < 4; i++) {
-            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-        }
-    });
-
-
-    auto ffxGaussFrag2 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag2);
-    ffxGaussFrag2->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-        static const float s_texOffsetX[4] = {-6, -1, 1, 6};
-        static const float s_texOffsetY[4] = {0, 0, 0, 0};;
-
-        for (int i = 0; i < 4; i++) {
-            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-        }
-    });
-    auto ffxGaussFrag3 = m_api->hDevice->createUniformBufferChunk(sizeof(FXGauss::meshWideBlockPS));
-    updateStage->uniformBufferChunks.push_back(ffxGaussFrag3);
-    ffxGaussFrag3->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-        auto &meshblockVS = self->getObject<FXGauss::meshWideBlockPS>();
-        static const float s_texOffsetX[4] = {0, 0, 0, 0};
-        static const float s_texOffsetY[4] = {10, 2, -2, -10};;
-
-        for (int i = 0; i < 4; i++) {
-            meshblockVS.texOffsetX[i] = s_texOffsetX[i];
-            meshblockVS.texOffsetY[i] = s_texOffsetY[i];
-        }
-    });
-    HGUniformBufferChunk frags[3] = {ffxGaussFrag, ffxGaussFrag2, ffxGaussFrag3};
-
-    HDrawStage prevStage = parentDrawStage;
-    for (int i = 0; i < 3; i++) {
-        ///1. Create draw stage
-        HDrawStage drawStage = std::make_shared<DrawStage>();
-
-        drawStage->drawStageDependencies = {prevStage};
-        drawStage->matricesForRendering = nullptr;
-        drawStage->setViewPort = true;
-        drawStage->viewPortDimensions = {{0, 0},
-                                         {parentDrawStage->viewPortDimensions.maxs[0] >> 2,
-                                             parentDrawStage->viewPortDimensions.maxs[1] >> 2}};
-        drawStage->clearScreen = false;
-        drawStage->target = ((i & 1) > 0) ? frameB1 : frameB2;
-
-        ///2. Create mesh
-        auto shader = m_api->hDevice->getShader("fullScreen_ffxgauss4", nullptr);
-        gMeshTemplate meshTemplate(quadBindings, shader);
-        meshTemplate.meshType = MeshType::eGeneralMesh;
-        meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = false;
-        meshTemplate.backFaceCulling = false;
-        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
-
-        meshTemplate.texture.resize(1);
-        meshTemplate.texture[0] = prevStage->target->getAttachment(0);
-
-        meshTemplate.textureCount = 1;
-
-        meshTemplate.ubo[0] = nullptr;
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = vertexChunk;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = frags[i];
-
-        meshTemplate.element = DrawElementMode::TRIANGLES;
-        meshTemplate.start = 0;
-        meshTemplate.end = 6;
-
-        //Make mesh
-        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-        drawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-        drawStage->opaqueMeshes->meshes.push_back(hmesh);
-
-        ///3. Reassign previous frame
-        prevStage = drawStage;
-    }
-
-    //And the final is ffxglow to screen
-    {
-        auto config = m_api->getConfig();
-
-        auto glow = parentDrawStage->frameDepedantData->currentGlow;
-        auto ffxGlowfragmentChunk = m_api->hDevice->createUniformBufferChunk(sizeof(mathfu::vec4_packed));
-        updateStage->uniformBufferChunks.push_back(ffxGlowfragmentChunk);
-        ffxGlowfragmentChunk->setUpdateHandler([glow, config](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) -> void {
-            auto &meshblockVS = self->getObject<mathfu::vec4_packed>();
-            meshblockVS.x = 1;
-            meshblockVS.y = 1;
-            meshblockVS.z = 0; //mix_coeficient
-            meshblockVS.w = glow; //glow multiplier
-        });
-
-        auto shader = m_api->hDevice->getShader("ffxGlowQuad", nullptr);
-        gMeshTemplate meshTemplate(quadBindings, shader);
-        meshTemplate.meshType = MeshType::eGeneralMesh;
-        meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = false;
-        meshTemplate.backFaceCulling = false;
-        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
-
-        meshTemplate.texture.resize(2);
-        meshTemplate.texture[0] = parentDrawStage->target->getAttachment(0);
-        meshTemplate.texture[1] = prevStage->target->getAttachment(0);
-
-        meshTemplate.textureCount = 2;
-
-
-        meshTemplate.ubo[0] = nullptr;
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = vertexChunk;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = ffxGlowfragmentChunk;
-
-        meshTemplate.element = DrawElementMode::TRIANGLES;
-        meshTemplate.start = 0;
-        meshTemplate.end = 6;
-
-        //Make mesh
-        HGMesh hmesh = m_api->hDevice->createMesh(meshTemplate);
-
-        auto resultDrawStage = std::make_shared<DrawStage>();
-        *resultDrawStage = *parentDrawStage;
-        resultDrawStage->sceneWideBlockVSPSChunk = nullptr; //Since it's not used but this shader and it's important for vulkan
-        resultDrawStage->drawStageDependencies = {prevStage};
-        resultDrawStage->transparentMeshes = nullptr;
-        resultDrawStage->opaqueMeshes = std::make_shared<MeshesToRender>();
-        resultDrawStage->opaqueMeshes->meshes.push_back(hmesh);
-        resultDrawStage->target = nullptr;
-
-        return resultDrawStage;
-    }
-}
-
-void Map::loadZoneLights() {
-    if (m_api->databaseHandler != nullptr) {
-        std::vector<ZoneLight> zoneLights;
-        m_api->databaseHandler->getZoneLightsForMap(m_mapId, zoneLights);
-
-        for (const auto &zoneLight : zoneLights) {
-            mapInnerZoneLightRecord innerZoneLightRecord;
-            innerZoneLightRecord.ID = zoneLight.ID;
-            innerZoneLightRecord.name = zoneLight.name;
-            innerZoneLightRecord.LightID = zoneLight.LightID;
-//            innerZoneLightRecord.Zmin = zoneLight.Zmin;
-//            innerZoneLightRecord.Zmax = zoneLight.Zmax;
-
-            float minX = 9999; float maxX = -9999;
-            float minY = 9999; float maxY = -9999;
-
-            auto &points = innerZoneLightRecord.points;
-            for (auto &zonePoint : zoneLight.points) {
-                minX = std::min<float>(zonePoint.x, minX); minY = std::min<float>(zonePoint.y, minY);
-                maxX = std::max<float>(zonePoint.x, maxX); maxY = std::max<float>(zonePoint.y, maxY);
-
-                points.push_back(mathfu::vec2(zonePoint.x, zonePoint.y));
-            }
-
-            innerZoneLightRecord.aabb = CAaBox(
-                C3Vector(mathfu::vec3(minX, minY, zoneLight.Zmin)),
-                C3Vector(mathfu::vec3(maxX, maxY, zoneLight.Zmax))
-            );
-
-            auto &lines = innerZoneLightRecord.lines;
-            for (int i = 0; i < (points.size() - 1); i++) {
-                lines.push_back(points[i + 1] - points[i]);
-            }
-            lines.push_back( points[0] - points[points.size() - 1]);
-
-            m_zoneLights.push_back(innerZoneLightRecord);
-        }
-
-    }
 }

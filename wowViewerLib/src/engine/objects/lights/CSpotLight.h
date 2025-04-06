@@ -1,0 +1,14 @@
+//
+// Created by Deamon on 4/1/2024.
+//
+
+#ifndef AWEBWOWVIEWERCPP_CSPOTLIGHT_H
+#define AWEBWOWVIEWERCPP_CSPOTLIGHT_H
+
+
+class CSpotLight {
+
+};
+
+
+#endif //AWEBWOWVIEWERCPP_CSPOTLIGHT_H

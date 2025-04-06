@@ -19,6 +19,7 @@ private:
     mathfu::vec3 lookAt = {0, 0, 0};
     mathfu::vec3 upVector = {0, 0, 0};
     mathfu::mat4 lookAtMat = {};
+    mathfu::mat4 invTranspViewMat = {};
 
 
     float MDDepthPlus = 0;
@@ -30,9 +31,10 @@ private:
     float MDVerticalMinus = 0;
 
     float depthDiff = 0;
-    float m_moveSpeed = 1.0;
+    float m_moveSpeed =  1.0f / 30.0f;
 
     bool staticCamera = false;
+    bool updatedAtLeastOnce = false;
 
     float ah = 0;
     float av = 0;
@@ -56,6 +58,7 @@ public:
     void stopMovingUp() override;
     void startMovingDown() override;
     void stopMovingDown() override;
+    void stopAllMovement() override;
 
     void zoomInFromMouseScroll(float val) override;
     void zoomInFromTouch(float val) override;
@@ -66,7 +69,7 @@ public:
         position[1] = camera.y;
         position[2] = camera.z;
     }
-
+    float getMovementSpeed() override;
     void setMovementSpeed(float value) override;
 
 public:
@@ -76,10 +79,14 @@ public:
                                       float nearPlane,
                                       float farPlane) override;
 
+    bool isCompatibleWithInfiniteZ() override {
+        return true;
+    }
+
 public:
     void tick(animTime_t timeDelta) override;
     void setCameraPos(float x, float y, float z) override;
-    void setCameraLookAt(float x, float y, float z) override {};
+    void setCameraLookAt(float x, float y, float z) override;
 };
 
 

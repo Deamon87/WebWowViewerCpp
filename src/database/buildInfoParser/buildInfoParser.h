@@ -6,7 +6,7 @@
 #define AWEBWOWVIEWERCPP_BUILDINFOPARSER_H
 
 #include <string>
-#include "fileBrowser/buildDefinition.h"
+#include "buildDefinition.h"
 
 class BuildInfoParser {
 public:

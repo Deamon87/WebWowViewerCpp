@@ -10,6 +10,12 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
     this->m2Skin = skinFile;
 
     M2SkinProfile *skinHeader = (M2SkinProfile *) &(*this->m2Skin.get())[0];
+    if (skinHeader->magic != 'NIKS') {
+        std::cout << "wrong file header for SKIN file" << std::endl;
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
+
     this->m_skinData = skinHeader;
 
     //Step 1: Init all m2Arrays
@@ -21,19 +27,6 @@ void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
 
     fsStatus = FileStatus::FSLoaded;
 }
-HGIndexBuffer SkinGeom::getIBO(const HGDevice &device) {
-    if (indexVbo == nullptr) {
-        auto indicies = generateIndexBuffer();
-
-        indexVbo = device->createIndexBuffer();
-        indexVbo->uploadData(
-            &indicies[0],
-            indicies.size() * sizeof(uint16_t));
-    }
-
-    return indexVbo;
-}
-
 void SkinGeom::fixShaderIdBasedOnBlendOverride(M2Data *m2File) {
     M2SkinProfile* skinFileData = this->m_skinData;
 
@@ -212,14 +205,28 @@ void SkinGeom::fixShaderIdBasedOnLayer(M2Data *m2File) {
     */
 }
 
-std::vector<uint16_t> SkinGeom::generateIndexBuffer() {
+void SkinGeom::generateIndexBuffer(std::vector<uint16_t> &buffer) {
     int indiciesLength = this->m_skinData->indices.size;
 
-    std::vector<uint16_t> indicies = std::vector<uint16_t>(indiciesLength);
+    buffer = std::vector<uint16_t>(indiciesLength);
 
     for (int i = 0; i < indiciesLength; i++) {
-        indicies[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
+        buffer[i] = *this->m_skinData->vertices.getElement(*this->m_skinData->indices.getElement(i));
+    }
+}
+
+#ifndef WOWLIB_EXCLUDE_RENDERER
+HGIndexBuffer SkinGeom::getIBO(const HMapSceneBufferCreate &renderer) {
+    if (m_IBO == nullptr) {
+        std::vector<uint16_t> indicies;
+        generateIndexBuffer(indicies);
+
+        m_IBO = renderer->createM2IndexBuffer(indicies.size() * sizeof(uint16_t));
+        m_IBO->uploadData(
+            &indicies[0],
+            indicies.size() * sizeof(uint16_t));
     }
 
-    return indicies;
+    return m_IBO;
 }
+#endif

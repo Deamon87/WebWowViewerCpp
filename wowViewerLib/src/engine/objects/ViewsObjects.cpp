@@ -4,7 +4,6 @@
 
 #include "ViewsObjects.h"
 #include "../../gapi/UniformBufferStructures.h"
-#include "../shader/ShaderDefinitions.h"
 #include "oneapi/tbb/parallel_for.h"
 
 #if (__AVX__ && __SSE2__)
@@ -12,31 +11,35 @@
 #endif
 #include "../algorithms/mathHelper_culling.h"
 
-void ExteriorView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
-    {
-        auto inserter = std::back_inserter(opaqueMeshes);
-        std::copy(this->m_opaqueMeshes.begin(), this->m_opaqueMeshes.end(), inserter);
-    }
-
-    {
-        auto inserter = std::back_inserter(transparentMeshes);
-        std::copy(this->m_transparentMeshes.begin(), this->m_transparentMeshes.end(), inserter);
-    }
-
-    GeneralView::collectMeshes(opaqueMeshes, transparentMeshes);
+void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
+    GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshCollector, transparentMeshes);
 }
 
 
-void GeneralView::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
-    for (auto& wmoGroup : wmoGroupArray.getToDraw()) {
-        wmoGroup->collectMeshes(opaqueMeshes, transparentMeshes, renderOrder);
+void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
+    if (renderWMO) {
+        for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
+            wmoGroup->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
+        }
     }
-
-//    for (auto& m2 : drawnM2s) {
-//        m2->collectMeshes(renderedThisFrame, renderOrder);
-//        m2->drawParticles(renderedThisFrame , renderOrder);
-//    }
 }
+void GeneralView::collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights) {
+    for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
+        auto &wmoPointLights = wmoGroup->getPointLights();
+
+        pointLights.reserve(pointLights.size() + wmoPointLights.size());
+
+        for (auto &pointLight : wmoPointLights)
+            pointLights.push_back(pointLight.getLightRec());
+
+        auto &wmoNewLights = wmoGroup->getWmoNewLights();
+        newWmoLights.reserve(newWmoLights.size() + wmoNewLights.size());
+        for (auto &newLight : wmoNewLights) {
+            newWmoLights.push_back(newLight);
+        }
+    }
+};
+
 
 void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos) {
     for (auto &wmoGroup : wmoGroupArray.getToCheckM2()) {
@@ -46,43 +49,38 @@ void GeneralView::addM2FromGroups(const MathHelper::FrustumCullingData &frustumD
         }
     }
 
-    auto candidatesArr = this->m2List.getCandidates();
+    auto &candidatesArr = this->m2List.getCandidates();
     auto candCullRes = std::vector<uint32_t>(candidatesArr.size(), 0xFFFFFFFF);
 
-    oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 1000),
-                      [&](tbb::blocked_range<size_t> r) {
-//for (int i = 0; i < candidatesArr.size(); i++) {
+    oneapi::tbb::task_arena arena(oneapi::tbb::task_arena::automatic, 3);
+    arena.execute([&] {
+
+        oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candCullRes.size(), 1000),
+                          [&](tbb::blocked_range<size_t> r) {
+    //for (int i = 0; i < candidatesArr.size(); i++) {
 #if (__AVX__ && __SSE2__)
-        ObjectCullingSEE<std::shared_ptr<M2Object>>::cull(this->frustumData, r.begin(),
-                                                                       r.end(), candidatesArr,
-                                                                       candCullRes);
+            ObjectCullingSEE<M2ObjId>::cull(this->frustumData, r.begin(),
+                                                                           r.end(), candidatesArr,
+                                                                           candCullRes);
 #else
-        ObjectCulling<std::shared_ptr<M2Object>>::cull(this->frustumData,
-                                                          r.begin(), r.end(), candidatesArr,
-                                                          candCullRes);
+            ObjectCulling<M2ObjId>::cull(this->frustumData,
+                                                              r.begin(), r.end(), candidatesArr,
+                                                              candCullRes);
 #endif
-    }, tbb::auto_partitioner());
+        }, tbb::auto_partitioner());
+    });
 
     for (int i = 0; i < candCullRes.size(); i++) {
         if (!candCullRes[i]) {
-            auto &m2ObjectCandidate = candidatesArr[i];
-            setM2Lights(m2ObjectCandidate);
-            this->m2List.addToDraw(m2ObjectCandidate);
+            const auto m2ObjectCandidate = m2Factory->getObjectById<0>(candidatesArr[i]);
+            if (m2ObjectCandidate != nullptr)
+                this->m2List.addToDraw(m2ObjectCandidate);
         }
     }
 }
 
-void GeneralView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
-    m2Object->setUseLocalLighting(false);
-}
-
-static std::array<GBufferBinding, 1> DrawPortalBindings = {
-    {+drawPortalShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 12, 0 }, // 0
-    //24
-};
-
-void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) {
-
+void GeneralView::produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
+                                                 const std::vector<std::vector<mathfu::vec3>> &portalsVerts, bool isAntiportal) {
     std::vector<uint16_t> indiciesArray;
     std::vector<float> verticles;
     int k = 0;
@@ -91,26 +89,32 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
     stripOffsets.push_back(0);
     int verticleOffset = 0;
     int stripOffset = 0;
-    for (int i = 0; i < this->worldPortalVertices.size(); i++) {
+    for (int i = 0; i < portalsVerts.size(); i++) {
         //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
 
-        int verticlesCount = this->worldPortalVertices[i].size();
+        int verticlesCount = portalsVerts[i].size();
         if ((verticlesCount - 2) <= 0) {
             stripOffsets.push_back(stripOffsets[i]);
             continue;
         };
 
-        for (int j =0; j < (((int)verticlesCount)-2); j++) {
-            indiciesArray.push_back(verticleOffset+0);
-            indiciesArray.push_back(verticleOffset+j+1);
-            indiciesArray.push_back(verticleOffset+j+2);
+        if (!isAntiportal) {
+            for (int j = 0; j < (((int) verticlesCount) - 2); j++) {
+                indiciesArray.push_back(verticleOffset + 0);
+                indiciesArray.push_back(verticleOffset + j + 1);
+                indiciesArray.push_back(verticleOffset + j + 2);
+            }
+        } else {
+            for (int j = 0; j < (verticlesCount); j++) {
+                indiciesArray.push_back(verticleOffset + j);
+            }
         }
         stripOffset += ((verticlesCount-2) * 3);
 
         for (int j =0; j < verticlesCount; j++) {
-            verticles.push_back(this->worldPortalVertices[i][j].x);
-            verticles.push_back(this->worldPortalVertices[i][j].y);
-            verticles.push_back(this->worldPortalVertices[i][j].z);
+            verticles.push_back(portalsVerts[i][j].x);
+            verticles.push_back(portalsVerts[i][j].y);
+            verticles.push_back(portalsVerts[i][j].z);
         }
 
         verticleOffset += verticlesCount;
@@ -119,73 +123,48 @@ void GeneralView::produceTransformedPortalMeshes(HApiContainer &apiContainer, st
 
     if (verticles.empty()) return;
 
-    auto hDevice = apiContainer->hDevice;
-
-    portalPointsFrame.m_indexVBO = hDevice->createIndexBuffer();
-    portalPointsFrame.m_bufferVBO = hDevice->createVertexBuffer();
-
-    portalPointsFrame.m_bindings = hDevice->createVertexBufferBindings();
-    portalPointsFrame.m_bindings->setIndexBuffer(portalPointsFrame.m_indexVBO);
-
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = portalPointsFrame.m_bufferVBO;
-    vertexBinding.bindings = std::vector<GBufferBinding>(DrawPortalBindings.begin(), DrawPortalBindings.end());
-
-    portalPointsFrame.m_bindings->addVertexBufferBinding(vertexBinding);
-    portalPointsFrame.m_bindings->save();
-
+    auto &portalPointsFrame = portals.emplace_back();
+    portalPointsFrame.m_indexVBO = sceneRenderer->createPortalIndexBuffer((indiciesArray.size() * sizeof(uint16_t)));
+    portalPointsFrame.m_bufferVBO = sceneRenderer->createPortalVertexBuffer((verticles.size() * sizeof(float)));
 
     portalPointsFrame.m_indexVBO->uploadData((void *) indiciesArray.data(), (int) (indiciesArray.size() * sizeof(uint16_t)));
     portalPointsFrame.m_bufferVBO->uploadData((void *) verticles.data(), (int) (verticles.size() * sizeof(float)));
 
+    portalPointsFrame.m_bindings = sceneRenderer->createPortalVAO(portalPointsFrame.m_bufferVBO, portalPointsFrame.m_indexVBO);
+
     {
-        HGShaderPermutation shaderPermutation = hDevice->getShader("drawPortalShader", nullptr);
+        PipelineTemplate pipelineTemplate;
+
+        pipelineTemplate.element = DrawElementMode::TRIANGLES;
+        pipelineTemplate.depthWrite = false;
+        pipelineTemplate.depthCulling = !apiContainer->getConfig()->renderPortalsIgnoreDepth;
+        pipelineTemplate.backFaceCulling = false;
+
+        pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+
+        auto material = sceneRenderer->createPortalMaterial(pipelineTemplate);
+        auto &portalColor = material->m_materialPS->getObject();
+        if (!isAntiportal) {
+            portalColor.uColor = {0.058, 0.058, 0.819607843, 0.3};
+        } else {
+            portalColor.uColor = {0.819607843, 0.058, 0.058, 0.3};
+        }
+        material->m_materialPS->save();
 
         //Create mesh
-        gMeshTemplate meshTemplate(portalPointsFrame.m_bindings, shaderPermutation);
-
-        meshTemplate.depthWrite = false;
-        meshTemplate.depthCulling = !apiContainer->getConfig()->renderPortalsIgnoreDepth;
-        meshTemplate.backFaceCulling = false;
-
-        meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-
-        //Let's assume ribbons are always at least transparent
-        if (meshTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
-            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
-        }
-
+        gMeshTemplate meshTemplate(portalPointsFrame.m_bindings);
         meshTemplate.start = 0;
         meshTemplate.end = indiciesArray.size();
-        meshTemplate.element = DrawElementMode::TRIANGLES;
 
-        meshTemplate.textureCount = 0;
+        auto mesh = sceneRenderer->createSortableMesh(meshTemplate, material, 0);
 
-        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = nullptr;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = hDevice->createUniformBufferChunk(sizeof(DrawPortalShader::meshWideBlockPS));
-
-        meshTemplate.ubo[4]->setUpdateHandler([](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
-            auto& blockPS = self->getObject<DrawPortalShader::meshWideBlockPS>();
-
-            blockPS.uColor = {0.058, 0.058, 0.819607843, 0.3};
-        });
-
-
-        transparentMeshes.push_back(hDevice->createParticleMesh(meshTemplate));
+        m_portalMeshes.push_back(mesh);
     }
 }
 
-void InteriorView::setM2Lights(std::shared_ptr<M2Object> &m2Object) {
-    if (ownerGroupWMO == nullptr || !ownerGroupWMO->getIsLoaded()) return;
-
-    if (ownerGroupWMO->getDontUseLocalLightingForM2()) {
-        m2Object->setUseLocalLighting(false);
-    } else {
-        ownerGroupWMO->assignInteriorParams(m2Object);
+void GeneralView::collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes) {
+    for (auto const &mesh : m_portalMeshes) {
+        transparentMeshes.push_back(mesh);
     }
 }
 
@@ -209,4 +188,11 @@ HInteriorView FrameViewsHolder::createInterior(const MathHelper::FrustumCullingD
 
 HExteriorView FrameViewsHolder::getExterior() {
     return exteriorView;
+}
+
+HExteriorView FrameViewsHolder::getSkybox() {
+    if (!skyBoxView) {
+        skyBoxView = std::make_shared<ExteriorView>();
+    }
+    return skyBoxView;
 }

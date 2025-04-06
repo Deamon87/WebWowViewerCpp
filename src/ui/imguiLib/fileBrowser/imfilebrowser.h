@@ -16,7 +16,7 @@
 #endif
 
 #include "../../../../wowViewerLib/src/include/string_utils.h"
-#include "buildDefinition.h"
+#include "../../../database/buildInfoParser/buildDefinition.h"
 #include "../../../database/buildInfoParser/buildInfoParser.h"
 #include "../../../database/product_db_parser/productDbParser.h"
 
@@ -206,8 +206,8 @@ inline ImGui::FileBrowser &ImGui::FileBrowser::operator=(const FileBrowser &copy
 inline void ImGui::FileBrowser::SetTitle(std::string title)
 {
     title_ = std::move(title);
-    openLabel_ = title_ + "##filebrowser_" + std::to_string(reinterpret_cast<size_t>(this));
-    openNewDirLabel_ = "new dir##new_dir_" + std::to_string(reinterpret_cast<size_t>(this));
+    openLabel_ = title_ + "##filebrowser_";
+    openNewDirLabel_ = "new dir##new_dir_";
 }
 
 inline void ImGui::FileBrowser::Open()
@@ -258,7 +258,7 @@ inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
 
     SetOfBuildDefs buildDefs;
 
-    std::string buildFile = GetSelected() / ".build.info";
+    std::string buildFile = (GetSelected() / ".build.info").string();
     if (fileExistsNotNull1(buildFile)) {
         std::string buildFileContent;
         readWholeFileToString(buildFile, buildFileContent);
@@ -434,10 +434,10 @@ inline void ImGui::FileBrowser::Display()
 
     // browse files in a child window
 
-    float reserveHeight = GetItemsLineHeightWithSpacing();
+    float reserveHeight = GetFrameHeightWithSpacing();
     ghc::filesystem::path newPwd; bool setNewPwd = false;
     if(!(flags_ & ImGuiFileBrowserFlags_SelectDirectory) && (flags_ & ImGuiFileBrowserFlags_EnterNewFilename))
-        reserveHeight += GetItemsLineHeightWithSpacing();
+        reserveHeight += GetFrameHeightWithSpacing();
     {
         BeginChild("ch", ImVec2(0, -reserveHeight), true,
             (flags_ & ImGuiFileBrowserFlags_NoModal) ? ImGuiWindowFlags_AlwaysHorizontalScrollbar : 0);
@@ -520,9 +520,8 @@ inline void ImGui::FileBrowser::Display()
 
     SameLine();
 
-    int escIdx = GetIO().KeyMap[ImGuiKey_Escape];
     if(Button("cancel") || closeFlag_ ||
-        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) && IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && escIdx >= 0 && IsKeyPressed(escIdx)))
+        ((flags_ & ImGuiFileBrowserFlags_CloseOnEsc) && IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && IsKeyPressed(ImGuiKey::ImGuiKey_Escape)))
         CloseCurrentPopup();
 
     if (m_cascOpenMode) {

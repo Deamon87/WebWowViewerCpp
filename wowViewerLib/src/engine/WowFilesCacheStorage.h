@@ -14,6 +14,7 @@ typedef std::shared_ptr<WoWFilesCacheStorage> HWoWFilesCacheStorage;
 #include "../gapi/interface/IDevice.h"
 #include "persistance/adtFile.h"
 #include "persistance/wdtFile.h"
+#include "persistance/wdtLightFile.h"
 #include "persistance/wdlFile.h"
 #include "persistance/skelFile.h"
 #include "cache/cache.h"
@@ -30,6 +31,7 @@ class WoWFilesCacheStorage : public IFileRequester {
 private:
     Cache<AdtFile> adtObjectCache;
     Cache<WdtFile> wdtCache;
+    Cache<WdtLightFile> wdtLightCache;
     Cache<WdlFile> wdlCache;
     Cache<WmoGroupGeom> wmoGeomCache;
     Cache<WmoMainGeom> wmoMainCache;
@@ -41,12 +43,9 @@ private:
     Cache<Db2File> db2Cache;
 public:
     WoWFilesCacheStorage(IFileRequest * requestProcessor);
-    void provideFile(CacheHolderType holderType, const char *fileName, const HFileContent &data)  ;
     void rejectFile(CacheHolderType holderType, const char* fileName) override ;
 
     void actuallDropCache();
-
-    void processCaches(int limit);
 
     Cache<AdtFile> *getAdtGeomCache();
     Cache<M2Geom> *getM2GeomCache();
@@ -57,6 +56,7 @@ public:
     Cache<WmoMainGeom>* getWmoMainCache();
     Cache<WmoGroupGeom>* getWmoGroupGeomCache();
     Cache<WdtFile>* getWdtFileCache();
+    Cache<WdtLightFile>* getWdtLightFileCache();
     Cache<WdlFile>* getWdlFileCache();
     Cache<Db2File>* getDb2Cache();
 };

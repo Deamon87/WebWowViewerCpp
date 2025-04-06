@@ -1,6 +1,7 @@
 //Adapted from https://github.com/kartikkukreja/blog-codes/blob/master/src/Graham%20Scan%20Convex%20Hull.cpp
 #include "grahamScan.h"
 #include <algorithm>
+#include "mathHelper.h"
 using namespace std;
 
 // returns -1 if a -> b -> c forms a counter-clockwise turn,
@@ -15,7 +16,7 @@ int ccw(const Point &a, const Point &b, const Point &c) {
 }
 
 // returns square of Euclidean distance between two points
-float sqrDist(const Point &a, const Point &b)  {
+float sqrDist(Point &a, Point &b)  {
     float dx = a.x - b.x, dy = a.y - b.y;
     return dx * dx + dy * dy;
 }
@@ -38,7 +39,7 @@ void swap(Point &p1, Point &p2)
 
 // A utility function to return square of distance
 // between p1 and p2
-int distSq(const Point &p1, const Point &p2)
+float distSq(const Point &p1, const Point &p2)
 {
     return (p1.x - p2.x)*(p1.x - p2.x) +
            (p1.y - p2.y)*(p1.y - p2.y);
@@ -51,10 +52,10 @@ int distSq(const Point &p1, const Point &p2)
 // 2 --> Counterclockwise
 int orientation(const Point &p, const Point &q, const Point &r)
 {
-    int val = (q.y - p.y) * (r.x - q.x) -
+    float val = (q.y - p.y) * (r.x - q.x) -
               (q.x - p.x) * (r.y - q.y);
 
-    if (val == 0) return 0;  // colinear
+    if (feq(val, 0.0f, 0.00001f)) return 0;  // colinear
     return (val > 0)? 1: 2; // clock or counterclock wise
 }
 
@@ -67,20 +68,21 @@ Point nextToTop(stack<Point> &S)
     return res;
 }
 
-stack<Point> grahamScan(std::vector<Point> &points)    {
+stack<Point> grahamScan(framebased::vector<Point> &points)    {
     stack<Point> hull;
     // Find the bottommost point
-    int ymin = points[0].y, min = 0;
+    float ymin = points[0].y;
+    int min = 0;
+
     int n = points.size();
 
     for (int i = 1; i < n; i++)
     {
-        int y = points[i].y;
+        float y = points[i].y;
 
         // Pick the bottom-most or chose the left
         // most point in case of tie
-        if ((y < ymin) || (ymin == y &&
-                           points[i].x < points[min].x))
+        if ((y < ymin) || (feq(ymin,y, 0.0001f) && points[i].x < points[min].x))
             ymin = points[i].y, min = i;
     }
 
@@ -96,11 +98,14 @@ stack<Point> grahamScan(std::vector<Point> &points)    {
     // has larger polar angle (in counterclockwise
     // direction) than p1
 
-    std::sort(points.begin()+1, points.end(), [p0](auto const &p1, auto const &p2) -> bool {
+    std::sort(points.begin()+1, points.end(), [&p0](auto const &p1, auto const &p2) -> bool {
         // Find orientation
         int o = orientation(p0, p1, p2);
-        if (o == 0)
-            return (distSq(p0, p2) >= distSq(p0, p1))? -1 : 1;
+        if (o == 0) {
+            return feq(distSq(p0, p2), distSq(p0, p1))
+                ? &p1 > &p2 // this is fallback to stabilize the sorting function
+                : distSq(p0, p2) >= distSq(p0, p1);
+        }
 
         return (o == 2);
     });

@@ -35,8 +35,8 @@ private:
 
     int m_currentDBDFile = 0;
     std::shared_ptr<std::thread> httpDownloadThread = nullptr;
-    bool m_httpDownloadThreadFinished = true;
 
+    bool m_httpDownloadThreadFinished = true;
     std::string m_failedToDownloadFile = "";
 
 

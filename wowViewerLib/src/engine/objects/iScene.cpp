@@ -1,4 +1,3 @@
-#include "../DrawStage.h"
 #include "iScene.h"
 
 IScene::~IScene() {

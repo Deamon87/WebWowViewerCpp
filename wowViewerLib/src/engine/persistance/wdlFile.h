@@ -37,6 +37,14 @@ public:
     mssc_t *m_mssc = nullptr;
     int m_mssc_len = -1;
 
+    uint32_t *m_msli = nullptr;
+    int m_msli_len = -1;
+
+    msld_t *m_msld = nullptr;
+    int m_msld_len = -1;
+
+    uint64_t *m_mssf = nullptr;
+
 private:
 
     HFileContent m_wdlFile;

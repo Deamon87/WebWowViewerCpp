@@ -60,25 +60,28 @@ void WdlObject::loadM2s() {
             for (int l = mssn_rec.mssoIndex; l < mssn_rec.mssoIndex+mssn_rec.mssoRecordsNum; l++) {
                 auto &msso_rec = m_wdlFile->m_msso[l];
 
+                uint64_t mssf_val = 0;
+                if (msso_rec.flags.unk_0x1) {
+                    mssf_val = m_wdlFile->m_mssf[msso_rec.mssf_index];
+                }
 
-                auto m2Object = std::make_shared<M2Object>(m_api, false, false);
+                if (m_wdlFile->m_msli) {
+                    auto msliIndex = m_wdlFile->m_msli[l];
+                    if (msliIndex != -1) {
+                        auto &msld = m_wdlFile->m_msld[msliIndex];
+                        //std::cout << msld.timeEnd0 << " " << mssf_val;
+                    }
+                }
+
+                auto m2Object = m2Factory->createObject(m_api, false, false);
                 m2Object->setLoadParams(0, {}, {});
                 m2Object->setModelFileId(msso_rec.fileDataID);
-//            std::cout << "fileDataID = " << msso_rec.fileDataID << std::endl;
-//            std::cout << "translateVec.x = " << msso_rec.translateVec.x << std::endl;
-//            std::cout << "translateVec.y = " << msso_rec.translateVec.y << std::endl;
-//            std::cout << "translateVec.z = " << msso_rec.translateVec.z << std::endl;
-//            std::cout << "rotationInRads.x = " << msso_rec.rotationInRads.x << std::endl;
-//            std::cout << "rotationInRads.y = " << msso_rec.rotationInRads.y << std::endl;
-//            std::cout << "rotationInRads.z = " << msso_rec.rotationInRads.z << std::endl;
-//            std::cout << "scale = " << msso_rec.scale << std::endl;
 
-                auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInRads.z - M_PI_2);
-                rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInRads.x);
-                rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInRads.y);
+                constexpr float degreeToRad = M_PI/180.0f;
 
-//            auto quat = mathfu::quat::FromMatrix(rotationMatrix);
-//            auto rotationMatrix1 = quat.ToMatrix4();
+                auto rotationMatrix = MathHelper::RotationZ(msso_rec.rotationInDegree.z*degreeToRad);
+                rotationMatrix *= MathHelper::RotationY(msso_rec.rotationInDegree.y*degreeToRad);
+                rotationMatrix *= MathHelper::RotationX(msso_rec.rotationInDegree.x*degreeToRad);
 
                 m2Object->createPlacementMatrix(
                     mathfu::vec3(msso_rec.translateVec.x, msso_rec.translateVec.y, msso_rec.translateVec.z),
@@ -88,7 +91,9 @@ void WdlObject::loadM2s() {
                 m2Object->calcWorldPosition();
                 m2Object->setAlwaysDraw(true);
 
-                skyObjectScene.m2Objects.push_back(m2Object);
+                auto &skyModel = skyObjectScene.skyModels.emplace_back();
+                skyModel.m_model = m2Object;
+                skyModel.animateWithTimeOfDay = msso_rec.flags.animateWithTimeOfDay;
             }
             skyScenes.push_back(skyObjectScene);
         }
@@ -132,49 +137,64 @@ WdlObject::WdlObject(HApiContainer api, int wdlFileDataId) {
     m_wdlFile = m_api->cacheStorage->getWdlFileCache()->getFileId(wdlFileDataId);
 }
 
+bool hasId(const std::vector<IdAndBlend> &vec, int id) {
+    return std::any_of(vec.begin(), vec.end(), [id](const IdAndBlend &val) {
+        return val.id == id;
+    });
+}
+
+bool hasId(const std::vector<IdAndBlendAndPriority> &vec, int id) {
+    return std::any_of(vec.begin(), vec.end(), [id](const IdAndBlendAndPriority &val) {
+        return val.id == id;
+    });
+}
+
 void WdlObject::checkSkyScenes(const StateForConditions &state,
                                M2ObjectListContainer &m2ObjectsCandidates,
                                const mathfu::vec4 &cameraPos,
                                const MathHelper::FrustumCullingData &frustumData
                                ) {
     for (auto &skyScene : skyScenes) {
-        bool conditionPassed = true;
+        bool conditionPassed = false;
 
         for (auto &condition : skyScene.conditions) {
             switch (condition.conditionType) {
                 case 1 : {
-                    if ((state.currentAreaId != condition.conditionValue) &&
-                        (state.currentParentAreaId != condition.conditionValue))
-                        conditionPassed = false;
+                    if ((state.currentAreaId == condition.conditionValue) ||
+                        (state.currentParentAreaId == condition.conditionValue))
+                        conditionPassed = true;
                     break;
                 }
                 case 2 : {
-                    auto it = std::find(state.currentLightParams.begin(), state.currentLightParams.end(), condition.conditionValue);
-                    if (it == state.currentLightParams.end()) {
-                        conditionPassed = false;
-                    }
+                    conditionPassed = hasId(state.currentLightParams, condition.conditionValue);
                     break;
                 }
                 case 3 : {
-                    auto it = std::find(state.currentSkyboxIds.begin(), state.currentSkyboxIds.end(), condition.conditionValue);
-                    if (it == state.currentSkyboxIds.end()) {
-                        conditionPassed = false;
-                    }
+                    conditionPassed = hasId(state.currentSkyboxIds, condition.conditionValue);
                     break;
                 }
                 case 5 : {
-                    auto it = std::find(state.currentZoneLights.begin(), state.currentZoneLights.end(), condition.conditionValue);
-                    if (it == state.currentZoneLights.end()) {
-                        conditionPassed = false;
-                    }
+                    conditionPassed = hasId(state.currentZoneLights, condition.conditionValue);
                     break;
                 }
                 default:
-                    std::cout << "Unk condition " << (int) condition.conditionType << std::endl;            }
+                    std::cout << "Unk condition " << (int) condition.conditionType << std::endl;
+            }
+
+            if (conditionPassed)
+                break;
         }
 
+//        conditionPassed = true;
+
         if (conditionPassed) {
-            for (auto &m2Object : skyScene.m2Objects) {
+            auto const config = m_api->getConfig();
+            for (const auto &skyModel : skyScene.skyModels) {
+                auto const &m2Object = skyModel.m_model;
+
+                if(skyModel.animateWithTimeOfDay) {
+                    m2Object->setOverrideAnimationPerc(config->currentTime / 2880.0f, true);
+                }
                 m2ObjectsCandidates.addToDraw(m2Object);
             }
         }

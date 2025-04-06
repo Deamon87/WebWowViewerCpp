@@ -45,14 +45,16 @@ public:
     GDeviceGL20();
     ~GDeviceGL20() override = default;;
 
+    GDeviceType getDeviceType() override {return GDeviceType::GOpenGL2; };
+
     void initialize() override;
     void reset() override;
 
-    unsigned int getFrameNumber() override { return m_frameNumber; };
-    unsigned int getUpdateFrameNumber() override;
-    unsigned int getCullingFrameNumber() override;
-    unsigned int getOcclusionFrameNumber() override;
-    unsigned int getDrawFrameNumber() override;
+    unsigned int getFrameNumber() { return m_frameNumber; };
+    unsigned int getUpdateFrameNumber() ;
+    unsigned int getCullingFrameNumber() ;
+    unsigned int getOcclusionFrameNumber() ;
+    unsigned int getDrawFrameNumber() ;
 
 
     void increaseFrameNumber() override;
@@ -67,14 +69,14 @@ public:
 
     void bindProgram(IShaderPermutation *program) override;
 
-    void bindIndexBuffer(IIndexBuffer *buffer) override;
+    void bindIndexBuffer(IBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
     void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
     void bindVertexBufferBindings(IVertexBufferBindings *buffer) override;
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantDataVec);
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override;
@@ -203,7 +205,7 @@ protected:
         HGUniformBuffer m_uniformBufferForUpload;
     };
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
+    std::array<FrameUniformBuffers, MAX_FRAMES_IN_FLIGHT> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload = std::vector<char>(1024*1024);
 

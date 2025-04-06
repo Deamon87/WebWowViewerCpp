@@ -62,6 +62,7 @@ public:
     void stopMovingUp() override;
     void startMovingDown() override;
     void stopMovingDown() override;
+    void stopAllMovement() override;
 
     void addCameraViewOffset(float x, float y) override;
 
@@ -73,7 +74,7 @@ public:
         position[1] = camera.y;
         position[2] = camera.z;
     }
-
+    float getMovementSpeed() override;
     void setMovementSpeed(float value) override;
 
 public:

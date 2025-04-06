@@ -41,6 +41,9 @@ private:
 
     int m_width = 0;
     int m_height = 0;
+
+    int frame_created = -1;
+    int frame_destroyed = -1;
 };
 
 

@@ -23,6 +23,8 @@ private:
 
     bool firstCalc = true;
     bool deferredLoadingStarted = false;
+    bool m_needToUpdateBB = false;
+
 
     bool isMirrored = false;
     bool m_hasExp2 = false;
@@ -37,15 +39,14 @@ private:
     std::vector<std::vector<int>> childBonesLookup;
 
     void initBonesIsCalc();
-    void initBlendMatrices();
     void initGlobalSequenceTimes();
 
     void calculateBoneTree();
-    void calcAnimMatrixes (std::vector<mathfu::mat4> &textAnimMatrices);
+    void calcAnimMatrixes (std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices);
 
     void calcAnimRepetition(AnimationStruct &animationStruct);
 public:
-    AnimationManager(HApiContainer api, std::shared_ptr<CBoneMasterData> boneMasterData, bool hasExp2);
+    AnimationManager(const HApiContainer &api, const std::shared_ptr<CBoneMasterData> &boneMasterData, bool hasExp2);
 
     void resetCurrentAnimation();
     bool setAnimationId(int animationId, bool reset);
@@ -57,39 +58,67 @@ public:
         mathfu::vec3 &cameraPosInLocal,
         mathfu::vec3 &localUpVector,
         mathfu::vec3 &localRightVector,
+        const mathfu::mat4 &modelMatrix,
         const mathfu::mat4 &modelViewMatrix,
-        std::vector<mathfu::mat4> &bonesMatrices,
-        std::vector<mathfu::mat4> &textAnimMatrices,
-        std::vector<mathfu::vec4> &subMeshColors,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+        std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
         std::vector<float> &transparencies,
         std::vector<M2LightResult> &lights,
-        std::vector<ParticleEmitter *> &particleEmitters,
-        std::vector<CRibbonEmitter *> &ribbonEmitters
+        std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+        std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters
 
         /*cameraDetails, particleEmitters*/);
 
-    void calcBones(std::vector<mathfu::mat4> &boneMatrices, const mathfu::mat4 &modelViewMatrix);
+    void calcBones(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, const mathfu::mat4 &modelViewMatrix);
 
-    void calcBoneMatrix(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
+    void calcBoneMatrix(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 
-    void calcChildBones(std::vector<mathfu::mat4> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
+    void calcChildBones(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 
-    void calcSubMeshColors(std::vector<mathfu::vec4> &subMeshColors);
+    void calcSubMeshColors(std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors);
 
     void calcTransparencies(std::vector<float> &transparencies);
 
-    bool getIsFirstCalc() {
-        return firstCalc;
+    bool isNeedUpdateBB() {
+        return m_needToUpdateBB;
+    }
+
+    M2Bounds getAnimatinonBB() {
+        m_needToUpdateBB = false;
+
+        if (this->animationInfo.currentAnimation.animationRecord != nullptr)
+            return this->animationInfo.currentAnimation.animationRecord->bounds;
+
+        return {};
     }
 
     void calcLights(std::vector<M2LightResult> &lights,
-                    std::vector<mathfu::mat4> &bonesMatrices);
-    void calcParticleEmitters(std::vector<ParticleEmitter *> &particleEmitters,
-                    std::vector<mathfu::mat4> &bonesMatrices);
+                    const std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+                    const mathfu::mat4 &modelMatrix);
+    void calcParticleEmitters(
+        const std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices);
 
-    void calcRibbonEmitters(std::vector<CRibbonEmitter *> &ribbonEmitters);
+    void calcRibbonEmitters(std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters);
 
     void calcCamera(M2CameraResult &camera, int cameraId, mathfu::mat4 &placementMatrix);
+
+    inline const std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> getCombinedChangedData() const {
+        if (animationInfo.blendFactor < 1.0) {
+            std::array<bool, EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE)> result;
+
+            for (int i = 0; i < EAnimDataTypeToInt(EAnimDataType::MAX_ANIM_DATA_TYPE); i++) {
+
+                auto const &currentChangedData = animationInfo.currentAnimation.changedData;
+                auto const &nextSubChangedData = animationInfo.nextSubAnimation.changedData;
+                result[i] = currentChangedData[i] || nextSubChangedData[i] ;
+            }
+            return result;
+        }
+
+        return animationInfo.currentAnimation.changedData;
+    }
 };
 
 

@@ -2,19 +2,15 @@
 #include <cassert>
 #include "CRibbonEmitter.h"
 #include "../../gapi/interface/IVertexBufferBindings.h"
-#include "../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "../../gapi/UniformBufferStructures.h"
-
-static GBufferBinding staticRibbonBindings[3] = {
-    {+ribbonShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false, 24, 0 }, // 0
-    {+ribbonShader::Attribute::aColor, 4, GBindingType::GUNSIGNED_BYTE, true, 24, 12}, // 12
-    {+ribbonShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, 24, 16}, // 16
-    //24
-};
+#include "../../gapi/interface/materials/IMaterial.h"
 
 //----- (00A19710) --------------------------------------------------------
-CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object,
+CRibbonEmitter::CRibbonEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer,
+                               const std::shared_ptr<IM2ModelData> &m2ModelData,
+                               M2Object *object,
                                std::vector<M2Material> &materials,
                                std::vector<int> &textureIndicies, int textureTransformLookup) : m_api(api)
 {
@@ -84,97 +80,76 @@ CRibbonEmitter::CRibbonEmitter(HApiContainer api, M2Object *object,
   check_offset<offsetof(CRibbonVertex, diffuseColor), 12>();
   check_offset<offsetof(CRibbonVertex, texCoord), 16>();
 
-  createMesh(object, materials, textureIndicies);
+  createMaterials(sceneRenderer, m2ModelData, object, materials, textureIndicies);
 }
 
-extern EGxBlendEnum M2BlendingModeToEGxBlendEnum [8];
-void CRibbonEmitter::createMesh(M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndicies) {
-  auto device = m_api->hDevice;
+extern const std::array<EGxBlendEnum,8> M2BlendingModeToEGxBlendEnum;
+void CRibbonEmitter::createMaterials(const HMapSceneBufferCreate &sceneRenderer,
+                                     const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                     M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndices) {
 
-  //Create Buffers
-  for (int k = 0; k < 4; k++) {
-    frame[k].m_indexVBO = device->createIndexBuffer();
-    frame[k].m_bufferVBO = device->createVertexBuffer();
-
-    frame[k].m_bindings = device->createVertexBufferBindings();
-    frame[k].m_bindings->setIndexBuffer(frame[k].m_indexVBO);
-
-    GVertexBufferBinding vertexBinding;
-    vertexBinding.vertexBuffer = frame[k].m_bufferVBO;
-    vertexBinding.bindings = std::vector<GBufferBinding>(&staticRibbonBindings[0],&staticRibbonBindings[3]);
-
-    frame[k].m_bindings->addVertexBufferBinding(vertexBinding);
-    frame[k].m_bindings->save();
-
-
-    //Get shader
-    for(int i = 0; i < materials.size(); i++) {
+    m_ribbonMaterials.resize(materials.size());
+    for (int i = 0; i < materials.size(); i++) {
         auto &material = materials[i];
-        auto &textureIndex = textureIndicies[i];
 
-        HGShaderPermutation shaderPermutation = device->getShader("ribbonShader", nullptr);
-
-        //Create mesh
-        gMeshTemplate meshTemplate(frame[k].m_bindings, shaderPermutation);
-
-        meshTemplate.depthWrite = !(material.flags & 0x10);
-        meshTemplate.depthCulling = !(material.flags & 0x8);
-        meshTemplate.backFaceCulling = !(material.flags & 0x4);
-
-        meshTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
+        PipelineTemplate pipelineTemplate;
+        pipelineTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+        pipelineTemplate.depthWrite = !(material.flags & 0x10);;
+        pipelineTemplate.depthCulling = !(material.flags & 0x8);;
+        pipelineTemplate.backFaceCulling = !(material.flags & 0x4);;
+        pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[material.blending_mode];
 
         //Let's assume ribbons are always at least transparent
-        if (meshTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
-            meshTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+        if (pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
+            pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
         }
 
+        M2RibbonMaterialTemplate m2RibbonMaterialTemplate;
+        HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndices[i]);
+        m2RibbonMaterialTemplate.textures[0] = m_api->hDevice->createBlpTexture(tex0, true, true);
 
-        meshTemplate.start = 0;
-        meshTemplate.end = 0;
-        meshTemplate.element = DrawElementMode::TRIANGLE_STRIP;
+        auto ribbonMaterial = sceneRenderer->createM2RibbonMaterial(m2ModelData, pipelineTemplate,
+                                                                    m2RibbonMaterialTemplate);
 
-
-        meshTemplate.textureCount = 1;
-        meshTemplate.texture = std::vector<HGTexture>(1, nullptr);
-        HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndicies[i]);
-        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
-
-        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = nullptr;
-
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
-
-        auto blendMode = meshTemplate.blendMode;
-        auto textureTransformLookupIndex = (this->textureTransformLookup>=0) ? this->textureTransformLookup + i : -1;
-        meshTemplate.ubo[4]->setUpdateHandler([blendMode, m2Object, textureTransformLookupIndex](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
-            Particle::meshParticleWideBlockPS& blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
-
-            blockPS.uAlphaTest = -1.0f;
+        //Create mesh
+        auto blendMode = pipelineTemplate.blendMode;
+        auto textureTransformLookupIndex = (this->textureTransformLookup >= 0) ? this->textureTransformLookup + i : -1;
+        {
+            std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> meshRibbonWideBlockPS = ribbonMaterial->m_fragmentData;
+            Ribbon::meshRibbonWideBlockPS &blockPS = meshRibbonWideBlockPS->getObject();
             blockPS.uPixelShader = 0;
             blockPS.uBlendMode = static_cast<int>(blendMode);
 
-            mathfu::mat4 textureTransformMat = mathfu::mat4::Identity();
+            int32_t transformIndex = -1;
             if (textureTransformLookupIndex >= 0) {
-                textureTransformMat = m2Object->getTextureTransformByLookup(textureTransformLookupIndex);
+                transformIndex = m2Object->getTextureTransformIndexByLookup(textureTransformLookupIndex);
             }
-
-            auto textureTranslate = textureTransformMat.GetColumn(3);
-            blockPS.textureTranslate0 = textureTranslate.x;
-            blockPS.textureTranslate1 = textureTranslate.y;
-            blockPS.textureTranslate2 = textureTranslate.z;
-
-            blockPS.textureScale0 = textureTransformMat.GetColumn(0).Length();
-            blockPS.textureScale1 = textureTransformMat.GetColumn(1).Length();
-            blockPS.textureScale2 = textureTransformMat.GetColumn(2).Length();
-
-        });
-
-        
-        frame[k].m_meshes.push_back(device->createParticleMesh(meshTemplate));
+            blockPS.uTextureTransformIndex = transformIndex;
+            meshRibbonWideBlockPS->save();
+        }
+        m_ribbonMaterials[i] = ribbonMaterial;
     }
-  }
+}
+
+void CRibbonEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, RibbonFrame &ribbonFrame) {
+    auto device = m_api->hDevice;
+
+    //Create Buffers
+    ribbonFrame.m_bufferVBO = sceneRenderer->createM2RibbonVertexBuffer(m_gxVertices.size() * sizeof(CRibbonVertex));
+    ribbonFrame.m_indexVBO = sceneRenderer->createM2IndexBuffer(m_gxIndices.size() * sizeof(uint16_t));
+    ribbonFrame.m_bindings = sceneRenderer->createM2RibbonVAO(ribbonFrame.m_bufferVBO, ribbonFrame.m_indexVBO);
+
+    ribbonFrame.m_meshes = {};
+    for (int i = 0; i < m_ribbonMaterials.size(); i++) {
+
+        //Create mesh
+        gMeshTemplate meshTemplate(ribbonFrame.m_bindings);
+
+        meshTemplate.start = 0;
+        meshTemplate.end = 0;
+
+        ribbonFrame.m_meshes.push_back(sceneRenderer->createSortableMesh(meshTemplate, m_ribbonMaterials[i], 0));
+    }
 }
 
 //----- (00A199E0) --------------------------------------------------------
@@ -223,12 +198,12 @@ void CRibbonEmitter::SetAbove(float above)
     this->m_above = above;
 }
 
+
 //----- (00A19B80) --------------------------------------------------------
 void CRibbonEmitter::SetAlpha(float a2)
 {
   this->m_diffuseClr.a = fmaxf(255.0f * a2, 0.0f);
 }
-
 
 //----- (00A19C50) --------------------------------------------------------
 void  CRibbonEmitter::InitInterpDeltas()
@@ -419,7 +394,6 @@ void CRibbonEmitter::ChangeFrameOfReference(const mathfu::mat4 *frameOfReference
     while ( this->m_gxVertices.size() > v16 );
   }
 }
-
 //----- (00A1A4E0) --------------------------------------------------------
 void CRibbonEmitter::SetColor(float a3, float a4, float a5)
 {
@@ -428,13 +402,14 @@ void CRibbonEmitter::SetColor(float a3, float a4, float a5)
     this->m_diffuseClr.b = a3 * 255.0f;
 
 }
+
 // FCBEB0: using guessed type int dword_FCBEB0;
 
 //----- (00A1A820) --------------------------------------------------------
 void CRibbonEmitter::SetTexSlot(unsigned int texSlot)
 {
   assert(texSlot < m_rows * m_cols);
-  
+
   if ( this->m_texSlot != texSlot )
   {
     this->m_texSlot = texSlot;
@@ -444,7 +419,7 @@ void CRibbonEmitter::SetTexSlot(unsigned int texSlot)
         texSlotModf = (float) (((texSlotMod) & 1) | (texSlotMod >> 1)) +
              (float) ((texSlotMod & 1) | (texSlotMod >> 1));
     }
-    
+
     float minx = (texSlotModf * this->m_tmpDU) + this->m_texBox.minx;
     this->m_texSlotBox.minx = minx;
 
@@ -461,7 +436,7 @@ void CRibbonEmitter::SetTexSlot(unsigned int texSlot)
     this->m_texSlotBox.maxx = minx + this->m_tmpDU;
     this->m_texSlotBox.maxy = miny + this->m_tmpDV;
   }
-  
+
 }
 
 //----- (00A1A960) --------------------------------------------------------
@@ -512,7 +487,6 @@ void CRibbonEmitter::Advance(int &pos, unsigned int amount) {
     if (v4 >= v5)
         pos = v4 - v5;
 }
-
 //----- (00A1AD60) --------------------------------------------------------
 void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 {
@@ -784,6 +758,7 @@ void CRibbonEmitter::Update(float deltaTime, int suppressNewEdges)
 
   this->m_ribbonEmitterflags.m_singletonUpdated = 1;
 }
+
 // 10131A0: using guessed type __int128 xmmword_10131A0;
 
 //----- (00A1C1A0) --------------------------------------------------------
@@ -864,27 +839,43 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-void CRibbonEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
-
-    auto &currFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+void CRibbonEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
+    auto &currFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
     if (currFrame.isDead) return;
 
     for (int i = 0; i < currFrame.m_meshes.size(); i++) {
         auto mesh = currFrame.m_meshes[i];
-
-        mesh->setRenderOrder(renderOrder);
         if (mesh->getIsTransparent()) {
-            transparentMeshes.push_back(mesh);
+            transparentMeshes.emplace_back() = mesh;
         } else {
-            opaqueMeshes.push_back(mesh);
+            opaqueMeshCollector.addMesh(mesh);
         }
     }
 }
 
-void CRibbonEmitter::updateBuffers() {
-//    return;
+void CRibbonEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
+    if (this->IsDead()) {
+        return;
+    }
 
-  auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+    size_t sizeInd = m_gxIndices.size() * sizeof(uint16_t);
+    size_t sizeVert = m_gxVertices.size() * sizeof(CRibbonVertex);
+
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
+    auto iboBufferDynamic = frame[frameNum].m_indexVBO;
+
+    if (!iboBufferDynamic ||
+        !vboBufferDynamic ||
+        sizeInd > iboBufferDynamic->getSize() ||
+        sizeVert > vboBufferDynamic->getSize()
+    ) {
+        createMesh(sceneRenderer, frame[frameNum]);
+    }
+}
+
+void CRibbonEmitter::updateBuffers() {
+  auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
   currentFrame.isDead = this->IsDead();
   if (currentFrame.isDead) return;
 
@@ -898,7 +889,6 @@ void CRibbonEmitter::updateBuffers() {
         mesh->setStart(2 * m_readPos * sizeof(uint16_t));
         mesh->setEnd(indexCount);
         mesh->setSortDistance(0);
-        mesh->setPriorityPlane(this->m_priority);
     }
 
 }

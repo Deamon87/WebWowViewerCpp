@@ -4,11 +4,13 @@
 
 #include "wmoObject.h"
 #include "../../algorithms/mathHelper.h"
+#include "../../algorithms/grahamScan.h"
 #include "../../persistance/header/commonFileStructs.h"
 #include "./../../../gapi/interface/IDevice.h"
+#include "../../../renderer/frame/FrameProfile.h"
 #include <algorithm>
 
-std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)
+std::vector<mathfu::vec3> createAntiPortal(const HWmoGroupGeom& groupGeom, const mathfu::mat4 &placementMat)
 {
     std::vector<mathfu::vec3> points(0);
 
@@ -18,37 +20,9 @@ std::vector<mathfu::vec3> createOccluders(const HWmoGroupGeom& groupGeom)
             ; ++mopy_index, ++movi_index
             )
     {
-        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]));
-        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]));
-        points.push_back(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]));
-//        C3Vector points[3] =
-//                {  groupGeom->verticles[groupGeom->indicies[movi_index]]
-//                   groupGeom->verticles[groupGeom->indicies[movi_index]]
-//                   groupGeom->verticles[groupGeom->indicies[movi_index]]
-//                };
-//
-//        float avg ((points[0]->z + points[1]->z + points[2]->z) / 3.0);
-//
-//        unsigned int two_points[2];
-//        unsigned int two_points_index (0);
-//
-//        for (unsigned int i (0); i < 3; ++i)
-//        {
-//            if (points[i]->z > avg)
-//            {
-//                two_points[two_points_index++] = i;
-//            }
-//        }
-//
-//        if (two_points_index > 1)
-//        {
-//            CMapObjOccluder* occluder (CMapObj::AllocOccluder());
-//            occluder->p1 = points[two_points[0]];
-//            occluder->p2 = points[two_points[1]];
-//
-//            append (this->occluders, occluder);
-//        }
-
+        points.emplace_back() = (placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+0]]), 1.0f)).xyz();
+        points.emplace_back() = (placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+1]]), 1.0f)).xyz();
+        points.emplace_back() = (placementMat * mathfu::vec4(mathfu::vec3(groupGeom->verticles[groupGeom->indicies[3*movi_index+2]]), 1.0f)).xyz();
     }
     return points;
 }
@@ -69,35 +43,28 @@ void WmoObject::startLoading() {
     }
 }
 
-std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
-    int doodadsSet = this->m_doodadSet;
-
-    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
-        doodadsSet = 0;
-    }
-    if (doodadsSet >= this->mainGeom->doodadSetsLen) {
-        return nullptr;
-    }
-
-    SMODoodadSet *defaultDooodadSetDef = &this->mainGeom->doodadSets[0];
-    SMODoodadSet *doodadSetDef = &this->mainGeom->doodadSets[doodadsSet];
-
-    bool isInDefaultDoodadSetDef =
-        (index >= defaultDooodadSetDef->firstinstanceindex) &&
-        (index < defaultDooodadSetDef->firstinstanceindex + defaultDooodadSetDef->numDoodads);
-
-    bool isInCurrentDoodadSetDef =
-        (index >= doodadSetDef->firstinstanceindex) &&
-        (index < doodadSetDef->firstinstanceindex + doodadSetDef->numDoodads);
-
-    if (!isInCurrentDoodadSetDef && !isInDefaultDoodadSetDef)
-        return nullptr;
-
+std::shared_ptr<M2Object> WmoObject::getDoodad(int index, int fromGroupIndex) {
     auto iterator = this->m_doodadsUnorderedMap.find(index);
     if (iterator != this->m_doodadsUnorderedMap.end())
         return iterator->second;
 
-    SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
+    bool existsInActiveDoodadSets = false;
+    for (int i = 0; i < this->mainGeom->doodadSetsLen; i++) {
+        if (!m_activeDoodadSets[i]) continue;;
+
+        if (
+            index >= this->mainGeom->doodadSets[i].firstinstanceindex &&
+            index <= this->mainGeom->doodadSets[i].firstinstanceindex + this->mainGeom->doodadSets[i].numDoodads
+            ) {
+            existsInActiveDoodadSets = true;
+            break;
+        }
+    }
+
+    if (!existsInActiveDoodadSets)
+        return nullptr;
+
+    const SMODoodadDef *doodadDef = &this->mainGeom->doodadDefs[index];
 
     bool fileIdMode = false;
     int doodadfileDataId = 0;
@@ -113,9 +80,12 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
         fileIdMode = true;
     }
 
-    auto m2Object = std::make_shared<M2Object>(m_api);
+    auto m2Object = m2Factory->createObject(m_api);
 
     m2Object->setLoadParams(0, {},{});
+
+    //Initial state for doodads in WMO is interior lighting. Unless there is exterior group WMO that references it
+    m2Object->setInteriorExteriorBlend(0.0f);
     if (fileIdMode) {
         m2Object->setModelFileId(doodadfileDataId);
     } else {
@@ -124,22 +94,230 @@ std::shared_ptr<M2Object> WmoObject::getDoodad(int index) {
     m2Object->createPlacementMatrix(*doodadDef, m_placementMatrix);
     m2Object->calcWorldPosition();
 
-    if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
-
-        auto &light = this->mainGeom->lights[doodadDef->color.a];
-        m2Object->setDiffuseColor(light.color);
-
-
-        std::cout << "Found index into MOLT = " << (int)doodadDef->color.a << std::endl;
-    } else {
-        m2Object->setDiffuseColor(doodadDef->color);
+    //Set interior lighting params
+    float mddiVal = 1.0f;
+    if (doodadDef->flag_0x10 && index < mainGeom->m_doodadAdditionalInfoLen) {
+        mddiVal = mainGeom->m_doodadAdditionalInfo[index];
     }
+
+    auto l_wmoId = this->getObjectId();
+    m2Object->addPostLoadEvent([l_wmoId, l_doodadDef = *doodadDef, m2Object, mddiVal, fromGroupIndex]() {
+        auto wmoObj = wmoFactory->getObjectById<0>(l_wmoId);
+        if (!wmoObj) return;
+
+        auto wmoFlag = wmoObj->mainGeom->groups[fromGroupIndex].flags;
+        if (wmoFlag.EXTERIOR_LIT || wmoFlag.EXTERIOR || !wmoFlag.INTERIOR) return;
+
+        wmoObj->applyLightingParamsToDoodad(&l_doodadDef, m2Object, mddiVal, fromGroupIndex);
+    });
+
+    // if (doodadDef->flag_AcceptProjTex) std::cout << "doodadDef->flag_AcceptProjTex" << std::endl;
+    // if (doodadDef->flag_0x2) std::cout << "doodadDef->flag_0x2" << std::endl;
+    // if (doodadDef->flag_0x4) std::cout << "doodadDef->flag_0x4" << std::endl;
+    // if (doodadDef->flag_0x8) std::cout << "doodadDef->flag_0x8" << std::endl;
+    // if (doodadDef->flag_0x10) std::cout << "doodadDef->flag_0x10" << std::endl;
+    // if (doodadDef->flag_0x20) std::cout << "doodadDef->flag_0x20" << std::endl;
+    // if (doodadDef->flag_0x40) std::cout << "doodadDef->flag_0x40" << std::endl;
+    // if (doodadDef->flag_0x80) std::cout << "doodadDef->flag_0x80" << std::endl;
 
     this->m_doodadsUnorderedMap[index] = m2Object;
 
     return m2Object;
 }
-void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
+
+mathfu::vec3 addDirectColorAndAmbient(mathfu::vec3 directColor, mathfu::vec3 ambient) {
+    auto sum = ambient + directColor;
+
+    float biggestComponent = std::max(sum.x, std::max(sum.y, sum.z));
+    if (biggestComponent > 1.0f) {
+        sum = sum * (1.0f / biggestComponent);
+    }
+    sum = mathfu::vec3(
+        fminf(sum.x, 1.0f),
+        fminf(sum.y, 1.0f),
+        fminf(sum.z, 1.0f)
+    );
+    return sum;
+}
+
+inline mathfu::vec3 fixDirectColor(const mathfu::vec3 &directColor, uint8_t limit) {
+    float biggestComponent = std::max(directColor.x, std::max(directColor.y, directColor.z));
+
+    if (biggestComponent <= 0.00001f) {
+        biggestComponent = 1.0f/255.0f;
+    }
+
+    const float limitInFloat = limit * (1.0f/255.0f);
+    if (biggestComponent < limitInFloat) {
+        auto hsv = MathHelper::rgb2hsv(directColor);
+        hsv.v = hsv.v * (limitInFloat / biggestComponent);
+        auto rgb = MathHelper::hsv2rgb(hsv);
+        return rgb;
+    }
+
+    return directColor;
+}
+inline mathfu::vec3 fixAmbient1(const mathfu::vec3 &ambient, uint8_t limit) {
+    float biggestComponent = std::max(ambient.x, std::max(ambient.y, ambient.z));
+
+    if (biggestComponent <= 0.00001f) {
+        biggestComponent = 1.0f/255.0f;
+    }
+
+    const float limitInFloat = limit * (1.0f/255.0f);
+    if (biggestComponent > limitInFloat) {
+        return ambient * (limitInFloat / biggestComponent);
+    }
+
+    return ambient;
+}
+
+void WmoObject::applyColorFromMOLT(
+        const SMODoodadDef *doodadDef,
+        const std::shared_ptr<M2Object> &doodad,
+        std::array<mathfu::vec3, 3> &interiorAmbients,
+        mathfu::vec3 &color,
+        bool &hasDoodad0x4Flag,
+        int fromGroupIndex)
+{
+
+    hasDoodad0x4Flag = doodadDef->flag_0x4;
+    if (doodadDef->flag_0x40)
+        hasDoodad0x4Flag = true;
+
+    if (doodadDef->flag_0x8) {
+        interiorAmbients[0] = color;
+        interiorAmbients[1] = color;
+        interiorAmbients[2] = color;
+
+        doodad->setAmbientColorOverride(
+            interiorAmbients[0],
+            interiorAmbients[2],
+            interiorAmbients[1]
+        );
+    }
+
+    if (hasDoodad0x4Flag) {
+        if (doodadDef->flag_0x40) {
+            color = mathfu::vec3(0,0,0);
+            doodad->setInteriorDirectColor(color);
+        } else if (doodadDef->color.a != 255 && doodadDef->color.a < this->mainGeom->lightsLen) {
+            auto &light = this->mainGeom->lights[doodadDef->color.a];
+
+            auto MOLTWorldPos = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f);
+
+            const auto doodadAAbb = doodad->getBoundingBox();
+
+            auto sunDirVec = (mathfu::vec3(doodadAAbb.max) + mathfu::vec3(doodadAAbb.min)) * 0.5f - MOLTWorldPos.xyz();
+            if (sunDirVec.LengthSquared() > 0) {
+                doodad->setSunDirOverride(sunDirVec.Normalized());
+            }
+
+            auto lightColor = ImVectorToVec4(light.color).xyz() * light.intensity;
+            float biggestComponent = std::max(lightColor.x, std::max(lightColor.y, lightColor.z));
+            if (biggestComponent > 1.0f) {
+                float inv = 1.0f / biggestComponent;
+                lightColor = lightColor * inv;
+                color = mathfu::vec3(
+                    fminf(lightColor.x, 1.0f),
+                    fminf(lightColor.y, 1.0f),
+                    fminf(lightColor.z, 1.0f)
+                );
+            }
+
+            if (doodadDef->flag_0x2 == 0) {
+                auto directColor = color;
+                directColor = fixDirectColor(directColor, 0x70);
+                doodad->setInteriorDirectColor(directColor);
+            }
+        }
+    } else {
+        if (!doodadDef->flag_0x2 && false)
+            return;
+    }
+
+    mathfu::vec3 interiorLightStart;
+    if (doodadDef->color.a == 255) {
+        auto const aabb = this->groupObjects[fromGroupIndex]->getWorldAABB();
+        interiorLightStart = (mathfu::vec3(aabb.max) + mathfu::vec3(aabb.min)) * 0.5f;
+    } else {
+        auto &light = this->mainGeom->lights[doodadDef->color.a];
+
+        interiorLightStart = this->m_placementMatrix * mathfu::vec4(mathfu::vec3(light.position), 1.0f).xyz();
+    }
+
+    const auto doodadAAbb = doodad->getBoundingBox();
+
+    auto sunDirVec = (mathfu::vec3(doodadAAbb.max) + mathfu::vec3(doodadAAbb.min)) * 0.5f - interiorLightStart;
+
+    if (sunDirVec.LengthSquared() > 0) {
+        doodad->setSunDirOverride(sunDirVec.Normalized());
+    }
+
+}
+
+void WmoObject::applyLightingParamsToDoodad(const SMODoodadDef *doodadDef, const std::shared_ptr<M2Object> &doodad, float mddiVal, int fromGroupIndex) {
+    std::array<mathfu::vec3, 3> interiorAmbients;
+    mathfu::Vector<float, 3> color;
+    bool hasDoodad0x4Flag;
+
+    interiorAmbients = getAmbientColors();
+    color = ImVectorToVec4(doodadDef->color).xyz();
+
+    applyColorFromMOLT(doodadDef, doodad, interiorAmbients, color, hasDoodad0x4Flag, fromGroupIndex);
+
+    //If both flag_0x4 and flag_0x8 are set - nothing is applied
+    if (hasDoodad0x4Flag && doodadDef->flag_0x8)
+        return;
+
+    if (doodadDef->flag_0x2 || true) { //TODO: Check this stupidity later
+        if (doodadDef->flag_0x10 && !hasDoodad0x4Flag) {
+            mathfu::vec3 directColor = mathfu::vec3(0,0,0);
+            if (!doodadDef->flag_0x80) {
+                mddiVal = std::max<float>(mddiVal, 1.0f);
+                directColor = color * mddiVal;
+            }
+            color = addDirectColorAndAmbient(directColor,  interiorAmbients[0]);
+        }
+    } else {
+        if (doodadDef->flag_0x10) {
+            mathfu::vec3 directColor = mathfu::vec3(0,0,0);
+            if (!doodadDef->flag_0x80) {
+                mddiVal = std::max<float>(mddiVal, 1.0f);
+                directColor = color * mddiVal;
+            }
+
+            interiorAmbients[0] = addDirectColorAndAmbient(directColor,  interiorAmbients[0]);
+            interiorAmbients[1] = addDirectColorAndAmbient(directColor,  interiorAmbients[1]);
+            interiorAmbients[2] = addDirectColorAndAmbient(directColor,  interiorAmbients[2]);
+            color = interiorAmbients[0];
+        } else {
+            interiorAmbients[0] = color;
+            interiorAmbients[1] = color;
+            interiorAmbients[2] = color;
+        }
+
+        color = fixDirectColor(color, 0x70u);
+        interiorAmbients[0] = fixAmbient1(interiorAmbients[0], 0x60u);
+        interiorAmbients[1] = fixAmbient1(interiorAmbients[1], 0x60u);
+        interiorAmbients[2] = fixAmbient1(interiorAmbients[2], 0x60u);
+    }
+
+    if (!hasDoodad0x4Flag) {
+        doodad->setInteriorDirectColor(color);
+    }
+    if (!doodadDef->flag_0x8) {
+        doodad->setAmbientColorOverride(
+            interiorAmbients[0],
+            interiorAmbients[2],
+            interiorAmbients[1]
+        );
+    }
+
+
+}
+
+void WmoObject::createPlacementMatrix(const SMMapObjDef &mapObjDef){
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
@@ -157,10 +335,11 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatChanged = true;
 
     //BBox is in ADT coordinates. We need to transform it first
-    C3Vector &bb1 = mapObjDef.extents.min;
-    C3Vector &bb2 = mapObjDef.extents.max;
+    const C3Vector &bb1 = mapObjDef.extents.min;
+    const C3Vector &bb2 = mapObjDef.extents.max;
     mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
     mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
 
@@ -169,7 +348,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDef &mapObjDef){
 
     createBB(worldAABB);
 }
-void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
+void WmoObject::createPlacementMatrix(const SMMapObjDefObj1 &mapObjDef){
     mathfu::mat4 adtToWorldMat4 = MathHelper::getAdtToWorldMat4();
 
     mathfu::mat4 placementMatrix = mathfu::mat4::Identity();
@@ -189,6 +368,7 @@ void WmoObject::createPlacementMatrix(SMMapObjDefObj1 &mapObjDef){
 
     m_placementInvertMatrix = placementInvertMatrix;
     m_placementMatrix = placementMatrix;
+    m_placementMatChanged = true;
 
     //BBox is in ADT coordinates. We need to transform it first
 //    C3Vector &bb1 = mapObjDef.extents.min;
@@ -260,7 +440,7 @@ void WmoObject::createWorldPortals() {
     geometryPerPortal = std::vector<PortalInfo_t>(portalCnt);
 
     for (int j = 0; j < portalCnt; j++) {
-        SMOPortal *portalInfo = &portals[j];
+        const SMOPortal *portalInfo = &portals[j];
 
 
         int base_index = portalInfo->base_index;
@@ -271,7 +451,7 @@ void WmoObject::createWorldPortals() {
                 portalVerticles[base_index + k].y,
                 portalVerticles[base_index + k].z);
 
-            portalVecs.push_back(verticle);
+            portalVecs.emplace_back() = verticle;
         }
 
         //Calculate center of the portal
@@ -285,33 +465,33 @@ void WmoObject::createWorldPortals() {
         mathfu::vec3 lookAt = center + mathfu::vec3(portalInfo->plane.planeGeneral.normal);
         mathfu::vec3 upVector = portalVecs[0] - center;
 
-        mathfu::mat4 projMat = mathfu::mat4::LookAt(
+        mathfu::mat4 viewMat = mathfu::mat4::LookAt(
                 lookAt,
                 center,
                 upVector
+//                1.0f
         );
-        mathfu::mat4 projMatInv = projMat.Inverse();
+        mathfu::mat4 viewMatInv = viewMat.Inverse();
 
-        std::vector <mathfu::vec3> portalTransformed(portalVecs.size());
+        framebased::vector <mathfu::vec3> portalTransformed(portalVecs.size());
         for (int k = 0; k < portalVecs.size(); k++) {
-            portalTransformed[k] = (projMat * mathfu::vec4(portalVecs[k], 1.0)).xyz();
+            portalTransformed[k] = (viewMat * mathfu::vec4(portalVecs[k], 1.0)).xyz();
         }
 
-        std::vector<mathfu::vec3> hulled = MathHelper::getHullPoints(portalTransformed);
+        framebased::vector<mathfu::vec3> hulled = MathHelper::getHullPoints(portalTransformed);
 
         portalVecs.clear();
         for (int k = 0; k < hulled.size(); k++) {
-            portalVecs.push_back((projMatInv * mathfu::vec4(hulled[k], 1.0)).xyz());
+            portalVecs.emplace_back() = (viewMatInv * mathfu::vec4(hulled[k], 1.0)).xyz();
         }
         geometryPerPortal[j].sortedVericles = portalVecs;
 
         //Calc CAAbox
         mathfu::vec3 min(99999,99999,99999), max(-99999,-99999,-99999);
 
-        for (int k = 0; k < portalVecs.size(); k++) {
-
-            min = mathfu::vec3::Min(portalVecs[k], min);
-            max = mathfu::vec3::Max(portalVecs[k], max);
+        for (const auto & portalVec : portalVecs) {
+            min = mathfu::vec3::Min(portalVec, min);
+            max = mathfu::vec3::Max(portalVec, max);
         }
 
         CAaBox &aaBoxCopyTo = geometryPerPortal[j].aaBox;
@@ -320,16 +500,20 @@ void WmoObject::createWorldPortals() {
     }
 }
 
-bool WmoObject::doPostLoad() {
+bool WmoObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
     if (!m_loaded) {
         if (mainGeom != nullptr && mainGeom->getStatus() == FileStatus::FSLoaded){
+
+            this->createMaterialCache();
+            this->createNewLights();
             this->createGroupObjects();
+            this->calculateAmbient();
             this->createWorldPortals();
             this->createBB(mainGeom->header->bounding_box);
-            this->createM2Array();
+            m_wmoModelChunk = sceneRenderer->createWMOWideChunk(mainGeom->groupsLen);
 
-            if (mainGeom->skyBoxM2FileName != nullptr || mainGeom->skyboxM2FileId != 0) {
-                skyBox = std::make_shared<M2Object>(m_api, true);
+            if ((mainGeom->skyBoxM2FileName != nullptr && mainGeom->skyBoxM2FileNameLen > 0) || mainGeom->skyboxM2FileId != 0) {
+                skyBox = m2Factory->createObject(m_api, true);
                 skyBox->setLoadParams(0, {},{});
 
                 if ( mainGeom->skyboxM2FileId != 0) {
@@ -351,28 +535,26 @@ bool WmoObject::doPostLoad() {
         return false;
     }
 
-//    for (auto &groupObject : groupObjects) {
-//        if (groupsProcessedThisFrame > 3) return false;
-//        groupObject->doPostLoad();
-//    }
-//    for (auto &groupObjectLod : groupObjectsLod1) {
-//        if (groupsProcessedThisFrame > 3) return false;
-//        if (groupObjectLod != nullptr) {
-//            if (groupObjectLod->doPostLoad()) groupsProcessedThisFrame++;;
-//        }
-//    }
-//    for (auto &groupObjectLod2 : groupObjectsLod2) {
-//        if (groupsProcessedThisFrame > 3) return false;
-//        if (groupObjectLod2 != nullptr) {
-//            if (groupObjectLod2->doPostLoad()) groupsProcessedThisFrame++;;
-//        }
-//    }
-
     return false;
 }
 
 void WmoObject::update() {
     if (!m_loaded) return;
+
+    if (m_placementMatChanged) {
+        auto &placementMat = m_wmoModelChunk->m_placementMatrix->getObject();
+        placementMat.uPlacementMat = m_placementMatrix;
+        m_wmoModelChunk->m_placementMatrix->save();
+
+        m_placementMatChanged = false;
+    }
+    if (m_interiorAmbientsChanged) {
+        auto &groupInteriorData = m_wmoModelChunk->m_groupInteriorData->getObject();
+        int interCount = (int) std::min(m_groupInteriorData.size(), (size_t) MAX_WMO_GROUPS);
+        std::copy(m_groupInteriorData.data(), m_groupInteriorData.data() + interCount, groupInteriorData.interiorData);
+
+        m_wmoModelChunk->m_groupInteriorData->save();
+    }
 
     for (int i= 0; i < groupObjects.size(); i++) {
         if(groupObjects[i] != nullptr) {
@@ -394,29 +576,16 @@ void WmoObject::update() {
 void WmoObject::uploadGeneratorBuffers() {
     if (!m_loaded) return;
 
-    for (int i= 0; i < groupObjects.size(); i++) {
-        if(groupObjects[i] != nullptr) {
-            groupObjects[i]->uploadGeneratorBuffers();
-        }
-    }
+//    for (int i= 0; i < groupObjects.size(); i++) {
+//        if(groupObjects[i] != nullptr) {
+//            groupObjects[i]->uploadGeneratorBuffers();
+//        }
+//    }
 }
 
 void WmoObject::collectMeshes(std::vector<HGMesh> &renderedThisFrame){
     if (!m_loaded) return;
-
-//    for (int i= 0; i < groupObjects.size(); i++) {
-//        if(drawGroupWMO[i]) {
-//           if (groupObjects[i] != nullptr && lodGroupLevelWMO[i] == 0) {
-//               groupObjects[i]->collectMeshes(renderedThisFrame);
-//           } else if (groupObjectsLod1[i] != nullptr && lodGroupLevelWMO[i] == 1) {
-//               groupObjectsLod1[i]->collectMeshes(renderedThisFrame);
-//           } else if (groupObjectsLod2[i] != nullptr && lodGroupLevelWMO[i] == 2) {
-//               groupObjectsLod2[i]->collectMeshes(renderedThisFrame);
-//           } else if (groupObjects[i] != nullptr) {
-//               groupObjects[i]->collectMeshes(renderedThisFrame);
-//           }
-//        }
-//    }
+    //Draw debug portals/Lights here?
 }
 
 void WmoObject::drawDebugLights(){
@@ -480,197 +649,20 @@ void WmoObject::drawDebugLights(){
  */
 }
 
-
-void WmoObject::drawTransformedPortalPoints(){
-
-#ifndef CULLED_NO_PORTAL_DRAWING
-    /*
-    if (!m_loaded) return;
-
-    std::vector<uint16_t> indiciesArray;
-    std::vector<float> verticles;
-    int k = 0;
-    //int l = 0;
-    std::vector<int> stripOffsets;
-    stripOffsets.push_back(0);
-    int verticleOffset = 0;
-    int stripOffset = 0;
-    for (int i = 0; i < this->interiorPortals.size(); i++) {
-        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
-
-        int verticlesCount = this->interiorPortals[i].portalVertices.size();
-        if ((verticlesCount - 2) <= 0) {
-            stripOffsets.push_back(stripOffsets[i]);
-            continue;
-        };
-
-        for (int j =0; j < (((int)verticlesCount)-2); j++) {
-            indiciesArray.push_back(verticleOffset+0);
-            indiciesArray.push_back(verticleOffset+j+1);
-            indiciesArray.push_back(verticleOffset+j+2);
-        }
-        stripOffset += ((verticlesCount-2) * 3);
-
-        for (int j =0; j < verticlesCount; j++) {
-            verticles.push_back(this->interiorPortals[i].portalVertices[j].x);
-            verticles.push_back(this->interiorPortals[i].portalVertices[j].y);
-            verticles.push_back(this->interiorPortals[i].portalVertices[j].z);
-        }
-
-        verticleOffset += verticlesCount;
-        stripOffsets.push_back(stripOffset);
-    }
-    GLuint indexVBO;
-    GLuint bufferVBO;
-    glGenBuffers(1, &indexVBO);
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-    if (indiciesArray.size() > 0) {
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
-    }
-    glGenBuffers(1, &bufferVBO);
-    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    if (verticles.size() > 0) {
-        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
-    }
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); // default blend func
-
-    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
-
-    auto drawPortalShader = m_api->getPortalShader();
-    static float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
-    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
-    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
-
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-
-    int offset = 0;
-    for (int i = 0; i < this->interiorPortals.size(); i++) {
-        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
-
-        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
-
-        offset += indeciesLen;
-    }
-    glDepthMask(GL_TRUE);
-    glDisable(GL_BLEND);
-
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
-
-    glDeleteBuffers(1, &indexVBO);
-    glDeleteBuffers(1, &bufferVBO);
-     */
-#endif
-}
-
-void WmoObject::createTransformedAntiPortalMesh() {
-
-}
-
-void WmoObject::updateTransformedAntiPortalPoints(){
-#ifndef CULLED_NO_PORTAL_DRAWING
-    if (!m_loaded) return;
-
-    std::vector<uint16_t> indiciesArray;
-    std::vector<float> verticles;
-    int k = 0;
-    //int l = 0;
-    std::vector<int> stripOffsets;
-    stripOffsets.push_back(0);
-    int verticleOffset = 0;
-    int stripOffset = 0;
-
-    //
-
-//    for (int i = 0; i < this->antiPortals.size(); i++) {
-//        //if (portalInfo.index_count != 4) throw new Error("portalInfo.index_count != 4");
-//
-//        int verticlesCount = this->antiPortals[i].portalVertices.size();
-////        if ((verticlesCount - 2) <= 0) {
-////            stripOffsets.push_back(stripOffsets[i]);
-////            continue;
-////        };
-////
-////        for (int j =0; j < (((int)verticlesCount)-2); j++) {
-////            indiciesArray.push_back(verticleOffset+0);
-////            indiciesArray.push_back(verticleOffset+j+1);
-////            indiciesArray.push_back(verticleOffset+j+2);
-////        }
-////        stripOffset += ((verticlesCount-2) * 3);
-//
-//        for (int j =0; j < verticlesCount; j++) {
-//            verticles.push_back(this->antiPortals[i].portalVertices[j].x);
-//            verticles.push_back(this->antiPortals[i].portalVertices[j].y);
-//            verticles.push_back(this->antiPortals[i].portalVertices[j].z);
-//        }
-//
-//        verticleOffset += verticlesCount;
-//        stripOffsets.push_back(stripOffset);
-//    }
-//    GLuint indexVBO;
-//    GLuint bufferVBO;
-////    glGenBuffers(1, &indexVBO);
-////    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, indexVBO);
-////    if (indiciesArray.size() > 0) {
-////        glBufferData(GL_ELEMENT_ARRAY_BUFFER, indiciesArray.size() * 2, &indiciesArray[0], GL_STATIC_DRAW);
-////    }
-//    glGenBuffers(1, &bufferVBO);
-//    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-//    if (verticles.size() > 0) {
-//        glBufferData(GL_ARRAY_BUFFER, verticles.size() * 4, &verticles[0], GL_STATIC_DRAW);
-//    }
-//
-//    glDisable(GL_BLEND);
-//
-//    glVertexAttribPointer(+drawPortalShader::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
-//
-//    auto drawPortalShader = m_api->getPortalShader();
-//    static float colorArr[4] = {0.819607843, 0.058, 0.058, 0.3};
-//    glUniformMatrix4fv(drawPortalShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
-//    glUniform4fv(drawPortalShader->getUnf("uColor"), 1, &colorArr[0]);
-//
-//    glDisable(GL_CULL_FACE);
-//    glDepthMask(GL_FALSE);
-//
-//    int offset = 0;
-//    for (int i = 0; i < this->antiPortals.size(); i++) {
-////        int indeciesLen = stripOffsets[i+1] - stripOffsets[i];
-//
-////        glDrawElements(GL_TRIANGLES, indeciesLen, GL_UNSIGNED_SHORT, (void *)(offset * 2));
-//        glDrawArrays(GL_TRIANGLES, 0, verticles.size()*4);
-//
-////        offset += indeciesLen;
-//    }
-//    glDepthMask(GL_TRUE);
-//    glDisable(GL_BLEND);
-//
-//    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-//    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
-//
-//    glDeleteBuffers(1, &indexVBO);
-//    glDeleteBuffers(1, &bufferVBO);
-
-#endif
-
-}
-
-void WmoObject::setLoadingParam(SMMapObjDef &mapObjDef) {
+void WmoObject::setLoadingParam(const SMMapObjDef &mapObjDef) {
     createPlacementMatrix(mapObjDef);
 
-    this->m_doodadSet = mapObjDef.doodadSet;
+    m_activeDoodadSets.set(mapObjDef.doodadSet);
     this->m_nameSet = mapObjDef.nameSet;
 }
-void WmoObject::setLoadingParam(SMMapObjDefObj1 &mapObjDef) {
+void WmoObject::setLoadingParam(const SMMapObjDefObj1 &mapObjDef) {
     createPlacementMatrix(mapObjDef);
 
-    this->m_doodadSet = mapObjDef.doodadSet;
+    m_activeDoodadSets.set(mapObjDef.doodadSet);
     this->m_nameSet = mapObjDef.nameSet;
 }
 
-HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
+HGSamplableTexture WmoObject::getTexture(int textureId, bool isSpec) {
     if (textureId == 0) return nullptr; //Usual case
 
     //Non-usual case
@@ -679,10 +671,8 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
         return nullptr;
     };
 
-    std::unordered_map<int, HGTexture> &textureCache = diffuseTextures;
-    if (isSpec) {
-        textureCache = specularTextures;
-    }
+    robin_hood::unordered_flat_map<int, HGSamplableTexture> &textureCache =
+        !isSpec ? diffuseTextures : specularTextures;
 
     auto i = textureCache.find(textureId);
     if (i != textureCache.end()) {
@@ -702,7 +692,7 @@ HGTexture WmoObject::getTexture(int textureId, bool isSpec) {
         texture = m_api->cacheStorage->getTextureCache()->getFileId(textureId);
     }
 
-    HGTexture hgTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    auto hgTexture = m_api->hDevice->createBlpTexture(texture, true, true);
     textureCache[textureId] = hgTexture;
 
     return hgTexture;
@@ -752,7 +742,8 @@ CAaBox WmoObject::getAABB() {
     return this->m_bbox;
 }
 
-void WmoObject::createM2Array() {
+void WmoObject::createMaterialCache() {
+    m_materialCache = decltype(m_materialCache)(mainGeom->materialsLen);
 }
 
 void WmoObject::postWmoGroupObjectLoad(int groupId, int lod) {
@@ -764,17 +755,9 @@ void WmoObject::checkGroupDoodads(int groupId, mathfu::vec4 &cameraVec4,
                                   M2ObjectListContainer &m2Candidates) {
     std::shared_ptr<WmoGroupObject> groupWmoObject = groupObjects[groupId];
     if (groupWmoObject != nullptr && groupWmoObject->getIsLoaded()) {
-        mathfu::vec4 ambientColor = groupWmoObject->getAmbientColor() ;
 
         for (auto &m2Object : groupWmoObject->getDoodads()) {
-
             if (!m2Object) continue;
-            if (groupWmoObject->getDontUseLocalLightingForM2()) {
-                m2Object->setUseLocalLighting(false);
-            } else {
-                m2Object->setUseLocalLighting(true);
-                m2Object->setAmbientColorOverride(ambientColor, true);
-            }
 
             m2Candidates.addCandidate(m2Object);
         }
@@ -790,13 +773,48 @@ bool WmoObject::startTraversingWMOGroup(
     bool traversingFromInterior,
     FrameViewsHolder &viewsHolder
 ) {
+    ZoneScoped;
     if (!m_loaded)
-        return true;
-
-    std::vector<HInteriorView> ivPerWMOGroup = std::vector<HInteriorView>(mainGeom->groupsLen);
+        return false;
 
     uint32_t portalCount = (uint32_t) std::max(0, this->mainGeom->portalsLen);
-    std::vector<bool> transverseVisitedPortals = std::vector<bool>(portalCount, false);
+
+    if (portalCount == 0) {
+        if (groupId > -1 && groupId < mainGeom->groupsLen &&
+            mainGeom->groups[groupId].flags.INTERIOR && !mainGeom->groups[groupId].flags.EXTERIOR_CULL)
+        {
+            auto nextGroupObject = groupObjects[groupId];
+
+            auto interiorView = viewsHolder.createInterior(frustumDataGlobal);
+            interiorView->ownerGroupWMO = groupObjects[groupId];
+            interiorView->wmoGroupArray.addToDraw(nextGroupObject);
+            interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
+
+            return true;
+        } else {
+            auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
+            bool result = false;
+            for (int i = 0; i< mainGeom->groupsLen; i++) {
+                if ((mainGeom->groups[i].flags.EXTERIOR) > 0 || (mainGeom->groups[i].flags.EXTERIOR_CULL) > 0 || !m_api->getConfig()->usePortalCulling) { //exterior
+                    if (this->groupObjects[i] != nullptr) {
+                        bool drawDoodads, drawGroup;
+                        this->groupObjects[i]->checkGroupFrustum(drawDoodads, drawGroup, cameraVec4, frustumDataGlobal);
+                        if (drawDoodads) {
+                            exteriorView->wmoGroupArray.addToCheckM2(this->groupObjects[i]);
+                        }
+                        if (drawGroup) {
+                            exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
+                        }
+                        result |= drawGroup;
+                    }
+                }
+            }
+            return result;
+        }
+    }
+    framebased::vector<HInteriorView> ivPerWMOGroup = framebased::vector<HInteriorView>(mainGeom->groupsLen);
+
+    framebased::vector<bool> transverseVisitedPortals = framebased::vector<bool>(portalCount, false);
 
     //CurrentVisibleM2 and visibleWmo is array of global m2 objects, that are visible after frustum
     mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4;
@@ -806,8 +824,10 @@ bool WmoObject::startTraversingWMOGroup(
 
     //For interior cull
     mathfu::mat4 MVPMat = frustumDataGlobal.perspectiveMat*frustumDataGlobal.viewMat*this->m_placementMatrix;
-    std::vector<mathfu::vec3> frustumPointsLocal = MathHelper::calculateFrustumPointsFromMat(MVPMat);
-    std::vector<mathfu::vec4> frustumPlanesLocal = MathHelper::getFrustumClipsFromMatrix(MVPMat);
+    mathfu::mat4 MVPMatInv = MVPMat.Inverse();
+
+    framebased::vector<mathfu::vec3> frustumPointsLocal = MathHelper::calculateFrustumPointsFromMat(MVPMat);
+    framebased::vector<mathfu::vec4> frustumPlanesLocal = MathHelper::getFrustumClipsFromMatrix(MVPMat);
 //    mathfu::vec4 headOfPyramidLocal = mathfu::vec4(MathHelper::getIntersection(
 //        frustumPointsLocal[4], frustumPointsLocal[7],
 //        frustumPointsLocal[3], frustumPointsLocal[0]
@@ -823,10 +843,14 @@ bool WmoObject::startTraversingWMOGroup(
         cameraVec4,
         cameraLocal,
         transposeInverseModelMat,
+        MVPMat,
+        MVPMatInv,
         transverseVisitedPortals
     };
 
     if (traversingFromInterior && m_api->getConfig()->usePortalCulling) {
+        traverseTempData.atLeastOneGroupIsDrawn = true;
+
         std::shared_ptr<WmoGroupObject> nextGroupObject = groupObjects[groupId];
         if (nextGroupObject->getIsLoaded() && nextGroupObject->getWmoGroupGeom()->mogp->flags2.isSplitGroupChild) {
             groupId = nextGroupObject->getWmoGroupGeom()->mogp->parentSplitOrFirstChildGroupIndex;
@@ -838,6 +862,7 @@ bool WmoObject::startTraversingWMOGroup(
         if (interiorView == nullptr) {
             interiorView = viewsHolder.createInterior(frustumDataGlobal);
             ivPerWMOGroup[groupId] = interiorView;
+            interiorView->ownerGroupWMO = groupObjects[groupId];
             interiorView->wmoGroupArray.addToDraw(nextGroupObject);
             interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
         }
@@ -878,25 +903,41 @@ bool WmoObject::startTraversingWMOGroup(
                     }
                     if (drawGroup) {
                         exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
-
-                        this->traverseGroupWmo(
-                            i,
-                            false,
-                            traverseTempData,
-                            frustumPlanesLocal,
-                            globalLevel,
-                            0);
+                        traverseTempData.atLeastOneGroupIsDrawn = true;
+                        if (m_api->getConfig()->usePortalCulling && portalCount > 0) {
+                            this->traverseGroupWmo(
+                                i,
+                                false,
+                                traverseTempData,
+                                frustumPlanesLocal,
+                                globalLevel,
+                                0);
+                        }
                     }
                 }
             }
         }
     }
 
-    //Add all ALAWAYSRENDER to Exterior
+    //Add all ALWAYSRENDER to Exterior
     for (int i = 0; i< mainGeom->groupsLen; i++) {
         if ((mainGeom->groups[i].flags.ALWAYSDRAW) > 0) { //exterior
             auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
             exteriorView->wmoGroupArray.addToDraw(this->groupObjects[i]);
+        }
+
+        if (m_api->getConfig()->renderAntiPortals) {
+            auto exteriorView = viewsHolder.getOrCreateExterior(frustumDataGlobal);
+            if (!this->groupObjects[i]->getIsLoaded()) {
+                exteriorView->wmoGroupArray.addToLoad(this->groupObjects[i]);
+            } else {
+                if ((mainGeom->groups[i].flags.ANTIPORTAL) > 0) { //ANTIPORTAL
+                    if (this->groupObjects[i]->getIsLoaded()) {
+                        exteriorView->worldAntiPortalVertices.emplace_back() =
+                            createAntiPortal(this->groupObjects[i]->getWmoGroupGeom(), m_placementMatrix);
+                    }
+                }
+            }
         }
     }
 
@@ -924,7 +965,7 @@ bool WmoObject::startTraversingWMOGroup(
     }
 
     //M2s will be collected later from separate function call
-    return true;
+    return traverseTempData.atLeastOneGroupIsDrawn;
 }
 void WmoObject::addSplitChildWMOsToView(InteriorView &interiorView, int groupId) {
     if (!groupObjects[groupId]->getIsLoaded())
@@ -960,7 +1001,7 @@ void WmoObject::traverseGroupWmo(
     int groupId,
     bool traversingStartedFromInterior,
     PortalTraverseTempData &traverseTempData,
-    std::vector<mathfu::vec4> &localFrustumPlanes,
+    framebased::vector<mathfu::vec4> &localFrustumPlanes,
     int globalLevel,
     int localLevel
 ) {
@@ -973,21 +1014,27 @@ void WmoObject::traverseGroupWmo(
     }
 
     //2. Loop through portals of current group
+
     int moprIndex = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprIndex;
     int numItems = groupObjects[groupId]->getWmoGroupGeom()->mogp->moprCount;
 
     if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.showSkyBox) {
-        if (skyBox != nullptr) {
-            traverseTempData.ivPerWMOGroup[groupId]->m2List.addToDraw(skyBox);
+        if (groupObjects[groupId]->getWmoGroupGeom()->mogp->flags.INTERIOR > 0 || !m_api->getConfig()->usePortalCulling) {
+            if (traversingStartedFromInterior && skyBox != nullptr) {
+                traverseTempData.viewsHolder.getSkybox()->m2List.addToDraw(skyBox);
+            }
+        } else {
+            //TODO: WHAT ????
+            //Example: main wmo: 850548, group WMO 901743
         }
     }
 
     for (int j = moprIndex; j < moprIndex+numItems; j++) {
-        SMOPortalRef * relation = &mainGeom->portalReferences[j];
-        SMOPortal * portalInfo = &mainGeom->portals[relation->portal_index];
+        const SMOPortalRef * relation = &mainGeom->portalReferences[j];
+        const SMOPortal * portalInfo = &mainGeom->portals[relation->portal_index];
 
         int nextGroup = relation->group_index;
-        C4Plane &plane = portalInfo->plane;
+        const C4Plane &plane = portalInfo->plane;
 
         //Skip portals we already visited
         if (traverseTempData.transverseVisitedPortals[relation->portal_index]) continue;
@@ -1050,7 +1097,7 @@ void WmoObject::traverseGroupWmo(
         if (portalInfo->index_count < 4) continue;
 
         //2.2 Check if Portal BB made from portal vertexes intersects frustum
-        std::vector<mathfu::vec3> portalVerticesVec;
+        framebased::vector<mathfu::vec3> portalVerticesVec;
         std::transform(
             geometryPerPortal[relation->portal_index].sortedVericles.begin(),
             geometryPerPortal[relation->portal_index].sortedVericles.end(),
@@ -1067,17 +1114,39 @@ void WmoObject::traverseGroupWmo(
         int lastFrustumPlanesLen = localFrustumPlanes.size();
 
         //3. Construct frustum planes for this portal
-        std::vector<mathfu::vec4> thisPortalPlanes;
+        framebased::vector<mathfu::vec4> thisPortalPlanes;
         thisPortalPlanes.reserve(lastFrustumPlanesLen);
 
         if (hackCondition) {
+            //Transform portal vertexes into clip space (this code should allow to use this logic with both Perspective and Ortho)
+            framebased::vector<mathfu::vec4> portalVerticesClip(portalVerticesVec.size());
+            framebased::vector<mathfu::vec4> portalVerticesClipNearPlane(portalVerticesVec.size());
+
+            for (int i = 0; i < portalVerticesVec.size(); i++) {
+                portalVerticesClip[i] = traverseTempData.MVPMat * mathfu::vec4(portalVerticesVec[i], 1.0f);
+                portalVerticesClip[i] /= portalVerticesClip[i].w;
+            }
+
+
+
+            for (int i = 0; i < portalVerticesVec.size(); i++) {
+                //Project Portal vertex to near plane in clip space
+                portalVerticesClipNearPlane[i] = portalVerticesClip[i];
+                portalVerticesClipNearPlane[i].z = -1;
+                //Transform back to local space
+                portalVerticesClipNearPlane[i] = traverseTempData.MVPMatInv * portalVerticesClipNearPlane[i];
+                portalVerticesClipNearPlane[i] /= portalVerticesClipNearPlane[i].w;
+            }
+
+            //This condition works, bcuz earlier it's verified we are inside the portal using the
+            //dot product AND `relation->side`
             bool flip = (relation->side > 0);
+            
+            int vertexCnt = portalVerticesVec.size();
+            for (int i = 0; i < vertexCnt; ++i) {
+                int i2 = (i + 1) % vertexCnt;
 
-            int portalCnt = portalVerticesVec.size();
-            for (int i = 0; i < portalCnt; ++i) {
-                int i2 = (i + 1) % portalCnt;
-
-                mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(traverseTempData.cameraLocal.xyz(),
+                mathfu::vec4 n = MathHelper::createPlaneFromEyeAndVertexes(portalVerticesClipNearPlane[i].xyz(),
                                                                            portalVerticesVec[i],
                                                                            portalVerticesVec[i2]);
 
@@ -1085,7 +1154,7 @@ void WmoObject::traverseGroupWmo(
                     n *= -1.0f;
                 }
 
-                thisPortalPlanes.push_back(n);
+                thisPortalPlanes.emplace_back() = n;
             }
             //The portalPlanes do not have far and near plane. So we need to add them
             //Near plane is this portal's plane, far plane is a global one
@@ -1094,8 +1163,8 @@ void WmoObject::traverseGroupWmo(
                 nearPlane *= -1.0f;
 
             auto &farPlane = traverseTempData.farPlane;
-            thisPortalPlanes.push_back(nearPlane);
-            thisPortalPlanes.push_back(farPlane);
+            thisPortalPlanes.emplace_back() = nearPlane;
+            thisPortalPlanes.emplace_back() = farPlane;
         } else {
             // If camera is too close - just use usual frustums
             thisPortalPlanes = localFrustumPlanes;
@@ -1103,8 +1172,8 @@ void WmoObject::traverseGroupWmo(
 
         //Transform local planes into world planes to use with frustum culling of M2Objects
         MathHelper::PlanesUndPoints worldSpaceFrustum;
-        worldSpaceFrustum.planes = std::vector<mathfu::vec4>(thisPortalPlanes.size());
-        worldSpaceFrustum.points = std::vector<mathfu::vec3>();
+        worldSpaceFrustum.planes = framebased::vector<mathfu::vec4>(thisPortalPlanes.size());
+        worldSpaceFrustum.points = framebased::vector<mathfu::vec3>();
         worldSpaceFrustum.points.reserve(thisPortalPlanes.size());
 
         for (int x = 0; x < thisPortalPlanes.size(); x++) {
@@ -1113,7 +1182,7 @@ void WmoObject::traverseGroupWmo(
 
         {
             worldSpaceFrustum.points = MathHelper::getIntersectionPointsFromPlanes(worldSpaceFrustum.planes);
-            worldSpaceFrustum.hullLines = MathHelper::getHullLines(worldSpaceFrustum.points);
+            //worldSpaceFrustum.hullLines = MathHelper::getHullLines(worldSpaceFrustum.points);
         }
 
         std::vector<mathfu::vec3> worldSpacePortalVertices;
@@ -1126,7 +1195,7 @@ void WmoObject::traverseGroupWmo(
 
         //5. Traverse next
         std::shared_ptr<WmoGroupObject> &nextGroupObject = groupObjects[nextGroup];
-        SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
+        const SMOGroupInfo &nextGroupInfo = mainGeom->groups[nextGroup];
         if ((nextGroupInfo.flags.EXTERIOR) == 0) {
             auto &interiorView = traverseTempData.ivPerWMOGroup[nextGroup];
             //5.1 The portal is into interior wmo group. So go on.
@@ -1137,11 +1206,11 @@ void WmoObject::traverseGroupWmo(
                 interiorView->ownerGroupWMO = nextGroupObject;
                 interiorView->wmoGroupArray.addToDraw(nextGroupObject);
                 interiorView->wmoGroupArray.addToCheckM2(nextGroupObject);
-                interiorView->portalIndexes.push_back(relation->portal_index);
+                interiorView->portalIndexes.emplace_back() = relation->portal_index;
             }
 
-            interiorView->worldPortalVertices.push_back(worldSpacePortalVertices);
-            interiorView->frustumData.frustums.push_back(worldSpaceFrustum);
+            interiorView->worldPortalVertices.emplace_back() = worldSpacePortalVertices;
+            interiorView->frustumData.frustums.emplace_back() = worldSpaceFrustum;
             if (globalLevel+1 >= interiorView->level) {
                 interiorView->level = globalLevel + 1;
             } else {
@@ -1167,91 +1236,100 @@ void WmoObject::traverseGroupWmo(
             if (!traverseTempData.exteriorWasCreatedBeforeTraversing) {
                 auto exteriorView = traverseTempData.viewsHolder.getOrCreateExterior({});
                 exteriorView->level = globalLevel + 1;
-                exteriorView->worldPortalVertices.push_back(worldSpacePortalVertices);
-                exteriorView->frustumData.frustums.push_back(worldSpaceFrustum);
+                exteriorView->worldPortalVertices.emplace_back() = worldSpacePortalVertices;
+                exteriorView->frustumData.frustums.emplace_back() = worldSpaceFrustum;
             }
         }
     }
 }
 
 bool WmoObject::isGroupWmoInterior(int groupId) {
-    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
     bool result = ((groupInfo->flags.EXTERIOR) == 0);
     return result;
 }
 
 bool WmoObject::isGroupWmoExteriorLit(int groupId) {
-    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
-    bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1);
+    const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    bool result = ((groupInfo->flags.EXTERIOR_LIT) == 1) || ((groupInfo->flags.EXTERIOR) == 1) || ((groupInfo->flags.INTERIOR) == 0);
     return result;
 }
 
 bool WmoObject::isGroupWmoExtSkybox(int groupId) {
-    SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
+    const SMOGroupInfo *groupInfo = &this->mainGeom->groups[groupId];
     bool result = ((groupInfo->flags.SHOW_EXTERIOR_SKYBOX) == 1);
     return result;
 }
 
-bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroupResult &groupResult) {
-        if (this->groupObjects.size() ==0) return false;
+bool WmoObject::getGroupWmoThatCameraIsInside (mathfu::vec4 cameraVec4, WmoGroupResult &groupResult, float &bottomBorder) {
+    if (this->groupObjects.size() ==0) return false;
 
-        //Transform camera into local coordinates
-        mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4 ;
+    //Transform camera into local coordinates
+    mathfu::vec4 cameraLocal = this->m_placementInvertMatrix * cameraVec4 ;
+    float localBorder = (this->m_placementInvertMatrix * mathfu::vec4(0,0,bottomBorder, 1.0f)).z;
 
-        //Check if camera inside wmo
-        bool isInsideWMOBB = (
-        cameraLocal[0] > this->mainGeom->header->bounding_box.min.x && cameraLocal[0] < this->mainGeom->header->bounding_box.max.x &&
-        cameraLocal[1] > this->mainGeom->header->bounding_box.min.y && cameraLocal[1] < this->mainGeom->header->bounding_box.max.y &&
-        cameraLocal[2] > this->mainGeom->header->bounding_box.min.z && cameraLocal[2] < this->mainGeom->header->bounding_box.max.z
-        );
-        if (!isInsideWMOBB) return false;
+    //Check if camera inside wmo
+    const auto &mainGeomBB = this->mainGeom->header->bounding_box;
+    bool isInsideWMOBB = (
+        cameraLocal[0] > mainGeomBB.min.x && cameraLocal[0] < mainGeomBB.max.x &&
+        cameraLocal[1] > mainGeomBB.min.y && cameraLocal[1] < mainGeomBB.max.y &&
+        cameraLocal[2] > mainGeomBB.min.z && cameraLocal[2] < mainGeomBB.max.z
+    );
+    if (!isInsideWMOBB) return false;
 
-        //Loop
-        int wmoGroupsInside = 0;
-        int interiorGroups = 0;
-        int lastWmoGroupInside = -1;
-        std::vector<WmoGroupResult> candidateGroups;
+    //Loop
+    int wmoGroupsInside = 0;
+    int interiorGroups = 0;
+    int lastWmoGroupInside = -1;
+    std::vector<WmoGroupResult> candidateGroups;
 
-        for (int i = 0; i < this->groupObjects.size(); i++) {
-            if (this->groupObjects[i] == nullptr) continue;
-            this->groupObjects[i]->checkIfInsideGroup(
-                    cameraVec4,
-                    cameraLocal,
-                    this->mainGeom->portal_vertices,
-                    this->mainGeom->portals,
-                    this->mainGeom->portalReferences,
-                    candidateGroups);
-            /* Test: iterate through portals in 5 value radius and check if it fits there */
-        }
+    for (int i = 0; i < this->groupObjects.size(); i++) {
+        if (this->groupObjects[i] == nullptr) continue;
+        this->groupObjects[i]->checkIfInsideGroup(
+                cameraVec4,
+                cameraLocal,
+                this->mainGeom->portal_vertices,
+                this->mainGeom->portals,
+                this->mainGeom->portalReferences,
+                candidateGroups);
+    }
 
-        //6. Iterate through result group list and find the one with maximal bottom z coordinate for object position
-        float minDist = 999999;
-        bool result = false;
-        for (int i = 0; i < candidateGroups.size(); i++) {
-            WmoGroupResult *candidate = &candidateGroups[i];
-            SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupIndex];
-            /*if ((candidate.topBottom.bottomZ < 99999) && (candidate.topBottom.topZ > -99999)){
-                if ((cameraLocal[2] < candidateGroups[i].topBottom.bottomZ) || (cameraLocal[2] > candidateGroups[i].topBottom.topZ))
-                    continue
-            } */
-            if (candidate->topBottom.min < 99999) {
-                float dist = cameraLocal[2] - candidate->topBottom.min;
-                if (dist > 0 && dist < minDist) {
-                    result = true;
-                    minDist = dist;
-                    groupResult = *candidate;
-                }
+    //6. Iterate through result group list and find the one with maximal bottom z coordinate for object position
+    float minDist = 999999;
+    bool result = false;
+    for (int i = 0; i < candidateGroups.size(); i++) {
+        WmoGroupResult *candidate = &candidateGroups[i];
+        const SMOGroupInfo *groupInfo = &this->mainGeom->groups[candidate->groupIndex];
+        /*if ((candidate.topBottom.bottomZ < 99999) && (candidate.topBottom.topZ > -99999)){
+            if ((cameraLocal[2] < candidateGroups[i].topBottom.bottomZ) || (cameraLocal[2] > candidateGroups[i].topBottom.topZ))
+                continue
+        } */
+        if (candidate->topBottom.min < 99999 && candidate->topBottom.min > localBorder) {
+            float dist = cameraLocal[2] - candidate->topBottom.min;
+            if (dist > 0 && dist < minDist) {
+                result = true;
+                minDist = dist;
+                groupResult = *candidate;
+
+                localBorder = candidate->topBottom.min;
             }
         }
+    }
 
+    bottomBorder = (this->m_placementMatrix * mathfu::vec4(0,0,localBorder, 1.0f)).z;
 
-        return result;
+    return result;
 }
 
+std::string WmoObject::getModelFileName() {
+    return m_modelName;
+}
 void WmoObject::setModelFileName(std::string modelName) {
     m_modelName = modelName;
 }
-
+int WmoObject::getModelFileId() {
+   return m_modelFileId;
+}
 void WmoObject::setModelFileId(int fileId) {
     useFileId = true;
     m_modelFileId = fileId;
@@ -1373,40 +1451,15 @@ std::function<void(WmoGroupGeom &wmoGroupGeom)> WmoObject::getAttenFunction() {
     } ;
 }
 
-void WmoObject::checkFog(mathfu::vec3 &cameraPos, std::vector<LightResult> &fogResults) {
+void WmoObject::checkFog(const mathfu::vec3 &cameraPos, std::vector<SMOFog_Data> &fogResults) {
     mathfu::vec3 cameraLocal = (m_placementInvertMatrix * mathfu::vec4(cameraPos, 1.0)).xyz();
     for (int i = mainGeom->fogsLen-1; i >= 0; i--) {
-        SMOFog &fogRecord = mainGeom->fogs[i];
+        const SMOFog &fogRecord = mainGeom->fogs[i];
         mathfu::vec3 fogPosVec = mathfu::vec3(fogRecord.pos);
 
         float distanceToFog = (fogPosVec - cameraLocal).Length();
         if ((distanceToFog < fogRecord.larger_radius) || fogRecord.flag_infinite_radius) {
-            LightResult wmoFog;
-            wmoFog.id = -1;
-            wmoFog.FogScaler = fogRecord.fog.start_scalar;
-            wmoFog.FogEnd = fogRecord.fog.end;
-            wmoFog.FogDensity = 0.18f;
-
-            wmoFog.FogHeightScaler = 0;
-            wmoFog.FogHeightDensity = 0;
-            wmoFog.SunFogAngle = 0;
-            wmoFog.EndFogColorDistance = 0;
-            wmoFog.SunFogStrength = 0;
-            if (fogRecord.flag_infinite_radius) {
-                wmoFog.blendCoef = 1.0;
-                wmoFog.isDefault = true;
-            } else {
-                wmoFog.blendCoef = std::min(
-                    (fogRecord.larger_radius - distanceToFog) / (fogRecord.larger_radius - fogRecord.smaller_radius),
-                    1.0f);
-                wmoFog.isDefault = false;
-            }
-            std::array<float, 3> fogColor = {fogRecord.fog.color.b/255.0f, fogRecord.fog.color.g/255.0f,  fogRecord.fog.color.r/255.0f};
-            wmoFog.EndFogColor = fogColor;
-            wmoFog.SunFogColor = fogColor;
-            wmoFog.FogHeightColor = fogColor;
-
-            fogResults.push_back(wmoFog);
+            fogResults.push_back(fogRecord.fog);
         }
     }
 }
@@ -1427,6 +1480,91 @@ PointerChecker<SMOMaterial> &WmoObject::getMaterials() {
     return mainGeom->materials;
 }
 
+std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, const HMapSceneBufferCreate &sceneRenderer) {
+    assert(materialIndex < m_materialCache.size());
+
+    auto materialInstance = m_materialCache[materialIndex];
+    if (materialInstance != nullptr)
+        return materialInstance;
+
+    //Otherwise create goddamit material
+
+    const SMOMaterial &material = getMaterials()[materialIndex];
+    assert(material.shader < MAX_WMO_SHADERS && material.shader >= 0);
+    auto shaderId = material.shader;
+    if (shaderId >= MAX_WMO_SHADERS) {
+        shaderId = 0;
+    }
+
+    int pixelShader = wmoMaterialShader[shaderId].pixelShader;
+    int vertexShader = wmoMaterialShader[shaderId].vertexShader;
+
+    auto blendMode = material.blendMode;
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = blendMode <= 1;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = !(material.flags.F_UNCULLED);
+
+    pipelineTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
+
+    bool isSecondTextSpec = material.shader == 8;
+
+    HGSamplableTexture texture1 = getTexture(material.diffuseNameIndex, false);
+    HGSamplableTexture texture2 = getTexture(material.envNameIndex, isSecondTextSpec);
+    HGSamplableTexture texture3 = getTexture(material.texture_2, false);
+
+    WMOMaterialTemplate materialTemplate;
+
+    materialTemplate.textures[0] = texture1;
+    materialTemplate.textures[1] = texture2;
+    materialTemplate.textures[2] = texture3;
+
+    if (pixelShader == (int)WmoPixelShader::MapObjParallax) {
+        materialTemplate.textures[3] = getTexture(material.color_2, false);
+        materialTemplate.textures[4] = getTexture(material.flags_2, false);
+        materialTemplate.textures[5] = getTexture(material.runTimeData[0], false);
+    } else if (pixelShader == (int)WmoPixelShader::MapObjDFShader) {
+        materialTemplate.textures[3] = getTexture(material.color_2, false);
+        materialTemplate.textures[4] = getTexture(material.flags_2, false);
+        materialTemplate.textures[5] = getTexture(material.runTimeData[0], false);
+        materialTemplate.textures[6] = getTexture(material.runTimeData[1], false);
+        materialTemplate.textures[7] = getTexture(material.runTimeData[2], false);
+        materialTemplate.textures[8] = getTexture(material.runTimeData[3], false);
+    }
+
+    materialInstance = sceneRenderer->createWMOMaterial(m_wmoModelChunk, pipelineTemplate, materialTemplate);
+    m_materialCache[materialIndex] = materialInstance;
+
+    C4Vector matUVAnim = C4Vector(mathfu::vec4(0.0f,0.0f,0.0f,0.0f));
+    if (mainGeom->materialUVSpeedLen > 0 && (materialIndex < mainGeom->materialUVSpeedLen)) {
+        matUVAnim = mainGeom->materialUVSpeed[materialIndex];
+    }
+    {
+        float alphaTest = (blendMode > 0) ? 0.00392157f : -1.0f;
+
+        //Update VS block
+        auto &blockVS = materialInstance->m_materialVS->getObject();
+        blockVS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockVS.VertexShader = vertexShader;
+        blockVS.translationSpeedXY = matUVAnim;
+        materialInstance->m_materialVS->save();
+
+        //Update PS block
+        auto &blockPS = materialInstance->m_materialPS->getObject();
+        blockPS.UseLitColor = (material.flags.F_UNLIT > 0) ? 0 : 1;
+        blockPS.EnableAlpha = (blendMode > 0) ? 1 : 0;
+        blockPS.PixelShader = pixelShader;
+        blockPS.BlendMode = blendMode;
+        blockPS.uFogColor_AlphaTest = mathfu::vec4_packed(
+            mathfu::vec4(0,0,0, alphaTest));
+        materialInstance->m_materialPS->save();
+    }
+
+    return materialInstance;
+};
+
 std::shared_ptr<M2Object> WmoObject::getSkyBoxForGroup(int groupNum) {
     if (!m_loaded) return nullptr;
     if (groupNum < 0 || groupNum >= this->groupObjects.size()) return nullptr;
@@ -1446,28 +1584,96 @@ int WmoObject::getWmoGroupId(int groupNum) {
     return groupObjects[groupNum]->getWmoGroupGeom()->mogp->wmoGroupID;
 }
 
-mathfu::vec3 WmoObject::getAmbientColor() {
-    CImVector ambientColor = mainGeom->header->ambColor;
-    if (mainGeom->mavgs != nullptr) {
+std::array<mathfu::vec3,3> WmoObject::getAmbientColors() {
+    return m_ambientColors;
+}
+
+void WmoObject::createNewLights() {
+    m_newLights.resize(mainGeom->newLightsLen);
+    for (int i = 0; i < mainGeom->newLightsLen; i++) {
+        auto &newLightRec = mainGeom->newLights[i];
+        if (!m_activeDoodadSets[newLightRec.doodadSet]) {
+            m_newLights[i] = nullptr;
+            continue;
+        }
+        m_newLights[i] = std::make_shared<CWmoNewLight>(m_placementMatrix, mainGeom->newLights[i]);
+    }
+}
+void WmoObject::calculateAmbient() {
+    mathfu::vec3 ambientColor;
+    mathfu::vec3 horizontAmbientColor;
+    mathfu::vec3 groundAmbientColor;
+
+    if (mainGeom->mavgsLen > 0) {
+        //Take ambient from MAVG
         int recordIndex = 0;
         for (int i = 0; i < mainGeom->mavgsLen; i++) {
-            if (mainGeom->mavgs[i].doodadSetID == m_doodadSet) {
+            if (m_activeDoodadSets[mainGeom->mavgs[i].doodadSetID]) {
                 recordIndex = i;
                 break;
             }
         }
         auto &record = mainGeom->mavgs[recordIndex];
-        if (record.flags & 1) {
-            ambientColor = record.color3;
+        if ((record.flags & 1) != 0) {
+            ambientColor = ImVectorToVec4(record.color1).xyz();
+            horizontAmbientColor = ImVectorToVec4(record.color2).xyz();
+            groundAmbientColor = ImVectorToVec4(record.color3).xyz();
         } else {
-            ambientColor = record.color1;
+            auto amb = ImVectorToVec4(record.color1).xyz();
+            ambientColor = amb;
+            horizontAmbientColor = amb;
+            groundAmbientColor = amb;
         }
+    } else if (mainGeom->mavdsLen > 0) {
+        //Take ambient from MAVD
+        auto const &mavds = mainGeom->mavds;
+        if ((mavds->flags & 1) != 0) {
+            ambientColor = ImVectorToVec4(mavds->color1).xyz();
+            horizontAmbientColor = ImVectorToVec4(mavds->color2).xyz();
+            groundAmbientColor = ImVectorToVec4(mavds->color3).xyz();
+        } else {
+            auto amb = ImVectorToVec4(mavds->color1).xyz();
+            ambientColor = amb;
+            horizontAmbientColor = amb;
+            groundAmbientColor = amb;
+        }
+    } else if (mainGeom->header) {
+        auto amb = ImVectorToVec4(mainGeom->header->ambColor).xyz();
+        ambientColor = amb;
+        horizontAmbientColor = amb;
+        groundAmbientColor = amb;
     }
-    mathfu::vec3 ambColor = mathfu::vec3(
-        ((float) ambientColor.r / 255.0f),
-        ((float) ambientColor.g / 255.0f),
-        ((float) ambientColor.b / 255.0f)
-    );
 
-    return ambColor;
+    m_ambientColors = {ambientColor, horizontAmbientColor, groundAmbientColor};
+    m_groupInteriorData = decltype(m_groupInteriorData)(groupObjects.size());
+    for (auto &interiorAmbientBlock : m_groupInteriorData) {
+         interiorAmbientBlock.uAmbientColorAndIsExteriorLit = mathfu::vec4(ambientColor, 1.0f);
+         interiorAmbientBlock.uHorizontAmbientColor = mathfu::vec4(horizontAmbientColor, 1.0f);
+         interiorAmbientBlock.uGroundAmbientColor = mathfu::vec4(groundAmbientColor, 1.0f);
+    }
+    m_interiorAmbientsChanged = true;
 }
+
+std::shared_ptr<CWmoNewLight> WmoObject::getNewLight(int index) {
+    if (index > m_newLights.size()) return nullptr;
+
+    return m_newLights[index];
+}
+void WmoObject::setInteriorAmbientColor(int groupIndex,
+                                        bool isExteriorLighted,
+                                        const mathfu::vec3 &ambient,
+                                        const mathfu::vec3 &horizontAmbient,
+                                        const mathfu::vec3 &groundAmbient)
+{
+    assert(groupIndex < m_groupInteriorData.size());
+
+    auto &interiorAmbientBlock = m_groupInteriorData[groupIndex];
+    interiorAmbientBlock.uAmbientColorAndIsExteriorLit = mathfu::vec4(ambient, isExteriorLighted ? 1.0 : 0.0);
+    interiorAmbientBlock.uHorizontAmbientColor = mathfu::vec4(horizontAmbient, 1.0f);
+    interiorAmbientBlock.uGroundAmbientColor   = mathfu::vec4(groundAmbient, 1.0f);
+
+    m_interiorAmbientsChanged = true;
+}
+
+
+std::shared_ptr<WMOEntityFactory> wmoFactory = std::make_shared<WMOEntityFactory>();

@@ -6,7 +6,7 @@
 #include "../../../gapi/interface/meshes/IParticleMesh.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
-#include "../../shader/ShaderDefinitions.h"
+#include <ShaderDefinitions.h>
 #include "generators/CParticleGenerator.h"
 #include "generators/CSphereGenerator.h"
 #include "generators/CPlaneGenerator.h"
@@ -14,20 +14,11 @@
 #include "../../persistance/header/M2FileHeader.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "generators/CSplineGenerator.h"
+#include "../../../gapi/interface/materials/IMaterial.h"
 
+//#undef TracyMessageStr
+//#define TracyMessageStr(x) std::cout << x << std::endl
 
-HGIndexBuffer ParticleEmitter::m_indexVBO = nullptr;
-
-static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
-
-static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
-     {+m2ParticleShader::Attribute::aPosition,  3, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, position) },
-     {+m2ParticleShader::Attribute::aColor,     4, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, color)},
-     {+m2ParticleShader::Attribute::aTexcoord0, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord0)},
-     {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
-     {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
-     {+m2ParticleShader::Attribute::aAlphaCutoff, 1, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, alphaCutoff)},
- }};
 
 enum class ParticleVertexShader : int {
     None = -1,
@@ -89,7 +80,7 @@ static const struct {
 };
 
 
-ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, Exp2Record *exp2, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
+ParticleEmitter::ParticleEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer, M2Particle *particle, Exp2Record *exp2, M2Object *m2Object, HM2Geom geom, int txac_val_raw) : m_seed(rand()), m_api(api), m2Object(m2Object) {
 
     if (!randTableInited) {
         for (int i = 0; i < 128; i++) {
@@ -200,8 +191,8 @@ ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, Exp2Re
         uint64_t defCellLong = (textureIndexMask + 1) * (uint64_t)this->m_seed.uint32t();
         this->m_randomizedTextureIndexMask = static_cast<uint16_t>(defCellLong>> 32);
     }
-    this->texScaleX = 1.0f / cols;
-    this->texScaleY = 1.0f / rows;
+    this->texScaleX = 1.0f / (float)cols;
+    this->texScaleY = 1.0f / (float)rows;
 
     //TODO: particle selection is not entirely proper because of strange freaking flag
     if ( (m_data->old.flags & 0x10100000) == 0) {
@@ -218,7 +209,7 @@ ParticleEmitter::ParticleEmitter(HApiContainer api, M2Particle *particle, Exp2Re
     }
 
     selectShaderId();
-    createMesh();
+    createMeshes(sceneRenderer);
 }
 
 void ParticleEmitter::selectShaderId() {
@@ -254,7 +245,7 @@ void ParticleEmitter::selectShaderId() {
     }
 }
 
-std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
+static const std::array<EGxBlendEnum, 8> ParticleBlendingModeToEGxBlendEnum =
     {
         EGxBlendEnum::GxBlend_Opaque,
         EGxBlendEnum::GxBlend_AlphaKey,
@@ -266,61 +257,27 @@ std::array<EGxBlendEnum, 8> PaticleBlendingModeToEGxBlendEnum1 =
         EGxBlendEnum::GxBlend_BlendAdd
     };
 
-void ParticleEmitter::createMesh() {
+void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     HGDevice device = m_api->hDevice;
 
     if (m_indexVBO == nullptr) {
-        m_indexVBO = device->createIndexBuffer();
-        int vo = 0;
-        for (int i = 0; i < MAX_PARTICLES_PER_EMITTER; i++) {
-            szIndexBuff.push_back(vo + 0);
-            szIndexBuff.push_back(vo + 1);
-            szIndexBuff.push_back(vo + 2);
-            szIndexBuff.push_back(vo + 3);
-            szIndexBuff.push_back(vo + 2);
-            szIndexBuff.push_back(vo + 1);
-            vo += 4;
-        }
-        m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
+        m_indexVBO = sceneRenderer->getOrCreateM2ParticleIndexBuffer();
     }
 
-    //Create Buffers
-    for (int i = 0; i < 4; i++) {
-        frame[i].m_bufferVBO = device->createVertexBufferDynamic(10 * sizeof(ParticleBuffStructQuad));
-
-        frame[i].m_bindings = device->createVertexBufferBindings();
-        frame[i].m_bindings->setIndexBuffer(m_indexVBO);
-
-        GVertexBufferBinding vertexBinding;
-        vertexBinding.vertexBuffer = frame[i].m_bufferVBO;
-        vertexBinding.bindings = std::vector<GBufferBinding>(&staticM2ParticleBindings[0],
-                                                             &staticM2ParticleBindings[5]);
-
-        frame[i].m_bindings->addVertexBufferBinding(vertexBinding);
-        frame[i].m_bindings->save();
-
-
-        //Get shader
-        HGShaderPermutation shaderPermutation = device->getShader("m2ParticleShader", nullptr);
-
-        //Create mesh
-        gMeshTemplate meshTemplate(frame[i].m_bindings, shaderPermutation);
-
-
+    //Create Material
+    {
+        PipelineTemplate pipelineTemplate;
         uint8_t blendMode = m_data->old.blendingType;
-        meshTemplate.meshType = MeshType::eParticleMesh;
-        meshTemplate.depthWrite = blendMode <= 1;
-        meshTemplate.depthCulling = true;
-        meshTemplate.backFaceCulling = false;
-
-        meshTemplate.blendMode =
-            blendMode < PaticleBlendingModeToEGxBlendEnum1.size() ?
-            PaticleBlendingModeToEGxBlendEnum1[blendMode] :
+        pipelineTemplate.element = DrawElementMode::TRIANGLES;
+        pipelineTemplate.depthWrite = blendMode <= 1;
+        pipelineTemplate.depthCulling = true;
+        pipelineTemplate.backFaceCulling = false;
+        pipelineTemplate.blendMode =
+            blendMode < ParticleBlendingModeToEGxBlendEnum.size() ?
+            ParticleBlendingModeToEGxBlendEnum[blendMode] :
             EGxBlendEnum::GxBlend_Opaque;
 
-        meshTemplate.start = 0;
-        meshTemplate.end = 0;
-        meshTemplate.element =  DrawElementMode::TRIANGLES;
+        M2ParticleMaterialTemplate particleTemplate;
 
         bool multitex = m_data->old.flags_per_number.hex_10000000 > 0;
         HBlpTexture tex0 = nullptr;
@@ -329,27 +286,20 @@ void ParticleEmitter::createMesh() {
         } else {
             tex0 = m2Object->getBlpTextureData(this->m_data->old.texture);
         }
-        meshTemplate.texture[0] = device->createBlpTexture(tex0, true, true);
+        particleTemplate.textures[0] = device->createBlpTexture(tex0, true, true);
         if (multitex) {
             HBlpTexture tex1 = m2Object->getBlpTextureData(this->m_data->old.texture_1);
             HBlpTexture tex2 = m2Object->getBlpTextureData(this->m_data->old.texture_2);
 
-            meshTemplate.texture[1] = device->createBlpTexture(tex1, true, true);
-            meshTemplate.texture[2] = device->createBlpTexture(tex2, true, true);
+            particleTemplate.textures[1] = device->createBlpTexture(tex1, true, true);
+            particleTemplate.textures[2] = device->createBlpTexture(tex2, true, true);
         }
-        meshTemplate.texture.resize(3);
-        meshTemplate.textureCount = (multitex) ? 3 : 1;
 
-        meshTemplate.ubo[0] = nullptr; //m_api->getSceneWideUniformBuffer();
-        meshTemplate.ubo[1] = nullptr;
-        meshTemplate.ubo[2] = nullptr;
+        m_material = sceneRenderer->createM2ParticleMaterial(pipelineTemplate, particleTemplate);
 
-        meshTemplate.ubo[3] = nullptr;
-        meshTemplate.ubo[4] = device->createUniformBufferChunk(sizeof(Particle::meshParticleWideBlockPS));
-
-        auto l_blendMode = meshTemplate.blendMode;
-        meshTemplate.ubo[4]->setUpdateHandler([this, l_blendMode](IUniformBufferChunk *self, const HFrameDepedantData &frameDepedantData) {
-            Particle::meshParticleWideBlockPS &blockPS = self->getObject<Particle::meshParticleWideBlockPS>();
+        //Update material
+        {
+            Particle::meshParticleWideBlockPS &blockPS = m_material->m_fragmentData->getObject();
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
                 blockPS.uAlphaTest = -1.0f;
@@ -358,30 +308,45 @@ void ParticleEmitter::createMesh() {
             } else {
                 blockPS.uAlphaTest = 0.0039215689f;
             }
+            blockPS.alphaMult = (m_exp2Data == nullptr) ? 1.0f : m_exp2Data->alphaMult;
+            blockPS.colorMult = (m_exp2Data == nullptr) ? 1.0f : m_exp2Data->colorMult;
 
             int uPixelShader = particleMaterialShader[this->shaderId].pixelShader;
 
             blockPS.uPixelShader =  uPixelShader;
-            blockPS.uBlendMode = static_cast<int>(l_blendMode);
-        });
+            blockPS.uBlendMode = static_cast<int>(blendMode < ParticleBlendingModeToEGxBlendEnum.size() ?
+                                                  ParticleBlendingModeToEGxBlendEnum[blendMode] :
+                                                  EGxBlendEnum::GxBlend_Opaque);
 
-        frame[i].m_mesh = device->createParticleMesh(meshTemplate);
-
+            m_material->m_fragmentData->save();
+        }
     }
+
+
+    //Create Buffers
+    for (int i = 0; i < PARTICLES_BUFF_NUM; i++) {
+        //Create mesh
+        createMesh(sceneRenderer, frame[i], i, 10 * sizeof(ParticleBuffStructQuad));
+    }
+}
+void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &currFrame, int frameIndex, int size) {
+    currFrame.m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(size, frameIndex);
+    currFrame.m_bindings = sceneRenderer->createM2ParticleVAO(currFrame.m_bufferVBO,m_indexVBO);
+
+    gMeshTemplate meshTemplate(currFrame.m_bindings);
+
+    meshTemplate.meshType = MeshType::eParticleMesh;
+    meshTemplate.start = 0;
+    meshTemplate.end = 0;
+
+    currFrame.m_mesh = sceneRenderer->createSortableMesh(meshTemplate, m_material, m_data->old.textureTileRotation);
 }
 
 
 bool ParticleEmitter::randTableInited = false;
 float ParticleEmitter::RandTable[128] = {};
 
-const mathfu::mat4 strangeMat = {
-    1.0f, 0, 0, 0,
-    0, 1.0f, 0, 0,
-    0, 0, 1.0f, 0,
-    0, 0, -1.0f, 0.0
-};
-
-void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &translatedViewMat) {
+void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, const mathfu::mat4 &translatedViewMat) {
     if ((this->m_data->old.flags & 0x10)) {
         s_particleToView = translatedViewMat * m_emitterModelMatrix ;
     } else {
@@ -400,7 +365,6 @@ void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, mathfu::mat4 &tra
             p_quadToView = p_quadToView * (1.0f / m_inheritedScale);
         }
 
-        mathfu::vec3 v28(0,0,1.0);
         p_quadToViewZVector = p_quadToView.GetColumn(2);
         if (p_quadToViewZVector.LengthSquared() <= 0.00000023841858f) {
             p_quadToViewZVector =  mathfu::vec3(0,0,1.0);
@@ -421,10 +385,10 @@ void ParticleEmitter::UpdateXform(const mathfu::mat4 &viewModelBoneMatrix, mathf
 
     this->m_inheritedScale = viewModelBoneMatrix.GetColumn(0).xyz().Length();
 }
-void ParticleEmitter::InternalUpdate(animTime_t delta) {
+void ParticleEmitter::InternalUpdate(ParticleBuffer &particlesCurr, ParticleBuffer &particlesLast, animTime_t delta) {
     delta = fmaxf(delta, 0.0f);
     if (delta < 0.1) {
-        m_deltaPosition = m_deltaPosition1;
+        m_deltaPosition = m_fullPosDeltaSinceLastUpdate;
     } else {
 
         float temp0 = floorf(delta / 0.1f);
@@ -440,16 +404,25 @@ void ParticleEmitter::InternalUpdate(animTime_t delta) {
             divider = temp3;
         }
 
-        m_deltaPosition = m_deltaPosition1 * (1.0f / divider);
+        m_deltaPosition = m_fullPosDeltaSinceLastUpdate * (1.0f / divider);
 
         for (int i = 0; i < numberOfStepUpdates; i++) {
-            this->StepUpdate(0.1f);
+            this->StepUpdate(particlesCurr, particlesLast, 0.1f);
         }
     }
 
-    this->StepUpdate(delta);
+    this->StepUpdate(particlesCurr, particlesLast, delta);
 }
-void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl, mathfu::mat4 *frameOfReference, mathfu::mat4 &viewMatrix) {
+
+ParticleBuffer& ParticleEmitter::GetLastPBuffer() {
+    return particlesPingPong[m_api->hDevice->getCurrentProcessingFrameNumber() % 2];
+}
+ParticleBuffer& ParticleEmitter::GetCurrentPBuffer() {
+    return particlesPingPong[(m_api->hDevice->getCurrentProcessingFrameNumber() + 1) % 2];
+}
+
+void ParticleEmitter::Update(animTime_t delta, const mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl,
+                             mathfu::mat4 *frameOfReference, const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
 //    if (this->particles.size() <= 0 && !isEnabled) return;
@@ -458,26 +431,31 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathf
     m_currentBonePos = (viewMatrix * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
 
     mathfu::vec3 viewMatVec = viewMatrix.GetColumn(3).xyz();
+    //Updates m_emitterModelMatrix and others
     this->UpdateXform(transformMat, viewMatVec, frameOfReference);
+
+    auto &particlesLast = GetLastPBuffer();
+    auto &particlesCurr = GetCurrentPBuffer();
 
     if (delta > 0) {
         if (this->m_data->old.flags & 0x4000) {
-            m_deltaPosition1 = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
-            float x = this->followMult * (m_deltaPosition1.Length() / delta) + this->followBase;
+            m_fullPosDeltaSinceLastUpdate = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
+            float x = this->followMult * (m_fullPosDeltaSinceLastUpdate.Length() / delta) + this->followBase;
             if (x >= 0.0)
                 x = fmin(x, 1.0f);
 
-            this->m_deltaPosition =  m_deltaPosition1 * x;
+            this->m_deltaPosition = m_fullPosDeltaSinceLastUpdate * x;
         }
 
         if (this->m_data->old.flags & 0x40) {
             this->burstTime += delta;
             animTime_t frameTime = 30.0 / 1000.0;
-            if (this->burstTime > frameTime) {
+            float burstTime = this->burstTime;
+            if (burstTime > frameTime) {
                 this->burstTime = 0;
 
-                if (this->particles.size() == 0) {
-                    animTime_t frameAmount = frameTime / this->burstTime;
+                if (particlesLast.size() == 0) {
+                    animTime_t frameAmount = frameTime / burstTime;
                     mathfu::vec3 dPos = m_emitterModelMatrix.GetColumn(3).xyz() - m_prevPosition;
 
                     this->burstVec = dPos * mathfu::vec3(frameAmount * this->m_data->old.BurstMultiplier);
@@ -487,13 +465,15 @@ void ParticleEmitter::Update(animTime_t delta, mathfu::mat4 &transformMat, mathf
                 }
             }
         }
-        this->InternalUpdate(delta);
+        this->InternalUpdate(particlesCurr, particlesLast, delta);
     }
+
+    const HGParticleMesh &mesh = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM].m_mesh;
+    mesh->setSortDistance(m_currentBonePos);
+
 }
-//void ParticleEmitter::Sync() {
-//
-//}
-void ParticleEmitter::StepUpdate(animTime_t delta) {
+
+void ParticleEmitter::StepUpdate(ParticleBuffer &particlesCurr, ParticleBuffer &particlesLast, animTime_t delta) {
     ParticleForces forces;
 
     if (delta < 0.0) return;
@@ -501,58 +481,48 @@ void ParticleEmitter::StepUpdate(animTime_t delta) {
         //this->Sync(); // basically does buffer resize. Thus is not needed
     }
 
-    this->CalculateForces(forces, delta);
-    this->EmitNewParticles(delta);
-    int i = 0;
+    particlesCurr.clear();
+    particlesCurr.reserve(particlesLast.size());
 
-
-    std::list<int> listForDeletion;
-
-    int numThreads = m_api->getConfig()->threadCount;
-
-    #pragma omp parallel for schedule(dynamic, 200) default(none) shared(delta, forces) num_threads(numThreads)
-    for (int i = 0; i < this->particles.size(); i++) {
-        auto &p = this->particles[i];
-        bool killParticle = false;
+    //StepUpdate_age
+    for (int i = 0; i < particlesLast.size(); i++) {
+        auto &p = particlesLast[i];
         p.age = p.age + delta;
 
-        if (p.age > (fmaxf(this->generator->GetLifeSpan(p.seed), 0.001f))) {
-            killParticle = true;
-        } else {
-            if (!this->UpdateParticle(p, delta, forces)) {
-                killParticle = true;//                i--;
-            }
+        p.isDead = ( p.age > (fmaxf(this->generator->GetLifeSpan(p.seed), 0.001f)));
+        if (!p.isDead) {
+            particlesCurr.push_back(p);
         }
+    }
 
-        if (killParticle) {
+    //StepUpdate_emit
+    this->CalculateForces(forces, delta);
+    this->EmitNewParticles(particlesCurr, delta);
+
+    //StepUpdate_update
+    for (int i = 0; i < particlesCurr.size(); i++) {
+        auto &p = particlesCurr[i];
+
+        if (!this->UpdateParticle(p, delta, forces)) {
             p.isDead = true;
         }
     }
 
-    for (int i = 0; i < this->particles.size();) {
-        if (particles[i].isDead) {
-            this->KillParticle(i);
-        } else {
-            i++;
-        }
-    }
-
-
 }
-void ParticleEmitter::EmitNewParticles(animTime_t delta) {
+void ParticleEmitter::EmitNewParticles(ParticleBuffer &particlesCurr, animTime_t delta) {
     if (!isEnabled) return;
 
     float rate = this->generator->GetEmissionRate();
     this->emission += delta * rate;
     while (this->emission > 1.0f) {
-        if (particles.size() < MAX_PARTICLES_PER_EMITTER) {
-            this->CreateParticle(delta);
+        if (particlesCurr.size() < MAX_PARTICLES_PER_EMITTER) {
+            this->CreateParticle(particlesCurr, delta);
         }
         this->emission -= 1.0f;
     }
 }
-void ParticleEmitter::CreateParticle(animTime_t delta) {
-    CParticle2 &p = this->BirthParticle();
+void ParticleEmitter::CreateParticle(ParticleBuffer &particlesCurr, animTime_t delta) {
+    CParticle2 &p = particlesCurr.emplace_back();
 
     this->generator->CreateParticle(p, delta);
 
@@ -588,7 +558,7 @@ void ParticleEmitter:: CalculateForces(ParticleForces &forces, animTime_t delta)
     auto g = this->generator->GetGravity();
     forces.velocity = g * mathfu::vec3(delta);
     forces.position = g * mathfu::vec3(delta * delta * 0.5f);
-    forces.drag = this->m_data->old.drag * delta;
+    forces.drag = std::min<float>(this->m_data->old.drag * delta, 1.0);
 }
 
 bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleForces &forces) {
@@ -637,87 +607,109 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
     return true;
 }
 
-void ParticleEmitter::KillParticle(int index) {
-    particles.erase(particles.begin()+index);
-}
-CParticle2& ParticleEmitter::BirthParticle() {
-    CParticle2 p1;
-    particles.push_back(p1);
-    
-
-    CParticle2 &p = particles[particles.size() - 1];
-    return p;
-}
-
-void ParticleEmitter::prepearBuffers(mathfu::mat4 &viewMatrix) {
+void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
 
+//    TracyMessageStr(("prepearBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+
+    auto &particles = GetCurrentPBuffer();
+
     if (particles.size() == 0 && this->generator != nullptr) {
-        szVertexCnt = 0;
         return;
     }
 
     inverseViewMatrix = viewMatrix.Inverse();
 
     mathfu::mat3 rotation = mathfu::mat3::ToRotationMatrix(viewMatrix);
-    mathfu::mat4 someMat = mathfu::mat4(
-        rotation[0],rotation[1],rotation[2], 0.0,
-        rotation[3],rotation[4],rotation[5], 0.0,
-        rotation[6],rotation[7],rotation[8], 0.0,
-        0, 0, 0, 1.0
-    );
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
-    auto vboBufferDynamic = frame[m_api->hDevice->getUpdateFrameNumber()].m_bufferVBO;
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
+
+//    auto *szVertexBuf = (ParticleBuffStruct *) vboBufferDynamic->getPointer();
+    int szVertexCnt = 0;
+    std::vector<ParticleBuffStruct> tempBuffer = std::vector<ParticleBuffStruct>(particles.size() * 2 * 4);
+
+    for (int i = 0; i < particles.size(); i++) {
+        CParticle2 &p = particles[i];
+        if (p.isDead) continue;
+
+        ParticlePreRenderData particlePreRenderData;
+        if (this->CalculateParticlePreRenderData(p, particlePreRenderData) != 0) {
+            if (m_data->old.flags & 0x20000) {
+                this->buildVertex1(p, particlePreRenderData, tempBuffer.data(), szVertexCnt);
+            }
+            if ( m_data->old.flags & 0x40000 ) {
+                this->buildVertex2(p, particlePreRenderData, tempBuffer.data(), szVertexCnt);
+            }
+        }
+    }
+     if (szVertexCnt > tempBuffer.size()) {
+        std::cout << "temp buffer overrun detected" << std::endl;
+    }
+
+    vboBufferDynamic->uploadData(tempBuffer.data(), szVertexCnt * sizeof(ParticleBuffStruct));
+
+
+    //szVertexCnt = szVertexCnt >> 2;
+
+    if ((szVertexCnt * sizeof(ParticleBuffStruct)) > vboBufferDynamic->getSize()){
+        std::cout << "buffer overrun detected" << std::endl;
+    }
+    if (m_temp_maxFutureSize < (szVertexCnt * sizeof(ParticleBuffStruct))) {
+        std::cout << "buffer overrun detected 2" << std::endl;
+    }
+    if (m_temp_maxFutureSize > vboBufferDynamic->getSize()) {
+        std::cout << "buffer overrun detected 3" << std::endl;
+    }
+
+    frame[frameNum].particlesUploaded = szVertexCnt >> 2;
+
+//    TracyMessageStr(
+//        (std::string("updateBuffers, CurrentProcessingFrameNumber =") +
+//        std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())+
+//        std::string(", szVertexCnt = ")+
+//        std::to_string(szVertexCnt)
+//        ));
+
+    auto &currentFrame = frame[frameNum];
+    currentFrame.active = szVertexCnt > 0;
+
+    if (!currentFrame.active)
+        return;
+
+    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStruct));
+
+    currentFrame.m_mesh->setEnd((szVertexCnt >> 2) * 6);
+    currentFrame.m_mesh->setSortDistance(m_currentBonePos);
+}
+
+void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
+//    TracyMessageStr(("fitBuffersToSize, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+
+    auto &particles = GetCurrentPBuffer();
+
+    if (particles.size() == 0) {
+        return;
+    }
+
     size_t maxFutureSize = particles.size() * sizeof(ParticleBuffStructQuad);
     if ((m_data->old.flags & 0x60000) == 0x60000) {
         maxFutureSize *= 2;
     }
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
-    vboBufferDynamic->resize(maxFutureSize);
+    m_temp_maxFutureSize = maxFutureSize;
 
-    szVertexBuf = (ParticleBuffStructQuad *) vboBufferDynamic->getPointerForModification();
-    szVertexCnt = 0;
-    for (int i = 0; i < particles.size(); i++) {
-        CParticle2 &p = this->particles[i];
-        ParticlePreRenderData particlePreRenderData;
-        if (this->CalculateParticlePreRenderData(p, particlePreRenderData)) {
-            if (m_data->old.flags & 0x20000) {
-                this->buildVertex1(p, particlePreRenderData);
-            }
-            if ( m_data->old.flags & 0x40000 ) {
-                this->buildVertex2(p, particlePreRenderData);
-            }
-        }
+    if (maxFutureSize > vboBufferDynamic->getSize()) {
+        createMesh(sceneRenderer, frame[frameNum], frameNum, maxFutureSize);
     }
-
-//    std::sort(szVertexBuf.begin(), szVertexBuf.end(), [](const ParticleBuffStructQuad &a, const ParticleBuffStructQuad &b) -> bool {
-//        return
-//        fminf(
-//            fminf(
-//                fminf(
-//                    a.particle[0].position.z,
-//                    a.particle[1].position.z
-//                ),
-//                a.particle[2].position.z
-//            ),
-//            a.particle[0].position.z
-//        ) < fminf(
-//            fminf(
-//                fminf(
-//                    b.particle[0].position.z,
-//                    b.particle[1].position.z
-//                ),
-//                b.particle[2].position.z
-//            ),
-//            b.particle[0].position.z
-//        );
-//    });
 }
 
-int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
-    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedHeadCell &  this->textureColMask);
+int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particlePreRenderData, ParticleBuffStruct *szVertexBuf, int &szVertexCnt) {
+    int coefXInt = (particlePreRenderData.m_ageDependentValues.timedHeadCell & this->textureColMask);
     float coefXf;
     if (coefXInt < 0) {
         coefXf = (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1)) + (float)((coefXInt & 1) | ((unsigned int)coefXInt >> 1));
@@ -854,19 +846,19 @@ int ParticleEmitter::buildVertex1(CParticle2 &p, ParticlePreRenderData &particle
         }
     }
 
-    this->BuildQuadT3(m0, m1,
-        particlePreRenderData.m_particleCenter,
+    this->BuildQuadT3(
+            szVertexBuf, szVertexCnt,
+            m0, m1,
+            particlePreRenderData.m_particleCenter,
             particlePreRenderData.m_ageDependentValues.m_timedColor,
             particlePreRenderData.m_ageDependentValues.m_alpha,
-            particlePreRenderData.m_ageDependentValues.exp2_unk3,
+            particlePreRenderData.m_ageDependentValues.alphaCutoff,
             texScaleVec.x, texScaleVec.y,  p.texPos);
-
-
 
     return 0;
 }
 
-int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData) {
+int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particlePreRenderData, ParticleBuffStruct *szVertexBuf, int &szVertexCnt) {
     int coefXInt = (particlePreRenderData.m_ageDependentValues.timedTailCell &  this->textureColMask);
     float coefXf;
     if (coefXInt < 0) {
@@ -911,11 +903,13 @@ int ParticleEmitter::buildVertex2(CParticle2 &p, ParticlePreRenderData &particle
             0);
     }
 
-    this->BuildQuadT3(m0, m1,
+    this->BuildQuadT3(
+                      szVertexBuf, szVertexCnt,
+                      m0, m1,
                       particlePreRenderData.m_particleCenter,
                       particlePreRenderData.m_ageDependentValues.m_timedColor,
                       particlePreRenderData.m_ageDependentValues.m_alpha,
-                      particlePreRenderData.m_ageDependentValues.exp2_unk3,
+                      particlePreRenderData.m_ageDependentValues.alphaCutoff,
                       texScaleVec.x, texScaleVec.y,  p.texPos);
 
 
@@ -953,7 +947,6 @@ int ParticleEmitter::CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRe
     float twinkleMin = twinkleRange.min;
     float twinkleVary = twinkleRange.max - twinkleMin;
 
-
     int rndIdx = 0;
     uint16_t seed = p.seed;
     animTime_t age = p.age;
@@ -962,6 +955,10 @@ int ParticleEmitter::CalculateParticlePreRenderData(CParticle2 &p, ParticlePreRe
     }
 
     if (twinkle < ParticleEmitter::RandTable[rndIdx]) {
+        return 0;
+    }
+
+    if (p.age > getGenerator()->GetMaxLifeSpan()) {
         return 0;
     }
 
@@ -1069,9 +1066,9 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 
     defaultCell = 0;
     ageDependentValues.timedTailCell = animatePartTrack<uint16_t, uint16_t>(percentTime, &m_data->old.tailCellTrack, defaultCell);
-    ageDependentValues.exp2_unk3 = 0.0f;
+    ageDependentValues.alphaCutoff = 0.0f;
     if (m_exp2Data != nullptr) {
-        ageDependentValues.exp2_unk3 = animatePartTrack<fixed16, float>(percentTime, &m_exp2Data->unk3, ageDependentValues.exp2_unk3);
+        ageDependentValues.alphaCutoff = animatePartTrack<fixed16, float>(percentTime, &m_exp2Data->alphaCutoff, ageDependentValues.alphaCutoff);
     }
 
 
@@ -1092,11 +1089,13 @@ void ParticleEmitter::fillTimedParticleData(CParticle2 &p,
 }
 
 inline float paramXTransform(uint32_t x) {
-    return ((x & 0x1F)/32.0f) + (float)(x >> 5);
+    return (((float)(x & 0x1F))/32.0f) + (float)(x >> 5);
 }
 
 void
 ParticleEmitter::BuildQuadT3(
+    ParticleBuffStruct *szVertexBuf,
+    int &szVertexCnt,
     mathfu::vec3 &m0, mathfu::vec3 &m1,
     mathfu::vec3 &viewPos, mathfu::vec3 &color, float alpha,
     float alphaCutoff,
@@ -1109,68 +1108,57 @@ ParticleEmitter::BuildQuadT3(
 
     if (szVertexCnt >= MAX_PARTICLES_PER_EMITTER) return;
 
-    ParticleBuffStructQuad &record = szVertexBuf[szVertexCnt++];
+//    ParticleBuffStruct &record = szVertexBuf[szVertexCnt++];
 
-//    mathfu::mat4 inverseLookAt = mathfu::mat4::Identity();
     mathfu::mat4 &inverseLookAt = this->inverseViewMatrix;
 
     for (int i = 0; i < 4; i++) {
-
-        record.particle[i].position = ( inverseLookAt * mathfu::vec4(
-                m0 * vxs[i] + m1 * vys[i] + viewPos,
-                1.0
+        auto &particleData = szVertexBuf[szVertexCnt++];//record.particle[i];
+        particleData.position = (inverseLookAt * mathfu::vec4(
+            m0 * vxs[i] + m1 * vys[i] + viewPos,
+            1.0
         )).xyz();
-        record.particle[i].color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
+        particleData.color = mathfu::vec4_packed(mathfu::vec4(color, alpha));
 
-        record.particle[i].textCoord0 =
+        particleData.textCoord0 =
             mathfu::vec2(txs[i] * this->texScaleX + texStartX,
                          tys[i] * this->texScaleY + texStartY);
 
-        record.particle[i].textCoord1 =
+        particleData.textCoord1 =
             mathfu::vec2(
                 txs[i] * paramXTransform(this->m_data->old.multiTextureParamX[0]) + texPos[0].x,
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[0]) + texPos[0].y);
-        record.particle[i].textCoord2 =
+        particleData.textCoord2 =
             mathfu::vec2(
                 txs[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].x,
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].y);
 
-        record.particle[i].alphaCutoff = alphaCutoff;
+        particleData.alphaCutoff = alphaCutoff;
     }
-
 }
 
-void ParticleEmitter::collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes, int renderOrder) {
+void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
     if (getGenerator() == nullptr) return;
 
-    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
+//    TracyMessageStr(("collectMeshes, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+
+    const auto frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    auto &currentFrame = frame[frameNum];
+
     if (!currentFrame.active)
         return;
 
-    HGParticleMesh mesh = frame[m_api->hDevice->getUpdateFrameNumber()].m_mesh;
-    mesh->setRenderOrder(renderOrder);
+//    TracyMessageStr(("collectMeshes 2, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+
+    HGParticleMesh mesh = currentFrame.m_mesh;
+
+    if (currentFrame.particlesUploaded * 6 > mesh->end()) {
+        std::cout << "currentFrame.particlesUploaded > szVertexCnt * 6" << std::endl;
+    }
+
     if (mesh->getIsTransparent()) {
-        transparentMeshes.push_back(mesh);
+        transparentMeshes.emplace_back() = mesh;
     } else {
-        opaqueMeshes.push_back(mesh);
+        opaqueMeshCollector.addMesh(mesh);
     }
 }
-
-void ParticleEmitter::updateBuffers() {
-    if (getGenerator() == nullptr) return;
-
-    auto &currentFrame = frame[m_api->hDevice->getUpdateFrameNumber()];
-    currentFrame.active = szVertexCnt > 0;
-
-    if (!currentFrame.active)
-        return;
-
-//    currentFrame.m_indexVBO->uploadData((void *) szIndexBuff.data(), (int) (szIndexBuff.size() * sizeof(uint16_t)));
-    currentFrame.m_bufferVBO->save(szVertexCnt * sizeof(ParticleBuffStructQuad));
-
-    currentFrame.m_mesh->setEnd(szVertexCnt * 6);
-    currentFrame.m_mesh->setSortDistance(m_currentBonePos);
-    currentFrame.m_mesh->setPriorityPlane(m_data->old.textureTileRotation);
-
-}
-

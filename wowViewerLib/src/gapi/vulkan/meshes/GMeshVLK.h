@@ -9,76 +9,41 @@
 #include "../../interface/meshes/IMesh.h"
 #include "../GDeviceVulkan.h"
 #include "../descriptorSets/GDescriptorSet.h"
+#include "../materials/ISimpleMaterialVLK.h"
+#include "../../../engine/objects/SceneObjectWithID.h"
 
-class GMeshVLK : public IMesh {
+class GMeshVLK : public IM2Mesh {
     friend class GDeviceVLK;
-protected:
-    explicit GMeshVLK(IDevice &device,
-                   const gMeshTemplate &meshTemplate
-    );
+public:
+    explicit GMeshVLK(const gMeshTemplate &meshTemplate,
+                      const HMaterialVLK &material, int layer, int priority);
 
 public:
     ~GMeshVLK() override;
-    HGUniformBufferChunk getUniformBuffer(int slot) override;
-    EGxBlendEnum getGxBlendMode() override;
+
     bool getIsTransparent() override;
     MeshType getMeshType()  override;
-    void setRenderOrder(int renderOrder) override;
+    EGxBlendEnum getGxBlendMode() override {
+        return material()->getBlendMode();
+    }
 
-    void setStart(int start) override;
-    void setEnd(int end) override;
 public:
-    void *getM2Object() override { return nullptr; };
-    void setM2Object(void * m2Object) override { throw "Not Implemented";};
-    void setLayer(int layer) override { throw "Not Implemented";};
-    void setPriorityPlane(int priorityPlane) override { throw "Not Implemented";};
-    void setQuery(const HGOcclusionQuery &query) override { throw "Not Implemented";};
-    void setSortDistance(float distance) override { m_sortDistance = distance;};
-    float getSortDistance() override { return m_sortDistance; };
-
-
-    std::shared_ptr<GPipelineVLK> getPipeLineForRenderPass(std::shared_ptr<GRenderPassVLK> renderPass, bool invertedZ);
-
+    auto material() const -> const HMaterialVLK& { return m_material; }
+    auto scissorOffset() const -> const  std::array<int, 2>& { return m_scissorOffset; }
+    auto scissorSize() const -> const std::array<uint32_t, 2>& { return m_scissorSize; }
+    auto scissorEnabled() const -> const bool {return m_isScissorsEnabled;};
 protected:
     MeshType m_meshType;
-private:
+    bool m_isTransparent = false;
 
-    HGShaderPermutation m_shader;
-
-    std::array<HGUniformBufferChunk, 6> m_UniformBuffer = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
-
-    int8_t m_depthWrite;
-    int8_t m_depthCulling;
-    int8_t m_backFaceCulling;
-    int8_t m_triCCW = 1;
-    EGxBlendEnum m_blendMode;
-    bool m_isTransparent;
-    int8_t m_isScissorsEnabled = -1;
+    bool m_isScissorsEnabled = false;
 
     std::array<int, 2> m_scissorOffset = {0,0};
-    std::array<int, 2> m_scissorSize = {0,0};
-
-    uint8_t m_colorMask = 0;
-
-    DrawElementMode m_element;
-
-
-//Vulkan specific
-    std::vector<std::shared_ptr<GDescriptorSets>> imageDescriptorSets;
-    std::vector<bool> descriptorSetsUpdated;
-
-    VkDescriptorPool m_descriptorPool;
-
-    std::shared_ptr<GRenderPassVLK> m_lastRenderPass = nullptr;
-    std::shared_ptr<GPipelineVLK> m_lastPipelineForRenderPass;
+    std::array<uint32_t, 2> m_scissorSize = {0,0};
 
 
 private:
-    GDeviceVLK &m_device;
-
-    void createDescriptorSets(GShaderPermutationVLK *shaderVLK);
-
-    void updateDescriptor();
+    HMaterialVLK m_material;
 };
 
 

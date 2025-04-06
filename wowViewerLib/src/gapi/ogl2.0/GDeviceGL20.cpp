@@ -66,7 +66,7 @@ void debug_func(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei 
 //        }
 }
 
-void GDeviceGL20::bindIndexBuffer(IIndexBuffer *buffer) {
+void GDeviceGL20::bindIndexBuffer(IBuffer *buffer) {
     GIndexBufferGL20 * gBuffer = (GIndexBufferGL20 *) buffer;
     if (gBuffer == nullptr ) {
         if (m_lastBindIndexBuffer != nullptr) {
@@ -233,7 +233,7 @@ void GDeviceGL20::drawMeshes(std::vector<HGMesh> &meshes) {
 //    }
 }
 
-void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) {
+void GDeviceGL20::updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantDataVec) {
     int fullSize = 0;
 
     for (int i = 0; i < bufferChunks.size(); i++) {
@@ -319,7 +319,7 @@ void GDeviceGL20::drawMesh(HGMesh hIMesh, HGUniformBufferChunk matrixChunk) {
     bindVertexBufferBindings(hmesh->m_bindings.get());
     for (int i = 0; i < 5; i++) {
 
-        IUniformBufferChunk *uniformChunk = nullptr;
+        IBufferChunk * uniformChunk = nullptr;
         if (i == 0) {
             uniformChunk = matrixChunk.get();
         } else {
@@ -711,18 +711,18 @@ void GDeviceGL20::reset() {
 }
 
 unsigned int GDeviceGL20::getUpdateFrameNumber() {
-    return (m_frameNumber + 1) & 3;
+    return (m_frameNumber + 1) % MAX_FRAMES_IN_FLIGHT;
 //    return 0;
 }
 unsigned int GDeviceGL20::getCullingFrameNumber() {
-    return (m_frameNumber + 3) & 3;
+    return (m_frameNumber + 3) % MAX_FRAMES_IN_FLIGHT;
 //    return 0;
 }
 unsigned int GDeviceGL20::getOcclusionFrameNumber() {
-    return (m_frameNumber + 2) & 3;
+    return (m_frameNumber + 2) % MAX_FRAMES_IN_FLIGHT;
 }
 unsigned int GDeviceGL20::getDrawFrameNumber() {
-    return m_frameNumber & 3;
+    return m_frameNumber % MAX_FRAMES_IN_FLIGHT;
 }
 
 void GDeviceGL20::increaseFrameNumber() {

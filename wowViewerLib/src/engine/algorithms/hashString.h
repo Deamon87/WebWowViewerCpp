@@ -72,7 +72,7 @@ public:
     // A wrapper so we can generate any number of functions using the pre-processor (const strings)
     template <size_t N>
     constexpr HashedString(const char(&str)[N]);
-    explicit HashedString(ConstCharWrapper str): m_Hash(CalculateFNV(str.str)){
+    explicit HashedString(ConstCharWrapper str): m_Hash(CalculateFNV(str.str)), m_originalString(str.str){
     };
 
     // Return the original string
@@ -92,6 +92,7 @@ public:
 
     // The hash object (pre-calculated if we use the full optimization flag)
     size_t m_Hash;
+    const char * m_originalString;
 
     // The original string
 //#ifdef _DEBUG
@@ -133,12 +134,13 @@ public:
 #define ME_HASHED_STRING_23            ((ME_HASHED_STRING_22 ^ str[21]) * PRIME)
 #define ME_HASHED_STRING_24            ((ME_HASHED_STRING_23 ^ str[22]) * PRIME)
 #define ME_HASHED_STRING_25            ((ME_HASHED_STRING_24 ^ str[23]) * PRIME)
+#define ME_HASHED_STRING_26            ((ME_HASHED_STRING_25 ^ str[24]) * PRIME)
 // etc.
 
 #define ME_HASHED_STRING_SPECIALIZATION(n)                                    \
   template <>                                                                \
   constexpr HashedString::HashedString(const char (&str)[n])                    \
-    : m_Hash(ME_JOIN(ME_HASHED_STRING_, n))                                \
+    : m_Hash(ME_JOIN(ME_HASHED_STRING_, n)), m_originalString(str)                                \
   {}
 
 ME_HASHED_STRING_SPECIALIZATION(1)
@@ -166,6 +168,7 @@ ME_HASHED_STRING_SPECIALIZATION(22)
 ME_HASHED_STRING_SPECIALIZATION(23)
 ME_HASHED_STRING_SPECIALIZATION(24)
 ME_HASHED_STRING_SPECIALIZATION(25)
+ME_HASHED_STRING_SPECIALIZATION(26)
 
 static size_t CalculateFNV(const char* str)
 {

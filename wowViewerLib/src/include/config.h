@@ -6,11 +6,17 @@
 #define WOWVIEWERLIB_CONFIG_H
 
 #include <string>
+#include <unordered_set>
+#include <unordered_map>
 #include <thread>
 #include <mathfu/glsl_mappings.h>
+#include "../renderer/mapScene/FrameDependentData.h"
+
+constexpr float DEFAULT_FOV_VALUE = 53.9726294579437f;
 
 struct RiverColorOverride {
-    int areaId = -1;
+    int liquidObjectId;
+    int liquidType;
     mathfu::vec4 color = {0,0,0,0};
 };
 
@@ -32,22 +38,35 @@ enum class EFreeStrategy : char {
 class Config {
 public:
     Config() {
-        threadCount = std::max<int>((int)std::thread::hardware_concurrency()-2, 1);
+        m_hardwareThreadCount = std::max<int>((int)std::thread::hardware_concurrency()-3, 1);
     }
 
 public:
+    auto hardwareThreadCount() const -> int { return m_hardwareThreadCount;}
     bool renderAdt = true;
     bool renderWMO = true;
     bool renderM2 = true;
+    bool renderRibbons = true;
+    bool renderSkyDom = true;
+    bool renderSkyScene = true;
+    bool renderLiquid = true;
     bool renderBSP = false;
     bool renderPortals = false;
+    bool renderAntiPortals = false;
     bool renderPortalsIgnoreDepth = false;
     bool usePortalCulling = true;
-    bool useInstancing = false;
+    bool discardInvisibleMeshes = true;
+
+    bool ignoreADTHoles = false;
+
+    bool stopBufferUpdates = false;
+    bool stepBufferUpdate = false;
+
 
     bool disableFog = false;
-    bool renderSkyDom = true;
 
+
+    bool drawDebugLights = false;
     bool drawWmoBB = false;
     bool drawM2BB = false;
 
@@ -56,6 +75,8 @@ public:
     bool swapMainAndDebug = false;
 
     bool BCLightHack = false;
+
+    bool enableLightBuffer = true;
 
     bool drawDepthBuffer = false;
     int cameraM2 = -1; // this will be sceneNumber of object
@@ -69,16 +90,16 @@ public:
     int minParticle = 0;
     int maxParticle = 9999;
 
-    int threadCount = 4;
-    int quickSortCutoff = 100;
-
-    int currentTime = 0;
+    uint16_t currentTime = 0;
 
     bool useWotlkLogic = false;
 
+    float fov = DEFAULT_FOV_VALUE;
     float nearPlane = 1;
     float farPlane = 1000;
     float farPlaneForCulling = 400;
+
+    float fogDensityIncreaser = 0;
 
     bool disableGlow = false;
 
@@ -87,17 +108,10 @@ public:
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
     EParameterSource globalLighting = EParameterSource::eDatabase;
-    mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorDirectColor = {0.3,0.3,0.3, 0.3};
+    ExteriorColors exteriorColors;
     mathfu::vec3 exteriorDirectColorDir;
 
     float adtSpecMult = 1.0;
-
-    mathfu::vec4 interiorAmbientColor;
-    mathfu::vec4 interiorSunColor;
-    mathfu::vec3 interiorSunDir;
 
     bool useMinimapWaterColor = false;
     bool useCloseRiverColorForDB = false;
@@ -108,31 +122,10 @@ public:
     mathfu::vec4 farOceanColor = {1,1,1,1};
 
     EParameterSource skyParams = EParameterSource::eDatabase;
-    mathfu::vec4 SkyTopColor;
-    mathfu::vec4 SkyMiddleColor;
-    mathfu::vec4 SkyBand1Color;
-    mathfu::vec4 SkyBand2Color;
-    mathfu::vec4 SkySmogColor;
-    mathfu::vec4 SkyFogColor;
+    SkyColors skyColors;
 
     EParameterSource globalFog = EParameterSource::eDatabase;
-    mathfu::vec4 actualFogColor = mathfu::vec4(1,1,1, 1);
-    float FogEnd = 0;
-    float FogScaler = 0;
-    float FogDensity = 0;
-    float FogHeight = 0;
-    float FogHeightScaler = 0;
-    float FogHeightDensity = 0;
-    float SunFogAngle = 0;
-    mathfu::vec3 FogColor = mathfu::vec3(0,0,0);
-    mathfu::vec3 EndFogColor = mathfu::vec3(0,0,0);
-    float EndFogColorDistance = 0;
-    mathfu::vec3 SunFogColor = mathfu::vec3(0,0,0);
-    float SunFogStrength = 0;
-    mathfu::vec3 FogHeightColor = mathfu::vec3(0,0,0);
-    mathfu::vec4 FogHeightCoefficients = mathfu::vec4(0,0,0,0);
-
-    std::string areaName;
+    FogResult fogResult;
 
     int diffuseColorHack = 0;
 
@@ -144,51 +137,46 @@ public:
     double adtFTLWithoutUpdate = 6; //25 frames by default
     EFreeStrategy adtFreeStrategy = EFreeStrategy::eTimeBased;
 
-
-    //Stuff to display in UI
-    double cullingTimePerFrame = 0;
-    double updateTimePerFrame = 0;
-    double mapUpdateTime = 0;
-    double m2UpdateTime = 0;
-    double wmoGroupUpdateTime = 0;
-    double adtUpdateTime = 0;
-    double m2calcDistanceTime = 0;
-    double adtCleanupTime = 0;
-
-    double mapProduceUpdateTime = 0;
-    double interiorViewCollectMeshTime = 0;
-    double exteriorViewCollectMeshTime = 0;
-    double m2CollectMeshTime = 0;
-    double sortMeshTime = 0;
-    double collectBuffersTime = 0;
-    double sortBuffersTime = 0;
-
-    double startUpdateForNexFrame = 0;
-    double singleUpdateCNT = 0;
-    double produceDrawStage = 0;
-    double meshesCollectCNT = 0;
-    double updateBuffersCNT = 0;
-    double updateBuffersDeviceCNT = 0;
-    double postLoadCNT = 0;
-    double textureUploadCNT = 0;
-    double drawStageAndDepsCNT = 0;
-    double endUpdateCNT = 0;
-
-    double cullCreateVarsCounter = 0;
-    double cullGetCurrentWMOCounter = 0;
-    double cullGetCurrentZoneCounter = 0;
-    double cullUpdateLightsFromDBCounter = 0;
-    double cullExterior = 0;
-    double cullExteriorSetDecl = 0;
-    double cullExteriorWDLCull = 0;
-    double cullExteriorGetCands = 0;
-    double cullExterioFrustumWMO = 0;
-    double cullExterioFrustumM2 = 0;
-    double cullSkyDoms = 0;
-    double cullCombineAllObjects = 0;
-
     HRiverColorOverrideHolder colorOverrideHolder = nullptr;
+private:
+    int m_hardwareThreadCount;
 };
+
+//ADT STUFF FOR MAP GENERATION
+typedef std::array<int,2> AdtCell;
+
+struct AdtCellCompare
+{
+    bool operator()(const AdtCell &a, const AdtCell &b) const {
+        return a[0] == b[0] && a[1] == b[1];
+    }
+};
+
+struct AdtCellHasher {
+    std::size_t operator()(const AdtCell &k) const {
+        using std::hash;
+        return hash<int>{}(k[0]) ^ (hash<int>{}(k[1]) << 16);
+    };
+};
+
+struct ADTRenderConfigData {
+    ADTRenderConfigData() {
+        std::array<mathfu::vec3, 64> defaultMax = {};
+        std::array<mathfu::vec3, 64> defaultMin = {};
+        defaultMax.fill({-200000, -200000, -200000});
+        defaultMin.fill({200000, 200000, 200000});
+
+        adtMax.fill(defaultMax);
+        adtMin.fill(defaultMin);
+    }
+    std::array<std::array<mathfu::vec3, 64>, 64> adtMin;
+    std::array<std::array<mathfu::vec3, 64>, 64> adtMax;
+    std::unordered_set<AdtCell, AdtCellHasher, AdtCellCompare> excludedADTs;
+    std::unordered_map<AdtCell, std::unordered_set<AdtCell, AdtCellHasher, AdtCellCompare>, AdtCellHasher> excludedChunksPerADTs;
+};
+
+typedef std::shared_ptr<ADTRenderConfigData> HADTRenderConfigDataHolder;
+
 
 
 #endif //WOWVIEWERLIB_CONFIG_H

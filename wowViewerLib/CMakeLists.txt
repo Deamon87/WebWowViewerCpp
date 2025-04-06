@@ -1,19 +1,26 @@
 cmake_minimum_required(VERSION 3.6)
 project(WoWViewerLib)
+set(CMAKE_CXX_STANDARD 17)
 
 include(CheckCXXCompilerFlag)
 
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 set(LINK_GLEW 1)
-set(LINK_OGL2 1)
-set(LINK_OGL3 1)
+set(LINK_OGL2 0)
+set(LINK_OGL3 0)
 set(LINK_OGL4 0)
 set(LINK_EGL 1 PARENT_SCOPE)
 set(LINK_EGL 1)
 option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
+set(LINK_TRACY 1)
+set(COMPILE_SHADER_WITH_DEBUG 0)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(COMPILE_SHADER_WITH_DEBUG 1)
+endif ()
+
 option(EMSCRIPTEN_SIMD "Enable SIMD for Emscripten " OFF)
 
 
@@ -81,12 +88,6 @@ if (EMSCRIPTEN)
 endif ()
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/oneTbb EXCLUDE_FROM_ALL)
 
-option(BUILD_WITHOUT_CULLED_PORTAL_DRAWING "Build without drawing culled portals" ON)
-
-if (BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
-    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DCULLED_NO_PORTAL_DRAWING")
-endif(BUILD_WITHOUT_CULLED_PORTAL_DRAWING MATCHES ON)
-
 #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDODEBUGTHREADS" )
 #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -DDODEBUGTHREADS")
  
@@ -100,7 +101,9 @@ if (EMSCRIPTEN)
 else()
     set(My_Vectorize_Compile_Options "${My_Vectorize_Compile_Options};-msse3;-mavx2;-ftree-vectorize")
 
-    if (NOT MSVC)
+    message(MSVC = "${MSVC}")
+    message(MSVC_VERSION = "${MSVC_VERSION}")
+    if (NOT DEFINED MSVC AND NOT DEFINED MSVC_VERSION)
         set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -Wno-multichar")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wno-multichar")
 
@@ -124,6 +127,20 @@ set(mathfu_build_tests OFF CACHE BOOL "")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/3rdparty/mathfu EXCLUDE_FROM_ALL)
+
+# ---------------------
+# Tracy integration
+# ---------------------
+
+if (LINK_TRACY)
+    option( TRACY_ENABLE "" ON)
+    option( TRACY_ON_DEMAND "" ON)
+    add_subdirectory (${PROJECT_SOURCE_DIR}/3rdparty/tracy EXCLUDE_FROM_ALL)
+
+    add_definitions(-DTRACY_ENABLE)
+    set(TRACY_INCLUDE_DIR "${PROJECT_SOURCE_DIR}/3rdparty/tracy/public/tracy")
+endif()
+
 
 message(CMAKE_SYSTEM_NAME = ${CMAKE_SYSTEM_NAME})
 string(TOUPPER ${CMAKE_SYSTEM_NAME} CMAKE_SYSTEM_NAME_LOWERCASE)
@@ -158,6 +175,11 @@ endif(LINK_GLEW)
 
 
 set(SOURCE_FILES
+        src/persistence/RequestProcessor.cpp
+		src/persistence/RequestProcessor.h
+        3rdparty/OffsetAllocator/offsetAllocator.cpp
+        3rdparty/OffsetAllocator/offsetAllocator.hpp
+        src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.cpp
         src/engine/shader/ShaderRuntimeData.h
         src/engine/opengl/header.h
@@ -260,11 +282,8 @@ set(SOURCE_FILES
         src/engine/persistance/m2File.cpp
         src/engine/persistance/m2File.h
         src/gapi/interface/IDevice.cpp
-        src/gapi/interface/textures/IBlpTexture.h
         src/gapi/interface/textures/ITexture.h
-        src/gapi/interface/buffers/IIndexBuffer.h
-        src/gapi/interface/buffers/IUniformBuffer.h
-        src/gapi/interface/buffers/IVertexBuffer.h
+        src/gapi/interface/buffers/IBuffer.h
         src/gapi/interface/IOcclusionQuery.h
         src/gapi/interface/IShaderPermutation.h
         src/gapi/interface/IVertexBufferBindings.h
@@ -285,18 +304,13 @@ set(SOURCE_FILES
         src/engine/objects/ViewsObjects.cpp
         src/engine/objects/ViewsObjects.h
         src/gapi/interface/sortLambda.h
-        src/gapi/interface/buffers/IUniformBufferChunk.h
+        src/gapi/interface/buffers/IBufferChunk.h
         src/engine/WowFilesCacheStorage.h
         src/engine/WowFilesCacheStorage.cpp
         src/engine/algorithms/quick-sort-omp.h
         src/include/databaseHandler.h
         src/engine/persistance/PersistentFile.h
-        src/engine/SceneComposer.cpp
-        src/engine/SceneComposer.h
-        src/engine/SceneScenario.h
         src/gapi/interface/IFrameBuffer.h
-        src/engine/SceneScenario.cpp
-        src/engine/DrawStage.h
         src/include/iostuff.h
         src/engine/ApiContainer.cpp
         src/engine/ApiContainer.h
@@ -320,7 +334,56 @@ set(SOURCE_FILES
         src/engine/algorithms/mathHelper_culling_sse.cpp
         src/engine/algorithms/mathHelper_culling_sse.h
         src/engine/algorithms/mathHelper_culling.cpp
-        src/engine/algorithms/mathHelper_culling.h)
+        src/engine/algorithms/mathHelper_culling.h
+        src/renderer/frame/SceneScenario.cpp
+        src/renderer/frame/SceneComposer.cpp
+        src/renderer/frame/SceneComposer.h
+        src/renderer/frame/SceneScenario.h
+        src/renderer/mapScene/MapSceneRenderer.cpp
+        src/renderer/mapScene/MapSceneRenderer.h
+        src/renderer/mapScene/MapSceneRendererFactory.cpp
+        src/renderer/mapScene/MapSceneRendererFactory.h
+        src/renderer/IRenderer.h
+        src/renderer/IRenderParameters.h
+        src/renderer/frame/FrameInputParams.h
+        src/renderer/mapScene/FrameDependentData.h
+        src/renderer/buffers/IVertexBufferDynamicTemplate.cpp
+        src/renderer/buffers/IVertexBufferDynamicTemplate.h
+        src/gapi/interface/IRendererProxy.h src/gapi/interface/meshes/ISortableMesh.h
+        src/renderer/mapScene/IMapSceneBufferCreate.h
+        src/gapi/interface/materials/IMaterial.h
+        src/renderer/mapScene/MapSceneParams.h
+        src/include/custom_container_key.h
+        src/renderer/mapScene/materials/IMaterialStructs.h
+        src/gapi/interface/textures/ITextureSampler.h
+        src/gapi/interface/textures/ISamplableTexture.h
+        src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.cpp
+        src/renderer/frame/prodConsumerChain/ProdConsumerIOConnector.h
+        src/engine/objects/liquid/LiquidInstance.cpp
+        src/engine/objects/liquid/LiquidInstance.h
+        src/engine/objects/liquid/LiquidDataGetters.h
+        src/renderer/frame/FrameProfile.h src/gapi/interface/buffers/IBufferVersioned.h
+        src/renderer/mapScene/materials/BindlessTexture.h
+        src/engine/objects/scenes/EntityActorsFactory.cpp
+        src/engine/objects/scenes/EntityActorsFactory.cpp
+        src/engine/objects/scenes/EntityActorsFactory.h
+        3rdparty/arena-allocator/arena_alloc.cc
+        src/engine/objects/SceneObjectWithID.h
+        src/engine/custom_allocators/FrameBasedStackAllocator.cpp
+        src/engine/custom_allocators/FrameBasedStackAllocator.h
+        src/engine/objects/wdt/wdtLightsObject.cpp
+        src/engine/objects/wdt/wdtLightsObject.h
+        src/engine/persistance/wdtLightFile.cpp
+        src/engine/persistance/wdtLightFile.h
+        src/engine/objects/lights/CPointLight.cpp
+        src/engine/objects/lights/CPointLight.h
+        src/engine/objects/lights/CSpotLight.cpp
+        src/engine/objects/lights/CSpotLight.h
+        src/engine/objects/lights/CWmoNewLight.cpp
+        src/engine/objects/lights/CWmoNewLight.h
+        src/engine/objects/scenes/dayNightDataHolder/DayNightLightHolder.cpp
+        src/engine/objects/scenes/dayNightDataHolder/DayNightLightHolder.h
+)
 
 if (LINK_OGL2)
     set(OPENGL20_IMPLEMENTATION
@@ -362,6 +425,7 @@ if (LINK_OGL2)
         src/gapi/ogl2.0/GOcclusionQueryGL20.h)
 endif()
 
+if (LINK_OGL3)
 set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/textures/GBlpTextureGL33.cpp
         src/gapi/ogl3.3/textures/GBlpTextureGL33.h
@@ -411,6 +475,7 @@ set(OPENGL33_IMPLEMENTATION
         src/gapi/ogl3.3/shaders/GWaterShaderGL33.h
         src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.cpp
         src/gapi/ogl3.3/shaders/GWaterfallShaderGL33.h)
+endif()
 
 if (LINK_OGL4)
 set(OPENGL4x_IMPLEMENTATION    src/gapi/ogl4.x/textures/GBlpTextureGL4x.cpp
@@ -457,48 +522,105 @@ if (LINK_VULKAN)
             src/gapi/vulkan/vkAllocator.cpp
             src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
             src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GAdtShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GM2ShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GM2ParticleShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GM2RibbonShaderPermutationVLK.cpp
-            src/gapi/vulkan/shaders/GWMOShaderPermutationVLK.cpp
             src/gapi/vulkan/meshes/GM2MeshVLK.cpp
             src/gapi/vulkan/meshes/GMeshVLK.cpp
             src/gapi/vulkan/textures/GTextureVLK.cpp
             src/gapi/vulkan/textures/GBlpTextureVLK.cpp
-            src/gapi/vulkan/buffers/GUniformBufferVLK.cpp
-            src/gapi/vulkan/buffers/GVertexBufferDynamicVLK.cpp
-            src/gapi/vulkan/buffers/GVertexBufferVLK.cpp
-            src/gapi/vulkan/buffers/GIndexBufferVLK.cpp
-            src/gapi/vulkan/GPipelineVLK.cpp src/gapi/vulkan/GPipelineVLK.h
+            src/gapi/vulkan/pipeline/GPipelineVLK.cpp
+            src/gapi/vulkan/pipeline/GPipelineVLK.h
+            src/gapi/vulkan/pipeline/GPipelineLayoutVLK.cpp
+            src/gapi/vulkan/pipeline/GPipelineLayoutVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorPoolVLK.h
             src/gapi/vulkan/descriptorSets/GDescriptorSet.cpp
             src/gapi/vulkan/descriptorSets/GDescriptorSet.h
-            src/gapi/vulkan/shaders/GImguiShaderPermutation.cpp
-            src/gapi/vulkan/shaders/GImguiShaderPermutation.h
-            src/gapi/vulkan/shaders/GWaterShaderPermutation.cpp
-            src/gapi/vulkan/shaders/GWaterShaderPermutation.h
-            src/gapi/vulkan/shaders/GSkyConusShaderVLK.cpp
-            src/gapi/vulkan/shaders/GSkyConusShaderVLK.h
             src/gapi/vulkan/GFrameBufferVLK.cpp
             src/gapi/vulkan/GFrameBufferVLK.h
-            src/gapi/vulkan/shaders/GFFXgauss4VLK.cpp
-            src/gapi/vulkan/shaders/GFFXgauss4VLK.h
-            src/gapi/vulkan/shaders/GFFXGlowVLK.cpp
-            src/gapi/vulkan/shaders/GFFXGlowVLK.h
             src/gapi/vulkan/GRenderPassVLK.cpp
             src/gapi/vulkan/GRenderPassVLK.h
-            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.cpp
-            src/gapi/vulkan/shaders/GDrawBoundingBoxVLK.h
-            src/gapi/vulkan/shaders/GWaterfallShaderVLK.cpp
-            src/gapi/vulkan/shaders/GWaterfallShaderVLK.h)
+            src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.cpp
+            src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderBindlessVLK.cpp
+            src/renderer/mapScene/vulkan/MapSceneRenderBindlessVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderBindlessDeferredVLK.cpp
+            src/renderer/mapScene/vulkan/MapSceneRenderBindlessDeferredVLK.h
+            src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.h
+            src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.cpp
+            src/gapi/vulkan/buffers/GBufferVLK.cpp
+            src/gapi/vulkan/buffers/GBufferVLK.h
+            src/gapi/vulkan/buffers/IBufferVLK.h
+            src/gapi/vulkan/materials/ISimpleMaterialVLK.cpp
+            src/gapi/vulkan/materials/ISimpleMaterialVLK.h
+            src/gapi/vulkan/buffers/CBufferChunkVLK.cpp
+            src/gapi/vulkan/buffers/CBufferChunkVLK.h
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h
+            src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.cpp
+            src/gapi/vulkan/descriptorSets/GDescriptorSetLayout.h
+            src/gapi/vulkan/commandBuffer/CommandBuffer.cpp
+            src/gapi/vulkan/commandBuffer/CommandBuffer.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.cpp
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.cpp
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/RenderPassHelper.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.cpp
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/TextureUploadHelper.h
+            src/gapi/vulkan/IDeviceVulkan.h
+            src/gapi/vulkan/synchronization/GSemaphoreVLK.cpp
+            src/gapi/vulkan/synchronization/GSemaphoreVLK.h
+            src/gapi/vulkan/synchronization/GFenceVLK.cpp
+            src/gapi/vulkan/synchronization/GFenceVLK.h
+            src/renderer/vulkan/IRenderFunctionVLK.h
+            src/gapi/vulkan/descriptorSets/DescriptorRecord.h
+            src/gapi/vulkan/materials/MaterialBuilderVLK.cpp
+            src/gapi/vulkan/materials/MaterialBuilderVLK.h
+            src/gapi/vulkan/TextureManagerVLK.cpp
+            src/gapi/vulkan/TextureManagerVLK.h
+            src/gapi/vulkan/utils/MutexLockedVector.h
+            src/gapi/vulkan/descriptorSets/DescriptorResourceCallBack.h
+            src/gapi/vulkan/bindable/DSBindable.h
+            src/renderer/mapScene/vulkan/materials/IMaterialInstance.h
+            src/gapi/vulkan/meshes/GSortableMeshVLK.cpp
+            src/gapi/vulkan/meshes/GSortableMeshVLK.h
+            src/gapi/vulkan/textures/GTextureSamplerVLK.cpp
+            src/gapi/vulkan/textures/GTextureSamplerVLK.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.cpp
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferDebugLabel.h
+            src/gapi/vulkan/context/vulkan_context.h
+            src/gapi/vulkan/shaders/ShaderConfig.h
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.cpp
+            src/gapi/vulkan/buffers/GBufferChunkDynamicVLK.h
+            src/gapi/vulkan/GDescriptorSetUpdater.cpp
+            src/gapi/vulkan/GDescriptorSetUpdater.h
+            src/gapi/vulkan/commandBuffer/CommandBufferThread.cpp
+            src/gapi/vulkan/commandBuffer/CommandBufferThread.h
+            src/gapi/vulkan/buffers/GStagingRingBuffer.cpp
+            src/gapi/vulkan/buffers/GStagingRingBuffer.h
+            src/gapi/vulkan/buffers/gpu/BufferStagingVLK.cpp
+            src/gapi/vulkan/buffers/gpu/BufferStagingVLK.h
+            src/gapi/vulkan/buffers/gpu/BufferGpuVLK.cpp
+            src/gapi/vulkan/buffers/gpu/BufferGpuVLK.h
+            src/gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h
+            src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.cpp
+            src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.h
+            src/renderer/mapScene/vulkan/view/RenderViewDeferredVLK.cpp
+            src/renderer/mapScene/vulkan/view/RenderViewDeferredVLK.h
+            src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.cpp
+            src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h
+)
 
-
+    message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
+    message(Vulkan_LIBRARY = ${Vulkan_LIBRARY})
+    message(Vulkan_DIR = ${Vulkan_DIR})
     IF (Vulkan_LIBRARY)
         set(Vulkan_FOUND ON PARENT_SCOPE)
         MESSAGE("Using Vulkan library, Vulkan_LIBRARY= ${Vulkan_LIBRARY}")
+        if (NOT SPIRV_OPT_APP AND Vulkan_INCLUDE_DIR)
+            set(SPIRV_OPT_APP ${Vulkan_INCLUDE_DIR}/../bin/spirv-opt)
+        endif()
+        if (NOT SLANG_COMPILER AND Vulkan_INCLUDE_DIR)
+            set(SLANG_COMPILER ${Vulkan_INCLUDE_DIR}/../bin/slangc)
+        endif()
     ELSE()
         MESSAGE("Vulkan Lib was not found. Disabling vulkan build")
 
@@ -516,9 +638,9 @@ if (LINK_VULKAN)
         get_filename_component(Vulkan_LIBRARY_DIR ${Vulkan_LIBRARY} DIRECTORY)
         message(Vulkan_LIBRARY_DIR = ${Vulkan_LIBRARY_DIR})
 
-#        IF(WIN32)
-#            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
-#        endif()
+        #        IF(WIN32)
+        #            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVK_USE_PLATFORM_WIN32_KHR")
+        #        endif()
 
         if(CMAKE_SYSTEM_NAME STREQUAL Windows)
             set(VOLK_STATIC_DEFINES VK_USE_PLATFORM_WIN32_KHR)
@@ -531,10 +653,11 @@ if (LINK_VULKAN)
 
             install(FILES ${Vulkan_LIBRARY} DESTINATION ${CMAKE_INSTALL_BINDIR})
             #TODO: The moltenVK needs to be built separately
-#            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
+            #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c
+                src/renderer/mapScene/vulkan/view/IRenderViewVLK.h)
     endif()
 
 
@@ -545,6 +668,10 @@ if (LINK_VULKAN)
     endif()
 endif()
 
+if(MSVC)
+  set(CMAKE_EXE_LINKER_FLAGS
+      "${CMAKE_EXE_LINKER_FLAGS} /NODEFAULTLIB:LIBCMTD /NODEFAULTLIB:LIBCPMT")
+endif()
 if (NOT MSVC)
     check_cxx_compiler_flag(-std=c++17 HAVE_FLAG_STD_CXX17)
     if(HAVE_FLAG_STD_CXX17)
@@ -566,6 +693,13 @@ if (NOT MSVC)
         endif()
     endif()
 endif()
+
+
+
+add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
+if (NOT MSVC)
+    target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
+endif()
 if (MSVC)
     include(CheckCXXCompilerFlag)
     CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
@@ -576,24 +710,30 @@ if (MSVC)
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
         set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
-        #target_compile_options(AWebWoWViewerCpp /std:c++17)
+        target_compile_options(WoWViewerLib PRIVATE "/std:c++latest")
     endif()
 endif()
 
-
-add_library(WoWViewerLib STATIC ${SOURCE_FILES} ${OPENGL20_IMPLEMENTATION} ${OPENGL33_IMPLEMENTATION} ${OPENGL4x_IMPLEMENTATION} ${VULKAN_IMPLEMENTATION})
-if (NOT MSVC)
-    target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
-endif()
 if (LINK_VULKAN)
     target_compile_definitions(WoWViewerLib PUBLIC ${VOLK_STATIC_DEFINES})
+endif()
+
+if (LINK_TRACY)
+    target_compile_definitions(WoWViewerLib PUBLIC -DLINK_TRACY)
+    target_include_directories(WoWViewerLib PUBLIC ${TRACY_INCLUDE_DIR})
+    target_link_libraries (WoWViewerLib Tracy::TracyClient )
 endif()
 
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
 endforeach()
-target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
-set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+if (NOT MSVC)
+    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
+    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+else()
+    target_compile_features(WoWViewerLib PRIVATE cxx_std_20)
+#    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+endif()
 
 if (LINK_OPENMP)
     if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
@@ -609,6 +749,7 @@ endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
 target_link_libraries(WoWViewerLib TBB::tbb )
+target_link_libraries(WoWViewerLib TBB::tbbmalloc )
 if (UNIX AND NOT EMSCRIPTEN)
 target_link_libraries(WoWViewerLib Threads::Threads)
 endif()
@@ -647,6 +788,10 @@ if (1)
     add_subdirectory(shaders)
 
     add_dependencies(WoWViewerLib SPIRV_EXTRACT_META)
+    add_dependencies(WoWViewerLib SPIRV_BUILD_SHADERS)
+    message("SPIRV_META_DIR (include) = ${SPIRV_META_DIR}")
+    target_include_directories(WoWViewerLib PUBLIC ${SPIRV_META_DIR})
+
     if (LINK_OGL2)
         add_dependencies(WoWViewerLib ShadersGLSL20)
     endif()

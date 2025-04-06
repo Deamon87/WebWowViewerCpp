@@ -1,22 +1,42 @@
 //
 // Created by deamon on 05.06.18.
 //
-
+#include <sstream> //for std::stringstream
 #include "GBlpTextureVLK.h"
 #include "../../../engine/persistance/helper/ChunkFileReader.h"
 #include "../../../engine/texture/DxtDecompress.h"
 
-GBlpTextureVLK::GBlpTextureVLK(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex)
-    : GTextureVLK(device,xWrapTex,yWrapTex), m_texture(texture) {
+inline static std::string addrToStr(void *addr) {
+    std::stringstream ss;
+    ss << (void *)addr;
+    return ss.str();
+}
+
+std::atomic<int> blpTexturesVulkanLoaded = 0;
+std::atomic<int> blpTexturesVulkanSizeLoaded = 0;
+
+GBlpTextureVLK::GBlpTextureVLK(IDeviceVulkan &device,
+                               const HBlpTexture &texture,
+                               const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback)
+    : GTextureVLK(device, onUpdateCallback), m_texture(texture) {
+
+    std::string blpAddress_str = addrToStr(texture.get());
+    std::string selfAddr_str = addrToStr(this);
+
+    m_debugName = "Texture FDID " + texture->getTextureName() + " blp ptr: "+ blpAddress_str + " self ptr :" + selfAddr_str ;
 }
 
 GBlpTextureVLK::~GBlpTextureVLK() {
-//    std::cout << "error!" << std::endl;
+//    std::cout << "destroyed blp text!" << std::endl;
+    if (m_loaded && m_uploaded && m_texture && m_texture->getStatus() == FileStatus::FSLoaded) {
+        blpTexturesVulkanLoaded.fetch_add(-1);
+        blpTexturesVulkanSizeLoaded.fetch_add(-m_texture->getFileSize());
+    }
 }
 
 
 static int texturesUploaded = 0;
-void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
+void GBlpTextureVLK::createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     VkFormat textureFormatGPU;
@@ -41,6 +61,9 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmaps
         case TextureFormat::RGBA:
             textureFormatGPU = VK_FORMAT_R8G8B8A8_UNORM;
             break;
+        case TextureFormat::BC5_UNORM:
+            textureFormatGPU = VK_FORMAT_BC5_UNORM_BLOCK;
+            break;
 
         default:
             debuglog("Unknown texture format found in file: ")
@@ -51,8 +74,8 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmaps
     auto &mipmaps = *hmipmaps;
 
     /* S3TC is not supported on mobile platforms */
-    bool compressedTextSupported = m_device.getIsCompressedTexturesSupported();
-    if (!compressedTextSupported && textureFormat !=  TextureFormat::BGRA) {
+    bool compressedTextSupported = m_device.getIsBCCompressedTexturesSupported();
+    if (!compressedTextSupported && textureFormat != TextureFormat::BGRA) {
         this->decompressAndUpload(textureFormat, hmipmaps);
         return;
     }
@@ -67,29 +90,24 @@ void GBlpTextureVLK::createGlTexture(TextureFormat textureFormat, const HMipmaps
         std::copy(&mipmaps[i].texture[0], &mipmaps[i].texture[0]+mipmaps[i].texture.size(), std::back_inserter(unitedBuffer));
     }
 
-    createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
+    GTextureVLK::createTexture(hmipmaps, textureFormatGPU, unitedBuffer);
 }
 
-//bool GBlpTextureVLK::getIsLoaded() {
-//    return m_loaded;
-//}
-
-bool GBlpTextureVLK::postLoad() {
-    if (m_loaded) return false;
+TextureStatus GBlpTextureVLK::postLoad() {
+    if (m_loaded) return TextureStatus::TSLoaded;
     if (!m_uploaded) {
-        if (m_texture == nullptr) return false;
-        if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
-    }
+        if (m_texture == nullptr) return TextureStatus::TSNotLoaded;
+        if (m_texture->getStatus() != FileStatus::FSLoaded) return TextureStatus::TSNotLoaded;
+        blpTexturesVulkanLoaded.fetch_add(1);
+        blpTexturesVulkanSizeLoaded.fetch_add(m_texture->getFileSize());
 
-    if (m_uploaded) {
-        return GTextureVLK::postLoad();
-    } else {
-        this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+        this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
 //        m_texture = nullptr;
-        return false;
+        return TextureStatus::TSHasUpdates;
+    } else {
+        return GTextureVLK::postLoad();
     }
 }
-
 
 void GBlpTextureVLK::decompressAndUpload(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 

@@ -8,6 +8,7 @@
 class AdtObject;
 class M2Object;
 class WmoObject;
+class WmoGroupGeom;
 class AnimationManager;
 struct M2SkinProfile;
 

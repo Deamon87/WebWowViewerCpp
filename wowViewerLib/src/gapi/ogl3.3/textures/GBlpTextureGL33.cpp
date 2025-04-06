@@ -43,7 +43,7 @@ void GBlpTextureGL33::unbind() {
 }
 
 static int texturesUploaded = 0;
-void GBlpTextureGL33::createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
+void GBlpTextureGL33::createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) {
 //    std::cout << "texturesUploaded = " << texturesUploaded++ << " " << this->m_texture->getTextureName() <<std::endl;
 
     GLuint textureGPUFormat = 0;
@@ -226,7 +226,7 @@ bool GBlpTextureGL33::postLoad() {
     if (m_texture->getStatus() != FileStatus::FSLoaded) return false;
 
     m_device->bindTexture(this, 0);
-    this->createGlTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
+    this->createTexture(m_texture->getTextureFormat(), m_texture->getMipmapsVector());
     m_device->bindTexture(nullptr, 0);
 
 //    m_texture = nullptr;

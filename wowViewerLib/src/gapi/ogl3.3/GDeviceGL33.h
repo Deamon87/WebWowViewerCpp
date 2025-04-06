@@ -62,6 +62,8 @@ public:
     GDeviceGL33();
     ~GDeviceGL33() override {};
 
+    GDeviceType getDeviceType() override {return GDeviceType::GOpenGL3; };
+
     void initialize() override;
     void reset() override;
 
@@ -86,7 +88,7 @@ public:
 
     void bindProgram(IShaderPermutation *program) override;
 
-    void bindIndexBuffer(IIndexBuffer *buffer) override;
+    void bindIndexBuffer(IBuffer *buffer) override;
     void bindVertexBuffer(IVertexBuffer *buffer) override;
     void bindUniformBuffer(IUniformBuffer *buffer, int slot, int offset, int length) override;
 
@@ -94,7 +96,7 @@ public:
 
     void bindTexture(ITexture *texture, int slot) override;
 
-    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDepedantData> &frameDepedantDataVec) override;
+    void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantDataVec) override;
     void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     void drawMeshes(std::vector<HGMesh> &meshes) override;
     void drawStageAndDeps(HDrawStage drawStage) override;
@@ -147,7 +149,7 @@ public:
 
     void addDeallocationRecord(std::function<void()> callback) override {
         DeallocationRecord dr;
-        dr.frameNumberToDoAt = m_frameNumber+4;
+        dr.frameNumberToDoAt = m_frameNumber+MAX_FRAMES_IN_FLIGHT;
         dr.callback = callback;
         listOfDeallocators.push_back(dr);
     };
@@ -258,7 +260,7 @@ protected:
 
     std::vector<FramebufAvalabilityStruct> m_createdFrameBuffers;
 
-    std::array<FrameUniformBuffers, 4> m_UBOFrames = {};
+    std::array<FrameUniformBuffers, MAX_FRAMES_IN_FLIGHT> m_UBOFrames = {};
 
     std::vector<char> aggregationBufferForUpload;
 

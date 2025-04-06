@@ -20,6 +20,8 @@ private:
     int m_cameraNum = -1;
 
     M2CameraResult m_lastCameraResult;
+    mathfu::vec4 lastCameraPos = mathfu::vec4(0,0,0,1.0);
+    mathfu::vec4 lastCameraDir = mathfu::vec4(0,0,0,1.0);
 public:
     void startMovingForward() override {};
     void stopMovingForward() override {};
@@ -33,6 +35,7 @@ public:
     void stopMovingUp() override {};
     void startMovingDown() override {};
     void stopMovingDown() override {};
+    void stopAllMovement() override {};
 
     void addForwardDiff(float val) override {};
 
@@ -53,12 +56,9 @@ public:
                                               float farPlane) override;
 
     void tick(animTime_t timeDelta) override ;
+    float getMovementSpeed() override {return 0.0f;} ;
     void setMovementSpeed(float value) override {};
     void setCameraOffset(float x, float y, float z) override {};
-
-    bool isCompatibleWithInfiniteZ() override {
-        return false;
-    }
 
     void setCameraLookAt(float x, float y, float z) override {};
 

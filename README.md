@@ -41,9 +41,6 @@ Otherwise, you can look at the github actions script in `.github/workflows/` fol
 - Open Map Selection dialog (File -> Open Map Selection)
 - Select a map and adjust the zoom to find the point on minimap. Select a point and click GO
 
-As an option, after v0.1.5, you can start app with "-vulkan" option from command line, which will switch from OpenGL renderer to Vulkan.
-Vulkan renderer is far from perfect, but it even now shows more performance compared to OGL
-
 Happy exploring :)
 
 [releases]:https://github.com/Deamon87/WebWowViewerCpp/releases/

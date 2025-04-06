@@ -5,6 +5,9 @@
 #ifndef AWEBWOWVIEWERCPP_GROUPPANEL_H
 #define AWEBWOWVIEWERCPP_GROUPPANEL_H
 
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS 1
+#endif
 #include <imgui.h>
 
 namespace ImGui {

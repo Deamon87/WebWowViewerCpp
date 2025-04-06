@@ -43,11 +43,11 @@ static DWORD GetLocaleValue_Copy(const std::string &szTag)
     return 0;
 }
 
-CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &buildDef) {
+CascRequestProcessor::CascRequestProcessor(const std::string &path, const BuildDefinition &buildDef) {
 
     m_cascDir = path;
     if (!buildDef.productName.empty()) {
-        path = path + "*"+buildDef.productName+"**"+buildDef.region;
+        m_cascDir = path + "*"+buildDef.productName+"**"+buildDef.region;
     }
 
     uint32_t localMask = 0xFFFFFFFF;
@@ -59,11 +59,12 @@ CascRequestProcessor::CascRequestProcessor(std::string &path, BuildDefinition &b
 
     bool openResult = false;
     bool openOnlineResult = false;
-    openResult = CascOpenStorage(path.c_str(), localMask, &this->m_storage);
+    openResult = CascOpenStorage(m_cascDir.c_str(), localMask, &this->m_storage);
     if (openResult) {
-        std::cout << "Opened local Casc Storage at "<< path << std::endl;
+        std::cout << "Opened local Casc Storage at "<< m_cascDir << std::endl;
+        updateKeys();
     } else {
-        std::cout << "Could not open local Casc Storage at "<< path << std::endl;
+        std::cout << "Could not open local Casc Storage at "<< m_cascDir << std::endl;
     }
 
     //Disable online feature for now
@@ -164,8 +165,7 @@ HFileContent CascRequestProcessor::tryGetFileFromOverrides(int fileDataId) {
     return nullptr;
 }
 
-
-void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+void CascRequestProcessor::processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) {
     auto perstFile = s_file.lock();
     uint32_t fileDataId = 0;
     if (fileName.find("File") == 0) {
@@ -182,45 +182,7 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
         return;
     }
 
-    std::string fileNameFixed = fileName;
-    std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
-
-    void *fileNameToPass = (void *) fileNameFixed.c_str();
-    DWORD openFlags = CASC_OPEN_BY_NAME;
-    if (fileNameFixed.find("File") == 0) {
-        if (fileDataId == 0) {
-            return;
-        }
-
-        fileNameToPass = reinterpret_cast<void *>(fileDataId);
-        openFlags = CASC_OPEN_BY_FILEID;
-    }
-
-    openFlags |= CASC_OVERCOME_ENCRYPTED;
-
-    HFileContent fileContent;
-
-    fileContent = this->tryGetFileFromOverrides(fileDataId);
-    if (this->m_storage != nullptr && fileContent == nullptr) {
-        fileContent = this->tryGetFile(this->m_storage, fileNameToPass, openFlags);
-        if (fileContent == nullptr) {
-            if (fileDataId > 0) {
-                std::cout << "Could read fileDataId " << fileDataId << " from local " << std::endl << std::flush;
-            } else {
-                std::cout << "Could read file " << fileName << " from local " << std::endl << std::flush;
-            }
-        }
-    }
-    if (this->m_storageOnline != nullptr && fileContent == nullptr) {
-        fileContent = this->tryGetFile(this->m_storageOnline, fileNameToPass, openFlags);
-        if (fileContent == nullptr) {
-            if (fileDataId > 0) {
-                std::cout << "Could read fileDataId " << fileDataId << " from online " << std::endl << std::flush;
-            } else {
-                std::cout << "Could read file " << fileName << " from online " << std::endl << std::flush;
-            }
-        }
-    }
+    HFileContent fileContent = readFileContent(fileName, fileDataId);
 
     if (!(fileContent == nullptr)) {
         toBeProcessed--;
@@ -232,7 +194,72 @@ void CascRequestProcessor::processFileRequest(std::string &fileName, CacheHolder
             std::cout << "Could read file " << fileName << std::endl << std::flush;
         }
         toBeProcessed--;
-        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
+        perstFile->setRejected();
+//        this->m_fileRequester->rejectFile(holderType, fileName.c_str());
+    }
+}
+
+HFileContent CascRequestProcessor::readFileContent(const std::string &fileName, uint32_t fileDataId) {
+    std::string fileNameFixed = fileName;
+    std::replace( fileNameFixed.begin(), fileNameFixed.end(), '/', '\\');
+
+    void *fileNameToPass = (void *) fileNameFixed.c_str();
+    DWORD openFlags = CASC_OPEN_BY_NAME;
+    if (fileDataId > 0) {
+        fileNameToPass = reinterpret_cast<void *>(fileDataId);
+        openFlags = CASC_OPEN_BY_FILEID;
+    }
+
+    openFlags |= CASC_OVERCOME_ENCRYPTED;
+
+    HFileContent fileContent = nullptr;
+
+    fileContent = tryGetFileFromOverrides(fileDataId);
+    if (m_storage != nullptr && fileContent == nullptr) {
+        fileContent = tryGetFile(m_storage, fileNameToPass, openFlags);
+        if (fileContent == nullptr) {
+            if (fileDataId > 0) {
+                std::cout << "Could not read fileDataId " << fileDataId << " from local " << std::endl << std::flush;
+            } else {
+                std::cout << "Could not read file " << fileName << " from local " << std::endl << std::flush;
+            }
+        }
+    }
+    if (m_storageOnline != nullptr && fileContent == nullptr) {
+        fileContent = tryGetFile(m_storageOnline, fileNameToPass, openFlags);
+        if (fileContent == nullptr) {
+            if (fileDataId > 0) {
+                std::cout << "Could read fileDataId " << fileDataId << " from online " << std::endl << std::flush;
+            } else {
+                std::cout << "Could read file " << fileName << " from online " << std::endl << std::flush;
+            }
+        }
+    }
+    return fileContent;
+}
+
+void CascRequestProcessor::iterateFilesInternal(
+    std::function<bool (int fileDataId, const std::string &fileName)> &process,
+    std::function<void (int fileDataId, const HFileContent &fileData)> &callback) {
+
+    CASC_FIND_DATA findData;
+    auto searchHandle = CascFindFirstFile(m_storage, nullptr, &findData, nullptr);
+    if (searchHandle != INVALID_HANDLE_VALUE ) {
+        do {
+            if (findData.dwFileDataId == CASC_INVALID_ID) continue;
+            if (findData.dwContentFlags == CASC_INVALID_ID) continue;
+
+            if (!process(findData.dwFileDataId, findData.szFileName)) continue;
+
+            if (findData.bFileAvailable) {
+                auto fileContent = readFileContent(findData.szFileName, findData.dwFileDataId);
+                if (fileContent) {
+                    callback(findData.dwFileDataId, fileContent);
+                }
+            }
+        } while(CascFindNextFile(searchHandle, &findData));
+
+        CascFindClose(searchHandle);
     }
 }
 
@@ -243,3 +270,7 @@ CascRequestProcessor::~CascRequestProcessor() {
         CascCloseStorage(m_storageOnline);
 }
 
+void CascRequestProcessor::updateKeys() {
+    if (m_storage != nullptr)
+        CascImportKeysFromFile(m_storage, CASC_KEYS_FILE.c_str());
+}

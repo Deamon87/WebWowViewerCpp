@@ -44,3 +44,12 @@
 [submodule "wowViewerLib/3rdparty/oneTbb"]
 	path = wowViewerLib/3rdparty/oneTbb
 	url = https://github.com/Deamon87/oneTBBWasm.git
+[submodule "3rdparty/hiberlite"]
+	path = 3rdparty/hiberlite
+	url = https://github.com/paulftw/hiberlite.git
+[submodule "wowViewerLib/3rdparty/tracy"]
+	path = wowViewerLib/3rdparty/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "3rdparty/imgui-notify"]
+	path = 3rdparty/imgui-notify
+	url = https://github.com/patrickcjk/imgui-notify.git

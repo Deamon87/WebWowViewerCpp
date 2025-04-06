@@ -409,6 +409,12 @@ struct M2_AFID {
     uint32_t file_id;
 };
 
+struct EDGF {
+/*0x00*/ float _0x0[2];
+/*0x08*/ float _0x8;
+/*0x0C*/ char _0xC[0xC + 8];
+};
+
 struct TXAC {
     union {
         uint16_t value;
@@ -419,9 +425,9 @@ struct TXAC {
 struct Exp2Record
 {
     float zSource;
-    uint32_t unk1;
-    uint32_t unk2;
-    M2PartTrack<fixed16> unk3;
+    float colorMult;
+    float alphaMult;
+    M2PartTrack<fixed16> alphaCutoff;
 };
 
 struct EXP2

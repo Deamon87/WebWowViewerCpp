@@ -5,7 +5,6 @@
 #ifndef WEBWOWVIEWERCPP_GBLPTEXTURE_4X_H
 #define WEBWOWVIEWERCPP_GBLPTEXTURE_4X_H
 
-#include "../../../gapi/interface/textures/IBlpTexture.h"
 #include "GTextureGL4x.h"
 #include "../GDeviceGL4x.h"
 
@@ -14,7 +13,7 @@ class GBlpTextureGL4x : public GTextureGL4x {
     explicit GBlpTextureGL4x(IDevice &device, HBlpTexture texture, bool xWrapTex, bool yWrapTex);
 public:
     ~GBlpTextureGL4x() override;
-    void createGlTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
+    void createTexture(TextureFormat textureFormat, const HMipmapsVector &hmipmaps) override;
 
     bool getIsLoaded() override;
     bool postLoad() override {return false;};

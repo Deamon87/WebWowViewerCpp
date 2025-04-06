@@ -54,6 +54,15 @@ void FirstPersonOrthoCamera::startMovingDown(){
 void FirstPersonOrthoCamera::stopMovingDown(){
     this->MDVerticalMinus = 0;
 }
+void FirstPersonOrthoCamera::stopAllMovement() {
+    MDDepthPlus = 0;
+    MDDepthMinus = 0;
+    MDHorizontalPlus = 0;
+    MDHorizontalMinus = 0;
+
+    MDVerticalPlus = 0;
+    MDVerticalMinus = 0;
+}
 
 void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
     mathfu::vec3 dir = {1, 0, 0};
@@ -114,15 +123,16 @@ void FirstPersonOrthoCamera::tick (animTime_t timeDelta) {
 
     lookAtMat *= mathfu::mat4::FromTranslationVector(-camera) ;
 
+    mathfu::mat4 invTranspViewMat = lookAtMat.Transpose().Inverse();
+
     mathfu::vec4 interiorSunDir = mathfu::vec4(-0.30822f, -0.30822f, -0.89999998f, 0);
-    interiorSunDir = lookAtMat.Transpose().Inverse() * interiorSunDir;
+    interiorSunDir = invTranspViewMat * interiorSunDir;
     interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
 
     this->interiorDirectLightDir = interiorSunDir;
 
     mathfu::vec4 upVector ( 0.0, 0.0 , 1.0 , 0.0);
-    mathfu::mat3 lookAtRotation = mathfu::mat4::ToRotationMatrix(lookAtMat);
-    this->upVector = (lookAtRotation * upVector.xyz());
+    this->upVector = (invTranspViewMat * upVector).xyz().Normalized();
 }
 void FirstPersonOrthoCamera :: setCameraPos (float x, float y, float z) {
     //Reset camera

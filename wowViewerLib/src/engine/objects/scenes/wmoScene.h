@@ -17,13 +17,13 @@ private:
 
     void getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                               const mathfu::vec4 &cameraPos,
-                              HCullStage &cullStage,
+                              const HMapRenderPlan &mapRenderPlan,
                               M2ObjectListContainer &potentialM2,
                               WMOListContainer &potentialWmo) override;
 
     void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
-                               HCullStage &cullStage,
+                               const HMapRenderPlan &mapRenderPlan,
                                M2ObjectListContainer &m2ObjectsCandidates,
                                WMOListContainer &wmoCandidates) override;
 public:
@@ -41,7 +41,7 @@ public:
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
 
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileName(m_wmoModel);
 
@@ -61,7 +61,7 @@ public:
         mapObjDef.extents.max = C3Vector(mathfu::vec3(9999,9999,9999));
         mapObjDef.doodadSet = 0;
 
-        auto wmoObject = std::make_shared<WmoObject>(m_api);
+        auto wmoObject = wmoFactory->createObject(m_api);
         wmoObject->setLoadingParam(mapObjDef);
         wmoObject->setModelFileId(fileDataId);
 
@@ -72,8 +72,8 @@ public:
 
     }
 
-    void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                                            StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
+    void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, MathHelper::FrustumCullingData &frustumData,
+                                  StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
 };
 
 

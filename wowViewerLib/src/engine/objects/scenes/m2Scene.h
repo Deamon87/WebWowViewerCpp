@@ -8,6 +8,7 @@
 
 #include "map.h"
 #include "../m2/m2Object.h"
+#include "../../../exporters/IExporter.h"
 
 class M2Scene : public Map {
 private:
@@ -16,48 +17,38 @@ private:
 
     void getPotentialEntities(const MathHelper::FrustumCullingData &frustumData,
                               const mathfu::vec4 &cameraPos,
-                              HCullStage &cullStage,
+                              const HMapRenderPlan &mapRenderPlan,
                               M2ObjectListContainer &potentialM2,
                               WMOListContainer &potentialWmo) override;
 
     void getCandidatesEntities(const MathHelper::FrustumCullingData &frustumData,
                                const mathfu::vec4 &cameraPos,
-                               HCullStage &cullStage,
+                               const HMapRenderPlan &mapRenderPlan,
                                M2ObjectListContainer &m2ObjectsCandidates,
                                WMOListContainer &wmoCandidates) override;
 
-    void updateLightAndSkyboxData(const HCullStage &cullStage, mathfu::vec3 &cameraVec3,
-                             StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
+    void updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
+                                  MathHelper::FrustumCullingData &frustumData,
+                                  StateForConditions &stateForConditions, const AreaRecord &areaRecord) override;
 
 public:
-    explicit M2Scene(HApiContainer api, std::string m2Model, int cameraView = - 1);
-    explicit M2Scene(HApiContainer api, int fileDataId, int cameraView = - 1);
+    explicit M2Scene(const HApiContainer &api, const std::string &m2Model);
+    explicit M2Scene(const HApiContainer &api, int fileDataId);
 
 
-    ~M2Scene() override {
+    ~M2Scene() override;
 
-    }
+    void setReplaceTextureArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<int> &replaceTextureArray) ;
+    void setMeshIdArray(const HMapSceneBufferCreate &sceneRenderer, const std::vector<uint8_t> &meshIds) ;
+    void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) ;
+    void resetReplaceParticleColor() ;
 
-    void setAnimationId(int animationId) override {
-        m_m2Object->setAnimationId(animationId);
-    };
-    void setMeshIds(std::vector<uint8_t> &meshIds) override {
-        m_m2Object->setMeshIds(meshIds);
-    };
-    void resetAnimation() override {
-        m_m2Object->resetCurrentAnimation();
-    }
 
-    void setReplaceTextureArray(std::vector<int> &replaceTextureArray) override;
-    void setMeshIdArray(std::vector<uint8_t> &meshIds) override ;
-    void setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) override;
-    void resetReplaceParticleColor() override;
-    void doPostLoad(HCullStage &cullStage) override;
+    int getCameraNum() ;
+    std::shared_ptr<ICamera> createCamera(int cameraNum);
+    void exportScene(IExporter* exporter);
+    std::shared_ptr<M2Object> getSceneM2();
 
-    int getCameraNum() override ;
-    std::shared_ptr<ICamera> createCamera(int cameraNum) override;
-
-    void exportScene(IExporter* exporter) override;
 };
 
 

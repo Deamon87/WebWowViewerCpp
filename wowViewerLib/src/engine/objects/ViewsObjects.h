@@ -24,11 +24,12 @@ typedef std::shared_ptr<ExteriorView> HExteriorView;
 class ADTObjRenderRes {
 public:
     std::shared_ptr<AdtObject> adtObject;
-    bool wasLoaded = false;
-    bool drawChunk[256] = {false};
-    bool drawWaterChunk[256] = {false};
-    bool checkRefs[256] = {false};
+    std::array<bool, 256> drawChunk = {false};
+    std::array<bool, 256> drawWaterChunk = {false};
+    std::array<bool, 256> checkRefs = {false};
 };
+
+
 
 class GeneralView {
 public:
@@ -37,6 +38,7 @@ public:
 
     //Support several frustum planes because of how portal culling works
     std::vector<std::vector<mathfu::vec3>> worldPortalVertices = {};
+    std::vector<std::vector<mathfu::vec3>> worldAntiPortalVertices = {};
     MathHelper::FrustumCullingData frustumData;
 
     int level = -1;
@@ -46,13 +48,17 @@ public:
         HGVertexBuffer m_bufferVBO;
 
         HGVertexBufferBindings m_bindings;
-        std::vector<HGMesh> m_meshes = {};
-    } portalPointsFrame;
+    };
+    framebased::vector<HGSortableMesh> m_portalMeshes = {};
 
-    virtual void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
-    virtual void setM2Lights(std::shared_ptr<M2Object> &m2Object);
+    std::vector<PortalPointsFrame> portals;
 
-    void produceTransformedPortalMeshes(HApiContainer &apiContainer,std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes);
+    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
+    virtual void collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights);
+    void collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
+
+    void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
+                                        const std::vector<std::vector<mathfu::vec3>> &portalsVerts, bool isAntiportal = false);
     void addM2FromGroups(const MathHelper::FrustumCullingData &frustumData, mathfu::vec4 &cameraPos);
 };
 
@@ -60,30 +66,27 @@ class InteriorView : public GeneralView {
 public:
     std::vector<int> portalIndexes;
     std::shared_ptr<WmoGroupObject> ownerGroupWMO = {}; //Wmos which portals belong to
-    void setM2Lights(std::shared_ptr<M2Object> &m2Object) override;
 };
 
 class ExteriorView : public GeneralView {
 public:
-	std::vector<std::shared_ptr<ADTObjRenderRes>> drawnADTs = {};
-    std::vector<HGMesh> m_opaqueMeshes = {};
-    std::vector<HGMesh> m_transparentMeshes = {};
-
-public:
-    void collectMeshes(std::vector<HGMesh> &opaqueMeshes, std::vector<HGMesh> &transparentMeshes) override;
+    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) override;
 };
 
 class FrameViewsHolder {
 public:
     HExteriorView getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData);
     HExteriorView getExterior();
-    HInteriorView createInterior(const MathHelper::FrustumCullingData &frustumData);
+    HExteriorView getSkybox();
+
+    HInteriorView createInterior(const  MathHelper::FrustumCullingData &frustumData);
 
     const std::vector<HInteriorView> &getInteriorViews() {
         return interiorViews;
     }
 private:
     HExteriorView exteriorView = nullptr ;
+    HExteriorView skyBoxView = nullptr ;
     std::vector<HInteriorView> interiorViews = {};
 
 

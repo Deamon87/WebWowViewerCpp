@@ -8,8 +8,8 @@ void initEXP2(EXP2 *exp2) {
     exp2->content.initM2Array(exp2);
     for (int i = 0; i < exp2->content.size; i++) {
         Exp2Record *exp2Record = exp2->content.getElement(i);
-        exp2Record->unk3.timestamps.initM2Array(exp2);
-        exp2Record->unk3.values.initM2Array(exp2);
+        exp2Record->alphaCutoff.timestamps.initM2Array(exp2);
+        exp2Record->alphaCutoff.values.initM2Array(exp2);
     }
 }
 
@@ -78,6 +78,9 @@ void initM2Event(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLo
 
 void initM2Light(M2Data *m2Header, M2Array<M2Sequence> *sequences, CM2SequenceLoad *cm2SequenceLoad) {
     int32_t lightCount = m2Header->lights.size;
+    if (lightCount > 0) {
+        debuglog("lightCount > 0");
+    }
     for (int i = 0; i < lightCount; i++) {
         M2Light *light = m2Header->lights.getElement(i);
         light->ambient_color.initTrack(m2Header, sequences, cm2SequenceLoad);

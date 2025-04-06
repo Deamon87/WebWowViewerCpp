@@ -9,7 +9,8 @@
 
 enum class GBindingType {
     GFLOAT,
-    GUNSIGNED_BYTE
+    GUNSIGNED_BYTE,
+    GSIGNED_BYTE
 };
 
 struct GBufferBinding{
@@ -33,7 +34,7 @@ public:
     virtual void save() = 0;
 
     virtual void setIndexBuffer(HGIndexBuffer indexBuffer) = 0;
-    virtual void addVertexBufferBinding(GVertexBufferBinding binding) = 0;
+    virtual void addVertexBufferBinding(const HGVertexBuffer &vertexBuffer, const std::vector<GBufferBinding> &bindings, bool isInstanceInputRate = false) = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_IVERTEXBUFFERBINDINGS_H
