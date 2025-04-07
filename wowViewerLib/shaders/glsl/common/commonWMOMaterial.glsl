@@ -308,49 +308,53 @@ void calcWMOVertMat(in int vertexShader,
                     out vec2 vTexCoord, out vec2 vTexCoord2, out vec2 vTexCoord3) {
 
     float sceneTimeInSec = sceneTime;
-    vec2 texCoordAnim = aTexCoord + makeWmoUVAnimVec(sceneTimeInSec, uvTransl.xy);
-    vec2 texCoordAnim2 = aTexCoord2 + makeWmoUVAnimVec(sceneTimeInSec, uvTransl.zw);
+    vec2 anim1 = uvTransl.xy;
+    vec2 anim2 = uvTransl.zw;
+
+    vec2 texCoordAnim1 = aTexCoord + makeWmoUVAnimVec(sceneTimeInSec, anim1);
+    vec2 texCoord2Anim2 = aTexCoord2 + makeWmoUVAnimVec(sceneTimeInSec, anim2);
+    vec2 texCoord3Anim1 = aTexCoord3 + makeWmoUVAnimVec(sceneTimeInSec, anim1);
 
     if ( vertexShader == -1 ) {
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2;
+        vTexCoord = texCoordAnim1;
+        vTexCoord2 = texCoord2Anim2;
         vTexCoord3 = aTexCoord3;
     } else if (vertexShader == 0) { //MapObjDiffuse_T1
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2; //not used
+        vTexCoord = texCoordAnim1;
+        vTexCoord2 = texCoord2Anim2; //not used
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 1) { //MapObjDiffuse_T1_Refl
-        vTexCoord = texCoordAnim;
+        vTexCoord = texCoordAnim1;
         vTexCoord2 = reflect(normalize(vertexPosInView.xyz), normalInView).xy;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 2) { //MapObjDiffuse_T1_Env_T2
-        vTexCoord = texCoordAnim;
+        vTexCoord = texCoordAnim1;
         vTexCoord2 = posToTexCoord(vertexPosInView.xyz, normalInView);
-        vTexCoord3 = texCoordAnim2;
+        vTexCoord3 = texCoord2Anim2;
     } else if (vertexShader == 3) { //MapObjSpecular_T1
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2; //not used
+        vTexCoord = texCoordAnim1;
+        vTexCoord2 = texCoord2Anim2; //not used
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 4) { //MapObjDiffuse_Comp
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2; //not used
+        vTexCoord = texCoordAnim1;
+        vTexCoord2 = texCoord2Anim2; //not used
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 5) { //MapObjDiffuse_Comp_Refl
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2;
+        vTexCoord = texCoordAnim1;
+        vTexCoord2 = texCoord2Anim2;
         vTexCoord3 = reflect(normalize(vertexPosInView.xyz), normalInView).xy;
     } else if (vertexShader == 6) { //MapObjDiffuse_Comp_Terrain
-        vTexCoord = texCoordAnim;
+        vTexCoord = texCoordAnim1;
         vTexCoord2 = vertexPosInView.xy * 0.239999995;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 7) { //MapObjDiffuse_CompAlpha
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2;
+        vTexCoord = texCoordAnim1;
+        vTexCoord2 = texCoord2Anim2;
         vTexCoord3 = aTexCoord3; //not used
     } else if (vertexShader == 8) { //MapObjParallax
-        vTexCoord = texCoordAnim;
-        vTexCoord2 = texCoordAnim2;
-        vTexCoord3 = aTexCoord3;
+        vTexCoord = aTexCoord;
+        vTexCoord2 = texCoord2Anim2;
+        vTexCoord3 = texCoord3Anim1;
     }
 }
 #endif

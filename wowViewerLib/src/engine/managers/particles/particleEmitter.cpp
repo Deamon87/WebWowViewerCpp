@@ -614,7 +614,11 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
 
     auto &particles = GetCurrentPBuffer();
 
+    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+
     if (particles.size() == 0 && this->generator != nullptr) {
+        auto &currentFrame = frame[frameNum];
+        currentFrame.active = false;
         return;
     }
 
@@ -624,7 +628,7 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     this->calculateQuadToViewEtc(nullptr, viewMatrix); // FrameOfRerefence mat is null since it's not used
 
 
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
 //    auto *szVertexBuf = (ParticleBuffStruct *) vboBufferDynamic->getPointer();

@@ -168,7 +168,7 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
                 if(SPIRV_OPT_APP)
                     add_custom_command(
                             OUTPUT ${SPIRVOpt}
-                            COMMAND ${SPIRV_OPT_APP} --preserve-bindings -O -Os -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                            COMMAND ${SPIRV_OPT_APP} -O -Os --preserve-bindings -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
