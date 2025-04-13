@@ -10,7 +10,7 @@ layout(location = 1) in vec4 vColor;
 layout(location = 2) in vec2 vTexcoord0;
 layout(location = 3) in vec2 vTexcoord1;
 layout(location = 4) in vec2 vTexcoord2;
-layout(location = 5) in float alphaCutoff;
+layout(location = 5) in float vAlphaCutoff;
 
 #include "../common/commonLightFunctions.glsl"
 #include "../common/commonFogFunctions.glsl"
@@ -90,7 +90,7 @@ void main() {
     if(finalColor.a < uAlphaTest)
         discard;
 
-    if(finalColor.a < alphaCutoff)
+    if(finalColor.a < vAlphaCutoff)
         discard;
 
     //    vec3 sunDir =
