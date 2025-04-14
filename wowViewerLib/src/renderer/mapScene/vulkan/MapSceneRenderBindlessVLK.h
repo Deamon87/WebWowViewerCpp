@@ -75,6 +75,9 @@ public:
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
                                                   const M2MaterialTemplate &m2MaterialTemplate) override;
+    std::shared_ptr<IM2ProjectiveMaterial> createM2ProjectiveMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                  const PipelineTemplate &pipelineTemplate,
+                                                  const M2MaterialTemplate &m2MaterialTemplate) override;
     std::shared_ptr<IM2WaterFallMaterial> createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                                     const PipelineTemplate &pipelineTemplate,
                                                                     const M2WaterfallMaterialTemplate &m2MaterialTemplate) override;
@@ -215,6 +218,7 @@ protected:
 
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
+    std::shared_ptr<GDescriptorSet> gBufferDataDS = nullptr;
 
     std::shared_ptr<ISimpleMaterialVLK> g_m2Material = nullptr;
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;

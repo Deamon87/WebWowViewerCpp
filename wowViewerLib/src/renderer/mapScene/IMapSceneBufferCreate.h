@@ -100,6 +100,10 @@ public:
                                                           const PipelineTemplate &pipelineTemplate,
                                                           const M2MaterialTemplate &m2MaterialTemplate) = 0;
 
+    virtual std::shared_ptr<IM2ProjectiveMaterial> createM2ProjectiveMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                          const PipelineTemplate &pipelineTemplate,
+                                                          const M2MaterialTemplate &m2MaterialTemplate) = 0;
+
     virtual std::shared_ptr<IM2WaterFallMaterial> createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                           const PipelineTemplate &pipelineTemplate,
                                                           const M2WaterfallMaterialTemplate &m2MaterialTemplate) = 0;
@@ -133,6 +137,7 @@ public:
     virtual HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;
     virtual HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) = 0;
     virtual HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
+    // virtual HGM2Mesh createM2ProjectiveMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
     virtual HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
     virtual HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;
     virtual HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) = 0;

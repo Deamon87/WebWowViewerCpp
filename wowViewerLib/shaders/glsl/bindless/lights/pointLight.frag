@@ -7,17 +7,13 @@ precision highp float;
 precision highp int;
 
 #include "../../common/commonUboSceneData.glsl"
+#include "../../common/commonGBufferData.glsl"
 #include "../../common/commonLightFunctions.glsl"
 
 layout(location = 0) in flat int lightIndex;
 
-layout(std430, set=1, binding=0) buffer readonly pointLightBuffer {
+layout(std430, set=2, binding=0) buffer readonly pointLightBuffer {
     LocalLight lights[];
-};
-layout(set=1, binding=1) uniform sampler2D depthTex;
-layout(set=1, binding=2) uniform sampler2D normalTex;
-layout(std140, set=1, binding=3) uniform pointLightBuffer {
-    vec4 screenSize;
 };
 
 layout(location = 0) out vec4 outColor;

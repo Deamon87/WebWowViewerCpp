@@ -88,8 +88,6 @@ public:
 
     void drawFrame(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) override;
 
-    void updateBuffers(/*std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks*/std::vector<HFrameDependantData> &frameDepedantData);
-    void uploadTextureForMeshes(std::vector<HGMesh> &meshes) override;
     bool getIsVulkanAxisSystem() override {return true;}
 
     void flushRingBuffer();

@@ -155,6 +155,7 @@ public:
     static float distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
     static mathfu::vec3 calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int time);
     static mathfu::vec3 calcSunPlanetPos(const mathfu::mat4 &lookAtMat, int time);
+    static mathfu::mat4 createProjectionalTexture(mathfu::vec2 p_t00, mathfu::vec2 p_t10, mathfu::vec2 p_t01);
 };
 
 const float ROUNDING_ERROR_f32 = 0.001f;

@@ -18,15 +18,39 @@
 #include "../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
 #include <future>
 
+static const DescTypeSetBindingConfig SceneDataSetConfig = {
+    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+    {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {2, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}}
+};
+
+static const ShaderConfig SceneDataSetStubShaderConfig = {
+    "stubs",
+    "stubs",
+    {
+        {0, SceneDataSetConfig}
+    }
+};
+
+static const DescTypeSetBindingConfig GBufferDataSetConfig = {
+    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {2, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+};
+
+static const ShaderConfig GBufferDataSetStubShaderConfig = {
+    "stubs",
+    "stubs",
+    {
+        {0, GBufferDataSetConfig}
+    }
+};
+
 static const ShaderConfig forwardShaderConfig = {
     "forwardRendering",
     "forwardRendering",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-            {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
-            {2, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}}
-        }}
+        {0, SceneDataSetConfig}
     }
 };
 
@@ -39,9 +63,7 @@ static const ShaderConfig m2BindlessShaderConfig = {
     "bindless/m2/forward",
     "bindless/m2/forward",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-        }},
+        {0, SceneDataSetConfig},
         {1, {
             {6, {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
         }},
@@ -58,9 +80,7 @@ static const ShaderConfig bindlessShaderConfig = {
     "bindless",
     "bindless",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-        }},
+        {0, SceneDataSetConfig},
     }};
 
 static const ShaderConfig m2ParticlesBindlessGBufferShaderConfig = {
@@ -73,9 +93,7 @@ static const ShaderConfig m2WaterfallBindlessShaderConfig = {
     "bindless/waterfall/forward",
     "bindless/waterfall/forward",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-        }},
+        {0, SceneDataSetConfig},
         {3, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2WaterfallTexturesBindlessCount}}
         }}
@@ -85,9 +103,7 @@ static const ShaderConfig wmoBindlessShaderConfig = {
     "bindless/wmo/forward",
     "bindless/wmo/forward",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-        }},
+        {0, SceneDataSetConfig },
         {2, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
         }}
@@ -103,9 +119,7 @@ static const ShaderConfig adtBindlessShaderConfig = {
     "bindless/adt/forward",
     "bindless/adt/forward",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-        }},
+        {0, SceneDataSetConfig },
         {2, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, adtTexturesBindlessCount}}
         }},
@@ -127,9 +141,7 @@ static const ShaderConfig waterBindlessShaderConfig = {
     "bindless/water",
     "bindless/water",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
-        }},
+        {0, SceneDataSetConfig },
         {2, {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, waterTexturesBindlessCount}}
         }}
@@ -386,24 +398,36 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     {
         //Create SceneWide descriptor
         sceneWideChunk = std::make_shared<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>>(hDevice, 3, uboBuffer);
-        MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, adtBindlessShaderConfig, {})
+        MaterialBuilderVLK::fromShader(m_device, {"stub", "commonSceneData"}, SceneDataSetStubShaderConfig, {})
             .createDescriptorSet(0, [&](std::shared_ptr<GDescriptorSet> &ds) {
                 ds->beginUpdate()
                     .ubo_dynamic(0, sceneWideChunk)
                     .texture(1, hDevice->getBlackTexturePixel())
-//Untill AO is ready.
-//#ifndef NDEBUG
-                    .texture(2, hDevice->getWhiteTexturePixel())
-//#endif
-                    ;
+                    .texture(2, hDevice->getWhiteTexturePixel());
 
                 sceneWideDS = ds;
+            });
+    }
+
+    {
+        //Create GBuffer descriptor
+        std::shared_ptr<IBufferChunk<mathfu::vec4_packed>> tmpUboBuffer = std::make_shared<CBufferChunkVLK<mathfu::vec4_packed>>(uboBuffer);
+
+        MaterialBuilderVLK::fromShader(m_device, {"stub", "commonGBufferData"}, GBufferDataSetStubShaderConfig, {})
+            .createDescriptorSet(0, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                ds->beginUpdate()
+                    .texture(0, hDevice->getBlackTexturePixel())
+                    .texture(1, hDevice->getWhiteTexturePixel())
+                    .ubo(2, BufferChunkHelperVLK::cast(tmpUboBuffer)); //This is temporary. This 3rd binding is overridden in view class right before rendering
+
+                gBufferDataDS = ds;
             });
     }
 
     defaultView = std::make_shared<RendererViewClass>(m_device, uboBuffer,
                                                       pointLightBuffer, spotLightBuffer,
                                                       sceneWideDS,
+                                                      gBufferDataDS,
                                                       m_drawQuadVao,
                                                       m_drawSpotVao,
                                                       m_drawSpotVaoLine,
@@ -827,7 +851,7 @@ MapSceneRenderBindlessVLK::createM2Material(const std::shared_ptr<IM2ModelData> 
     auto staticMaterial = getM2StaticMaterial(pipelineTemplate);
 
     auto material = MaterialBuilderVLK::fromMaterial(m_device, staticMaterial)
-        .toMaterial<IM2MaterialVis>([&vertexFragmentDataBindless, &vertexFragmentData](IM2MaterialVis *instance) -> void {
+        .toMaterial<IM2MaterialBindless>([&vertexFragmentDataBindless, &vertexFragmentData](IM2MaterialBindless *instance) -> void {
             instance->m_vertexFragmentDataBindless = vertexFragmentDataBindless;
             instance->m_vertexFragmentData = vertexFragmentData;
         });
@@ -868,6 +892,14 @@ MapSceneRenderBindlessVLK::createM2Material(const std::shared_ptr<IM2ModelData> 
 
 
     return material;
+}
+
+std::shared_ptr<IM2ProjectiveMaterial> MapSceneRenderBindlessVLK::createM2ProjectiveMaterial(
+    const std::shared_ptr<IM2ModelData> &m2ModelData,
+    const PipelineTemplate &pipelineTemplate,
+    const M2MaterialTemplate &m2MaterialTemplate
+) {
+    return nullptr;
 }
 
 std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderBindlessVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
@@ -1529,7 +1561,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
                                    l_this->defaultView :
                                    std::dynamic_pointer_cast<RendererViewClass>(renderTarget.target);
 
-                currentView->setLightBuffers(l_this->sceneWideDS);
+                currentView->updateExternalDSes();
                 {
 
                     {
@@ -1678,7 +1710,7 @@ MapSceneRenderBindlessVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::
     auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();
     meshTemplate.bindings = m_emptyM2VAO;
     auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
-    mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialVis>(material)->instanceIndex;
+    mesh->instanceIndex = std::dynamic_pointer_cast<IM2MaterialBindless>(material)->instanceIndex;
     mesh->vertexStart = ((IBufferVLK * )realVAO->getVertexBuffers()[0].get())->getIndex();
     mesh->start() += ((IBufferVLK * )realVAO->getIndexBuffer().get())->getOffset();
 
@@ -1733,6 +1765,7 @@ std::shared_ptr<IRenderView> MapSceneRenderBindlessVLK::createRenderView(bool cr
     return std::make_shared<RendererViewClass>(m_device, uboBuffer,
                                                pointLightBuffer, spotLightBuffer,
                                                sceneWideDS,
+                                               gBufferDataDS,
                                                m_drawQuadVao,
                                                m_drawSpotVao,
                                                m_drawSpotVaoLine,

@@ -358,6 +358,14 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
     return material;
 }
 
+std::shared_ptr<IM2ProjectiveMaterial> MapSceneRenderForwardVLK::createM2ProjectiveMaterial(
+    const std::shared_ptr<IM2ModelData> &m2ModelData,
+    const PipelineTemplate &pipelineTemplate,
+    const M2MaterialTemplate &m2MaterialTemplate
+) {
+    return nullptr;
+}
+
 std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                                 const PipelineTemplate &pipelineTemplate,
                                                                 const M2WaterfallMaterialTemplate &m2MaterialTemplate) {

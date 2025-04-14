@@ -124,7 +124,7 @@ namespace DataExporter {
                    make_column("texture_weights_count", &DBM2::texture_weights_count),
                    make_column("texture_transforms_count", &DBM2::texture_transforms_count),
                    make_column("replacable_texture_lookup_count", &DBM2::replacable_texture_lookup_count),
-#ifdef _MSC_VER
+#if 1
                    make_column("materials_count", &DBM2::materials_count),
                    make_column("bone_lookup_table_count", &DBM2::bone_lookup_table_count),
                    make_column("texture_lookup_table_count", &DBM2::texture_lookup_table_count),
@@ -167,7 +167,7 @@ namespace DataExporter {
                 make_table("M2SkinSection",
                    make_column("m2Id", &DBSkinSection::m2Id),
                    make_column("skinSectionIndex", &DBSkinSection::skinSectionIndex),
-#ifdef _MSC_VER
+#if 1
                    make_column("skinSectionId", &DBSkinSection::skinSectionId),
                    make_column("Level", &DBSkinSection::Level),
                    make_column("vertexStart", &DBSkinSection::vertexStart),

@@ -24,7 +24,9 @@ struct DescTypeConfig {
     };
 };
 
-typedef std::unordered_map<int,std::unordered_map<int, DescTypeConfig>> DescTypeOverride;
+typedef std::unordered_map<int, DescTypeConfig> DescTypeSetBindingConfig;
+
+typedef std::unordered_map<int, DescTypeSetBindingConfig> DescTypeOverride;
 
 struct ShaderConfig {
     std::string vertexShaderFolder;

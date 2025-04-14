@@ -1496,6 +1496,9 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     return hmesh;
 }
 
+bool isProjectiveTexture(M2Batch * batch) {
+    return (batch->flags & 0x4) > 0;
+}
 
 void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     ZoneScoped;
@@ -1530,6 +1533,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             this->m_materialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, mainBlendMode, false);
             this->m_forcedTranspMaterialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, forcedTranspBlend, true);
         }
+        //Create meshes
         for (int batchIndex = 0; batchIndex < batches.size; batchIndex++) {
             auto m2Batch = batches[batchIndex];
             auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
@@ -1537,6 +1541,13 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
                 batchesRequiringDynamicVao.push_back(batchIndex);
                 continue;
             }
+
+            if (isProjectiveTexture(m2Batch)) {
+                m_projectiveMaterialArray[batchIndex];
+                //createProjectiveMesh
+                continue;
+            }
+
 
             HGM2Mesh hMesh = createSingleMesh(sceneRenderer,  0, bufferBindings, m_materialArray[batchIndex], skinSection, m2Batch);
 
@@ -1556,7 +1567,6 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         }
 
         // Create meshes requiring dynamic
-
         for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
             int batchIndex = batchesRequiringDynamicVao[j];
             auto m2Batch = skinProfile->batches[batchIndex];
@@ -1593,9 +1603,11 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             M2Data* m2File = this->m_m2Geom->getM2Data();
             M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
             for (auto& material : m_materialArray) {
+                if (!material) continue;
                 M2MeshBufferUpdater::updateMaterialData(material, this, m2File, skinData);
             }
             for (auto& material : m_forcedTranspMaterialArray) {
+                if (!material) continue;
                 M2MeshBufferUpdater::updateMaterialData(material, this, m2File, skinData);
             }
         }
@@ -1604,7 +1616,8 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
-    m_finalTransparencies.resize(m_meshArray.size(), 1.0);
+    constexpr float defaultTranspVal = 1.0f;
+    m_finalTransparencies.resize(m_meshArray.size(), defaultTranspVal);
 }
 
 EGxBlendEnum M2Object::getBlendMode(int batchIndex) {
@@ -1626,6 +1639,9 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     auto m_m2Data = m_m2Geom->getM2Data();
     const auto &batches = m_skinGeom->getSkinData()->batches;
     auto m2Batch = batches[batchIndex];
+
+    //Do not create projective material using this function
+    if (isProjectiveTexture(m2Batch)) return nullptr;
 
     if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
 
@@ -1649,8 +1665,50 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     return m2Material;
 }
 
+std::shared_ptr<IM2ProjectiveMaterial> M2Object::createM2ProjectiveMaterial(const HMapSceneBufferCreate &sceneRenderer, int batchIndex) {
+    M2MaterialTemplate materialTemplate;
+
+    auto m_m2Data = m_m2Geom->getM2Data();
+    const auto &batches = m_skinGeom->getSkinData()->batches;
+    auto m2Batch = batches[batchIndex];
+
+    //Do not create projective material using this function
+    if (!isProjectiveTexture(m2Batch)) return nullptr;
+    if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
+
+    int materialIndex = m2Batch->materialIndex;
+    auto renderFlag = m_m2Data->materials[materialIndex];
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = true;
+    pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+
+    auto m2ProjectiveMaterial = sceneRenderer->createM2ProjectiveMaterial(m_modelWideDataBuff, pipelineTemplate, materialTemplate);
+    return m2ProjectiveMaterial;
+}
+
 HGM2Mesh
 M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int indexStartCorrection,
+                           const HGVertexBufferBindings &finalBufferBindings,
+                           const std::shared_ptr<IM2Material> &m2Material,
+                           const M2SkinSection *skinSection,
+                           const M2Batch *m2Batch) {
+    gMeshTemplate meshTemplate(finalBufferBindings);
+    meshTemplate.meshType = MeshType::eM2Mesh;
+
+    meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
+    meshTemplate.end = skinSection->indexCount;
+
+    auto m2Mesh = sceneRenderer->createM2Mesh(meshTemplate, m2Material, m2Batch->materialLayer, m2Batch->priorityPlane);
+
+    return m2Mesh;
+}
+
+HGM2Mesh
+M2Object::createProjectiveMesh(const HMapSceneBufferCreate &sceneRenderer, int indexStartCorrection,
                            const HGVertexBufferBindings &finalBufferBindings,
                            const std::shared_ptr<IM2Material> &m2Material,
                            const M2SkinSection *skinSection,
