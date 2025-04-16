@@ -3,7 +3,6 @@
 #extension GL_GOOGLE_include_directive: require
 #extension GL_EXT_nonuniform_qualifier: require
 
-
 precision highp float;
 precision highp int;
 
@@ -53,7 +52,7 @@ void main() {
     }
 
     int placementIndex = instances[nonuniformEXT(instanceIndex)].placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.x;
-    mat4 placementMat = uPlacementMats[nonuniformEXT(placementIndex)];
+    mat4 placementMat = placementMats[nonuniformEXT(placementIndex)].placementMat;
 
     mat4 viewModelMat = scene.uLookAtMat * placementMat  * boneTransformMat ;
     vec4 vertexPosInView = viewModelMat * aPositionVec4;

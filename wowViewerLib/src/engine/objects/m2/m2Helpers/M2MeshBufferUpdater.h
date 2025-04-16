@@ -18,6 +18,8 @@ public:
     static float calcFinalTransparency(const M2Object &m2Object, int batchIndex, M2SkinProfile * m2SkinProfile);
 
     static void updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
+    static void updateProjectiveMaterialData(int batchIndex, uint8_t blendMode, uint8_t pixelShader,
+        const std::shared_ptr<IM2ProjectiveMaterial> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile);
 
     static mathfu::mat4 getTextureMatrix(const M2Object &m2Object, int textureMatIndex,  M2Data *m2Data);
 

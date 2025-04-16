@@ -262,7 +262,7 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
                 *(uint32_t*)&adtVertex.normal = 0x00FF0000;
             }
             /* 1.4 MCCV */ //Color vertex
-            if (m_adtFile->mcnkStructs[i].mccv != nullptr) {
+            if (m_adtFile->mcnkStructs[i].mccv != nullptr && !m_api->getConfig()->ignoreADTColoring) {
                 auto &mccv = m_adtFile->mcnkStructs[i].mccv;
                 *(uint32_t*)(&adtVertex.mccv) = *((uint32_t*)&mccv->entries[j]);
             } else {
@@ -318,6 +318,9 @@ void AdtObject::createVBO(const HMapSceneBufferCreate &sceneRenderer) {
 
         lodVertexBindings->save();
     }
+
+    m_adtColorsIgnored = m_api->getConfig()->ignoreADTColoring;
+
 }
 
 void AdtObject::calcBoundingBoxes() {
@@ -728,9 +731,20 @@ bool AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
         }
     }
 
-    if (m_loaded && m_holesIgnored != m_api->getConfig()->ignoreADTHoles) {
-        createIBOAndBinding(sceneRenderer);
-        createMeshes(sceneRenderer);
+    if (m_loaded) {
+        bool needToIgnoreColors = m_adtColorsIgnored != m_api->getConfig()->ignoreADTColoring;
+        bool needToIgnoreHoles = m_holesIgnored != m_api->getConfig()->ignoreADTHoles;
+
+        if (needToIgnoreColors || needToIgnoreHoles) {
+
+            if (needToIgnoreColors) {
+                createVBO(sceneRenderer);
+            }
+            if (needToIgnoreHoles) {
+                createIBOAndBinding(sceneRenderer);
+            }
+            createMeshes(sceneRenderer);
+        }
     }
     return false;
 }

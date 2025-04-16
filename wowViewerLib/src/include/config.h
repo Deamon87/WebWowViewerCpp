@@ -58,6 +58,7 @@ public:
     bool discardInvisibleMeshes = true;
 
     bool ignoreADTHoles = false;
+    bool ignoreADTColoring = false;
 
     bool stopBufferUpdates = false;
     bool stepBufferUpdate = false;

@@ -129,6 +129,7 @@ private:
     HGIndexBuffer stripIBO ;
     HGVertexBufferBindings adtVertexBindings;
     bool m_holesIgnored = false;
+    bool m_adtColorsIgnored = false;
 
     HGVertexBuffer heightVboLod;
     HGIndexBuffer stripVBOLod;

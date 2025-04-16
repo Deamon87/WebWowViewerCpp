@@ -1609,6 +1609,11 @@ void FrontendUI::showSettingsDialog() {
                 m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
             }
 
+            bool ignoreADTColors = m_api->getConfig()->ignoreADTColoring;
+            if (ImGui::Checkbox("Ignore ADT colors for rendering", &ignoreADTColors)) {
+                m_api->getConfig()->ignoreADTColoring = ignoreADTColors;
+            }
+
 
             bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
             if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {

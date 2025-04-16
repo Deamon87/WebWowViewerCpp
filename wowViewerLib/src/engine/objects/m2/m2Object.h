@@ -102,7 +102,7 @@ private:
     std::shared_ptr<CBoneMasterData> m_boneMasterData = nullptr;
 
     HGVertexBufferBindings bufferBindings = nullptr;
-    std::shared_ptr<IM2ModelData> m_modelWideDataBuff = nullptr;
+    std::shared_ptr<IM2ModelData> m_modelWideData = nullptr;
 
     HGSortableMesh boundingBoxMesh = nullptr;
     
@@ -156,6 +156,7 @@ private:
     //Tuple of Mesh and batch index
     std::vector<std::tuple<HGM2Mesh, int>> m_meshForcedTranspArray;
     std::vector<std::tuple<HGM2Mesh, int>> m_meshArray;
+    std::vector<std::tuple<HGM2Mesh, int>> m_meshProjectiveArray;
     std::vector<float> m_finalTransparencies;
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
@@ -336,11 +337,10 @@ public:
                               const M2SkinSection *skinSection,
                               const M2Batch *m2Batch);
 
-    HGM2Mesh createProjectiveMesh(const HMapSceneBufferCreate &sceneRenderer, int indexStartCorrection,
-                              const HGVertexBufferBindings &finalBufferBindings,
-                              const std::shared_ptr<IM2Material> &m2Material,
-                              const M2SkinSection *skinSection,
-                              const M2Batch *m2Batch);
+    HGM2Mesh createProjectiveMesh(const HMapSceneBufferCreate &sceneRenderer,
+                                  const std::shared_ptr<IM2ProjectiveMaterial> &m2Material,
+                                  const M2SkinSection *skinSection,
+                                  const M2Batch *m2Batch);
 
     HGM2Mesh createWaterfallMesh(const HMapSceneBufferCreate &sceneRenderer, const HGVertexBufferBindings &finalBufferBindings);
     void updateDynamicMeshes();

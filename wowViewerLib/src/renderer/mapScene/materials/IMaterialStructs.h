@@ -95,8 +95,10 @@ public:
     ~IM2ProjectiveMaterial() override = default;
 
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS>> m_vertexFragmentData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::ProjectiveData>> m_projectiveTextData = nullptr;
 };
 class IM2ProjectiveMaterialBindless : public IM2ProjectiveMaterial {
+public:
     ~IM2ProjectiveMaterialBindless() override = default;
 
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS_Bindless>> m_vertexFragmentDataBindless = nullptr;

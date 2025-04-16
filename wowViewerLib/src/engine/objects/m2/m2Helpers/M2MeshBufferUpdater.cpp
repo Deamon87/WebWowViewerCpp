@@ -54,6 +54,81 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
 
     m2Material->m_vertexFragmentData->save();
 }
+void M2MeshBufferUpdater::updateProjectiveMaterialData(int batchIndex, uint8_t blendMode, uint8_t pixelShader, const std::shared_ptr<IM2ProjectiveMaterial> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
+    auto batch = m2SkinProfile->batches[batchIndex];
+    auto skinSection = m2SkinProfile->skinSections[batch->skinSectionIndex];
+    int renderFlagIndex = batch->materialIndex;
+    auto renderFlag = m2Data->materials[renderFlagIndex];
+
+    std::array<int,2> textureMatrixIndexes = {-1, -1};
+    getTextureMatrixIndexes(*m2Object, batchIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
+
+    //2. Update VSPS buffer
+    {
+        auto &meshblockVSPS = m2Material->m_vertexFragmentData->getObject();
+        meshblockVSPS.VertexShader = 0;
+        meshblockVSPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
+        meshblockVSPS.textureMatIndex1 = textureMatrixIndexes[0];
+        meshblockVSPS.textureMatIndex2 = textureMatrixIndexes[1];
+        meshblockVSPS.UnFogged = ((renderFlag->flags & 0x2) > 0) ? 1 : 0;
+        meshblockVSPS.BlendMode = blendMode;
+        meshblockVSPS.applyWeight = batch->textureCount && !(batch->flags & 0x40);
+        meshblockVSPS.colorIndex =
+            ((batch->colorIndex >= 0) && (batch->colorIndex < m2Data->colors.size))
+            ? batch->colorIndex
+            : -1;
+        meshblockVSPS.textureWeightIndexes[0] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 0);
+        meshblockVSPS.textureWeightIndexes[1] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 1);
+        meshblockVSPS.textureWeightIndexes[2] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 2);
+        meshblockVSPS.textureWeightIndexes[3] = getTextureWeightIndex(m2SkinProfile, m2Data, batchIndex, 3);
+
+        meshblockVSPS.PixelShader = pixelShader;
+        meshblockVSPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
+
+        m2Material->m_vertexFragmentData->save();
+    }
+
+    {
+        //Iterate over vertexes of projective mesh to get the min max;
+        assert(skinSection->vertexCount == 4);
+
+        auto min = mathfu::vec3(9999, 9999, 9999);
+        auto max = mathfu::vec3(-9999, -9999, -9999);
+
+        mathfu::vec2 p_t00, p_t01, p_t10;
+
+        for (int vertIndex = skinSection->vertexStart; vertIndex < skinSection->vertexStart + skinSection->vertexCount; ++vertIndex) {
+            auto const &vertex = *m2Data->vertices[vertIndex];
+
+            if (feq(vertex.tex_coords[0].x, 0) && feq(vertex.tex_coords[0].y, 0)) p_t00 = mathfu::vec3(vertex.pos).xy();
+            if (feq(vertex.tex_coords[0].x, 1) && feq(vertex.tex_coords[0].y, 0)) p_t10 = mathfu::vec3(vertex.pos).xy();
+            if (feq(vertex.tex_coords[0].x, 0) && feq(vertex.tex_coords[0].y, 1)) p_t01 = mathfu::vec3(vertex.pos).xy();
+
+            min = mathfu::vec3(
+               mathfu::vec3(
+                   std::min(min.x, vertex.pos.x),
+                   std::min(min.y, vertex.pos.y),
+                   std::min(min.z, vertex.pos.z)
+               )
+           );
+
+           max = mathfu::vec3(
+               mathfu::vec3(
+                   std::max(max.x, vertex.pos.x),
+                   std::max(max.y, vertex.pos.y),
+                   std::max(max.z, vertex.pos.z)
+               )
+           );
+        }
+
+        auto &projectiveData = m2Material->m_projectiveTextData->getObject();
+        projectiveData.localMin = mathfu::vec4(min.x, min.y, min.z, 0);
+        projectiveData.localMax = mathfu::vec4(max.x, max.y, max.z, 0);
+        projectiveData.localToUVMat = MathHelper::createProjectionalTexture(p_t00, p_t10, p_t01);
+        m2Material->m_projectiveTextData->save();
+    }
+
+}
 
 void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Object, int batchIndex,
                                          const M2Data * m2File, const M2SkinProfile *m2SkinProfile, const mathfu::mat4 &modelViewMat) {

@@ -108,6 +108,8 @@ public:
 
     virtual void addMesh(const HGMesh &mesh) = 0;
 
+    virtual void addProjectiveMesh(const HGMesh &mesh) = 0;
+
     virtual void merge(COpaqueMeshCollector & collector) = 0;
     virtual COpaqueMeshCollector * clone() = 0;
 };

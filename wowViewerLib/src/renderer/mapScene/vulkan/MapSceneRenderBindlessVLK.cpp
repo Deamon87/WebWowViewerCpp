@@ -71,6 +71,20 @@ static const ShaderConfig m2BindlessShaderConfig = {
             {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
         }}
     }};
+static const ShaderConfig m2ProjectedBindlessShaderConfig = {
+    "bindless/projected",
+    "bindless/projected",
+    {
+            {0, SceneDataSetConfig},
+            {1, {
+                {6, {VkDescriptorType::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+            }},
+            {2, {
+                {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, true, m2TexturesBindlessCount}}
+            }},
+            {3, GBufferDataSetConfig}
+    }};
+
 static const ShaderConfig m2BindlessGBufferShaderConfig = {
     "bindless/m2/forward",
     "bindless/m2/deferred",
@@ -186,6 +200,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         this->m2Buffers.m2InstanceData,
         this->m2Buffers.meshWideBlocks,
         this->m2Buffers.meshWideBlocksBindless,
+        this->m2Buffers.projectiveData,
 
         this->m2WaterfallBuffer.waterfallCommon,
         this->m2WaterfallBuffer.waterfallBindless,
@@ -207,6 +222,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         this->iboBuffer,
         this->m_vboQuad,
         this->m_iboQuad,
+        this->m_iboBBox,
         this->m_particleIndexBuffer,
         this->m_vboSpot,
         this->m_iboSpot,
@@ -228,7 +244,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
     vboWaterBuffer      = m_device->createVertexBuffer(un("Scene_VBO_Water"),1024*1024, sizeof(LiquidVertexFormat));
     vboSkyBuffer        = m_device->createVertexBuffer(un("Scene_VBO_Sky"),1024*1024);
 
-
+    //Quad vao
     {
         const float epsilon = 0.f;
         std::array<mathfu::vec2_packed, 4> vertexBuffer = {
@@ -251,6 +267,37 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         m_drawQuadVao->setIndexBuffer(m_iboQuad);
         m_drawQuadVao->save();
     }
+    //Box vao
+    {
+        const std::array<uint16_t, 36> indices = {
+            // Front face (+Y)
+            3, 7, 6,
+            3, 6, 2,
+           // Right face (+X)
+            1, 5, 7,
+            1, 7, 3,
+           // Back face  (–Y)
+            0, 4, 5,
+            0, 5, 1,
+           // Left face  (–X)
+            2, 6, 4,
+            2, 4, 0,
+           // Top face   (+Z)
+            7, 5, 4,
+            7, 4, 6,
+           // Bottom face(–Z)
+            2, 0, 1,
+            2, 1, 3
+        };
+
+        m_iboBBox = m_device->createIndexBuffer(un("Scene_IBO_BBox"), indices.size() * sizeof(uint16_t));
+        m_iboBBox->uploadData(indices.data(), indices.size() * sizeof(uint16_t));
+
+        m_drawBBoxVao = m_device->createVertexBufferBindings();
+        m_drawBBoxVao->setIndexBuffer(m_iboBBox);
+        m_drawBBoxVao->save();
+    }
+
     {
         m_particleIndexBuffer = m_device->createIndexBuffer(un("Scene_IBO_Particle"),
                                                             MAX_PARTICLES_PER_EMITTER * 6 * sizeof(uint16_t));
@@ -355,6 +402,7 @@ MapSceneRenderBindlessVLK::MapSceneRenderBindlessVLK(const HGDeviceVLK &hDevice,
         m2Buffers.m2InstanceData = m_device->createSSBOBuffer(un("M2 InstanceData"), 1024*1024, sizeof(M2::M2InstanceRecordBindless));
         m2Buffers.meshWideBlocks = m_device->createSSBOBuffer(un("M2 MeshWide"), 1024*1024, sizeof(M2::meshWideBlockVSPS));
         m2Buffers.meshWideBlocksBindless = m_device->createSSBOBuffer(un("M2 MeshWide Bindless"), 1024*1024, sizeof(M2::meshWideBlockVSPS_Bindless));
+        m2Buffers.projectiveData = m_device->createSSBOBuffer(un("M2 Projective Data"), 64, sizeof(M2::ProjectiveData));
     }
     //Create adt Shader buffs
     {
@@ -558,7 +606,8 @@ void MapSceneRenderBindlessVLK::createM2GlobalMaterialData() {
                 .ssbo(6, m2Buffers.textureMatrices)
                 .ssbo(7, m2Buffers.m2InstanceData)
                 .ssbo(8, m2Buffers.meshWideBlocks)
-                .ssbo(9, m2Buffers.meshWideBlocksBindless);
+                .ssbo(9, m2Buffers.meshWideBlocksBindless)
+                .ssbo(10, m2Buffers.projectiveData);
 
             m2BufferOneDS = ds;
         })
@@ -606,6 +655,32 @@ std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderBindlessVLK::getM2StaticMateri
 
     m_m2StaticMaterials[pipelineTemplate] = staticMaterial;
     m_m2MatCacheId[staticMaterial->getMaterialId()] = staticMaterial;
+
+    return staticMaterial;
+}
+
+std::shared_ptr<ISimpleMaterialVLK> MapSceneRenderBindlessVLK::getM2ProjectiveStaticMaterial(const PipelineTemplate &pipelineTemplate) {
+    auto i = m_m2ProjectiveStaticMaterials.find(pipelineTemplate);
+    if (i != m_m2ProjectiveStaticMaterials.end()) {
+        return i->second;
+    }
+
+    bool isOpaq = pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque ||
+                  pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_AlphaKey;
+
+    bool isTrueOpaq = pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque;
+
+    auto staticMaterial =
+        MaterialBuilderVLK::fromShader(m_device, {"m2_projected", "m2_projected"}, m2ProjectedBindlessShaderConfig, {{0, sceneWideDS}})
+            .setMaterialId(generateUniqueM2MatId())
+            .createPipeline(m_drawBBoxVao, m_forwardRenderPass, pipelineTemplate)
+            .bindDescriptorSet(0, sceneWideDS)
+            .bindDescriptorSet(1, m2BufferOneDS)
+            .bindDescriptorSet(2, m2TextureDS)
+            .bindDescriptorSet(3, gBufferDataDS)
+            .toMaterial();
+
+    m_m2ProjectiveStaticMaterials[pipelineTemplate] = staticMaterial;
 
     return staticMaterial;
 }
@@ -899,7 +974,49 @@ std::shared_ptr<IM2ProjectiveMaterial> MapSceneRenderBindlessVLK::createM2Projec
     const PipelineTemplate &pipelineTemplate,
     const M2MaterialTemplate &m2MaterialTemplate
 ) {
-    return nullptr;
+    ZoneScoped;
+
+    auto m2ModelDataVisVLK = std::dynamic_pointer_cast<IM2ModelData>(m2ModelData);
+
+    auto vertexFragmentDataBindless = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS_Bindless>>(m2Buffers.meshWideBlocksBindless);
+    auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(m2Buffers.meshWideBlocks);
+    auto projectiveTextData = std::make_shared<CBufferChunkVLK<M2::ProjectiveData>>(m2Buffers.projectiveData);
+
+    auto staticMaterial = getM2ProjectiveStaticMaterial(pipelineTemplate);
+
+    auto material = MaterialBuilderVLK::fromMaterial(m_device, staticMaterial)
+        .toMaterial<IM2ProjectiveMaterialBindless>([&vertexFragmentDataBindless, &vertexFragmentData, &projectiveTextData](IM2ProjectiveMaterialBindless *instance) -> void {
+            instance->m_vertexFragmentDataBindless = vertexFragmentDataBindless;
+            instance->m_vertexFragmentData = vertexFragmentData;
+            instance->m_projectiveTextData = projectiveTextData;
+        });
+    {
+        auto dsUpdate = m2TextureDS->beginUpdate();
+
+        for (int i = 0; i < 4; i++) {
+            auto bindlessText = m2TextureHolder->allocate(m2MaterialTemplate.textures[i]);
+            material->m_bindlessText.push_back(bindlessText);
+            dsUpdate.texture(0, m2MaterialTemplate.textures[i], bindlessText->getIndex());
+        }
+    }
+
+    {
+        auto &modelFragmentDataVis = vertexFragmentDataBindless->getObject();
+
+        modelFragmentDataVis.instanceIndex =
+            BufferChunkHelperVLK::castToChunk(m2ModelDataVisVLK->m_instanceBindless)->getSubBuffer()->getIndex();
+        modelFragmentDataVis.meshIndex = vertexFragmentData->getSubBuffer()->getIndex();
+        modelFragmentDataVis.projectiveDataIndex = projectiveTextData->getSubBuffer()->getIndex();
+        for (int i = 0; i < 4; i++) {
+            modelFragmentDataVis.textureIndicies[i] = material->m_bindlessText[i]->getIndex();
+        }
+
+        vertexFragmentDataBindless->save();
+    }
+
+    material->instanceIndex = vertexFragmentDataBindless->getSubBuffer()->getIndex();
+
+    return material;
 }
 
 std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderBindlessVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
@@ -1246,6 +1363,7 @@ private:
     framebased::vector<DrawCommand> wmoDrawVec;
     framebased::vector<DrawCommand> waterMeshVec;
     framebased::vector<DrawCommand> adtDrawVec;
+    framebased::vector<HGMesh> projectiveMeshes;
     framebased::vector<HGMesh> commonMeshes;
 
      static void fillDrawCommand(DrawCommand &drawCommand, GMeshVLK *meshVlk) {
@@ -1311,7 +1429,9 @@ public:
     void addMesh(const HGMesh &mesh) override {
         commonMeshes.push_back(mesh);
     };
-
+    void addProjectiveMesh(const HGMesh &mesh) override {
+        projectiveMeshes.push_back(mesh);
+    }
     virtual COpaqueMeshCollector * clone() override {
         return new COpaqueMeshCollectorBindlessVLK(m_renderer);
     }
@@ -1324,6 +1444,8 @@ public:
         adtDrawVec.insert(adtDrawVec.end(), l_collector.adtDrawVec.begin(), l_collector.adtDrawVec.end());
         commonMeshes.insert(commonMeshes.end(), l_collector.commonMeshes.begin(), l_collector.commonMeshes.end());
         waterMeshVec.insert(waterMeshVec.end(), l_collector.waterMeshVec.begin(), l_collector.waterMeshVec.end());
+        projectiveMeshes.insert(projectiveMeshes.end(), l_collector.projectiveMeshes.begin(), l_collector.projectiveMeshes.end());
+
     }
 
     void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
@@ -1411,6 +1533,12 @@ public:
             for (auto const &drawCmd : waterMeshVec) {
                 cmdBuf.drawIndexed(drawCmd.indexCount, drawCmd.instanceCount, drawCmd.firstIndex, drawCmd.firstInstance, drawCmd.vertexOffset);
             }
+        }
+    }
+    void renderProjective(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
+        //Render projectiveMeshes
+        for (auto const &mesh : projectiveMeshes ) {
+            MapSceneRenderBindlessVLK::drawMesh(cmdBuf, mesh, viewPortType);
         }
     }
     void fillMeshCount(MeshCount &meshCount) {
@@ -1581,6 +1709,12 @@ std::unique_ptr<IRenderFunction> MapSceneRenderBindlessVLK::update(const std::sh
                                                                         frameInputParams->frameParameters->clearColor);
 
                         l_this->drawOpaque(frameBufCmd, l_opaqueMeshes);
+                        {
+                            auto debugHelper = frameBufCmd.beginDebugLabel("Decals Pass", {0, 0, 0.5f});
+
+                            l_opaqueMeshes->renderProjective(frameBufCmd, CmdBufRecorder::ViewportType::vp_usual);
+                        }
+
 
                         if (l_this->m_config->drawDebugLights) {
                             currentView->doDebugLightPass(frameBufCmd);
@@ -1716,6 +1850,19 @@ MapSceneRenderBindlessVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::
 
     return mesh;
 }
+HGM2Mesh
+MapSceneRenderBindlessVLK::createM2ProjectiveMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2ProjectiveMaterial> &material, int layer, int priorityPlane) {
+    ZoneScoped;
+    meshTemplate.bindings = m_drawBBoxVao;
+    auto mesh = bindlessMeshFactoryVlk->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
+    mesh->instanceIndex = std::dynamic_pointer_cast<IM2ProjectiveMaterialBindless>(material)->instanceIndex;
+    mesh->vertexStart = 0;
+    mesh->start() = 0;
+    mesh->end() = 36;
+
+    return mesh;
+}
+
 HGM2Mesh
 MapSceneRenderBindlessVLK::createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) {
 //    auto realVAO = (GVertexBufferBindingsVLK *)meshTemplate.bindings.get();

@@ -5,8 +5,13 @@
 #endif
 
 // Whole model
+struct PlacementMatStruct {
+    mat4 placementMat;
+    mat4 invPlacementMat;
+};
+
 layout(std430, set=1, binding=1) buffer readonly modelWideBlockVS {
-    mat4 uPlacementMats[];
+    PlacementMatStruct placementMats[];
 };
 
 struct modelWideBlockPSStruct {
@@ -61,3 +66,16 @@ struct meshWideBlockVSPSBindless {
 layout(std430, set=1, binding=9) buffer readonly meshWideBindless {
     meshWideBlockVSPSBindless meshWideBindleses[];
 };
+
+//Used only by projective meshes
+
+struct ProjectiveData {
+    vec4 localMin;
+    vec4 localMax;
+    mat4 localToUVMat;
+};
+
+layout(std430, set=1, binding=10) buffer readonly projectiveDataBuff {
+    ProjectiveData projectiveData[];
+};
+

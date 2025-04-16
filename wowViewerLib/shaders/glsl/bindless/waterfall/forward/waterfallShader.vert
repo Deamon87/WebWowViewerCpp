@@ -69,7 +69,7 @@ void main() {
     boneTransformMat += (boneWeights.w ) * uBoneMatrixes[boneMatInd + bones.w];
 
     int placementMatInd = instanceData.placementMatrixInd_boneMatrixInd_m2ColorsInd_textureWeightsInd.x;
-    mat4 placementMat = uPlacementMats[placementMatInd];
+    mat4 placementMat = placementMats[placementMatInd].placementMat;
     mat4 viewModelMat = scene.uLookAtMat * placementMat * boneTransformMat ;
     vec4 cameraPoint = viewModelMat * vec4(pos, 1.0);
 

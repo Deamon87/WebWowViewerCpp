@@ -7,6 +7,7 @@
 // Whole model
 layout(std140, set=1, binding=0) uniform modelWideBlockVS {
     mat4 uPlacementMat;
+    mat4 uInvPlacementMat;
 };
 
 layout(std140, set=1, binding=1) uniform modelWideBlockPS {

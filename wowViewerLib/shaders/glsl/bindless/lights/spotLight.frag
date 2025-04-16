@@ -21,15 +21,9 @@ layout(location = 0) out vec4 outColor;
 void main() {
     SpotLight lightRec = lights[lightIndex];
     
-    vec2 uv = gl_FragCoord.xy / screenSize.xy;
+    vec3 viewPos = gbuff_getViewPos(gl_FragCoord.xy, scene.uInvPMatrix);
+    vec3 viewNormal = gbuff_readNormal(gl_FragCoord.xy);
 
-    vec3 viewNormal = texture(normalTex, uv).rgb * 2.0 - vec3(1.0);
-    float sceneDepth = texture(depthTex, uv).r;
-
-    float z = (sceneDepth - 0.06f) / (1.0f - 0.06f) ;
-
-    vec4 viewPos = scene.uInvPMatrix * vec4(uv.xy * 2.0 - 1.0, z, 1.0);
-    viewPos.xyz = viewPos.xyz / viewPos.w;
 
 //    vec3 viewRay = vec3((in_viewPos.xy / vec2(in_viewPos.z)), 1.0);
 //    vec3 viewPos = (viewRay * sceneDepth);
