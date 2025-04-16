@@ -49,14 +49,14 @@ void main() {
         any(lessThan(localPoint.xyz, projectiveData.localMin.xyz - vec3(0,0,PROJECTIVE_BOUNDING_BOX_BOTTOM))) ||
         any(greaterThan(localPoint.xyz, projectiveData.localMax.xyz + vec3(0,0,PROJECTIVE_BOUNDING_BOX_UP)))
     ) {
-//        discard;
+        discard;
     }
 
     vec2 texCoordinates = (projectiveData.localToUVMat * localPoint).xy;
 
-//    if (texCoordinates.x < 0 || texCoordinates.x > 1 ||
-//        texCoordinates.y < 0 || texCoordinates.y > 1) discard;
-
+    if (texCoordinates.x < 0 || texCoordinates.x > 1 ||
+        texCoordinates.y < 0 || texCoordinates.y > 1) discard;
+//
     //Calculate material based on pixel shader
 
     outColor = vec4(0,0,1.0f,0.5);

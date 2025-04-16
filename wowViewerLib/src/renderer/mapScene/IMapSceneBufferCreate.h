@@ -41,6 +41,13 @@ PACK(
     }
 );
 
+namespace ObjStencilValues {
+    constexpr uint8_t ADT_STENCIL_VAL = 1;
+    constexpr uint8_t WMO_STENCIL_VAL = 2;
+    constexpr uint8_t M2_STENCIL_VAL = 3;
+};
+
+
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
 //    static const int PARTICLES_BUFF_NUM = IDevice::MAX_FRAMES_IN_FLIGHT + 1;

@@ -1437,6 +1437,10 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     pipelineTemplate.backFaceCulling = false;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
+    pipelineTemplate.stencilTestEnable = false;
+    pipelineTemplate.stencilWrite = true;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::M2_STENCIL_VAL;
+
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
     meshTemplate.end = skinSection->indexCount;
 
@@ -1654,6 +1658,9 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     } else {
         pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
     }
+    pipelineTemplate.stencilTestEnable = false;
+    pipelineTemplate.stencilWrite = true;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::M2_STENCIL_VAL;
 
     auto m2Material = sceneRenderer->createM2Material(m_modelWideData, pipelineTemplate, materialTemplate);
 
@@ -1682,7 +1689,12 @@ std::shared_ptr<IM2ProjectiveMaterial> M2Object::createM2ProjectiveMaterial(cons
     pipelineTemplate.depthWrite = false;
     pipelineTemplate.depthCulling = true;
     pipelineTemplate.backFaceCulling = true;
+    pipelineTemplate.triCCW = false;
     pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+
+    pipelineTemplate.stencilTestEnable = true;
+    pipelineTemplate.stencilWrite = false;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::M2_STENCIL_VAL;
 
     auto m2ProjectiveMaterial = sceneRenderer->createM2ProjectiveMaterial(m_modelWideData, pipelineTemplate, materialTemplate);
 

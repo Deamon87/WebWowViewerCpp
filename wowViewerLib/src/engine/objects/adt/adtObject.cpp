@@ -373,6 +373,11 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     pipelineTemplate.backFaceCulling = true;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
+    pipelineTemplate.stencilTestEnable = false;
+    pipelineTemplate.stencilWrite = true;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::ADT_STENCIL_VAL;
+
+
     auto const &stripOffsets = !m_api->getConfig()->ignoreADTHoles ?
                          m_adtFile->stripOffsets :
                          m_adtFile->stripOffsetsNoHoles;

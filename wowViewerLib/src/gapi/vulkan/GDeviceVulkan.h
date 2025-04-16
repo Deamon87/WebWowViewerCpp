@@ -129,7 +129,10 @@ public:
                                 EGxBlendEnum blendMode,
                                 bool depthCulling,
                                 bool depthWrite,
-                                uint8_t colorMask);
+                                uint8_t colorMask,
+                                bool stencilTestEnable,
+                                bool stencilWrite,
+                                uint8_t stencilWriteVal);
 
     std::shared_ptr<GRenderPassVLK> getRenderPass(const std::vector<ITextureFormat> &textureAttachments,
                                                   ITextureFormat depthAttachment,
@@ -235,6 +238,9 @@ protected:
         bool depthCulling;
         bool depthWrite;
         uint8_t colorMask;
+        bool stencilTestEnable;
+        bool stencilWrite;
+        uint8_t stencilWriteVal;
 
 
         bool operator==(const PipelineCacheRecord &other) const {
@@ -247,7 +253,11 @@ protected:
                 (blendMode == other.blendMode) &&
                 (depthCulling == other.depthCulling) &&
                 (depthWrite == other.depthWrite) &&
-                (colorMask == other.colorMask);
+                (colorMask == other.colorMask) &&
+                (stencilTestEnable == other.stencilTestEnable) &&
+                (stencilWrite == other.stencilWrite) &&
+                (stencilWriteVal == other.stencilWriteVal);
+
         };
     };
     struct PipelineCacheRecordHasher {
@@ -261,7 +271,10 @@ protected:
             (hash<bool >{}(k.depthWrite) << 10) ^
             (hash<EGxBlendEnum>{}(k.blendMode) << 14) ^
             (hash<DrawElementMode>{}(k.element) << 16) ^
-            (hash<uint8_t>{}(k.colorMask) << 18);
+            (hash<uint8_t>{}(k.colorMask) << 18) ^
+            (hash<uint8_t>{}(k.stencilWriteVal) << 7) ^
+            (hash<bool>{}(k.stencilTestEnable) << 15) ^
+            (hash<bool>{}(k.stencilWrite) << 11);
         };
     };
     std::unordered_map<PipelineCacheRecord, std::weak_ptr<GPipelineVLK>, PipelineCacheRecordHasher> loadedPipeLines;

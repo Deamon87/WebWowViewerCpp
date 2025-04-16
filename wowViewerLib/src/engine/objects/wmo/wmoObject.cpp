@@ -1509,6 +1509,10 @@ std::shared_ptr<IWMOMaterial> WmoObject::getMaterialInstance(int materialIndex, 
 
     pipelineTemplate.blendMode = static_cast<EGxBlendEnum>(blendMode);
 
+    pipelineTemplate.stencilTestEnable = false;
+    pipelineTemplate.stencilWrite = true;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::WMO_STENCIL_VAL;
+
     bool isSecondTextSpec = material.shader == 8;
 
     HGSamplableTexture texture1 = getTexture(material.diffuseNameIndex, false);

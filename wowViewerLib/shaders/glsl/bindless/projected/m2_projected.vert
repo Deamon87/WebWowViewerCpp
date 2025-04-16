@@ -50,6 +50,9 @@ void main()
 
     vec3 localPoint = center + bboxPos * scale + vec3(0,0,newCenter + bboxPos.z * newHalfOfHeight);
 
+    vec4 worldPoint = placementMat * vec4(localPoint, 1.0);
+    vec4 viewPoint = scene.uLookAtMat * worldPoint;
+
     // Transform the vertex position to clip space using the provided mvp matrix.
     gl_Position = scene.uPMatrix * viewPoint;
     vMeshIndex = gl_InstanceIndex;

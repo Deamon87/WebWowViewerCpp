@@ -665,7 +665,7 @@ VkFormat GDeviceVLK::findSupportedFormat(const std::vector<VkFormat>& candidates
 
 VkFormat GDeviceVLK::findDepthFormat() {
     return findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
@@ -1435,7 +1435,10 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                         EGxBlendEnum blendMode,
                                         bool depthCulling,
                                         bool depthWrite,
-                                        uint8_t colorMask) {
+                                        uint8_t colorMask,
+                                        bool stencilTestEnable,
+                                        bool stencilWrite,
+                                        uint8_t stencilWriteVal) {
 
     PipelineCacheRecord pipelineCacheRecord = {
         .shader = shader,
@@ -1448,6 +1451,9 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
         .depthCulling = depthCulling,
         .depthWrite = depthWrite,
         .colorMask = colorMask,
+        .stencilTestEnable = stencilTestEnable,
+        .stencilWrite = stencilWrite,
+        .stencilWriteVal = stencilWriteVal,
     };
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
@@ -1466,7 +1472,10 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                       triCCW,
                                       blendMode,
                                       depthCulling, depthWrite,
-                                      colorMask);
+                                      colorMask,
+                                      stencilTestEnable,
+                                      stencilWrite,
+                                      stencilWriteVal);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;
