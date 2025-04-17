@@ -1805,17 +1805,19 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_v
                 }
             }
         }
-        for (int i = 0; i < this->m_meshProjectiveArray.size(); i++) {
-            int currentM2BatchIndex = std::get<1>(this->m_meshProjectiveArray[i]);
+        if (m_api->getConfig()->renderM2Decals) {
+            for (int i = 0; i < this->m_meshProjectiveArray.size(); i++) {
+                int currentM2BatchIndex = std::get<1>(this->m_meshProjectiveArray[i]);
 
-            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
-            bool meshIsInvisible = (finalTransparency < 0.0001);
+                float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+                bool meshIsInvisible = (finalTransparency < 0.0001);
 
-            if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
-                continue;
+                if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
+                    continue;
 
-            HGM2Mesh mesh = std::get<0>(this->m_meshProjectiveArray[i]);
-            opaqueMeshCollector.addProjectiveMesh(mesh);
+                HGM2Mesh mesh = std::get<0>(this->m_meshProjectiveArray[i]);
+                opaqueMeshCollector.addProjectiveMesh(mesh);
+            }
         }
     }
 

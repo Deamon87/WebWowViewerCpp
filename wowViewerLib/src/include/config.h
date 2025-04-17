@@ -46,6 +46,7 @@ public:
     bool renderAdt = true;
     bool renderWMO = true;
     bool renderM2 = true;
+    bool renderM2Decals = true;
     bool renderRibbons = true;
     bool renderSkyDom = true;
     bool renderSkyScene = true;

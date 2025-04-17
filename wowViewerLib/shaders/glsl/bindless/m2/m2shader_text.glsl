@@ -77,10 +77,6 @@ void main() {
 
     vec3 l_Normal = vNormal;
 
-    //Accumulate and apply lighting
-
-    vec3 meshResColor = vMeshColorAlpha.rgb;
-
     //----------------------
     // Calc Diffuse and Specular
     //---------------------

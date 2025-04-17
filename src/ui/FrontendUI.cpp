@@ -1561,6 +1561,13 @@ void FrontendUI::showSettingsDialog() {
             }
 
             {
+                bool renderM2Decals = m_api->getConfig()->renderM2Decals;
+                if (ImGui::Checkbox("Render M2 Decals", &renderM2Decals)) {
+                    m_api->getConfig()->renderM2Decals = renderM2Decals;
+                }
+            }
+
+            {
                 bool renderParticles = m_api->getConfig()->maxParticle >= 0;
                 if (ImGui::Checkbox("Render Particles", &renderParticles)) {
                     m_api->getConfig()->maxParticle = renderParticles ? 9999 : -1;
