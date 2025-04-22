@@ -87,9 +87,9 @@ public:
         float f = 1.0f / tan(fovR / 2.0f);
         return mathfu::mat4(
             f / aspect, 0.0f,  0.0f,  0.0f,
-            0.0f,    f,  0.0f,  0.0f,
-            0.0f, 0.0f,  -1, 1.0f,
-            0.0f, 0.0f, 2.0f,  0.0f);
+            0.0f,          f,  0.0f,  0.0f,
+            0.0f,       0.0f,    -1,  1.0f,
+            0.0f,       0.0f,   2.0f, 0.0f);
     }
 
     static inline mathfu::mat4 RotationX(float angle) {

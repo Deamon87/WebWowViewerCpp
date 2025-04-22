@@ -31,6 +31,7 @@
 #include "childWindow/fileListWindow/FileListWindow.h"
 #include "childWindow/sceneWindow/SceneWindow.h"
 #include "childWindow/m2Window/M2Window.h"
+#include "childWindow/mapSelectionWindow/MapSelectDialog.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -85,38 +86,11 @@ private:
     void getDebugCameraPos(float &cameraX,float &cameraY,float &cameraZ);
     void makeScreenshotCallback(std::string fileName, int width, int height);
 
-    void getAdtSelectionMinimap(int wdtFileDataId);
-    void getAdtSelectionMinimap(std::string wdtFilePath);
-    void getMapList(std::vector<MapRecord> &mapList);
-
-    bool fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists);
-
     std::shared_ptr<SceneWindow> getOrCreateWindow();
     void unloadScene();
     void resetAnimationCallback();
 
-    std::array<std::array<HGSamplableTexture, 64>, 64> adtSelectionMinimapTextures;
-    std::array<std::array<std::shared_ptr<IUIMaterial>, 64>, 64> adtSelectionMinimapMaterials;
-    std::vector<mapInnerZoneLightRecord> m_zoneLights = {};
-    std::vector<LightResult> m_mapLights = {};
-    int limitZoneLight = -1;
-
-    void emptyMinimap() {
-        for (int i = 0; i < 64; i++) {
-            for (int j = 0; j < 64; j++) {
-                adtSelectionMinimapTextures[i][j] = nullptr;
-                adtSelectionMinimapMaterials[i][j] = nullptr;
-            }
-        }
-    }
-
     auto createMinimapGenerator();
-
-    std::array<char, 128> filterText = {0};
-    bool refilterIsNeeded = false;
-    bool resortIsNeeded = false;
-    void filterMapList(const std::string &text);
-    void fillMapListStrings();
 
     ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory, true);
     ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
@@ -133,25 +107,14 @@ private:
     bool showMapConstruction = false;
 
     bool cascOpened = false;
-    bool mapCanBeOpened = true;
-    bool adtMinimapFilled = false;
 
     int windowWidth = 640;
     int windowHeight = 480;
-
-
-    float minimapZoom = 1;
-    bool drawZoneLights = false;
-    bool drawAreaLights = false;
 
     int currentTime = 0;
 
     int  threadCount = 4;
     int  quickSortCutoff = 100;
-    float prevMinimapZoom = 1;
-    float prevZoomedSize = 0;
-    int prevMapId = -1;
-    bool isWmoMap = false;
 
     bool pauseAnimation = true;
 
@@ -161,21 +124,7 @@ private:
     int glowSource = 0;
     float customGlow = 0.0;
 
-
-
-    MapRecord prevMapRec;
-
-    float worldPosX = 0;
-    float worldPosY = 0;
-    float worldPosZ = 0;
-
     HApiContainer m_api;
-
-    HWdtFile m_wdtFile = nullptr;
-
-    std::vector<MapRecord> mapList = {};
-    std::vector<MapRecord> filteredMapList = {};
-    std::vector<std::vector<std::string>> mapListStringMap = {};
 
     int lastWidth = 100;
     int lastHeight = 100;
@@ -194,6 +143,7 @@ private:
     std::shared_ptr<IExporter> exporter;
     int exporterFramesReady = 0;
 
+    std::shared_ptr<MapSelectDialog> m_mapSelectDialog = nullptr;
     std::shared_ptr<MinimapGenerationWindow> m_minimapGenerationWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpViewerWindow = nullptr;
     std::shared_ptr<BLPViewer> m_blpFileViewerWindow = nullptr;
@@ -240,7 +190,6 @@ public:
     void showMapConstructionDialog();
     void showMakeScreenshotDialog();
 
-    void showAdtSelectionMinimap();
     void showSettingsDialog();
     void showQuickLinksDialog();
 
