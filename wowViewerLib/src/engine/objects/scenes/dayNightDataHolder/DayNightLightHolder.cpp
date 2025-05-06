@@ -565,7 +565,13 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
     LightParamData lightParamData;
     if (m_api->databaseHandler->getLightParamData(lightParamId, config->currentTime, lightParamData)) {
 
-        float blendTimeCoeff = (config->currentTime - lightParamData.lightTimedData[0].time) / (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
+        bool resultTimeIsTheSame = lightParamData.lightTimedData[1].time == lightParamData.lightTimedData[0].time;
+        float blendTimeCoeff = 0.0f;
+        if (!resultTimeIsTheSame)
+            blendTimeCoeff =
+                (float)(config->currentTime - lightParamData.lightTimedData[0].time) /
+                (float)(lightParamData.lightTimedData[1].time - lightParamData.lightTimedData[0].time);
+
         blendTimeCoeff = std::min<float>(std::max<float>(blendTimeCoeff, 0.0f), 1.0f);
 
         skyBodyData.skyBoxInfo = lightParamData.skyboxInfo;
@@ -694,6 +700,8 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         {
             fogResult.FogScaler = fogScalarOverride;
         }
+    } else {
+        lightParamData.lightTimedData[0].time = 0;
     }
 }
 

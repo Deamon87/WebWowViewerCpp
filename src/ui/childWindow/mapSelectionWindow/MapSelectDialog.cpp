@@ -115,11 +115,9 @@ void MapSelectDialog::renderLeftSide() {
                                           break;
                                   }
                                   if (delta > 0)
-                                      return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true
-                                                 : false;
+                                      return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true : false;
                                   if (delta < 0)
-                                      return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false
-                                                 : true;
+                                      return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false : true;
                               }
 
                               return (a.ID - b.ID) > 0;
