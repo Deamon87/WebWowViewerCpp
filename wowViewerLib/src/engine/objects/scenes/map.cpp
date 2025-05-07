@@ -1208,7 +1208,7 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
                            mathfu::vec3(0,0,0);
 
         if (EndFogColor.Length() < 0.0001) {
-            EndFogColor = renderPlan->frameDependentData->skyColors.SkyFogColor.xyz();
+            EndFogColor = renderPlan->frameDependentData->skyColors.SkyFogColor;
         }
 
 
@@ -1225,12 +1225,12 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
     if (skyMeshMat)
     {
         auto &meshblockVS = skyMeshMat->m_skyColors->getObject();
-        meshblockVS.skyColor[0] = renderPlan->frameDependentData->skyColors.SkyTopColor;
-        meshblockVS.skyColor[1] = renderPlan->frameDependentData->skyColors.SkyMiddleColor;
-        meshblockVS.skyColor[2] = renderPlan->frameDependentData->skyColors.SkyBand1Color;
-        meshblockVS.skyColor[3] = renderPlan->frameDependentData->skyColors.SkyBand2Color;
-        meshblockVS.skyColor[4] = renderPlan->frameDependentData->skyColors.SkySmogColor;
-        meshblockVS.skyColor[5] = renderPlan->frameDependentData->skyColors.SkyFogColor;
+        meshblockVS.skyColor[0] = mathfu::vec4(renderPlan->frameDependentData->skyColors.SkyTopColor,    0);
+        meshblockVS.skyColor[1] = mathfu::vec4(renderPlan->frameDependentData->skyColors.SkyMiddleColor, 0);
+        meshblockVS.skyColor[2] = mathfu::vec4(renderPlan->frameDependentData->skyColors.SkyBand1Color,  0);
+        meshblockVS.skyColor[3] = mathfu::vec4(renderPlan->frameDependentData->skyColors.SkyBand2Color,  0);
+        meshblockVS.skyColor[4] = mathfu::vec4(renderPlan->frameDependentData->skyColors.SkySmogColor,   0);
+        meshblockVS.skyColor[5] = mathfu::vec4(renderPlan->frameDependentData->skyColors.SkyFogColor,    0);
         skyMeshMat->m_skyColors->save();
     }
 

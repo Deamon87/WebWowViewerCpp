@@ -42,20 +42,20 @@ struct FogResult {
 };
 
 struct SkyColors {
-    mathfu::vec4 SkyTopColor;
-    mathfu::vec4 SkyMiddleColor;
-    mathfu::vec4 SkyBand1Color;
-    mathfu::vec4 SkyBand2Color;
-    mathfu::vec4 SkySmogColor;
-    mathfu::vec4 SkyFogColor;
+    mathfu::vec3 SkyTopColor;
+    mathfu::vec3 SkyMiddleColor;
+    mathfu::vec3 SkyBand1Color;
+    mathfu::vec3 SkyBand2Color;
+    mathfu::vec3 SkySmogColor;
+    mathfu::vec3 SkyFogColor;
 
     void assignZeros() {
-        SkyTopColor = {0,0,0,0};
-        SkyMiddleColor = {0,0,0,0};
-        SkyBand1Color = {0,0,0,0};
-        SkyBand2Color = {0,0,0,0};
-        SkySmogColor = {0,0,0,0};
-        SkyFogColor = {0,0,0,0};
+        SkyTopColor     = {0,0,0};
+        SkyMiddleColor  = {0,0,0};
+        SkyBand1Color   = {0,0,0};
+        SkyBand2Color   = {0,0,0};
+        SkySmogColor    = {0,0,0};
+        SkyFogColor     = {0,0,0};
     }
 };
 
@@ -72,30 +72,39 @@ struct SkyBodyData {
 };
 
 struct LiquidColors {
-    mathfu::vec4 closeRiverColor_shallowAlpha = mathfu::vec4(0,0,0,0);
-    mathfu::vec4 farRiverColor_deepAlpha = mathfu::vec4(0,0,0,0);
+    mathfu::vec3 closeRiverColor = mathfu::vec3(0,0,0);
+    mathfu::vec3 farRiverColor = mathfu::vec3(0,0,0);
+    float riverShallowAlpha = 0;
+    float riverDeepAlpha = 0;
 
-    mathfu::vec4 closeOceanColor_shallowAlpha = mathfu::vec4(0,0,0,0);
-    mathfu::vec4 farOceanColor_deepAlpha = mathfu::vec4(0,0,0,0);
+    mathfu::vec3 closeOceanColor = mathfu::vec3(0,0,0);
+    mathfu::vec3 farOceanColor = mathfu::vec3(0,0,0);
+    float oceanShallowAlpha = 0;
+    float oceanDeepAlpha = 0;
 
     void assignZeros() {
-        closeRiverColor_shallowAlpha =  {0, 0, 0, 0};
-        farRiverColor_deepAlpha =  {0, 0, 0, 0};
-        closeOceanColor_shallowAlpha =  {0, 0, 0, 0};
-        farOceanColor_deepAlpha =  {0, 0, 0, 0};
+        closeRiverColor = {0, 0, 0};
+        farRiverColor =  {0, 0, 0};
+        riverShallowAlpha = 0;
+        riverDeepAlpha = 0;
+
+        closeOceanColor =  {0, 0, 0};
+        farOceanColor =  {0, 0, 0};
+        oceanShallowAlpha = 0;
+        oceanDeepAlpha = 0;
     }
 };
 struct ExteriorColors {
-    mathfu::vec4 exteriorAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorHorizontAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorGroundAmbientColor = {1, 1, 1, 1};
-    mathfu::vec4 exteriorDirectColor = {0.3f,0.3f,0.3f, 0.3f};
+    mathfu::vec3 exteriorAmbientColor =         {1, 1, 1};
+    mathfu::vec3 exteriorHorizontAmbientColor = {1, 1, 1};
+    mathfu::vec3 exteriorGroundAmbientColor =   {1, 1, 1};
+    mathfu::vec3 exteriorDirectColor =          {0.3f,0.3f,0.3f};
 
     void assignZeros() {
-        exteriorAmbientColor =  {0, 0, 0, 0};
-        exteriorHorizontAmbientColor =  {0, 0, 0, 0};
-        exteriorGroundAmbientColor =  {0, 0, 0, 0};
-        exteriorDirectColor =  {0, 0, 0, 0};
+        exteriorAmbientColor =          {0, 0, 0};
+        exteriorHorizontAmbientColor =  {0, 0, 0};
+        exteriorGroundAmbientColor =    {0, 0, 0};
+        exteriorDirectColor =           {0, 0, 0};
     }
 };
 

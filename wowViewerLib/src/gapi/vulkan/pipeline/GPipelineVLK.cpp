@@ -44,7 +44,10 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     EGxBlendEnum blendMode,
     bool depthCulling,
     bool depthWrite,
-    uint8_t colorMask) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    uint8_t colorMask,
+    bool stencilTestEnable,
+    bool stencilWrite,
+    uint8_t stencilWriteVal) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
     auto &arrVLKFormat = bufferBindingsVlk->getVLKFormat();
@@ -72,6 +75,9 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         depthCulling,
         depthWrite,
         colorMask,
+        stencilTestEnable,
+        stencilWrite,
+        stencilWriteVal,
         vertexBindingDescriptions,
         vertexAttributeDescriptions);
 }
@@ -97,7 +103,9 @@ void GPipelineVLK::createPipeline(
         bool depthCulling,
         bool depthWrite,
         uint8_t colorMask,
-
+        bool stencilTestEnable,
+        bool stencilWrite,
+        uint8_t stencilWriteVal,
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
         const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
 
@@ -248,7 +256,16 @@ void GPipelineVLK::createPipeline(
     depthStencil.depthWriteEnable = depthWrite ? VK_TRUE : VK_FALSE;
     depthStencil.depthCompareOp = renderPass->getInvertZ() ? VK_COMPARE_OP_GREATER_OR_EQUAL : VK_COMPARE_OP_LESS_OR_EQUAL;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
-    depthStencil.stencilTestEnable = VK_FALSE;
+    depthStencil.stencilTestEnable = (stencilTestEnable || stencilWrite) ? VK_TRUE : VK_FALSE;
+    depthStencil.front = {
+        .failOp = VK_STENCIL_OP_KEEP,
+        .passOp = stencilWrite ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP,
+        .depthFailOp = VK_STENCIL_OP_KEEP,
+        .compareOp = stencilTestEnable ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_ALWAYS,
+        .compareMask = 0xFF,
+        .writeMask = 0xFF,
+        .reference = stencilWriteVal
+    };
 
     static const std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 

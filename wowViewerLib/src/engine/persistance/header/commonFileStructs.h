@@ -9,6 +9,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#define NOMINMAX 1
+
 #include <cstdint>
 #include <array>
 #include <string>
@@ -54,7 +56,6 @@
 #endif
 #endif
 
-#define NOMINMAX 1
 
 //#define DEBUGPOINTER 1
 

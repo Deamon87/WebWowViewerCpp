@@ -502,7 +502,7 @@ void CSqliteDB::getTimedLightParamData(int lightParamId, int time, LightParamDat
             timeIndex++;
         }
 
-        if (timeIndex > 1) return;
+        if (timeIndex > 1) break;
 
         auto &currLdRes = lightParamData.lightTimedData[timeIndex];
         currLdRes.time = thisTime;

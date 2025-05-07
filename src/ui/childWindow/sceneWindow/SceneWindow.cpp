@@ -198,8 +198,7 @@ void SceneWindow::openM2SceneByfdid(int m2Fdid, const std::vector<int> &replacem
 
     m_camera = std::make_shared<FirstPersonCamera>();
     m_camera->setMovementSpeed(movementSpeed);
-    m_api->getConfig()->BCLightHack = false;
-//
+
     m_camera->setCameraPos(0, 0, 0);
 
     {

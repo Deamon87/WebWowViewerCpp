@@ -179,10 +179,6 @@ class IDevice {
         virtual void startUpdateForNextFrame() {};
         virtual void endUpdateForNextFrame() {};
 
-//        virtual void updateBuffers(std::vector<std::vector<HGUniformBufferChunk>*> &bufferChunks, std::vector<HFrameDependantData> &frameDepedantData)= 0;
-        virtual void uploadTextureForMeshes(std::vector<HGMesh> &meshes) = 0;
-
-
         virtual void drawFrame(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) = 0;
 //        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 

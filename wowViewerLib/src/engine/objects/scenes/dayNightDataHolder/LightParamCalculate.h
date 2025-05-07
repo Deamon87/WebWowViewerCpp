@@ -116,7 +116,8 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
         }
     }
 
-    if (foundZoneLights.empty()) {
+    // if (foundZoneLights.empty()) {
+    if (true) {
         if (stateForConditions != nullptr && defaultLightParamId > 0 && defaultLightId > 0) {
             stateForConditions->currentLightParams.push_back({defaultLightParamId, 1.0f});
             stateForConditions->currentLightIds.push_back({defaultLightId, 1.0f});
@@ -160,6 +161,10 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
             stateForConditions->currentLightIds.push_back({it->id, it->blendAlpha});
         }
     }
+
+    // if (paramsBlend.size() > 0) {
+    //     paramsBlend[0].blend = 1.0f;
+    // }
 
     return paramsBlend;
 }

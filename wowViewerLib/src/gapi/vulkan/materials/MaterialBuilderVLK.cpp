@@ -75,7 +75,10 @@ MaterialBuilderVLK &MaterialBuilderVLK::createPipeline(const HGVertexBufferBindi
         pipelineTemplate.blendMode,
         pipelineTemplate.depthCulling,
         pipelineTemplate.depthWrite,
-        pipelineTemplate.colorMask
+        pipelineTemplate.colorMask,
+        pipelineTemplate.stencilTestEnable,
+        pipelineTemplate.stencilWrite,
+        pipelineTemplate.stencilWriteVal
     );
 
     return *this;
@@ -104,7 +107,10 @@ MaterialBuilderVLK& MaterialBuilderVLK::createGBufferPipeline(const HGVertexBuff
         m_pipelineTemplate.blendMode,
         m_pipelineTemplate.depthCulling,
         m_pipelineTemplate.depthWrite,
-        m_pipelineTemplate.colorMask
+        m_pipelineTemplate.colorMask,
+        m_pipelineTemplate.stencilTestEnable,
+        m_pipelineTemplate.stencilWrite,
+        m_pipelineTemplate.stencilWriteVal
     );
 
     return *this;

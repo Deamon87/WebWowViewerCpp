@@ -33,46 +33,46 @@ struct LightResult {
 };
 
 struct LightTimedData {
-    int time;
+    int time = 0;
 
     int ambientLight = 0 ;
     int horizontAmbientColor = 0;
     int groundAmbientColor = 0;
 
-    int directColor;
+    int directColor = 0;
 
-    int closeRiverColor;
-    int farRiverColor;
-    int closeOceanColor;
-    int farOceanColor;
+    int closeRiverColor = 0;
+    int farRiverColor = 0;
+    int closeOceanColor = 0;
+    int farOceanColor = 0;
 
-    int SkyTopColor;
-    int SkyMiddleColor;
-    int SkyBand1Color;
-    int SkyBand2Color;
-    int SkySmogColor;
-    int SkyFogColor;
+    int SkyTopColor = 0;
+    int SkyMiddleColor = 0;
+    int SkyBand1Color = 0;
+    int SkyBand2Color = 0;
+    int SkySmogColor = 0;
+    int SkyFogColor = 0;
 
-    float FogEnd;
-    float FogScaler;
-    float FogDensity;
-    float FogHeight;
-    float FogHeightScaler;
-    float FogHeightDensity;
-    float FogZScalar;
-    float MainFogStartDist;
-    float MainFogEndDist;
-    float SunFogAngle;
-    int EndFogColor;
-    float EndFogColorDistance;
-    float FogStartOffset;
-    int SunFogColor;
-    float SunFogStrength;
-    int FogHeightColor;
-    int EndFogHeightColor;
-    std::array<float, 4> FogHeightCoefficients;
-    std::array<float, 4> MainFogCoefficients;
-    std::array<float, 4> HeightDensityFogCoeff;
+    float FogEnd = 0.0f;
+    float FogScaler = 0.0f;
+    float FogDensity = 0.0f;
+    float FogHeight = 0.0f;
+    float FogHeightScaler = 0.0f;
+    float FogHeightDensity = 0.0f;
+    float FogZScalar = 0.00001f;
+    float MainFogStartDist = 0.00001f;
+    float MainFogEndDist = 0.00001f;
+    float SunFogAngle = 0.0f;
+    int EndFogColor = 0;
+    float EndFogColorDistance = 0.0f;
+    float FogStartOffset = 0.00001f;
+    int SunFogColor = 0;
+    float SunFogStrength = 0.0f;
+    int FogHeightColor = 0;
+    int EndFogHeightColor = 0;
+    std::array<float, 4> FogHeightCoefficients = {0.f, 0.f, 0.f, 0.f};
+    std::array<float, 4> MainFogCoefficients = {0.f, 0.f, 0.f, 0.f};
+    std::array<float, 4> HeightDensityFogCoeff = {0.f, 0.f, 0.f, 0.f};
 };
 
 struct SkyBoxInfo {

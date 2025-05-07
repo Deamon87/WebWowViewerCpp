@@ -1061,45 +1061,46 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
 
     //Update materials`
     if (m_firstUpdate || m_placementMatrixChanged) {
-        auto &placementMatrix = m_modelWideDataBuff->m_placementMatrix->getObject();
+        auto &placementMatrix = m_modelWideData->m_placementMatrix->getObject();
         placementMatrix.uPlacementMat = m_placementMatrix;
-        m_modelWideDataBuff->m_placementMatrix->save();
+        placementMatrix.invPlacementMat = m_placementInvertMatrix;
+        m_modelWideData->m_placementMatrix->save();
         m_placementMatrixChanged = false;
     }
     if (m_firstUpdate || (!bonesMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)])) {
-        auto &bonesData = m_modelWideDataBuff->m_bonesData->getObject();
+        auto &bonesData = m_modelWideData->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
-        m_modelWideDataBuff->m_bonesData->save();
+        m_modelWideData->m_bonesData->save();
     }
     if (m_firstUpdate || (!subMeshColors.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)])) {
-        auto &m2Colors = m_modelWideDataBuff->m_colors->getObject();
+        auto &m2Colors = m_modelWideData->m_colors->getObject();
         int m2ColorsCnt = (int) std::min(subMeshColors.size(), (size_t) MAX_M2COLORS_NUM);
 
         std::copy(subMeshColors.data(), subMeshColors.data() + m2ColorsCnt, m2Colors.colors);
-        m_modelWideDataBuff->m_colors->save();
+        m_modelWideData->m_colors->save();
     }
 
     if (m_firstUpdate || (!transparencies.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::transparencies)])) {
-        auto &textureWeights = m_modelWideDataBuff->m_textureWeights->getObject();
+        auto &textureWeights = m_modelWideData->m_textureWeights->getObject();
         int textureWeightsCnt = (int) std::min(transparencies.size(), (size_t) MAX_TEXTURE_WEIGHT_NUM);
 
         std::copy(transparencies.data(), transparencies.data() + textureWeightsCnt, textureWeights.textureWeight);
-        m_modelWideDataBuff->m_textureWeights->save();
+        m_modelWideData->m_textureWeights->save();
     }
 
     if (m_firstUpdate || (!textAnimMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::textAnimMatrices)])) {
-        auto &textureMatrices = m_modelWideDataBuff->m_textureMatrices->getObject();
+        auto &textureMatrices = m_modelWideData->m_textureMatrices->getObject();
         int textureMatricesCnt = (int) std::min(textAnimMatrices.size(), (size_t) MAX_TEXTURE_MATRIX_NUM);
 
         std::copy(textAnimMatrices.data(), textAnimMatrices.data() + textureMatricesCnt, textureMatrices.textureMatrix);
-        m_modelWideDataBuff->m_textureMatrices->save();
+        m_modelWideData->m_textureMatrices->save();
     }
 
     if (m_firstUpdate || m_modelWideDataChanged || m_setInteriorSunDir)
     {
-        auto &modelFragmentData = m_modelWideDataBuff->m_modelFragmentData->getObject();
+        auto &modelFragmentData = m_modelWideData->m_modelFragmentData->getObject();
         static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
         mathfu::vec4 localDiffuse = diffuseNon;
 
@@ -1131,12 +1132,9 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
                 m_setInteriorSunDir ? 1.0f : 0.f
             ));
 
-        //Lights
-        bool BCLoginScreenHack = m_api->getConfig()->BCLightHack;
-        modelFragmentData.LightCount = 0;
-        modelFragmentData.bcHack = BCLoginScreenHack ? 1 : 0;
+        modelFragmentData.modelAlpha = m_alpha;
 
-        m_modelWideDataBuff->m_modelFragmentData->save();
+        m_modelWideData->m_modelFragmentData->save();
         m_modelWideDataChanged = false;
     }
 
@@ -1436,6 +1434,10 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     pipelineTemplate.backFaceCulling = false;
     pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
 
+    pipelineTemplate.stencilTestEnable = false;
+    pipelineTemplate.stencilWrite = true;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::M2_STENCIL_VAL;
+
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
     meshTemplate.end = skinSection->indexCount;
 
@@ -1447,7 +1449,7 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     m2WaterfallMaterialTemplate.textures[3] = getTexture(3); //bumpTexture
     m2WaterfallMaterialTemplate.textures[4] = getTexture(4); //normalTex
 
-    auto waterfallMaterial = sceneRenderer->createM2WaterfallMaterial(m_modelWideDataBuff, pipelineTemplate, m2WaterfallMaterialTemplate);
+    auto waterfallMaterial = sceneRenderer->createM2WaterfallMaterial(m_modelWideData, pipelineTemplate, m2WaterfallMaterialTemplate);
 
     {
         auto &waterfallCommon = waterfallMaterial->m_waterfallCommon->getObject();
@@ -1496,6 +1498,9 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     return hmesh;
 }
 
+bool isProjectiveTexture(M2Batch * batch) {
+    return (batch->flags & 0x4) > 0;// || (batch->geosetIndex & 0x2) > 0; // something is wrong with these flags2
+}
 
 void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     ZoneScoped;
@@ -1519,6 +1524,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     m_materialArray.resize(std::max<int32_t>(batches.size, 0));
     m_forcedTranspMaterialArray.resize(std::max<int32_t>(batches.size, 0));
+    m_projectiveMaterialArray.resize(std::max<int32_t>(batches.size, 0));
 
     if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
         //Create materials
@@ -1529,12 +1535,26 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
             this->m_materialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, mainBlendMode, false);
             this->m_forcedTranspMaterialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, forcedTranspBlend, true);
+
+            if (isProjectiveTexture(m2Batch)) {
+
+
+                this->m_projectiveMaterialArray[batchIndex] = createM2ProjectiveMaterial(sceneRenderer, batchIndex);
+            }
         }
+        //Create meshes
         for (int batchIndex = 0; batchIndex < batches.size; batchIndex++) {
             auto m2Batch = batches[batchIndex];
             auto skinSection = skinProfile->skinSections[m2Batch->skinSectionIndex];
             if (!checkifBonesAreInRange(skinProfile, skinSection)) {
                 batchesRequiringDynamicVao.push_back(batchIndex);
+                continue;
+            }
+
+            if (isProjectiveTexture(m2Batch)) {
+                auto mesh = createProjectiveMesh(sceneRenderer, m_projectiveMaterialArray[batchIndex], skinSection, m2Batch);
+                this->m_meshProjectiveArray.emplace_back(mesh, batchIndex);
+
                 continue;
             }
 
@@ -1556,7 +1576,6 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         }
 
         // Create meshes requiring dynamic
-
         for (int j = 0; j < batchesRequiringDynamicVao.size(); j++) {
             int batchIndex = batchesRequiringDynamicVao[j];
             auto m2Batch = skinProfile->batches[batchIndex];
@@ -1588,23 +1607,12 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
             dynamicMeshes.push_back(dynamicMeshData);
         }
-
-        {
-            M2Data* m2File = this->m_m2Geom->getM2Data();
-            M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
-            for (auto& material : m_materialArray) {
-                M2MeshBufferUpdater::updateMaterialData(material, this, m2File, skinData);
-            }
-            for (auto& material : m_forcedTranspMaterialArray) {
-                M2MeshBufferUpdater::updateMaterialData(material, this, m2File, skinData);
-            }
-        }
-
     } else {
         m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
-    m_finalTransparencies.resize(m_meshArray.size(), 1.0);
+    constexpr float defaultTranspVal = 1.0f;
+    m_finalTransparencies.resize(m_meshArray.size(), defaultTranspVal);
 }
 
 EGxBlendEnum M2Object::getBlendMode(int batchIndex) {
@@ -1627,6 +1635,9 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     const auto &batches = m_skinGeom->getSkinData()->batches;
     auto m2Batch = batches[batchIndex];
 
+    //Do not create projective material using this function
+    if (isProjectiveTexture(m2Batch)) return nullptr;
+
     if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
 
     int materialIndex = m2Batch->materialIndex;
@@ -1644,9 +1655,57 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     } else {
         pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
     }
+    pipelineTemplate.stencilTestEnable = false;
+    pipelineTemplate.stencilWrite = true;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::M2_STENCIL_VAL;
 
-    auto m2Material = sceneRenderer->createM2Material(m_modelWideDataBuff, pipelineTemplate, materialTemplate);
+    auto m2Material = sceneRenderer->createM2Material(m_modelWideData, pipelineTemplate, materialTemplate);
+
+    //Update material
+    M2MeshBufferUpdater::updateMaterialData(m2Material, this, m_m2Data, m_skinGeom->getSkinData());
+
     return m2Material;
+}
+
+std::shared_ptr<IM2ProjectiveMaterial> M2Object::createM2ProjectiveMaterial(const HMapSceneBufferCreate &sceneRenderer, int batchIndex) {
+    M2MaterialTemplate materialTemplate;
+
+    auto m_m2Data = m_m2Geom->getM2Data();
+    const auto &batches = m_skinGeom->getSkinData()->batches;
+    auto m2Batch = batches[batchIndex];
+
+    //Do not create projective material using this function
+    if (!isProjectiveTexture(m2Batch)) return nullptr;
+    if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
+
+    int materialIndex = m2Batch->materialIndex;
+    auto renderFlag = m_m2Data->materials[materialIndex];
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = true;
+    pipelineTemplate.triCCW = false;
+    pipelineTemplate.blendMode = M2BlendingModeToEGxBlendEnum[renderFlag->blending_mode];
+
+    pipelineTemplate.stencilTestEnable = true;
+    pipelineTemplate.stencilWrite = false;
+    pipelineTemplate.stencilWriteVal = ObjStencilValues::M2_STENCIL_VAL;
+
+    auto m2ProjectiveMaterial = sceneRenderer->createM2ProjectiveMaterial(m_modelWideData, pipelineTemplate, materialTemplate);
+
+    uint8_t pixelShader =
+        (m2Batch->textureCount == 1 && renderFlag->blending_mode == 5) ?
+         4  : //Add_Single_Texture
+        (m2Batch->textureCount - 1) & 3; // one of [Opaque_Single_Texture, Two_Texture, Three_Texture]
+
+    //Update material
+    M2MeshBufferUpdater::updateProjectiveMaterialData(batchIndex, static_cast<uint8_t>(pipelineTemplate.blendMode), pixelShader,
+        m2ProjectiveMaterial, this, m_m2Data, m_skinGeom->getSkinData());
+
+
+    return m2ProjectiveMaterial;
 }
 
 HGM2Mesh
@@ -1662,6 +1721,22 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int index
     meshTemplate.end = skinSection->indexCount;
 
     auto m2Mesh = sceneRenderer->createM2Mesh(meshTemplate, m2Material, m2Batch->materialLayer, m2Batch->priorityPlane);
+
+    return m2Mesh;
+}
+
+HGM2Mesh
+M2Object::createProjectiveMesh(const HMapSceneBufferCreate &sceneRenderer,
+                               const std::shared_ptr<IM2ProjectiveMaterial> &m2Material,
+                               const M2SkinSection *skinSection,
+                               const M2Batch *m2Batch) {
+    gMeshTemplate meshTemplate(nullptr);
+    meshTemplate.meshType = MeshType::eM2Mesh;
+
+    meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
+    meshTemplate.end = skinSection->indexCount;
+
+    auto m2Mesh = sceneRenderer->createM2ProjectiveMesh(meshTemplate, m2Material, m2Batch->materialLayer, m2Batch->priorityPlane);
 
     return m2Mesh;
 }
@@ -1725,6 +1800,20 @@ void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_v
                 } else {
                     opaqueMeshCollector.addMesh(mesh);
                 }
+            }
+        }
+        if (m_api->getConfig()->renderM2Decals) {
+            for (int i = 0; i < this->m_meshProjectiveArray.size(); i++) {
+                int currentM2BatchIndex = std::get<1>(this->m_meshProjectiveArray[i]);
+
+                float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+                bool meshIsInvisible = (finalTransparency < 0.0001);
+
+                if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
+                    continue;
+
+                HGM2Mesh mesh = std::get<0>(this->m_meshProjectiveArray[i]);
+                opaqueMeshCollector.addProjectiveMesh(mesh);
             }
         }
     }
@@ -1809,7 +1898,7 @@ void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
 
         int textureTransformLookup = (m2Data->global_flags.flag_unk_0x20000 != 0) ? m2Ribbon->textureTransformLookupIndex : -1;
 
-        auto emitter = std::make_unique<CRibbonEmitter>(m_api, sceneRenderer, m_modelWideDataBuff,
+        auto emitter = std::make_unique<CRibbonEmitter>(m_api, sceneRenderer, m_modelWideData,
                                           this, materials, textureIndicies, textureTransformLookup);
 
         CImVector color;
@@ -2034,7 +2123,7 @@ void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) 
     bufferBindings = m_m2Geom->getVAO(sceneRenderer, m_skinGeom.get());
 
     //3. Create model wide uniform buffer
-    m_modelWideDataBuff = sceneRenderer->createM2ModelMat(
+    m_modelWideData = sceneRenderer->createM2ModelMat(
         m_boneMasterData->getSkelData()->m_m2CompBones->size,
         m_m2Geom->m_m2Data->colors.size,
         m_m2Geom->m_m2Data->texture_weights.size,

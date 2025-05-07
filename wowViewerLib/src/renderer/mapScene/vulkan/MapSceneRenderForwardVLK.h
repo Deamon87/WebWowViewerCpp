@@ -69,6 +69,10 @@ public:
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
                                                   const M2MaterialTemplate &m2MaterialTemplate) override;
+    std::shared_ptr<IM2ProjectiveMaterial> createM2ProjectiveMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                      const PipelineTemplate &pipelineTemplate,
+                                                      const M2MaterialTemplate &m2MaterialTemplate) override;
+
     std::shared_ptr<IM2WaterFallMaterial> createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                            const PipelineTemplate &pipelineTemplate,
                                                            const M2WaterfallMaterialTemplate &m2MaterialTemplate) override;
@@ -102,6 +106,7 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
+    HGM2Mesh createM2ProjectiveMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2ProjectiveMaterial> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
     HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;

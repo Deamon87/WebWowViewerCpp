@@ -15,6 +15,7 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                              const HGBufferVLK &pointLightBuffer,
                                              const HGBufferVLK &spotLightBuffer,
                                              const std::shared_ptr<GDescriptorSet> &sceneWideDS,
+                                             const std::shared_ptr<GDescriptorSet> &gBufferDataDS,
                                              const HGVertexBufferBindings &quadVAO,
                                              const HGVertexBufferBindings &spotVAO,
                                              const HGVertexBufferBindings &spotLineVAO,
@@ -25,6 +26,7 @@ RenderViewDeferredVLK::RenderViewDeferredVLK(const HGDeviceVLK &device,
                                              m_pointLightDataBuffer(pointLightBuffer),
                                              m_spotLightDataBuffer(spotLightBuffer),
                                              m_sceneWideDS(sceneWideDS),
+                                             m_gBufferDataDS(gBufferDataDS),
                                              m_createOutputFBO(createOutputFBO) {
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
 
@@ -189,15 +191,13 @@ void RenderViewDeferredVLK::createLightBufferMats() {
                     {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
                 }}
             }
-        }, {{0, m_sceneWideDS}})
+        }, {{0, m_sceneWideDS}, {1, m_gBufferDataDS}})
         .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineT)
         .bindDescriptorSet(0, m_sceneWideDS)
-        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+        .bindDescriptorSet(1, m_gBufferDataDS)
+        .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ssbo(0, m_pointLightBuffers[i])
-                .texture(1, m_gBufferFrameBuffers[i]->getAttachment(1))
-                .texture(2, m_gBufferFrameBuffers[i]->getAttachment(0))
-                .ubo(3, BufferChunkHelperVLK::cast(m_lightScreenSize))
                 .delayUpdate();
         })
         .toMaterial();
@@ -211,15 +211,13 @@ void RenderViewDeferredVLK::createLightBufferMats() {
                     {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
                 }}
             }
-        }, {{0, m_sceneWideDS}})
+        }, {{0, m_sceneWideDS}, {1, m_gBufferDataDS}})
         .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineSpot)
         .bindDescriptorSet(0, m_sceneWideDS)
-        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+        .bindDescriptorSet(1, m_gBufferDataDS)
+        .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ssbo(0, m_spotLightBuffers[i])
-                .texture(1, m_gBufferFrameBuffers[i]->getAttachment(1))
-                .texture(2, m_gBufferFrameBuffers[i]->getAttachment(0))
-                .ubo(3, BufferChunkHelperVLK::cast(m_lightScreenSize))
                 .delayUpdate();
         })
         .toMaterial();
@@ -233,15 +231,13 @@ void RenderViewDeferredVLK::createLightBufferMats() {
                     {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
                 }}
             }
-        }, {{0, m_sceneWideDS}})
+        }, {{0, m_sceneWideDS}, {1, m_gBufferDataDS}})
         .createPipeline(m_quadVAO, m_lightBufferPass, s_lightBufferPipelineSpot)
         .bindDescriptorSet(0, m_sceneWideDS)
-        .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+        .bindDescriptorSet(1, m_gBufferDataDS)
+        .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ssbo(0, m_insideSpotLightBuffers[i])
-                .texture(1, m_gBufferFrameBuffers[i]->getAttachment(1))
-                .texture(2, m_gBufferFrameBuffers[i]->getAttachment(0))
-                .ubo(3, BufferChunkHelperVLK::cast(m_lightScreenSize))
                 .delayUpdate();
         })
         .toMaterial();
@@ -256,10 +252,11 @@ void RenderViewDeferredVLK::createLightBufferMats() {
                         {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
                     }}
                 }
-            }, {{0, m_sceneWideDS}})
+            }, {{0, m_sceneWideDS}, {1, m_gBufferDataDS}})
             .createPipeline(m_spotLineVAO, m_forwardRenderPass, s_spotLightDebug)
             .bindDescriptorSet(0, m_sceneWideDS)
-            .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
+            .bindDescriptorSet(1, m_gBufferDataDS)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
                     ds->beginUpdate()
                         .ssbo(0, m_spotLightBuffers[i])
                         .delayUpdate();
@@ -313,11 +310,16 @@ void RenderViewDeferredVLK::update(int width, int height, float glow,
     glowPass->assignFFXGlowUBOConsts(glow);
 }
 
-void RenderViewDeferredVLK::setLightBuffers(const std::shared_ptr<GDescriptorSet> &sceneWideDS) {
+void RenderViewDeferredVLK::updateExternalDSes() {
     auto frameNum = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
-    sceneWideDS->beginUpdate()
+    m_sceneWideDS->beginUpdate()
         .texture(1, m_lightFrameBuffers[frameNum]->getAttachment(0));
+
+    m_gBufferDataDS->beginUpdate()
+        .texture(0, m_gBufferFrameBuffers[frameNum]->getAttachment(1))
+        .texture(1, m_gBufferFrameBuffers[frameNum]->getAttachment(0))
+        .ubo(2, BufferChunkHelperVLK::cast(m_lightScreenSize));
 }
 
 static inline std::array<float,3> vec4ToArr3(const mathfu::vec4 &vec) {
@@ -433,7 +435,7 @@ void RenderViewDeferredVLK::doLightPass(CmdBufRecorder &frameBufCmd) {
         if (insideSpotLightCount > 0) {
             frameBufCmd.bindVertexBindings(m_quadVAO);
             frameBufCmd.bindMaterial(m_insideSpotLightMats[frameNum]);
-            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, insideSpotLightCount, 0, 0, 0);
+            frameBufCmd.drawIndexed(6, insideSpotLightCount, 0, 0, 0);
 
             // for (int i = 0; i < insideSpotLightCount; i++)
                 // frameBufCmd.drawIndexed(6, 1, 0, i, 0);
@@ -455,11 +457,10 @@ void RenderViewDeferredVLK::doDebugLightPass(CmdBufRecorder &frameBufCmd) {
     if (spotLightCount > 0) {
         frameBufCmd.bindVertexBindings(m_spotVAO);
         frameBufCmd.bindMaterial(m_spotLightDebugMats[frameNum]);
-        //        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
+        frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, spotLightCount, 0, 0, 0);
 
-        for (int i = 0; i < spotLightCount; i++)
-            frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
-
+        // for (int i = 0; i < spotLightCount; i++)
+            // frameBufCmd.drawIndexed((spotLightSegments*3) + (spotLightSegments - 2) * 3, 1, 0, i, 0);
     }
 }
 

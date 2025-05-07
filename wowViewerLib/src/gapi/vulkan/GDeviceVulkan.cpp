@@ -665,7 +665,7 @@ VkFormat GDeviceVLK::findSupportedFormat(const std::vector<VkFormat>& candidates
 
 VkFormat GDeviceVLK::findDepthFormat() {
     return findSupportedFormat(
-        {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+        {VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
@@ -1207,105 +1207,6 @@ void GDeviceVLK::getNextSwapImageIndex(uint32_t &imageIndex) {
     }
 }
 
-
-void GDeviceVLK::updateBuffers(std::vector<HFrameDependantData> &frameDepedantData) {
-//    aggregationBufferForUpload.resize(maxUniformBufferSize);
-/*
-    if (!m_blackPixelTexture) {
-        m_blackPixelTexture = createTexture(false, false);
-        unsigned int zero = 0;
-        m_blackPixelTexture->loadData(1,1,&zero, ITextureFormat::itRGBA);
-    }
-    if (!m_whitePixelTexture) {
-        m_whitePixelTexture = createTexture(false, false);
-        unsigned int ff = 0xffffffff;
-        m_whitePixelTexture->loadData(1,1,&ff, ITextureFormat::itRGBA);
-    }
-
-    int fullSize = 0;
-    for (int i = 0; i < bufferChunks.size(); i++) {
-        auto &bufferVec = bufferChunks[i];
-        for (auto &buffer : *bufferVec) {
-            fullSize += buffer->getSize();
-            int offsetDiff = fullSize % uniformBufferOffsetAlign;
-            if (offsetDiff != 0) {
-                int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-                fullSize += bytesToAdd;
-            }
-        }
-    }
-
-    //2. Create buffers and update them
-    int currentSize = 0;
-    int buffersIndex = 0;
-
-    HGUniformBuffer bufferForUpload = m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload;
-
-    if (bufferForUpload == nullptr) {
-        bufferForUpload = createUniformBuffer(1000);
-        m_UBOFrames[getUpdateFrameNumber()].m_uniformBufferForUpload = bufferForUpload;
-        m_shaderDescriptorUpdateNeeded = true;
-    }
-
-    auto bufferForUploadVLK = std::dynamic_pointer_cast<IBufferVLK>(bufferForUpload);
-    size_t old_size = bufferForUploadVLK->getSize();
-
-
-    if (old_size < fullSize) {
-        //TODO:
-        //bufferForUploadVLK->resize(fullSize);
-        //Buffer identifier was changed, so we need to update shader UBO descriptor
-        m_shaderDescriptorUpdateNeeded = true;
-    }
-
-    if (fullSize > 0) {
-        char *pointerForUpload = static_cast<char *>(bufferForUploadVLK->getPointer());
-
-        for (int i = 0; i < bufferChunks.size(); i++) {
-            auto &bufferVec = bufferChunks[i];
-            for (auto &buffer : *bufferVec) {
-                buffer->setOffset(currentSize);
-                buffer->setPointer(&pointerForUpload[currentSize]);
-                currentSize += buffer->getSize();
-
-                int offsetDiff = currentSize % uniformBufferOffsetAlign;
-                if (offsetDiff != 0) {
-                    int bytesToAdd = uniformBufferOffsetAlign - offsetDiff;
-
-                    currentSize += bytesToAdd;
-                }
-            }
-        }
-        assert(currentSize == fullSize);
-        for (int i = 0; i < bufferChunks.size(); i++) {
-            auto &bufferVec = bufferChunks[i];
-            auto frameDepData = frameDepedantData[i];
-
-            int gran = std::max<int>(bufferVec->size() / this->threadCount, 1);
-
-            tbb::parallel_for(tbb::blocked_range<size_t>(0, bufferVec->size(), gran),
-                              [&](tbb::blocked_range<size_t> r) {
-                                  for (size_t i = r.begin(); i != r.end(); ++i) {
-                                      auto& buffer = (*bufferVec)[i];
-                                      buffer->update(frameDepData);
-                                  }
-                              }, tbb::simple_partitioner());
-
-//            for (auto &buffer : *bufferVec) {
-//                buffer->update(frameDepData);
-//            }
-        }
-        if (currentSize > 0) {
-            //TODO:
-            //bufferForUploadVLK->uploadFromStaging(currentSize);
-        }
-    }
-    */
-}
-
-void GDeviceVLK::uploadTextureForMeshes(std::vector<HGMesh> &meshes) {}
-
 std::shared_ptr<IShaderPermutation> GDeviceVLK::getShader(const std::string &vertexName, const std::string &fragmentName,
                                                           const ShaderConfig &shaderConfig,
                                                           const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides) {
@@ -1534,7 +1435,10 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                         EGxBlendEnum blendMode,
                                         bool depthCulling,
                                         bool depthWrite,
-                                        uint8_t colorMask) {
+                                        uint8_t colorMask,
+                                        bool stencilTestEnable,
+                                        bool stencilWrite,
+                                        uint8_t stencilWriteVal) {
 
     PipelineCacheRecord pipelineCacheRecord = {
         .shader = shader,
@@ -1547,6 +1451,9 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
         .depthCulling = depthCulling,
         .depthWrite = depthWrite,
         .colorMask = colorMask,
+        .stencilTestEnable = stencilTestEnable,
+        .stencilWrite = stencilWrite,
+        .stencilWriteVal = stencilWriteVal,
     };
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
@@ -1565,7 +1472,10 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                       triCCW,
                                       blendMode,
                                       depthCulling, depthWrite,
-                                      colorMask);
+                                      colorMask,
+                                      stencilTestEnable,
+                                      stencilWrite,
+                                      stencilWriteVal);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;

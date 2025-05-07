@@ -157,7 +157,6 @@ void GDescriptorSetLayout::fillUbo(int setIndex, const DescTypeOverride &typeOve
                 auto &setTypeOverrides = typeOverrides.at(uboBinding.set);
                 if (setTypeOverrides.find(uboBinding.binding) != setTypeOverrides.end()) {
                     auto const &overrideStruct = setTypeOverrides.at(uboBinding.binding);
-                    assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC);
                     uniformType = overrideStruct.type;
                     if (overrideStruct.stageMask != 0) {
                         stageOverride = overrideStruct.stageMask;

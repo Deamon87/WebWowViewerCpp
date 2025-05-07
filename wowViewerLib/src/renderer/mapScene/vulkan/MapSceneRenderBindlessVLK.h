@@ -75,6 +75,9 @@ public:
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
                                                   const M2MaterialTemplate &m2MaterialTemplate) override;
+    std::shared_ptr<IM2ProjectiveMaterial> createM2ProjectiveMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
+                                                  const PipelineTemplate &pipelineTemplate,
+                                                  const M2MaterialTemplate &m2MaterialTemplate) override;
     std::shared_ptr<IM2WaterFallMaterial> createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                                     const PipelineTemplate &pipelineTemplate,
                                                                     const M2WaterfallMaterialTemplate &m2MaterialTemplate) override;
@@ -109,6 +112,7 @@ public:
     HGSortableMesh createSortableMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGMesh createAdtMesh(gMeshTemplate &meshTemplate,  const std::shared_ptr<IADTMaterial> &material) override;
     HGM2Mesh createM2Mesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
+    HGM2Mesh createM2ProjectiveMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2ProjectiveMaterial> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
     HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) override;
@@ -120,8 +124,9 @@ public:
 
     std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
 protected:
-    virtual std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
-    virtual std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
+    /*virtual*/ std::shared_ptr<ISimpleMaterialVLK> getM2StaticMaterial(const PipelineTemplate &pipelineTemplate);
+    /*virtual*/ std::shared_ptr<ISimpleMaterialVLK> getM2ProjectiveStaticMaterial(const PipelineTemplate &pipelineTemplate);
+    /*virtual*/ std::shared_ptr<ISimpleMaterialVLK> getWMOStaticMaterial(const PipelineTemplate &pipelineTemplate);
 
     struct PipelineTemplateHasher {
         std::size_t operator()(const PipelineTemplate& k) const {
@@ -136,6 +141,7 @@ protected:
         };
     };
     robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2StaticMaterials;
+    robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_m2ProjectiveStaticMaterials;
     robin_hood::unordered_flat_map<PipelineTemplate, std::shared_ptr<ISimpleMaterialVLK>, PipelineTemplateHasher> m_wmoStaticMaterials;
 protected:
     HGDeviceVLK m_device;
@@ -169,6 +175,7 @@ protected:
         HGBufferVLK m2InstanceData;
         HGBufferVLK meshWideBlocks;
         HGBufferVLK meshWideBlocksBindless;
+        HGBufferVLK projectiveData;
     } m2Buffers;
     struct {
         HGBufferVLK waterfallCommon;
@@ -200,9 +207,12 @@ protected:
     HGBufferVLK m_vboQuad;
     HGBufferVLK m_iboQuad;
 
+    HGBufferVLK m_iboBBox;
+
     HGBufferVLK m_particleIndexBuffer;
 
     HGVertexBufferBindings m_drawQuadVao = nullptr;
+    HGVertexBufferBindings m_drawBBoxVao = nullptr;
 
     HGBufferVLK m_vboSpot;
     HGBufferVLK m_iboSpot;
@@ -215,6 +225,7 @@ protected:
 
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
+    std::shared_ptr<GDescriptorSet> gBufferDataDS = nullptr;
 
     std::shared_ptr<ISimpleMaterialVLK> g_m2Material = nullptr;
     std::shared_ptr<GDescriptorSet> m2BufferOneDS = nullptr;

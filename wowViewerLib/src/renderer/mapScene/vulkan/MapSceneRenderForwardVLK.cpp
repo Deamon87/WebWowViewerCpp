@@ -358,6 +358,14 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
     return material;
 }
 
+std::shared_ptr<IM2ProjectiveMaterial> MapSceneRenderForwardVLK::createM2ProjectiveMaterial(
+    const std::shared_ptr<IM2ModelData> &m2ModelData,
+    const PipelineTemplate &pipelineTemplate,
+    const M2MaterialTemplate &m2MaterialTemplate
+) {
+    return nullptr;
+}
+
 std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2WaterfallMaterial(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                                 const PipelineTemplate &pipelineTemplate,
                                                                 const M2WaterfallMaterialTemplate &m2MaterialTemplate) {
@@ -624,6 +632,7 @@ public:
     }
 private:
     std::vector<HGMesh> commonMeshes;
+    std::vector<HGMesh> projectiveMeshes;
     std::vector<HGMesh> waterMeshes;
 public:
     void addM2Mesh(const HGM2Mesh &mesh) override {
@@ -642,6 +651,11 @@ public:
     void addMesh(const HGMesh &mesh) override {
         commonMeshes.push_back(mesh);
     };
+
+    void addProjectiveMesh(const HGMesh &mesh) override {
+        projectiveMeshes.push_back(mesh);
+    };
+
 
     void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
          //Render commonMeshes
@@ -897,6 +911,12 @@ MapSceneRenderForwardVLK::createM2Mesh(gMeshTemplate &meshTemplate, const std::s
 
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
     return mesh;
+}
+HGM2Mesh MapSceneRenderForwardVLK::createM2ProjectiveMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2ProjectiveMaterial> &material, int layer, int priorityPlane) {
+    // auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), layer, priorityPlane);
+    // return mesh;
+
+    return nullptr;
 }
 HGM2Mesh
 MapSceneRenderForwardVLK::createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) {

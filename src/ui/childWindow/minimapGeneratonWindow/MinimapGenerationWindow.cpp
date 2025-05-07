@@ -153,12 +153,7 @@ void MinimapGenerationWindow::editComponentsForConfig(Config * config) {
 
     ImGui::BeginGroupPanel("Exterior Lighting");
 
-    {
-        ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor, false);
-        ImGui::CompactColorPicker("Exterior Horizon Ambient", config->exteriorColors.exteriorHorizontAmbientColor, false);
-        ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor, false);
-        ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor, false);
-    }
+
 
     ImGui::EndGroupPanel();
 }

@@ -15,6 +15,7 @@ public:
                           const HGBufferVLK &pointLightBuffer,
                           const HGBufferVLK &spotLightBuffer,
                           const std::shared_ptr<GDescriptorSet> &sceneWideDS,
+                          const std::shared_ptr<GDescriptorSet> &gBufferDataDS,
                           const HGVertexBufferBindings &quadVAO,
                           const HGVertexBufferBindings &spotVAO,
                           const HGVertexBufferBindings &spotLineVAO,
@@ -26,7 +27,7 @@ public:
                 const std::vector<SpotLight> &spotLights,
                 const std::vector<SpotLight> &insideSpotLights);
 
-    void setLightBuffers(const std::shared_ptr<GDescriptorSet> &sceneWideDS);
+    void updateExternalDSes();
 
     std::shared_ptr<GRenderPassVLK> getGBufferPass() {return m_gBufferRenderPass;}
     std::shared_ptr<GRenderPassVLK> getForwardPass() {return m_forwardRenderPass;}
@@ -53,6 +54,7 @@ private:
     std::array<uint32_t,IDevice::MAX_FRAMES_IN_FLIGHT> m_insideSpotLightCounts;
 
     std::shared_ptr<GDescriptorSet> m_sceneWideDS;
+    std::shared_ptr<GDescriptorSet> m_gBufferDataDS;
 
     HGDeviceVLK m_device;
 

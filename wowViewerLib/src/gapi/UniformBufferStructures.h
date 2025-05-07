@@ -96,6 +96,7 @@ struct SpotLight
 namespace M2 {
     struct PlacementMatrix {
         mathfu::mat4 uPlacementMat;
+        mathfu::mat4 invPlacementMat;
     };
     struct Bones {
         mathfu::mat4 uBoneMatrixes[MAX_MATRIX_NUM];
@@ -128,6 +129,11 @@ namespace M2 {
         int unused2;
         int unused3;
     };
+    struct ProjectiveData {
+        mathfu::vec4 localMin;
+        mathfu::vec4 localMax;
+        mathfu::mat4 localToUVMat;
+    };
 
     struct M2InstanceRecordBindless {
         int placementMatrixInd;
@@ -143,7 +149,7 @@ namespace M2 {
     struct meshWideBlockVSPS_Bindless {
         int instanceIndex;
         int meshIndex;
-        int notUsed3;
+        int projectiveDataIndex;
         int notUsed4;
         int textureIndicies[4];
     };
@@ -151,10 +157,10 @@ namespace M2 {
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
         InteriorLightParam intLight;
-        int LightCount;
-        int bcHack;
-        int notUsed2;
-        int notUsed3;
+        float modelAlpha;
+        float unused0;
+        float unused1;
+        float unused2;
     };
 
     namespace WaterfallData {

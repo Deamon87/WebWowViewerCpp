@@ -10,7 +10,7 @@ precision highp int;
 
 layout (location = 0) in vec2 position;
 
-layout(std430, set=1, binding=0) buffer readonly spotLightBuffer {
+layout(std430, set=2, binding=0) buffer readonly spotLightBuffer {
     SpotLight lights[];
 };
 

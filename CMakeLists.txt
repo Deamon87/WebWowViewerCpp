@@ -239,6 +239,10 @@ set(SOURCE_FILES
 		src/ui/childWindow/m2Window/M2Window.h
 		src/ui/imguiLib/hasFocus/imguiHasFocus.cpp
 		src/ui/imguiLib/hasFocus/imguiHasFocus.h
+		src/ui/imguiLib/floatCenterSlider/floatCenterSlider.h
+		src/ui/imguiLib/floatCenterSlider/floatCenterSlider.cpp
+		src/ui/imguiLib/compactFloatEditor/compactFloatEditor.cpp
+		src/ui/imguiLib/compactFloatEditor/compactFloatEditor.h
 )
 
 set(PROTOBUF_FILES_ "")

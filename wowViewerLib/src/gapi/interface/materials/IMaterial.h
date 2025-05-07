@@ -19,6 +19,11 @@ struct PipelineTemplate {
 
     uint8_t colorMask = 0xFF;
 
+    bool stencilTestEnable = false;
+    bool stencilWrite = false;
+    uint8_t stencilWriteVal = 0;
+
+
     bool operator==(const PipelineTemplate &other) const {
         return
             (element == other.element) &&

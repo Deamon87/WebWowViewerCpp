@@ -81,9 +81,25 @@ public:
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS>> m_vertexFragmentData = nullptr;
 };
 
-class IM2MaterialVis : public IM2Material {
+class IM2MaterialBindless : public IM2Material {
 public:
-    ~IM2MaterialVis() override = default;
+    ~IM2MaterialBindless() override = default;
+
+    std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS_Bindless>> m_vertexFragmentDataBindless = nullptr;
+    std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;
+    int instanceIndex = 0;
+};
+
+class IM2ProjectiveMaterial : public IMaterial {
+public:
+    ~IM2ProjectiveMaterial() override = default;
+
+    std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS>> m_vertexFragmentData = nullptr;
+    std::shared_ptr<IBufferChunk<M2::ProjectiveData>> m_projectiveTextData = nullptr;
+};
+class IM2ProjectiveMaterialBindless : public IM2ProjectiveMaterial {
+public:
+    ~IM2ProjectiveMaterialBindless() override = default;
 
     std::shared_ptr<IBufferChunk<M2::meshWideBlockVSPS_Bindless>> m_vertexFragmentDataBindless = nullptr;
     std::vector<std::shared_ptr<BindlessTexture>> m_bindlessText;

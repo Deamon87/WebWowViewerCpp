@@ -1119,3 +1119,24 @@ MathHelper::getIntersectionPointsFromPlanes(const framebased::vector<mathfu::vec
     }
     return points;
 }
+
+mathfu::mat4 MathHelper::createProjectionalTexture(
+    mathfu::vec2 p_t00,
+    mathfu::vec2 p_t10,
+    mathfu::vec2 p_t01
+) {
+    auto const vec2Zero = mathfu::vec2(0.0, 0.0);
+
+    auto const vecX = (p_t10 - p_t00);
+    auto const vecY = (p_t01 - p_t00);
+    auto const vecZ = mathfu::vec3(0,0,1);
+
+    auto projMat = mathfu::mat4(
+        mathfu::vec4(vecX, vec2Zero),
+        mathfu::vec4(vecY, vec2Zero),
+        mathfu::vec4(vecZ, 0),
+        mathfu::vec4(p_t00, mathfu::vec2(0, 1))
+    ).Inverse();
+
+    return projMat;
+}

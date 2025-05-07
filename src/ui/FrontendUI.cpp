@@ -43,7 +43,7 @@ FrontendUI::FrontendUI(HApiContainer api) {
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
-    // this->createDefaultprocessor();
+    //this->createDefaultprocessor();
 
     m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer);
 }
@@ -64,12 +64,7 @@ void FrontendUI::composeUI() {
         if (m_dataExporter->isDone())
             m_dataExporter = nullptr;
     }
-    if (mapCanBeOpened) {
-        if (!adtMinimapFilled && fillAdtSelectionminimap(isWmoMap, mapCanBeOpened )) {
-//            fillAdtSelectionminimap = nullptr;
-            adtMinimapFilled = true;
-        }
-    }
+
 
     showMainMenu();
 
@@ -168,52 +163,69 @@ void FrontendUI::composeUI() {
     ImGui::Render();
 }
 
-inline void drawColumnF(const std::string &text, const float &value) {
+
+template<int T, typename M = std::conditional_t<(T > 1), mathfu::Vector<float, T>, float>>
+inline void drawEditVar(
+    bool editMode,
+    const std::string& text,
+    M& value,
+    const std::string& name = ""    // if non‐empty and T==vec3, we show a ColorButton
+) {
     ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::Text("%s", text.c_str());
+    ImGui::TableNextColumn();
 
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
-    ImGui::TableNextColumn();
-    ImGui::Text("%.3f", value);
-}
-inline void drawColumnVec4(const std::string &text, const mathfu::vec4 &value) {
-    ImGui::TableNextRow();
 
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
-    ImGui::TableNextColumn();
-    ImGui::Text("%.3f, %.3f, %.3f, %.3f", value.x, value.y, value.z, value.w);
-}
+    if constexpr (T == 1) {
+        ImGui::Text("%.3f", value);
+    }
+    else if constexpr (T == 3) {
+        ImGui::Text("(%.3f, %.3f, %.3f)", value.x, value.y, value.z);
+        if (!name.empty()) {
+            //Color showing
+            ImGui::SameLine();
+            ImGuiColorEditFlags colorEditFlags = editMode ? ImGuiColorEditFlags_None : ImGuiColorEditFlags_NoPicker;
+            if (ImGui::ColorButton((name+"##3b").c_str(), ImVec4(value.x, value.y, value.z, 0), colorEditFlags)) {
+                if (editMode) ImGui::OpenPopup((name+"picker").c_str());
+            }
 
-inline void drawColumnColorVec3(const std::string &text, const std::string &name, const mathfu::vec3 &value) {
-    ImGui::TableNextRow();
+            if (editMode && ImGui::BeginPopup((name + "picker").c_str())) {
+                if (ImGui::ColorPicker3(name.c_str(), value.data_)) {
+                }
+                ImGui::EndPopup();
+            }
+        }
+    }
+    else if constexpr (T == 4) {
+        ImGui::Text("(%.3f, %.3f, %.3f, %.3f)", value.x, value.y, value.z, value.w);
+    }
+    if (editMode && name.empty()) {
+        //Show edit button
+        ImGui::SameLine();
+        std::string popupName = text+"picker";
+        if (ImGui::Button(("Edit##"+text).c_str())) {
+            ImGui::OpenPopup(popupName.c_str());
+        }
 
-    const std::string message = "(%.3f, %.3f, %.3f)";
-    const std::string varName = name + "##b";
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
+        if (ImGui::BeginPopup(popupName.c_str())) {
+            float delta = 0;
+            for (int i = 0; i < T; i++) {
+                delta = 0;
+                if (ImGui::SliderFloat(("Val"+std::to_string(i)).c_str(), &delta, -10, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoInput)) {
+                    if constexpr (T == 1) {
+                        value += delta;
+                    } else {
+                        float & v = value.data_[i];
+                        v += delta;
+                    }
+                }
+            }
 
-    ImGui::TableNextColumn();
-    ImGui::Text(message.c_str(),
-                value.x,
-                value.y,
-                value.z);
-    ImGui::SameLine();
-    ImGui::ColorButton(varName.c_str(), ImVec4(value.x, value.y, value.z, 0));
-}
-inline void drawColumnVec3(const std::string &text, const std::string &name, const mathfu::vec3 &value) {
-    ImGui::TableNextRow();
 
-    const std::string message = "(%.3f, %.3f, %.3f)";
-    const std::string varName = name + "##b";
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
-
-    ImGui::TableNextColumn();
-    ImGui::Text(message.c_str(),
-                value.x,
-                value.y,
-                value.z);
+            ImGui::EndPopup();
+        }
+    }
 }
 
 void FrontendUI::showCurrentStatsDialog() {
@@ -376,32 +388,45 @@ void FrontendUI::showCurrentStatsDialog() {
                     if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr &&
                         !cullStageData->frameDependentData->fogResults.empty() )
                     {
-                        ImGui::BeginTable("CurrentFogParams", 2);
+                        auto &source = m_api->getConfig()->globalFog;
+                        auto prevVal = source;
+                        showModeControls("fogParams", source);
 
-                        const auto &fogData = cullStageData->frameDependentData->fogResults[0];
-                        drawColumnF("Fog End:", fogData.FogEnd);
-                        drawColumnF("Fog Scalar:", fogData.FogScaler);
-                        drawColumnF("Fog Density:", fogData.FogDensity);
-                        drawColumnF("Fog Height:", fogData.FogHeight);
-                        drawColumnF("Fog Height Scaler:", fogData.FogHeightScaler);
-                        drawColumnF("Fog Height Density:", fogData.FogHeightDensity);
-                        drawColumnF("Sun Fog Angle:", fogData.SunFogAngle);
-                        drawColumnF("End Fog Color Distance:", fogData.EndFogColorDistance);
-                        drawColumnF("Sun Fog Strength:", fogData.SunFogStrength);
-                        drawColumnVec4("Fog Height Coefficients:", fogData.FogHeightCoefficients);
-                        drawColumnVec4("Main Fog Coefficients:", fogData.MainFogCoefficients);
-                        drawColumnVec4("Height Density Fog Coefficients:", fogData.HeightDensityFogCoefficients);
-                        drawColumnF("Fog Z Scalar:", fogData.FogZScalar);
-                        drawColumnF("Legacy Fog Scalar:", fogData.LegacyFogScalar);
-                        drawColumnF("Main Fog Start Dist:", fogData.MainFogStartDist);
-                        drawColumnF("Main Fog End Dist:", fogData.MainFogEndDist);
-                        drawColumnF("Fog Blend Alpha:", fogData.FogBlendAlpha);
-                        drawColumnF("Fog Start Offset:", fogData.FogStartOffset);
-                        drawColumnColorVec3("Sun Fog Color:", "SunFogColor", fogData.SunFogColor);
-                        drawColumnColorVec3("Fog Color:", "FogColor", fogData.FogColor);
-                        drawColumnColorVec3("End Fog Color:", "EndFogColor", fogData.EndFogColor);
-                        drawColumnColorVec3("Fog Height Color:", "FogHeightColor", fogData.FogHeightColor);
-                        drawColumnColorVec3("Height End Fog Color:", "HeightEndFogColor", fogData.HeightEndFogColor);
+
+                        //editMode
+                        bool e = (source == EParameterSource::eConfig);
+                        if (e && prevVal != source) {
+                            if (cullStageData->frameDependentData->fogResults.size() > 0)
+                                m_api->getConfig()->fogResult = cullStageData->frameDependentData->fogResults[0];
+                        }
+
+                        auto &fogData = !e ? cullStageData->frameDependentData->fogResults[0] : m_api->getConfig()->fogResult;
+
+                        ImGui::BeginTable("CurrentFogParams", 2);
+                        drawEditVar<1>(e, "Fog End:", fogData.FogEnd);
+                        drawEditVar<1>(e, "Fog Scalar:", fogData.FogScaler);
+                        drawEditVar<1>(e, "Fog Density:", fogData.FogDensity);
+                        drawEditVar<1>(e, "Fog Height:", fogData.FogHeight);
+                        drawEditVar<1>(e, "Fog Height Scaler:", fogData.FogHeightScaler);
+                        drawEditVar<1>(e, "Fog Height Density:", fogData.FogHeightDensity);
+                        drawEditVar<1>(e, "Sun Fog Angle:", fogData.SunFogAngle);
+                        drawEditVar<1>(e, "End Fog Color Distance:", fogData.EndFogColorDistance);
+                        drawEditVar<1>(e, "Sun Fog Strength:", fogData.SunFogStrength);
+                        drawEditVar<4>(e, "Fog Height Coefficients:", fogData.FogHeightCoefficients);
+                        drawEditVar<4>(e, "Main Fog Coefficients:", fogData.MainFogCoefficients);
+                        drawEditVar<4>(e, "Height Density Fog Coefficients:", fogData.HeightDensityFogCoefficients);
+                        drawEditVar<1>(e, "Fog Z Scalar:", fogData.FogZScalar);
+                        drawEditVar<1>(e, "Legacy Fog Scalar:", fogData.LegacyFogScalar);
+                        drawEditVar<1>(e, "Main Fog Start Dist:", fogData.MainFogStartDist);
+                        drawEditVar<1>(e, "Main Fog End Dist:", fogData.MainFogEndDist);
+                        drawEditVar<1>(e, "Fog Blend Alpha:", fogData.FogBlendAlpha);
+                        drawEditVar<1>(e, "Fog Start Offset:", fogData.FogStartOffset);
+                        drawEditVar<3>(e, "Sun Fog Color:", fogData.SunFogColor, "SunFogColor");
+                        drawEditVar<3>(e, "Fog Color:", fogData.FogColor, "FogColor");
+                        drawEditVar<3>(e, "End Fog Color:", fogData.EndFogColor, "EndFogColor");
+                        drawEditVar<3>(e, "Fog Height Color:", fogData.FogHeightColor, "FogHeightColor");
+                        drawEditVar<3>(e, "Height End Fog Color:", fogData.HeightEndFogColor, "HeightEndFogColor");
+                        drawEditVar<1>(e, "Sun Angle Blend:", fogData.SunAngleBlend);
                         ImGui::EndTable();
 
                         ImGui::Separator();
@@ -411,28 +436,51 @@ void FrontendUI::showCurrentStatsDialog() {
                     if (cullStageData->frameDependentData != nullptr) {
                         auto frameDependentData = cullStageData->frameDependentData;
 
+                        auto &source = m_api->getConfig()->skyParams;
+                        auto prevVal = source;
+                        showModeControls("skyColors", source);
+
+                        //editMode
+                        bool e = (source == EParameterSource::eConfig);
+                        if (e && prevVal != source) {
+                            m_api->getConfig()->skyColors = cullStageData->frameDependentData->skyColors;
+                        }
+
+                        auto &skyColors = !e ? cullStageData->frameDependentData->skyColors : m_api->getConfig()->skyColors;
+
                         ImGui::BeginTable("CurrentSkyColors", 2);
-                        drawColumnColorVec3("Sky Top:", "SkyTopColor", frameDependentData->skyColors.SkyTopColor.xyz());
-                        drawColumnColorVec3("Sky Middle:", "SkyMiddleColor", frameDependentData->skyColors.SkyMiddleColor.xyz());
-                        drawColumnColorVec3("Sky Band1:", "SkyBand1Color", frameDependentData->skyColors.SkyBand1Color.xyz());
-                        drawColumnColorVec3("Sky Band2:", "SkyBand2Color", frameDependentData->skyColors.SkyBand2Color.xyz());
-                        drawColumnColorVec3("Sky Smog:", "SkySmogColor", frameDependentData->skyColors.SkySmogColor.xyz());
-                        drawColumnColorVec3("Sky Fog:", "SkyFogColor", frameDependentData->skyColors.SkyFogColor.xyz());
+                        drawEditVar<3>(e, "Sky Top:", skyColors.SkyTopColor, "SkyTopColor");
+                        drawEditVar<3>(e, "Sky Middle:", skyColors.SkyMiddleColor, "SkyMiddleColor");
+                        drawEditVar<3>(e, "Sky Band1:", skyColors.SkyBand1Color, "SkyBand1Color");
+                        drawEditVar<3>(e, "Sky Band2:", skyColors.SkyBand2Color, "SkyBand2Color");
+                        drawEditVar<3>(e, "Sky Smog:", skyColors.SkySmogColor, "SkySmogColor");
+                        drawEditVar<3>(e, "Sky Fog:", skyColors.SkyFogColor, "SkyFogColor");
                         ImGui::EndTable();
                     }
                 }
                 if (ImGui::CollapsingHeader("Current global light")) {
                     if (cullStageData->frameDependentData != nullptr) {
-                        auto frameDependentData = cullStageData->frameDependentData;
+                        auto fdd = cullStageData->frameDependentData;
+
+                        auto &source = m_api->getConfig()->globalLighting;
+                        auto prevVal = source;
+                        showModeControls("globalLight", source, true);
+
+                        //editMode
+                        bool e = (source == EParameterSource::eConfig);
+                        if (e && prevVal != source) {
+                            m_api->getConfig()->exteriorColors = fdd->colors;
+                        }
+
+                        auto &colors = !e ? fdd->colors : m_api->getConfig()->exteriorColors;
 
                         ImGui::BeginTable("CurrentLightParams", 2);
-
-                        drawColumnColorVec3("Exterior Ambient:", "ExteriorAmbient", frameDependentData->colors.exteriorAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Horizon Ambient:", "ExteriorHorizonAmbient", frameDependentData->colors.exteriorHorizontAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Ground Ambient:", "ExteriorGroundAmbient", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Direct Color:", "ExteriorDirectColor", frameDependentData->colors.exteriorDirectColor.xyz());
-                        drawColumnVec3("Exterior Direct Dir:", "ExteriorDirectDir", frameDependentData->exteriorDirectColorDir);
-                        drawColumnF("Glow:", cullStageData->frameDependentData->currentGlow);
+                        drawEditVar<3>(e, "Exterior Ambient:", colors.exteriorAmbientColor, "ExteriorAmbient");
+                        drawEditVar<3>(e, "Exterior Horizon Ambient:", colors.exteriorHorizontAmbientColor, "ExteriorHorizonAmbient");
+                        drawEditVar<3>(e, "Exterior Ground Ambient:", colors.exteriorGroundAmbientColor, "ExteriorGroundAmbient");
+                        drawEditVar<3>(e, "Exterior Direct Color:", colors.exteriorDirectColor, "ExteriorDirectColor");
+                        drawEditVar<3>(false, "Exterior Direct Dir:", fdd->exteriorDirectColorDir, "ExteriorDirectDir");
+                        drawEditVar<1>(false, "Glow:", fdd->currentGlow);
                         ImGui::EndTable();
                     }
                 }
@@ -469,458 +517,9 @@ void FrontendUI::showFileList() {
     }
 }
 
-
-// templated version of my_equal so it could work with both char and wchar_t
-template<typename charT>
-struct my_equal {
-    my_equal( const std::locale& loc ) : loc_(loc) {}
-    bool operator()(charT ch1, charT ch2) {
-        return std::toupper(ch1, loc_) == std::toupper(ch2, loc_);
-    }
-private:
-    const std::locale& loc_;
-};
-
-// find substring (case insensitive)
-template<typename T>
-int ci_find_substr( const T& str1, const T& str2, const std::locale& loc = std::locale() )
-{
-    typename T::const_iterator it = std::search( str1.begin(), str1.end(),
-                                                 str2.begin(), str2.end(), my_equal<typename T::value_type>(loc) );
-    if ( it != str1.end() ) return it - str1.begin();
-    else return -1; // not found
-}
-void FrontendUI::filterMapList(const std::string &text) {
-    filteredMapList = {};
-    for (int i = 0; i < mapList.size(); i++) {
-        auto &currentRec = mapList[i];
-        if (text == "" ||
-            (
-                (ci_find_substr(currentRec.MapName, text) != std::string::npos) ||
-                (ci_find_substr(currentRec.MapDirectory, text) != std::string::npos) ||
-                (ci_find_substr(std::to_string(currentRec.ID), text) != std::string::npos)
-            )
-            ) {
-            filteredMapList.push_back(currentRec);
-        }
-    }
-}
-void FrontendUI::fillMapListStrings() {
-    mapListStringMap = {};
-    for (int i = 0; i < filteredMapList.size(); i++) {
-        auto mapRec = filteredMapList[i];
-
-        std::vector<std::string> mapStrRec;
-        mapStrRec.push_back(std::to_string(mapRec.ID));
-        mapStrRec.push_back(mapRec.MapName);
-        mapStrRec.push_back(mapRec.MapDirectory);
-        mapStrRec.push_back(std::to_string(mapRec.WdtFileID));
-        mapStrRec.push_back(std::to_string(mapRec.MapType));
-
-        mapListStringMap.push_back(mapStrRec);
-    }
-}
-void FrontendUI::showAdtSelectionMinimap() {
-    ImGui::BeginChild("Adt selection minimap", ImVec2(0, 0), true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
-                                                       ImGuiWindowFlags_AlwaysVerticalScrollbar);
-
-    float wheel = 0.0f;
-
-    float pivotForZoomX;
-    float pivotForZoomY;
-    {
-        auto windowSize = ImGui::GetWindowSize();
-        const ImGuiStyle &style = ImGui::GetStyle();
-
-        if (ImGui::CaptureMouseWheel(wheel)) {
-            minimapZoom = pow(2.0f, (std::log(minimapZoom)/std::log(2.0f)) + wheel * 0.1f);
-            auto windowPos = ImGui::GetWindowPos();
-            auto mousePos = ImGui::GetMousePos();
-
-            float windowRelativeMouseX = mousePos.x - windowPos.x - style.WindowPadding.x / 2.0f;
-            float windowRelativeMouseY = mousePos.y - windowPos.y - style.WindowPadding.y / 2.0f;
-
-            pivotForZoomX = windowRelativeMouseX;
-            pivotForZoomY = windowRelativeMouseY;
-        } else {
-            pivotForZoomX = ((windowSize.x - style.WindowPadding.x) / 2.0f);
-            pivotForZoomY = ((windowSize.x - style.WindowPadding.y) / 2.0f);
-        }
-    }
-
-    if (minimapZoom < 0.1)
-        minimapZoom = 0.1;
-
-
-
-
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
-    ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
-//                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-
-    const float defaultImageDimension = 100.0f;
-    float newZoomedSize = defaultImageDimension * minimapZoom;
-    if (prevZoomedSize == 0)
-        prevZoomedSize = defaultImageDimension *  prevMinimapZoom;
-
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            if (adtSelectionMinimapMaterials[i][j] != nullptr) {
-                if (ImGui::ImageButton(std::to_string(i*64+j).c_str(),
-                                       adtSelectionMinimapMaterials[i][j]->uniqueId,
-                                       ImVec2(prevZoomedSize, prevZoomedSize))) {
-                    auto mousePos = ImGui::GetMousePos();
-                    const ImGuiStyle &style = ImGui::GetStyle();
-                    auto content = ImGui::GetWindowContentRegionMin();
-                    auto windowPos = ImGui::GetWindowPos();
-                    auto windowSize = ImGui::GetWindowSize();
-
-                    float windowRelativeMouseX = mousePos.x - windowPos.x - style.WindowPadding.x / 2.0f;
-                    float windowRelativeMouseY = mousePos.y - windowPos.y - style.WindowPadding.y / 2.0f;
-
-                    float screenSpaceCoordX = ImGui::GetScrollX() + windowRelativeMouseX - style.WindowPadding.x / 2.0f;
-                    float screenSpaceCoordY = ImGui::GetScrollY() + windowRelativeMouseY - style.WindowPadding.y / 2.0f;
-
-                    float adtIndexX = (screenSpaceCoordX) / (prevZoomedSize);
-                    float adtIndexY = (screenSpaceCoordY) / (prevZoomedSize);
-
-                    worldPosX = AdtIndexToWorldCoordinate(adtIndexY); //?
-                    worldPosY = AdtIndexToWorldCoordinate(adtIndexX);
-
-                    ImGui::OpenPopup("AdtWorldCoordsTest");
-                    std::cout << "world coords : x = " << worldPosX << " y = " << worldPosY
-                              << std::endl;
-
-                }
-            } else {
-                ImGui::Dummy(ImVec2(prevZoomedSize, prevZoomedSize));
-            }
-
-            ImGui::SameLine(0, 0);
-        }
-        ImGui::NewLine();
-    }
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
-    ImGui::PopStyleVar();
-
-    //Draw
-    {
-        const float zoomConstant = prevZoomedSize;
-        const auto windowPos = ImGui::GetWindowPos();
-        const auto scrollX = ImGui::GetScrollX();
-        const auto scrollY = ImGui::GetScrollY();
-        //To Window Space
-        const auto toWS = [&zoomConstant](float value) -> float {
-            return worldCoordinateToAdtIndexF(value) * zoomConstant;
-        };
-        //To Window Space Translated
-        const auto toWST = [&toWS, windowPos, scrollX, scrollY](float value, int index) -> float {
-            return toWS(value) + (index == 0 ? (windowPos.x - scrollX) : (windowPos.y - scrollY));
-        };
-
-        if (drawZoneLights) {
-            ImDrawList *draw_list = ImGui::GetWindowDrawList();
-            for (const auto &zoneLight: m_zoneLights) {
-                if (limitZoneLight != -1 && zoneLight.ID != limitZoneLight) continue;
-
-                if (!zoneLight.points.empty()) {
-                    for (int n = 0; n < zoneLight.points.size() - 1; n++)
-                        draw_list->AddLine(
-                            ImVec2(toWST(zoneLight.points[n].y, 0), toWST(zoneLight.points[n].x, 1)),
-                            ImVec2(toWST(zoneLight.points[n + 1].y, 0), toWST(zoneLight.points[n + 1].x, 1)),
-                            IM_COL32(255, 255, 0, 255),
-                            2.0f
-                        );
-                    uint32_t maxIdx = zoneLight.points.size() - 1;
-                    draw_list->AddLine(
-                        ImVec2(toWST(zoneLight.points[0].y, 0), toWST(zoneLight.points[0].x, 1)),
-                        ImVec2(toWST(zoneLight.points[maxIdx].y, 0), toWST(zoneLight.points[maxIdx].x, 1)),
-                        IM_COL32(255, 255, 0, 255),
-                        2.0f
-                    );
-                }
-            }
-        }
-        if (drawAreaLights) {
-            ImDrawList *draw_list = ImGui::GetWindowDrawList();
-            for (auto const &light: m_mapLights) {
-                draw_list->AddCircle(
-                    ImVec2(toWST(light.pos[1], 0), toWST(light.pos[0], 1)),
-                    light.fallbackEnd * prevZoomedSize / MathHelper::TILESIZE,
-                    IM_COL32(3, 186, 252, 255)
-                );
-                draw_list->AddCircle(
-                    ImVec2(toWST(light.pos[1], 0), toWST(light.pos[0], 1)),
-                    light.fallbackStart * prevZoomedSize / MathHelper::TILESIZE,
-                    IM_COL32(58, 138, 126, 255)
-                );
-            }
-        }
-    }
-
-
-    if (ImGui::BeginPopup("AdtWorldCoordsTest", ImGuiWindowFlags_NoMove)) {
-        ImGui::Text("Pos: (%.2f,%.2f,200)", worldPosX, worldPosY);
-        if (ImGui::Button("Go")) {
-
-            if (prevMapRec.WdtFileID > 0) {
-                m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, worldPosX, worldPosY, 200, prevMapRec.overrideTime);
-            } else {
-                m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, worldPosX, worldPosY, 200, prevMapRec.overrideTime);
-            }
-            showSelectMap = false;
-
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-
-    if (prevZoomedSize != newZoomedSize && prevMinimapZoom != minimapZoom) {
-        auto windowSize = ImGui::GetWindowSize();
-        auto scrollX = ImGui::GetScrollX();
-        auto scrollY = ImGui::GetScrollY();
-        const ImGuiStyle &style = ImGui::GetStyle();
-
-        float pivotX = ImGui::GetScrollX() + pivotForZoomX - style.WindowPadding.x / 2.0f;
-        float pivotY = ImGui::GetScrollY() + pivotForZoomY - style.WindowPadding.y / 2.0f;
-
-        float newScrollX = (pivotX) *  minimapZoom / prevMinimapZoom - pivotForZoomX + style.WindowPadding.x / 2.0f;
-        float newScrollY = (pivotY) *  minimapZoom / prevMinimapZoom - pivotForZoomY + style.WindowPadding.y / 2.0f;
-
-        ImGui::SetScrollX(newScrollX);
-        ImGui::SetScrollY(newScrollY);
-        prevZoomedSize = newZoomedSize;
-        prevMinimapZoom = minimapZoom;
-    }
-
-    ImGui::EndChild();
-}
-
-
 void FrontendUI::showMapSelectionDialog() {
-    if (!showSelectMap) {
-//        for (int i = 0; i < 64; i++)
-//        for (int j = 0; j < 64; j++)
-//            adtSelectionMinimapMaterials[i][j] = nullptr;
-        return;
-    }
-
-    enum MyMapTableColumnID {
-        MyItemColumnID_ID,
-        MyItemColumnID_Name,
-        MyItemColumnID_Directory,
-        MyItemColumnID_WDTId,
-        MyItemColumnID_MapType
-    };
-
-    if (mapList.size() == 0) {
-        getMapList(mapList);
-        refilterIsNeeded = true;
-    }
-    if (refilterIsNeeded) {
-        filterMapList(std::string(&filterText[0]));
-        fillMapListStrings();
-
-        refilterIsNeeded = false;
-        resortIsNeeded = true;
-    }
-
-    ImGui::Begin("Map Select Dialog", &showSelectMap);
-    {
-        ImGui::Columns(2, NULL, true);
-        //Left panel
-        {
-            //Filter
-            if (ImGui::InputText("Filter: ", filterText.data(), filterText.size(),
-                                 ImGuiInputTextFlags_AlwaysOverwrite)) {
-                refilterIsNeeded = true;
-            }
-            //The table
-
-            ImGui::BeginChild("Map Select Dialog Left panel");
-            if (ImGui::BeginTable("MapListSelector", 5, ImGuiTableFlags_Resizable |
-                                                        ImGuiTableFlags_Reorderable |
-                                                        ImGuiTableFlags_Sortable |
-                                                        ImGuiTableFlags_NoHostExtendX |
-                                                        ImGuiTableFlags_NoHostExtendY |
-                                                        ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY,
-                                  ImVec2(-1, -1)
-            )) {
-                ImGui::TableSetupColumn("ID", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_ID);
-                ImGui::TableSetupColumn("MapName", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_Name);
-                ImGui::TableSetupColumn("MapDirectory", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_Directory);
-                ImGui::TableSetupColumn("WdtFileID", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_WDTId);
-                ImGui::TableSetupColumn("MapType", ImGuiTableColumnFlags_None, 0.0f, MyItemColumnID_MapType);
-                ImGui::TableSetupScrollFreeze(0, 1);
-                ImGui::TableHeadersRow();
-
-                ImGuiTableSortSpecs *sorts_specs = ImGui::TableGetSortSpecs();
-                if (sorts_specs && sorts_specs->SpecsDirty)
-                    resortIsNeeded = true;
-
-                if (sorts_specs && resortIsNeeded) {
-                    std::sort(filteredMapList.begin(), filteredMapList.end(),
-                              [sorts_specs](const auto &a, const auto &b) -> bool {
-
-                                  for (int n = 0; n < sorts_specs->SpecsCount; n++) {
-                                      const ImGuiTableColumnSortSpecs *sort_spec = &sorts_specs->Specs[n];
-                                      int delta = 0;
-
-                                      switch (sort_spec->ColumnUserID) {
-
-                                          case MyItemColumnID_ID:
-                                              delta = a.ID - b.ID;
-                                              break;
-                                          case MyItemColumnID_Name:
-                                              delta = a.MapName.compare(b.MapName);
-                                              break;
-                                          case MyItemColumnID_Directory:
-                                              delta = a.MapDirectory.compare(b.MapDirectory);
-                                              break;
-                                          case MyItemColumnID_WDTId:
-                                              delta = a.WdtFileID - b.WdtFileID;
-                                              break;
-                                          case MyItemColumnID_MapType:
-                                              delta = a.MapType - b.MapType;
-                                              break;
-
-                                          default:
-                                              IM_ASSERT(0);
-                                              break;
-                                      }
-                                      if (delta > 0)
-                                          return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? true
-                                                                                                            : false;
-                                      if (delta < 0)
-                                          return (sort_spec->SortDirection == ImGuiSortDirection_Ascending) ? false
-                                                                                                            : true;
-                                  }
-
-                                  return (a.ID - b.ID) > 0;
-                              });
-
-                    sorts_specs->SpecsDirty = false;
-                    resortIsNeeded = false;
-                    fillMapListStrings();
-                }
-
-                static int selected = -1;
-                for (int i = 0; i < filteredMapList.size(); i++) {
-                    ImGui::TableNextRow();
-                    auto mapRec = filteredMapList[i];
-
-                    ImGui::TableSetColumnIndex(0);
-
-                    if (ImGui::Selectable(mapListStringMap[i][0].c_str(), selected == i,
-                                          ImGuiSelectableFlags_SpanAllColumns |
-                                          ImGuiSelectableFlags_AllowItemOverlap)) {
-                        if (mapRec.ID != prevMapId) {
-                            minimapZoom = 0.1;
-                            mapCanBeOpened = true;
-                            adtMinimapFilled = false;
-                            prevMapRec = mapRec;
-
-                            limitZoneLight = -1;
-                            m_zoneLights = {};
-
-                            isWmoMap = false;
-                            adtSelectionMinimapTextures = {};
-                            adtSelectionMinimapMaterials = {};
-                            if (mapRec.WdtFileID > 0) {
-                                getAdtSelectionMinimap(mapRec.WdtFileID);
-                            } else {
-                                getAdtSelectionMinimap(
-                                    "world/maps/" + mapRec.MapDirectory + "/" + mapRec.MapDirectory + ".wdt");
-                            }
-
-                            m_zoneLights = loadZoneLightRecs(m_api->databaseHandler, mapRec.ID);
-                            m_mapLights.clear();
-                            m_api->databaseHandler->getAllLightByMap(mapRec.ID, m_mapLights);
-                        }
-                        prevMapId = mapRec.ID;
-                        selected = i;
-                    }
-                    bool hovered = ImGui::IsItemHovered();
-
-                    ImGui::TableSetColumnIndex(1);
-                    ImGui::Text("%s", mapListStringMap[i][1].c_str());
-                    ImGui::TableSetColumnIndex(2);
-                    ImGui::Text("%s", mapListStringMap[i][2].c_str());
-                    ImGui::TableSetColumnIndex(3);
-                    ImGui::Text("%s", mapListStringMap[i][3].c_str());
-                    ImGui::TableSetColumnIndex(4);
-                    ImGui::Text("%s", mapListStringMap[i][4].c_str());
-                }
-                ImGui::EndTable();
-            }
-            ImGui::Separator();
-            ImGui::EndChild();
-        }
-        ImGui::NextColumn();
-
-        {
-            ImGui::BeginChild("Map Select Dialog Right panel", ImVec2(0, 0));
-            {
-                if (!mapCanBeOpened) {
-                    ImGui::Text("Cannot open this map.");
-                    ImGui::Text("WDT file either does not exist in CASC repository or is encrypted");
-                } else if (!isWmoMap) {
-                    ImGui::SliderFloat("Zoom", &minimapZoom, 0.1, 10);
-                    ImGui::Checkbox("Draw Area lights", &drawAreaLights);
-                    ImGui::Checkbox("Draw ZoneLights", &drawZoneLights);
-                    ImGui::SameLine();
-                    ImGui::Text("Limit ZoneLights");
-                    ImGui::SameLine();
-                    std::string zoneLightIdStr = limitZoneLight >= 0 ? std::to_string(limitZoneLight) : "None";
-                    if (ImGui::BeginCombo("##combo", zoneLightIdStr.c_str())) // The second parameter is the label previewed before opening the combo.
-                    {
-                        {
-                            const std::string caption = "First None";
-                            if (ImGui::Selectable(caption.c_str(), limitZoneLight == -1)) {
-                                limitZoneLight = -1;
-                            }
-                        }
-
-                        for (int n = 0; n < m_zoneLights.size(); n++)
-                        {
-                            bool is_selected = (m_zoneLights[n].ID == limitZoneLight); // You can store your selection however you want, outside or inside your objects
-                            std::string caption = std::to_string(m_zoneLights[n].ID);
-                            if (ImGui::Selectable(caption.c_str(), is_selected)) {
-                                limitZoneLight = m_zoneLights[n].ID;
-                            }
-
-                            if (is_selected)
-                                ImGui::SetItemDefaultFocus();   // You may set the initial focus when opening the combo (scrolling + for keyboard navigation support)
-                        }
-                        ImGui::EndCombo();
-                    }
-//                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
-                    showAdtSelectionMinimap();
-                } else {
-                    worldPosX = 0;
-                    worldPosY = 0;
-                    if (ImGui::Button("Open WMO Map", ImVec2(-1, 0))) {
-                        if (prevMapRec.WdtFileID > 0) {
-                            m_backgroundScene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0, prevMapRec.overrideTime);
-                        } else {
-                            //Try to open map by fileName
-                            m_backgroundScene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f,
-                                                   0, prevMapRec.overrideTime);
-                        }
-                        showSelectMap = false;
-                    }
-                }
-
-            }
-            ImGui::EndChild();
-
-
-        }
-        ImGui::Columns(1);
-
-        ImGui::End();
+    if (m_mapSelectDialog && !m_mapSelectDialog->draw()) {
+        m_mapSelectDialog = nullptr;
     }
 }
 
@@ -933,7 +532,16 @@ void FrontendUI::showMainMenu() {
             }
 
             if (ImGui::MenuItem("Open Map selection", "", false, cascOpened)) {
-                showSelectMap = true;
+                if (!m_mapSelectDialog) {
+                    auto weakPtr = weak_from_this();
+                    m_mapSelectDialog = std::make_shared<MapSelectDialog>(m_api, m_uiRenderer, [weakPtr]() -> std::shared_ptr<SceneWindow> {
+                        auto sharedPtr = weakPtr.lock();
+                        if (!sharedPtr) return nullptr;
+
+                        return sharedPtr->getOrCreateWindow();
+                    });
+                }
+                m_mapSelectDialog->show();
             }
             if (ImGui::MenuItem("Unload scene", "", false, cascOpened)) {
                 unloadScene();
@@ -1020,8 +628,6 @@ void FrontendUI::initImgui(
     GLFWwindow *window
 #endif
 ) {
-
-    emptyMinimap();
 
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
@@ -1300,7 +906,7 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(131982, replacementTextureFDids);
         //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-        m_api->getConfig()->BCLightHack = true;
+        // m_api->getConfig()->BCLightHack = true;
     }
     if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(236122, replacementTextureFDids);
@@ -1444,6 +1050,47 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::End();
 }
 
+void FrontendUI::showModeControls(const std::string &groupName, EParameterSource &source, bool allowM2AsSource) {
+    int selection =
+        source == EParameterSource::eDatabase ? 0 :
+        source == EParameterSource::eM2 ? 1 :
+        source == EParameterSource::eConfig ? 2 : 0;
+
+    const char* labels[] = { "DB", "M2", "Manual" };
+    const char* labelsHints[] = { "Database", "M2 file of scene", "Manual (edit mode)" };
+
+    ImGui::BeginGroup();
+    for (int i = 0; i < IM_ARRAYSIZE(labels); i++)
+    {
+        if (!allowM2AsSource && i == 1) continue;
+
+        // Visual feedback: different color for selected
+        bool isSelectedThisIter = i == selection;
+        if (isSelectedThisIter)
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+
+        if (ImGui::Button((std::string(labels[i])+"##"+groupName).c_str()))
+            selection = i;
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip(labelsHints[i]);
+        }
+
+        if (isSelectedThisIter)
+            ImGui::PopStyleColor();
+
+        if (i + 1 < IM_ARRAYSIZE(labels))
+            ImGui::SameLine();
+    }
+    ImGui::EndGroup();
+
+    source =
+        selection == 0 ? EParameterSource::eDatabase :
+        selection == 1 ? EParameterSource::eM2 :
+        selection == 2 ? EParameterSource::eConfig : EParameterSource::eDatabase;
+}
+
 static HGTexture blpText = nullptr;
 
 void FrontendUI::showSettingsDialog() {
@@ -1561,6 +1208,13 @@ void FrontendUI::showSettingsDialog() {
             }
 
             {
+                bool renderM2Decals = m_api->getConfig()->renderM2Decals;
+                if (ImGui::Checkbox("Render M2 Decals", &renderM2Decals)) {
+                    m_api->getConfig()->renderM2Decals = renderM2Decals;
+                }
+            }
+
+            {
                 bool renderParticles = m_api->getConfig()->maxParticle >= 0;
                 if (ImGui::Checkbox("Render Particles", &renderParticles)) {
                     m_api->getConfig()->maxParticle = renderParticles ? 9999 : -1;
@@ -1607,6 +1261,11 @@ void FrontendUI::showSettingsDialog() {
             bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
             if (ImGui::Checkbox("Ignore ADT holes for rendering", &ignoreADTHoles)) {
                 m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
+            }
+
+            bool ignoreADTColors = m_api->getConfig()->ignoreADTColoring;
+            if (ImGui::Checkbox("Ignore ADT colors for rendering", &ignoreADTColors)) {
+                m_api->getConfig()->ignoreADTColoring = ignoreADTColors;
             }
 
 
@@ -1672,55 +1331,6 @@ void FrontendUI::showSettingsDialog() {
             auto activeScene = m_lastActiveScene.lock();
             auto mapPlan = activeScene ? activeScene->getLastPlan() : nullptr;
 
-            switch(m_api->getConfig()->globalLighting) {
-                case EParameterSource::eDatabase: {
-                    lightSource = 0;
-                    break;
-                }
-                case EParameterSource::eM2: {
-                    lightSource = 1;
-                    break;
-                }
-                case EParameterSource::eConfig: {
-                    lightSource = 2;
-                    break;
-                }
-            }
-
-            if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
-                m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
-            }
-            if (mapPlan != nullptr &&
-                mapPlan->frameDependentData != nullptr &&
-                m_api->getConfig()->globalLighting == EParameterSource::eDatabase) {
-
-                ImGui::SameLine();
-                if (ImGui::Button("Edit current colors")) {
-                    m_api->getConfig()->exteriorColors = mapPlan->frameDependentData->colors;
-                    m_api->getConfig()->globalLighting = EParameterSource::eConfig;
-                }
-            }
-
-            if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
-                m_api->getConfig()->globalLighting = EParameterSource::eM2;
-            }
-            if (ImGui::RadioButton("Manual light", &lightSource, 2)) {
-                m_api->getConfig()->globalLighting = EParameterSource::eConfig;
-            }
-
-            if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
-                auto config = m_api->getConfig();
-
-                ImGui::BeginTable("CurrentFogParams", 2);
-
-                ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor,true);
-                ImGui::CompactColorPicker("Exterior Horizon Ambient",
-                                          config->exteriorColors.exteriorHorizontAmbientColor,true);
-                ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor,true);
-                ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor,true);
-
-                ImGui::EndTable();
-            }
 
             //Glow source
             switch (m_api->getConfig()->glowSource) {
@@ -1786,61 +1396,6 @@ void FrontendUI::showSettingsDialog() {
     }
 }
 
-//void FrontendUI::produceDrawStage(HDrawStage &resultDrawStage, std::vector<HUpdateStage> &updateStages) {
-
-//}
-void FrontendUI::getAdtSelectionMinimap(int wdtFileDataId) {
-    m_wdtFile = m_api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
-}
-
-void FrontendUI::getAdtSelectionMinimap(std::string wdtFilePath) {
-    m_wdtFile = m_api->cacheStorage->getWdtFileCache()->get(wdtFilePath);
-}
-
-void FrontendUI::getMapList(std::vector<MapRecord> &mapList) {
-    if (m_api->databaseHandler == nullptr)  return;
-
-    m_api->databaseHandler->getMapArray(mapList);
-}
-
-bool FrontendUI::fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExists) {
-    if (m_wdtFile == nullptr) return false;
-
-    if (m_wdtFile->getStatus() == FileStatus::FSRejected) {
-        wdtFileExists = false;
-        isWMOMap = false;
-        return false;
-    }
-
-    if (m_wdtFile->getStatus() != FileStatus::FSLoaded) return false;
-
-    isWMOMap = m_wdtFile->mphd->flags.wdt_uses_global_map_obj != 0;
-
-    if (!isWMOMap) {
-        if (m_wdtFile->mphd->flags.wdt_has_maid) {
-            for (int i = 0; i < 64; i++) {
-                for (int j = 0; j < 64; j++) {
-                    if (m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture > 0) {
-                        auto blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(
-                            m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture);
-                        auto textureObj = m_api->hDevice->createBlpTexture(blpTexture, false, false);
-                        adtSelectionMinimapTextures[i][j] = textureObj;
-                        adtSelectionMinimapMaterials[i][j] = m_uiRenderer->createUIMaterial({textureObj});
-                    } else {
-                        adtSelectionMinimapTextures[i][j] = nullptr;
-                        adtSelectionMinimapMaterials[i][j] = nullptr;
-                    }
-                }
-
-            }
-        }
-        else {
-            std::cout << "wdtId = " << prevMapRec.WdtFileID << std::endl;
-        }
-    }
-    return true;
-}
-
 void FrontendUI::showMakeScreenshotDialog() {
    if (showMakeScreenshot) {
        ImGui::Begin("Make screenshot", &showMakeScreenshot);
@@ -1884,7 +1439,6 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
         l_device->setCurrentProcessingFrameNumber(frame);
         return frame;
     };
-
 
     HFrameScenario scenario = std::make_shared<HFrameScenario::element_type>();
     {
@@ -2072,10 +1626,6 @@ void FrontendUI::createDatabaseHandler() {
     if (useEmptyDatabase) {
         m_api->databaseHandler = std::make_shared<CEmptySqliteDB>();
     }
-
-    mapList = {};
-    mapListStringMap = {};
-    filteredMapList = {};
 }
 
 void FrontendUI::createFontTexture() {
