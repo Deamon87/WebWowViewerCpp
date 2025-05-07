@@ -193,7 +193,7 @@ public:
     void showSettingsDialog();
     void showQuickLinksDialog();
 
-    void showModeControls(EParameterSource &source, bool allowM2AsSource = false);
+    void showModeControls(const std::string &groupName, EParameterSource &source, bool allowM2AsSource = false);
     void showCurrentStatsDialog();
     void showBlpViewer();
     void showM2Viewer();

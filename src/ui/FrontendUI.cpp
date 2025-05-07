@@ -390,7 +390,8 @@ void FrontendUI::showCurrentStatsDialog() {
                     {
                         auto &source = m_api->getConfig()->globalFog;
                         auto prevVal = source;
-                        showModeControls(source);
+                        showModeControls("fogParams", source);
+
 
                         //editMode
                         bool e = (source == EParameterSource::eConfig);
@@ -399,10 +400,9 @@ void FrontendUI::showCurrentStatsDialog() {
                                 m_api->getConfig()->fogResult = cullStageData->frameDependentData->fogResults[0];
                         }
 
-                        ImGui::BeginTable("CurrentFogParams", 2);
-
                         auto &fogData = !e ? cullStageData->frameDependentData->fogResults[0] : m_api->getConfig()->fogResult;
 
+                        ImGui::BeginTable("CurrentFogParams", 2);
                         drawEditVar<1>(e, "Fog End:", fogData.FogEnd);
                         drawEditVar<1>(e, "Fog Scalar:", fogData.FogScaler);
                         drawEditVar<1>(e, "Fog Density:", fogData.FogDensity);
@@ -436,32 +436,51 @@ void FrontendUI::showCurrentStatsDialog() {
                     if (cullStageData->frameDependentData != nullptr) {
                         auto frameDependentData = cullStageData->frameDependentData;
 
-                        bool e = false; // editMode
+                        auto &source = m_api->getConfig()->skyParams;
+                        auto prevVal = source;
+                        showModeControls("skyColors", source);
+
+                        //editMode
+                        bool e = (source == EParameterSource::eConfig);
+                        if (e && prevVal != source) {
+                            m_api->getConfig()->skyColors = cullStageData->frameDependentData->skyColors;
+                        }
+
+                        auto &skyColors = !e ? cullStageData->frameDependentData->skyColors : m_api->getConfig()->skyColors;
 
                         ImGui::BeginTable("CurrentSkyColors", 2);
-                        drawEditVar<3>(e, "Sky Top:", frameDependentData->skyColors.SkyTopColor, "SkyTopColor");
-                        drawEditVar<3>(e, "Sky Middle:", frameDependentData->skyColors.SkyMiddleColor, "SkyMiddleColor");
-                        drawEditVar<3>(e, "Sky Band1:", frameDependentData->skyColors.SkyBand1Color, "SkyBand1Color");
-                        drawEditVar<3>(e, "Sky Band2:", frameDependentData->skyColors.SkyBand2Color, "SkyBand2Color");
-                        drawEditVar<3>(e, "Sky Smog:", frameDependentData->skyColors.SkySmogColor, "SkySmogColor");
-                        drawEditVar<3>(e, "Sky Fog:", frameDependentData->skyColors.SkyFogColor, "SkyFogColor");
+                        drawEditVar<3>(e, "Sky Top:", skyColors.SkyTopColor, "SkyTopColor");
+                        drawEditVar<3>(e, "Sky Middle:", skyColors.SkyMiddleColor, "SkyMiddleColor");
+                        drawEditVar<3>(e, "Sky Band1:", skyColors.SkyBand1Color, "SkyBand1Color");
+                        drawEditVar<3>(e, "Sky Band2:", skyColors.SkyBand2Color, "SkyBand2Color");
+                        drawEditVar<3>(e, "Sky Smog:", skyColors.SkySmogColor, "SkySmogColor");
+                        drawEditVar<3>(e, "Sky Fog:", skyColors.SkyFogColor, "SkyFogColor");
                         ImGui::EndTable();
                     }
                 }
                 if (ImGui::CollapsingHeader("Current global light")) {
                     if (cullStageData->frameDependentData != nullptr) {
-                        auto frameDependentData = cullStageData->frameDependentData;
+                        auto fdd = cullStageData->frameDependentData;
+
+                        auto &source = m_api->getConfig()->globalLighting;
+                        auto prevVal = source;
+                        showModeControls("globalLight", source, true);
+
+                        //editMode
+                        bool e = (source == EParameterSource::eConfig);
+                        if (e && prevVal != source) {
+                            m_api->getConfig()->exteriorColors = fdd->colors;
+                        }
+
+                        auto &colors = !e ? fdd->colors : m_api->getConfig()->exteriorColors;
 
                         ImGui::BeginTable("CurrentLightParams", 2);
-
-                        bool e = false; // editMode
-
-                        drawEditVar<3>(e, "Exterior Ambient:", frameDependentData->colors.exteriorAmbientColor, "ExteriorAmbient");
-                        drawEditVar<3>(e, "Exterior Horizon Ambient:", frameDependentData->colors.exteriorHorizontAmbientColor, "ExteriorHorizonAmbient");
-                        drawEditVar<3>(e, "Exterior Ground Ambient:", frameDependentData->colors.exteriorGroundAmbientColor, "ExteriorGroundAmbient");
-                        drawEditVar<3>(e, "Exterior Direct Color:", frameDependentData->colors.exteriorDirectColor, "ExteriorDirectColor");
-                        drawEditVar<3>(e, "Exterior Direct Dir:", frameDependentData->exteriorDirectColorDir, "ExteriorDirectDir");
-                        drawEditVar<1>(e, "Glow:", cullStageData->frameDependentData->currentGlow);
+                        drawEditVar<3>(e, "Exterior Ambient:", colors.exteriorAmbientColor, "ExteriorAmbient");
+                        drawEditVar<3>(e, "Exterior Horizon Ambient:", colors.exteriorHorizontAmbientColor, "ExteriorHorizonAmbient");
+                        drawEditVar<3>(e, "Exterior Ground Ambient:", colors.exteriorGroundAmbientColor, "ExteriorGroundAmbient");
+                        drawEditVar<3>(e, "Exterior Direct Color:", colors.exteriorDirectColor, "ExteriorDirectColor");
+                        drawEditVar<3>(false, "Exterior Direct Dir:", fdd->exteriorDirectColorDir, "ExteriorDirectDir");
+                        drawEditVar<1>(false, "Glow:", fdd->currentGlow);
                         ImGui::EndTable();
                     }
                 }
@@ -1031,7 +1050,7 @@ void FrontendUI::showQuickLinksDialog() {
     ImGui::End();
 }
 
-void FrontendUI::showModeControls(EParameterSource &source, bool allowM2AsSource) {
+void FrontendUI::showModeControls(const std::string &groupName, EParameterSource &source, bool allowM2AsSource) {
     int selection =
         source == EParameterSource::eDatabase ? 0 :
         source == EParameterSource::eM2 ? 1 :
@@ -1050,7 +1069,7 @@ void FrontendUI::showModeControls(EParameterSource &source, bool allowM2AsSource
         if (isSelectedThisIter)
             ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
 
-        if (ImGui::Button(labels[i]))
+        if (ImGui::Button((std::string(labels[i])+"##"+groupName).c_str()))
             selection = i;
 
         if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
@@ -1311,43 +1330,6 @@ void FrontendUI::showSettingsDialog() {
         if (ImGui::CollapsingHeader("Light options")) {
             auto activeScene = m_lastActiveScene.lock();
             auto mapPlan = activeScene ? activeScene->getLastPlan() : nullptr;
-
-            switch(m_api->getConfig()->globalLighting) {
-                case EParameterSource::eDatabase: {
-                    lightSource = 0;
-                    break;
-                }
-                case EParameterSource::eM2: {
-                    lightSource = 1;
-                    break;
-                }
-                case EParameterSource::eConfig: {
-                    lightSource = 2;
-                    break;
-                }
-            }
-
-            if (ImGui::RadioButton("Use global timed light", &lightSource, 0)) {
-                m_api->getConfig()->globalLighting = EParameterSource::eDatabase;
-            }
-            if (mapPlan != nullptr &&
-                mapPlan->frameDependentData != nullptr &&
-                m_api->getConfig()->globalLighting == EParameterSource::eDatabase) {
-
-                ImGui::SameLine();
-                if (ImGui::Button("Edit current colors")) {
-                    m_api->getConfig()->exteriorColors = mapPlan->frameDependentData->colors;
-                    m_api->getConfig()->globalLighting = EParameterSource::eConfig;
-                }
-            }
-
-            if (ImGui::RadioButton("Use ambient light from M2  (only for M2 scenes)", &lightSource, 1)) {
-                m_api->getConfig()->globalLighting = EParameterSource::eM2;
-            }
-            if (ImGui::RadioButton("Manual light", &lightSource, 2)) {
-                m_api->getConfig()->globalLighting = EParameterSource::eConfig;
-            }
-
 
 
             //Glow source

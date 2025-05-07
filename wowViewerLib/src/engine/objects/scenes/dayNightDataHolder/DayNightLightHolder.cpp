@@ -301,9 +301,9 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         if (config->skyParams == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
             fdd->skyColors = skyColors;
-        } else if (config->waterColorParams == EParameterSource::eConfig) {
+        } else if (config->skyParams == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->liquidColors = config->liquidColors;
+            fdd->skyColors = config->skyColors;
         }
     }
 
