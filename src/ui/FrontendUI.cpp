@@ -515,7 +515,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Open Map selection", "", false, cascOpened)) {
                 if (!m_mapSelectDialog) {
                     auto weakPtr = weak_from_this();
-                    m_mapSelectDialog = std::make_shared<MapSelectDialog>(m_api, m_uiRenderer, [weakPtr] -> std::shared_ptr<SceneWindow> {
+                    m_mapSelectDialog = std::make_shared<MapSelectDialog>(m_api, m_uiRenderer, [weakPtr]() -> std::shared_ptr<SceneWindow> {
                         auto sharedPtr = weakPtr.lock();
                         if (!sharedPtr) return nullptr;
 
