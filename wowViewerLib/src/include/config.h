@@ -76,7 +76,7 @@ public:
     bool controlSecondCamera = false;
     bool swapMainAndDebug = false;
 
-    bool BCLightHack = false;
+    // bool BCLightHack = false;
 
     bool enableLightBuffer = true;
 
@@ -118,16 +118,13 @@ public:
     bool useMinimapWaterColor = false;
     bool useCloseRiverColorForDB = false;
     EParameterSource waterColorParams = EParameterSource::eDatabase;
-    mathfu::vec4 closeRiverColor = {1,1,1,1};
-    mathfu::vec4 farRiverColor = {1,1,1,1};
-    mathfu::vec4 closeOceanColor = {1,1,1,1};
-    mathfu::vec4 farOceanColor = {1,1,1,1};
+    LiquidColors liquidColors;
 
     EParameterSource skyParams = EParameterSource::eDatabase;
     SkyColors skyColors;
 
     EParameterSource globalFog = EParameterSource::eDatabase;
-    FogResult fogResult;
+        FogResult fogResult;
 
     int diffuseColorHack = 0;
 

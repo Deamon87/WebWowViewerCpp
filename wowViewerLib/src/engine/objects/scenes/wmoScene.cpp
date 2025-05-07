@@ -41,10 +41,10 @@ void WmoScene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan, Mat
     );
 
     if (m_api->getConfig()->globalLighting == EParameterSource::eDatabase) {
-        frameDependantData->colors.exteriorAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
-        frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
-        frameDependantData->colors.exteriorGroundAmbientColor = mathfu::vec4(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z, 1.0);
-        frameDependantData->colors.exteriorDirectColor = mathfu::vec4(0.5, 0.5, 0.5, 0.5);
+        frameDependantData->colors.exteriorAmbientColor         = mathfu::vec3(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z);
+        frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec3(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z);
+        frameDependantData->colors.exteriorGroundAmbientColor   = mathfu::vec3(exteriorAmbient.x, exteriorAmbient.y, exteriorAmbient.z);
+        frameDependantData->colors.exteriorDirectColor          = mathfu::vec3(0.5, 0.5, 0.5);
     } else if (config->globalLighting == EParameterSource::eConfig) {
         auto fdd = mapRenderPlan->frameDependentData;
 

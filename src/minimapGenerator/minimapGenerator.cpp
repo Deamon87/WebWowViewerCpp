@@ -36,10 +36,10 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGD
 //    config->adtTTLWithoutUpdate = 500; //0.5 sec
     config->adtFreeStrategy = EFreeStrategy::eFrameBase; //
 
-    config->exteriorColors.exteriorAmbientColor =  mathfu::vec4(0.5f,0.5f,0.5f,1.0);;
-    config->exteriorColors.exteriorHorizontAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
-    config->exteriorColors.exteriorGroundAmbientColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
-    config->exteriorColors.exteriorDirectColor = mathfu::vec4(0.5f,0.5f,0.5f,1.0);
+    config->exteriorColors.exteriorAmbientColor =         mathfu::vec3(0.5f,0.5f,0.5f);
+    config->exteriorColors.exteriorHorizontAmbientColor = mathfu::vec3(0.5f,0.5f,0.5f);
+    config->exteriorColors.exteriorGroundAmbientColor =   mathfu::vec3(0.5f,0.5f,0.5f);
+    config->exteriorColors.exteriorDirectColor =          mathfu::vec3(0.5f,0.5f,0.5f);
 
     config->adtSpecMult = 0.0;
 
@@ -249,8 +249,7 @@ void MinimapGenerator::setupScenarioData() {
 
 
     auto config = m_apiContainer->getConfig();
-    config->closeOceanColor = currentScenario.closeOceanColor;//{0.0671968088, 0.294095874, 0.348881632, 0};
-    config->closeRiverColor = {0.345206976, 0.329288304, 0.270450264, 0};
+
     config->currentTime = currentScenario.time;
 
     m_width = currentScenario.imageWidth;

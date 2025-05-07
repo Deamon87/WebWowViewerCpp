@@ -109,10 +109,15 @@ void mixStructure<ExteriorColors>(ExteriorColors& a, ExteriorColors& b, float bl
 }
 template <>
 void mixStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoeff) {
-    mixStructOffset(a, b, &LiquidColors::closeRiverColor_shallowAlpha  , blendCoeff);
-    mixStructOffset(a, b, &LiquidColors::farRiverColor_deepAlpha       , blendCoeff);
-    mixStructOffset(a, b, &LiquidColors::closeOceanColor_shallowAlpha  , blendCoeff);
-    mixStructOffset(a, b, &LiquidColors::farOceanColor_deepAlpha       , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::closeRiverColor  , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::farRiverColor    , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::closeOceanColor  , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::farOceanColor    , blendCoeff);
+
+    mixStructOffset(a, b, &LiquidColors::riverShallowAlpha , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::riverDeepAlpha    , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::oceanShallowAlpha , blendCoeff);
+    mixStructOffset(a, b, &LiquidColors::oceanDeepAlpha    , blendCoeff);
 }
 template <>
 void mixStructure<SkyBodyData>(SkyBodyData& a, SkyBodyData& b, float blendCoeff) {
@@ -172,10 +177,15 @@ void madStructure<ExteriorColors>(ExteriorColors& a, ExteriorColors& b, float bl
 }
 template <>
 void madStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoeff) {
-    madStructOffset(a, b, &LiquidColors::closeRiverColor_shallowAlpha  , blendCoeff);
-    madStructOffset(a, b, &LiquidColors::farRiverColor_deepAlpha       , blendCoeff);
-    madStructOffset(a, b, &LiquidColors::closeOceanColor_shallowAlpha  , blendCoeff);
-    madStructOffset(a, b, &LiquidColors::farOceanColor_deepAlpha       , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::closeRiverColor  , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::farRiverColor    , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::closeOceanColor  , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::farOceanColor    , blendCoeff);
+
+    madStructOffset(a, b, &LiquidColors::riverShallowAlpha , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::riverDeepAlpha    , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::oceanShallowAlpha , blendCoeff);
+    madStructOffset(a, b, &LiquidColors::oceanDeepAlpha    , blendCoeff);
 }
 template <>
 void madStructure<SkyBodyData>(SkyBodyData& a, SkyBodyData& b, float blendCoeff) {
@@ -266,10 +276,8 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         } else if (config->globalLighting == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
 
-            fdd->colors.exteriorAmbientColor = config->exteriorColors.exteriorAmbientColor;
-            fdd->colors.exteriorGroundAmbientColor = config->exteriorColors.exteriorGroundAmbientColor;
-            fdd->colors.exteriorHorizontAmbientColor = config->exteriorColors.exteriorHorizontAmbientColor;
-            fdd->colors.exteriorDirectColor = config->exteriorColors.exteriorDirectColor;
+            fdd->colors = config->exteriorColors;
+
             auto extDir = MathHelper::calcExteriorColorDir(
                 frustumData.viewMat,
                 m_api->getConfig()->currentTime
@@ -288,14 +296,14 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
             fdd->liquidColors = liquidColors;
         } else if (config->waterColorParams == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
-            fdd->liquidColors.closeRiverColor_shallowAlpha = config->closeRiverColor;
-            fdd->liquidColors.farRiverColor_deepAlpha = config->farRiverColor;
-            fdd->liquidColors.closeOceanColor_shallowAlpha = config->closeOceanColor;
-            fdd->liquidColors.farOceanColor_deepAlpha = config->farOceanColor;
+            fdd->liquidColors = config->liquidColors;
         }
         if (config->skyParams == EParameterSource::eDatabase) {
             auto fdd = mapRenderPlan->frameDependentData;
             fdd->skyColors = skyColors;
+        } else if (config->waterColorParams == EParameterSource::eConfig) {
+            auto fdd = mapRenderPlan->frameDependentData;
+            fdd->liquidColors = config->liquidColors;
         }
     }
 
@@ -357,7 +365,11 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
             fdd->FogDataFound = !combinedResults.empty();
 
             auto &fogResult = fdd->fogResults.emplace_back();
-            fogResult = exteriorFogResult;
+            if (config->globalFog == EParameterSource::eDatabase) {
+                fogResult = exteriorFogResult;
+            } else if (config->globalFog == EParameterSource::eConfig){
+                fogResult = config->fogResult;
+            }
 
             fdd->FogDataFound = true;
 
@@ -548,10 +560,7 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
 
 
     float blendCoeff = fmaxf(fminf(getClampedFarClip(config->farPlane) / fogResult.EndFogColorDistance, 1.0f), 0.0f);
-    skyColors.SkyFogColor =
-        mathfu::vec4(
-            mix(skyColors.SkyFogColor.xyz(), fogResult.EndFogColor, blendCoeff),
-        0);
+    skyColors.SkyFogColor = mix(skyColors.SkyFogColor, fogResult.EndFogColor, blendCoeff);
 
     stateForConditions->currentLightParams = paramsBlend;
 }
@@ -593,35 +602,35 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
 
 
         //Ambient lights
-        exteriorColors.exteriorAmbientColor =         mixMembers<4>(lightParamData, &LightTimedData::ambientLight, blendTimeCoeff);
-        exteriorColors.exteriorGroundAmbientColor =   mixMembers<4>(lightParamData, &LightTimedData::groundAmbientColor, blendTimeCoeff);
-        if (vec3EqZero(exteriorColors.exteriorGroundAmbientColor.xyz()))
+        exteriorColors.exteriorAmbientColor =         mixMembers<3>(lightParamData, &LightTimedData::ambientLight, blendTimeCoeff);
+        exteriorColors.exteriorGroundAmbientColor =   mixMembers<3>(lightParamData, &LightTimedData::groundAmbientColor, blendTimeCoeff);
+        if (vec3EqZero(exteriorColors.exteriorGroundAmbientColor))
             exteriorColors.exteriorGroundAmbientColor = exteriorColors.exteriorAmbientColor;
 
-        exteriorColors.exteriorHorizontAmbientColor = mixMembers<4>(lightParamData, &LightTimedData::horizontAmbientColor, blendTimeCoeff);
-        if (vec3EqZero(exteriorColors.exteriorHorizontAmbientColor.xyz()))
+        exteriorColors.exteriorHorizontAmbientColor = mixMembers<3>(lightParamData, &LightTimedData::horizontAmbientColor, blendTimeCoeff);
+        if (vec3EqZero(exteriorColors.exteriorHorizontAmbientColor))
             exteriorColors.exteriorHorizontAmbientColor = exteriorColors.exteriorAmbientColor;
 
-        exteriorColors.exteriorDirectColor =          mixMembers<4>(lightParamData, &LightTimedData::directColor, blendTimeCoeff);
+        exteriorColors.exteriorDirectColor =          mixMembers<3>(lightParamData, &LightTimedData::directColor, blendTimeCoeff);
 
         //Liquid colors
-        liquidColors.closeOceanColor_shallowAlpha = mixMembers<4>(lightParamData, &LightTimedData::closeOceanColor, blendTimeCoeff);
-        liquidColors.farOceanColor_deepAlpha =      mixMembers<4>(lightParamData, &LightTimedData::farOceanColor, blendTimeCoeff);
-        liquidColors.closeRiverColor_shallowAlpha = mixMembers<4>(lightParamData, &LightTimedData::closeRiverColor, blendTimeCoeff);
-        liquidColors.farRiverColor_deepAlpha =      mixMembers<4>(lightParamData, &LightTimedData::farRiverColor, blendTimeCoeff);
+        liquidColors.closeOceanColor = mixMembers<3>(lightParamData, &LightTimedData::closeOceanColor, blendTimeCoeff);
+        liquidColors.farOceanColor =   mixMembers<3>(lightParamData, &LightTimedData::farOceanColor, blendTimeCoeff);
+        liquidColors.closeRiverColor = mixMembers<3>(lightParamData, &LightTimedData::closeRiverColor, blendTimeCoeff);
+        liquidColors.farRiverColor =   mixMembers<3>(lightParamData, &LightTimedData::farRiverColor, blendTimeCoeff);
 
-        liquidColors.closeOceanColor_shallowAlpha.w = lightParamData.oceanShallowAlpha;
-        liquidColors.farOceanColor_deepAlpha.w =      lightParamData.oceanDeepAlpha;
-        liquidColors.closeRiverColor_shallowAlpha.w = lightParamData.waterShallowAlpha;
-        liquidColors.farRiverColor_deepAlpha.w =      lightParamData.waterDeepAlpha;
+        liquidColors.oceanShallowAlpha = lightParamData.oceanShallowAlpha;
+        liquidColors.oceanDeepAlpha    = lightParamData.oceanDeepAlpha;
+        liquidColors.riverShallowAlpha = lightParamData.waterShallowAlpha;
+        liquidColors.riverDeepAlpha    = lightParamData.waterDeepAlpha;
 
         //SkyColors
-        skyColors.SkyTopColor =    mixMembers<4>(lightParamData, &LightTimedData::SkyTopColor, blendTimeCoeff);
-        skyColors.SkyMiddleColor = mixMembers<4>(lightParamData, &LightTimedData::SkyMiddleColor, blendTimeCoeff);
-        skyColors.SkyBand1Color =  mixMembers<4>(lightParamData, &LightTimedData::SkyBand1Color, blendTimeCoeff);
-        skyColors.SkyBand2Color =  mixMembers<4>(lightParamData, &LightTimedData::SkyBand2Color, blendTimeCoeff);
-        skyColors.SkySmogColor =   mixMembers<4>(lightParamData, &LightTimedData::SkySmogColor, blendTimeCoeff);
-        skyColors.SkyFogColor =    mixMembers<4>(lightParamData, &LightTimedData::SkyFogColor, blendTimeCoeff);
+        skyColors.SkyTopColor =    mixMembers<3>(lightParamData, &LightTimedData::SkyTopColor, blendTimeCoeff);
+        skyColors.SkyMiddleColor = mixMembers<3>(lightParamData, &LightTimedData::SkyMiddleColor, blendTimeCoeff);
+        skyColors.SkyBand1Color =  mixMembers<3>(lightParamData, &LightTimedData::SkyBand1Color, blendTimeCoeff);
+        skyColors.SkyBand2Color =  mixMembers<3>(lightParamData, &LightTimedData::SkyBand2Color, blendTimeCoeff);
+        skyColors.SkySmogColor =   mixMembers<3>(lightParamData, &LightTimedData::SkySmogColor, blendTimeCoeff);
+        skyColors.SkyFogColor =    mixMembers<3>(lightParamData, &LightTimedData::SkyFogColor, blendTimeCoeff);
 
         //Fog!
         fogResult.FogEnd =           mixMembers<1>(lightParamData, &LightTimedData::FogEnd, blendTimeCoeff);
@@ -701,7 +710,7 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
             fogResult.FogScaler = fogScalarOverride;
         }
     } else {
-        lightParamData.lightTimedData[0].time = 0;
+        // lightParamData.lightTimedData[0].time = 0;
     }
 }
 

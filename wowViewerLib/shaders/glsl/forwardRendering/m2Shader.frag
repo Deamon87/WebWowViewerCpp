@@ -56,6 +56,8 @@ void main() {
         vMeshColorAlpha.a *=
         textureWeightIndexes.x < 0 ? 1.0 : textureWeight[textureWeightIndexes.x / 4][textureWeightIndexes.x % 4];
 
+    vMeshColorAlpha.a *= modelAlpha.x;
+
     vec3 l_Normal = vNormal;
 
     //Accumulate and apply lighting
@@ -93,6 +95,7 @@ void main() {
         //finalColor.rgb =  finalColor.rgb * lightColor;
     }
 #endif
+
 
 //----------------------
 // Calc Diffuse and Specular

@@ -16,7 +16,7 @@ layout(std430, set=1, binding=1) buffer readonly modelWideBlockVS {
 
 struct modelWideBlockPSStruct {
     InteriorLightParam intLight;
-    ivec4 lightCountAndBcHack;
+    vec4 modelAlpha;
 };
 
 layout(std430, set=1, binding=2) buffer readonly modelWideBlockPS {

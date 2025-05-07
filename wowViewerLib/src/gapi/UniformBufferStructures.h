@@ -157,10 +157,10 @@ namespace M2 {
     //M2 Pixel buffer formats
     struct modelWideBlockPS {
         InteriorLightParam intLight;
-        int LightCount;
-        int bcHack;
-        int notUsed2;
-        int notUsed3;
+        float modelAlpha;
+        float unused0;
+        float unused1;
+        float unused2;
     };
 
     namespace WaterfallData {

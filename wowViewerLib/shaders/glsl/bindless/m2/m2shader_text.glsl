@@ -75,6 +75,8 @@ void main() {
             1.0 :
             textureWeight[textureWeightsInd + meshWide.textureWeightIndexes.x / 4][meshWide.textureWeightIndexes.x % 4];
 
+    vMeshColorAlpha.a *= modelWide.modelAlpha.x;
+
     vec3 l_Normal = vNormal;
 
     //----------------------

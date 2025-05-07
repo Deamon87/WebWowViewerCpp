@@ -178,17 +178,18 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
 
         blockPSVS.uViewUpSceneTime = mathfu::vec4(renderingMatrices->viewUp.xyz(), sceneTime);
 
-        blockPSVS.closeOceanColor = fdd->liquidColors.closeOceanColor_shallowAlpha;
-        blockPSVS.farOceanColor = fdd->liquidColors.farOceanColor_deepAlpha;
-        blockPSVS.closeRiverColor = fdd->liquidColors.closeRiverColor_shallowAlpha;
-        blockPSVS.farRiverColor = fdd->liquidColors.farRiverColor_deepAlpha;
+        const auto &lc = fdd->liquidColors;
+        blockPSVS.closeOceanColor = mathfu::vec4(lc.closeOceanColor, lc.oceanShallowAlpha);
+        blockPSVS.farOceanColor =   mathfu::vec4(lc.farOceanColor, lc.oceanDeepAlpha);
+        blockPSVS.closeRiverColor = mathfu::vec4(lc.closeRiverColor, lc.riverShallowAlpha);
+        blockPSVS.farRiverColor =   mathfu::vec4(lc.farRiverColor, lc.riverDeepAlpha);
 
-        blockPSVS.extLight.uExteriorAmbientColor = fdd->colors.exteriorAmbientColor;
-        blockPSVS.extLight.uExteriorHorizontAmbientColor = fdd->colors.exteriorHorizontAmbientColor;
-        blockPSVS.extLight.uExteriorGroundAmbientColor = fdd->colors.exteriorGroundAmbientColor;
-        blockPSVS.extLight.uExteriorDirectColor = fdd->colors.exteriorDirectColor;
-        blockPSVS.extLight.uExteriorDirectColorDir = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
-        blockPSVS.extLight.uAdtSpecMult_FogCount = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
+        blockPSVS.extLight.uExteriorAmbientColor         = mathfu::vec4(fdd->colors.exteriorAmbientColor, 1.0);
+        blockPSVS.extLight.uExteriorHorizontAmbientColor = mathfu::vec4(fdd->colors.exteriorHorizontAmbientColor, 1.0);
+        blockPSVS.extLight.uExteriorGroundAmbientColor   = mathfu::vec4(fdd->colors.exteriorGroundAmbientColor, 1.0);
+        blockPSVS.extLight.uExteriorDirectColor          = mathfu::vec4(fdd->colors.exteriorDirectColor, 1.0);
+        blockPSVS.extLight.uExteriorDirectColorDir       = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
+        blockPSVS.extLight.uAdtSpecMult_FogCount         = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
 
         for (int i = 0; i < std::min<int>(fdd->fogResults.size(), FOG_MAX_SHADER_COUNT); i++) {
             auto &fogResult = fdd->fogResults[i];
@@ -204,7 +205,7 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
             float fogEnd = std::min<float>(std::max<float>(m_config->farPlane, 277.5), m_config->farPlane);
             const float densityMultFix = 0.00050000002 * std::pow(10, m_config->fogDensityIncreaser);
             float fogScaler = fogResult.FogScaler;
-            if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
+            // if (fogScaler <= 0.00000001f) fogScaler = 0.5f;
             float fogStart = std::min<float>(m_config->farPlane, 3000) * fogScaler;
 
             if (m_config->disableFog || !fdd->FogDataFound) {

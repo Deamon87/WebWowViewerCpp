@@ -12,7 +12,7 @@ layout(std140, set=1, binding=0) uniform modelWideBlockVS {
 
 layout(std140, set=1, binding=1) uniform modelWideBlockPS {
     InteriorLightParam intLight;
-    ivec4 lightCountAndBcHack;
+    vec4 modelAlpha;
 };
 
 layout(std140, set=1, binding=2) uniform boneMats {

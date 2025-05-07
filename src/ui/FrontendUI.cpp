@@ -43,7 +43,7 @@ FrontendUI::FrontendUI(HApiContainer api) {
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
-    this->createDefaultprocessor();
+    //this->createDefaultprocessor();
 
     m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer);
 }
@@ -163,52 +163,69 @@ void FrontendUI::composeUI() {
     ImGui::Render();
 }
 
-inline void drawColumnF(const std::string &text, const float &value) {
+
+template<int T, typename M = std::conditional_t<(T > 1), mathfu::Vector<float, T>, float>>
+inline void drawEditVar(
+    bool editMode,
+    const std::string& text,
+    M& value,
+    const std::string& name = ""    // if non‐empty and T==vec3, we show a ColorButton
+) {
     ImGui::TableNextRow();
+    ImGui::TableNextColumn();
+    ImGui::Text("%s", text.c_str());
+    ImGui::TableNextColumn();
 
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
-    ImGui::TableNextColumn();
-    ImGui::Text("%.3f", value);
-}
-inline void drawColumnVec4(const std::string &text, const mathfu::vec4 &value) {
-    ImGui::TableNextRow();
 
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
-    ImGui::TableNextColumn();
-    ImGui::Text("%.3f, %.3f, %.3f, %.3f", value.x, value.y, value.z, value.w);
-}
+    if constexpr (T == 1) {
+        ImGui::Text("%.3f", value);
+    }
+    else if constexpr (T == 3) {
+        ImGui::Text("(%.3f, %.3f, %.3f)", value.x, value.y, value.z);
+        if (!name.empty()) {
+            //Color showing
+            ImGui::SameLine();
+            ImGuiColorEditFlags colorEditFlags = editMode ? ImGuiColorEditFlags_None : ImGuiColorEditFlags_NoPicker;
+            if (ImGui::ColorButton((name+"##3b").c_str(), ImVec4(value.x, value.y, value.z, 0), colorEditFlags)) {
+                if (editMode) ImGui::OpenPopup((name+"picker").c_str());
+            }
 
-inline void drawColumnColorVec3(const std::string &text, const std::string &name, const mathfu::vec3 &value) {
-    ImGui::TableNextRow();
+            if (editMode && ImGui::BeginPopup((name + "picker").c_str())) {
+                if (ImGui::ColorPicker3(name.c_str(), value.data_)) {
+                }
+                ImGui::EndPopup();
+            }
+        }
+    }
+    else if constexpr (T == 4) {
+        ImGui::Text("(%.3f, %.3f, %.3f, %.3f)", value.x, value.y, value.z, value.w);
+    }
+    if (editMode && name.empty()) {
+        //Show edit button
+        ImGui::SameLine();
+        std::string popupName = text+"picker";
+        if (ImGui::Button(("Edit##"+text).c_str())) {
+            ImGui::OpenPopup(popupName.c_str());
+        }
 
-    const std::string message = "(%.3f, %.3f, %.3f)";
-    const std::string varName = name + "##b";
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
+        if (ImGui::BeginPopup(popupName.c_str())) {
+            float delta = 0;
+            for (int i = 0; i < T; i++) {
+                delta = 0;
+                if (ImGui::SliderFloat(("Val"+std::to_string(i)).c_str(), &delta, -10, 10, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoInput)) {
+                    if constexpr (T == 1) {
+                        value += delta;
+                    } else {
+                        float & v = value.data_[i];
+                        v += delta;
+                    }
+                }
+            }
 
-    ImGui::TableNextColumn();
-    ImGui::Text(message.c_str(),
-                value.x,
-                value.y,
-                value.z);
-    ImGui::SameLine();
-    ImGui::ColorButton(varName.c_str(), ImVec4(value.x, value.y, value.z, 0));
-}
-inline void drawColumnVec3(const std::string &text, const std::string &name, const mathfu::vec3 &value) {
-    ImGui::TableNextRow();
 
-    const std::string message = "(%.3f, %.3f, %.3f)";
-    const std::string varName = name + "##b";
-    ImGui::TableNextColumn();
-    ImGui::Text(text.c_str());
-
-    ImGui::TableNextColumn();
-    ImGui::Text(message.c_str(),
-                value.x,
-                value.y,
-                value.z);
+            ImGui::EndPopup();
+        }
+    }
 }
 
 void FrontendUI::showCurrentStatsDialog() {
@@ -371,32 +388,45 @@ void FrontendUI::showCurrentStatsDialog() {
                     if (cullStageData != nullptr && cullStageData->frameDependentData != nullptr &&
                         !cullStageData->frameDependentData->fogResults.empty() )
                     {
+                        auto &source = m_api->getConfig()->globalFog;
+                        auto prevVal = source;
+                        showModeControls(source);
+
+                        //editMode
+                        bool e = (source == EParameterSource::eConfig);
+                        if (e && prevVal != source) {
+                            if (cullStageData->frameDependentData->fogResults.size() > 0)
+                                m_api->getConfig()->fogResult = cullStageData->frameDependentData->fogResults[0];
+                        }
+
                         ImGui::BeginTable("CurrentFogParams", 2);
 
-                        const auto &fogData = cullStageData->frameDependentData->fogResults[0];
-                        drawColumnF("Fog End:", fogData.FogEnd);
-                        drawColumnF("Fog Scalar:", fogData.FogScaler);
-                        drawColumnF("Fog Density:", fogData.FogDensity);
-                        drawColumnF("Fog Height:", fogData.FogHeight);
-                        drawColumnF("Fog Height Scaler:", fogData.FogHeightScaler);
-                        drawColumnF("Fog Height Density:", fogData.FogHeightDensity);
-                        drawColumnF("Sun Fog Angle:", fogData.SunFogAngle);
-                        drawColumnF("End Fog Color Distance:", fogData.EndFogColorDistance);
-                        drawColumnF("Sun Fog Strength:", fogData.SunFogStrength);
-                        drawColumnVec4("Fog Height Coefficients:", fogData.FogHeightCoefficients);
-                        drawColumnVec4("Main Fog Coefficients:", fogData.MainFogCoefficients);
-                        drawColumnVec4("Height Density Fog Coefficients:", fogData.HeightDensityFogCoefficients);
-                        drawColumnF("Fog Z Scalar:", fogData.FogZScalar);
-                        drawColumnF("Legacy Fog Scalar:", fogData.LegacyFogScalar);
-                        drawColumnF("Main Fog Start Dist:", fogData.MainFogStartDist);
-                        drawColumnF("Main Fog End Dist:", fogData.MainFogEndDist);
-                        drawColumnF("Fog Blend Alpha:", fogData.FogBlendAlpha);
-                        drawColumnF("Fog Start Offset:", fogData.FogStartOffset);
-                        drawColumnColorVec3("Sun Fog Color:", "SunFogColor", fogData.SunFogColor);
-                        drawColumnColorVec3("Fog Color:", "FogColor", fogData.FogColor);
-                        drawColumnColorVec3("End Fog Color:", "EndFogColor", fogData.EndFogColor);
-                        drawColumnColorVec3("Fog Height Color:", "FogHeightColor", fogData.FogHeightColor);
-                        drawColumnColorVec3("Height End Fog Color:", "HeightEndFogColor", fogData.HeightEndFogColor);
+                        auto &fogData = !e ? cullStageData->frameDependentData->fogResults[0] : m_api->getConfig()->fogResult;
+
+                        drawEditVar<1>(e, "Fog End:", fogData.FogEnd);
+                        drawEditVar<1>(e, "Fog Scalar:", fogData.FogScaler);
+                        drawEditVar<1>(e, "Fog Density:", fogData.FogDensity);
+                        drawEditVar<1>(e, "Fog Height:", fogData.FogHeight);
+                        drawEditVar<1>(e, "Fog Height Scaler:", fogData.FogHeightScaler);
+                        drawEditVar<1>(e, "Fog Height Density:", fogData.FogHeightDensity);
+                        drawEditVar<1>(e, "Sun Fog Angle:", fogData.SunFogAngle);
+                        drawEditVar<1>(e, "End Fog Color Distance:", fogData.EndFogColorDistance);
+                        drawEditVar<1>(e, "Sun Fog Strength:", fogData.SunFogStrength);
+                        drawEditVar<4>(e, "Fog Height Coefficients:", fogData.FogHeightCoefficients);
+                        drawEditVar<4>(e, "Main Fog Coefficients:", fogData.MainFogCoefficients);
+                        drawEditVar<4>(e, "Height Density Fog Coefficients:", fogData.HeightDensityFogCoefficients);
+                        drawEditVar<1>(e, "Fog Z Scalar:", fogData.FogZScalar);
+                        drawEditVar<1>(e, "Legacy Fog Scalar:", fogData.LegacyFogScalar);
+                        drawEditVar<1>(e, "Main Fog Start Dist:", fogData.MainFogStartDist);
+                        drawEditVar<1>(e, "Main Fog End Dist:", fogData.MainFogEndDist);
+                        drawEditVar<1>(e, "Fog Blend Alpha:", fogData.FogBlendAlpha);
+                        drawEditVar<1>(e, "Fog Start Offset:", fogData.FogStartOffset);
+                        drawEditVar<3>(e, "Sun Fog Color:", fogData.SunFogColor, "SunFogColor");
+                        drawEditVar<3>(e, "Fog Color:", fogData.FogColor, "FogColor");
+                        drawEditVar<3>(e, "End Fog Color:", fogData.EndFogColor, "EndFogColor");
+                        drawEditVar<3>(e, "Fog Height Color:", fogData.FogHeightColor, "FogHeightColor");
+                        drawEditVar<3>(e, "Height End Fog Color:", fogData.HeightEndFogColor, "HeightEndFogColor");
+                        drawEditVar<1>(e, "Sun Angle Blend:", fogData.SunAngleBlend);
                         ImGui::EndTable();
 
                         ImGui::Separator();
@@ -406,13 +436,15 @@ void FrontendUI::showCurrentStatsDialog() {
                     if (cullStageData->frameDependentData != nullptr) {
                         auto frameDependentData = cullStageData->frameDependentData;
 
+                        bool e = false; // editMode
+
                         ImGui::BeginTable("CurrentSkyColors", 2);
-                        drawColumnColorVec3("Sky Top:", "SkyTopColor", frameDependentData->skyColors.SkyTopColor.xyz());
-                        drawColumnColorVec3("Sky Middle:", "SkyMiddleColor", frameDependentData->skyColors.SkyMiddleColor.xyz());
-                        drawColumnColorVec3("Sky Band1:", "SkyBand1Color", frameDependentData->skyColors.SkyBand1Color.xyz());
-                        drawColumnColorVec3("Sky Band2:", "SkyBand2Color", frameDependentData->skyColors.SkyBand2Color.xyz());
-                        drawColumnColorVec3("Sky Smog:", "SkySmogColor", frameDependentData->skyColors.SkySmogColor.xyz());
-                        drawColumnColorVec3("Sky Fog:", "SkyFogColor", frameDependentData->skyColors.SkyFogColor.xyz());
+                        drawEditVar<3>(e, "Sky Top:", frameDependentData->skyColors.SkyTopColor, "SkyTopColor");
+                        drawEditVar<3>(e, "Sky Middle:", frameDependentData->skyColors.SkyMiddleColor, "SkyMiddleColor");
+                        drawEditVar<3>(e, "Sky Band1:", frameDependentData->skyColors.SkyBand1Color, "SkyBand1Color");
+                        drawEditVar<3>(e, "Sky Band2:", frameDependentData->skyColors.SkyBand2Color, "SkyBand2Color");
+                        drawEditVar<3>(e, "Sky Smog:", frameDependentData->skyColors.SkySmogColor, "SkySmogColor");
+                        drawEditVar<3>(e, "Sky Fog:", frameDependentData->skyColors.SkyFogColor, "SkyFogColor");
                         ImGui::EndTable();
                     }
                 }
@@ -422,12 +454,14 @@ void FrontendUI::showCurrentStatsDialog() {
 
                         ImGui::BeginTable("CurrentLightParams", 2);
 
-                        drawColumnColorVec3("Exterior Ambient:", "ExteriorAmbient", frameDependentData->colors.exteriorAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Horizon Ambient:", "ExteriorHorizonAmbient", frameDependentData->colors.exteriorHorizontAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Ground Ambient:", "ExteriorGroundAmbient", frameDependentData->colors.exteriorGroundAmbientColor.xyz());
-                        drawColumnColorVec3("Exterior Direct Color:", "ExteriorDirectColor", frameDependentData->colors.exteriorDirectColor.xyz());
-                        drawColumnVec3("Exterior Direct Dir:", "ExteriorDirectDir", frameDependentData->exteriorDirectColorDir);
-                        drawColumnF("Glow:", cullStageData->frameDependentData->currentGlow);
+                        bool e = false; // editMode
+
+                        drawEditVar<3>(e, "Exterior Ambient:", frameDependentData->colors.exteriorAmbientColor, "ExteriorAmbient");
+                        drawEditVar<3>(e, "Exterior Horizon Ambient:", frameDependentData->colors.exteriorHorizontAmbientColor, "ExteriorHorizonAmbient");
+                        drawEditVar<3>(e, "Exterior Ground Ambient:", frameDependentData->colors.exteriorGroundAmbientColor, "ExteriorGroundAmbient");
+                        drawEditVar<3>(e, "Exterior Direct Color:", frameDependentData->colors.exteriorDirectColor, "ExteriorDirectColor");
+                        drawEditVar<3>(e, "Exterior Direct Dir:", frameDependentData->exteriorDirectColorDir, "ExteriorDirectDir");
+                        drawEditVar<1>(e, "Glow:", cullStageData->frameDependentData->currentGlow);
                         ImGui::EndTable();
                     }
                 }
@@ -853,7 +887,7 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("BC login screen", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(131982, replacementTextureFDids);
         //        auto ambient = mathfu::vec4(0.3929412066936493f, 0.26823532581329346f, 0.3082353174686432f, 0);
-        m_api->getConfig()->BCLightHack = true;
+        // m_api->getConfig()->BCLightHack = true;
     }
     if (ImGui::Button("Wrath login screen", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(236122, replacementTextureFDids);
@@ -995,6 +1029,47 @@ void FrontendUI::showQuickLinksDialog() {
     }
 
     ImGui::End();
+}
+
+void FrontendUI::showModeControls(EParameterSource &source, bool allowM2AsSource) {
+    int selection =
+        source == EParameterSource::eDatabase ? 0 :
+        source == EParameterSource::eM2 ? 1 :
+        source == EParameterSource::eConfig ? 2 : 0;
+
+    const char* labels[] = { "DB", "M2", "Manual" };
+    const char* labelsHints[] = { "Database", "M2 file of scene", "Manual (edit mode)" };
+
+    ImGui::BeginGroup();
+    for (int i = 0; i < IM_ARRAYSIZE(labels); i++)
+    {
+        if (!allowM2AsSource && i == 1) continue;
+
+        // Visual feedback: different color for selected
+        bool isSelectedThisIter = i == selection;
+        if (isSelectedThisIter)
+            ImGui::PushStyleColor(ImGuiCol_Button, ImGui::GetStyleColorVec4(ImGuiCol_ButtonActive));
+
+        if (ImGui::Button(labels[i]))
+            selection = i;
+
+        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        {
+            ImGui::SetTooltip(labelsHints[i]);
+        }
+
+        if (isSelectedThisIter)
+            ImGui::PopStyleColor();
+
+        if (i + 1 < IM_ARRAYSIZE(labels))
+            ImGui::SameLine();
+    }
+    ImGui::EndGroup();
+
+    source =
+        selection == 0 ? EParameterSource::eDatabase :
+        selection == 1 ? EParameterSource::eM2 :
+        selection == 2 ? EParameterSource::eConfig : EParameterSource::eDatabase;
 }
 
 static HGTexture blpText = nullptr;
@@ -1273,19 +1348,7 @@ void FrontendUI::showSettingsDialog() {
                 m_api->getConfig()->globalLighting = EParameterSource::eConfig;
             }
 
-            if (m_api->getConfig()->globalLighting == EParameterSource::eConfig) {
-                auto config = m_api->getConfig();
 
-                ImGui::BeginTable("CurrentFogParams", 2);
-
-                ImGui::CompactColorPicker("Exterior Ambient", config->exteriorColors.exteriorAmbientColor,true);
-                ImGui::CompactColorPicker("Exterior Horizon Ambient",
-                                          config->exteriorColors.exteriorHorizontAmbientColor,true);
-                ImGui::CompactColorPicker("Exterior Ground Ambient", config->exteriorColors.exteriorGroundAmbientColor,true);
-                ImGui::CompactColorPicker("Exterior Direct Color", config->exteriorColors.exteriorDirectColor,true);
-
-                ImGui::EndTable();
-            }
 
             //Glow source
             switch (m_api->getConfig()->glowSource) {
