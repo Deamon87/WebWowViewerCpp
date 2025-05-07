@@ -259,12 +259,12 @@ void GPipelineVLK::createPipeline(
     depthStencil.stencilTestEnable = (stencilTestEnable || stencilWrite) ? VK_TRUE : VK_FALSE;
     depthStencil.front = {
         .failOp = VK_STENCIL_OP_KEEP,
-        .depthFailOp = VK_STENCIL_OP_KEEP,
         .passOp = stencilWrite ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP,
+        .depthFailOp = VK_STENCIL_OP_KEEP,
         .compareOp = stencilTestEnable ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_ALWAYS,
-        .reference = stencilWriteVal,
         .compareMask = 0xFF,
-        .writeMask = 0xFF
+        .writeMask = 0xFF,
+        .reference = stencilWriteVal
     };
 
     static const std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
