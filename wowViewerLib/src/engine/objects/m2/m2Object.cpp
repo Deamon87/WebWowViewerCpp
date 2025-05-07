@@ -1132,10 +1132,7 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
                 m_setInteriorSunDir ? 1.0f : 0.f
             ));
 
-        //Lights
-        bool BCLoginScreenHack = m_api->getConfig()->BCLightHack;
-        modelFragmentData.LightCount = 0;
-        modelFragmentData.bcHack = BCLoginScreenHack ? 1 : 0;
+        modelFragmentData.modelAlpha = m_alpha;
 
         m_modelWideData->m_modelFragmentData->save();
         m_modelWideDataChanged = false;

@@ -6,12 +6,16 @@
 #define AWEBWOWVIEWERCPP_M2MESHBUFFERUPDATER_H
 #define _USE_MATH_DEFINES
 
+#define NOMINMAX 1
+
 #include <mathfu/glsl_mappings.h>
 #include "./../../../../gapi/UniformBufferStructures.h"
 #include "M2MaterialInst.h"
 #include "../../../persistance/header/skinFileHeader.h"
 #include "../../../persistance/header/M2FileHeader.h"
 #include "../m2Object.h"
+
+
 
 class M2MeshBufferUpdater {
 public:

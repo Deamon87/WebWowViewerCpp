@@ -229,6 +229,7 @@ public:
 
     void setAlpha(float alpha) {
         m_alpha = alpha;
+        m_modelWideDataChanged = true;
     }
 
     float getAlpha() const {
