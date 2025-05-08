@@ -5,6 +5,8 @@
 #ifndef AWEBWOWVIEWERCPP_STATESAVER_H
 #define AWEBWOWVIEWERCPP_STATESAVER_H
 
+#include <functional>
+#include <string>
 #include <imgui.h>
 void addIniCallback(ImGuiContext* context, const std::string& sectionName,
                     std::function<void(const char* line)> readFunction,

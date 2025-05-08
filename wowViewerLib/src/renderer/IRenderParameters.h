@@ -47,6 +47,7 @@ public:
 
             return [framePlan, frameInputParams, this_s, l_updateProcessingFrame]() -> std::unique_ptr<IRenderFunction> {
                 auto l_currentFrame = l_updateProcessingFrame();
+                //TracyMessageStr(("Update stage frame = " + std::to_string(l_currentFrame)));
 
                 auto renderFunc = this_s->update(frameInputParams, framePlan);
                 renderFunc->setProcessingFrame(l_currentFrame);

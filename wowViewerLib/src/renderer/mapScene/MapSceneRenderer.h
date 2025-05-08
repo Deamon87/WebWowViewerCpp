@@ -15,6 +15,7 @@
 #include "../../gapi/interface/buffers/IBufferVersioned.h"
 #include <ShaderDefinitions.h>
 #include "../../engine/algorithms/FrameCounter.h"
+#include "MapSceneRendererTypes.h"
 
 static const std::vector<GBufferBinding> staticWMOBindings = {{
     {+wmoShader::Attribute::aPosition, 3, GBindingType::GFLOAT, false,          sizeof(WMOVertex), offsetof(WMOVertex, pos) },
@@ -62,6 +63,7 @@ static const std::vector<GBufferBinding> staticM2ParticleBindings = {{
     {+m2ParticleShader::Attribute::aTexcoord1, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord1)},
     {+m2ParticleShader::Attribute::aTexcoord2, 2, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, textCoord2)},
     {+m2ParticleShader::Attribute::aAlphaCutoff, 1, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, alphaCutoff)},
+    {+m2ParticleShader::Attribute::aObjectId, 1, GBindingType::GFLOAT, false, sizeof(ParticleBuffStruct), offsetof(ParticleBuffStruct, padding[0])},
 }};
 
 static std::vector<GBufferBinding> staticM2RibbonBindings = {{
@@ -109,9 +111,28 @@ public:
 
     void collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                        COpaqueMeshCollector &opaqueMeshCollector,
-                       COpaqueMeshCollector &skyOpaqueMeshCollector,
                        const std::shared_ptr<framebased::vector<HGSortableMesh>> &htransparentMeshes,
-                       const std::shared_ptr<framebased::vector<HGSortableMesh>> &hSkyTransparentMeshes);
+                       const std::shared_ptr<framebased::vector<HGMesh>> &hSkyMeshes);
+
+    // Individual collection steps — renderers compose exactly what their draw path needs.
+    // E.g. the deferred (GPU-indirect) renderer collects view meshes without WMO transparents
+    // (those go through the indirect path), plus projective (decal) meshes and sky meshes.
+    void collectViewMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                           COpaqueMeshCollector &opaqueMeshCollector,
+                           framebased::vector<HGSortableMesh> &transparentMeshes,
+                           bool includeWmoTransparents);
+
+    void collectM2MeshesCpu(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                            COpaqueMeshCollector &opaqueMeshCollector,
+                            framebased::vector<HGSortableMesh> &transparentMeshes);
+
+    // Decal/projective meshes aren't part of the GPU-indirect draw path, so GPU-indirect
+    // renderers collect them through this CPU-side step.
+    void collectM2ProjectiveMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                                   COpaqueMeshCollector &opaqueMeshCollector);
+
+    void collectSkyMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                          framebased::vector<HGMesh> &skyMeshes);
 
     void updateSceneWideChunk(const std::shared_ptr<IBufferChunkVersioned<sceneWideBlockVSPS>> &sceneWideChunk,
                               const std::vector<RenderingMatAndSceneSize> &renderingMatricesAndSizes,

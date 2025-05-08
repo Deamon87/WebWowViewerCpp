@@ -10,6 +10,7 @@
 #include <queue>
 #include <functional>
 #include <chrono>
+#include <climits>
 #include "../FrameProfile.h"
 
 template<typename T, typename Container = std::deque<T>>

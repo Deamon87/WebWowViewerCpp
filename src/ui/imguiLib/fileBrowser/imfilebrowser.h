@@ -298,7 +298,7 @@ inline void ImGui::FileBrowser::loadBuildsFromBuildInfo() {
         compareRes = a.buildVersion.compare(b.buildVersion);
         if (compareRes != 0) return compareRes < 0;
 
-        compareRes = a.buildConfig.compare(b.buildConfig);
+        compareRes = a.buildConfigHash.compare(b.buildConfigHash);
         if (compareRes != 0) return compareRes < 0;
 
         return false;
@@ -379,7 +379,7 @@ inline void ImGui::FileBrowser::Display()
         PushID(secIdx);
         if(secIdx > 0)
             SameLine();
-        if(SmallButton(sec.u8string().c_str()))
+        if(SmallButton(sec.string().c_str()))
             newPwdLastSecIdx = secIdx;
         PopID();
         ++secIdx;
@@ -544,7 +544,7 @@ inline void ImGui::FileBrowser::Display()
                 auto &buildDef = availableBuilds[n];
 
                 bool is_selected = (buildDef == currentBuild);
-                std::string label = buildDef.productName + " - " +buildDef.buildVersion + " - " + buildDef.buildConfig.substr(0,5);
+                std::string label = buildDef.productName + " - " +buildDef.buildVersion + " - " + buildDef.buildConfigHash.substr(0,5);
 
                 if (ImGui::Selectable(label.c_str(), is_selected)) {
                     currentBuild = buildDef;
@@ -636,7 +636,7 @@ inline void ImGui::FileBrowser::SetPwdUncatched(const ghc::filesystem::path &pwd
 
         rcd.extension = p.path().filename().extension().string();
 
-        rcd.showName = (rcd.isDir ? "[D] " : "[F] ") + p.path().filename().u8string();
+        rcd.showName = std::string(rcd.isDir ? "[D] " : "[F] ") + p.path().filename().string();
         fileRecords_.push_back(rcd);
     }
 

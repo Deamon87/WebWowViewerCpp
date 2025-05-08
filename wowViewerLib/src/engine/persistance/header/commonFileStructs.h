@@ -297,16 +297,12 @@ struct M2Track
     };
 };
 
-
-
-
 template<typename T>
 struct M2SplineKey {
     T value;
     T inTan;
     T outTan;
 };
-
 
 struct CImVector
 {
@@ -345,4 +341,53 @@ struct C4Plane
     };
 };
 PACK(struct vector_2fp_6_9 { uint16_t x; uint16_t y; });
+
+inline float halfToFloat(uint16_t half) {
+    uint16_t h = half;
+    uint32_t sign = (h & 0x8000) << 16;
+    uint32_t exp = h & 0x7C00;
+    uint32_t mant = h & 0x03FF;
+
+    uint32_t f;
+
+    if (exp == 0x7C00) { // Inf or NaN
+        f = sign | 0x7F800000 | (mant << 13);
+    } else if (exp != 0) { // Normalized number
+        int new_exp = ((exp >> 10) - 15 + 127) << 23;
+        f = sign | new_exp | (mant << 13);
+    } else if (mant != 0) { // Subnormal number
+        // Normalize the mantissa
+        exp = 1;
+        while ((mant & 0x0400) == 0) {
+            mant <<= 1;
+            exp--;
+        }
+        mant &= 0x03FF;
+        int new_exp = ((exp - 15 + 127) << 23);
+        f = sign | new_exp | (mant << 13);
+    } else { // Zero
+        f = sign;
+    }
+
+    float result;
+    *(uint32_t *) (&result) = f;
+    return result;
+}
+
+struct LightTextureAnimation
+{
+    float flickerIntensity;
+    float flickerSpeed;
+    int flickerMode; // 0 = off, 1 = sine curve, 2 = noise curve, 3 = noise step curve
+};
+static_assert(sizeof(LightTextureAnimation) == 12);
+
+PACK(
+struct MapLightTextureAnimation{
+    LightTextureAnimation textureAnimation;
+});
+static_assert(sizeof(MapLightTextureAnimation) == 12);
+
+
+
 #endif //WOWVIEWERLIB_COMMONFILESTRUCTS_H

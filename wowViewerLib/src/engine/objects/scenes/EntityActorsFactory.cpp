@@ -4,6 +4,7 @@
 
 #include "EntityActorsFactory.h"
 #include "../../../gapi/interface/IDevice.h"
+#include "../../../gapi/interface/FrameContext.h"
 
 #include <functional>
 #include <list>
@@ -19,26 +20,31 @@ std::list<EntityDeallocationRecord> listOfEntityDeallocators;
 void addEntityDeallocationRecord(std::function<void()> callback) {
     std::lock_guard<std::mutex> lock(m_listOfEntityDeallocatorsAccessMtx);
     EntityDeallocationRecord dr;
-    dr.frameNumberToDoAt = IDevice::getCurrentProcessingFrameNumber() + IDevice::MAX_FRAMES_IN_FLIGHT+1;
+    dr.frameNumberToDoAt = FrameContext::getCurrentProcessingFrameNumber() + IDevice::MAX_FRAMES_IN_FLIGHT+1;
     dr.callback = callback;
     listOfEntityDeallocators.push_back(dr);
 };
 
-void executeEntityDeallocators() {
-    std::unique_lock<std::mutex> lock(m_listOfEntityDeallocatorsAccessMtx, std::defer_lock);
+void executeEntityDeallocators(bool forceDealloc) {
+    std::list<EntityDeallocationRecord> toRun;
 
-    lock.lock();
-    auto m_frameNumber = IDevice::getCurrentProcessingFrameNumber();
-    while ((!listOfEntityDeallocators.empty()) && (listOfEntityDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-        auto stuff = listOfEntityDeallocators.front();
+    do {
+        {
+            std::lock_guard<std::mutex> lock(m_listOfEntityDeallocatorsAccessMtx);
+            auto frame = FrameContext::getCurrentProcessingFrameNumber();
 
-        if (stuff.callback != nullptr) {
-            lock.unlock();
-            stuff.callback();
-            lock.lock();
+            while (!listOfEntityDeallocators.empty() &&
+                (forceDealloc || listOfEntityDeallocators.front().frameNumberToDoAt <= frame)) {
+                toRun.push_back(std::move(listOfEntityDeallocators.front()));
+                listOfEntityDeallocators.pop_front();
+            }
         }
 
-        listOfEntityDeallocators.pop_front();
-    }
-    lock.unlock();
+        // Run callbacks without holding the lock
+        for (auto& item : toRun) {
+            if (item.callback)
+                item.callback();
+        }
+        toRun.clear();
+    } while ((!listOfEntityDeallocators.empty()) && forceDealloc);
 }

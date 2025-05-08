@@ -221,7 +221,11 @@ struct SMOFog
     /*000h*/  uint32_t flag_infinite_radius : 1; // F_IEBLEND: Ignore radius in CWorldView::QueryCameraFog
     /*000h*/  uint32_t unused1: 3;                      // unused as of 7.0.1.20994
     /*000h*/  uint32_t flag_0x10 : 1;
-    /*000h*/  uint32_t unused2: 27;                     // unused as of 7.0.1.20994
+    /*000h*/  uint32_t unused2: 7;
+    /*000h*/  uint32_t flag_0x1000 : 1;                 // F_FOGVOLUME: fogs of the group are blended as weighted average (CWorldView::sub_14058DE30)
+    /*000h*/  uint32_t unused3: 3;
+    /*000h*/  uint32_t flag_0x10000 : 1;                // together with flag_0x1000 disables the WMO fog completely
+    /*000h*/  uint32_t unused4: 15;
     /*004h*/  C3Vector pos;
     /*010h*/  float smaller_radius;              // start
     /*014h*/  float larger_radius;               // end
@@ -328,6 +332,23 @@ struct SMOBatch
 //#else
 };
 
+#pragma pack(push, 1)
+struct MOPY {
+    uint8_t flags;
+    uint8_t materialId;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(MOPY) == 2);
+
+#pragma pack(push, 1)
+struct MOPY2 {
+    uint16_t flags;
+    uint16_t materialId;
+};
+#pragma pack(pop)
+
+static_assert(sizeof(MOPY2) == 4);
 
 struct t_BSP_NODE
 {
@@ -380,13 +401,6 @@ struct SMOLTile
 
 //Light related structs
 
-struct Light_texture_animation
-{
-    float flickerIntensity;
-    float flickerSpeed;
-    int flickerMode;
-};
-
 struct LightUnkRecord
 {
     int unk0;
@@ -412,7 +426,7 @@ PACK(
 struct map_object_point_light {
     uint32_t lightId;
     CImVector color;
-    C3Vector pos;
+    C3Vector position;
     float attenuationStart;
     float attenuationEnd;
     float intensity;
@@ -424,7 +438,7 @@ PACK(
 struct map_object_pointlight_anim
 {
     map_object_point_light pointLight;
-    Light_texture_animation lightTextureAnimation;
+    LightTextureAnimation lightTextureAnimation;
     LightUnkRecord lightUnkRecord;
 });
 
@@ -448,11 +462,11 @@ PACK(
 struct map_object_spotlight_anim
 {
     map_object_spot_light spotLight;
-    Light_texture_animation lightTextureAnimation;
+    LightTextureAnimation lightTextureAnimation;
     LightUnkRecord lightUnkRecord;
 });
 
-//MLND - lives in main WMO
+//MNLD - lives in main WMO
 struct mapobject_new_light_def {
     int type;
     int lightIndex;
@@ -465,16 +479,16 @@ struct mapobject_new_light_def {
     float attenEnd;
     float intensity;
     CImVector outerColor;
-    float falloffStart;
-    float falloff;
+    float blendStart;
+    float blendEnd;
     int field_44;
-    Light_texture_animation lightTextureAnimation;
+    LightTextureAnimation lightTextureAnimation;
     LightUnkRecord lightUnkRecord;
-    float spotlightRadius;
+    float falloff;
     float innerAngle;
     float outerAngle;
-    uint16_t packedVal1;
-    uint16_t packedIntesityMultiplier;
+    uint16_t f16_scale;
+    uint16_t f16_intesityMultiplier;
     int field_8C;
     int field_90;
     int field_94;

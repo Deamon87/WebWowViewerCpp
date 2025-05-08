@@ -3,11 +3,14 @@
 //
 
 #include "GStagingRingBuffer.h"
+#include "../../interface/FrameContext.h"
 
 void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_offset) {
-//    TracyMessageStr(("GStagingRingBuffer::allocateNext, CurrentProcessingFrameNumber =" + std::to_string(m_device->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("GStagingRingBuffer::allocateNext, CurrentProcessingFrameNumber =" + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
+    auto sDevice = m_device.lock();
+    if (!sDevice) return nullptr;
 
-    auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto frame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
     int startOffset = 0;
@@ -36,7 +39,7 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
 
                 while (currentIndexAfter >= vec.size()) {
                     auto &bufferAndCPU = vec.emplace_back();
-                    bufferAndCPU.staging = std::make_shared<BufferStagingVLK>(m_device, STAGE_BUFFER_SIZE);
+                    bufferAndCPU.staging = std::make_shared<BufferStagingVLK>(sDevice, STAGE_BUFFER_SIZE);
                     bufferAndCPU.cpuBuffer = std::make_unique<CPUBufferAccum>();
                 }
             }
@@ -84,8 +87,11 @@ void * GStagingRingBuffer::allocateNext(int o_size, VkBuffer &o_staging, int &o_
 }
 
 void GStagingRingBuffer::flushBuffers() {
-//    TracyMessageStr(("GStagingRingBuffer::flushBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_device->getCurrentProcessingFrameNumber())));
-    auto frame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+//    TracyMessageStr(("GStagingRingBuffer::flushBuffers, CurrentProcessingFrameNumber =" + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
+    auto sDevice = m_device.lock();
+    if (!sDevice) return;
+    
+    auto frame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto &vec = m_stagingBuffers[frame];
 
     uint64_t currentOffset = offsets[frame];

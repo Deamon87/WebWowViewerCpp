@@ -61,4 +61,59 @@ struct MAIN {
     uint32_t asyncId;    // only set during runtime.
 };
 
+PACK(
+struct MapPointLight2
+{
+/*0x00*/  uint32_t lightIndex;
+/*0x04*/  CImVector color;
+/*0x08*/  C3Vector position;
+/*0x14*/  float attenuationStart;
+/*0x18*/  float attenuationEnd;
+/*0x1C*/  float intensity;
+/*0x20*/  C3Vector rotation;
+/*0x2C*/  uint16_t tileX;
+/*0x2E*/  uint16_t tileY;
+/*0x30*/  int16_t mlta_index;   //Index into MLTA
+/*0x32*/  int16_t textureIndex; //Index into MTEX
+});
+
+PACK(
+struct MapPointLight3
+{
+/*0x00*/  uint32_t lightIndex;
+/*0x04*/  CImVector color;
+/*0x08*/  C3Vector position;
+/*0x14*/  float attenuationStart;
+/*0x18*/  float attenuationEnd;
+/*0x1C*/  float intensity;
+/*0x20*/  C3Vector rotation;        //Should be rotation, but rotation doesn't make sense for point light. Probably unused?
+/*0x2C*/  uint16_t tileX;
+/*0x2E*/  uint16_t tileY;
+/*0x30*/  int16_t mlta_index;   //Index into MLTA
+/*0x32*/  int16_t textureIndex; //Index into MTEX
+/*0x34*/  uint16_t flags;
+/*0x36*/  uint16_t scale;        //Some packed value
+});
+
+PACK(
+struct MapSpotLight
+{
+    uint32_t id;
+    CArgb color;
+    C3Vector position;
+    float attenuationStart; // When to start the attenuation of the light, must be <= attenuationEnd or glitches
+    float attenuationEnd;
+    float intensity;
+    C3Vector rotation; // radians
+    float falloff;
+    float innerAngle;
+    float outerAngle; // radians
+    uint16_t tileX;
+    uint16_t tileY;
+    uint16_t mlta_index; //Index into MTLA
+    uint16_t textureIndex; //Index into MTEX
+}) ;
+
+
+
 #endif //WEBWOWVIEWERCPP_WDTFILEHEADER_H_H

@@ -78,7 +78,12 @@ struct SMMapObjDef {
         uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
         uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
         uint16_t modf_entry_is_filedata_id : 1;               // Legion(?)+: unknown
-        uint16_t unused : 12;
+        uint16_t modf_unk_16 : 1;
+        uint16_t modf_unk_32 : 1;
+        uint16_t modf_unk_64 : 1;
+        uint16_t modf_use_sets_from_mwds : 1;
+
+        uint16_t unused : 8;
     } flags;               // values from enum MODFFlags.
     uint16_t doodadSet;           // which WMO doodad set is used.
     uint16_t nameSet;             // which WMO name set is used. Used for renaming goldshire inn to northshire inn while using the same model.
@@ -94,8 +99,13 @@ struct SMMapObjDefObj1 {                        // same as MODF but without boun
         uint16_t modf_destroyable : 1;         // set for destroyable buildings like the tower in DeathknightStart. This makes it a server-controllable game object.
         uint16_t modf_use_lod : 1;             // WoD(?)+: also load _LOD1.WMO for use dependent on distance
         uint16_t modf_unk_4 : 1;               // Legion(?)+: unknown
-        uint16_t modf_entry_is_filedata_id : 1; // Legion(?)+: nameId is a file data id to directly load
-        uint16_t unused : 12;
+        uint16_t modf_entry_is_filedata_id : 1;               // Legion(?)+: unknown
+        uint16_t modf_unk_16 : 1;
+        uint16_t modf_unk_32 : 1;
+        uint16_t modf_unk_64 : 1;
+        uint16_t modf_use_sets_from_mwds : 1;
+
+        uint16_t unused : 8;
     } flags;
     uint16_t doodadSet;
     uint16_t nameSet;
@@ -184,6 +194,8 @@ union{
 /*0x07C*/  uint32_t unused;                              // currently unused
 /*0x080*/
 };
+
+static_assert(sizeof(SMChunk) == 128);
 
 struct MCVT {
     float height[9*9 + 8*8];
@@ -300,6 +312,9 @@ struct MLND
     int16_t indices[4]; // indexes into MLND for child leaves
 };
 
-
+struct MWDR {
+    uint32_t begin; // Index into MWDS.
+    uint32_t end;   // inclusive: [7, 10] = MWDS[7] + MWDS[8] + MWDS[9] + MWDS[10]
+};
 
 #endif //WOWVIEWERLIB_ADTFILEHEADER_H

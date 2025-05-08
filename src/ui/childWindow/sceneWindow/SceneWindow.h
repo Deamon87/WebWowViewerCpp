@@ -8,6 +8,10 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <optional>
+#include <array>
+#include <map>
+#include <set>
 #include "../../../../wowViewerLib/src/engine/ApiContainer.h"
 #include "../../../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
 #include "../../../../wowViewerLib/src/engine/objects/iScene.h"
@@ -21,9 +25,11 @@ struct RenderTargetParameters {
     std::shared_ptr<IRenderView> target;
 };
 
+class WorldObjectManager;
+
 class SceneWindow : public std::enable_shared_from_this<SceneWindow> {
 public:
-    SceneWindow(const HApiContainer &api, bool renderToSwapChain, const std::shared_ptr<FrontendUIRenderer> &uiRenderer);
+    SceneWindow(const HApiContainer &api, bool renderToSwapChain, const std::shared_ptr<FrontendUIRenderer> &uiRenderer, bool forceForwardRendering);
     virtual ~SceneWindow();
 
     void openMapByIdAndFilename(int mapId, const std::string &mapName, float x, float y, float z, int timeOverride);
@@ -36,8 +42,20 @@ public:
 
     void unload();
 
+    int getMapId() { return m_mapId; };
+
     std::shared_ptr<MapRenderPlan> getLastPlan();
     const std::shared_ptr<ICamera> &getCamera();
+
+    // Returns the current Map scene's WorldObjectManager, or nullptr if the current
+    // scene isn't a Map (or has none set, e.g. M2/WMO preview scenes).
+    std::shared_ptr<WorldObjectManager> getWorldObjectManager();
+
+    // Sky scene ids of the current Map scene's WDL, grouped by the player condition
+    // that gates them (SkySceneXPlayerCondition db2). Empty when the current scene
+    // isn't a Map or the map has no WDL. Built once at WDL load and static for the
+    // WDL's lifetime.
+    const std::map<int, std::set<int>> &getSkyScenesByPlayerCondition();
 
     bool hasRenderer();
     std::shared_ptr<IRenderView> createRenderView();
@@ -53,8 +71,32 @@ public:
                         const HFrameScenario &scenario,
                         const std::function<uint32_t()> &updateFrameNumberLambda);
 
+    std::shared_ptr<IVideoRecordingContext> startVideoRecording(uint32_t framebufferWidth, uint32_t framebufferHeight,
+                                                                uint32_t outputWidth, uint32_t outputHeight,
+                                                                const std::string &videoFilename);
+    void processVideoRecording(const std::shared_ptr<IVideoRecordingContext> &videoRecordingContext,
+                               const HFrameScenario &scenario,
+                               float fov,
+                               const std::function<uint32_t()> &updateFrameNumberLambda);
+
     void setViewPortDimensions(const ViewPortDimensions &dimensions) {
         m_dimension = dimensions;
+    }
+
+    // Request an object-id pick at the given pixel (in this window's render-target pixel space),
+    // consumed and cleared on the next render() call. isHoverPeek marks a passive hover-only
+    // query (e.g. nameplate tooltips) that must not change the actual selection.
+    //
+    // An explicit request (right-click / Ctrl-hover-select) always takes priority: a hover-peek
+    // request will not overwrite an explicit request that's still pending/unconsumed, since the
+    // continuous per-frame hover-peek call would otherwise always win the race against the
+    // event-driven (mouse-move/click) explicit request and silently swallow every selection.
+    void requestPick(int x, int y, bool isHoverPeek = false) {
+        if (isHoverPeek && m_pendingPickRequest && !m_pendingPickIsHoverPeek) {
+            return;
+        }
+        m_pendingPickRequest = {{x, y}};
+        m_pendingPickIsHoverPeek = isHoverPeek;
     }
 
     int getCurrentCameraIndex() {return m_currentCameraIndex;}
@@ -75,6 +117,8 @@ private:
     std::shared_ptr<IScene> m_currentScene = nullptr;
     bool m_renderToSwapChain = true;
 
+    int m_mapId = -1;
+
     HApiContainer createNewApiContainer();
 
 private:
@@ -94,10 +138,13 @@ protected:
 
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
 
+    bool m_forceForwardRendering = false;
+
     std::shared_ptr<IRenderView> m_renderView = nullptr;
     std::vector<std::tuple<std::string, std::array<std::shared_ptr<IUIMaterial>, IDevice::MAX_FRAMES_IN_FLIGHT>>> materials = {};
 
-
+    std::optional<std::array<int, 2>> m_pendingPickRequest;
+    bool m_pendingPickIsHoverPeek = false;
 };
 
 

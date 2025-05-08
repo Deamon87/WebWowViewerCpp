@@ -6,6 +6,7 @@
 #include "../../../3rdparty/mathfu/include/mathfu/glsl_mappings.h"
 #include "../../gapi/UniformBufferStructures.h"
 #include "../../gapi/interface/materials/IMaterial.h"
+#include "../../gapi/interface/FrameContext.h"
 
 //----- (00A19710) --------------------------------------------------------
 CRibbonEmitter::CRibbonEmitter(const HApiContainer &api, const HMapSceneBufferCreate &sceneRenderer,
@@ -14,73 +15,76 @@ CRibbonEmitter::CRibbonEmitter(const HApiContainer &api, const HMapSceneBufferCr
                                std::vector<M2Material> &materials,
                                std::vector<int> &textureIndicies, int textureTransformLookup) : m_api(api)
 {
-  this->textureTransformLookup = textureTransformLookup;
-  this->m_refCount = 1;
-  this->m_prevPos.x = 0.0;
-  this->m_prevPos.y = 0.0;
-  this->m_prevPos.z = 0.0;
-  this->m_pos.x = 0.0;
-  this->m_pos.y = 0.0;
-  this->m_pos.z = 0.0;
-  this->m_texSlotBox.miny = 0.0;
-  this->m_texSlotBox.minx = 0.0;
-  this->m_texSlotBox.maxy = 0.0;
-  this->m_texSlotBox.maxx = 0.0;
-  this->m_prevVertical.x = 0.0;
-  this->m_prevVertical.y = 0.0;
-  this->m_prevVertical.z = 0.0;
-  this->m_currVertical.x = 0.0;
-  this->m_currVertical.y = 0.0;
-  this->m_currVertical.z = 0.0;
-  this->m_prevDir.x = 0.0;
-  this->m_prevDir.y = 0.0;
-  this->m_prevDir.z = 0.0;
-  this->m_currDir.x = 0.0;
-  this->m_currDir.y = 0.0;
-  this->m_currDir.z = 0.0;
-  this->m_prevDirScaled.x = 0.0;
-  this->m_prevDirScaled.y = 0.0;
-  this->m_prevDirScaled.z = 0.0;
-  this->m_currDirScaled.x = 0.0;
-  this->m_currDirScaled.y = 0.0;
-  this->m_currDirScaled.z = 0.0;
-  this->m_below0.x = 0.0;
-  this->m_below0.y = 0.0;
-  this->m_below0.z = 0.0;
-  this->m_below1.x = 0.0;
-  this->m_below1.y = 0.0;
-  this->m_below1.z = 0.0;
-  this->m_above0.x = 0.0;
-  this->m_above0.y = 0.0;
-  this->m_above0.z = 0.0;
-  this->m_above1.x = 0.0;
-  this->m_above1.y = 0.0;
-  this->m_above1.z = 0.0;
-  this->m_minWorldBounds.z = 3.4028235e10f;
-  this->m_minWorldBounds.y = 3.4028235e10f;
-  this->m_minWorldBounds.x = 3.4028235e10f;
-  this->m_maxWorldBound.z = -3.4028235e10f;
-  this->m_maxWorldBound.y = -3.4028235e10f;
-  this->m_maxWorldBound.x = -3.4028235e10f;
-  this->m_diffuseClr = {0,0,0,0};
-  this->m_texBox.miny = 0.0;
-  this->m_texBox.minx = 0.0;
-  this->m_texBox.maxy = 0.0;
-  this->m_texBox.maxx = 0.0;
-  this->m_ribbonEmitterflags.m_singletonUpdated = 0;
-  this->m_ribbonEmitterflags.m_initialized = 0;
-  this->m_currPos.x = 0.0;
-  this->m_currPos.y = 0.0;
-  this->m_currPos.z = 0.0;
+    m_fileDataId = object->getModelFileId();
+    m_m2Object = object;
 
-//  std::cout << "sizeof(CRibbonVertex) = " << sizeof(CRibbonVertex) << std::endl;
-//  std::cout << "offset(CRibbonVertex.diffuseColor) = " << sizeof(CRibbonVertex) << std::endl;
-//  std::cout << "offset(CRibbonVertex.texCoord) = " << sizeof(CRibbonVertex) << std::endl;
+    this->textureTransformLookup = textureTransformLookup;
+    this->m_refCount = 1;
+    this->m_prevPos.x = 0.0;
+    this->m_prevPos.y = 0.0;
+    this->m_prevPos.z = 0.0;
+    this->m_pos.x = 0.0;
+    this->m_pos.y = 0.0;
+    this->m_pos.z = 0.0;
+    this->m_texSlotBox.miny = 0.0;
+    this->m_texSlotBox.minx = 0.0;
+    this->m_texSlotBox.maxy = 0.0;
+    this->m_texSlotBox.maxx = 0.0;
+    this->m_prevVertical.x = 0.0;
+    this->m_prevVertical.y = 0.0;
+    this->m_prevVertical.z = 0.0;
+    this->m_currVertical.x = 0.0;
+    this->m_currVertical.y = 0.0;
+    this->m_currVertical.z = 0.0;
+    this->m_prevDir.x = 0.0;
+    this->m_prevDir.y = 0.0;
+    this->m_prevDir.z = 0.0;
+    this->m_currDir.x = 0.0;
+    this->m_currDir.y = 0.0;
+    this->m_currDir.z = 0.0;
+    this->m_prevDirScaled.x = 0.0;
+    this->m_prevDirScaled.y = 0.0;
+    this->m_prevDirScaled.z = 0.0;
+    this->m_currDirScaled.x = 0.0;
+    this->m_currDirScaled.y = 0.0;
+    this->m_currDirScaled.z = 0.0;
+    this->m_below0.x = 0.0;
+    this->m_below0.y = 0.0;
+    this->m_below0.z = 0.0;
+    this->m_below1.x = 0.0;
+    this->m_below1.y = 0.0;
+    this->m_below1.z = 0.0;
+    this->m_above0.x = 0.0;
+    this->m_above0.y = 0.0;
+    this->m_above0.z = 0.0;
+    this->m_above1.x = 0.0;
+    this->m_above1.y = 0.0;
+    this->m_above1.z = 0.0;
+    this->m_minWorldBounds.z = 3.4028235e10f;
+    this->m_minWorldBounds.y = 3.4028235e10f;
+    this->m_minWorldBounds.x = 3.4028235e10f;
+    this->m_maxWorldBound.z = -3.4028235e10f;
+    this->m_maxWorldBound.y = -3.4028235e10f;
+    this->m_maxWorldBound.x = -3.4028235e10f;
+    this->m_diffuseClr = {0,0,0,0};
+    this->m_texBox.miny = 0.0;
+    this->m_texBox.minx = 0.0;
+    this->m_texBox.maxy = 0.0;
+    this->m_texBox.maxx = 0.0;
+    this->m_ribbonEmitterflags.m_singletonUpdated = 0;
+    this->m_ribbonEmitterflags.m_initialized = 0;
+    this->m_currPos.x = 0.0;
+    this->m_currPos.y = 0.0;
+    this->m_currPos.z = 0.0;
 
-  check_offset<offsetof(CRibbonVertex, diffuseColor), 12>();
-  check_offset<offsetof(CRibbonVertex, texCoord), 16>();
+//    std::cout << "sizeof(CRibbonVertex) = " << sizeof(CRibbonVertex) << std::endl;
+//    std::cout << "offset(CRibbonVertex.diffuseColor) = " << sizeof(CRibbonVertex) << std::endl;
+//    std::cout << "offset(CRibbonVertex.texCoord) = " << sizeof(CRibbonVertex) << std::endl;
 
-  createMaterials(sceneRenderer, m2ModelData, object, materials, textureIndicies);
+    check_offset<offsetof(CRibbonVertex, diffuseColor), 12>();
+    check_offset<offsetof(CRibbonVertex, texCoord), 16>();
+
+    createMaterials(sceneRenderer, m2ModelData, object, materials, textureIndicies);
 }
 
 extern const std::array<EGxBlendEnum,8> M2BlendingModeToEGxBlendEnum;
@@ -88,7 +92,11 @@ void CRibbonEmitter::createMaterials(const HMapSceneBufferCreate &sceneRenderer,
                                      const std::shared_ptr<IM2ModelData> &m2ModelData,
                                      M2Object *m2Object, std::vector<M2Material> &materials, std::vector<int> &textureIndices) {
 
+    m_m2ModelData = m2ModelData;
     m_ribbonMaterials.resize(materials.size());
+    m_pipelineTemplates.resize(materials.size());
+    m_materialTextures.resize(materials.size());
+    m_blockPS.resize(materials.size());
     for (int i = 0; i < materials.size(); i++) {
         auto &material = materials[i];
 
@@ -103,10 +111,12 @@ void CRibbonEmitter::createMaterials(const HMapSceneBufferCreate &sceneRenderer,
         if (pipelineTemplate.blendMode == EGxBlendEnum::GxBlend_Opaque) {
             pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
         }
+        m_pipelineTemplates[i] = pipelineTemplate;
 
         M2RibbonMaterialTemplate m2RibbonMaterialTemplate;
         HBlpTexture tex0 = m2Object->getBlpTextureData(textureIndices[i]);
         m2RibbonMaterialTemplate.textures[0] = m_api->hDevice->createBlpTexture(tex0, true, true);
+        m_materialTextures[i] = m2RibbonMaterialTemplate.textures[0];
 
         auto ribbonMaterial = sceneRenderer->createM2RibbonMaterial(m2ModelData, pipelineTemplate,
                                                                     m2RibbonMaterialTemplate);
@@ -115,8 +125,10 @@ void CRibbonEmitter::createMaterials(const HMapSceneBufferCreate &sceneRenderer,
         auto blendMode = pipelineTemplate.blendMode;
         auto textureTransformLookupIndex = (this->textureTransformLookup >= 0) ? this->textureTransformLookup + i : -1;
         {
-            std::shared_ptr<IBufferChunk<Ribbon::meshRibbonWideBlockPS>> meshRibbonWideBlockPS = ribbonMaterial->m_fragmentData;
-            Ribbon::meshRibbonWideBlockPS &blockPS = meshRibbonWideBlockPS->getObject();
+            // Fill the CPU-side snapshot, then write the UBO chunk whole
+            // (getObject() memory is fresh staging — partial writes/read-backs
+            // upload garbage)
+            auto &blockPS = m_blockPS[i];
             blockPS.uPixelShader = 0;
             blockPS.uBlendMode = static_cast<int>(blendMode);
 
@@ -125,7 +137,10 @@ void CRibbonEmitter::createMaterials(const HMapSceneBufferCreate &sceneRenderer,
                 transformIndex = m2Object->getTextureTransformIndexByLookup(textureTransformLookupIndex);
             }
             blockPS.uTextureTransformIndex = transformIndex;
-            meshRibbonWideBlockPS->save();
+            blockPS.objectId = static_cast<uint32_t>(m2Object->getObjectId());
+
+            ribbonMaterial->m_fragmentData->getObject() = m_blockPS[i];
+            ribbonMaterial->m_fragmentData->save();
         }
         m_ribbonMaterials[i] = ribbonMaterial;
     }
@@ -144,6 +159,9 @@ void CRibbonEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, Ribb
 
         //Create mesh
         gMeshTemplate meshTemplate(ribbonFrame.m_bindings);
+#ifdef DEBUG_MESH_NAMES
+    meshTemplate.name = "Ribbon, FileDataId = " + std::to_string(this->m_fileDataId);
+#endif
 
         meshTemplate.start = 0;
         meshTemplate.end = 0;
@@ -839,8 +857,19 @@ void CRibbonEmitter::Initialize(float edgesPerSec, float edgeLifeSpanInSec, CImV
   this->m_ribbonEmitterflags.m_initialized = 1;
 }
 
-void CRibbonEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
-    auto &currFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+void CRibbonEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
+    if (isGpuSimActive()) {
+        for (auto &mesh : m_gpuMeshes) {
+            if (mesh->getIsTransparent()) {
+                transparentMeshes.emplace_back() = mesh;
+            } else {
+                opaqueMeshCollector.addMesh(mesh);
+            }
+        }
+        return;
+    }
+
+    auto &currFrame = frame[FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
     if (currFrame.isDead) return;
 
     for (int i = 0; i < currFrame.m_meshes.size(); i++) {
@@ -853,7 +882,24 @@ void CRibbonEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, tr
     }
 }
 
+void CRibbonEmitter::forEachMesh(const std::function<void(const HGParticleMesh &mesh)> &visitor) {
+    if (isGpuSimActive()) {
+        for (auto &mesh : m_gpuMeshes) {
+            visitor(mesh);
+        }
+        return;
+    }
+
+    auto &currFrame = frame[FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+    if (currFrame.isDead) return;
+
+    for (auto &mesh : currFrame.m_meshes) {
+        visitor(mesh);
+    }
+}
+
 void CRibbonEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
+    if (isGpuSimActive()) return; // GPU ring/index buffers have fixed capacity
     if (this->IsDead()) {
         return;
     }
@@ -861,7 +907,7 @@ void CRibbonEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer
     size_t sizeInd = m_gxIndices.size() * sizeof(uint16_t);
     size_t sizeVert = m_gxVertices.size() * sizeof(CRibbonVertex);
 
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    int frameNum = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
     auto iboBufferDynamic = frame[frameNum].m_indexVBO;
 
@@ -875,7 +921,8 @@ void CRibbonEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer
 }
 
 void CRibbonEmitter::updateBuffers() {
-  auto &currentFrame = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+  if (isGpuSimActive()) return; // GPU sim writes the ring + index buffer directly
+  auto &currentFrame = frame[FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
   currentFrame.isDead = this->IsDead();
   if (currentFrame.isDead) return;
 
@@ -891,4 +938,77 @@ void CRibbonEmitter::updateBuffers() {
         mesh->setSortDistance(0);
     }
 
+}
+
+// ---------------------- GPU ribbon sim path ----------------------
+
+bool CRibbonEmitter::isGpuSimActive() const {
+    // Live only while the object's GPU animation path is enabled; toggling it
+    // off hands simulation/buffer uploads/mesh collection back to the CPU path.
+    return m_gpuStateIndex >= 0 && m_m2Object != nullptr && m_m2Object->isGpuAnimActive();
+}
+
+void CRibbonEmitter::createGpuMeshes(const HMapSceneBufferCreate &sceneRenderer) {
+    if (!sceneRenderer->supportsM2GpuAnimation()) return;
+    if (m_edges.empty() || m_ribbonMaterials.empty()) return;
+    if (m_m2ModelData == nullptr) return;
+
+    m_gpuIbo = sceneRenderer->createM2RibbonGpuIndexBuffer((int)m_edges.size());
+    if (m_gpuIbo == nullptr) return;
+
+    HGVertexBufferBindings bindings = sceneRenderer->createM2RibbonGpuVAO(m_gpuIbo);
+    if (bindings == nullptr) return;
+
+    m_gpuRibbonMaterials.resize(m_ribbonMaterials.size());
+    for (int i = 0; i < (int)m_ribbonMaterials.size(); i++) {
+        M2RibbonMaterialTemplate gpuTemplate;
+        gpuTemplate.textures[0] = m_materialTextures[i];
+        gpuTemplate.forGpuPath = true;
+
+        auto gpuMat = sceneRenderer->createM2RibbonMaterial(m_m2ModelData, m_pipelineTemplates[i], gpuTemplate);
+        if (gpuMat == nullptr) return;
+        m_gpuRibbonMaterials[i] = gpuMat;
+
+        // Same fragment data content as the CPU material (separate chunk; each
+        // material's descriptor set binds its own). Written whole from the
+        // snapshot — getObject() memory is fresh staging, reading it back yields
+        // garbage.
+        gpuMat->m_fragmentData->getObject() = m_blockPS[i];
+        gpuMat->m_fragmentData->save();
+
+        gMeshTemplate meshTemplate(bindings);
+#ifdef DEBUG_MESH_NAMES
+        meshTemplate.name = "RibbonGPU, FileDataId = " + std::to_string(this->m_fileDataId);
+#endif
+        meshTemplate.start = 0;
+        // The sim rewrites the whole strip index buffer every frame (live arc +
+        // degenerate fill), so the draw always covers the full buffer
+        meshTemplate.end = (int)(m_gxIndices.size());
+
+        m_gpuMeshes.push_back(sceneRenderer->createSortableMesh(meshTemplate, gpuMat, m_priority));
+    }
+}
+
+void CRibbonEmitter::setGpuSimData(int32_t stateIndex) {
+    if (m_gpuMeshes.empty()) return;
+    m_gpuStateIndex = stateIndex;
+}
+
+void CRibbonEmitter::setGpuBindFields(const GpuRibbonEmitterBindInfo &bindInfo) {
+    // Update the per-material snapshots, then write each UBO chunk whole
+    // (getObject() returns fresh staging memory — partial writes upload garbage)
+    for (auto &blockPS : m_blockPS) {
+        blockPS.gpuStateIndex = bindInfo.stateIndex;
+        blockPS.gpuEdgesOffset = bindInfo.edgesOffset;
+        blockPS.gpuEdgeCount = bindInfo.edgeCount;
+        blockPS.gpuPropsIndex = bindInfo.propsIndex;
+        blockPS.objectId = bindInfo.objectId;
+    }
+    auto writeTo = [&](const std::shared_ptr<IM2RibbonMaterial> &material, int i) {
+        if (material == nullptr || material->m_fragmentData == nullptr) return;
+        material->m_fragmentData->getObject() = m_blockPS[i];
+        material->m_fragmentData->save();
+    };
+    for (int i = 0; i < (int)m_ribbonMaterials.size(); i++) writeTo(m_ribbonMaterials[i], i);
+    for (int i = 0; i < (int)m_gpuRibbonMaterials.size(); i++) writeTo(m_gpuRibbonMaterials[i], i);
 }

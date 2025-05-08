@@ -8,8 +8,13 @@ static const bool SortMeshes(const HGSortableMesh &indexA, const HGSortableMesh 
     if (pB == nullptr) return true;
 
     if (pA->getIsTransparent() && pB->getIsTransparent()) {
-        if (pA->priorityPlane() != pB->priorityPlane()) {
-            return pB->priorityPlane() > pA->priorityPlane();
+        {
+            const auto aPlane = pA->priorityPlane();
+            const auto bPlane = pB->priorityPlane();
+            //
+            if ( aPlane != bPlane) {
+                return bPlane > aPlane;
+            }
         }
 
         if (pA->getSortDistance() > pB->getSortDistance()) {

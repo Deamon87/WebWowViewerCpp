@@ -63,13 +63,4 @@ std::string IDevice::insertAfterVersion(std::string &glslShaderString, std::stri
     }
 }
 
-thread_local unsigned int processingFrame = 0;
-unsigned int IDevice::getCurrentProcessingFrameNumber() {
-    return processingFrame;
-}
-
-void IDevice::setCurrentProcessingFrameNumber(unsigned int frameNumber) {
-    processingFrame = frameNumber;
-}
-
 

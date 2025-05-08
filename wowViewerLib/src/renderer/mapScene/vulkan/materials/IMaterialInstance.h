@@ -18,9 +18,10 @@ public:
         const PipelineTemplate &pipelineTemplate,
         const HPipelineVLK &pipeline,
         const HPipelineVLK &gBufferPipeline,
+        const HPipelineVLK &zPrefillPipeline,
         const std::array<std::shared_ptr<GDescriptorSet>, MAX_SHADER_DESC_SETS> &descriptorSets,
         uint32_t materialId) :
-        ISimpleMaterialVLK(shader, pipelineTemplate, pipeline, gBufferPipeline, descriptorSets, materialId) {
+        ISimpleMaterialVLK(shader, pipelineTemplate, pipeline, gBufferPipeline, zPrefillPipeline, descriptorSets, materialId) {
 
         initializer(this);
     }

@@ -484,6 +484,26 @@ chunkDef<AdtFile> AdtFile::adtFileTable = {
                         chunkData.readValues(file.mlsi_indicies, file.mlsi_len);
                     }
                 }
+        },{
+            'MWDR',
+                {
+                    [](AdtFile& file, ChunkData& chunkData){
+                        debuglog("Entered MWDR ");
+
+                        file.m_MWDR_length = chunkData.chunkLen / sizeof(MWDR);
+                        chunkData.readValues(file.m_MWDR, file.m_MWDR_length);
+                    }
+                }
+        },{
+            'MWDS',
+                {
+                    [](AdtFile& file, ChunkData& chunkData){
+                        debuglog("Entered MWDS ");
+
+                        file.m_MWDS_length = chunkData.chunkLen / sizeof(MWDR);
+                        chunkData.readValues(file.m_MWDS, file.m_MWDS_length);
+                    }
+                }
         }
     }
 };
@@ -493,7 +513,7 @@ MCAL_Offsets_Runtime AdtFile::createAlphaTextureRuntime(int mcnkChunkIndex) {
     uint8_t* mcal = mcnkObj.mcal;
     auto &layers = mcnkObj.mcly;
 
-    uint32_t uniqueTextureIds[4] = {0,0,0,0};
+    uint32_t uniqueTextureIds[8] = {0,0,0,0,0,0,0,0};
     uint32_t uniqTextCnt = 0;
     if ( mcnkObj.mclyCnt) {
         uniqueTextureIds[0] = layers[0].textureId;
@@ -516,6 +536,7 @@ MCAL_Offsets_Runtime AdtFile::createAlphaTextureRuntime(int mcnkChunkIndex) {
 
 
     MCAL_Offsets_Runtime result;
+    result.needSecondAlphaTexture = mcnkObj.mclyCnt > 4;
     for (int j = 0; j < mcnkObj.mclyCnt; j++ ) {
         auto &layerDef = layers[j];
         uint32_t alphaOffs = layerDef.offsetInMCAL;
@@ -544,7 +565,7 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
     uint8_t* mcal = mcnkObj.mcal;
     auto &layers = mcnkObj.mcly;
 
-    assert(mcnkObj.mclyCnt <= 4);
+//    assert(mcnkObj.mclyCnt <= 4);
     if (layers == nullptr || mcal == nullptr) return;
 
 
@@ -604,19 +625,6 @@ void AdtFile::processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MP
             }
         }
     }
-
-//    if (mcalRuntime.uncompressedIndex) {
-//        auto pCurrentLayer = currentLayer;
-//        auto pCurrentLayerInt = (uint32_t *)currentLayer;
-//        for ( int i = 0; i < 64; i++ ) {
-//            uint8_t layer0 = *pCurrentLayer++;
-//            uint8_t layer1 = *pCurrentLayer++;
-//            uint8_t layer2 = *pCurrentLayer++;
-//            uint8_t layer3 = *pCurrentLayer++;
-//
-//            *pCurrentLayerInt++ = 255 - layer0 - layer1 - layer2 - layer3;
-//        }
-//    }
 }
 
 bool isHoleLowRes(int hole, int i, int j) {
@@ -690,9 +698,9 @@ void AdtFile::createTriangleStrip() {
     stripOffsetsNoHoles.push_back(stripsNoHoles.size());
 }
 
-void AdtFile::process(HFileContent adtFile, const std::string &fileName) {
+void AdtFile::process(HFileContent adtFile) {
     m_adtFile = adtFile;
-    CChunkFileReader reader(*m_adtFile.get(), fileName);
+    CChunkFileReader reader(*m_adtFile.get(), getFileNameOrDataId());
     reader.processFile(*this, &AdtFile::adtFileTable);
 
     createTriangleStrip();

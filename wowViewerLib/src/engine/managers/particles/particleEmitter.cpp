@@ -3,6 +3,7 @@
 //
 
 #include "particleEmitter.h"
+#include <cstring>
 #include "../../../gapi/interface/meshes/IParticleMesh.h"
 #include "../../algorithms/mathHelper.h"
 #include "../../algorithms/animate.h"
@@ -15,6 +16,7 @@
 #include "../../../gapi/UniformBufferStructures.h"
 #include "generators/CSplineGenerator.h"
 #include "../../../gapi/interface/materials/IMaterial.h"
+#include "../../../gapi/interface/FrameContext.h"
 
 //#undef TracyMessageStr
 //#define TracyMessageStr(x) std::cout << x << std::endl
@@ -225,8 +227,9 @@ void ParticleEmitter::selectShaderId() {
         }
         else
         {
-            shaderId = -1;
-            throw "Incompatible situation";
+            shaderId = 0;
+            std::cout << "Uncompatible particle emitter detected at " << this->m2Object->getModelFileId() << std::endl;
+//            throw "Incompatible situation";
         }
     }
     else if ( m_particleType == 2 || (m_particleType == 4 && multiTex ))
@@ -299,7 +302,10 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
         //Update material
         {
-            Particle::meshParticleWideBlockPS &blockPS = m_material->m_fragmentData->getObject();
+            // Fill the CPU-side snapshot, then write the UBO chunk whole.
+            // (getObject() returns a fresh staging slot whose entire content is
+            // uploaded over the chunk — never partial-write or read it back)
+            auto &blockPS = m_blockPS;
             uint8_t blendMode = m_data->old.blendingType;
             if (blendMode == 0) {
                 blockPS.uAlphaTest = -1.0f;
@@ -317,7 +323,24 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             blockPS.uBlendMode = static_cast<int>(blendMode < ParticleBlendingModeToEGxBlendEnum.size() ?
                                                   ParticleBlendingModeToEGxBlendEnum[blendMode] :
                                                   EGxBlendEnum::GxBlend_Opaque);
+            blockPS.txac1 = txac_particles_value.perByte[0];
+            blockPS.txac2 = txac_particles_value.perByte[1];
 
+            // GPU particle path: no GPU sim data yet (setGpuSimData fills these)
+            blockPS.gpuStateIndex = -1;
+            blockPS.gpuParticleOffset = 0;
+            blockPS.gpuParticleCapacity = 0;
+            blockPS.gpuStaticsIndex = 0;
+            blockPS.gpuPropsIndex = 0;
+            blockPS.gpuColorReplOffset = -1;
+            blockPS.gpuObjectId = static_cast<uint32_t>(m2Object->getObjectId());
+            blockPS.gpuQuadsPerParticle = ((m_data->old.flags & 0x60000) == 0x60000) ? 2 : 1;
+            blockPS.gpuValuesVec4Offset = 0;
+            blockPS.gpuValuesFloatOffset = 0;
+            blockPS.gpuPartTimesOffset = 0;
+            blockPS.gpuPad = 0;
+
+            m_material->m_fragmentData->getObject() = m_blockPS;
             m_material->m_fragmentData->save();
         }
     }
@@ -328,12 +351,22 @@ void ParticleEmitter::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
         //Create mesh
         createMesh(sceneRenderer, frame[i], i, 10 * sizeof(ParticleBuffStructQuad));
     }
+
+    // The pull-model mesh/material for the GPU particle path (only created when the
+    // renderer supports it; used once setGpuSimData links the emitter to GPU sim data)
+    if (sceneRenderer->supportsM2GpuAnimation()) {
+        createGpuMesh(sceneRenderer);
+    }
 }
 void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, particleFrame &currFrame, int frameIndex, int size) {
     currFrame.m_bufferVBO = sceneRenderer->createM2ParticleVertexBuffer(size, frameIndex);
     currFrame.m_bindings = sceneRenderer->createM2ParticleVAO(currFrame.m_bufferVBO,m_indexVBO);
 
     gMeshTemplate meshTemplate(currFrame.m_bindings);
+
+#ifdef DEBUG_MESH_NAMES
+    meshTemplate.name = "Particle, FileDataId = " + std::to_string(m2Object->getModelFileId());
+#endif
 
     meshTemplate.meshType = MeshType::eParticleMesh;
     meshTemplate.start = 0;
@@ -345,6 +378,126 @@ void ParticleEmitter::createMesh(const HMapSceneBufferCreate &sceneRenderer, par
 
 bool ParticleEmitter::randTableInited = false;
 float ParticleEmitter::RandTable[128] = {};
+
+// ---------------------- GPU particle sim path ----------------------
+
+bool ParticleEmitter::isGpuSimActive() const {
+    // Live only while the object's GPU animation path is enabled; toggling it
+    // off hands simulation/buffer uploads/mesh collection back to the CPU path.
+    return m_gpuStateIndex >= 0 && m2Object->isGpuAnimActive();
+}
+
+void ParticleEmitter::getSeedStates(M2GpuEmitterSeeds &outSeeds) const {
+    outSeeds.emitterSeedValue = m_seed.getCurrentValue();
+    outSeeds.emitterSeedAccum = m_seed.getAccumulator();
+    if (generator != nullptr) {
+        outSeeds.generatorSeedValue = generator->getSeed().getCurrentValue();
+        outSeeds.generatorSeedAccum = generator->getSeed().getAccumulator();
+    }
+}
+
+void ParticleEmitter::createGpuMesh(const HMapSceneBufferCreate &sceneRenderer) {
+    if (m_indexVBO == nullptr || generator == nullptr) return;
+
+    // Pull-model VAO: index buffer only — the GPU vertex shader reads SSBO pools
+    auto bindings = sceneRenderer->createM2ParticleGpuVAO(m_indexVBO);
+    if (bindings == nullptr) return; // renderer doesn't support GPU particles
+
+    // Same pipeline/blend setup as the CPU mesh (createMeshes)
+    PipelineTemplate pipelineTemplate;
+    uint8_t blendMode = m_data->old.blendingType;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = blendMode <= 1;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode =
+        blendMode < ParticleBlendingModeToEGxBlendEnum.size() ?
+        ParticleBlendingModeToEGxBlendEnum[blendMode] :
+        EGxBlendEnum::GxBlend_Opaque;
+
+    M2ParticleMaterialTemplate gpuTemplate;
+    gpuTemplate.forGpuPath = true;
+
+    bool multitex = m_data->old.flags_per_number.hex_10000000 > 0;
+    HBlpTexture tex0 = nullptr;
+    if (multitex) {
+        tex0 = m2Object->getBlpTextureData(this->m_data->old.texture_0);
+    } else {
+        tex0 = m2Object->getBlpTextureData(this->m_data->old.texture);
+    }
+    gpuTemplate.textures[0] = m_api->hDevice->createBlpTexture(tex0, true, true);
+    if (multitex) {
+        HBlpTexture tex1 = m2Object->getBlpTextureData(this->m_data->old.texture_1);
+        HBlpTexture tex2 = m2Object->getBlpTextureData(this->m_data->old.texture_2);
+        gpuTemplate.textures[1] = m_api->hDevice->createBlpTexture(tex1, true, true);
+        gpuTemplate.textures[2] = m_api->hDevice->createBlpTexture(tex2, true, true);
+    }
+
+    m_gpuMaterial = sceneRenderer->createM2ParticleMaterial(pipelineTemplate, gpuTemplate);
+    if (m_gpuMaterial == nullptr) return;
+
+    // Same per-emitter fragment data content as the CPU material (separate chunk:
+    // each material's descriptor set binds its own). Written whole from the
+    // snapshot — getObject() memory is fresh staging, reading it back yields garbage.
+    m_gpuMaterial->m_fragmentData->getObject() = m_blockPS;
+    m_gpuMaterial->m_fragmentData->save();
+
+    gMeshTemplate meshTemplate(bindings);
+#ifdef DEBUG_MESH_NAMES
+    meshTemplate.name = "ParticleGPU, FileDataId = " + std::to_string(m2Object->getModelFileId());
+#endif
+    meshTemplate.meshType = MeshType::eParticleMesh;
+    meshTemplate.start = 0;
+    meshTemplate.end = 0;
+
+    m_gpuMesh = sceneRenderer->createSortableMesh(meshTemplate, m_gpuMaterial, m_data->old.textureTileRotation);
+}
+
+void ParticleEmitter::setGpuSimData(int32_t stateIndex, int32_t capacity) {
+    if (m_gpuMesh == nullptr || stateIndex < 0) return;
+
+    m_gpuStateIndex = stateIndex;
+
+    int quadsPerParticle = ((m_data->old.flags & 0x60000) == 0x60000) ? 2 : 1;
+    // The CPU path caps rendered *vertices* at MAX_PARTICLES_PER_EMITTER (BuildQuadT3),
+    // i.e. 500 quads — keep the same budget
+    int maxQuads = std::min(capacity * quadsPerParticle, (int)MAX_PARTICLES_PER_EMITTER / 4);
+    m_gpuMesh->setStart(0);
+    m_gpuMesh->setEnd(maxQuads * 6);
+}
+
+void ParticleEmitter::setGpuBindFields(const GpuParticleEmitterBindInfo &bindInfo) {
+    // Update the snapshot, then write each material's UBO chunk whole
+    // (getObject() returns fresh staging memory — partial writes upload garbage)
+    m_blockPS.gpuStateIndex = bindInfo.stateIndex;
+    m_blockPS.gpuParticleOffset = bindInfo.particleOffset;
+    m_blockPS.gpuParticleCapacity = bindInfo.capacity;
+    m_blockPS.gpuStaticsIndex = bindInfo.staticsIndex;
+    m_blockPS.gpuPropsIndex = bindInfo.propsIndex;
+    m_blockPS.gpuColorReplOffset = bindInfo.colorReplOffset;
+    m_blockPS.gpuObjectId = static_cast<uint32_t>(m2Object->getObjectId());
+    m_blockPS.gpuQuadsPerParticle = bindInfo.quadsPerParticle;
+    m_blockPS.gpuValuesVec4Offset = bindInfo.valuesVec4Offset;
+    m_blockPS.gpuValuesFloatOffset = bindInfo.valuesFloatOffset;
+    m_blockPS.gpuPartTimesOffset = bindInfo.partTimesOffset;
+
+    auto writeTo = [&](const std::shared_ptr<IM2ParticleMaterial> &material) {
+        if (material == nullptr || material->m_fragmentData == nullptr) return;
+        material->m_fragmentData->getObject() = m_blockPS;
+        material->m_fragmentData->save();
+    };
+    writeTo(m_material);
+    writeTo(m_gpuMaterial);
+}
+
+void ParticleEmitter::updateGpuSortDistance(const mathfu::mat4 &transformMat, const mathfu::mat4 &viewMat) {
+    // Same math as the tail of ParticleEmitter::Update
+    m_currentBonePos = -(viewMat * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
+    if (m_gpuMesh != nullptr) {
+        m_gpuMesh->setSortDistance(m_currentBonePos);
+    }
+}
+
 
 void ParticleEmitter::calculateQuadToViewEtc(mathfu::mat4 *a1, const mathfu::mat4 &translatedViewMat) {
     if ((this->m_data->old.flags & 0x10)) {
@@ -414,27 +567,33 @@ void ParticleEmitter::InternalUpdate(ParticleBuffer &particlesCurr, ParticleBuff
     this->StepUpdate(particlesCurr, particlesLast, delta);
 }
 
-ParticleBuffer& ParticleEmitter::GetLastPBuffer() {
-    return particlesPingPong[m_api->hDevice->getCurrentProcessingFrameNumber() % 2];
+ParticleBuffer& ParticleEmitter::GetBufferAndAdvance() {
+    int bufferIndex = (m_bufferIndex++) % particlesPingPong.size();
+    return particlesPingPong[bufferIndex];
 }
 ParticleBuffer& ParticleEmitter::GetCurrentPBuffer() {
-    return particlesPingPong[(m_api->hDevice->getCurrentProcessingFrameNumber() + 1) % 2];
+    int bufferIndex = (m_bufferIndex) % particlesPingPong.size();
+
+    return particlesPingPong[bufferIndex];
 }
 
 void ParticleEmitter::Update(animTime_t delta, const mathfu::mat4 &transformMat, mathfu::vec3 invMatTransl,
                              mathfu::mat4 *frameOfReference, const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
+    if (isGpuSimActive()) return; // simulated by the GPU (particleSimulate.comp.slang)
 
 //    if (this->particles.size() <= 0 && !isEnabled) return;
 
     m_prevPosition = m_emitterModelMatrix.TranslationVector3D();
-    m_currentBonePos = (viewMatrix * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
+    // View-space z is negative in front of the camera; keep positive view depth so the
+    // shared SortMeshes comparator orders particles far-to-near like the other meshes.
+    m_currentBonePos = -(viewMatrix * mathfu::vec4(transformMat.GetColumn(3).xyz(), 1.0f)).z;
 
     mathfu::vec3 viewMatVec = viewMatrix.GetColumn(3).xyz();
     //Updates m_emitterModelMatrix and others
     this->UpdateXform(transformMat, viewMatVec, frameOfReference);
 
-    auto &particlesLast = GetLastPBuffer();
+    auto &particlesLast = GetBufferAndAdvance();
     auto &particlesCurr = GetCurrentPBuffer();
 
     if (delta > 0) {
@@ -466,10 +625,18 @@ void ParticleEmitter::Update(animTime_t delta, const mathfu::mat4 &transformMat,
             }
         }
         this->InternalUpdate(particlesCurr, particlesLast, delta);
+    } else {
+        //If delta is 0 - the last buffer becomes current one
+        std::swap(particlesCurr, particlesLast);
     }
 
-    const HGParticleMesh &mesh = frame[m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM].m_mesh;
+    const HGParticleMesh &mesh = frame[FrameContext::getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM].m_mesh;
     mesh->setSortDistance(m_currentBonePos);
+#ifdef DEBUG_MESH_NAMES
+    // Keep the mesh's renderdoc label in sync with the latest sort data
+    mesh->setDebugName("Particle, FileDataId = " + std::to_string(m2Object->getModelFileId()) +
+                       " sortDistance = " + std::to_string(m_currentBonePos));
+#endif
 
 }
 
@@ -609,12 +776,13 @@ bool ParticleEmitter::UpdateParticle(CParticle2 &p, animTime_t delta, ParticleFo
 
 void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
     if (getGenerator() == nullptr) return;
+    if (isGpuSimActive()) return; // geometry is expanded by the pull-model vertex shader
 
-//    TracyMessageStr(("prepearBuffers, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("prepearBuffers, CurrentProcessingFrameNumber =" + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
 
     auto &particles = GetCurrentPBuffer();
 
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    int frameNum = FrameContext::getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
 
     if (particles.size() == 0 && this->generator != nullptr) {
         auto &currentFrame = frame[frameNum];
@@ -662,7 +830,7 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
         std::cout << "buffer overrun detected" << std::endl;
     }
     if (m_temp_maxFutureSize < (szVertexCnt * sizeof(ParticleBuffStruct))) {
-        std::cout << "buffer overrun detected 2" << std::endl;
+//        std::cout << "buffer overrun detected 2" << std::endl;
     }
     if (m_temp_maxFutureSize > vboBufferDynamic->getSize()) {
         std::cout << "buffer overrun detected 3" << std::endl;
@@ -672,7 +840,7 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
 
 //    TracyMessageStr(
 //        (std::string("updateBuffers, CurrentProcessingFrameNumber =") +
-//        std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())+
+//        std::to_string(FrameContext::getCurrentProcessingFrameNumber())+
 //        std::string(", szVertexCnt = ")+
 //        std::to_string(szVertexCnt)
 //        ));
@@ -687,10 +855,16 @@ void ParticleEmitter::prepearAndUpdateBuffers(const mathfu::mat4 &viewMatrix) {
 
     currentFrame.m_mesh->setEnd((szVertexCnt >> 2) * 6);
     currentFrame.m_mesh->setSortDistance(m_currentBonePos);
+#ifdef DEBUG_MESH_NAMES
+    // Keep the mesh's renderdoc label in sync with the latest sort data
+    currentFrame.m_mesh->setDebugName("Particle, FileDataId = " + std::to_string(m2Object->getModelFileId()) +
+                                      " sortDistance = " + std::to_string(m_currentBonePos));
+#endif
 }
 
 void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer) {
-//    TracyMessageStr(("fitBuffersToSize, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("fitBuffersToSize, CurrentProcessingFrameNumber =" + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
+    if (isGpuSimActive()) return; // GPU mesh has fixed capacity set at creation
 
     auto &particles = GetCurrentPBuffer();
 
@@ -702,7 +876,7 @@ void ParticleEmitter::fitBuffersToSize(const HMapSceneBufferCreate &sceneRendere
     if ((m_data->old.flags & 0x60000) == 0x60000) {
         maxFutureSize *= 2;
     }
-    int frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    int frameNum = FrameContext::getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
     auto vboBufferDynamic = frame[frameNum].m_bufferVBO;
 
     m_temp_maxFutureSize = maxFutureSize;
@@ -1138,21 +1312,35 @@ ParticleEmitter::BuildQuadT3(
                 tys[i] * paramXTransform(this->m_data->old.multiTextureParamX[1]) + texPos[1].y);
 
         particleData.alphaCutoff = alphaCutoff;
+
+        uint32_t objId = static_cast<uint32_t>(this->m2Object->getObjectId());
+        std::memcpy(&particleData.padding[0], &objId, sizeof(uint32_t));
     }
 }
 
-void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
     if (getGenerator() == nullptr) return;
 
-//    TracyMessageStr(("collectMeshes, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+    if (isGpuSimActive()) {
+        if (m_gpuMesh != nullptr) {
+            if (m_gpuMesh->getIsTransparent()) {
+                transparentMeshes.emplace_back() = m_gpuMesh;
+            } else {
+                opaqueMeshCollector.addMesh(m_gpuMesh);
+            }
+        }
+        return;
+    }
 
-    const auto frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    TracyMessageStr(("collectMeshes, CurrentProcessingFrameNumber =" + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
+
+    const auto frameNum = FrameContext::getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
     auto &currentFrame = frame[frameNum];
 
     if (!currentFrame.active)
         return;
 
-//    TracyMessageStr(("collectMeshes 2, CurrentProcessingFrameNumber =" + std::to_string(m_api->hDevice->getCurrentProcessingFrameNumber())));
+//    TracyMessageStr(("collectMeshes 2, CurrentProcessingFrameNumber =" + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
 
     HGParticleMesh mesh = currentFrame.m_mesh;
 
@@ -1165,4 +1353,22 @@ void ParticleEmitter::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, t
     } else {
         opaqueMeshCollector.addMesh(mesh);
     }
+}
+
+void ParticleEmitter::forEachMesh(const std::function<void(const HGParticleMesh &mesh)> &visitor) {
+    if (getGenerator() == nullptr) return;
+
+    if (isGpuSimActive()) {
+        if (m_gpuMesh != nullptr) {
+            visitor(m_gpuMesh);
+        }
+        return;
+    }
+
+    const auto frameNum = FrameContext::getCurrentProcessingFrameNumber() % PARTICLES_BUFF_NUM;
+    auto &currentFrame = frame[frameNum];
+
+    if (!currentFrame.active) return;
+
+    visitor(currentFrame.m_mesh);
 }

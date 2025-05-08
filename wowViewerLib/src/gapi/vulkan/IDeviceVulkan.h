@@ -40,6 +40,7 @@ public:
 
     virtual HGSamplableTexture getWhiteTexturePixel() = 0;
     virtual HGSamplableTexture getBlackTexturePixel() = 0;
+    virtual HGSamplableTexture getEmptyDepthTexture() = 0;
 
     virtual std::shared_ptr<GDescriptorSetUpdater> getDescriptorSetUpdater() = 0;
 

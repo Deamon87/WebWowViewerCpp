@@ -5,9 +5,15 @@
 #include <locale>
 #include <iomanip>
 #include <unordered_set>
+#include <cmath>
 #include "m2Object.h"
+
+#include <fstream>
+
 #include "mathfu/matrix.h"
 #include "m2Helpers/M2MeshBufferUpdater.h"
+#include "../../../gapi/interface/FrameContext.h"
+#include "../../../gapi/interface/sortLambda.h"
 
 //Shader stuff
 enum class M2PixelShader : int {
@@ -458,13 +464,9 @@ int getShaderNames(M2Batch *m2Batch, std::string &vertexShader, std::string &pix
     return 1;
 }
 
-M2Object::~M2Object() {
-//    std::cout << "M2Object destroyed" << std::endl;
-}
-
 
 void M2Object::createAABB() {
-    M2Data *m2Data = m_m2Geom->getM2Data();
+    const M2Data *m2Data = m_m2Geom->getM2Data();
 
     //Debug: calc bounding box from verticies
     if (false)
@@ -529,7 +531,7 @@ void M2Object::createAABB() {
 
         CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
 
-        *this->aabb = worldAABB;
+        setAABB(worldAABB);
     }
 
 
@@ -543,7 +545,7 @@ void M2Object::createAABB() {
         CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix, minVec, maxVec);
 
         //this.diameter = vec3.distance(worldAABB[0],worldAABB[1]);
-        *this->aabb = worldAABB;
+        setAABB(worldAABB);
     }
 
     {
@@ -607,7 +609,7 @@ void M2Object::createPlacementMatrix(const SMODoodadDef &def, mathfu::mat4 &wmoP
 
     m_localUpVector = (invertPlacementMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
 
-
+    m_scale = placementMatrix.GetColumn(0).Length();
 }
 
 void M2Object::createPlacementMatrix(const SMDoodadDef &def) {
@@ -638,6 +640,7 @@ void M2Object::createPlacementMatrix(const SMDoodadDef &def) {
 
     m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
     m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
+    m_scale = placementMatrix.GetColumn(0).Length();
 }
 
 void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 scaleVec, mathfu::mat4 *rotationMatrix){
@@ -658,6 +661,7 @@ void M2Object::createPlacementMatrix (mathfu::vec3 pos, float f, mathfu::vec3 sc
 
     m_localUpVector = (placementInvertMatrix * mathfu::vec4(0,0,1,0)).xyz().Normalized();
     m_localRightVector = (placementInvertMatrix * mathfu::vec4(1,0,0,0)).xyz().Normalized();
+    m_scale = placementMatrix.GetColumn(0).Length();
 }
 
 void M2Object::updatePlacementMatrixFromParentAttachment(M2Object *parent, int attachment, float scale) {
@@ -691,16 +695,19 @@ void M2Object::updatePlacementMatrixFromParentAttachment(M2Object *parent, int a
 }
 
 
-void M2Object::calcDistance(mathfu::vec3 cameraPos) {
-    m_currentDistance = (m_worldPosition-cameraPos).Length();
+void M2Object::calcDistance(const mathfu::vec3 &cameraPos) {
+    const CAaBox &aabb = this->getAABB();
+    mathfu::vec3 closestPoint = mathfu::vec3::Max(mathfu::vec3(aabb.min),
+                                                   mathfu::vec3::Min(mathfu::vec3(aabb.max), cameraPos));
+    m_currentDistance = (closestPoint - cameraPos).Length();
 }
 
 float M2Object::getCurrentDistance() {
     return m_currentDistance;
 }
 float M2Object::getHeight(){
-    const auto &aabb = *this->aabb;
-    return aabb.max.z -aabb.min.z;
+    const auto &aabb = this->getAABB();
+    return aabb.max.z - aabb.min.z;
 }
 
 uint8_t miniLogic(const CImVector *a2) {
@@ -735,7 +742,6 @@ void M2Object::setLoadParams (int skinNum, std::vector<uint8_t> meshIds, std::ve
     this->m_skinNum = skinNum;
     this->m_meshIds = meshIds;
     this->m_replaceTextures = replaceTextures;
-    this->aabb = m2Factory->getObjectById<1>(this->getObjectId());
     this->status = m2Factory->getObjectById<2>(this->getObjectId());
     *this->status = M2LoadedStatus();
 }
@@ -756,8 +762,8 @@ void M2Object::startLoading() {
 void M2Object::sortMaterials(mathfu::mat4 &modelViewMat) {
     if (!status->m_loaded) return;
 
-    M2Data * m2File = this->m_m2Geom->getM2Data();
-    M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
+    const M2Data * m2File = this->m_m2Geom->getM2Data();
+    const M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
     if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
         for (int i = 0; i < this->m_meshArray.size(); i++) {
@@ -834,6 +840,66 @@ bool M2Object::isFailedToLoadGeomFile() {
     return m_skinGeom != nullptr && m_skinGeom->getStatus() == FileStatus::FSRejected;
 }
 
+template<typename N>
+void printTrack(std::ofstream &outFile, const M2Track<N> &track, int animIndex) {
+    const auto *transTrackTime = track.timestamps.getElement(animIndex);
+    const auto *transTrackVal = track.values.getElement(animIndex);
+
+    if (transTrackTime != nullptr && transTrackVal != nullptr) {
+        outFile << "  Times = ";
+        printArray(outFile, *transTrackTime);
+        outFile << "  Val = ";
+        printArray(outFile, *transTrackVal);
+    } else {
+        outFile << "  Times = []" << std::endl;
+        outFile << "  Val = []" << std::endl;
+    }
+}
+template<typename N>
+void printArray(std::ofstream &outFile, const M2Array<N> &array) {
+    if (array.size > 0) {
+        outFile << "[ ";
+        for (int k = 0; k < array.size; k++) {
+            const auto &elem = *array.getElement(k);
+            if constexpr (std::is_same<N, Quat16>::value) {
+                auto quat = convertHelper<Quat16, mathfu::quat>(elem);
+                auto vec = quat.vector();
+                outFile << "[ "<< vec.x << " " << vec.y << " " << vec.z << " " << quat.scalar() << " ]";
+            } else if constexpr (std::is_same<N, C3Vector>::value) {
+                outFile << "[ " << elem.x << " " << elem.y << " " << elem.z << " ] ";
+            } else {
+                outFile << elem << " ";
+            }
+        }
+        outFile << "]" << std::endl;
+    } else {
+        outFile << "[]" << std::endl;
+    }
+}
+
+void M2Object::dumpBoneAnimations() {
+    std::ofstream outFile(std::to_string(this->getModelFileId())+".txt");
+    outFile << std::scientific << std::setprecision(6);
+    auto const &skelData = m_boneMasterData->getSkelData();
+    for (int i = 0; i < skelData->m_sequences->size; i++) {
+        const auto &sequence = skelData->m_sequences->getElement(i);
+        outFile << "Sequence_" << i << "." << " id=" << sequence->id<< " variation=" << sequence->variationIndex << std::endl;
+        for (int j = 0; j < skelData->m_m2CompBones->size; j++) {
+            const auto &bone = skelData->m_m2CompBones->getElement(j);
+
+            outFile << "Bone_" << j << std::endl;
+
+            outFile << "Translation" << std::endl;
+            printTrack(outFile, bone->translation, i);
+            outFile << "Rotation" << std::endl;
+            printTrack(outFile, bone->rotation, i);
+            outFile << "Scale" << std::endl;
+            printTrack(outFile, bone->scaling, i);
+        }
+        outFile << std::endl << std::endl;
+    }
+}
+
 void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     //0. If loading procedures were already done - exit
     if (this->status->m_loaded) return;
@@ -878,7 +944,7 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     }
 
     //3. Do post load procedures
-    m_skinGeom->fixData(m_m2Geom->getM2Data());
+//    m_skinGeom->fixData(m_m2Geom->getM2Data());
     m_boneMasterData = std::make_shared<CBoneMasterData>(m_m2Geom, m_skelGeom, m_parentSkelGeom);
 
     this->createVertexBindings(sceneRenderer);
@@ -893,12 +959,20 @@ void M2Object::doLoadGeom(const HMapSceneBufferCreate &sceneRenderer){
     this->initParticleEmitters(sceneRenderer);
     this->initRibbonEmitters(sceneRenderer);
 
+    m_sceneRendererWeak = sceneRenderer;
+    buildCpuBoneSubset();
+
     this->status->m_loaded = true;
     this->status->m_geomLoaded = true;
     this->status->m_loading = false;
 
+//Dump to bone animations to txt
+    {
+        // dumpBoneAnimations();
+    }
+
     for ( auto &item : m_postLoadEvents) {
-        item();
+        item(this);
     }
     m_postLoadEvents.clear();
 
@@ -912,6 +986,160 @@ static const mathfu::mat4 particleCoordinatesFix =
         0,0,1,0,
         0,0,0,1
     );
+
+void M2Object::buildCpuBoneSubset() {
+    std::unordered_set<int> boneSet;
+
+    auto const m2Data = m_m2Geom->getM2Data();
+
+    // Transparent sorting reads bonesMatrices[centerBoneIndex] (M2MeshBufferUpdater::updateSortData)
+    auto skinData = m_skinGeom->getSkinData();
+    if (skinData != nullptr) {
+        for (int i = 0; i < skinData->skinSections.size; i++) {
+            boneSet.insert((int)skinData->skinSections.getElement(i)->centerBoneIndex);
+        }
+    }
+
+    // Lights attach to bones (calcLights)
+    for (int i = 0; i < m2Data->lights.size; i++) {
+        int bone = m2Data->lights.getElement(i)->bone;
+        if (bone >= 0) boneSet.insert(bone);
+    }
+
+    // Attachment points (updatePlacementMatrixFromParentAttachment reads the parent's bone)
+    for (int i = 0; i < m2Data->attachments.size; i++) {
+        boneSet.insert((int)m2Data->attachments.getElement(i)->bone);
+    }
+
+    // While particle/ribbon sims run on CPU (or as a fallback), their transforms
+    // read the attachment bone matrix
+    for (int i = 0; i < m2Data->particle_emitters.size; i++) {
+        boneSet.insert((int)m2Data->particle_emitters.getElement(i)->old.bone);
+    }
+    for (int i = 0; i < m2Data->ribbon_emitters.size; i++) {
+        boneSet.insert((int)m2Data->ribbon_emitters.getElement(i)->boneIndex);
+    }
+
+    m_cpuBoneSubset.assign(boneSet.begin(), boneSet.end());
+}
+
+void M2Object::pushGpuParticleBindFields() {
+    if (m_gpuAnimData == nullptr) return;
+    for (int i = 0; i < (int)particleEmitters.size(); i++) {
+        GpuParticleEmitterBindInfo bindInfo;
+        if (m_gpuAnimData->getParticleEmitterBindInfo(i, bindInfo)) {
+            particleEmitters[i]->setGpuSimData(bindInfo.stateIndex, bindInfo.capacity);
+            particleEmitters[i]->setGpuBindFields(bindInfo);
+        }
+    }
+}
+
+void M2Object::tryInitGpuAnimData() {
+    if (m_gpuAnimDataTried) return;
+    m_gpuAnimDataTried = true;
+
+    // TEMP diagnostic: report exactly why the GPU anim path is not taken
+#ifdef GPU_ANIM_LOGGING
+    #define GPU_ANIM_BAIL(reason) do { \
+        std::cout << "[GPU M2 anim] skip \"" << m_modelName << "\" (id " << (uintptr_t)this->getObjectId() \
+                  << "): " << reason << std::endl; \
+        return; \
+    } while (0)
+#else
+    #define GPU_ANIM_BAIL(reason) do {return;} while(0)
+#endif
+
+    if (!m_api->getConfig()->useGpuAnimation) GPU_ANIM_BAIL("useGpuAnimation off");
+    if (m_animationManager == nullptr || m_boneMasterData == nullptr) GPU_ANIM_BAIL("no animationManager/boneMasterData");
+    if (m_modelWideData == nullptr || m_modelWideData->m_bonesData == nullptr) GPU_ANIM_BAIL("no modelWideData/bonesData");
+    // Waterfall meshes and legacy dynamic-VAO (>256 bone) batches stay on the CPU path
+    if (m_m2Geom->m_wfv3 != nullptr || m_m2Geom->m_wfv1 != nullptr) GPU_ANIM_BAIL("waterfall model");
+    if (!dynamicMeshes.empty()) GPU_ANIM_BAIL("has dynamic meshes");
+
+    auto sceneRenderer = m_sceneRendererWeak.lock();
+    if (sceneRenderer == nullptr || !sceneRenderer->supportsM2GpuAnimation()) GPU_ANIM_BAIL("renderer does not support GPU anim (not bindless Vulkan / shader missing)");
+
+    // Particle emitters: capture the CPU RNG streams so the GPU sim continues them
+    std::vector<M2GpuEmitterSeeds> emitterSeeds(particleEmitters.size());
+    std::vector<int32_t> emitterRim(particleEmitters.size());
+    for (int i = 0; i < (int)particleEmitters.size(); i++) {
+        particleEmitters[i]->getSeedStates(emitterSeeds[i]);
+        emitterRim[i] = particleEmitters[i]->getRandomizedTextureIndexMask();
+    }
+
+    // Ribbons: the per-ribbon GPU index buffer chunks (created at load)
+    std::vector<std::shared_ptr<IBuffer>> ribbonGpuIndexBuffers(ribbonEmitters.size());
+    for (int i = 0; i < (int)ribbonEmitters.size(); i++) {
+        ribbonGpuIndexBuffers[i] = ribbonEmitters[i]->getGpuIndexBuffer();
+    }
+
+    // The static track data is shared per source model (keyed on m_m2Geom): the
+    // renderer invokes the pack builder only when no track set exists for the
+    // model yet, so instances after the first neither rebuild nor re-upload it.
+    m_gpuAnimData = sceneRenderer->createM2GpuAnimData(m_m2Geom.get(),
+        [this]() -> M2GpuTrackPack {
+            return buildM2GpuTrackPack(*m_boneMasterData, m_m2Geom->getM2Data(),
+                                       m_m2Geom->exp2);
+        },
+        m_modelWideData,
+        emitterSeeds, emitterRim,
+        ribbonGpuIndexBuffers);
+    if (m_gpuAnimData == nullptr) GPU_ANIM_BAIL("createM2GpuAnimData returned null");
+
+    #undef GPU_ANIM_BAIL
+    // std::cout << "[GPU M2 anim] enabled for \"" << m_modelName << "\" (id " << (uintptr_t)this->getObjectId()
+    //           << "), stateIndex: " << m_gpuAnimData->getStateIndex() << std::endl;
+
+    // Track-data generation baseline for .anim streaming detection (syncGpuAnimTrackData)
+    m_gpuTrackDataGeneration = m_gpuAnimData->getTrackSet()->getDataGeneration();
+
+    // Wire up the emitters that run on GPU (others stay on the CPU sim)
+    pushGpuParticleBindFields();
+
+    // Wire up the ribbons
+    for (int i = 0; i < (int)ribbonEmitters.size(); i++) {
+        GpuRibbonEmitterBindInfo bindInfo;
+        if (m_gpuAnimData->getRibbonBindInfo(i, bindInfo)) {
+            bindInfo.objectId = static_cast<uint32_t>(this->getObjectId());
+            ribbonEmitters[i]->setGpuSimData(bindInfo.stateIndex);
+            ribbonEmitters[i]->setGpuBindFields(bindInfo);
+        }
+    }
+
+    // Push the runtime ParticleColor replacement if it was set before GPU-init
+    if (particleColorReplacementIsSet) {
+        m_gpuAnimData->updateParticleColorReplacements(m_particleColorReplacement, true);
+        // validity flipped the colorReplOffset in the bind info — re-push
+        pushGpuParticleBindFields();
+    }
+}
+
+// .anim streaming: lazy sequences become resident when the CPU sequencing gate
+// (updateSequencing -> loadLowPriority) finishes loading them; the flag 0x20 flip
+// is the completion signal. The track data is shared per model: the first instance
+// to notice the growth rebuilds the pack and re-uploads the shared track pools
+// (inside syncTrackData, under its mutex); the rest observe the bumped generation.
+void M2Object::syncGpuAnimTrackData() {
+    auto trackSet = m_gpuAnimData->getTrackSet();
+
+    int32_t loaded = countGpuLoadedSequences(*m_boneMasterData);
+    trackSet->syncTrackData(loaded, [this]() -> M2GpuTrackPack {
+        return buildM2GpuTrackPack(*m_boneMasterData, m_m2Geom->getM2Data(),
+                                   m_m2Geom->exp2);
+    });
+
+    // Emitter UBOs carry value-pool offsets (gpuBind fields) that may have moved
+    // with the replaced chunks — re-push them whenever the shared data was
+    // re-uploaded, no matter which instance of the model triggered it
+    uint32_t generation = trackSet->getDataGeneration();
+    if (generation != m_gpuTrackDataGeneration) {
+        m_gpuTrackDataGeneration = generation;
+        pushGpuParticleBindFields();
+    }
+
+    // std::cout << "[GPU M2 anim] \"" << m_modelName << "\" (id " << (uintptr_t)this->getObjectId()
+    //           << "): streamed track data, loaded sequences: " << loaded << std::endl;
+}
 
 //deltaTime = miliseconds
 void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat) {
@@ -936,32 +1164,72 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
         animDeltaTime = 0;
         this->m_animationManager->setAnimationPercent(animationOverridePercent);
     }
-    this->m_animationManager->update(
-        animDeltaTime,
-        deltaTime,
-        cameraInlocalPos,
-        this->m_localUpVector,
-        this->m_localRightVector,
-        m_placementMatrix,
-        modelViewMat,
-        this->bonesMatrices,
-        this->textAnimMatrices,
-        this->subMeshColors,
-        this->transparencies,
-        //this->cameras,
-        this->lights,
-        this->particleEmitters,
-        this->ribbonEmitters
-    );
+
+    if (m_api->getConfig()->useGpuAnimation && m_gpuAnimData == nullptr) {
+        tryInitGpuAnimData();
+    }
+
+    if (m_gpuAnimData != nullptr && m_api->getConfig()->useGpuAnimation) {
+        // Stream newly resident .anim sequences into the GPU track pools
+        // (the CPU sequencing gate below is what triggers their load)
+        syncGpuAnimTrackData();
+
+        // GPU animation path: sequencing stays on CPU, bone/track evaluation runs
+        // in the m2Animation compute pass. CPU keeps only the cheap scalar evals and
+        // the small bone subset needed for sorting/lights/CPU emitters.
+        if (m_animationManager->updateSequencing(animDeltaTime, deltaTime)) {
+            m_animationManager->evaluateForGpuPath(m_placementMatrix, modelViewMat,
+                                                   this->bonesMatrices, this->textAnimMatrices,
+                                                   this->subMeshColors, this->transparencies,
+                                                   this->lights, this->particleEmitters,
+                                                   this->ribbonEmitters, m_cpuBoneSubset);
+
+            GpuM2AnimState &animState = m_gpuAnimData->getStateForWrite();
+            mathfu::mat4 invModelViewMat = modelViewMat.Inverse();
+            static_assert(sizeof(animState.modelViewMat) == sizeof(mathfu::mat4));
+            memcpy(animState.modelViewMat, &modelViewMat, sizeof(mathfu::mat4));
+            memcpy(animState.invModelViewMat, &invModelViewMat, sizeof(mathfu::mat4));
+            m_animationManager->fillGpuAnimState(animState);
+            m_gpuAnimStateFrame = FrameContext::getCurrentProcessingFrameNumber();
+        }
+        // else: deferred .anim loading gate — skip evaluation this frame (same as CPU)
+    } else {
+        this->m_animationManager->update(
+            animDeltaTime,
+            deltaTime,
+            cameraInlocalPos,
+            this->m_localUpVector,
+            this->m_localRightVector,
+            m_placementMatrix,
+            modelViewMat,
+            this->bonesMatrices,
+            this->textAnimMatrices,
+            this->subMeshColors,
+            this->transparencies,
+            //this->cameras,
+            this->lights,
+            this->particleEmitters,
+            this->ribbonEmitters
+        );
+    }
 
     if (m_animationManager->isNeedUpdateBB()) {
         auto bounds = m_animationManager->getAnimatinonBB();
 
-        CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix,
-                                                             mathfu::vec4(mathfu::vec3(bounds.extent.min), 1.0f),
-                                                             mathfu::vec4(mathfu::vec3(bounds.extent.max), 1.0f));
+        // Empty/un-extended animation bounds come back as the classic min=FLT_MAX/max=-FLT_MAX
+        // accumulator sentinel. Transforming that through the placement matrix overflows to
+        // +/-Infinity, which then poisons WMO group AABB merging and GPU frustum culling permanently.
+        bool boundsValid = bounds.extent.min.x <= bounds.extent.max.x &&
+                            bounds.extent.min.y <= bounds.extent.max.y &&
+                            bounds.extent.min.z <= bounds.extent.max.z &&
+                            (mathfu::vec3(bounds.extent.max) - mathfu::vec3(bounds.extent.min)).LengthSquared() > 0.001f;
 
-        *this->aabb = worldAABB;
+        if (boundsValid) {
+            CAaBox worldAABB = MathHelper::transformAABBWithMat4(m_placementMatrix,
+                                                                 mathfu::vec4(mathfu::vec3(bounds.extent.min), 1.0f),
+                                                                 mathfu::vec4(mathfu::vec3(bounds.extent.max), 1.0f));
+            setAABB(worldAABB);
+        }
     }
 
 
@@ -982,7 +1250,13 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
                 ) *
             particleCoordinatesFix; // <- actually is there in the client
 
-        particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
+        if (particleEmitters[i]->isGpuSimActive() && isGpuAnimActive()) {
+            // GPU-simulated emitter: only the sort distance stays on CPU
+            // (the bone it uses is part of m_cpuBoneSubset)
+            particleEmitters[i]->updateGpuSortDistance(transformMat, viewMat);
+        } else {
+            particleEmitters[i]->Update(deltaTime * 0.001 , transformMat, viewMatInv.TranslationVector3D(), nullptr, viewMat);
+        }
     }
 
     this->sortMaterials(modelViewMat);
@@ -990,6 +1264,9 @@ void M2Object::update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &v
     //Ribbon Emitters
     mathfu::vec3 nullPos(0,0,0);
     for (int i = 0; i < ribbonEmitters.size(); i++) {
+        // GPU-simulated ribbons run in ribbonSimulate.comp.slang (bones read from SSBO)
+        if (ribbonEmitters[i]->isGpuSimActive() && isGpuAnimActive()) continue;
+
         auto *ribbonRecord = m_m2Geom->m_m2Data->ribbon_emitters.getElement(i);
 
         mathfu::mat4 transformMat =
@@ -1024,13 +1301,29 @@ void M2Object::collectLights(std::vector<LocalLight> &pointLights) {
             if (m2Data->lights[i]->type != 1) continue;
 
             auto const &m2Light = lights[i];
-            if (!m2Light.visibility) continue;
+            // if (!m2Light.visibility) continue;
+
+            float detlMult = 1.0f;
+            if (i < m_m2Geom->detl_count) {
+                detlMult = halfToFloat(m_m2Geom->detl[i].diffuseColorMultiplier);
+            }
 
             auto &pointLight =  pointLights.emplace_back();
-            pointLight.attenuation = mathfu::vec4(m2Light.attenuation_start, m2Light.diffuse_intensity,
-                                                  m2Light.attenuation_end, 0);
-            pointLight.innerColor = m2Light.diffuse_color * m2Light.diffuse_intensity;
-            pointLight.outerColor = m2Light.diffuse_color * m2Light.diffuse_intensity;
+
+            auto attenuation_start = m_scale * m2Light.attenuation_start;
+            auto attenuation_end = m_scale * m2Light.attenuation_end;
+
+            if (attenuation_end < attenuation_start)
+                attenuation_end = attenuation_start + 1.0;
+
+            pointLight.attenuation = mathfu::vec4(
+                attenuation_start,
+                attenuation_end,
+                1.0f/(attenuation_end - attenuation_start),
+                0
+            );
+            pointLight.innerColor = m2Light.diffuse_color * m2Light.diffuse_intensity * detlMult;
+            pointLight.outerColor = m2Light.diffuse_color * m2Light.diffuse_intensity * detlMult;
             pointLight.position = m2Light.position;
             pointLight.blendParams = mathfu::vec4(0,0,0,0);
         }
@@ -1054,8 +1347,8 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
 
 //    mathfu::mat4 modelViewMat = viewMat * m_placementMatrix;
 
-    M2Data * m2File = this->m_m2Geom->getM2Data();
-    M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
+    const M2Data * m2File = this->m_m2Geom->getM2Data();
+    const M2SkinProfile * skinData = this->m_skinGeom->getSkinData();
 
     auto const dataIsChanged = m_animationManager->getCombinedChangedData();
 
@@ -1067,12 +1360,21 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
         m_modelWideData->m_placementMatrix->save();
         m_placementMatrixChanged = false;
     }
-    if (m_firstUpdate || (!bonesMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)])) {
+
+    // On the GPU animation path the bone matrices are computed by the m2Animation
+    // compute pass straight into the bone SSBO — no CPU upload.
+    const bool gpuBonesActive = (m_gpuAnimData != nullptr) && m_api->getConfig()->useGpuAnimation;
+    if (gpuBonesActive) {
+        // The dirty-flag system does not track CPU-evaluated bones on this path,
+        // so force one upload when switching back to the CPU path
+        m_forceBoneUploadAfterGpu = true;
+    } else if (m_firstUpdate || m_forceBoneUploadAfterGpu || (!bonesMatrices.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::bonesMatrices)])) {
         auto &bonesData = m_modelWideData->m_bonesData->getObject();
         int interCount = (int) std::min(bonesMatrices.size(), (size_t) MAX_MATRIX_NUM);
         std::copy(bonesMatrices.data(), bonesMatrices.data() + interCount, bonesData.uBoneMatrixes);
 
         m_modelWideData->m_bonesData->save();
+        m_forceBoneUploadAfterGpu = false;
     }
     if (m_firstUpdate || (!subMeshColors.empty() && dataIsChanged[EAnimDataTypeToInt(EAnimDataType::subMeshColors)])) {
         auto &m2Colors = m_modelWideData->m_colors->getObject();
@@ -1101,8 +1403,6 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
     if (m_firstUpdate || m_modelWideDataChanged || m_setInteriorSunDir)
     {
         auto &modelFragmentData = m_modelWideData->m_modelFragmentData->getObject();
-        static mathfu::vec4 diffuseNon(0.0, 0.0, 0.0, 0.0);
-        mathfu::vec4 localDiffuse = diffuseNon;
 
         modelFragmentData.intLight.uInteriorAmbientColorAndInteriorExteriorBlend =
             mathfu::vec4_packed(mathfu::vec4(
@@ -1128,11 +1428,12 @@ void M2Object::uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &f
             ));
         modelFragmentData.intLight.uPersonalInteriorSunDirAndApplyPersonalSunDir =
             mathfu::vec4_packed(mathfu::vec4(
-                (viewMat * mathfu::vec4(-m_interiorSunDir, 0.0)).xyz(),
+                (viewMat * mathfu::vec4(m_interiorSunDir, 0.0)).xyz(),
                 m_setInteriorSunDir ? 1.0f : 0.f
             ));
 
         modelFragmentData.modelAlpha = m_alpha;
+        modelFragmentData.objectId = static_cast<uint32_t>(this->getObjectId());
 
         m_modelWideData->m_modelFragmentData->save();
         m_modelWideDataChanged = false;
@@ -1153,6 +1454,32 @@ void M2Object::uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependa
 
     for (int i = 0; i < ribbonEmitters.size(); i++) {
         ribbonEmitters[i]->updateBuffers();
+    }
+}
+
+void M2Object::appendGpuParticleStateIndices(std::vector<uint32_t> &out) const {
+    if (m_gpuAnimData == nullptr) return;
+
+    int minParticle = m_api->getConfig()->minParticle;
+    int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
+
+    for (int i = minParticle; i < maxParticle; i++) {
+        int32_t idx = particleEmitters[i]->getGpuStateIndex();
+        if (idx >= 0) {
+            out.push_back((uint32_t)idx);
+        }
+    }
+}
+
+void M2Object::appendGpuRibbonStateIndices(std::vector<uint32_t> &out) const {
+    if (m_gpuAnimData == nullptr) return;
+    if (!m_api->getConfig()->renderRibbons) return;
+
+    for (int i = 0; i < (int)ribbonEmitters.size(); i++) {
+        int32_t idx = ribbonEmitters[i]->getGpuStateIndex();
+        if (idx >= 0) {
+            out.push_back((uint32_t)idx);
+        }
     }
 }
 
@@ -1181,7 +1508,7 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const M
         return true;
     }
 
-    CAaBox &aabb = *this->aabb;
+    const CAaBox &aabb = this->getAABB();
 
     //1. Check if camera position is inside Bounding Box
     if (
@@ -1197,56 +1524,7 @@ const bool M2Object::checkFrustumCulling (const mathfu::vec4 &cameraPos, const M
     return result;
 }
 
-void M2Object::drawDebugLight() {
-/*
-    std::vector<float> points;
-
-    for (int i = 0; i < this->lights.size(); i++) {
-        auto &light = this->lights[i];
-
-        points.push_back(light.position[0]);
-        points.push_back(light.position[1]);
-        points.push_back(light.position[2]);
-
-    }
-
-    GLuint bufferVBO;
-    glGenBuffers(1, &bufferVBO);
-    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    if (points.size() > 0) {
-        glBufferData(GL_ARRAY_BUFFER, points.size() * 4, &points[0], GL_STATIC_DRAW);
-    }
-
-    auto drawPointsShader = m_api->getDrawPointsShader();
-    static float colorArr[4] = {0.058, 0.058, 0.819607843, 0.3};
-    glUniformMatrix4fv(drawPointsShader->getUnf("uPlacementMat"), 1, GL_FALSE, &this->m_placementMatrix[0]);
-    glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
-
-#ifndef WITH_GLESv2
-    glEnable( GL_PROGRAM_POINT_SIZE );
-#endif
-    glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
-
-
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-
-    glDrawArrays(GL_POINTS, 0, points.size()/3);
-
-#ifndef WITH_GLESv2
-    glDisable( GL_PROGRAM_POINT_SIZE );
-#endif
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
-
-    glDepthMask(GL_TRUE);
-
-    glBindBuffer( GL_ARRAY_BUFFER, 0);
-    glDeleteBuffers(1, &bufferVBO);
-    */
-}
-
-void M2Object::drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &placementMatrix) {
+void M2Object::drawBBInternal(const CAaBox &bb, mathfu::vec3 &color, mathfu::mat4 &placementMatrix) {
     /*
     mathfu::vec3 center = mathfu::vec3(
         (bb.min.x + bb.max.x) / 2,
@@ -1275,7 +1553,7 @@ void M2Object::drawBB(mathfu::vec3 &color) {
     if (!this->status->m_loaded) return;
 
     mathfu::mat4 defMat = mathfu::mat4::Identity();
-    drawBBInternal(*this->aabb, color, defMat);
+    drawBBInternal(getAABB(), color, defMat);
 
 }
 
@@ -1314,11 +1592,19 @@ bool M2Object::prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIn
         materialTemplate.vertexShader = getVertexShaderId(m2Batch->textureCount, m2Batch->shader_id);
     }
 
+    //Hack for Midnight, which has wrongly constructed assets
+    if (m_modelFileId > 5000000 && textureCount == 1) {
+        auto blpText = getHardCodedTexture(*m2File->texture_lookup_table[m2Batch->textureComboIndex]);
+        if (blpText && blpText->getFileDataId() == 5930925) {
+            return false;
+        }
+    }
+
     for (int j = 0; j < std::min<int>(textureCount, 4); j++) {
         auto m2TextureIndex = *m2File->texture_lookup_table[m2Batch->textureComboIndex + j];
         materialTemplate.textures[j] = getTexture(m2TextureIndex);
     }
-
+//materialTemplate.textures[0]->getTexture()->
     materialTemplate.batchIndex = batchIndex;
 
     return true;
@@ -1427,6 +1713,10 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
 
     int renderFlagIndex = m2Batch->materialIndex;
 
+#ifdef DEBUG_MESH_NAMES
+        meshTemplate.name = "M2 WaterFall, FileDataId = " + std::to_string(m_modelFileId);
+#endif
+
     PipelineTemplate pipelineTemplate;
     pipelineTemplate.element = DrawElementMode::TRIANGLES;
     pipelineTemplate.depthWrite = false;
@@ -1456,7 +1746,7 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
         waterfallCommon.bumpScale = wfv3Data->bumpScale;
 
         std::array<int, 2> textureMatrixIndexes = {-1, -1};
-        M2MeshBufferUpdater::getTextureMatrixIndexes(*this, 0, m2Data, skinData, textureMatrixIndexes);
+        M2MeshBufferUpdater::getTextureMatrixIndexes(*this, 0, 0, m2Data, skinData, textureMatrixIndexes);
         waterfallCommon.textureMatIndex1 = textureMatrixIndexes[0];
         waterfallCommon.textureMatIndex2 = textureMatrixIndexes[1];
 
@@ -1498,8 +1788,8 @@ HGM2Mesh M2Object::createWaterfallMesh(const HMapSceneBufferCreate &sceneRendere
     return hmesh;
 }
 
-bool isProjectiveTexture(M2Batch * batch) {
-    return (batch->flags & 0x4) > 0;// || (batch->geosetIndex & 0x2) > 0; // something is wrong with these flags2
+bool isProjectiveTexture(M2Batch * batch, int version) {
+    return (batch->flags & 0x4) > 0 || (version > 273 && batch->flags2 & 0x2) > 0; // something is wrong with these flags2
 }
 
 void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
@@ -1527,6 +1817,8 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
     m_projectiveMaterialArray.resize(std::max<int32_t>(batches.size, 0));
 
     if (m_m2Geom->m_wfv3 == nullptr && m_m2Geom->m_wfv1 == nullptr) {
+        int m2Version = m_m2Geom->m_m2Data->version;
+
         //Create materials
         for (int batchIndex = 0; batchIndex < batches.size; batchIndex++) {
             auto m2Batch = batches[batchIndex];
@@ -1536,9 +1828,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             this->m_materialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, mainBlendMode, false);
             this->m_forcedTranspMaterialArray[batchIndex] = createM2Material(sceneRenderer, batchIndex, forcedTranspBlend, true);
 
-            if (isProjectiveTexture(m2Batch)) {
-
-
+            if (isProjectiveTexture(m2Batch, m2Version)) {
                 this->m_projectiveMaterialArray[batchIndex] = createM2ProjectiveMaterial(sceneRenderer, batchIndex);
             }
         }
@@ -1551,12 +1841,15 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
                 continue;
             }
 
-            if (isProjectiveTexture(m2Batch)) {
+            if (isProjectiveTexture(m2Batch, m2Version)) {
                 auto mesh = createProjectiveMesh(sceneRenderer, m_projectiveMaterialArray[batchIndex], skinSection, m2Batch);
                 this->m_meshProjectiveArray.emplace_back(mesh, batchIndex);
 
                 continue;
             }
+
+            if (m_materialArray[batchIndex] == nullptr)
+                continue;
 
             HGM2Mesh hMesh = createSingleMesh(sceneRenderer,  0, bufferBindings, m_materialArray[batchIndex], skinSection, m2Batch);
 
@@ -1608,6 +1901,7 @@ void M2Object::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             dynamicMeshes.push_back(dynamicMeshData);
         }
     } else {
+//        std::cout << "Waterfall mesh detected " << m_modelFileId << std::endl;
         m_meshArray.push_back({createWaterfallMesh(sceneRenderer, bufferBindings), 0});
     }
 
@@ -1636,9 +1930,11 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     auto m2Batch = batches[batchIndex];
 
     //Do not create projective material using this function
-    if (isProjectiveTexture(m2Batch)) return nullptr;
-
+    int m2Version = m_m2Geom->m_m2Data->version;
+    if (isProjectiveTexture(m2Batch, m2Version)) return nullptr;
     if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
+
+
 
     int materialIndex = m2Batch->materialIndex;
     auto renderFlag = m_m2Data->materials[materialIndex];
@@ -1662,7 +1958,7 @@ std::shared_ptr<IM2Material> M2Object::createM2Material(const HMapSceneBufferCre
     auto m2Material = sceneRenderer->createM2Material(m_modelWideData, pipelineTemplate, materialTemplate);
 
     //Update material
-    M2MeshBufferUpdater::updateMaterialData(m2Material, this, m_m2Data, m_skinGeom->getSkinData());
+    M2MeshBufferUpdater::updateMaterialData(m2Material, this, m_skinGeom->getSkinData());
 
     return m2Material;
 }
@@ -1674,8 +1970,9 @@ std::shared_ptr<IM2ProjectiveMaterial> M2Object::createM2ProjectiveMaterial(cons
     const auto &batches = m_skinGeom->getSkinData()->batches;
     auto m2Batch = batches[batchIndex];
 
-    //Do not create projective material using this function
-    if (!isProjectiveTexture(m2Batch)) return nullptr;
+    //Create only projective material using this function
+    int m2Version = m_m2Geom->m_m2Data->version;
+    if (!isProjectiveTexture(m2Batch, m2Version)) return nullptr;
     if (!prepearMaterial(materialTemplate, batchIndex)) return nullptr;
 
     int materialIndex = m2Batch->materialIndex;
@@ -1701,7 +1998,8 @@ std::shared_ptr<IM2ProjectiveMaterial> M2Object::createM2ProjectiveMaterial(cons
         (m2Batch->textureCount - 1) & 3; // one of [Opaque_Single_Texture, Two_Texture, Three_Texture]
 
     //Update material
-    M2MeshBufferUpdater::updateProjectiveMaterialData(batchIndex, static_cast<uint8_t>(pipelineTemplate.blendMode), pixelShader,
+    M2MeshBufferUpdater::updateProjectiveMaterialData(batchIndex, static_cast<uint8_t>(pipelineTemplate.blendMode),
+        0, pixelShader,
         m2ProjectiveMaterial, this, m_m2Data, m_skinGeom->getSkinData());
 
 
@@ -1716,6 +2014,14 @@ M2Object::createSingleMesh(const HMapSceneBufferCreate &sceneRenderer, int index
                            const M2Batch *m2Batch) {
     gMeshTemplate meshTemplate(finalBufferBindings);
     meshTemplate.meshType = MeshType::eM2Mesh;
+
+#ifdef DEBUG_MESH_NAMES
+    meshTemplate.name = std::string("M2,") +
+                        " FileDataId = " + std::to_string(m_modelFileId) +
+                        " batchFlags = " + std::to_string(m2Batch->flags) +
+                        " priorityPlane = " + std::to_string(m2Batch->priorityPlane)
+    ;
+#endif
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16) - indexStartCorrection) * 2;
     meshTemplate.end = skinSection->indexCount;
@@ -1732,6 +2038,15 @@ M2Object::createProjectiveMesh(const HMapSceneBufferCreate &sceneRenderer,
                                const M2Batch *m2Batch) {
     gMeshTemplate meshTemplate(nullptr);
     meshTemplate.meshType = MeshType::eM2Mesh;
+#ifdef DEBUG_MESH_NAMES
+    meshTemplate.name = std::string("M2 Projective,") +
+                        " FileDataId = " + std::to_string(m_modelFileId) +
+                        " batchFlags = " + std::to_string(m2Batch->flags) +
+                        " priorityPlane = " + std::to_string(m2Batch->priorityPlane)
+    ;
+#endif
+
+
 
     meshTemplate.start = (skinSection->indexStart + (skinSection->Level << 16)) * 2;
     meshTemplate.end = skinSection->indexCount;
@@ -1741,87 +2056,155 @@ M2Object::createProjectiveMesh(const HMapSceneBufferCreate &sceneRenderer,
     return m2Mesh;
 }
 
-void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
+void M2Object::forEachVisibleMesh(const std::function<void(const HGM2Mesh &mesh)> &visitor) {
     if (!this->status->m_loaded) return;
+
+    auto *config = m_api->getConfig();
+    if (!config->renderM2) return;
 
     M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
 
-    int minBatch = m_api->getConfig()->m2MinBatch;
-    int maxBatch = std::min(m_api->getConfig()->m2MaxBatch, (const int &) this->m_meshArray.size());
+    int minBatch = config->m2MinBatch;
+    int maxBatch = std::min(config->m2MaxBatch, (const int &) this->m_meshArray.size());
+    bool discardInvisible = config->discardInvisibleMeshes;
+
+    for (int i = 0; i < this->m_meshArray.size(); i++) {
+        int currentM2BatchIndex = std::get<1>(this->m_meshArray[i]);
+        if (currentM2BatchIndex < minBatch || currentM2BatchIndex > maxBatch ) continue;
+
+        float finalTransparency = m_finalTransparencies[i];
+        bool meshIsInvisible = finalTransparency < 0.0001;
+        if (discardInvisible && meshIsInvisible)
+            continue;
+
+        // Borrowed pointer — avoids a shared_ptr copy (atomic refcounts) per mesh
+        const HGM2Mesh *mesh = &std::get<0>(this->m_meshArray[i]);
+        if (!meshIsInvisible && finalTransparency < 0.999f && i < this->m_meshForcedTranspArray.size() &&
+            std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
+            mesh = &std::get<0>(this->m_meshForcedTranspArray[i]);
+        }
+
+        visitor(*mesh);
+    }
+
+    const int frame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    for (auto &dynMesh: dynamicMeshes) {
+        auto const &dynMeshFrame = dynMesh[frame];
+
+        int currentM2BatchIndex = dynMeshFrame.batchIndex;
+        if (currentM2BatchIndex < minBatch || currentM2BatchIndex > maxBatch ) continue;
+
+        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+        if ((finalTransparency < 0.0001))
+            continue;
+
+        visitor(dynMeshFrame.m_mesh);
+    }
+}
+
+void M2Object::forEachVisibleMeshSorted(const std::function<void(const HGSortableMesh &mesh, bool hasDynamicDrawParams)> &visitor) {
+    if (!this->status->m_loaded) return;
+
+    auto *config = m_api->getConfig();
+    if (!config->renderM2) return;
+
+    auto &scratch = m_sortedTranspMeshScratch;
+    scratch.clear();
+
+    auto collectMesh = [&](const HGSortableMesh &mesh, bool hasDynamicDrawParams) {
+        if (mesh->getIsTransparent()) {
+            scratch.push_back({mesh, hasDynamicDrawParams});
+        } else {
+            // Opaque meshes are re-sorted for batching by the renderer — serve in any order
+            visitor(mesh, hasDynamicDrawParams);
+        }
+    };
+
+    // Static and dynamic-VAO meshes
+    forEachVisibleMesh([&](const HGM2Mesh &mesh) {
+        collectMesh(mesh, false);
+    });
+
+    // Particle and ribbon meshes are sorted together with the usual transparent meshes
+    forEachParticleEmitter([&](ParticleEmitter *emitter) {
+        emitter->forEachMesh([&](const HGParticleMesh &mesh) {
+            collectMesh(mesh, true);
+        });
+    });
+
+    if (config->renderRibbons) {
+        forEachRibbonEmitter([&](CRibbonEmitter *ribbonEmitter) {
+            ribbonEmitter->forEachMesh([&](const HGParticleMesh &mesh) {
+                collectMesh(mesh, true);
+            });
+        });
+    }
+
+    // Intra-M2 transparent sort. The M2 objects themselves are ordered by the
+    // renderer using per-object bounding-box distances ("boxes" rendering).
+    if (scratch.size() > 1) {
+        std::sort(scratch.begin(), scratch.end(),
+                  [](const SortedTranspMeshEntry &a, const SortedTranspMeshEntry &b) {
+                      return SortMeshes(a.mesh, b.mesh);
+                  });
+    }
+
+    for (const auto &entry : scratch) {
+        visitor(entry.mesh, entry.hasDynamicDrawParams);
+    }
+}
+
+void M2Object::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
+    if (!this->status->m_loaded) return;
 
     bool isWaterFallMesh = m_m2Geom->m_wfv3 != nullptr && m_m2Geom->m_wfv1 != nullptr;
 
-    if (m_api->getConfig()->renderM2) {
-        for (int i = 0; i < this->m_meshArray.size(); i++) {
-            int currentM2BatchIndex = std::get<1>(this->m_meshArray[i]);
-            if (currentM2BatchIndex < minBatch || currentM2BatchIndex > maxBatch ) continue;
-
-//            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
-            float finalTransparency = m_finalTransparencies[i];
-            bool meshIsInvisible = finalTransparency < 0.0001;
-            if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
-                continue;
-
-            HGM2Mesh mesh = std::get<0>(this->m_meshArray[i]);
-            if (!meshIsInvisible && finalTransparency < 0.999f && i < this->m_meshForcedTranspArray.size() &&
-                std::get<0>(this->m_meshForcedTranspArray[i]) != nullptr) {
-                mesh = std::get<0>(this->m_meshForcedTranspArray[i]);
-            }
-
-            if (mesh->getIsTransparent()) {
-                transparentMeshes.emplace_back() = mesh;
+    forEachVisibleMesh([&](const HGM2Mesh &mesh) {
+        if (mesh->getIsTransparent()) {
+            transparentMeshes.emplace_back() = mesh;
+        } else {
+            if (!isWaterFallMesh) {
+                opaqueMeshCollector.addM2Mesh(mesh);
             } else {
-                if (!isWaterFallMesh) {
-                    opaqueMeshCollector.addM2Mesh(mesh);
-                } else {
-                    opaqueMeshCollector.addMesh(mesh);
-                }
+                opaqueMeshCollector.addMesh(mesh);
             }
         }
+    });
 
-        for (auto &dynMesh: dynamicMeshes) {
-            int frame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
-
-            auto const &dynMeshFrame = dynMesh[frame];
-
-            int currentM2BatchIndex = dynMeshFrame.batchIndex;
-            if (currentM2BatchIndex < minBatch || currentM2BatchIndex > maxBatch ) continue;
-
-            float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
-            if ((finalTransparency < 0.0001))
-                continue;
-
-            const HGM2Mesh &mesh = dynMeshFrame.m_mesh;
-            if (mesh->getIsTransparent()) {
-                transparentMeshes.push_back(mesh);
-            } else {
-                if (!isWaterFallMesh) {
-                    opaqueMeshCollector.addM2Mesh(mesh);
-                } else {
-                    opaqueMeshCollector.addMesh(mesh);
-                }
-            }
-        }
-        if (m_api->getConfig()->renderM2Decals) {
-            for (int i = 0; i < this->m_meshProjectiveArray.size(); i++) {
-                int currentM2BatchIndex = std::get<1>(this->m_meshProjectiveArray[i]);
-
-                float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
-                bool meshIsInvisible = (finalTransparency < 0.0001);
-
-                if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
-                    continue;
-
-                HGM2Mesh mesh = std::get<0>(this->m_meshProjectiveArray[i]);
-                opaqueMeshCollector.addProjectiveMesh(mesh);
-            }
-        }
-    }
+    collectProjectiveMeshes(opaqueMeshCollector);
 
     if (m_api->getConfig()->drawM2BB) {
         transparentMeshes.emplace_back(boundingBoxMesh);
     }
 //    std::cout << "Collected meshes at update frame =" << m_api->hDevice->getUpdateFrameNumber() << std::endl;
+}
+
+void M2Object::collectProjectiveMeshes(COpaqueMeshCollector &opaqueMeshCollector) {
+    if (!this->status->m_loaded) return;
+    if (!m_api->getConfig()->renderM2 || !m_api->getConfig()->renderM2Decals) return;
+
+    M2SkinProfile* skinData = this->m_skinGeom->getSkinData();
+
+    for (int i = 0; i < this->m_meshProjectiveArray.size(); i++) {
+        int currentM2BatchIndex = std::get<1>(this->m_meshProjectiveArray[i]);
+
+        float finalTransparency = M2MeshBufferUpdater::calcFinalTransparency(*this, currentM2BatchIndex, skinData);
+        bool meshIsInvisible = (finalTransparency < 0.0001);
+
+        if (m_api->getConfig()->discardInvisibleMeshes && meshIsInvisible)
+            continue;
+
+        HGM2Mesh mesh = std::get<0>(this->m_meshProjectiveArray[i]);
+        opaqueMeshCollector.addProjectiveMesh(mesh);
+    }
+}
+
+void M2Object::forEachRibbonEmitter(const std::function<void(CRibbonEmitter *emitter)> &visitor) {
+    if (!this->status->m_loaded) return;
+
+    for (auto &ribbonEmitter : ribbonEmitters) {
+        visitor(ribbonEmitter.get());
+    }
 }
 
 void M2Object::initAnimationManager() {
@@ -1916,6 +2299,8 @@ void M2Object::initRibbonEmitters(const HMapSceneBufferCreate &sceneRenderer) {
         emitter->SetGravity(m2Ribbon->gravity);
         emitter->SetPriority(m2Ribbon->priorityPlane);
         emitter->SetDataEnabled(0);
+        // Pull-model GPU mesh set (created only when the renderer supports GPU ribbons)
+        emitter->createGpuMeshes(sceneRenderer);
 
         ribbonEmitters.push_back(std::move(emitter));
     }
@@ -2034,17 +2419,11 @@ int32_t M2Object::getTextureTransformIndexByLookup(int textureTrasformlookup) {
     return -1;
 }
 
-void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder) {
-    if (!this->status->m_loaded) return;
-
-    int renderRibbons = m_api->getConfig()->renderRibbons;
-
+void M2Object::forEachParticleEmitter(const std::function<void(ParticleEmitter *emitter)> &visitor) {
     int minParticle = m_api->getConfig()->minParticle;
     int maxParticle = std::min(m_api->getConfig()->maxParticle, (const int &) particleEmitters.size());
 
-
     for (int i = minParticle; i < maxParticle; i++) {
-
         //Respect PGD1 chunk
         if (m_m2Geom->particleGeosetData != nullptr) {
             auto geoset = *m_m2Geom->particleGeosetData->pgd.getElement(i);
@@ -2055,12 +2434,20 @@ void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_v
             }
         }
 
-        particleEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
+        visitor(particleEmitters[i].get());
     }
+}
 
-    if (renderRibbons) {
+void M2Object::drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes) {
+    if (!this->status->m_loaded) return;
+
+    forEachParticleEmitter([&](ParticleEmitter *emitter) {
+        emitter->collectMeshes(opaqueMeshCollector, transparentMeshes);
+    });
+
+    if (m_api->getConfig()->renderRibbons) {
         for (int i = 0; i < ribbonEmitters.size(); i++) {
-            ribbonEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
+            ribbonEmitters[i]->collectMeshes(opaqueMeshCollector, transparentMeshes);
         }
     }
 }
@@ -2127,7 +2514,8 @@ void M2Object::createVertexBindings(const HMapSceneBufferCreate &sceneRenderer) 
         m_boneMasterData->getSkelData()->m_m2CompBones->size,
         m_m2Geom->m_m2Data->colors.size,
         m_m2Geom->m_m2Data->texture_weights.size,
-        m_m2Geom->m_m2Data->texture_transforms.size
+        m_m2Geom->m_m2Data->texture_transforms.size,
+        static_cast<uint32_t>(this->getObjectId())
     );
 }
 
@@ -2135,7 +2523,7 @@ void M2Object::updateDynamicMeshes() {
     if (dynamicMeshes.empty()) return;
 
     auto rootMatInverse = bonesMatrices[0].Inverse();
-    auto frameNum = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto frameNum = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
 
     for (auto &dynamicMesh: dynamicMeshes) {
@@ -2198,6 +2586,10 @@ void M2Object::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 
     m_particleColorReplacement = particleColorReplacement;
     particleColorReplacementIsSet = true;
     std::cout << "particleColorReplacementIsSet = " << particleColorReplacementIsSet << std::endl;
+    if (m_gpuAnimData != nullptr) {
+        m_gpuAnimData->updateParticleColorReplacements(m_particleColorReplacement, true);
+        pushGpuParticleBindFields();
+    }
 }
 
 bool M2Object::getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {
@@ -2211,6 +2603,10 @@ bool M2Object::getReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 
 
 void M2Object::resetReplaceParticleColor() {
     particleColorReplacementIsSet = false;
+    if (m_gpuAnimData != nullptr) {
+        m_gpuAnimData->updateParticleColorReplacements(m_particleColorReplacement, false);
+        pushGpuParticleBindFields();
+    }
 }
 
 int M2Object::getCurrentAnimationIndex() {

@@ -6,6 +6,8 @@
 #define AWEBWOWVIEWERCPP_GDESCRIPTORSETLAYOUT_H
 
 #include <memory>
+#include <unordered_map>
+#include <unordered_set>
 
 class GDescriptorSetLayout;
 class IDeviceVulkan;
@@ -18,7 +20,7 @@ class IDeviceVulkan;
 
 class GDescriptorSetLayout {
 public:
-    static const constexpr int MAX_BINDPOINT_NUMBER = 16;
+    static const constexpr int MAX_BINDPOINT_NUMBER = 20;
 
     GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> &device,
                          const std::vector<const shaderMetaData*> &metaData,
@@ -60,7 +62,7 @@ private:
     bool m_isBindless = false;
 
 
-    std::shared_ptr<IDeviceVulkan> m_device;
+    std::weak_ptr<IDeviceVulkan> m_device;
     std::string m_shaderSourceName;
     int m_sourceSetIndex;
 
@@ -71,6 +73,28 @@ private:
     void fillSSBO(int setIndex, const DescTypeOverride &typeOverrides,
                  std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
                  const shaderMetaData *p_metaData, const VkShaderStageFlagBits &vkStageFlag);
+
+    void fillImages(int setIndex, const DescTypeOverride &typeOverrides,
+                    std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                    std::unordered_set<int> &bindlessBindPoints, const shaderMetaData *p_metaData,
+                    const VkShaderStageFlagBits &vkStageFlag);
+
+    void fillBindings(
+        int setIndex,
+        const DescTypeOverride &typeOverrides,
+        std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+        std::unordered_set<int> &bindlessBindPoints,
+        const shaderMetaData *p_metaData,
+        const VkShaderStageFlagBits &vkStageFlag,
+        const std::vector<bindingData> &metaBindings,
+        VkDescriptorType defaultType,
+        std::unordered_map<int, int> *sizeMap // nullptr if not applicable
+    );
+
+    void fillMissingBindingsFromOverrides(int setIndex, const DescTypeOverride &typeOverrides,
+                                          std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                                          std::unordered_set<int> &bindlessBindPoints,
+                                          const VkShaderStageFlags &vkStageFlag);
 };
 
 

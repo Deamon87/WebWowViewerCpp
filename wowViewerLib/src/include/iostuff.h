@@ -34,7 +34,7 @@ enum class CacheHolderType {
 
 class IFileRequest {
 public:
-    virtual void requestFile(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) = 0;
+    virtual void requestFile(CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) = 0;
     virtual ~IFileRequest()= default;
 };
 

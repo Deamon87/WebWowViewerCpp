@@ -20,7 +20,7 @@ public:
 
     void flushBuffers();
 private:
-    HGDeviceVLK m_device;
+    const WGDeviceVLK m_device;
 
     std::mutex m_mutex;
 

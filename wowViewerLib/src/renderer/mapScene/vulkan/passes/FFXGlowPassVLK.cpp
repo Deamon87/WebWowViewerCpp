@@ -8,6 +8,8 @@
 #include "../../../../gapi/vulkan/GVertexBufferBindingsVLK.h"
 #include "../../../frame/FrameProfile.h"
 #include "../../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
+#include "../../../../gapi/interface/FrameContext.h"
+#include "../../../../gapi/vulkan/textures/GTextureVLK.h"
 
 
 FFXGlowPassVLK::FFXGlowPassVLK(const HGDeviceVLK &device, const HGBufferVLK &uboBuffer, const HGVertexBufferBindings &quadVAO) : m_device(device), m_drawQuadVao(quadVAO) {
@@ -69,9 +71,10 @@ void FFXGlowPassVLK::updateFsUBO(int width, int height) {
 
 void FFXGlowPassVLK::updateDimensions(int width, int height,
                                       const std::vector<HGSamplableTexture> &inputColorTextures,
-                                      const std::shared_ptr<GRenderPassVLK> &finalRenderPass) {
+                                      const std::shared_ptr<GRenderPassVLK> &finalRenderPass,
+                                      bool force) {
 
-    if (m_width == width && m_height == height) return;
+    if (!force && m_width == width && m_height == height) return;
 
     m_width = width;
     m_height = height;
@@ -88,12 +91,20 @@ void FFXGlowPassVLK::updateDimensions(int width, int height,
     glowPipelineTemplate.backFaceCulling = false;
     glowPipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Opaque;
 
+    // FBO attachments default to a NEAREST sampler (right for gbuffer data, wrong for blur):
+    // the gauss kernel's half-texel taps assume bilinear filtering, and the final composite
+    // upsamples the quarter-res blur 4x — with NEAREST that shows as visible 4x4 squares.
+    // Wrap the whole glow chain in linear samplers.
+    auto asLinearSampled = [this](const HGSamplableTexture &t) -> HGSamplableTexture {
+        return m_device->createSampledTexture(t->getTexture(), false, false);
+    };
+
     for (int i = 0; i < IDevice::MAX_FRAMES_IN_FLIGHT; i++) {
-        std::array<HGSamplableTexture, 4> inputTextures;
+        std::array<HGSamplableTexture, GAUSS_PASS_COUNT+1> inputTextures;
         //Fill input textures array
-        inputTextures[0] = inputColorTextures[i];
+        inputTextures[0] = asLinearSampled(inputColorTextures[i]);
         for (int j = 0; j < GAUSS_PASS_COUNT; j++)
-            inputTextures[j + 1] = getTargetFrameBuffer(j, i)->getAttachment(0);
+            inputTextures[j + 1] = asLinearSampled(getTargetFrameBuffer(j, i)->getAttachment(0));
 
 
         // Create materials
@@ -110,8 +121,8 @@ void FFXGlowPassVLK::updateDimensions(int width, int height,
 
         ffxGlowMat[i] = createFFXGlowMat(m_ffxGlowVs,
                                          m_ffxGlowPS,
-                                         inputColorTextures[i],
-                                         getTargetFrameBuffer(GAUSS_PASS_COUNT-1, i)->getAttachment(0),
+                                         inputTextures[0],
+                                         inputTextures[GAUSS_PASS_COUNT],
                                          glowPipelineTemplate,
                                          finalRenderPass
         );
@@ -141,10 +152,36 @@ void FFXGlowPassVLK::drawMaterial (CmdBufRecorder& cmdBuf, const std::shared_ptr
 
 void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd) {
     ZoneScoped;
-    auto currentFrame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     {
 
         for (int i = 0; i < GAUSS_PASS_COUNT; i++) {
+            if (i > 0) {
+                auto previousFrameBuffer = getTargetFrameBuffer(i - 1, currentFrame);
+                auto previousTexture = std::dynamic_pointer_cast<GTextureVLK>(previousFrameBuffer->getAttachment(0)->getTexture());
+                
+                VkImageSubresourceRange subresourceRange = {};
+                subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+                subresourceRange.baseMipLevel = 0;
+                subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+                subresourceRange.layerCount = 1;
+
+                VkImageMemoryBarrier imgBarrier{};
+                imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                imgBarrier.subresourceRange = subresourceRange;
+                imgBarrier.image = previousTexture->texture.image;
+                imgBarrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imgBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imgBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+                imgBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+                frameBufCmd.recordPipelineImageBarrier(
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                    {imgBarrier}
+                );
+            }
+
             auto passHelper = frameBufCmd.beginRenderPass(
                 false,
                 m_renderPass,
@@ -160,7 +197,7 @@ void FFXGlowPassVLK::doPass(CmdBufRecorder &frameBufCmd) {
     }
 }
 void FFXGlowPassVLK::doFinalDraw(CmdBufRecorder &finalBufCmd) {
-    auto currentFrame = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
     {
         finalBufCmd.setViewPort(CmdBufRecorder::ViewportType::vp_usual);
@@ -191,29 +228,22 @@ void FFXGlowPassVLK::assignFFXGlowUBOConsts(float glow) {
 
 void FFXGlowPassVLK::createFrameBuffers(int m_width, int m_height) {
     {
-        auto const dataFormat = {ITextureFormat::itRGBA};
         int targetWidth = m_width >> 2;
         int targetHeight = m_height >> 2;
 
         for (auto &colorFrameBuffer: m_GlowFrameB1) {
             colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
-                dataFormat,
-                ITextureFormat::itNone,
+                m_renderPass,
                 nullptr,
-                1,
-                false,
                 targetWidth, targetHeight
             );
         }
         for (auto &colorFrameBuffer: m_GlowFrameB2) {
             colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
-                dataFormat,
-                ITextureFormat::itNone,
+                m_renderPass,
                 nullptr,
-                1,
-                false,
                 targetWidth, targetHeight
             );
         }
@@ -224,6 +254,10 @@ std::shared_ptr<GFrameBufferVLK> FFXGlowPassVLK::getTargetFrameBuffer(int GAUSS_
     return (GAUSS_PASS_I & 1) ?
         m_GlowFrameB1[frameInFlightI] :
         m_GlowFrameB2[frameInFlightI];
+}
+
+std::shared_ptr<GFrameBufferVLK> FFXGlowPassVLK::getFinalGaussOutputFrameBuffer(int frameInFlightI) {
+    return getTargetFrameBuffer(GAUSS_PASS_COUNT - 1, frameInFlightI);
 }
 
 std::shared_ptr<IMaterial>
@@ -237,7 +271,7 @@ FFXGlowPassVLK::createFFXGaussMat(
 
     auto material = MaterialBuilderVLK::fromShader(m_device,
                                                    {"drawQuad", isInitCopyMat ? "ffxgauss4_copy" : "ffxgauss4"},
-                                                   {"forwardRendering", "forwardRendering"}, {})
+                                                   {"forwardRendering", "forwardRendering"})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGaussVs, &ffxGaussPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -262,7 +296,7 @@ FFXGlowPassVLK::createFFXGlowMat(
     const PipelineTemplate &pipelineTemplate,
     const std::shared_ptr<GRenderPassVLK> &targetRenderPass) {
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxglow"}, {"forwardRendering", "forwardRendering"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawQuad", "ffxglow"}, {"forwardRendering", "forwardRendering"})
         .createPipeline(m_drawQuadVao, targetRenderPass, pipelineTemplate)
         .createDescriptorSet(0, [&ffxGlowVs, &ffxGlowPS](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()

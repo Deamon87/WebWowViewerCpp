@@ -35,6 +35,10 @@ enum class EFreeStrategy : char {
     eFrameBase
 };
 
+struct ConfigWMOVertFlags {
+    uint32_t useMOCV: 1;
+};
+
 class Config {
 public:
     Config() {
@@ -50,7 +54,13 @@ public:
     bool renderRibbons = true;
     bool renderSkyDom = true;
     bool renderSkyScene = true;
+    // Player conditions (from the SkySceneXPlayerCondition db2) that the user turned
+    // off; WDL sky scenes gated by these are not shown. Empty = everything enabled.
+    std::unordered_set<int> disabledSkyScenePlayerConditions;
     bool renderLiquid = true;
+    bool renderGameObjects = true;
+    bool showGameObjectNameplates = false;
+    bool showGameObjectNameplatesForAll = false;
     bool renderBSP = false;
     bool renderPortals = false;
     bool renderAntiPortals = false;
@@ -60,6 +70,9 @@ public:
 
     bool ignoreADTHoles = false;
     bool ignoreADTColoring = false;
+    bool ignoreWMOColoring = false;
+
+    bool renderAllWmoDoodads = false;
 
     bool stopBufferUpdates = false;
     bool stepBufferUpdate = false;
@@ -71,6 +84,10 @@ public:
     bool drawDebugLights = false;
     bool drawWmoBB = false;
     bool drawM2BB = false;
+
+    bool enableObjectPicking = true;
+
+    bool enableFXAA = true;
 
     bool doubleCameraDebug = false;
     bool controlSecondCamera = false;
@@ -92,7 +109,8 @@ public:
     int minParticle = 0;
     int maxParticle = 9999;
 
-    uint16_t currentTime = 0;
+    uint16_t currentTime = 2880/2; //midday is the default time now
+    float timeMultiplier = 1.0f;
 
     bool useWotlkLogic = false;
 
@@ -106,6 +124,11 @@ public:
     bool disableGlow = false;
 
     bool pauseAnimation = false;
+
+    // When true (and supported by the device/renderer), M2 skeletal animation,
+    // particle emitters and ribbon emitters are evaluated on GPU (Vulkan compute)
+    // instead of CPU. Per-object fallback to CPU happens automatically.
+    bool useGpuAnimation = true;
 
     mathfu::vec4 clearColor = {0.117647, 0.207843, 0.392157, 0};
 
@@ -124,7 +147,7 @@ public:
     SkyColors skyColors;
 
     EParameterSource globalFog = EParameterSource::eDatabase;
-        FogResult fogResult;
+    FogResult fogResult;
 
     int diffuseColorHack = 0;
 

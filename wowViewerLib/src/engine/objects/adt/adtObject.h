@@ -22,6 +22,7 @@ class M2Object;
 #include "../iMapApi.h"
 #include "../ViewsObjects.h"
 #include "../liquid/LiquidInstance.h"
+#include "../liquid/liquidMaterials/LiquidMaterialManager.h"
 
 typedef std::function<bool(bool doCheck, bool doUpdate, animTime_t currentTime)> FreeStrategy;
 
@@ -31,8 +32,8 @@ typedef EntityFactory<50, AdtObjectId, AdtObject> ADTObjectEntityFactory;
 extern std::shared_ptr<ADTObjectEntityFactory> adtObjectFactory;
 class AdtObject : public ObjectWithId<AdtObjectId> {
 public:
-    AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, bool useWeightedBlend, HWdtFile wdtfile);
-    AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, bool useWeightedBlend, HWdtFile wdtfile);
+    AdtObject(const HApiContainer &api, std::string &adtFileTemplate, const std::string &mapname, int adt_x, int adt_y, bool useWeightedBlend, const HWdtFile &wdtfile);
+    AdtObject(const HApiContainer &api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, bool useWeightedBlend, const HWdtFile &wdtfile);
     ~AdtObject() {
 //        std::cout << "~AdtObject called" << std::endl;
     };
@@ -53,7 +54,7 @@ public:
 
     void update(animTime_t deltaTime);
     void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData);
-    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager);
 
     int getAreaId(int mcnk_x, int mcnk_y);
     void getHeight(const mathfu::vec4 &camera, float &height);
@@ -95,7 +96,7 @@ private:
         int length;
     };
 
-    void loadingFinished(const HMapSceneBufferCreate &sceneRenderer);
+    void loadingFinished(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager);
 
     void createVBO(const HMapSceneBufferCreate &sceneRenderer);
     void createIBOAndBinding(const HMapSceneBufferCreate &sceneRenderer);
@@ -138,6 +139,7 @@ private:
 
 private:
     HGSamplableTexture alphaTexture;
+    HGSamplableTexture alphaTexture2;
     HBlpTexture lodDiffuseTexture  = nullptr;
     HBlpTexture lodNormalTexture  = nullptr;
 
@@ -151,11 +153,12 @@ private:
 
     std::vector<CAaBox> tileAabb;
     std::vector<CAaBox> waterTileAabb;
+    //Per-chunk flags for chunks that actually have liquid instances (set in loadWater).
+    //waterTileAabb entries are only valid for flagged chunks.
+    std::array<uint8_t, 16*16> m_chunkHasWater = {};
+    bool m_hasAnyWater = false;
     std::vector<int> globIndexX;
     std::vector<int> globIndexY;
-
-    std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> m_waterPlacementChunk = nullptr;
-    std::vector<std::shared_ptr<IWaterMaterial>> m_waterMaterialArray = {};
 
     int adt_x;
     int adt_y;
@@ -181,7 +184,7 @@ private:
     void calcBoundingBoxes();
     void loadM2s();
     void loadWmos();
-    void loadWater(const HMapSceneBufferCreate &sceneRenderer);
+    void loadWater(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager);
 
     bool checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,
                                  const mathfu::vec4 &cameraPos,

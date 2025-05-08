@@ -17,7 +17,7 @@ BufferGpuVLK::BufferGpuVLK(const HGDeviceVLK &device, int size, VkBufferUsageFla
     VmaAllocationCreateInfo stagingAllocInfo = {};
     stagingAllocInfo.usage = VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
     stagingAllocInfo.flags = 0;
-    ERR_GUARD_VULKAN(vmaCreateBuffer(m_device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
+    ERR_GUARD_VULKAN(vmaCreateBuffer(device->getVMAAllocator(), &vbInfo, &stagingAllocInfo,
                                      &m_hBuffer,
                                      &m_hBufferAlloc, &allocationInfo));
 
@@ -31,10 +31,13 @@ BufferGpuVLK::BufferGpuVLK(const HGDeviceVLK &device, int size, VkBufferUsageFla
 
 BufferGpuVLK::~BufferGpuVLK() {
     //This thing MUST ONLY ALLOCATE FUTURE DEALLOC
-    auto l_device = m_device;
+    auto sDevice = m_device.lock();
+    if (!sDevice) return;
+
+    auto l_device = sDevice;
     auto l_buffer = m_hBuffer;
     auto l_bufferAlloc = m_hBufferAlloc;
-    m_device->addDeallocationRecord(
+    sDevice->addDeallocationRecord(
         [l_buffer, l_device, l_bufferAlloc]() {
             vmaDestroyBuffer(l_device->getVMAAllocator(), l_buffer, l_bufferAlloc);
         }

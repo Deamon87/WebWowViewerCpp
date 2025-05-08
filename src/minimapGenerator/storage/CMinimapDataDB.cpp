@@ -8,7 +8,7 @@
 #include <sqlite3.h>
 
 CMinimapDataDB::DataBaseClass::DataBaseClass(const std::string &fileName) : m_storage(makeStorage(fileName)) {
-    char *sErrMsg = "";
+    char *sErrMsg = 0;
 //    sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
 //    sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA schema.journal_mode = MEMORY", NULL, NULL, &sErrMsg);
 

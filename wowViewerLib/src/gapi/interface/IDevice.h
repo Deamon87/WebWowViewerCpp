@@ -164,6 +164,9 @@ class IDevice {
 
         virtual bool getIsAsynBuffUploadSupported() = 0;
         virtual bool supportsBindless() {return false;};
+        // Whether object-id selection (picking) is supported.
+        // Vulkan: requires the independentBlend feature for the non-blended object-id attachment
+        virtual bool supportsSelection() {return true;};
         virtual int getMaxSamplesCnt() = 0;
         virtual int getUploadSize() {return 0;};
 
@@ -171,16 +174,9 @@ class IDevice {
         virtual unsigned int getProcessingFrameNumber() = 0;
         virtual void increaseFrameNumber() = 0;
 
-        static unsigned int getCurrentProcessingFrameNumber();
-        static void setCurrentProcessingFrameNumber(unsigned int frameNumber);
-
         virtual void submitDrawCommands() {};
 
-        virtual void startUpdateForNextFrame() {};
-        virtual void endUpdateForNextFrame() {};
-
         virtual void drawFrame(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) = 0;
-//        virtual void drawStageAndDeps(HDrawStage drawStage) = 0;
 
         virtual bool getIsAnisFiltrationSupported();
         virtual float getAnisLevel() = 0;
@@ -188,6 +184,7 @@ class IDevice {
         virtual bool getIsRenderbufferSupported() {return false;}
 
     public:
+        virtual void clear() = 0;
         virtual HGPUFence createFence() = 0;
         virtual HGVertexBufferBindings createVertexBufferBindings() = 0;
 
@@ -196,6 +193,7 @@ class IDevice {
         virtual HGSamplableTexture createSampledTexture(HGTexture texture, bool xWrapTex, bool yWrapTex) = 0;
         virtual HGSamplableTexture getWhiteTexturePixel() = 0;
         virtual HGSamplableTexture getBlackTexturePixel() = 0;
+        virtual HGSamplableTexture getEmptyDepthTexture() = 0;
         virtual HGMesh createMesh(gMeshTemplate &meshTemplate) = 0;
 
         virtual void shrinkData() {};

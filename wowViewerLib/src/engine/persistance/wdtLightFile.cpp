@@ -17,6 +17,16 @@ chunkDef<WdtLightFile> WdtLightFile::wdtLightFileTable = {
             }
         },
         {
+            'MPL2',
+            {
+                [](WdtLightFile &file, ChunkData &chunkData) {
+                    debuglog("Entered MPL2");
+                    file.mapPointLights2Len = (chunkData.chunkLen / sizeof(MapPointLight2));
+                    chunkData.readValues(file.mapPointLights2, file.mapPointLights2Len);
+                }
+            }
+        },
+        {
             'MSLT',
             {
                 [](WdtLightFile &file, ChunkData &chunkData) {
@@ -31,7 +41,7 @@ chunkDef<WdtLightFile> WdtLightFile::wdtLightFileTable = {
             {
                 [](WdtLightFile &file, ChunkData &chunkData) {
                     debuglog("Entered MLTA");
-                    file.mapTextureLightAttenuationLen = (chunkData.chunkLen / sizeof(MapLightTextureAttenuation));
+                    file.mapTextureLightAttenuationLen = (chunkData.chunkLen / sizeof(MapLightTextureAnimation));
                     chunkData.readValues(file.mapTextureLightAttenuation, file.mapTextureLightAttenuationLen);
                 }
             }
@@ -55,10 +65,10 @@ chunkDef<WdtLightFile> WdtLightFile::wdtLightFileTable = {
 };
 
 
-void WdtLightFile::process(HFileContent wdtLightFile, const std::string &fileName) {
+void WdtLightFile::process(HFileContent wdtLightFile) {
     m_wdtLightFile = wdtLightFile;
 
-    CChunkFileReader reader(*m_wdtLightFile.get(), fileName);
+    CChunkFileReader reader(*m_wdtLightFile.get(), getFileNameOrDataId());
     reader.processFile(*this, &WdtLightFile::wdtLightFileTable);
 
     fsStatus = FileStatus::FSLoaded;

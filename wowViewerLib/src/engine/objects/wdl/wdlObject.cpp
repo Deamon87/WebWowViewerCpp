@@ -3,13 +3,14 @@
 //
 
 #include "wdlObject.h"
+#include <unordered_map>
 
 bool WdlObject::checkFrustumCulling(const MathHelper::FrustumCullingData &frustumData,
                                     mathfu::vec4 &cameraPos,
                                     M2ObjectListContainer &m2ObjectsCandidates,
                                     WMOListContainer &wmoCandidates) {
     if (!this->m_loaded) {
-        if (m_wdlFile->getStatus() == FileStatus::FSLoaded) {
+        if (m_wdlFile && m_wdlFile->getStatus() == FileStatus::FSLoaded) {
             this->loadingFinished();
             m_loaded = true;
         } else {
@@ -45,9 +46,30 @@ void WdlObject::loadM2s() {
 
     //LoadSkyObjects
     if (m_wdlFile->m_mssn_len > 0) {
+        // Player conditions assigned to sky scenes by the SkySceneXPlayerCondition db2
+        // (the import is optional, so this may legitimately be empty). The DB layer
+        // caches the table, so reading it here once per WDL load is cheap.
+        std::unordered_map<int, std::vector<int>> playerConditionsBySkyScene;
+        if (m_api->databaseHandler) {
+            std::vector<SkySceneXPlayerConditionRecord> playerConditionRecords;
+            m_api->databaseHandler->getSkySceneXPlayerConditions(playerConditionRecords);
+            for (auto &record : playerConditionRecords) {
+                playerConditionsBySkyScene[record.SkySceneID].push_back(record.PlayerConditionID);
+            }
+        }
+
         for (int i = 0; i < m_wdlFile->m_mssn_len; i++) {
             auto &mssn_rec = m_wdlFile->m_mssn[i];
             SkyObjectScene skyObjectScene;
+            skyObjectScene.skySceneId = mssn_rec.SkySceneID;
+
+            auto playerConditionsIt = playerConditionsBySkyScene.find((int)mssn_rec.SkySceneID);
+            if (playerConditionsIt != playerConditionsBySkyScene.end()) {
+                skyObjectScene.playerConditionIds = playerConditionsIt->second;
+                for (int playerConditionId : playerConditionsIt->second) {
+                    m_skyScenesByPlayerCondition[playerConditionId].insert((int)mssn_rec.SkySceneID);
+                }
+            }
 
             for (int m = mssn_rec.msscIndex; m < mssn_rec.msscIndex+mssn_rec.msscRecordsNum; m++) {
                 auto &mssc_rec = m_wdlFile->m_mssc[m];
@@ -112,7 +134,8 @@ void WdlObject::loadWmos() {
         auto &mapDef = m_wdlFile->mapObjDefObj[i];
 
         int fileDataId = mapDef.nameId;
-        wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDef);
+        int zero = 0;
+        wmoObjects[j] = m_mapApi->getWmoObject(fileDataId, mapDef, {zero}, {zero});
 
 //        std::cout << "wmo filename = "<< fileName << std::endl;
 
@@ -155,7 +178,9 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                                const MathHelper::FrustumCullingData &frustumData
                                ) {
     for (auto &skyScene : skyScenes) {
-        bool conditionPassed = false;
+        bool conditionPassed = skyScene.conditions.empty() && skyScene.playerConditionIds.empty();
+
+        auto const config = m_api->getConfig();
 
         for (auto &condition : skyScene.conditions) {
             switch (condition.conditionType) {
@@ -185,10 +210,20 @@ void WdlObject::checkSkyScenes(const StateForConditions &state,
                 break;
         }
 
+        // Player conditions from the SkySceneXPlayerCondition db2: an additional OR'd
+        // way for the scene to pass, unless the user turned them off in the settings.
+        if (!conditionPassed) {
+            for (int playerConditionId : skyScene.playerConditionIds) {
+                if (config->disabledSkyScenePlayerConditions.count(playerConditionId) == 0) {
+                    conditionPassed = true;
+                    break;
+                }
+            }
+        }
+
 //        conditionPassed = true;
 
         if (conditionPassed) {
-            auto const config = m_api->getConfig();
             for (const auto &skyModel : skyScene.skyModels) {
                 auto const &m2Object = skyModel.m_model;
 

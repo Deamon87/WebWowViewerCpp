@@ -6,12 +6,12 @@
 #include "../persistance/header/M2FileHeader.h"
 #include "../../gapi/interface/IDevice.h"
 
-void SkinGeom::process(HFileContent skinFile, const std::string &fileName) {
+void SkinGeom::process(HFileContent skinFile) {
     this->m2Skin = skinFile;
 
     M2SkinProfile *skinHeader = (M2SkinProfile *) &(*this->m2Skin.get())[0];
     if (skinHeader->magic != 'NIKS') {
-        std::cout << "wrong file header for SKIN file" << std::endl;
+        std::cout << "wrong file header for SKIN file " << getFileNameOrDataId() << std::endl;
         fsStatus = FileStatus::FSRejected;
         return;
     }

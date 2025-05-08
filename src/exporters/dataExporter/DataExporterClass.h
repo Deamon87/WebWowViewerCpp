@@ -152,7 +152,7 @@ namespace DataExporter {
                    make_column("priorityPlane", &DBM2Batch::priorityPlane),
                    make_column("shader_id", &DBM2Batch::shader_id),
                    make_column("skinSectionIndex", &DBM2Batch::skinSectionIndex),
-                   make_column("geosetIndex", &DBM2Batch::geosetIndex),
+                   make_column("flags2", &DBM2Batch::flags2),
                    make_column("colorIndex", &DBM2Batch::colorIndex),
                    make_column("materialIndex", &DBM2Batch::materialIndex),
                    make_column("materialLayer", &DBM2Batch::materialLayer),

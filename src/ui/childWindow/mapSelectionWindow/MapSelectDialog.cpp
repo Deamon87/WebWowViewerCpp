@@ -9,9 +9,12 @@
 
 MapSelectDialog::MapSelectDialog(const HApiContainer &api,
                                  const std::shared_ptr<FrontendUIRenderer> &uiRenderer,
-                                 const SceneWindowAccessor &getSceneWindow) : m_api(api),
-                                                                              m_uiRenderer(uiRenderer),
-                                                                              m_getSceneWindow(getSceneWindow)
+                                 const SceneWindowAccessor &getSceneWindow,
+                                 const SceneWindowAccessor &getActiveSceneWindow
+) : m_api(api),
+    m_uiRenderer(uiRenderer),
+    m_getSceneWindow(getSceneWindow),
+    m_getActiveSceneWindow(getActiveSceneWindow)
 {
     emptyMinimap();
 
@@ -43,6 +46,36 @@ void MapSelectDialog::setCurrentMap(const MapRecord &mapRec) {
     m_zoneLights = loadZoneLightRecs(m_api->databaseHandler, mapRec.ID);
     m_mapLights.clear();
     m_api->databaseHandler->getAllLightByMap(mapRec.ID, m_mapLights);
+}
+void MapSelectDialog::setOverrideMap(int wdtFileDataId) {
+    minimapZoom = 0.1;
+    mapCanBeOpened = true;
+    adtMinimapFilled = false;
+    prevMapRec = {
+        .ID = 0,
+        .MapDirectory = "",
+        .MapName = "",
+        .WdtFileID = wdtFileDataId,
+        .MapType = 0,
+        .overrideTime = 0,
+        .flags0 = 0,
+        .flags1 = 0,
+        .flags2 = 0
+    };
+    prevMapId = 0;
+
+    limitZoneLight = -1;
+    m_zoneLights = {};
+
+    isWmoMap = false;
+    adtSelectionMinimapTextures = {};
+    adtSelectionMinimapMaterials = {};
+    if (wdtFileDataId) {
+        getAdtSelectionMinimap(wdtFileDataId);
+    }
+    m_zoneLights = loadZoneLightRecs(m_api->databaseHandler, 0);
+    m_mapLights.clear();
+    m_api->databaseHandler->getAllLightByMap(0, m_mapLights);
 }
 
 void MapSelectDialog::renderLeftSide() {
@@ -209,11 +242,10 @@ void MapSelectDialog::renderRightSide() {
                 auto scene = m_getSceneWindow();
                 if (scene) {
                     if (prevMapRec.WdtFileID > 0) {
-                        scene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 17066.6641f, 17066.67380f, 0, prevMapRec.overrideTime);
+                        scene->openMapByIdAndWDTId(prevMapId, prevMapRec.WdtFileID, 0, 0, 0, prevMapRec.overrideTime);
                     } else {
                         //Try to open map by fileName
-                        scene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 17066.6641f, 17066.67380f,
-                                                                  0, prevMapRec.overrideTime);
+                        scene->openMapByIdAndFilename(prevMapId, prevMapRec.MapDirectory, 0, 0, 0, prevMapRec.overrideTime);
                     }
                 }
                 m_showWindow = false;
@@ -225,6 +257,14 @@ void MapSelectDialog::renderRightSide() {
 }
 
 void MapSelectDialog::showAdtSelectionMinimap() {
+    const float defaultImageDimension = 100.0f;
+    if (prevZoomedSize == 0)
+        prevZoomedSize = defaultImageDimension * prevMinimapZoom;
+
+    ImVec2 zoneSize {64.0f * prevZoomedSize, 64.0f * prevZoomedSize};
+
+    ImGui::SetNextWindowContentSize(zoneSize);
+
     ImGui::BeginChild("Adt selection minimap", ImVec2(0, 0), true, ImGuiWindowFlags_AlwaysHorizontalScrollbar |
                                                        ImGuiWindowFlags_AlwaysVerticalScrollbar);
 
@@ -241,70 +281,51 @@ void MapSelectDialog::showAdtSelectionMinimap() {
             auto windowPos = ImGui::GetWindowPos();
             auto mousePos = ImGui::GetMousePos();
 
-            float windowRelativeMouseX = mousePos.x - windowPos.x - style.WindowPadding.x / 2.0f;
-            float windowRelativeMouseY = mousePos.y - windowPos.y - style.WindowPadding.y / 2.0f;
+            float windowRelativeMouseX = mousePos.x - windowPos.x;
+            float windowRelativeMouseY = mousePos.y - windowPos.y;
 
             pivotForZoomX = windowRelativeMouseX;
             pivotForZoomY = windowRelativeMouseY;
         } else {
-            pivotForZoomX = ((windowSize.x - style.WindowPadding.x) / 2.0f);
-            pivotForZoomY = ((windowSize.x - style.WindowPadding.y) / 2.0f);
+            pivotForZoomX = windowSize.x / 2.0f;
+            pivotForZoomY = windowSize.y / 2.0f;
         }
     }
 
     if (minimapZoom < 0.1)
         minimapZoom = 0.1;
 
-
-
-
     ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
     ImGui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 0);
     ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
 //                ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(10, 10));
 
-    const float defaultImageDimension = 100.0f;
     float newZoomedSize = defaultImageDimension * minimapZoom;
-    if (prevZoomedSize == 0)
-        prevZoomedSize = defaultImageDimension *  prevMinimapZoom;
 
-    for (int i = 0; i < 64; i++) {
-        for (int j = 0; j < 64; j++) {
-            if (adtSelectionMinimapMaterials[i][j] != nullptr) {
-                if (ImGui::ImageButton(std::to_string(i*64+j).c_str(),
-                                       adtSelectionMinimapMaterials[i][j]->uniqueId,
-                                       ImVec2(prevZoomedSize, prevZoomedSize))) {
-                    auto mousePos = ImGui::GetMousePos();
-                    const ImGuiStyle &style = ImGui::GetStyle();
-                    auto content = ImGui::GetWindowContentRegionMin();
-                    auto windowPos = ImGui::GetWindowPos();
-                    auto windowSize = ImGui::GetWindowSize();
+    if (ImGui::InvisibleButton("##canvas", zoneSize)) {
+        auto mousePos = ImGui::GetMousePos();
+        const ImGuiStyle &style = ImGui::GetStyle();
+        auto content = ImGui::GetWindowContentRegionMin();
+        auto windowPos = ImGui::GetWindowPos();
+        auto windowSize = ImGui::GetWindowSize();
 
-                    float windowRelativeMouseX = mousePos.x - windowPos.x - style.WindowPadding.x / 2.0f;
-                    float windowRelativeMouseY = mousePos.y - windowPos.y - style.WindowPadding.y / 2.0f;
+        float windowRelativeMouseX = mousePos.x - windowPos.x;
+        float windowRelativeMouseY = mousePos.y - windowPos.y;
 
-                    float screenSpaceCoordX = ImGui::GetScrollX() + windowRelativeMouseX - style.WindowPadding.x / 2.0f;
-                    float screenSpaceCoordY = ImGui::GetScrollY() + windowRelativeMouseY - style.WindowPadding.y / 2.0f;
+        float screenSpaceCoordX = ImGui::GetScrollX() + windowRelativeMouseX;
+        float screenSpaceCoordY = ImGui::GetScrollY() + windowRelativeMouseY;
 
-                    float adtIndexX = (screenSpaceCoordX) / (prevZoomedSize);
-                    float adtIndexY = (screenSpaceCoordY) / (prevZoomedSize);
+        float adtIndexX = (screenSpaceCoordX) / (prevZoomedSize);
+        float adtIndexY = (screenSpaceCoordY) / (prevZoomedSize);
 
-                    worldPosX = AdtIndexToWorldCoordinate(adtIndexY); //?
-                    worldPosY = AdtIndexToWorldCoordinate(adtIndexX);
+        worldPosX = AdtIndexToWorldCoordinate(adtIndexY); //?
+        worldPosY = AdtIndexToWorldCoordinate(adtIndexX);
 
-                    ImGui::OpenPopup("AdtWorldCoordsTest");
-                    std::cout << "world coords : x = " << worldPosX << " y = " << worldPosY
-                              << std::endl;
-
-                }
-            } else {
-                ImGui::Dummy(ImVec2(prevZoomedSize, prevZoomedSize));
-            }
-
-            ImGui::SameLine(0, 0);
-        }
-        ImGui::NewLine();
+        ImGui::OpenPopup("AdtWorldCoordsTest");
+        // std::cout << "world coords : x = " << worldPosX << " y = " << worldPosY
+        //           << std::endl;
     }
+
     ImGui::PopStyleVar();
     ImGui::PopStyleVar();
     ImGui::PopStyleVar();
@@ -315,14 +336,56 @@ void MapSelectDialog::showAdtSelectionMinimap() {
         const auto windowPos = ImGui::GetWindowPos();
         const auto scrollX = ImGui::GetScrollX();
         const auto scrollY = ImGui::GetScrollY();
+
+        const auto contentAreaSize = ImGui::GetWindowSize();
+
+        //Window space scroll
+        const auto getWSS = [windowPos, scrollX, scrollY](int index) -> float {
+            return index == 0 ? (windowPos.x - scrollX) : (windowPos.y - scrollY);
+        };
+        const float currWSS[2] = {getWSS(0), getWSS(1)};
+
         //To Window Space
         const auto toWS = [&zoomConstant](float value) -> float {
             return worldCoordinateToAdtIndexF(value) * zoomConstant;
         };
         //To Window Space Translated
-        const auto toWST = [&toWS, windowPos, scrollX, scrollY](float value, int index) -> float {
-            return toWS(value) + (index == 0 ? (windowPos.x - scrollX) : (windowPos.y - scrollY));
+        const auto toWST = [&toWS, &currWSS](float value, int index) -> float {
+            return toWS(value) + currWSS[index];
         };
+
+        const auto doOverlap = [](const ImVec2 &l1, const ImVec2 &r1, const ImVec2 &l2, const ImVec2 &r2) -> bool {
+            if (l1.x > r2.x || l2.x > r1.x)
+                return false;
+
+            // If one rectangle is above the other
+            if (l1.y > r2.y || l2.y > r1.y)
+                return false;
+
+            return true;
+        };
+
+
+        auto activeScene = (m_getActiveSceneWindow) ? m_getActiveSceneWindow() : nullptr;
+        auto camera = (activeScene) ? activeScene->getCamera() : nullptr;
+
+        //Draw zone imgs
+        {
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            ImVec2 screenMin = ImVec2(windowPos.x, windowPos.y);
+            ImVec2 screenMax = ImVec2(windowPos.x + contentAreaSize.x, windowPos.y + contentAreaSize.y);
+            for (int i = 0; i < 64; i++) {
+                for (int j = 0; j < 64; j++) {
+                    //TODO clip
+                    ImVec2 imgMin = ImVec2(currWSS[0] + prevZoomedSize* j,   currWSS[1] + prevZoomedSize* i );
+                    ImVec2 imgMax = ImVec2(currWSS[0] + prevZoomedSize*(j+1),currWSS[1] + prevZoomedSize*(i+1));
+
+                    if (adtSelectionMinimapMaterials[i][j] != nullptr && doOverlap( screenMin, screenMax, imgMin, imgMax)) {
+                        draw_list->AddImage(adtSelectionMinimapMaterials[i][j]->uniqueId, imgMin, imgMax );
+                    }
+                }
+            }
+        }
 
         if (drawZoneLights) {
             ImDrawList *draw_list = ImGui::GetWindowDrawList();
@@ -349,6 +412,7 @@ void MapSelectDialog::showAdtSelectionMinimap() {
         }
         if (drawAreaLights) {
             ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
             for (auto const &light: m_mapLights) {
                 draw_list->AddCircle(
                     ImVec2(toWST(light.pos[1], 0), toWST(light.pos[0], 1)),
@@ -361,6 +425,18 @@ void MapSelectDialog::showAdtSelectionMinimap() {
                     IM_COL32(58, 138, 126, 255)
                 );
             }
+        }
+        if (camera && activeScene->getMapId() == prevMapId) {
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+
+            float cameraPos[4];
+            camera->getCameraPosition(cameraPos);
+
+            draw_list->AddCircleFilled(
+                ImVec2(toWST(cameraPos[1], 0), toWST(cameraPos[0], 1)),
+                4,
+                IM_COL32(8, 217, 11, 255)
+            );
         }
     }
 
@@ -389,11 +465,11 @@ void MapSelectDialog::showAdtSelectionMinimap() {
         auto scrollY = ImGui::GetScrollY();
         const ImGuiStyle &style = ImGui::GetStyle();
 
-        float pivotX = ImGui::GetScrollX() + pivotForZoomX - style.WindowPadding.x / 2.0f;
-        float pivotY = ImGui::GetScrollY() + pivotForZoomY - style.WindowPadding.y / 2.0f;
+        float pivotX = ImGui::GetScrollX() + pivotForZoomX;
+        float pivotY = ImGui::GetScrollY() + pivotForZoomY;
 
-        float newScrollX = (pivotX) *  minimapZoom / prevMinimapZoom - pivotForZoomX + style.WindowPadding.x / 2.0f;
-        float newScrollY = (pivotY) *  minimapZoom / prevMinimapZoom - pivotForZoomY + style.WindowPadding.y / 2.0f;
+        float newScrollX = (pivotX) *  minimapZoom / prevMinimapZoom - pivotForZoomX;
+        float newScrollY = (pivotY) *  minimapZoom / prevMinimapZoom - pivotForZoomY;
 
         ImGui::SetScrollX(newScrollX);
         ImGui::SetScrollY(newScrollY);
@@ -474,9 +550,9 @@ bool MapSelectDialog::fillAdtSelectionminimap(bool &isWMOMap, bool &wdtFileExist
         if (m_wdtFile->mphd->flags.wdt_has_maid) {
             for (int i = 0; i < 64; i++) {
                 for (int j = 0; j < 64; j++) {
-                    if (m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture > 0) {
+                    if (m_wdtFile->mapFileDataIDs->array[i * 64 + j].minimapTexture > 0) {
                         auto blpTexture = m_api->cacheStorage->getTextureCache()->getFileId(
-                            m_wdtFile->mapFileDataIDs[i * 64 + j].minimapTexture);
+                            m_wdtFile->mapFileDataIDs->array[i * 64 + j].minimapTexture);
                         auto textureObj = m_api->hDevice->createBlpTexture(blpTexture, false, false);
                         adtSelectionMinimapTextures[i][j] = textureObj;
                         adtSelectionMinimapMaterials[i][j] = m_uiRenderer->createUIMaterial({textureObj});

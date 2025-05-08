@@ -12,7 +12,7 @@ public:
     BufferStagingVLK(const HGDeviceVLK &device, int size);
     ~BufferStagingVLK();
 private:
-    HGDeviceVLK m_device;
+    WGDeviceVLK m_device;
 
     VkBuffer m_stagingBuffer = VK_NULL_HANDLE;
     VmaAllocation m_stagingBufferAlloc = VK_NULL_HANDLE;

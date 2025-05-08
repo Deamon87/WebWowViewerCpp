@@ -47,7 +47,9 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
     uint8_t colorMask,
     bool stencilTestEnable,
     bool stencilWrite,
-    uint8_t stencilWriteVal) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
+    uint8_t stencilWriteVal,
+    const std::vector<uint8_t> &specializationConstantsData,
+    const std::vector<VkSpecializationMapEntry> &specializationConstantsMetadata) : m_device(dynamic_cast<GDeviceVLK &>(device))  {
 
     GVertexBufferBindingsVLK* bufferBindingsVlk = dynamic_cast<GVertexBufferBindingsVLK *>(m_bindings.get());
     auto &arrVLKFormat = bufferBindingsVlk->getVLKFormat();
@@ -60,7 +62,7 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
             vertexAttributeDescriptions.push_back(attibuteDesc);
         }
     }
-    GShaderPermutationVLK* shaderVLK = reinterpret_cast<GShaderPermutationVLK *>(shader.get());
+    GShaderPermutationVLK* shaderVLK = dynamic_cast<GShaderPermutationVLK *>(shader.get());
 
     m_pipelineLayout = pipelineLayout;
 
@@ -79,7 +81,9 @@ GPipelineVLK::GPipelineVLK(IDevice &device,
         stencilWrite,
         stencilWriteVal,
         vertexBindingDescriptions,
-        vertexAttributeDescriptions);
+        vertexAttributeDescriptions,
+        specializationConstantsData,
+        specializationConstantsMetadata);
 }
 
 GPipelineVLK::~GPipelineVLK() {
@@ -107,7 +111,9 @@ void GPipelineVLK::createPipeline(
         bool stencilWrite,
         uint8_t stencilWriteVal,
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
-        const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions) {
+        const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions,
+        const std::vector<uint8_t> &specializationConstantsData,
+        const std::vector<VkSpecializationMapEntry> &specializationConstantsMetadata) {
 
     auto swapChainExtent = m_device.getCurrentExtent();
 
@@ -116,17 +122,28 @@ void GPipelineVLK::createPipeline(
     VkShaderModule vertShaderModule = shaderVLK->getVertexModule();
     VkShaderModule fragShaderModule = shaderVLK->getFragmentModule();
 
+    // Create specialization info if constants are provided
+    VkSpecializationInfo specializationInfo = {};
+    if (!specializationConstantsData.empty() && !specializationConstantsMetadata.empty()) {
+        specializationInfo.mapEntryCount = static_cast<uint32_t>(specializationConstantsMetadata.size());
+        specializationInfo.pMapEntries = specializationConstantsMetadata.data();
+        specializationInfo.dataSize = specializationConstantsData.size();
+        specializationInfo.pData = specializationConstantsData.data();
+    }
+
     VkPipelineShaderStageCreateInfo vertShaderStageInfo = {};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
     vertShaderStageInfo.module = vertShaderModule;
     vertShaderStageInfo.pName = "main"; //entry point in SPIR-V
+    vertShaderStageInfo.pSpecializationInfo = (!specializationConstantsData.empty() && !specializationConstantsMetadata.empty()) ? &specializationInfo : nullptr;
 
     VkPipelineShaderStageCreateInfo fragShaderStageInfo = {};
     fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
     fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
     fragShaderStageInfo.module = fragShaderModule;
     fragShaderStageInfo.pName = "main"; //entry point in SPIR-V
+    fragShaderStageInfo.pSpecializationInfo = (!specializationConstantsData.empty() && !specializationConstantsMetadata.empty()) ? &specializationInfo : nullptr;
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
 
@@ -194,9 +211,22 @@ void GPipelineVLK::createPipeline(
     rasterizer.frontFace = triCCW ? VK_FRONT_FACE_COUNTER_CLOCKWISE : VK_FRONT_FACE_CLOCKWISE;
     rasterizer.depthBiasEnable = VK_FALSE;
 
+    // Conservative rasterization extension
+    VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterInfo = {};
+    if (m_device.getIsConservativeRasterizationSupported() && false) {
+        conservativeRasterInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
+        conservativeRasterInfo.pNext = nullptr;
+        conservativeRasterInfo.flags = 0;
+        conservativeRasterInfo.conservativeRasterizationMode = VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT;
+        conservativeRasterInfo.extraPrimitiveOverestimationSize = -1.0f;
+        
+        rasterizer.pNext = &conservativeRasterInfo;
+    }
+
     VkPipelineMultisampleStateCreateInfo multisampling = {};
     multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
     multisampling.sampleShadingEnable = VK_FALSE;
+    multisampling.minSampleShading = 1.0f;
     multisampling.rasterizationSamples = renderPass->getSampleCountBit();
 
     std::vector <VkPipelineColorBlendAttachmentState> colorBlendAttachments = {};
@@ -266,6 +296,18 @@ void GPipelineVLK::createPipeline(
         .writeMask = 0xFF,
         .reference = stencilWriteVal
     };
+    depthStencil.back = {
+        .failOp = VK_STENCIL_OP_KEEP,
+        .passOp = (stencilWrite) ? VK_STENCIL_OP_REPLACE : VK_STENCIL_OP_KEEP,
+        .depthFailOp = VK_STENCIL_OP_KEEP,
+        .compareOp = (!backFaceCulling) ?
+            (stencilTestEnable ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_ALWAYS) :
+            VK_COMPARE_OP_NEVER,
+
+        .compareMask = 0xFF,
+        .writeMask = 0xFF,
+        .reference = stencilWriteVal
+    };
 
     static const std::array<VkDynamicState, 2> dynamicStateEnables = {VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
 
@@ -277,6 +319,7 @@ void GPipelineVLK::createPipeline(
 
     VkGraphicsPipelineCreateInfo pipelineInfo = {};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+    pipelineInfo.pNext = nullptr;
     pipelineInfo.stageCount = 2;
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;

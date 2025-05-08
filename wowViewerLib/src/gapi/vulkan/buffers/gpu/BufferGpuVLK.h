@@ -25,7 +25,7 @@ public:
         return m_hBuffer;
     }
 private:
-    HGDeviceVLK m_device;
+    WGDeviceVLK m_device;
 
     VkBuffer m_hBuffer = VK_NULL_HANDLE;
     VmaAllocation m_hBufferAlloc = VK_NULL_HANDLE;

@@ -18,10 +18,15 @@ struct RequiredTableStruct {
     int fileDataId;
     std::string tableName;
     bool notInClassic;
+    // Optional tables are skipped without failing the whole workflow when their db2
+    // is not present in the storage (or cannot be imported).
+    bool optional = false;
 };
 
-std::array<RequiredTableStruct, 13> requiredTables = {{
+std::array<RequiredTableStruct, 18> requiredTables = {{
     {1353545, "AreaTable", false},
+    {841620, "GameObjects", false},
+    {1266277, "GameObjectDisplayInfo", false},
     {1375579, "Light", false},
     {1375580, "LightData", false},
     {1334669, "LightParams", false},
@@ -34,6 +39,9 @@ std::array<RequiredTableStruct, 13> requiredTables = {{
     {1355528, "WMOAreaTable", false},
     {1310253, "ZoneLight", false},
     {1310256, "ZoneLightPoint", false},
+    {3581893, "SkySceneXPlayerCondition", false, true},
+{1302850, "TactKey", false, true},
+{1302851, "TactKeyLookup", false, true},
 }};
 
 
@@ -251,16 +259,30 @@ void DatabaseUpdateWorkflow::db2UpdateLogic() {
 
         auto dbFile = m_api->cacheStorage->getDb2Cache()->getFileId(requiredTables[m_currentDB2File].fileDataId);
         checkDB2Lambda = [dbFile, &l_addTableLambda, &l_currentDB2File, &l_db2FailedMessage, &l_checkDB2Lambda]() -> bool {
+            const auto &requiredTable = requiredTables[l_currentDB2File];
+
             if (dbFile->getStatus() == FileStatus::FSNotLoaded)
                 return false;
             if (dbFile->getStatus() == FileStatus::FSRejected) {
-                l_db2FailedMessage = "Could not read db2 " + requiredTables[l_currentDB2File].tableName;
+                if (requiredTable.optional) {
+                    std::cout << "Optional db2 " << requiredTable.tableName
+                              << " is not present in the storage; skipping it" << std::endl;
+                    l_checkDB2Lambda = nullptr;
+                    return true;
+                }
+
+                l_db2FailedMessage = "Could not read db2 " + requiredTable.tableName;
                 return false;
             }
 
             if (dbFile->getStatus() == FileStatus::FSLoaded) {
-                if (!l_addTableLambda(requiredTables[l_currentDB2File].tableName, dbFile)) {
-                    l_db2FailedMessage = "Failed to import db2 " + requiredTables[l_currentDB2File].tableName;
+                if (!l_addTableLambda(requiredTable.tableName, dbFile)) {
+                    if (requiredTable.optional) {
+                        std::cout << "Failed to import optional db2 " << requiredTable.tableName
+                                  << "; skipping it" << std::endl;
+                    } else {
+                        l_db2FailedMessage = "Failed to import db2 " + requiredTable.tableName;
+                    }
                 }
                 l_checkDB2Lambda = nullptr;
                 return true;

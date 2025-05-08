@@ -11,7 +11,7 @@
 DayNightLightHolder::DayNightLightHolder(const HApiContainer &api, int mapId) : m_api(api), m_mapId(mapId) {
 
     MapRecord mapRecord;
-    if (m_api) {
+    if (m_api && m_mapId > -1) {
         api->databaseHandler->getMapById(mapId, mapRecord);
         m_mapFlag2_0x2 = (mapRecord.flags2 & 0x2) > 0;
         m_useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
@@ -23,7 +23,7 @@ DayNightLightHolder::DayNightLightHolder(const HApiContainer &api, int mapId) : 
 }
 
 void DayNightLightHolder::loadZoneLights() {
-    if (m_api && m_api->databaseHandler != nullptr) {
+    if (m_api && m_api->databaseHandler != nullptr && m_mapId > -1) {
         m_zoneLights = loadZoneLightRecs(m_api->databaseHandler, m_mapId);
     }
 }
@@ -106,6 +106,7 @@ void mixStructure<ExteriorColors>(ExteriorColors& a, ExteriorColors& b, float bl
     mixStructOffset(a, b, &ExteriorColors::exteriorHorizontAmbientColor  , blendCoeff);
     mixStructOffset(a, b, &ExteriorColors::exteriorGroundAmbientColor    , blendCoeff);
     mixStructOffset(a, b, &ExteriorColors::exteriorDirectColor           , blendCoeff);
+    mixStructOffset(a, b, &ExteriorColors::exteriorSpecularColor           , blendCoeff);
 }
 template <>
 void mixStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoeff) {
@@ -122,7 +123,37 @@ void mixStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoe
 template <>
 void mixStructure<SkyBodyData>(SkyBodyData& a, SkyBodyData& b, float blendCoeff) {
     mixStructOffset(a, b, &SkyBodyData::celestialBodyOverride  , blendCoeff);
-    mixStructOffset(a, b, &SkyBodyData::celestialBodyOverride2 , blendCoeff);
+    mixStructOffset(a, b, &SkyBodyData::sunPlanetHideBlend     , blendCoeff);
+    mixStructOffset(a, b, &SkyBodyData::moonPlanetHideBlend    , blendCoeff);
+    mixStructOffset(a, b, &SkyBodyData::starsHideBlend         , blendCoeff);
+
+    if (b.hasSunPositionOverride) {
+        if (a.hasSunPositionOverride) {
+            mixStructOffset(a, b, &SkyBodyData::sunPositionOverride , blendCoeff);
+            mixStructOffset(a, b, &SkyBodyData::sunAttenuationStart , blendCoeff);
+            mixStructOffset(a, b, &SkyBodyData::sunAttenuationEnd , blendCoeff);
+            mixStructOffset(a, b, &SkyBodyData::sunPositionBlend , blendCoeff);
+        } else {
+            mixStructOffset(a, b, &SkyBodyData::sunPositionOverride, 1.0f);
+            mixStructOffset(a, b, &SkyBodyData::sunAttenuationStart, 1.0f);
+            mixStructOffset(a, b, &SkyBodyData::sunAttenuationEnd, 1.0f);
+            mixStructOffset(a, b, &SkyBodyData::sunPositionBlend, 1.0f);
+        }
+        a.hasSunPositionOverride = true;
+    }
+
+    if (b.hasSunDirectionOverride) {
+        if (a.hasSunDirectionOverride) {
+            mixStructOffset(a, b, &SkyBodyData::sunDirPolar , blendCoeff);
+            mixStructOffset(a, b, &SkyBodyData::sunDirAzimuth , blendCoeff);
+            mixStructOffset(a, b, &SkyBodyData::sunDirectionBlend , blendCoeff);
+        } else {
+            mixStructOffset(a, b, &SkyBodyData::sunDirPolar , 1.0f);
+            mixStructOffset(a, b, &SkyBodyData::sunDirAzimuth , 1.0f);
+            mixStructOffset(a, b, &SkyBodyData::sunDirectionBlend , 1.0f);
+        }
+        a.hasSunDirectionOverride = true;
+    }
 }
 
 template <typename T>
@@ -174,6 +205,7 @@ void madStructure<ExteriorColors>(ExteriorColors& a, ExteriorColors& b, float bl
     madStructOffset(a, b, &ExteriorColors::exteriorHorizontAmbientColor  , blendCoeff);
     madStructOffset(a, b, &ExteriorColors::exteriorGroundAmbientColor    , blendCoeff);
     madStructOffset(a, b, &ExteriorColors::exteriorDirectColor           , blendCoeff);
+    madStructOffset(a, b, &ExteriorColors::exteriorSpecularColor         , blendCoeff);
 }
 template <>
 void madStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoeff) {
@@ -187,10 +219,159 @@ void madStructure<LiquidColors>(LiquidColors& a, LiquidColors& b, float blendCoe
     madStructOffset(a, b, &LiquidColors::oceanShallowAlpha , blendCoeff);
     madStructOffset(a, b, &LiquidColors::oceanDeepAlpha    , blendCoeff);
 }
-template <>
-void madStructure<SkyBodyData>(SkyBodyData& a, SkyBodyData& b, float blendCoeff) {
-    madStructOffset(a, b, &SkyBodyData::celestialBodyOverride  , blendCoeff);
-    madStructOffset(a, b, &SkyBodyData::celestialBodyOverride2 , blendCoeff);
+// template <>
+// void madStructure<SkyBodyData>(SkyBodyData& a, SkyBodyData& b, float blendCoeff) {
+//     madStructOffset(a, b, &SkyBodyData::celestialBodyOverride  , blendCoeff);
+//     madStructOffset(a, b, &SkyBodyData::celestialBodyOverride2 , blendCoeff);
+// }
+
+
+std::array<mathfu::vec3, 4> DayNightLightHolder::calcPlanetPositions(const mathfu::vec3 &cameraVec3) {
+    std::array<mathfu::vec3, 4> planetPositions;
+
+    const auto time = m_api->getConfig()->currentTime;
+    {
+        float posPhi = 0, posTheta = 0;
+        MathHelper::calcSunPlanetPos(time, posPhi, posTheta);
+        planetPositions[0] = MathHelper::polarToCartesian(posPhi, posTheta) + cameraVec3;
+    }
+    {
+        float posPhi = 0, posTheta = 0;
+        MathHelper::calcMoon1PlanetPos(time, posPhi, posTheta);
+        planetPositions[1] = MathHelper::polarToCartesian(posPhi, posTheta) + cameraVec3;
+    }
+    {
+        float posPhi = 0, posTheta = 0;
+        MathHelper::calcMoon2PlanetPos(time, posPhi, posTheta);
+        planetPositions[2] = MathHelper::polarToCartesian(posPhi, posTheta) + cameraVec3;
+    }
+    planetPositions[3] = planetPositions[1];
+
+    return planetPositions;
+}
+
+mathfu::vec3 DayNightLightHolder::calcSunPosition(
+    const SkyBodyData &skyBodyData,
+    const mathfu::vec3 &cameraVec3,
+    const mathfu::mat4 &viewMat,
+    float &sunAttenuationStart,
+    float &sunAttenuationEnd,
+    std::array<mathfu::vec3, 4> &planetPositions
+) {
+    float dayNightProgress = m_api->getConfig()->currentTime / 2880.0f;
+    bool isDaytime = (dayNightProgress >= 0.25f && dayNightProgress <= 0.89583331f);
+
+    auto shinyPlanetPos = isDaytime ? planetPositions[0] : planetPositions[1]; //Sun or Moon
+
+    auto sunDir = shinyPlanetPos - cameraVec3;
+
+    sunAttenuationStart = 0.f;
+    sunAttenuationEnd = 0.f;
+
+    if (skyBodyData.hasSunPositionOverride) {
+        auto overrideSunDir = skyBodyData.sunPositionOverride - cameraVec3;
+        auto overrideSunDist = overrideSunDir.Length();
+
+        auto scaledSunDir = sunDir.Normalized() * overrideSunDist;
+
+        sunDir = mix(scaledSunDir, overrideSunDir, skyBodyData.sunPositionBlend);
+
+        //Set back the sun position
+        planetPositions[0] = cameraVec3 + sunDir.Normalized() * 12.0f;
+
+        //Blend the sun attenuation
+        float horizontalDistToSun = overrideSunDir.xy().Length();
+        float horizonStart = m_api->getConfig()->farPlane; // Viewer doesn't use Horizon as of now
+        float usualAtten = horizonStart + horizontalDistToSun;
+
+        sunAttenuationStart = mix(usualAtten, skyBodyData.sunAttenuationStart, skyBodyData.sunPositionBlend) ;
+        sunAttenuationEnd = mix(usualAtten, skyBodyData.sunAttenuationEnd, skyBodyData.sunPositionBlend);
+    }
+
+    auto viewSpaceSunPos = viewMat * mathfu::vec4(cameraVec3 + sunDir, 1.0f);
+    return viewSpaceSunPos.xyz();
+}
+
+mathfu::vec3 DayNightLightHolder::calcDirectColorDir(const SkyBodyData &skyBodyData, const mathfu::mat4 &invTranspViewMat) {
+    float sunPosPhi = 0, sunPosTheta = 0;
+    MathHelper::calcExteriorDirectColorDir(m_api->getConfig()->currentTime, sunPosPhi, sunPosTheta);
+
+    if (skyBodyData.hasSunDirectionOverride) {
+        float blend = skyBodyData.sunDirectionBlend;
+        float invBlend = 1.0f - skyBodyData.sunDirectionBlend;
+
+        sunPosPhi   = skyBodyData.sunDirPolar   * blend + sunPosPhi   * invBlend;
+        sunPosTheta = skyBodyData.sunDirAzimuth * blend + sunPosTheta * invBlend;
+    }
+
+    mathfu::vec4 sunDir = mathfu::vec4(MathHelper::polarToCartesian(sunPosPhi, sunPosTheta), 0.0f);
+    auto exteriorDirectColorDir = (invTranspViewMat * sunDir).xyz().Normalized();
+
+    return exteriorDirectColorDir;
+}
+
+mathfu::vec3 DayNightLightHolder::calcSunDirForFog(
+    const SkyBodyData &skyBody,
+    const mathfu::vec3 &sunPositionInView,
+    const mathfu::vec3 &cameraVec3,
+    const mathfu::mat4 &invTranspViewMat,
+    std::array<mathfu::vec3, 4> &planetPositions
+) {
+
+    mathfu::vec3 normalizedSunDir;
+    if (skyBody.hasSunDirectionOverride) {
+        normalizedSunDir = sunPositionInView.Normalized();
+    } else {
+        normalizedSunDir = (
+            invTranspViewMat *
+            mathfu::vec4((planetPositions[0] - cameraVec3).Normalized(), 0.0f)
+        ).xyz();
+    }
+
+    return normalizedSunDir;
+}
+
+void DayNightLightHolder::updatePlanetsAndStars(const mathfu::vec3 &cameraPos, const SkyBodyData &skyBodyData,
+                                                const HFrameDependantData &fdd) {
+    if (!m_api || !fdd) return;
+    Config* config = m_api->getConfig();
+    const int time = config->currentTime;
+
+    struct PlanetDef {
+        void (*posFn)(int, float&, float&);
+        float loadScale;
+    };
+    static const PlanetDef planetDefs[3] = {
+        { &MathHelper::calcSunPlanetPos,   1.0f }, // sun   (fdid 186220)
+        { &MathHelper::calcMoon1PlanetPos, 2.2f }, // moon1 (fdid 4629581)
+        { &MathHelper::calcMoon2PlanetPos, 1.2f }, // moon2 (fdid 4629582)
+    };
+
+    // The client hides the planet discs when a custom sun position is active (planet alpha = 0)
+    float planetAlpha = skyBodyData.hasSunPositionOverride ? 0.0f : 1.0f;
+
+    for (int i = 0; i < 3; i++) {
+        auto &out = fdd->planets[i];
+
+        float posPhi = 0.0f, posTheta = 0.0f;
+        planetDefs[i].posFn(time, posPhi, posTheta);
+
+        // Planet discs sit on the sky sphere at radius 12 around the camera
+        out.worldPos = cameraPos + MathHelper::polarToCartesian(posPhi, posTheta).Normalized() * 12.0f;
+
+        out.scale = (i == 0 ? MathHelper::calcSunPlanetScale(time) : MathHelper::calcMoonPlanetScale(time))
+                    * planetDefs[i].loadScale;
+        out.color = fdd->colors.exteriorSpecularColor;
+        out.alpha = planetAlpha;
+
+        float hideBlend = (i == 0) ? skyBodyData.sunPlanetHideBlend : skyBodyData.moonPlanetHideBlend;
+        out.visible = hideBlend < 0.5f && out.alpha > 0.0f;
+    }
+
+    // Stars: own brightness curve (0 at day, 1 at night) scaled by (1 - starsHideBlend)
+    float starByte = MathHelper::calcStarsBrightness(time) * 254.0f + 1.0f;
+    fdd->stars.alpha = (starByte / 255.0f) * (1.0f - skyBodyData.starsHideBlend);
+    fdd->stars.enabled = starByte >= 2.0f && fdd->stars.alpha > 0.0f;
 }
 
 void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
@@ -206,15 +387,16 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
     bool fogRecordWasFound = false;
     mathfu::vec3 endFogColor = mathfu::vec3(0.0, 0.0, 0.0);
 
-    std::vector<SMOFog_Data> wmoFogData = {};
+    WmoObject::WmoFogBlendResult wmoFogBlendResult;
     if (mapRenderPlan->m_currentWMO != emptyWMO) {
         auto l_currentWmoObject = wmoFactory->getObjectById<0>(mapRenderPlan->m_currentWMO);
         if (l_currentWmoObject != nullptr) {
-            l_currentWmoObject->checkFog(frustumData.cameraPos, wmoFogData);
+            l_currentWmoObject->checkFog(frustumData.cameraPos, mapRenderPlan->m_currentWmoGroup, wmoFogBlendResult);
         }
     }
 
     FogResult exteriorFogResult;
+    FogResult exteriorUnderWaterFogResult;
 
     auto fdd = mapRenderPlan->frameDependentData;
     if ((m_api->databaseHandler != nullptr)) {
@@ -222,6 +404,9 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         SkyColors skyColors;
         ExteriorColors exteriorColors;
         float currentGlow = 0.0f;
+        mathfu::vec3 exteriorDirectColorDir = mathfu::vec3(0.0, 0.0, 0.0);
+        mathfu::vec3 sunDirForFog = mathfu::vec3(0.0, 0.0, 0.0);
+        mathfu::vec3 sunPosViewSpace = mathfu::vec3(0.0, 0.0, 0.0);
 
         LiquidColors liquidColors;
         SkyBodyData skyBodyData;
@@ -231,133 +416,94 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
         getLightResultsFromDB(frustumData.cameraPos, config,
                               currentGlow,
                               skyColors, skyBodyData, exteriorColors,
-                              exteriorFogResult, liquidColors, skyBoxCollector, &stateForConditions);
+                              exteriorFogResult, exteriorUnderWaterFogResult, liquidColors, skyBoxCollector, &stateForConditions);
 
         m_exteriorSkyBoxes = skyBoxCollector.getNewSkyBoxes();
         mapRenderPlan->frameDependentData->overrideValuesWithFinalFog = skyBoxCollector.getOverrideValuesWithFinalFog();
 
-        {
-            mathfu::vec3 sunPlanetPosVec3 = MathHelper::calcSunPlanetPos(
-                mapRenderPlan->renderingMatrices->lookAtMat,
-                m_api->getConfig()->currentTime
-            ) + frustumData.cameraPos;
 
-            if (skyBodyData.celestialBodyOverride2.LengthSquared() > 0.0f) {
-                sunPlanetPosVec3 = mathfu::vec3(
-                    skyBodyData.celestialBodyOverride2[0],
-                    skyBodyData.celestialBodyOverride2[1],
-                    skyBodyData.celestialBodyOverride2[2]);
-            }
-            mathfu::vec4 sunPlanetPos = mathfu::vec4((sunPlanetPosVec3 - frustumData.cameraPos).Normalized(), 0.0f);
-            fdd->sunDirection = (frustumData.viewMat.Inverse().Transpose() * sunPlanetPos).xyz().Normalized();
+        {
+            auto invTranspViewMat = frustumData.viewMat.Inverse().Transpose();
+
+            auto planets = calcPlanetPositions(frustumData.cameraPos);
+
+            sunPosViewSpace = calcSunPosition(
+                skyBodyData,
+                frustumData.cameraPos, frustumData.viewMat,
+                fdd->sunAttentuationStart, fdd->sunAttentuationEnd,
+                planets
+            );
+            exteriorDirectColorDir = calcDirectColorDir(skyBodyData, invTranspViewMat);
+            sunDirForFog = calcSunDirForFog(
+                skyBodyData,
+                sunPosViewSpace,
+                frustumData.cameraPos,
+                invTranspViewMat, planets
+            );
+
+            fdd->useSunAttenuation = skyBodyData.hasSunPositionOverride;
         }
 
         float ambientMult = areaRecord.ambientMultiplier * 2.0f + 1;
 
         if (config->glowSource == EParameterSource::eDatabase) {
-            auto fdd = mapRenderPlan->frameDependentData;
             fdd->currentGlow = currentGlow;
         } else if (config->glowSource == EParameterSource::eConfig) {
             auto fdd = mapRenderPlan->frameDependentData;
             fdd->currentGlow = config->currentGlow; //copy from config to FDD
         }
-
+        fdd->sunPos = sunPosViewSpace;
+        fdd->sunDirection = sunDirForFog;
 
         if (config->globalLighting == EParameterSource::eDatabase) {
-            auto fdd = mapRenderPlan->frameDependentData;
+                        fdd->colors = exteriorColors;
 
-            fdd->colors = exteriorColors;
-
-            auto extDir = MathHelper::calcExteriorColorDir(
-                frustumData.viewMat,
-                m_api->getConfig()->currentTime
-            );
-            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
+            fdd->exteriorDirectColorDir = exteriorDirectColorDir;
         } else if (config->globalLighting == EParameterSource::eConfig) {
-            auto fdd = mapRenderPlan->frameDependentData;
-
             fdd->colors = config->exteriorColors;
-
-            auto extDir = MathHelper::calcExteriorColorDir(
-                frustumData.viewMat,
-                m_api->getConfig()->currentTime
-            );
-            fdd->exteriorDirectColorDir = { extDir.x, extDir.y, extDir.z };
+            fdd->exteriorDirectColorDir = exteriorDirectColorDir;
         }
 
         {
-            auto fdd = mapRenderPlan->frameDependentData;
             fdd->useMinimapWaterColor = config->useMinimapWaterColor;
             fdd->useCloseRiverColorForDB = config->useCloseRiverColorForDB;
         }
         if (config->waterColorParams == EParameterSource::eDatabase)
         {
-            auto fdd = mapRenderPlan->frameDependentData;
             fdd->liquidColors = liquidColors;
         } else if (config->waterColorParams == EParameterSource::eConfig) {
-            auto fdd = mapRenderPlan->frameDependentData;
             fdd->liquidColors = config->liquidColors;
         }
         if (config->skyParams == EParameterSource::eDatabase) {
-            auto fdd = mapRenderPlan->frameDependentData;
             fdd->skyColors = skyColors;
         } else if (config->skyParams == EParameterSource::eConfig) {
-            auto fdd = mapRenderPlan->frameDependentData;
             fdd->skyColors = config->skyColors;
         }
+
+        updatePlanetsAndStars(frustumData.cameraPos, skyBodyData, fdd);
+    }
+
+    //Mix the WMO fog into the DB fogs
+    //The blend weight is the distance from the camera to the nearest portal of the current
+    //interior WMO group: full DB fog at the portal, full WMO fog 25+ units into the interior.
+    //Note: the client additionally gates this on the liquid type at the camera (WMO fog is
+    //suppressed for most liquids); that refinement is not implemented here.
+    if (wmoFogBlendResult.fogFound && wmoFogBlendResult.insideInterior &&
+        m_api->databaseHandler != nullptr && config->globalFog == EParameterSource::eDatabase) {
+
+        float wmoBlend = std::min<float>(std::max<float>(wmoFogBlendResult.distToExit * 0.04f, 0.0f), 1.0f);
+
+        FogResult wmoExteriorFog = wmoFogDataToFogResult(wmoFogBlendResult.fog.fog, config->farPlane);
+        blendWmoFogIntoFogResult(exteriorFogResult, wmoExteriorFog, wmoBlend, false);
+
+        FogResult wmoUnderwaterFog = wmoFogDataToFogResult(wmoFogBlendResult.fog.underwater_fog, config->farPlane);
+        blendWmoFogIntoFogResult(exteriorUnderWaterFogResult, wmoUnderwaterFog, wmoBlend, true);
     }
 
     //Handle fog
     {
         std::vector<LightResult> combinedResults = {};
         float totalSummator = 0.0;
-
-        //Apply fog from WMO
-//        {
-//            for (auto &wmoFog : wmoFogData) {
-//                auto &lightResult = combinedResults.emplace_back();
-//                auto farPlaneClamped = std::min<float>(config->farPlane, wmoFog.end);
-//
-//                std::array<float, 3> colorConverted;
-//                ImVectorToArrBGR(colorConverted, wmoFog.color);
-//
-//                lightResult.FogEnd = farPlaneClamped;
-//                lightResult.FogStart = farPlaneClamped * wmoFog.start_scalar;
-//                lightResult.SkyFogColor = colorConverted;
-//                lightResult.FogDensity = 1.0;
-//                lightResult.FogHeightColor = colorConverted;
-//                lightResult.EndFogColor = colorConverted;
-//                lightResult.SunFogColor = colorConverted;
-//                lightResult.HeightEndFogColor = colorConverted;
-//
-//                if (farPlaneClamped < 30.f) {
-//                    lightResult.FogEnd = farPlaneClamped;
-//                    farPlaneClamped = 30.f;
-//                }
-//
-//                bool mapHasWeightedBlendFlag = false;
-//                if (!mapHasWeightedBlendFlag) {
-//                    float difference = farPlaneClamped - lightResult.FogStart;
-//                    float farPlaneClamped2 = std::min<float>(config->farPlane, 700.0f) - 200.0f;
-//                    if ((difference > farPlaneClamped2) || (farPlaneClamped2 <= 0.0f)) {
-//                        lightResult.FogDensity = 1.5;
-//                    } else {
-//                        lightResult.FogDensity = ((1.0 - (difference / farPlaneClamped2)) * 5.5) + 1.5;
-//                    }
-//                    lightResult.FogEnd = config->farPlane;
-//                    if (lightResult.FogStart < 0.0f)
-//                        lightResult.FogStart = 0.0;
-//                }
-//
-//                lightResult.FogHeightDensity = lightResult.FogDensity;
-//                lightResult.FogStartOffset = 0;
-//                lightResult.FogHeightScaler = 1.0;
-//                lightResult.FogZScalar = 0;
-//                lightResult.FogHeight = -10000.0;
-//                lightResult.LegacyFogScalar = 1.0;
-//                lightResult.EndFogColorDistance = 10000.0;
-//            }
-//        }
 
         //In case of no data -> disable the fog
         {
@@ -367,8 +513,10 @@ void DayNightLightHolder::updateLightAndSkyboxData(const HMapRenderPlan &mapRend
             auto &fogResult = fdd->fogResults.emplace_back();
             if (config->globalFog == EParameterSource::eDatabase) {
                 fogResult = exteriorFogResult;
+                fdd->underWaterFogResult = exteriorUnderWaterFogResult;
             } else if (config->globalFog == EParameterSource::eConfig){
                 fogResult = config->fogResult;
+                fdd->underWaterFogResult = FogResult();
             }
 
             fdd->FogDataFound = true;
@@ -500,27 +648,148 @@ void DayNightLightHolder::fixLightTimedData(LightTimedData &data, float farClip,
         data.FogHeightDensity = data.FogDensity;
 }
 
+// Density heuristic shared with fixLightTimedData
+static float calcFogDensityFromStartEnd(float fogEnd, float fogStart, float farClip) {
+    float farPlaneClamped = std::min<float>(farClip, 700.0f) - 200.0f;
+
+    float difference = fogEnd - fogStart;
+    if (difference > farPlaneClamped || farPlaneClamped <= 0.0f) {
+        return 1.5f;
+    }
+    return ((1.0f - (difference / farPlaneClamped)) * 5.5f) + 1.5f;
+}
+
+// Converts a blended WMO fog record into the FogResult form
+// WMO fogs carry only end/start_scalar/color; the rest of the fields are filled with
+// the neutral values the client uses so that blendFogs keeps the DB fog's height-fog
+// and main-fog behaviour.
+FogResult DayNightLightHolder::wmoFogDataToFogResult(const SMOFog_Data &wmoFogData, float farClip) const {
+    FogResult result;
+
+    float fogEnd = std::min<float>(farClip, wmoFogData.end);
+    fogEnd = std::max<float>(fogEnd, 30.0f);
+    float fogStart = fogEnd * wmoFogData.start_scalar;
+
+    int colorInt = 0;
+    static_assert(sizeof(wmoFogData.color) == sizeof(colorInt), "CImVector must be 4 bytes");
+    memcpy(&colorInt, &wmoFogData.color, sizeof(colorInt));
+    mathfu::vec3 fogColor = intToColor3(colorInt);
+
+    // The client assigns the WMO fog color to every color slot
+    result.FogColor = fogColor;
+    result.EndFogColor = fogColor;
+    result.SunFogColor = fogColor;
+    result.FogHeightColor = fogColor;
+    result.HeightEndFogColor = fogColor;
+
+    // Camera-not-in-liquid path of the client converter: density is derived from
+    // end/start, fog end becomes the far clip and fog start is clamped to >= 0
+    result.FogDensity = calcFogDensityFromStartEnd(fogEnd, fogStart, farClip);
+    result.FogEnd = farClip;
+    fogStart = std::max<float>(fogStart, 0.0f);
+    // MapSceneRenderer derives the fog start as min(farClip, 3000) * FogScaler
+    result.FogScaler = fogStart / std::min<float>(farClip, 3000.0f);
+
+    result.FogHeightDensity = result.FogDensity;
+
+    // Neutral values the client converter writes (they make blendFogs keep the DB fog's
+    // height fog / main fog parameters)
+    result.FogHeight = -10000.0f;
+    result.FogHeightScaler = 1.0f;
+    result.FogZScalar = 0.0f;
+    result.FogStartOffset = 0.0f;
+
+    result.LegacyFogScalar = 1.0f;
+    result.EndFogColorDistance = 10000.0f;
+
+    // sunPercentage is not produced by the WMO fog converter
+    result.SunFogStrength = 0.0f;
+
+    return result;
+}
+
+// Mixes a WMO fog into a DB fog
+// fogResult = lerp(dbFog, wmoFog, wmoBlend) with per-field rules.
+void DayNightLightHolder::blendWmoFogIntoFogResult(FogResult &fogResult, const FogResult &wmoFog, float wmoBlend, bool underwater) {
+    // Colors (the client blends them per-byte; float lerp is equivalent within rounding)
+    fogResult.FogColor = mix(fogResult.FogColor, wmoFog.FogColor, wmoBlend);
+    fogResult.EndFogColor = mix(fogResult.EndFogColor, wmoFog.EndFogColor, wmoBlend);
+    fogResult.SunFogColor = mix(fogResult.SunFogColor, wmoFog.SunFogColor, wmoBlend);
+    fogResult.FogHeightColor = mix(fogResult.FogHeightColor, wmoFog.FogHeightColor, wmoBlend);
+
+    // Fog start/end and density
+    fogResult.FogEnd = mix(fogResult.FogEnd, wmoFog.FogEnd, wmoBlend);
+    fogResult.FogScaler = mix(fogResult.FogScaler, wmoFog.FogScaler, wmoBlend);
+    fogResult.FogDensity = mix(fogResult.FogDensity, wmoFog.FogDensity, wmoBlend);
+
+    // The WMO fog carries no sun fog angle of its own (stays 0 in the converter), so the
+    // DB value blends toward 0: sun fog fades out the deeper the camera goes into the WMO
+    fogResult.SunFogAngle = mix(fogResult.SunFogAngle, 0.0f, wmoBlend);
+
+    if (underwater || wmoFog.FogHeight >= -9999.0f) {
+        // Underwater fogs (or WMO fogs defining their own height plane) blend the
+        // height fog too; the height plane distance uses a cubic blend factor
+        float cubicBlend = wmoBlend * wmoBlend * wmoBlend;
+        fogResult.FogHeight = mix(fogResult.FogHeight, wmoFog.FogHeight, cubicBlend);
+        fogResult.FogHeightScaler = mix(fogResult.FogHeightScaler, wmoFog.FogHeightScaler, wmoBlend);
+        fogResult.FogHeightDensity = mix(fogResult.FogHeightDensity, wmoFog.FogHeightDensity, wmoBlend);
+        fogResult.FogZScalar = mix(fogResult.FogZScalar, wmoFog.FogZScalar, wmoBlend);
+        fogResult.FogHeightCoefficients = mix(fogResult.FogHeightCoefficients, wmoFog.FogHeightCoefficients, wmoBlend);
+    } else {
+        // WMO fog has no height fog of its own: the DB height plane/rate/coefficients are kept,
+        // height density blends toward the WMO density and FogZScalar fades out
+        fogResult.FogHeightDensity = mix(fogResult.FogHeightDensity, wmoFog.FogDensity, wmoBlend);
+        fogResult.FogZScalar = fogResult.FogZScalar * (1.0f - wmoBlend);
+    }
+
+    // FogStartOffset, MainFogStartDist, MainFogEndDist, MainFogCoefficients and
+    // HeightDensityFogCoefficients are always kept from the DB fog (blendFogs copies fog1)
+
+    fogResult.EndFogColorDistance = mix(fogResult.EndFogColorDistance, wmoFog.EndFogColorDistance, wmoBlend);
+    fogResult.LegacyFogScalar = mix(fogResult.LegacyFogScalar, 1.0f, wmoBlend);
+
+    // sunPercentage: the WMO fog contributes none, so it fades out with the blend
+    fogResult.SunFogStrength = fogResult.SunFogStrength * (1.0f - wmoBlend);
+}
+
+// Day-progress curve for the sun fog strength
+// 0 at night, ramps up 06:30->07:00, 1.0 during the day, ramps down 18:00->18:30.
+static float sunFogStrengthDayCurve(float dayProgress) {
+    static const float rampUpStart   = 0.2708333f; // 06:30
+    static const float rampUpEnd     = 0.2916667f; // 07:00
+    static const float rampDownStart = 0.75f;      // 18:00
+    static const float rampDownEnd   = 0.7708333f; // 18:30
+
+    if (dayProgress <= rampUpStart || dayProgress >= rampDownEnd)
+        return 0.0f;
+    if (dayProgress < rampUpEnd)
+        return (dayProgress - rampUpStart) / (rampUpEnd - rampUpStart);
+    if (dayProgress <= rampDownStart)
+        return 1.0f;
+    return 1.0f - (dayProgress - rampDownStart) / (rampDownEnd - rampDownStart);
+}
+
 void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const Config *config,
                                 float &glow,
                                 SkyColors &skyColors,
                                 SkyBodyData &skyBodyData,
                                 ExteriorColors &exteriorColors,
                                 FogResult &fogResult,
+                                FogResult &underWaterFogResult,
                                 LiquidColors &liquidColors,
                                 SkyBoxCollector &skyBoxCollector,
                                 StateForConditions *stateForConditions) {
-    if (!m_api || !m_api->databaseHandler)
+    if (!m_api || !m_api->databaseHandler || m_mapId == -1)
         return ;
 
-    int currentLightParamIdIndex = 0;
-    auto paramsBlend = calculateLightParamBlends(
+    auto blendResults = calculateLightParamBlends(
         m_api->databaseHandler,
         m_mapId,
         cameraVec3,
         stateForConditions,
-        m_zoneLights,
-        currentLightParamIdIndex
+        m_zoneLights
     );
+    auto &paramsBlend = blendResults.params;
 
 
     if (!paramsBlend.empty()) {
@@ -558,9 +827,30 @@ void DayNightLightHolder::getLightResultsFromDB(mathfu::vec3 &cameraVec3, const 
         }
     }
 
+    // Underwater fog (Light param slot 1) — from the same blend computation, no re-query
+    for (auto it = blendResults.underwaterParams.begin(); it != blendResults.underwaterParams.end(); it++) {
+        SkyColors tmp_skyColors;
+        ExteriorColors tmp_exteriorColors;
+        LiquidColors tmp_liquidColors;
+        SkyBodyData tmp_skyBodyData;
+        FogResult tmp_underWaterFogResult;
+
+        float tmp_glow = 0.0;
+
+        calcLightParamResult(it->id, config,
+                             tmp_glow,
+                             tmp_skyBodyData, tmp_exteriorColors, tmp_underWaterFogResult, tmp_liquidColors, tmp_skyColors);
+
+        mixStructure(underWaterFogResult, tmp_underWaterFogResult, it->blend);
+    }
+
 
     float blendCoeff = fmaxf(fminf(getClampedFarClip(config->farPlane) / fogResult.EndFogColorDistance, 1.0f), 0.0f);
     skyColors.SkyFogColor = mix(skyColors.SkyFogColor, fogResult.EndFogColor, blendCoeff);
+
+    // The client scales the sun fog blend factor by a day-progress curve (SetPlanets),
+    // which is what actually turns the sun halo off at night
+    fogResult.SunAngleBlend *= sunFogStrengthDayCurve(config->currentTime / 2880.0f);
 
     stateForConditions->currentLightParams = paramsBlend;
 }
@@ -584,11 +874,33 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         blendTimeCoeff = std::min<float>(std::max<float>(blendTimeCoeff, 0.0f), 1.0f);
 
         skyBodyData.skyBoxInfo = lightParamData.skyboxInfo;
-        skyBodyData.celestialBodyOverride2 = mathfu::vec3(
-            lightParamData.celestialBodyOverride2[0],
-            lightParamData.celestialBodyOverride2[1],
-            lightParamData.celestialBodyOverride2[2]
-        );
+
+        skyBodyData.hasSunPositionOverride = lightParamData.lightParamFlags & 0x100;
+        skyBodyData.hasSunDirectionOverride = lightParamData.lightParamFlags & 0x200;
+
+        // LightParams flags as blendable floats
+        skyBodyData.sunPlanetHideBlend = (lightParamData.lightParamFlags & 0x4) ? 1.0f : 0.0f;
+        skyBodyData.moonPlanetHideBlend = (lightParamData.lightParamFlags & 0x8) ? 1.0f : 0.0f;
+        skyBodyData.starsHideBlend = (lightParamData.lightParamFlags & 0x10) ? 1.0f : 0.0f;
+
+        if (skyBodyData.hasSunPositionOverride) {
+            skyBodyData.sunPositionOverride = mathfu::vec3(
+                lightParamData.celestialBodyOverride2[0],
+                lightParamData.celestialBodyOverride2[1],
+                lightParamData.celestialBodyOverride2[2]
+            );
+            skyBodyData.sunAttenuationStart = lightParamData.sunAttenuationStart;
+            skyBodyData.sunAttenuationEnd = lightParamData.sunAttenuationEnd;
+
+            skyBodyData.sunPositionBlend = 1.0f;
+        }
+
+        if (skyBodyData.hasSunDirectionOverride) {
+            skyBodyData.sunDirAzimuth = lightParamData.sunAzimuth * ( M_PI / 180.0f);
+            skyBodyData.sunDirPolar = lightParamData.sunPolar * ( M_PI / 180.0f);
+            skyBodyData.sunDirectionBlend = 1.0f;
+        }
+
 
         glow = lightParamData.glow;
 
@@ -611,7 +923,8 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         if (vec3EqZero(exteriorColors.exteriorHorizontAmbientColor))
             exteriorColors.exteriorHorizontAmbientColor = exteriorColors.exteriorAmbientColor;
 
-        exteriorColors.exteriorDirectColor =          mixMembers<3>(lightParamData, &LightTimedData::directColor, blendTimeCoeff);
+        exteriorColors.exteriorDirectColor   = mixMembers<3>(lightParamData, &LightTimedData::directColor, blendTimeCoeff);
+        exteriorColors.exteriorSpecularColor = mixMembers<3>(lightParamData, &LightTimedData::SunColor, blendTimeCoeff);
 
         //Liquid colors
         liquidColors.closeOceanColor = mixMembers<3>(lightParamData, &LightTimedData::closeOceanColor, blendTimeCoeff);
@@ -666,6 +979,11 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
             }
         }
 
+        // LightParams flag 0x4 disables the sun fog by forcing the angle to 1.1
+        if ((lightParamData.lightParamFlags & 0x4) != 0) {
+            fogResult.SunFogAngle = 1.1f;
+        }
+
         if (false) {//fdd->overrideValuesWithFinalFog) {
             fogResult.FogColor = mixMembers<3>(lightParamData, &LightTimedData::EndFogColor, blendTimeCoeff);
         } else {
@@ -679,7 +997,7 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         fogResult.FogHeightColor =        mixMembers<3>(lightParamData, &LightTimedData::FogHeightColor, blendTimeCoeff);
         fogResult.FogHeightCoefficients = mixMembers<4>(lightParamData, &LightTimedData::FogHeightCoefficients, blendTimeCoeff);
         fogResult.MainFogCoefficients =   mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
-        fogResult.HeightDensityFogCoefficients = mixMembers<4>(lightParamData, &LightTimedData::MainFogCoefficients, blendTimeCoeff);
+        fogResult.HeightDensityFogCoefficients = mixMembers<4>(lightParamData, &LightTimedData::HeightDensityFogCoeff, blendTimeCoeff);
 
         fogResult.FogZScalar =        mixMembers<1>(lightParamData, &LightTimedData::FogZScalar, blendTimeCoeff);
         fogResult.MainFogStartDist =  mixMembers<1>(lightParamData, &LightTimedData::MainFogStartDist, blendTimeCoeff);
@@ -688,7 +1006,8 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         fogResult.FogStartOffset =    mixMembers<1>(lightParamData, &LightTimedData::FogStartOffset, blendTimeCoeff);
 
         if (fogResult.FogHeightCoefficients.LengthSquared() <= 0.00000011920929f ){
-            fogResult.FogHeightCoefficients = mathfu::vec4(0,0,1,0);
+            //Client falls back to DB-ordered (0,0,0,1); stored reversed for the shader here
+            fogResult.FogHeightCoefficients = mathfu::vec4(1,0,0,0);
         }
 
         if (
@@ -713,6 +1032,8 @@ void DayNightLightHolder::calcLightParamResult(int lightParamId, const Config *c
         // lightParamData.lightTimedData[0].time = 0;
     }
 }
+
+
 
 void DayNightLightHolder::createMinFogDistances() {
     m_minFogDist1 = maxFarClip(0.0f);
@@ -750,7 +1071,9 @@ void DayNightLightHolder::SkyBoxCollector::addSkyBox(StateForConditions &stateFo
             skyBoxModel = model;
 
             float currentAlpha = model->getAlpha();
-            model->setAlpha(std::max<float>(currentAlpha, alpha));
+            alpha = std::max<float>(currentAlpha, alpha);
+
+            model->setAlpha(alpha);
             break;
         }
     }
@@ -782,6 +1105,13 @@ void DayNightLightHolder::SkyBoxCollector::addSkyBox(StateForConditions &stateFo
         m_newSkyBoxes.push_back(skyBoxModel);
     }
 
+    //4. Decrease alpha of all previous skyboxes except the current one
+    for (const auto &model : m_newSkyBoxes) {
+        if (model == skyBoxModel) continue;
+
+        float currentAlpha = model->getAlpha();
+        model->setAlpha( currentAlpha * (1.0f - alpha));
+    }
 
     if ((skyBoxInfo.skyBoxFlags & 4) > 0 ) {
         //In this case cone is still rendered been, but all values are final fog values.

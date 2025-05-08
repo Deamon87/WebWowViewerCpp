@@ -6,7 +6,8 @@
 #include "GTextureSamplerVLK.h"
 #include "../../interface/IDevice.h"
 
-GTextureSamplerVLK::GTextureSamplerVLK(IDeviceVulkan &deviceVlk, bool xWrapTex, bool yWrapTex, bool nearest) : m_device(deviceVlk) {
+GTextureSamplerVLK::GTextureSamplerVLK(IDeviceVulkan &deviceVlk, bool xWrapTex, bool yWrapTex, bool nearest,
+                                       bool useDepthComparison, VkCompareOp compareOp) : m_device(deviceVlk) {
 
     // Create a texture sampler
     // In Vulkan textures are accessed by samplers
@@ -18,9 +19,11 @@ GTextureSamplerVLK::GTextureSamplerVLK(IDeviceVulkan &deviceVlk, bool xWrapTex, 
     sampler.mipmapMode = nearest ? VK_SAMPLER_MIPMAP_MODE_NEAREST : VK_SAMPLER_MIPMAP_MODE_LINEAR;
     sampler.addressModeU = xWrapTex ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler.addressModeV = yWrapTex ? VK_SAMPLER_ADDRESS_MODE_REPEAT : VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    sampler.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
     sampler.mipLodBias = 0.0f;
-    sampler.compareOp = VK_COMPARE_OP_NEVER;
+    // Depth comparison for shadow mapping (optional)
+    sampler.compareEnable = useDepthComparison ? VK_TRUE : VK_FALSE;
+    sampler.compareOp = useDepthComparison ? compareOp : VK_COMPARE_OP_NEVER;
     sampler.minLod = 0.0f;
     // Set max level-of-detail to mip level count of the texture
     sampler.maxLod = 64.0f;//vulkanMipMapCount;

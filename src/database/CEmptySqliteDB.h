@@ -19,9 +19,14 @@ public:
     void getEnvInfo(int mapId, float x, float y, float z, std::vector<LightResult> &lightResults) override {};
 
     bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) override {return false;};
-    void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override {};
+    void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidObjectRec &loData) override {};
     void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override {};
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override  {};
+
+    void getGameObjectsForMap(int mapId, std::vector<GameObjectRecord> &gameObjects) override {};
+    bool getGameObjectDisplayInfo(int displayId, GameObjectDisplayInfoRecord &result) override {return false;};
+
+    void getSkySceneXPlayerConditions(std::vector<SkySceneXPlayerConditionRecord> &result) override {};
 };
 
 

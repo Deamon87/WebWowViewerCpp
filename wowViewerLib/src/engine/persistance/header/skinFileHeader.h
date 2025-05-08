@@ -33,7 +33,7 @@ struct M2Batch
     int8_t priorityPlane;
     uint16_t shader_id;                  // See below.
     uint16_t skinSectionIndex;           // A duplicate entry of a submesh from the list above.
-    uint16_t geosetIndex;                // See below.
+    uint16_t flags2;                // See below.
     int16_t colorIndex;                 // A Color out of the Colors-Block or -1 if none.
     uint16_t materialIndex;              // The renderflags used on this texture-unit.
     uint16_t materialLayer;              // Capped at 7 (see CM2Scene::BeginDraw)

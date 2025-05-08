@@ -6,6 +6,7 @@
 #define WEBWOWVIEWERCPP_WDLOBJECT_H
 
 #include <vector>
+#include <map>
 #include <set>
 #include "../iMapApi.h"
 #include "mathfu/glsl_mappings.h"
@@ -46,15 +47,28 @@ private:
         bool animateWithTimeOfDay = false;
     };
     struct SkyObjectScene{
-
+        uint32_t skySceneId = 0; // mssn_t::SkySceneID
         std::vector<SkyModelRec> skyModels = {};
         std::vector<SkyObjectCondition> conditions = {};
+        // Player condition ids assigned to this scene by the SkySceneXPlayerCondition
+        // db2. A scene passes when at least one of them is not disabled in the config
+        // (treated as an additional OR'd condition group).
+        std::vector<int> playerConditionIds = {};
     };
 
     std::vector<SkyObjectScene> skyScenes;
+
+    // Sky scene ids grouped by the player condition that gates them, for UI display
+    // (only scenes that actually have player conditions contribute). Built once in
+    // loadM2s(); neither the db2 assignments nor the scenes change afterwards.
+    std::map<int, std::set<int>> m_skyScenesByPlayerCondition;
 public:
     bool getIsLoaded() {
         return m_loaded;
+    }
+
+    const std::map<int, std::set<int>> &getSkyScenesByPlayerCondition() const {
+        return m_skyScenesByPlayerCondition;
     }
 
     bool checkFrustumCulling(const MathHelper::FrustumCullingData &frustumData,

@@ -6,6 +6,7 @@
 #define AWEBWOWVIEWERCPP_IMAPSCENEBUFFERCREATE_H
 
 #include <memory>
+#include <functional>
 #include "../../gapi/interface/IDevice.h"
 #include "../../engine/persistance/header/commonFileStructs.h"
 #include "materials/IMaterialStructs.h"
@@ -51,7 +52,7 @@ namespace ObjStencilValues {
 static const size_t MAX_PARTICLES_PER_EMITTER = 2000;
 
 //    static const int PARTICLES_BUFF_NUM = IDevice::MAX_FRAMES_IN_FLIGHT + 1;
-static const int PARTICLES_BUFF_NUM = 2;
+static const int PARTICLES_BUFF_NUM = IDevice::MAX_FRAMES_IN_FLIGHT;
 
 class IMapSceneBufferCreate {
 public:
@@ -65,7 +66,16 @@ public:
     virtual HGVertexBufferBindings createWmoVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createM2VAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createM2ParticleVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    // Pull-model particle VAO for the GPU particle path: index buffer only, no vertex
+    // buffers (the vertex shader pulls particle data from SSBOs). Null when unsupported.
+    virtual HGVertexBufferBindings createM2ParticleGpuVAO(HGIndexBuffer indexBuffer) { return nullptr; }
     virtual HGVertexBufferBindings createM2RibbonVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
+    // Pull-model ribbon VAO for the GPU ribbon path: index buffer only, no vertex
+    // buffers (the vertex shader reads the ribbon edge SSBO). Null when unsupported.
+    virtual HGVertexBufferBindings createM2RibbonGpuVAO(HGIndexBuffer indexBuffer) { return nullptr; }
+    // Per-ribbon GPU index buffer chunk in the renderer's GPU-writable index pool
+    // (the ribbon sim rewrites its content per frame). Null when unsupported.
+    virtual std::shared_ptr<IBuffer> createM2RibbonGpuIndexBuffer(int32_t edgeCount) { return nullptr; }
     virtual HGVertexBufferBindings createWaterVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createSkyVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
     virtual HGVertexBufferBindings createPortalVAO(HGVertexBuffer vertexBuffer, HGIndexBuffer indexBuffer) = 0;
@@ -101,7 +111,27 @@ public:
     virtual std::shared_ptr<IADTMaterial> createAdtMaterial(const PipelineTemplate &pipelineTemplate,
                                                             const ADTMaterialTemplate &adtMaterialTemplate) = 0;
 
-    virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) = 0;
+    virtual std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount, uint32_t objectId = 0) = 0;
+
+    // GPU M2 animation path (bindless Vulkan renderer only).
+    // supportsM2GpuAnimation() reports availability; createM2GpuAnimData allocates
+    // the per-object animation-state slot and sim data. The static track data is
+    // shared per source model: modelKey identifies it (the M2Geom pointer — a live
+    // track set is always referenced by a live M2Object which keeps its geometry
+    // alive, so a live key can never be reused by a different geometry) and
+    // packBuilder is invoked at most once per model to produce the packed track
+    // data (only when no shared track set exists yet).
+    // emitterSeeds/emitterRandomizedTextureIndexMasks carry the CPU emitters' RNG
+    // state so the GPU sim continues the same streams (empty when no emitters).
+    // Default: unsupported (other backends keep the CPU path).
+    virtual bool supportsM2GpuAnimation() const { return false; }
+    virtual std::shared_ptr<IM2GpuAnimData> createM2GpuAnimData(
+        const void *modelKey,
+        const std::function<M2GpuTrackPack()> &packBuilder,
+        const std::shared_ptr<IM2ModelData> &m2ModelData,
+        const std::vector<M2GpuEmitterSeeds> &emitterSeeds,
+        const std::vector<int32_t> &emitterRandomizedTextureIndexMasks,
+        const std::vector<std::shared_ptr<IBuffer>> &ribbonGpuIndexBuffers) { return nullptr; }
 
     virtual std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                           const PipelineTemplate &pipelineTemplate,
@@ -124,18 +154,42 @@ public:
 
     virtual std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) = 0;
 
+    virtual std::shared_ptr<IPlanetMaterial> createPlanetMaterial(const PipelineTemplate &pipelineTemplate,
+                                                                  const HGSamplableTexture &texture) = 0;
+
     virtual std::shared_ptr<IWmoModelData> createWMOWideChunk(int groupNum) = 0;
     virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> createWmoModelMatrixChunk() = 0;
 
     virtual std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                             const PipelineTemplate &pipelineTemplate,
                                                             const WMOMaterialTemplate &wmoMaterialTemplate) = 0;
+    virtual std::shared_ptr<IPortalMaterial> createPortalMaterial(const PipelineTemplate &pipelineTemplate) = 0;
 
-    virtual std::shared_ptr<IWaterMaterial> createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+//-------------------------------------
+// Liquid material creation
+//-------------------------------------
+    virtual std::shared_ptr<ILiquidMaterial> createLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                                const PipelineTemplate &pipelineTemplate,
                                                                const WaterMaterialTemplate &waterMaterialTemplate) = 0;
 
-    virtual std::shared_ptr<IPortalMaterial> createPortalMaterial(const PipelineTemplate &pipelineTemplate) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createWaterLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<WaterLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createMagmaLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<MagmaLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createMercuryLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<MercuryLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createFogLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<FogLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createLeyLineLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<LeyLineLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createFelLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<FelLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createSwampLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<SwampLiquidData> &liquidData) = 0;
+    virtual std::shared_ptr<ILiquidMaterial> createAzeritheLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<AzeritheLiquidData> &liquidData) = 0;
+
+    virtual std::shared_ptr<WaterLiquidData> createWaterLiquidData() = 0;
+    virtual std::shared_ptr<MagmaLiquidData> createMagmaLiquidData() = 0;
+    virtual std::shared_ptr<MercuryLiquidData> createMercuryLiquidData() = 0;
+    virtual std::shared_ptr<FogLiquidData> createFogLiquidData() = 0;
+    virtual std::shared_ptr<LeyLineLiquidData> createLeyLineLiquidData() = 0;
+    virtual std::shared_ptr<FelLiquidData> createFelLiquidData() = 0;
+    virtual std::shared_ptr<SwampLiquidData> createSwampLiquidData() = 0;
+    virtual std::shared_ptr<AzeritheLiquidData> createAzeritheLiquidData() = 0;
+
 //-------------------------------------
 //  Mesh creation
 //-------------------------------------
@@ -147,7 +201,7 @@ public:
     virtual HGM2Mesh createM2ProjectiveMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2ProjectiveMaterial> &material, int layer, int priorityPlane) = 0;
     virtual HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) = 0;
     virtual HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) = 0;
-    virtual HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) = 0;
+    virtual HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum, int canHaveExteriorLit, uint32_t wmoObjId = 0) = 0;
     virtual HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) = 0;
 };
 typedef std::shared_ptr<IMapSceneBufferCreate> HMapSceneBufferCreate;

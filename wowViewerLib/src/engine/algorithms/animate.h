@@ -59,7 +59,7 @@ int binary_search(M2Array<uint32_t>& vec, int start, int end, uint32_t& key);
 
 
 template<typename T, typename R>
-inline R convertHelper(T &value) {
+inline R convertHelper(const T &value) {
 //    REGISTER_PARSE_TYPE(T);
 //    template <typename T> struct MyClassTemplate<T*>;
     //static_assert(false, "This function was not meant to be called");
@@ -67,39 +67,39 @@ inline R convertHelper(T &value) {
 
 };
 template<>
-inline mathfu::vec4 convertHelper<mathfu::vec4_packed, mathfu::vec4>(mathfu::vec4_packed &a ) {
+inline mathfu::vec4 convertHelper<mathfu::vec4_packed, mathfu::vec4>(const mathfu::vec4_packed &a ) {
     return mathfu::vec4(a);
 };
 template<>
-inline float convertHelper<float, float>(float &a ) {
+inline float convertHelper<float, float>(const float &a ) {
     return a;
 };
 
 template<>
-inline unsigned char convertHelper<unsigned char, unsigned char>(unsigned char &a ) {
+inline unsigned char convertHelper<unsigned char, unsigned char>(const unsigned char &a ) {
     return a;
 };
 template<>
-inline unsigned short convertHelper<unsigned short, unsigned short>(unsigned short &a ) {
+inline unsigned short convertHelper<unsigned short, unsigned short>(const unsigned short &a ) {
     return a;
 };
 
 template<>
-inline mathfu::vec3 convertHelper<mathfu::vec3_packed, mathfu::vec3>(mathfu::vec3_packed &a ) {
+inline mathfu::vec3 convertHelper<mathfu::vec3_packed, mathfu::vec3>(const mathfu::vec3_packed &a ) {
     return mathfu::vec3(a);
 };
 template<>
-inline mathfu::vec2 convertHelper<mathfu::vec2_packed, mathfu::vec2>(mathfu::vec2_packed &a ) {
+inline mathfu::vec2 convertHelper<mathfu::vec2_packed, mathfu::vec2>(const mathfu::vec2_packed &a ) {
     return mathfu::vec2(a);
 };
 inline float stf(unsigned short Short) {
     return (Short / float (32767)) - 1.0f; // (Short > 0 ? Short-32767 : Short+32767)/32767.0;
 }
 inline float convertUint16ToFloat(unsigned short Short){
-    return (Short * 0.000030518044) - 1.0;
+    return (Short * 0.000030518044f) - 1.0f;
 }
 template<>
-inline mathfu::quat convertHelper<Quat16, mathfu::quat>(Quat16 &a ) {
+inline mathfu::quat convertHelper<Quat16, mathfu::quat>(const Quat16 &a ) {
     mathfu::quat result = mathfu::quat(
         convertUint16ToFloat(a.w),
         convertUint16ToFloat(a.x),
@@ -110,7 +110,7 @@ inline mathfu::quat convertHelper<Quat16, mathfu::quat>(Quat16 &a ) {
     return result;
 };
 template<>
-inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) {
+inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(const C4Quaternion &a ) {
     return mathfu::quat(
             a.w ,
             a.x,
@@ -119,7 +119,7 @@ inline mathfu::quat convertHelper<C4Quaternion, mathfu::quat>(C4Quaternion &a ) 
     ).Normalized();
 };
 template<>
-inline float convertHelper<fixed16, float>(fixed16 &a ) {
+inline float convertHelper<fixed16, float>(const fixed16 &a ) {
     return (float)(a / 32768.0f);
 };
 
@@ -129,22 +129,22 @@ inline float convertHelper<fixed16, float>(fixed16 &a ) {
 //};
 
 template<>
-inline fixed16 convertHelper<float, fixed16>(float &a ) {
+inline fixed16 convertHelper<float, fixed16>(const float &a ) {
     return (fixed16)(floor(a * 32768.0f));
 };
 
 template<>
-inline fixed16 convertHelper<double, fixed16>(double &a ) {
+inline fixed16 convertHelper<double, fixed16>(const double &a ) {
     return (fixed16)(floor(a * 32768.0f));
 };
 
 template<>
-inline uint32_t convertHelper<animTime_t, uint32_t>(animTime_t &a ) {
+inline uint32_t convertHelper<animTime_t, uint32_t>(const animTime_t &a ) {
     return (uint32_t) a;
 };
 
 template<>
-inline mathfu::vec3 convertHelper<CompressedParticleGravity, mathfu::vec3>(CompressedParticleGravity &a ) {
+inline mathfu::vec3 convertHelper<CompressedParticleGravity, mathfu::vec3>(const CompressedParticleGravity &a ) {
     mathfu::vec3 dir = mathfu::vec3(a.x, a.y, 0) * (1.0f / 128.0f);
     float z = sqrtf(1.0f - mathfu::vec3::DotProduct(dir,dir));
     float mag = a.z * 0.04238648f;
@@ -158,7 +158,7 @@ inline mathfu::vec3 convertHelper<CompressedParticleGravity, mathfu::vec3>(Compr
 };
 
 template<>
-inline mathfu::vec4 convertHelper<mathfu::vec3_packed, mathfu::vec4>(mathfu::vec3_packed &a ) {
+inline mathfu::vec4 convertHelper<mathfu::vec3_packed, mathfu::vec4>(const mathfu::vec3_packed &a ) {
     return mathfu::vec4(a.x, a.y, a.z, 0);
 };
 
@@ -171,7 +171,7 @@ int32_t findTimeIndex(
     if (times_len > 1 ) {
         T timeConverted = convertHelper<R, T>(currTime);
         if (timeConverted > timestamps[times_len - 1]) return times_len - 1;
-        auto time = std::lower_bound(&timestamps[0], &timestamps[times_len - 1], timeConverted);
+        auto time = std::lower_bound(&timestamps[0], &timestamps[times_len], timeConverted);
         if ((time != &timestamps[0])) {
             time = time - 1;
         }

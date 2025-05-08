@@ -31,8 +31,7 @@ void ZipRequestProcessor::loadingFinished(std::vector<unsigned char> * file) {
 //        zip_source_keep(src);
 }
 
-void ZipRequestProcessor::requestFile(std::string &fileName, CacheHolderType holderType,
-                                      std::weak_ptr<PersistentFile> s_file) {
+void ZipRequestProcessor::requestFile(CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
 //    std::string s_fileName(fileName);
 //    zip_error_t error;
 //    struct zip_stat sb;

@@ -5,6 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include "animationManager.h"
+#include "../objects/m2/m2Helpers/M2GpuAnimData.h"
 #include "../algorithms/animate.h"
 #include "../persistance/header/M2FileHeader.h"
 #include "mathfu/glsl_mappings.h"
@@ -722,33 +723,77 @@ void AnimationManager::calcBones (
     this->firstCalc = false;
 }
 
+void AnimationManager::calcBoneSubset(
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices,
+    const std::vector<int> &boneIndices,
+    const mathfu::mat4 &modelViewMatrix) {
+
+    if (boneIndices.empty()) return;
+
+    auto &bones = *boneMasterData->getSkelData()->m_m2CompBones;
+    for (int i = 0; i < bones.size; i++) {
+        this->bonesIsCalculated[i] = false;
+    }
+
+    for (int boneIndex : boneIndices) {
+        if (boneIndex < 0 || boneIndex >= bones.size) continue;
+        this->calcBoneMatrix(boneMatrices, boneIndex, modelViewMatrix);
+    }
+
+    // Same invModelView post-multiply as the full pass, applied to every bone the
+    // (recursive) evaluation touched
+    mathfu::mat4 invModelViewMatrix = modelViewMatrix.Inverse();
+    for (int i = 0; i < bones.size; i++) {
+        if (this->bonesIsCalculated[i]) {
+            boneMatrices[i] = invModelViewMatrix * boneMatrices[i];
+        }
+    }
+}
+
+bool AnimationManager::fillGpuAnimState(GpuM2AnimState &state) const {
+    if (globalSequenceTimes.size() > GPU_ANIM_MAX_GLOBAL_SEQUENCES ||
+        parentGlobalSequenceTimes.size() > GPU_ANIM_MAX_GLOBAL_SEQUENCES) {
+        return false;
+    }
+    const auto &currentAnimation = this->animationInfo.currentAnimation;
+    const auto &nextSubAnimation = this->animationInfo.nextSubAnimation;
+
+    state.animIndex = currentAnimation.animationIndex;
+    state.animTime = (float)currentAnimation.animationTime;
+    state.animFoundInParent = currentAnimation.animationFoundInParent ? 1 : 0;
+    state.blendFactor = animationInfo.blendFactor;
+
+    // Mirrors animateTrackWithBlend's blend condition
+    bool blending = (nextSubAnimation.animationIndex > -1) && (animationInfo.blendFactor < 0.999f);
+    state.nextAnimIndex = blending ? nextSubAnimation.animationIndex : -1;
+    state.nextAnimTime = blending ? (float)nextSubAnimation.animationTime : 0.0f;
+    state.nextAnimFoundInParent = (blending && nextSubAnimation.animationFoundInParent) ? 1 : 0;
+
+    state.ownGsCount = (int32_t)globalSequenceTimes.size();
+    state.parentGsCount = (int32_t)parentGlobalSequenceTimes.size();
+    for (int i = 0; i < state.ownGsCount; i++) {
+        state.gsTimes[i] = (float)globalSequenceTimes[i];
+    }
+    for (int i = 0; i < state.parentGsCount; i++) {
+        state.parentGsTimes[i] = (float)parentGlobalSequenceTimes[i];
+    }
+    return true;
+}
+
 
 static bool dump = false;
 
-void AnimationManager::update(
+bool AnimationManager::updateSequencing(
     animTime_t deltaTime,
-    animTime_t deltaTimeForGS,
-    mathfu::vec3 &cameraPosInLocal,
-    mathfu::vec3 &localUpVector,
-    mathfu::vec3 &localRightVector,
-    const mathfu::mat4 &modelMatrix,
-    const mathfu::mat4 &modelViewMatrix,
-    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
-    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
-    std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
-    std::vector<float> &transparencies,
-    std::vector<M2LightResult> &lights,
-    std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
-    std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters) {
+    animTime_t deltaTimeForGS) {
 
     auto skelData = boneMasterData->getSkelData();
 
     auto &global_loops = *skelData->m_globalSequences;
-    auto &bones = *skelData->m_m2CompBones;
 
     {
         auto sequences = *skelData->m_sequences;
-        if (sequences.size <= 0) return;
+        if (sequences.size <= 0) return false;
     }
 
     const M2Sequence* currentAnimationRecord = this->animationInfo.currentAnimation.animationRecord;
@@ -892,7 +937,7 @@ void AnimationManager::update(
                                             animationInfo.currentAnimation.animationFoundInParent);
             deferredLoadingStarted = true;
         }
-        return;
+        return false;
     } else {
         deferredLoadingStarted = false;
     };
@@ -904,10 +949,27 @@ void AnimationManager::update(
                                             animationInfo.nextSubAnimation.animationFoundInParent);
             deferredLoadingStarted = true;
         }
-        return;
+        return false;
     } else {
         deferredLoadingStarted = false;
     };
+
+    return true;
+}
+
+void AnimationManager::evaluateAnimation(
+    const mathfu::mat4 &modelMatrix,
+    const mathfu::mat4 &modelViewMatrix,
+    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+    std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
+    std::vector<float> &transparencies,
+    std::vector<M2LightResult> &lights,
+    std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+    std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters) {
+
+    auto skelData = boneMasterData->getSkelData();
+    auto &bones = *skelData->m_m2CompBones;
 
     this->calcAnimMatrixes(textAnimMatrices);
 
@@ -942,14 +1004,65 @@ void AnimationManager::update(
     this->calcParticleEmitters(particleEmitters, bonesMatrices);
     this->calcRibbonEmitters(ribbonEmitters);
 
+    finishFrameEvaluation();
+}
+
+void AnimationManager::finishFrameEvaluation() {
     if (this->animationInfo.blendFactor < 1.0)
         this->animationInfo.nextSubAnimation.firstUpdate = false;
 
     this->animationInfo.currentAnimation.firstUpdate = false;
 }
 
+void AnimationManager::evaluateForGpuPath(
+    const mathfu::mat4 &modelMatrix,
+    const mathfu::mat4 &modelViewMatrix,
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+    std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+    std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
+    std::vector<float> &transparencies,
+    std::vector<M2LightResult> &lights,
+    std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+    std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters,
+    const std::vector<int> &cpuBoneSubset) {
+
+    this->calcAnimMatrixes(textAnimMatrices);
+    this->calcSubMeshColors(subMeshColors);
+    this->calcTransparencies(transparencies);
+
+    this->calcBoneSubset(bonesMatrices, cpuBoneSubset, modelViewMatrix);
+    this->calcLights(lights, bonesMatrices, modelMatrix);
+    this->calcParticleEmitters(particleEmitters, bonesMatrices);
+    this->calcRibbonEmitters(ribbonEmitters);
+
+    finishFrameEvaluation();
+}
+
+void AnimationManager::update(
+    animTime_t deltaTime,
+    animTime_t deltaTimeForGS,
+    mathfu::vec3 &cameraPosInLocal,
+    mathfu::vec3 &localUpVector,
+    mathfu::vec3 &localRightVector,
+    const mathfu::mat4 &modelMatrix,
+    const mathfu::mat4 &modelViewMatrix,
+    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+    std::vector<mathfu::mat4,tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+    std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
+    std::vector<float> &transparencies,
+    std::vector<M2LightResult> &lights,
+    std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+    std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters) {
+
+    if (!updateSequencing(deltaTime, deltaTimeForGS)) return;
+
+    evaluateAnimation(modelMatrix, modelViewMatrix,
+                      bonesMatrices, textAnimMatrices, subMeshColors, transparencies,
+                      lights, particleEmitters, ribbonEmitters);
+}
+
 void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors) {
-    M2Array<M2Color> &colors = boneMasterData->getM2Geom()->getM2Data()->colors;
+    const M2Array<M2Color> &colors = boneMasterData->getM2Geom()->getM2Data()->colors;
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
 
     static mathfu::vec3 defaultVector(1.0, 1.0, 1.0);
@@ -984,7 +1097,7 @@ void AnimationManager::calcSubMeshColors(std::vector<mathfu::vec4, tbb::cache_al
 
 void AnimationManager::calcTransparencies(std::vector<float> &transparencies) {
 
-    M2Array<M2TextureWeight> &transparencyRecords = boneMasterData->getM2Geom()->getM2Data()->texture_weights;
+    const M2Array<M2TextureWeight> &transparencyRecords = boneMasterData->getM2Geom()->getM2Data()->texture_weights;
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
 
     static float defaultAlpha = 1.0;
@@ -1006,6 +1119,8 @@ void AnimationManager::calcTransparencies(std::vector<float> &transparencies) {
 void AnimationManager::calcLights(std::vector<M2LightResult> &lights, const std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices, const mathfu::mat4 &modelMatrix) {
     auto &lightRecords = boneMasterData->getM2Geom()->getM2Data()->lights;
     auto &global_loops = *boneMasterData->getSkelData()->m_globalSequences;
+
+
 
     if (lightRecords.size <= 0) return;
 
@@ -1120,12 +1235,8 @@ void AnimationManager::calcLights(std::vector<M2LightResult> &lights, const std:
         mathfu::vec4 lightWorldPos = modelMatrix * boneMat * mathfu::vec4(mathfu::vec3(pos_vec), 1.0);
         lightWorldPos.w = 1.0;
 
-//        if (i == 0) {
-//            diffuse_intensity = 1.0;
-//        }
-
         if (boneMasterData->getM2Geom()->getM2Data()->global_flags.flag_unk_0x8000 == 0) {
-            attenuation_start =  1.6666f;
+            attenuation_start = 1.6666f;
             attenuation_end = 5.2666602f;
         }
 
@@ -1458,10 +1569,15 @@ void AnimationManager::setAnimationPercent(float percent) {
 
 void AnimationManager::calcAnimRepetition(AnimationStruct &animationStruct) {
     auto &seqRec = animationStruct.animationRecord;
-    animationStruct.repeatTimes =
-        seqRec->replay.min + (
-            (seqRec->replay.max - seqRec->replay.min) * ((float)std::rand() / (float)RAND_MAX)
-        ) - 1;
+
+    if (seqRec->replay.max == 0 && seqRec->replay.min == 0) {
+        animationStruct.repeatTimes = 1;
+    } else {
+        animationStruct.repeatTimes =
+            seqRec->replay.min + (
+                (seqRec->replay.max - seqRec->replay.min) * ((float)std::rand() / (float)RAND_MAX)
+            ) - 1;
+    }
 }
 
 int AnimationManager::getCurrentAnimationIndex() {
