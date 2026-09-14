@@ -30,8 +30,7 @@ class CChunkFileReader {
 protected:
     void *fileData;
     int regionSizeToProcess;
-    std::string fileName;
-
+    std::string fileName = "";
 public:
     unsigned int chunkIdent;
     int chunkLen = -1;

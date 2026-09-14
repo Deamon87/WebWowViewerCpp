@@ -18,9 +18,11 @@ typedef  std::function<std::shared_ptr<SceneWindow>()> SceneWindowAccessor;
 class MapSelectDialog {
 public:
     MapSelectDialog(const HApiContainer &api, const std::shared_ptr<FrontendUIRenderer> &uiRenderer,
-                    const SceneWindowAccessor &getSceneWindow);
+                    const SceneWindowAccessor &getSceneWindow,
+                    const SceneWindowAccessor &getActiveSceneWindow);
 
     void setCurrentMap(const MapRecord & mapRec);
+    void setOverrideMap(int wdtFileDataId);
 
     void renderLeftSide();
 
@@ -37,6 +39,7 @@ private:
     HApiContainer m_api;
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
     SceneWindowAccessor m_getSceneWindow;
+    SceneWindowAccessor m_getActiveSceneWindow;
 
     int prevMapId = -1;
 

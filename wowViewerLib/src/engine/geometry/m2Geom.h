@@ -17,7 +17,7 @@
 
 class M2Geom : public PersistentFile {
 public:
-    M2Geom(std::string fileName){
+    M2Geom(std::string fileName) : PersistentFile(fileName) {
         std::string delimiter = ".";
         std::string nameTemplate = fileName.substr(0, fileName.find_last_of(delimiter));
         std::string modelFileName = nameTemplate + ".m2";
@@ -25,7 +25,7 @@ public:
         this->m_modelName = modelFileName;
         this->m_nameTemplate= nameTemplate;
     };
-    M2Geom(int fileDataId){
+    M2Geom(int fileDataId) : PersistentFile(fileDataId) {
         useFileId = true;
         m_modelFileId = fileDataId;
     };
@@ -35,7 +35,7 @@ public:
         return m_modelName;
     }
 
-    void process(HFileContent m2File, const std::string &fileName) override;
+    void process(HFileContent m2File) override;
     HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer);
     HGVertexBufferBindings getVAO(const HMapSceneBufferCreate &sceneRenderer, SkinGeom *skinGeom);
     std::array<HGVertexBufferBindings, IDevice::MAX_FRAMES_IN_FLIGHT>
@@ -44,7 +44,7 @@ public:
                          SkinGeom *skinGeom, M2SkinSection *skinSection);
     void loadLowPriority(const HApiContainer& m_api, uint32_t animationId, uint32_t subAnimationId);
 
-    M2Data * getM2Data(){ if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
+    const M2Data * getM2Data() const { if (fsStatus == FileStatus::FSLoaded) {return m_m2Data;} else {return nullptr;}};
 
     M2Data *m_m2Data = nullptr;
     std::vector<uint32_t> skinFileDataIDs;
@@ -59,6 +59,9 @@ public:
 
     EDGF * edgf = nullptr;
     int edgf_count = 0;
+
+    DETL * detl = nullptr;
+    int detl_count = 0;
 
     EXP2 *exp2 = nullptr;
     std::vector<TXAC> txacMesh = {};

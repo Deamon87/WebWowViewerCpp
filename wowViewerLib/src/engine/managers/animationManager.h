@@ -13,6 +13,7 @@ class AnimationManager;
 #include "CRibbonEmitter.h"
 #include "../algorithms/animate.h"
 #include "../objects/m2/m2Helpers/CBoneMasterData.h"
+#include "../objects/m2/m2Helpers/M2GpuAnimData.h"
 
 class AnimationManager {
 private:
@@ -52,6 +53,26 @@ public:
     bool setAnimationId(int animationId, bool reset);
     int getCurrentAnimationIndex();
     void setAnimationPercent(float percent);
+
+    // Sequencing-only part of update(): advances animation/global-sequence time, picks and
+    // blends sub-animations, applies the deferred (.anim) loading gate.
+    // Returns false when sequence data is not loaded yet and evaluation must be skipped
+    // this frame (GPU buffers then keep last frame's values, same as the CPU arrays do).
+    bool updateSequencing(animTime_t deltaTime, animTime_t deltaTimeForGS);
+
+    // Evaluation part of update(): computes bone matrices, texture animation matrices,
+    // colors, transparencies, lights and emitter properties from the current sequencing state.
+    void evaluateAnimation(
+        const mathfu::mat4 &modelMatrix,
+        const mathfu::mat4 &modelViewMatrix,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+        std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
+        std::vector<float> &transparencies,
+        std::vector<M2LightResult> &lights,
+        std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+        std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters);
+
     void update (
         animTime_t deltaTime,
         animTime_t deltaTimeForGS,
@@ -71,6 +92,39 @@ public:
         /*cameraDetails, particleEmitters*/);
 
     void calcBones(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, const mathfu::mat4 &modelViewMatrix);
+
+    // Evaluates only the listed bones (parent chains are covered by recursion).
+    // Used on the GPU animation path for the few bones the CPU still needs
+    // (transparent-sort centers, light attachments). Results are model-space,
+    // same as calcBones output.
+    void calcBoneSubset(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices,
+                        const std::vector<int> &boneIndices,
+                        const mathfu::mat4 &modelViewMatrix);
+
+    // Fills the per-object GPU animation state from the current sequencing state.
+    // Returns false when the state doesn't fit GPU constraints (too many global sequences).
+    bool fillGpuAnimState(GpuM2AnimState &state) const;
+
+    // GPU animation path: evaluates everything the CPU still owns when bone matrices
+    // are computed by the GPU compute pass: texture transforms, colors, transparencies,
+    // the cpuBoneSubset bones (sorting centers + attachment bones, model-space), lights,
+    // and (until the sims move to GPU) the particle/ribbon emitter properties.
+    void evaluateForGpuPath(
+        const mathfu::mat4 &modelMatrix,
+        const mathfu::mat4 &modelViewMatrix,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &bonesMatrices,
+        std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &textAnimMatrices,
+        std::vector<mathfu::vec4, tbb::cache_aligned_allocator<mathfu::vec4>> &subMeshColors,
+        std::vector<float> &transparencies,
+        std::vector<M2LightResult> &lights,
+        std::vector<std::unique_ptr<ParticleEmitter>> &particleEmitters,
+        std::vector<std::unique_ptr<CRibbonEmitter>> &ribbonEmitters,
+        const std::vector<int> &cpuBoneSubset);
+
+    // The firstUpdate bookkeeping evaluateAnimation() does at the end of a frame;
+    // kept separate so the GPU animation path (which skips evaluateAnimation) keeps
+    // identical changedData semantics.
+    void finishFrameEvaluation();
 
     void calcBoneMatrix(std::vector<mathfu::mat4, tbb::cache_aligned_allocator<mathfu::mat4>> &boneMatrices, int boneIndex, const mathfu::mat4 &modelViewMatrix);
 

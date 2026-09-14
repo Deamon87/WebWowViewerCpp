@@ -119,6 +119,7 @@ const std::string liquidTypeSQL =   R"===(
         select
             lt.Texture_0, lt.Texture_1, lt.Texture_2, lt.Texture_3, lt.Texture_4, lt.Texture_5,
             lt.Flags, lt.SpellID, lt.LightID,
+            lt.MaxDarkenDepth, lt.FogDarkenIntensity, lt.AmbDarkenIntensity, lt.DirDarkenIntensity,
             lt.MaterialID,
             lt.MinimapStaticCol,
             lt.FrameCountTexture_0, lt.FrameCountTexture_1, lt.FrameCountTexture_2, lt.FrameCountTexture_3,
@@ -165,16 +166,17 @@ CSqliteDB::CSqliteDB(std::string dbFileName) :
     getLiquidObjectInfo(m_sqliteDatabase,liquidObjectInfoSQL),
     getLiquidTypeInfo(m_sqliteDatabase, liquidTypeSQL),
     getLiquidTextureFileDataIds(m_sqliteDatabase, getHasLiquidTypeXTexture(m_sqliteDatabase) ? liquidTextureFileDataIdsSQL : "select 1 from Map;"),
-    getZoneLightInfo(m_sqliteDatabase,
-        "select ID, Name, LightID, Zmin, Zmax from ZoneLight where MapID = ?"
-    ),
+    getZoneLightInfo(m_sqliteDatabase, generateSimpleSelectSQL("ZoneLight",{},"where MapID = ?")),
     getZoneLightPointsInfo(m_sqliteDatabase,
         "select Pos_0, Pos_1 from ZoneLightPoint where ZoneLightID = ? order by PointOrder DESC;"
     ),
     getMapList(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapListSQL : getMapListSQL_classic),
-    getMapByIdStatement(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapByIDSQL : getMapByIDSQL_classic)
+    getMapByIdStatement(m_sqliteDatabase, getHasWDTId(m_sqliteDatabase) ? getMapByIDSQL : getMapByIDSQL_classic),
+
+    getGameObjectsForMapStatement(m_sqliteDatabase, generateSimpleSelectSQL("GameObjects", {}, "where OwnerID = ?")),
+    getGameObjectDisplayInfoStatement(m_sqliteDatabase, generateSimpleSelectSQL("GameObjectDisplayInfo", {}, "where ID = ?"))
 {
-    char *sErrMsg = "";
+    char *sErrMsg = 0;
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA synchronous = OFF", NULL, NULL, &sErrMsg);
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA temp_store = MEMORY", NULL, NULL, &sErrMsg);
     sqlite3_exec(m_sqliteDatabase.getHandle(), "PRAGMA schema.journal_mode = MEMORY", NULL, NULL, &sErrMsg);
@@ -431,7 +433,7 @@ bool CSqliteDB::getLightParamData(int lightParamId, int time, LightParamData &li
 
     getLightParamDataStatement.setInputs(lightParamId);
 
-    bool hasSecondOverrideSphere = getLightParamDataStatement.getFieldIndex("Field_11_0_0_54210_001_0") >= 0;
+    bool hasSunOverride = getLightParamDataStatement.getFieldIndex("OverrideSunPosition_0") >= 0;
 
     if (getLightParamDataStatement.execute()) {
         lightParamData.glow = getLightParamDataStatement.getField("Glow").getDouble();
@@ -442,10 +444,15 @@ bool CSqliteDB::getLightParamData(int lightParamId, int time, LightParamData &li
         lightParamData.oceanDeepAlpha = getLightParamDataStatement.getField("OceanDeepAlpha").getDouble();
         lightParamData.lightParamFlags = getLightParamDataStatement.getField("Flags").getInt();
 
-        if (hasSecondOverrideSphere) {
-            lightParamData.celestialBodyOverride2[0] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_0").getDouble();
-            lightParamData.celestialBodyOverride2[1] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_1").getDouble();
-            lightParamData.celestialBodyOverride2[2] = getLightParamDataStatement.getField("Field_11_0_0_54210_001_2").getDouble();
+        if (hasSunOverride) {
+            lightParamData.celestialBodyOverride2[0] = getLightParamDataStatement.getField("OverrideSunPosition_0").getDouble();
+            lightParamData.celestialBodyOverride2[1] = getLightParamDataStatement.getField("OverrideSunPosition_1").getDouble();
+            lightParamData.celestialBodyOverride2[2] = getLightParamDataStatement.getField("OverrideSunPosition_2").getDouble();
+
+            lightParamData.sunPolar = getLightParamDataStatement.getField("SunPolar").getDouble();
+            lightParamData.sunAzimuth = getLightParamDataStatement.getField("SunAzimuth").getDouble();
+            lightParamData.sunAttenuationStart = getLightParamDataStatement.getField("SunAttenuationStart").getDouble();
+            lightParamData.sunAttenuationEnd = getLightParamDataStatement.getField("SunAttenuationEnd").getDouble();
         }
 
         if (lightParamData.lightSkyBoxId > 0) {
@@ -525,6 +532,8 @@ void CSqliteDB::getTimedLightParamData(int lightParamId, int time, LightParamDat
         currLdRes.SkySmogColor = getLightData.getField("SkySmogColor");
         currLdRes.SkyFogColor = getLightData.getField("SkyFogColor");
 
+        currLdRes.SunColor = getLightData.getField("SunColor");
+
         currLdRes.FogEnd = getLightData.getField("FogEnd").getDouble();
         currLdRes.FogScaler = getLightData.getField("FogScaler").getDouble();
         currLdRes.FogDensity = hasFogDensity ? getLightData.getField("FogDensity").getDouble() : 0.000001f;
@@ -565,7 +574,7 @@ void CSqliteDB::getTimedLightParamData(int lightParamId, int time, LightParamDat
 }
 
 
-void CSqliteDB::getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) {
+void CSqliteDB::getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidObjectRec &loData) {
     getLiquidObjectInfo.setInputs( liquidObjectId );
 
     if (getLiquidObjectInfo.execute()) {
@@ -574,14 +583,8 @@ void CSqliteDB::getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId
         loData.flowDirection = getLiquidObjectInfo.getField("FlowDirection").getDouble();
         loData.flowSpeed = getLiquidObjectInfo.getField("FlowSpeed").getDouble();
         loData.reflection = getLiquidObjectInfo.getField("Reflection").getInt() > 0;
-
-        getLiquidTypeData(loData.liquidTypeId, loData, textures);
-
-        return;
     } else {
         loData.liquidTypeId = fallbackliquidTypeId;
-        getLiquidTypeData(fallbackliquidTypeId, loData, textures);
-
     }
 };
 void CSqliteDB::getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) {
@@ -594,8 +597,16 @@ void CSqliteDB::getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, st
         }
         loData.flags = getLiquidTypeInfo.getField("Flags").getUInt();
         loData.spellID = getLiquidTypeInfo.getField("SpellID").getUInt();
-        loData.lightID = getLiquidTypeInfo.getField("SpellID").getUInt();
+
+        loData.maxDarkenDepth = getLiquidTypeInfo.getField("MaxDarkenDepth").getDouble();
+        loData.fogDarkenIntensity = getLiquidTypeInfo.getField("FogDarkenIntensity").getDouble();
+        loData.ambDarkenIntensity = getLiquidTypeInfo.getField("AmbDarkenIntensity").getDouble();
+        loData.dirDarkenIntensity = getLiquidTypeInfo.getField("DirDarkenIntensity").getDouble();
+
+
+        loData.lightID = getLiquidTypeInfo.getField("LightID").getUInt();
         loData.materialID = getLiquidTypeInfo.getField("MaterialID").getUInt();
+
 
         int minimapStaticCol = getLiquidTypeInfo.getField("MinimapStaticCol").getInt();
         loData.minimapStaticCol[0] = getFloatFromInt<0>(minimapStaticCol);
@@ -608,21 +619,21 @@ void CSqliteDB::getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, st
         }
 
         int color1 = getLiquidTypeInfo.getField("Color_0").getInt();
-        loData.color1[0] = getFloatFromInt<0>(color1);
-        loData.color1[1] = getFloatFromInt<1>(color1);
-        loData.color1[2] = getFloatFromInt<2>(color1);
+        loData.m_colors[0][0] = getFloatFromInt<0>(color1);
+        loData.m_colors[0][1] = getFloatFromInt<1>(color1);
+        loData.m_colors[0][2] = getFloatFromInt<2>(color1);
         int color2 = getLiquidTypeInfo.getField("Color_1").getInt();
-        loData.color2[0] = getFloatFromInt<0>(color2);
-        loData.color2[1] = getFloatFromInt<1>(color2);
-        loData.color2[2] = getFloatFromInt<2>(color2);
+        loData.m_colors[1][0] = getFloatFromInt<0>(color2);
+        loData.m_colors[1][1] = getFloatFromInt<1>(color2);
+        loData.m_colors[1][2] = getFloatFromInt<2>(color2);
 
         for (int i = 0; i < loData.m_floats.size(); i++) {
             HashedString fieldHash = HashedString(("Float_" + std::to_string(i)).c_str());
             loData.m_floats[i] = getLiquidTypeInfo.getField(fieldHash).getDouble();
         }
-        for (int i = 0; i < loData.m_int.size(); i++) {
+        for (int i = 0; i < loData.m_ints.size(); i++) {
             HashedString fieldHash = HashedString(("Int_" + std::to_string(i)).c_str());
-            loData.m_int[i] = getLiquidTypeInfo.getField(fieldHash).getInt();
+            loData.m_ints[i] = getLiquidTypeInfo.getField(fieldHash).getInt();
         }
 
         for (int i = 0; i < loData.coefficient.size(); i++) {
@@ -652,6 +663,8 @@ void CSqliteDB::getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData
 
 void CSqliteDB::getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) {
 
+    bool hasPriority = getZoneLightInfo.getFieldIndex("TransitionType") >= 0;
+
     zoneLights.clear();
     getZoneLightInfo.setInputs( mapId );
     while (getZoneLightInfo.execute()) {
@@ -662,6 +675,8 @@ void CSqliteDB::getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLight
         zoneLight.LightID = getZoneLightInfo.getField("LightID").getInt();
         zoneLight.Zmin = getZoneLightInfo.getField("Zmin").getDouble();
         zoneLight.Zmax = getZoneLightInfo.getField("Zmax").getDouble();
+        if (hasPriority)
+            zoneLight.Priority = getZoneLightInfo.getField("TransitionType").getInt();
     }
 
     for (auto &zoneLight : zoneLights) {
@@ -674,6 +689,53 @@ void CSqliteDB::getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLight
             pt.y = getZoneLightPointsInfo.getField("Pos_1").getDouble();
         }
     }
+}
+
+void CSqliteDB::getGameObjectsForMap(int mapId, std::vector<GameObjectRecord> &gameObjects) {
+    getGameObjectsForMapStatement.setInputs( mapId );
+
+    while (getGameObjectsForMapStatement.execute()) {
+        GameObjectRecord &gameObjectRecord = gameObjects.emplace_back();
+
+        gameObjectRecord.ID = getGameObjectsForMapStatement.getField("ID").getInt();
+        gameObjectRecord.OwnerID = mapId;
+        gameObjectRecord.DisplayID = getGameObjectsForMapStatement.getField("DisplayID").getInt();
+        gameObjectRecord.TypeID = getGameObjectsForMapStatement.getField("TypeID").getInt();
+        gameObjectRecord.Name = getGameObjectsForMapStatement.getField("Name_lang").getString();
+
+        gameObjectRecord.Pos[0] = getGameObjectsForMapStatement.getField("Pos_0").getDouble();
+        gameObjectRecord.Pos[1] = getGameObjectsForMapStatement.getField("Pos_1").getDouble();
+        gameObjectRecord.Pos[2] = getGameObjectsForMapStatement.getField("Pos_2").getDouble();
+
+        gameObjectRecord.Rot[0] = getGameObjectsForMapStatement.getField("Rot_0").getDouble();
+        gameObjectRecord.Rot[1] = getGameObjectsForMapStatement.getField("Rot_1").getDouble();
+        gameObjectRecord.Rot[2] = getGameObjectsForMapStatement.getField("Rot_2").getDouble();
+        gameObjectRecord.Rot[3] = getGameObjectsForMapStatement.getField("Rot_3").getDouble();
+
+        gameObjectRecord.Scale = getGameObjectsForMapStatement.getField("Scale").getDouble();
+
+        gameObjectRecord.PropValue0 = getGameObjectsForMapStatement.getField("PropValue_0").getInt();
+    }
+}
+
+bool CSqliteDB::getGameObjectDisplayInfo(int displayId, GameObjectDisplayInfoRecord &result) {
+    getGameObjectDisplayInfoStatement.setInputs( displayId );
+
+    if (getGameObjectDisplayInfoStatement.execute()) {
+        result.ID = displayId;
+        result.FileDataID = getGameObjectDisplayInfoStatement.getField("FileDataID").getInt();
+
+        result.GeoBoxMin[0] = getGameObjectDisplayInfoStatement.getField("GeoBox_0").getDouble();
+        result.GeoBoxMin[1] = getGameObjectDisplayInfoStatement.getField("GeoBox_1").getDouble();
+        result.GeoBoxMin[2] = getGameObjectDisplayInfoStatement.getField("GeoBox_2").getDouble();
+        result.GeoBoxMax[0] = getGameObjectDisplayInfoStatement.getField("GeoBox_3").getDouble();
+        result.GeoBoxMax[1] = getGameObjectDisplayInfoStatement.getField("GeoBox_4").getDouble();
+        result.GeoBoxMax[2] = getGameObjectDisplayInfoStatement.getField("GeoBox_5").getDouble();
+
+        return true;
+    }
+
+    return false;
 }
 
 std::string
@@ -692,4 +754,29 @@ CSqliteDB::generateSimpleSelectSQL(const std::string &tableName, const std::vect
     query = query.substr(0, query.size()-2);
     query += " FROM "+tableName+" "+whereClause;
     return query;
+}
+
+void CSqliteDB::getSkySceneXPlayerConditions(std::vector<SkySceneXPlayerConditionRecord> &result) {
+    if (!m_skySceneXPlayerConditionLoaded) {
+        m_skySceneXPlayerConditionLoaded = true;
+        m_skySceneXPlayerConditionCache.clear();
+
+        try {
+            if (m_sqliteDatabase.tableExists("SkySceneXPlayerCondition")) {
+                SQLite::Statement statement(m_sqliteDatabase,
+                    "SELECT ID, PlayerConditionID, SkySceneID FROM SkySceneXPlayerCondition");
+                while (statement.executeStep()) {
+                    auto &record = m_skySceneXPlayerConditionCache.emplace_back();
+                    record.ID = statement.getColumn("ID").getInt();
+                    record.PlayerConditionID = statement.getColumn("PlayerConditionID").getInt();
+                    record.SkySceneID = statement.getColumn("SkySceneID").getInt();
+                }
+            }
+        } catch (const std::exception &e) {
+            std::cout << "Failed to read SkySceneXPlayerCondition table: " << e.what() << std::endl;
+            m_skySceneXPlayerConditionCache.clear();
+        }
+    }
+
+    result = m_skySceneXPlayerConditionCache;
 }

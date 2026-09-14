@@ -21,6 +21,8 @@ struct CRibbonVertex
 
 
 class CRibbonEmitter {
+    int m_fileDataId;
+
     int textureTransformLookup = -1;
     int m_refCount;
     std::vector<float> m_edges;
@@ -86,6 +88,11 @@ private:
 
     std::array<RibbonFrame, IDevice::MAX_FRAMES_IN_FLIGHT> frame;
     std::vector<std::shared_ptr<IM2RibbonMaterial>> m_ribbonMaterials;
+    // Full last-written snapshots of each material's meshRibbonWideBlockPS UBO
+    // content. CBufferChunkVLK::getObject() returns a fresh staging slot whose
+    // ENTIRE content is uploaded over the chunk at submit, so UBOs must always be
+    // written whole from these snapshots — never read back or partially written.
+    std::vector<Ribbon::meshRibbonWideBlockPS> m_blockPS;
 
     void createMaterials(const HMapSceneBufferCreate &sceneRenderer,
                          const std::shared_ptr<IM2ModelData> &m2ModelData,
@@ -122,10 +129,40 @@ public:
     //CTexture **SetTexture(unsigned int a2, CTexture *a3);
     //int ReplaceTexture(unsigned int a2, CTexture *a3);
 
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes);
+    // Visits the live meshes for the current processing frame.
+    void forEachMesh(const std::function<void(const HGParticleMesh &mesh)> &visitor);
 
     void updateBuffers();
     void fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
+
+    // ---- GPU ribbon sim path (Config::useGpuAnimation + bindless renderer) ----
+    // The sim runs in ribbonSimulate.comp.slang; the pull-model ribbonGpuShader
+    // vertex shader reads the edge ring directly; the strip index buffer is
+    // rewritten per frame by the sim.
+    // True only while the GPU path is actually live (GPU data created AND the
+    // object's GPU animation is enabled) — when the user toggles GPU animation
+    // off, the CPU sim/buffers/meshes must take over again.
+    // Defined in the .cpp: M2Object is incomplete here (circular include).
+    bool isGpuSimActive() const;
+    int32_t getGpuStateIndex() const { return m_gpuStateIndex; }
+    void setGpuSimData(int32_t stateIndex);
+    void setGpuBindFields(const GpuRibbonEmitterBindInfo &bindInfo);
+    const std::shared_ptr<IBuffer> &getGpuIndexBuffer() const { return m_gpuIbo; }
+    // Creates the pull-model GPU meshes/materials (called by M2Object after Initialize)
+    void createGpuMeshes(const HMapSceneBufferCreate &sceneRenderer);
+
+private:
+    // GPU ribbon state: created at load (end of Initialize) when the renderer supports it
+    int32_t m_gpuStateIndex = -1;
+    std::shared_ptr<IBuffer> m_gpuIbo = nullptr;
+    std::vector<std::shared_ptr<IM2RibbonMaterial>> m_gpuRibbonMaterials;
+    std::vector<HGSortableMesh> m_gpuMeshes;
+    // Saved from createMaterials for the GPU material variants
+    std::shared_ptr<IM2ModelData> m_m2ModelData;
+    std::vector<PipelineTemplate> m_pipelineTemplates;
+    std::vector<HGSamplableTexture> m_materialTextures;
+    M2Object *m_m2Object = nullptr;
 
 
 };

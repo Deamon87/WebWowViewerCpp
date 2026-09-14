@@ -53,6 +53,8 @@ struct LightTimedData {
     int SkySmogColor = 0;
     int SkyFogColor = 0;
 
+    int SunColor = 0;
+
     float FogEnd = 0.0f;
     float FogScaler = 0.0f;
     float FogDensity = 0.0f;
@@ -94,6 +96,11 @@ struct LightParamData {
 
     std::array<float, 3> celestialBodyOverride;
     std::array<float, 3> celestialBodyOverride2;
+
+    float sunPolar = 0.0f;
+    float sunAzimuth = 0.0f;
+    float sunAttenuationStart = 0.0f;
+    float sunAttenuationEnd = 0.0f;
 
     SkyBoxInfo skyboxInfo;
 
@@ -163,18 +170,26 @@ struct LiquidTextureData {
     int type;
 };
 
+struct LiquidObjectRec {
+    int liquid_object_or_lvf = 0;
+    int liquidTypeId = 1;
+    float flowSpeed = 0.0f;
+    float flowDirection = 0.0f;
+    bool fishable = false;
+    bool reflection = false;
+};
+
 struct LiquidTypeAndMat {
-    int liquidTypeId;
     std::string name;
     std::array<std::string, 6> texture;
     uint16_t flags;
 //    uint8_t soundBank;
 //    uint32_t SoundID;
     uint32_t spellID;
-//    float maxDarkenDepth;
-//    float fogDarkenIntensity;
-//    float ambDarkenIntensity;
-//    float dirDarkenIntensity;
+    float maxDarkenDepth;
+    float fogDarkenIntensity;
+    float ambDarkenIntensity;
+    float dirDarkenIntensity;
     uint16_t lightID;
 //    float particleScale;
 //    uint8_t particleMovement;
@@ -182,19 +197,13 @@ struct LiquidTypeAndMat {
     uint8_t materialID;
     std::array<float,3> minimapStaticCol;
     std::array<uint8_t, 6> frameCountTexture;
-    std::array<float,3> color1;
-    std::array<float,3> color2;
+    std::array<std::array<float,3>, 2> m_colors;
     std::array<float, 18> m_floats = {0};
-    std::array<uint32_t, 4> m_int = {0};
+    std::array<uint32_t, 4> m_ints = {0};
     std::array<float, 4> coefficient;
 
     uint8_t matFlag;
     uint8_t matLVF;
-
-    float flowSpeed = 0.0f;
-    float flowDirection = 0.0f;
-    bool fishable = false;
-    bool reflection = false;
 };
 
 struct vec2 {
@@ -206,6 +215,7 @@ struct ZoneLight {
     int LightID;
     float Zmin;
     float Zmax;
+    int Priority;
     std::vector<vec2> points;
 };
 
@@ -216,5 +226,33 @@ struct AreaRecord {
     int areaId = 0;
     int parentAreaId = 0;
     float ambientMultiplier = 1;
+};
+
+struct GameObjectRecord {
+    int ID = 0;
+    int OwnerID = 0; //Actually MapID
+    int DisplayID = 0;
+    int TypeID = 0;
+    std::string Name;
+    std::array<float, 3> Pos = {0.0f, 0.0f, 0.0f};
+    std::array<float, 4> Rot = {0.0f, 0.0f, 0.0f, 0.0f};
+    float Scale = 1.0f;
+    int PropValue0 = 0; //For TypeID == 5 (Generic), this is `floatingTooltip`
+};
+
+struct GameObjectDisplayInfoRecord {
+    int ID = 0;
+    int FileDataID = 0;
+    std::array<float, 3> GeoBoxMin = {0.0f, 0.0f, 0.0f};
+    std::array<float, 3> GeoBoxMax = {0.0f, 0.0f, 0.0f};
+};
+
+// Row of the SkySceneXPlayerCondition db2: assigns a player condition to a WDL
+// sky scene (mssn_t::SkySceneID). Import of this db2 is optional, so an empty
+// result can simply mean the table is not present in the database.
+struct SkySceneXPlayerConditionRecord {
+    int ID = 0;
+    int PlayerConditionID = 0;
+    int SkySceneID = 0;
 };
 #endif //AWEBWOWVIEWERCPP_DBSTRUCTS_H

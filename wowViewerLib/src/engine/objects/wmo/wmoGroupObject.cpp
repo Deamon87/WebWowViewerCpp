@@ -10,87 +10,51 @@
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include <algorithm>
 
-bool WmoGroupObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
-    if (this->m_loaded) return false;
+bool WmoGroupObject::getIsLoaded() {
+    return m_loaded && m_wmoColorsIgnored == m_api->getConfig()->ignoreWMOColoring;
+};
 
-    if (!this->m_loading) {
-        this->startLoading();
+bool WmoGroupObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager) {
+    if (m_loaded) {
+        bool needToIgnoreColors = m_wmoColorsIgnored != m_api->getConfig()->ignoreWMOColoring;
+
+        if (needToIgnoreColors) {
+            m_meshArray.clear();
+            m_sortableMeshArray.clear();
+            createMeshes(sceneRenderer);
+            return true;
+        }
         return false;
     }
 
-    if ((m_geom == nullptr) || (m_geom->getStatus() != FileStatus::FSLoaded) || (!m_wmoApi->isLoaded())) return false;
+    if (!this->m_loaded) {
+        if (!this->m_loading) {
+            this->startLoading();
+            return false;
+        }
 
-    this->postLoad(sceneRenderer);
-    this->m_loaded = true;
-    this->m_loading = false;
-    return true;
+        if ((m_geom == nullptr) || (m_geom->getStatus() != FileStatus::FSLoaded) || (!m_wmoApi->isLoaded())) return false;
+
+        this->postLoad(sceneRenderer, liquidMaterialManager);
+        this->m_loaded = true;
+        this->m_loading = false;
+        return true;
+    }
+
+    return false;
 }
 
 void WmoGroupObject::update() {
     if (!this->m_loaded) return;
 
     if (m_recalcBoundries) {
-        this->updateWorldGroupBBWithM2();
+        m_wmoApi->recalcGroupBorders(m_groupNumber);
         m_recalcBoundries = false;
     }
-
-
 }
 
 void WmoGroupObject::uploadGeneratorBuffers(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime)  {
-    for(auto &liquidInstance : m_liquidInstances) {
-        liquidInstance->updateLiquidMaterials(frameDependantData, mapCurrentTime);
-    }
 }
-
-void WmoGroupObject::drawDebugLights() {
-    /*
-    if (!this->m_loaded) return;
-
-    MOLP * lights = m_geom->molp;
-
-    std::vector<float> points;
-
-    for (int i = 0; i < this->m_geom->molpCnt; i++) {
-        points.push_back(lights[i].vec1.x);
-        points.push_back(lights[i].vec1.y);
-        points.push_back(lights[i].vec1.z);
-    }
-
-    GLuint bufferVBO;
-    glGenBuffers(1, &bufferVBO);
-    glBindBuffer( GL_ARRAY_BUFFER, bufferVBO);
-    if (points.size() > 0) {
-        glBufferData(GL_ARRAY_BUFFER, points.size() * 4, &points[0], GL_STATIC_DRAW);
-    }
-
-    auto drawPointsShader = m_api->getDrawPointsShader();
-    static float colorArr[4] = {0.058, 0.819607843, 0.058, 0.3};
-    glUniform3fv(drawPointsShader->getUnf("uColor"), 1, &colorArr[0]);
-
-#ifndef WITH_GLESv2
-    glEnable( GL_PROGRAM_POINT_SIZE );
-#endif
-    glVertexAttribPointer(+drawPoints::Attribute::aPosition, 3, GL_FLOAT, GL_FALSE, 0, 0);  // position
-
-
-    glDisable(GL_CULL_FACE);
-    glDepthMask(GL_FALSE);
-
-    glDrawArrays(GL_POINTS, 0, points.size()/3);
-
-#ifndef WITH_GLESv2
-    glDisable( GL_PROGRAM_POINT_SIZE );
-#endif
-    glBindBuffer( GL_ELEMENT_ARRAY_BUFFER, GL_ZERO);
-    glBindBuffer( GL_ARRAY_BUFFER, GL_ZERO);
-
-    glDepthMask(GL_TRUE);
-
-    glDeleteBuffers(1, &bufferVBO);
-     */
-}
-
 
 void WmoGroupObject::startLoading() {
     if (!this->m_loading) {
@@ -106,13 +70,13 @@ void WmoGroupObject::startLoading() {
     }
 }
 
-void WmoGroupObject::postLoad(const HMapSceneBufferCreate &sceneRenderer) {
+void WmoGroupObject::postLoad(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager) {
     m_localGroupBorder = m_geom->mogp->boundingBox;
-    this->createWorldGroupBB(m_geom->mogp->boundingBox, *m_modelMatrix);
+    m_wmoApi->recalcGroupBorders(m_groupNumber);
     this->loadDoodads();
     this->loadLights();
     this->createMeshes(sceneRenderer);
-    this->createWaterMeshes(sceneRenderer);
+    this->createWaterMeshes(sceneRenderer, liquidMaterialManager);
 
     auto ambients = getAmbientColors();
 
@@ -137,7 +101,9 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
     HGDevice device = m_api->hDevice;
 
-    HGVertexBufferBindings binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader());
+    bool ignoreColors = config->ignoreWMOColoring;
+    m_binding = m_geom->getVertexBindings(sceneRenderer, this->m_wmoApi->getWmoHeader(), ignoreColors);
+    m_wmoColorsIgnored = ignoreColors;
 
     MOGP *mogp = m_geom->mogp;
 
@@ -153,17 +119,26 @@ void WmoGroupObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
         auto materialInstance = m_wmoApi->getMaterialInstance(materialIndex, sceneRenderer);
 
-        gMeshTemplate meshTemplate(binding);
+        gMeshTemplate meshTemplate(m_binding);
 
-        bool isBatchA = (j >= 0 && j < (m_geom->mogp->transBatchCount));
-        bool isBatchC = (j >= (mogp->transBatchCount + mogp->intBatchCount));
+#ifdef DEBUG_MESH_NAMES
+    meshTemplate.name = std::string("WMO Projective,") +
+                        " FileDataId = " + std::to_string(m_modelFileId) +
+                        " batchIndex = " + std::to_string(j)
+    ;
+#endif
+
+        bool isTranspBatch = (j >= 0 && j < (m_geom->mogp->transBatchCount));
+        bool isExteriorBatch = (j >= (mogp->transBatchCount + mogp->intBatchCount));
+
+        int canHaveExteriorLit = (isExteriorBatch || isTranspBatch) ? 1 : 0;
 
         meshTemplate.meshType = MeshType::eWmoMesh;
         meshTemplate.start = renderBatch.first_index * 2;
         meshTemplate.end = renderBatch.num_indices;
 
         //Make mesh
-        auto hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_groupNumber);
+        auto hmesh = sceneRenderer->createWMOMesh(meshTemplate, materialInstance, m_groupNumber, canHaveExteriorLit, m_wmoApi->getPickObjectId());
         if (!hmesh->getIsTransparent()) {
             this->m_meshArray.push_back(hmesh);
         } else {
@@ -226,7 +201,8 @@ void WmoGroupObject::setLiquidType() {
     }
 }
 
-void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer) {
+void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer,
+                                       const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager) {
     HGDevice device = m_api->hDevice;
 
     //Get Liquid with new method
@@ -236,9 +212,28 @@ void WmoGroupObject::createWaterMeshes(const HMapSceneBufferCreate &sceneRendere
     if (binding == nullptr)
         return;
 
-    auto l_liquidInstance = std::make_shared<LiquidInstance>(m_api, sceneRenderer, binding, (int)liquid_type, m_geom->waterIndexSize, m_wmoApi->getPlacementBuffer(), m_waterAaBB);
+    auto m_mliq = m_geom->m_mliq;
 
-    m_liquidInstances.push_back(l_liquidInstance);
+    std::shared_ptr<ILiquidMaterial> liquidMaterial = liquidMaterialManager->getLiquidMaterial(
+        0,
+        (int)liquid_type,
+        isInteriorLightingLit(),
+        m_wmoApi->getPlacementBuffer(),
+        m_mliq->xtiles - 1,
+        m_mliq->ytiles - 1,
+        0, 0
+    );
+
+    if (liquidMaterial) {
+        auto l_liquidInstance = std::make_shared<LiquidInstance>(
+            m_api,
+            sceneRenderer, binding, liquidMaterial,
+            (int) liquid_type, m_geom->waterIndexSize, m_waterAaBB
+        );
+
+
+        m_liquidInstances.push_back(l_liquidInstance);
+    }
 }
 
 void WmoGroupObject::loadDoodads() {
@@ -250,7 +245,7 @@ void WmoGroupObject::loadDoodads() {
 
     bool wmoGroupUsesExteriorLighting = !isInteriorLightingLit();
 
-    //Load all doodad from MOBR
+    //Load all doodad from MODR
     for (int i = 0; i < this->m_geom->doodadRefsLen; i++) {
         auto newDoodad = m_wmoApi->getDoodad(this->m_geom->doodadRefs[i], m_groupNumber);
         m_doodads.push_back(newDoodad);
@@ -260,7 +255,7 @@ void WmoGroupObject::loadDoodads() {
                 newDoodad->setInteriorExteriorBlend(1.0f);
             }
 
-            std::function<void()> event = [&]() -> void {
+            std::function<void(M2Object* m2Object)> event = [&](M2Object* m2Object) -> void {
                 this->m_recalcBoundries = true;
             };
 
@@ -293,109 +288,30 @@ void WmoGroupObject::loadLights() {
 
             if (doodadSet < m_geom->mapobject_pointlight_animsetsLen) {
                 auto lightPointSet = m_geom->mapobject_pointlight_animsets[doodadSet];
+
+                m_wmoNewLights.reserve(m_wmoNewLights.size() + lightPointSet.count);
                 for (int i = 0; i < lightPointSet.count; i++) {
                     const auto lightIndex = lightPointSet.offset + i;
                     if (lightIndex > m_geom->map_object_pointlight_animLen) break;
 
                     auto &lightRecord = m_geom->map_object_pointlight_anims[lightIndex];
 
-                    m_pointLights.emplace_back() = CPointLight(modelMatrix, lightRecord);
+                    m_wmoNewLights.emplace_back() =  std::make_shared<CEngineLight>(modelMatrix, lightRecord);
                 }
             }
         }
     }
 
     //Get newlights array
-    m_wmoNewLights.reserve(m_geom->mapobject_new_light_refsLen);
+    m_wmoNewLights.reserve(m_wmoNewLights.size() + m_geom->mapobject_new_light_refsLen);
     for (int i = 0; i < m_geom->mapobject_new_light_refsLen; i++) {
         auto wmoNewLight = m_wmoApi->getNewLight(m_geom->mapobject_new_light_refs[i]);
         if (wmoNewLight) {
             m_wmoNewLights.push_back(wmoNewLight);
+        } else {
+            std::cout << "New Light denied" << std::endl;
         }
     }
-}
-
-void WmoGroupObject::createWorldGroupBB(const CAaBox &bbox, mathfu::mat4 &placementMatrix) {
-//            groupInfo = this.groupInfo;
-//            bb1 = groupInfo.bb1;
-//            bb2 = groupInfo.bb2;
-//        } else {
-//            groupInfo = this.wmoGeom.wmoGroupFile.mogp;
-//            bb1 = groupInfo.BoundBoxCorner1;
-//            bb2 = groupInfo.BoundBoxCorner2;
-//        }
-    const C3Vector &bb1 = bbox.min;
-    const C3Vector &bb2 = bbox.max;
-
-    mathfu::vec4 bb1vec = mathfu::vec4(bb1.x, bb1.y, bb1.z, 1);
-    mathfu::vec4 bb2vec = mathfu::vec4(bb2.x, bb2.y, bb2.z, 1);
-
-    CAaBox worldAABB = MathHelper::transformAABBWithMat4(placementMatrix, bb1vec, bb2vec);
-
-    this->m_worldGroupBorder = worldAABB;
-    this->m_volumeWorldGroupBorder = worldAABB;
-
-//    std::cout << "Called WmoGroupObject::createWorldGroupBB " << std::endl;
-}
-
-void WmoGroupObject::updateWorldGroupBBWithM2() {
-//    var doodadRefs = this.wmoGeom.wmoGroupFile.doodadRefs;
-//    var mogp = this.wmoGeom.wmoGroupFile.mogp;
-    CAaBox &groupAABB = this->m_worldGroupBorder;
-//
-//    var dontUseLocalLighting = ((mogp.flags & 0x40) > 0) || ((mogp.flags & 0x8) > 0);
-//
-    for (auto &m2Object : this->m_doodads) {
-        if (m2Object == nullptr || !m2Object->isMainDataLoaded()) continue;
-
-        CAaBox m2AAbb = m2Object->getAABB();
-
-        //2. Update the world group BB
-        groupAABB.min = mathfu::vec3_packed(mathfu::vec3(std::min(m2AAbb.min.x, groupAABB.min.x),
-                                                         std::min(m2AAbb.min.y, groupAABB.min.y),
-                                                         std::min(m2AAbb.min.z, groupAABB.min.z)));
-
-        groupAABB.max = mathfu::vec3_packed(mathfu::vec3(std::max(m2AAbb.max.x, groupAABB.max.x),
-                                                         std::max(m2AAbb.max.y, groupAABB.max.y),
-                                                         std::max(m2AAbb.max.z, groupAABB.max.z)));
-    }
-
-//    std::cout << "Called WmoGroupObject::updateWorldGroupBBWithM2 " << std::endl;
-    this->m_worldGroupBorder = CAaBox(groupAABB.min, groupAABB.max);
-    m_wmoApi->updateBB();
-}
-
-void WmoGroupObject::checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
-                                       mathfu::vec4 &cameraPos,
-                                       const MathHelper::FrustumCullingData &frustumData) {
-    drawDoodads = false;
-    drawGroup = false;
-    if (!m_loaded) {
-        //Force load of group if it's exterior
-        if (m_main_groupInfo->flags.EXTERIOR > 0 || !m_api->getConfig()->usePortalCulling) {
-            drawGroup = true;
-            drawDoodads = true;
-        }
-        return;
-    }
-    CAaBox bbArray = this->m_worldGroupBorder;
-
-    bool isInsideM2Volume = (
-        cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
-        cameraPos[1] > bbArray.min.y && cameraPos[1] < bbArray.max.y &&
-        cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
-    );
-
-    drawDoodads = isInsideM2Volume || MathHelper::checkFrustum(frustumData, bbArray);
-
-    bbArray = this->m_volumeWorldGroupBorder;
-    bool isInsideGroup = (
-        cameraPos[0] > bbArray.min.z && cameraPos[0] < bbArray.max.x &&
-        cameraPos[1] > bbArray.min.y && cameraPos[1] < bbArray.max.y &&
-        cameraPos[2] > bbArray.min.z && cameraPos[2] < bbArray.max.z
-    );
-
-    drawGroup = isInsideGroup || MathHelper::checkFrustum(frustumData, bbArray);
 }
 
 bool WmoGroupObject::checkIfInsidePortals(mathfu::vec3 point,
@@ -649,7 +565,7 @@ bool WmoGroupObject::checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                                         PointerChecker<SMOPortalRef> &portalRels,
                                         std::vector<WmoGroupResult> &candidateGroups) {
 
-    CAaBox &bbArray = this->m_volumeWorldGroupBorder;
+    const CAaBox &bbArray = m_wmoApi->getGroupVolumeWorldBorder(m_groupNumber);
 
     //1. Check if group wmo is interior wmo
     //if ((groupInfo.flags & 0x2000) == 0) return null;
@@ -781,19 +697,27 @@ void WmoGroupObject::setModelFileId(int fileId) {
     m_modelFileId = fileId;
 }
 
-void WmoGroupObject::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder) {
+void WmoGroupObject::forEachGroupMesh(const std::function<void(const HGMesh &mesh, bool isTransparent)> &visitor) {
     if (!m_loaded) return;
-    for (auto const &i : this->m_meshArray) {
-        opaqueMeshCollector.addWMOMesh(i);
+    for (auto const &mesh : this->m_meshArray) {
+        visitor(mesh, false);
     }
-    for (auto &i : this->m_sortableMeshArray) {
-        if (!i->getIsTransparent()) {
-            opaqueMeshCollector.addWMOMesh(i);
-        } else {
-            transparentMeshes.push_back(i);
-        }
+    for (auto &mesh : this->m_sortableMeshArray) {
+        visitor(mesh, mesh->getIsTransparent());
     }
+}
 
+void WmoGroupObject::collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder, bool includeTransparents) {
+    forEachGroupMesh([&](const HGMesh &mesh, bool isTransparent) {
+        if (!isTransparent) {
+            opaqueMeshCollector.addWMOMesh(mesh);
+        } else if (includeTransparents) {
+            // Only sortable-array meshes are ever flagged transparent, so this cast is safe.
+            transparentMeshes.push_back(std::static_pointer_cast<ISortableMesh>(mesh));
+        }
+    });
+
+    if (!m_loaded) return;
     for (auto const &liquidInstance : m_liquidInstances) {
         liquidInstance->collectMeshes(opaqueMeshCollector);
     }
@@ -803,7 +727,7 @@ const std::vector<CPointLight> &WmoGroupObject::getPointLights() {
     return m_pointLights;
 }
 
-const std::vector<std::shared_ptr<CWmoNewLight>> &WmoGroupObject::getWmoNewLights() {
+const std::vector<std::shared_ptr<CEngineLight>> &WmoGroupObject::getWmoNewLights() {
     return m_wmoNewLights;
 }
 
@@ -811,18 +735,18 @@ std::array<mathfu::vec3, 3> WmoGroupObject::getAmbientColors() {
     std::array<mathfu::vec3, 3> ambColors;
     if (isInteriorLightingLit()) {
         ambColors = m_wmoApi->getAmbientColors();
-        if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
-            ambColors[0] = ImVectorToVec4(m_geom->replacement_for_header_color).xyz();
-            ambColors[1] = ambColors[0];
-            ambColors[2] = ambColors[0];
-        }
+//        if ((m_geom->use_replacement_for_header_color == 1) && (*(int *) &m_geom->replacement_for_header_color != -1)) {
+//            ambColors[0] = ImVectorToVec4(m_geom->replacement_for_header_color).xyz();
+//            ambColors[1] = ambColors[0];
+//            ambColors[2] = ambColors[0];
+//        }
 
         return ambColors;
     }
     return ambColors;
 }
 
-void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint8_t a4, mathfu::vec3 &color_out_1, uint8_t a6)
+void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint8_t brightnessThreshold, mathfu::vec3 &color_out_1, uint8_t saturationLimit)
 {
     float maxInputComponent = std::max<float>(color_in.x, std::max<float>(color_in.y, color_in.z));
 
@@ -832,23 +756,24 @@ void AdjustLighting(const mathfu::vec3 color_in, mathfu::vec3 &color_out_0, uint
     {
         v10 = std::floor(maxInputComponent * 255.0f);
     }
-    if ( v10 < a4 )
+    if (v10 < brightnessThreshold )
     {
         auto hsv = MathHelper::rgb2hsv(color_in);
-        hsv.v = (float)((float)(a4) / (float)(v10)) * hsv.v;
+        hsv.v = (float)((float)(brightnessThreshold) / (float)(v10)) * hsv.v;
         color_out_0 = MathHelper::hsv2rgb(hsv);
     }
-    if ( v10 <= a6 )
+    if (v10 <= saturationLimit )
     {
         color_out_1 = color_in;
     }
     else
     {
-        float v12 = (float)((float)a6) / (float)v10;
+        float v12 = (float)((float)saturationLimit) / (float)v10;
         color_out_1 = v12 * color_in;
     }
 }
 
+/*
 void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
     auto ambientColors = getAmbientColors();
 
@@ -904,3 +829,4 @@ void WmoGroupObject::assignInteriorParams(M2Object *m2Object) {
 //    interiorSunDir = mathfu::vec4(interiorSunDir.xyz() * (1.0f / interiorSunDir.xyz().Length()), 0.0f);
 //    m2Object->setSunDirOverride(interiorSunDir, true);
 }
+*/

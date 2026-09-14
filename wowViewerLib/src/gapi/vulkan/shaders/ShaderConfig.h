@@ -34,4 +34,9 @@ struct ShaderConfig {
     DescTypeOverride typeOverrides;
 };
 
+struct ComputeShaderConfig {
+    std::string computeShaderFolder;
+    DescTypeOverride typeOverrides;
+};
+
 #endif //AWEBWOWVIEWERCPP_SHADERCONFIG_H

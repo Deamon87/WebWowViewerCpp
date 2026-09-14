@@ -24,6 +24,8 @@ GTextureVLK::GTextureVLK(IDeviceVulkan &device,
 
     m_samplable = (imageUsageFlags & VK_IMAGE_USAGE_SAMPLED_BIT) > 0;
 
+    m_isDepthTexture = isDepthTexture;
+
     createVulkanImageObject(
         isDepthTexture,
         textureFormatGPU,
@@ -86,8 +88,44 @@ bool GTextureVLK::getIsLoaded() {
 static int pureTexturesUploaded = 0;
 
 void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat textureFormat) {
-    std::vector<uint8_t > unifiedBuffer((uint8_t *)data, (uint8_t *)data + (width*height*4));
+    bool isDepthTexture = false;
+    int bytesPerPixel = 4;
+    VkFormat vkFormat;
 
+    switch (textureFormat) {
+        case ITextureFormat::itDepth32:
+            vkFormat = VK_FORMAT_D32_SFLOAT;
+            bytesPerPixel = 4;
+            isDepthTexture = true;
+            break;
+        case ITextureFormat::itRGBA16:
+            vkFormat = VK_FORMAT_R16G16B16A16_UNORM;
+            bytesPerPixel = 8;
+            break;
+        case ITextureFormat::itFloat32:
+            vkFormat = VK_FORMAT_R32_SFLOAT;
+            bytesPerPixel = 4;
+            break;
+        case ITextureFormat::itRGBAFloat32:
+            vkFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+            bytesPerPixel = 16;
+            break;
+        case ITextureFormat::itInt:
+            vkFormat = VK_FORMAT_R32_SINT;
+            bytesPerPixel = 4;
+            break;
+        case ITextureFormat::itRGBA:
+        case ITextureFormat::itNone:
+        default:
+            vkFormat = VK_FORMAT_R8G8B8A8_UNORM;
+            bytesPerPixel = 4;
+            break;
+    }
+
+    std::vector<uint8_t> unifiedBuffer(
+        static_cast<uint8_t*>(data),
+        static_cast<uint8_t*>(data) + (width * height * bytesPerPixel)
+    );
 
     HMipmapsVector mipmapsVector = std::make_shared<std::vector<mipmapStruct_t>>(1);
     mipmapStruct_t &mipmap = mipmapsVector->at(0);
@@ -95,10 +133,10 @@ void GTextureVLK::loadData(int width, int height, void *data, ITextureFormat tex
     mipmap.width = width;
     mipmap.texture = unifiedBuffer;
 
-    createTexture(mipmapsVector, VK_FORMAT_R8G8B8A8_UNORM, unifiedBuffer);
+    createTexture(mipmapsVector, vkFormat, unifiedBuffer, isDepthTexture);
 }
 
-void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer) {// Copy data to an optimal tiled image
+void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer, bool isDepthTexture) {// Copy data to an optimal tiled image
     if (m_uploaded) {
         std::cout << "oops!" << std::endl << std::flush;
     }
@@ -142,16 +180,16 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
 
     int vulkanMipMapCount = 0;
     for (uint32_t i = 0; i < mipmaps.size(); i++) {
-        if (
-            (textureFormatGPU != VK_FORMAT_B8G8R8A8_SNORM) &&
-            (textureFormatGPU != VK_FORMAT_B8G8R8A8_UNORM) &&
-            (textureFormatGPU != VK_FORMAT_R8G8B8A8_UNORM) &&
-            ((mipmaps[i].width < 4) || (mipmaps[i].height < 4))
-            )
-        break;
+        // if (
+        //     (textureFormatGPU != VK_FORMAT_B8G8R8A8_SNORM) &&
+        //     (textureFormatGPU != VK_FORMAT_B8G8R8A8_UNORM) &&
+        //     (textureFormatGPU != VK_FORMAT_R8G8B8A8_UNORM) &&
+        //     ((mipmaps[i].width < 4) || (mipmaps[i].height < 4))
+        //     )
+        // break;
 
         VkBufferImageCopy &bufferCopyRegion = m_tempUpdateData->bufferCopyRegions.emplace_back();
-        bufferCopyRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        bufferCopyRegion.imageSubresource.aspectMask = isDepthTexture ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
         bufferCopyRegion.imageSubresource.mipLevel = i;
         bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
         bufferCopyRegion.imageSubresource.layerCount = 1;
@@ -169,7 +207,7 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
 
     // Create optimal tiled target image on the device
     createVulkanImageObject(
-        false,
+        isDepthTexture,
         textureFormatGPU,
         VK_SAMPLE_COUNT_1_BIT,
         vulkanMipMapCount,
@@ -185,6 +223,8 @@ void GTextureVLK::createTexture(const HMipmapsVector &hmipmaps, const VkFormat &
 void GTextureVLK::createVulkanImageObject(bool isDepthTexture, const VkFormat textureFormatGPU,
                                           VkSampleCountFlagBits numSamples, int vulkanMipMapCount,
                                           VkImageUsageFlags imageUsageFlags) {
+    m_isDepthTexture = isDepthTexture;
+
     if (!isDepthTexture) {
         m_device.findSupportedFormat(
             {textureFormatGPU},

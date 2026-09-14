@@ -99,34 +99,38 @@ SET(CURL_USE_LIBPSL 0)
 SET(BUILD_LIBCURL_DOCS 0)
 SET(ENABLE_CURL_MANUAL 0)
 SET(CURL_ZLIB OFF CACHE STRING "" FORCE) # disable this lib to download the zlib as external project
-FetchContent_Declare(cpr
-		GIT_REPOSITORY https://github.com/libcpr/cpr.git
-		GIT_TAG 2b2b16989708d81d4fe062240e085a2f5a61f74a # the commit hash for 1.9.9
-		EXCLUDE_FROM_ALL
-)
 
-#FetchContent_MakeAvailable(cpr)
-FetchContent_GetProperties(cpr)
-message("cpr_POPULATED = ${cpr_POPULATED}")
-if(NOT cpr_POPULATED)
-#	 Fetch the content using previously declared details
-	FetchContent_MakeAvailable(cpr)
-	message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
-	message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
-#	 Bring the populated content into the build
-	set(BUILD_SHARED_LIBS ON CACHE BOOL "")
-#	add_subdirectory(${cpr_SOURCE_DIR} ${cpr_BINARY_DIR} EXCLUDE_FROM_ALL)
-	set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+# First, try to find CPR if it's already installed on the system
+find_package(cpr QUIET)
+
+if(NOT cpr_FOUND)
+    # If not found, check if it's already been fetched by another dependency
+    FetchContent_Declare(cpr
+        GIT_REPOSITORY https://github.com/libcpr/cpr.git
+        GIT_TAG 2b2b16989708d81d4fe062240e085a2f5a61f74a # the commit hash for 1.9.9
+        EXCLUDE_FROM_ALL
+    )
+
+    FetchContent_GetProperties(cpr)
+    message("cpr_POPULATED = ${cpr_POPULATED}")
+
+    if(NOT cpr_POPULATED)
+        # Fetch the content using previously declared details
+        FetchContent_MakeAvailable(cpr)
+        message("cpr_BINARY_DIR = ${cpr_BINARY_DIR}")
+        message("cpr_SOURCE_DIR = ${cpr_SOURCE_DIR}")
+
+        # Bring the populated content into the build
+        set(BUILD_SHARED_LIBS ON CACHE BOOL "")
+        set(BUILD_SHARED_LIBS OFF CACHE BOOL "")
+    endif()
 endif()
+
 
 #StormLib
 #add_subdirectory(3rdparty/stormlib)
 
-#CascLib
-add_definitions(-DCASCLIB_NO_AUTO_LINK_LIBRARY)
-
 if (CMAKE_NDK_BUILD MATCHES 1)
-	#set(CASC_BUILD_SHARED_LIB ON)
 	set(CMAKE_SYSTEM_NAME_TEMPTEMP ${CMAKE_SYSTEM_NAME})
 	set(CMAKE_SYSTEM_NAME "Linux")
 endif() 
@@ -134,11 +138,7 @@ if (WIN32)
 	set(WITH_LIBTOMCRYPT true)
 endif()
 
-set(CASC_BUILD_STATIC_LIB 1)
-
-set(CASC_BUILD_STATIC_LIB ON CACHE BOOL "Set static lib from main project")
-set(CASC_BUILD_SHARED_LIB true CACHE BOOL "Turn off shared lib ")
-add_subdirectory(3rdparty/casclib EXCLUDE_FROM_ALL)
+add_subdirectory(3rdparty/TactCpp EXCLUDE_FROM_ALL)
 
 # Protobuf
 if (INCLUDE_PROTOBUF_LIB)
@@ -150,7 +150,7 @@ endif ()
 
 
 if (CMAKE_NDK_BUILD MATCHES 1)
-	target_compile_definitions(casc PUBLIC -DCMAKE_SYSTEM_NAME=Linux)
+
 	set(CMAKE_SYSTEM_NAME "${CMAKE_SYSTEM_NAME_TEMPTEMP}")
 endif()
 
@@ -243,6 +243,14 @@ set(SOURCE_FILES
 		src/ui/imguiLib/floatCenterSlider/floatCenterSlider.cpp
 		src/ui/imguiLib/compactFloatEditor/compactFloatEditor.cpp
 		src/ui/imguiLib/compactFloatEditor/compactFloatEditor.h
+		src/ui/childWindow/fakeWDTGenerator/FakeWDTWindow.cpp
+		src/ui/childWindow/fakeWDTGenerator/FakeWDTWindow.h
+		src/ui/childWindow/cascStorageDialog/CascStorageDialog.cpp
+		src/ui/childWindow/cascStorageDialog/CascStorageDialog.h
+		src/ui/childWindow/customObjectsWindow/CustomObjectsWindow.cpp
+		src/ui/childWindow/customObjectsWindow/CustomObjectsWindow.h
+		src/ui/imguiLib/ImGuizmo/ImGuizmo.cpp
+		src/ui/imguiLib/ImGuizmo/ImGuizmo.h
 )
 
 set(PROTOBUF_FILES_ "")
@@ -307,6 +315,7 @@ message(ccp WoWViewerLib_INCLUDE_DIRS = ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(WoWFrontendLib PUBLIC ${WoWViewerLib_INCLUDE_DIRS})
 target_include_directories(WoWFrontendLib PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
 target_include_directories(WoWFrontendLib PUBLIC ${PROJECT_SOURCE_DIR}/WoWViewerLib/3rdparty/mathfu/include)
+target_include_directories(WoWFrontendLib PUBLIC ${PROJECT_SOURCE_DIR}/3rdparty/clipboard/include)
 
 #target_compile_options(WoWFrontendLib PRIVATE "-static")
 target_compile_definitions(WoWFrontendLib PUBLIC -DIMGUI_USER_CONFIG=<imguiCustomConfig.h>)
@@ -315,7 +324,6 @@ target_include_directories(WoWFrontendLib PUBLIC 3rdparty/imgui-notify/example/s
 
 add_dependencies(WoWFrontendLib WoWViewerLib)
 #add_dependencies(WoWFrontendLib storm)
-add_dependencies(WoWFrontendLib casc_static)
 
 #TODO: platform dependant!!
 add_dependencies(WoWFrontendLib glfw)
@@ -343,15 +351,15 @@ endif()
 
 if (MSVC)
 	include(CheckCXXCompilerFlag)
-	CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
+	CHECK_CXX_COMPILER_FLAG("/std:c++20" _cpp_20_flag_supported)
 	message("MSVC Is on")
 	if (_cpp_17_flag_supported)
-		message("/std:c++17 is supported")
-		#target_compile_options(WoWFrontendLib "/std:c++17")
-		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
-		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
-		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
-		#target_compile_options(WoWFrontendLib /std:c++17)
+		message("/std:c++20 is supported")
+		#target_compile_options(WoWFrontendLib "/std:c++20")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++20 /permissive-")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++20 /permissive-")
+		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++20 /permissive-")
+		#target_compile_options(WoWFrontendLib /std:c++20)
 	endif()
 endif()
 
@@ -399,7 +407,7 @@ else()
 endif()
 
 #target_link_libraries(WoWFrontendLib storm)
-target_link_libraries(WoWFrontendLib casc_static)
+target_link_libraries(WoWFrontendLib TactCppLib)
 target_link_libraries(WoWFrontendLib DBImporterLib)
 target_link_libraries(WoWFrontendLib cpr::cpr)
 
@@ -428,6 +436,11 @@ install(TARGETS WowStudio
 
 INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Libraries)
 
+if(WIN32)
+	# zlib's own install rules are skipped by EXCLUDE_FROM_ALL.
+	install(FILES "$<TARGET_FILE:zlib>" DESTINATION bin COMPONENT libraries)
+endif()
+
 if( MINGW )
 	message( STATUS "Installing system-libraries: MinGW DLLs." )
 	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
@@ -435,7 +448,6 @@ if( MINGW )
 			${Mingw_Path}/libgcc_s_seh-1.dll
 			${Mingw_Path}/libstdc++-6.dll
 			${Mingw_Path}/libwinpthread-1.dll
-			${Mingw_Path}/zlib1.dll
 	)
 endif( MINGW )
 include( InstallRequiredSystemLibraries )
@@ -453,6 +465,8 @@ target_include_directories(wow_viewer_tests_run
     PRIVATE
     "$<TARGET_PROPERTY:WoWFrontendLib,INTERFACE_INCLUDE_DIRECTORIES>"
 )
+
+add_subdirectory(offlineRenderer EXCLUDE_FROM_ALL)
 
 
 

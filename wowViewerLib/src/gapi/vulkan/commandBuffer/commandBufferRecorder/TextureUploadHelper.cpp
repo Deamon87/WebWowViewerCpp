@@ -12,8 +12,8 @@ void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
     imageMemoryBarriers.reserve(textures.size());
 
     for ( auto &wtextureVlk : textures) {
-        if (wtextureVlk.expired()) continue;
         auto textureVlk = wtextureVlk.lock();
+        if (!textureVlk) continue;
 
         // Image memory barriers for the texture image
         VkImageMemoryBarrier &imageMemoryBarrier = imageMemoryBarriers.emplace_back();
@@ -21,7 +21,7 @@ void transitionLayoutAndOwnageTextures(CmdBufRecorder &uploadCmdBufRecorder,
         // The sub resource range describes the regions of the image that will be transitioned using the memory barriers below
         VkImageSubresourceRange subresourceRange = {};
         // Image only contains color data
-        subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        subresourceRange.aspectMask = !textureVlk->isDepthTexture() ? VK_IMAGE_ASPECT_COLOR_BIT : VK_IMAGE_ASPECT_DEPTH_BIT;
         // Start at first mip level
         subresourceRange.baseMipLevel = 0;
         // We will transition on all mip levels

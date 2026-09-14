@@ -153,9 +153,20 @@ public:
     static float distance_aux(float p, float lower, float upper);
 
     static float distanceFromAABBToPoint2DSquared(const mathfu::vec2 aabb[2], mathfu::vec2 &p);
-    static mathfu::vec3 calcExteriorColorDir(const mathfu::mat4 &lookAtMat, int time);
-    static mathfu::vec3 calcSunPlanetPos(const mathfu::mat4 &lookAtMat, int time);
-    static mathfu::mat4 createProjectionalTexture(mathfu::vec2 p_t00, mathfu::vec2 p_t10, mathfu::vec2 p_t01);
+    static void calcExteriorDirectColorDir(int time, float &phi, float &theta);
+    static void calcSunPlanetPos(int time, float &phi, float &theta);
+    static void calcMoon1PlanetPos(int time, float &phi, float &theta);
+    static void calcMoon2PlanetPos(int time, float &phi, float &theta);
+    static float calcSunPlanetScale(int time);
+    static float calcMoonPlanetScale(int time);
+    static float calcStarsBrightness(int time);
+    static mathfu::vec3 polarToCartesian(float phi, float theta);
+
+    static mathfu::mat4 createProjectionalTexture(
+        mathfu::vec2 p0, mathfu::vec2 uv0,
+        mathfu::vec2 p1, mathfu::vec2 uv1,
+        mathfu::vec2 p2, mathfu::vec2 uv2
+    );
 };
 
 const float ROUNDING_ERROR_f32 = 0.001f;
@@ -169,11 +180,11 @@ inline float worldCoordinateToAdtIndexF(float x) {
 }
 
 inline int worldCoordinateToAdtIndex(float x) {
-    return floor(worldCoordinateToAdtIndexF(x));
+    return (int)floor(worldCoordinateToAdtIndexF(x));
 }
 
 inline int worldCoordinateToGlobalAdtChunk(float x) {
-    return floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
+    return (int)floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
 }
 
 inline float AdtIndexToWorldCoordinate(float x) {

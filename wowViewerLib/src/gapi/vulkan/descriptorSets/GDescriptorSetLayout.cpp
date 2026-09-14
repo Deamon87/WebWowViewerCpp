@@ -25,6 +25,7 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
             switch (stage) {
                 case ShaderStage::Vertex:           return VK_SHADER_STAGE_VERTEX_BIT; break;
                 case ShaderStage::Fragment:         return VK_SHADER_STAGE_FRAGMENT_BIT; break;
+                case ShaderStage::Compute:          return VK_SHADER_STAGE_COMPUTE_BIT; break;
                 case ShaderStage::RayGenerate:      return VK_SHADER_STAGE_RAYGEN_BIT_KHR; break;
                 case ShaderStage::RayAnyHit:        return VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR; break;
                 case ShaderStage::RayClosestHit:    return VK_SHADER_STAGE_ANY_HIT_BIT_KHR; break;
@@ -36,51 +37,27 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
 
         fillUbo(setIndex, typeOverrides, shaderLayoutBindings, p_metaData, vkStageFlag);
         fillSSBO(setIndex, typeOverrides, shaderLayoutBindings, p_metaData, vkStageFlag);
+        fillImages(setIndex, typeOverrides, shaderLayoutBindings, bindlessBindPoints, p_metaData, vkStageFlag);
+    }
 
-        for (int i = 0; i < p_metaData->imageBindings.size(); i++) {
-            auto &imageBinding = p_metaData->imageBindings[i];
-
-            if (imageBinding.set != setIndex) continue;
-
-            auto it = shaderLayoutBindings.find(imageBinding.binding);
-            if (it != std::end( shaderLayoutBindings )) {
-                it->second.stageFlags |= vkStageFlag;
-                if (it->second.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
-                    std::cerr << "Type mismatch for image in GDescriptorSetLayout" << std::endl;
-                    throw std::runtime_error("types mismatch");
-                }
-            } else {
-                VkDescriptorSetLayoutBinding imageLayoutBinding = {};
-                imageLayoutBinding.binding = imageBinding.binding;
-                imageLayoutBinding.descriptorCount = 1;
-                imageLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-                imageLayoutBinding.pImmutableSamplers = nullptr;
-                imageLayoutBinding.stageFlags = vkStageFlag;
-
-                {
-                    if (typeOverrides.find(imageBinding.set) != typeOverrides.end()) {
-                        auto &setTypeOverrides = typeOverrides.at(imageBinding.set);
-                        if (setTypeOverrides.find(imageBinding.binding) != setTypeOverrides.end()) {
-                            auto const &overrideStruct = setTypeOverrides.at(imageBinding.binding);
-                            assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-                            if (overrideStruct.isBindless) {
-                                m_isBindless = true;
-                                imageLayoutBinding.descriptorCount = overrideStruct.descriptorCount;
-                                bindlessBindPoints.insert(imageBinding.binding);
-                            }
-                        }
-                    }
-                }
-
-                m_arraySizes[imageLayoutBinding.binding] = imageLayoutBinding.descriptorCount;
-
-                shaderLayoutBindings.insert({imageBinding.binding, imageLayoutBinding});
-                m_totalImages += imageLayoutBinding.descriptorCount;
-
-                m_requiredBindPoints[imageBinding.binding] = true;
-            }
+    // Compute combined stage flags from all shader stages in metadata
+    VkShaderStageFlags combinedStageFlags = 0;
+    for (const auto p_metaData : metaDatas) {
+        auto const &metaData = *p_metaData;
+        switch (metaData.stage) {
+            case ShaderStage::Vertex:   combinedStageFlags |= VK_SHADER_STAGE_VERTEX_BIT; break;
+            case ShaderStage::Fragment: combinedStageFlags |= VK_SHADER_STAGE_FRAGMENT_BIT; break;
+            case ShaderStage::Compute:  combinedStageFlags |= VK_SHADER_STAGE_COMPUTE_BIT; break;
+            default: break;
         }
     }
+    if (combinedStageFlags == 0)
+        combinedStageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    fillMissingBindingsFromOverrides(
+        setIndex, typeOverrides, shaderLayoutBindings, bindlessBindPoints,
+        combinedStageFlags
+    );
 
     std::vector<VkDescriptorSetLayoutBinding> layouts(shaderLayoutBindings.size());
     std::transform(shaderLayoutBindings.begin(), shaderLayoutBindings.end(), layouts.begin(), [](auto &pair){return pair.second;});
@@ -137,130 +114,166 @@ GDescriptorSetLayout::GDescriptorSetLayout(const std::shared_ptr<IDeviceVulkan> 
         layoutInfo.pNext = &binding_flags;
     }
 
-    if (vkCreateDescriptorSetLayout(m_device->getVkDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
+    if (vkCreateDescriptorSetLayout(device->getVkDevice(), &layoutInfo, nullptr, &m_descriptorSetLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create descriptor set layout!");
     }
 }
 
-void GDescriptorSetLayout::fillUbo(int setIndex, const DescTypeOverride &typeOverrides,
-                                   std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
-                                   const shaderMetaData *p_metaData, const VkShaderStageFlagBits &vkStageFlag) {
-    for (int i = 0; i < p_metaData->uboBindings.size(); i++) {
-        auto &uboBinding = p_metaData->uboBindings[i];
+void GDescriptorSetLayout::fillBindings(
+    int setIndex,
+    const DescTypeOverride &typeOverrides,
+    std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+    std::unordered_set<int> &bindlessBindPoints,
+    const shaderMetaData *p_metaData,
+    const VkShaderStageFlagBits &vkStageFlag,
+    const std::vector<bindingData> &metaBindings,
+    VkDescriptorType defaultType,
+    std::unordered_map<int, int> *sizeMap // nullptr if not applicable
+) {
 
-        if (uboBinding.set != setIndex) continue;
+    // 1️⃣  Process all existing bindings from shader metadata
+    for (auto &binding : metaBindings) {
+        if (binding.set != setIndex) continue;
 
-        auto uniformType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        VkDescriptorType descType = defaultType;
         uint32_t stageOverride = 0;
-        {
-            if (typeOverrides.find(uboBinding.set) != typeOverrides.end()) {
-                auto &setTypeOverrides = typeOverrides.at(uboBinding.set);
-                if (setTypeOverrides.find(uboBinding.binding) != setTypeOverrides.end()) {
-                    auto const &overrideStruct = setTypeOverrides.at(uboBinding.binding);
-                    uniformType = overrideStruct.type;
-                    if (overrideStruct.stageMask != 0) {
-                        stageOverride = overrideStruct.stageMask;
-                    }
-                }
+        uint32_t descriptorCount = 1;
+        bool isBindless = false;
+
+        // Check for overrides
+        if (auto setIt = typeOverrides.find(binding.set); setIt != typeOverrides.end()) {
+            const auto &setOverrides = setIt->second;
+            if (auto bindIt = setOverrides.find(binding.binding); bindIt != setOverrides.end()) {
+                const auto &ov = bindIt->second;
+                descType = ov.type;
+                descriptorCount = ov.descriptorCount;
+                stageOverride = ov.stageMask;
+                isBindless = ov.isBindless;
             }
         }
 
-
-        auto it = shaderLayoutBindings.find(uboBinding.binding);
-        if (it != std::end( shaderLayoutBindings )) {
+        // Check if binding already exists
+        auto it = shaderLayoutBindings.find(binding.binding);
+        if (it != shaderLayoutBindings.end()) {
             it->second.stageFlags |= vkStageFlag;
-            if (it->second.descriptorType != uniformType) {
-                std::cerr << "Type mismatch for ubo in GDescriptorSetLayout" << std::endl;
-                throw std::runtime_error("types mismatch");
+            if (it->second.descriptorType != descType) {
+                std::cerr << "Type mismatch for binding " << binding.binding << std::endl;
+                throw std::runtime_error("Descriptor type mismatch");
             }
         } else {
-            VkDescriptorSetLayoutBinding uboLayoutBinding = {};
-            uboLayoutBinding.binding = uboBinding.binding;
-            uboLayoutBinding.descriptorCount = 1;
-            uboLayoutBinding.descriptorType = uniformType;
-            uboLayoutBinding.pImmutableSamplers = nullptr;
-            uboLayoutBinding.stageFlags = stageOverride == 0 ? vkStageFlag : stageOverride;
+            VkDescriptorSetLayoutBinding layoutBinding{};
+            layoutBinding.binding = binding.binding;
+            layoutBinding.descriptorCount = descriptorCount;
+            layoutBinding.descriptorType = descType;
+            layoutBinding.pImmutableSamplers = nullptr;
+            layoutBinding.stageFlags = stageOverride ? stageOverride : vkStageFlag;
 
-            shaderLayoutBindings.insert({uboBinding.binding, uboLayoutBinding});
-            if (uboBinding.size > 0) {
-                if (m_requiredUBOSize.find(uboBinding.binding) == m_requiredUBOSize.end()) {
-                    m_requiredUBOSize.insert({uboBinding.binding, uboBinding.size});
-                } else {
-                    if (m_requiredUBOSize.at(uboBinding.binding) != uboBinding.size) {
-                        std::cerr << "Size mismatch for ubo for binding " << uboBinding.binding << std::endl;
-                        throw std::runtime_error("UBO size mismatch");
-                    }
+            shaderLayoutBindings[binding.binding] = layoutBinding;
+            m_arraySizes[binding.binding] = descriptorCount;
+            m_requiredBindPoints[binding.binding] = true;
+
+            if (isBindless) {
+                this->m_isBindless = true;
+                bindlessBindPoints.insert(binding.binding);
+            }
+
+            // Handle size validation for UBO/SSBO
+            if (sizeMap && binding.size > 0) {
+                auto &map = *sizeMap;
+                auto itSize = map.find(binding.binding);
+                if (itSize == map.end()) {
+                    map[binding.binding] = binding.size;
+                } else if (itSize->second != binding.size) {
+                    std::cerr << "Size mismatch for binding " << binding.binding << std::endl;
+                    throw std::runtime_error("Descriptor size mismatch");
                 }
             }
 
-            m_arraySizes[uboLayoutBinding.binding] = uboLayoutBinding.descriptorCount;
-            m_requiredBindPoints[uboBinding.binding] = true;
+            // Count images for statistics
+            if (descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                this->m_totalImages += descriptorCount;
         }
     }
+}
+
+void GDescriptorSetLayout::fillMissingBindingsFromOverrides(int setIndex, const DescTypeOverride &typeOverrides,
+                                                            std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                                                            std::unordered_set<int> &bindlessBindPoints,
+                                                            const VkShaderStageFlags &vkStageFlag) {
+    if (auto setIt = typeOverrides.find(setIndex); setIt != typeOverrides.end()) {
+        const auto &setOverrides = setIt->second;
+        for (auto &[binding, ov] : setOverrides) {
+            if (shaderLayoutBindings.find(binding) != shaderLayoutBindings.end())
+                continue; // Already handled above
+
+            VkDescriptorSetLayoutBinding layoutBinding{};
+            layoutBinding.binding = binding;
+            layoutBinding.descriptorCount = ov.descriptorCount;
+            layoutBinding.descriptorType = ov.type;
+            layoutBinding.pImmutableSamplers = nullptr;
+            layoutBinding.stageFlags = ov.stageMask ? ov.stageMask : vkStageFlag;
+
+            shaderLayoutBindings[binding] = layoutBinding;
+            this->m_arraySizes[binding] = layoutBinding.descriptorCount;
+            this->m_requiredBindPoints[binding] = true;
+
+            if (ov.isBindless) {
+                this->m_isBindless = true;
+                bindlessBindPoints.insert(binding);
+            }
+
+            //The size is not being overriden as of now
+//            if (sizeMap && ov.size > 0) {
+//                (*sizeMap)[binding] = ov.size;
+//            }
+
+            if (ov.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
+                this->m_totalImages += layoutBinding.descriptorCount;
+        }
+    }
+}
+
+
+void GDescriptorSetLayout::fillImages(int setIndex, const DescTypeOverride &typeOverrides,
+                                      std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                                      std::unordered_set<int> &bindlessBindPoints,
+                                      const shaderMetaData *p_metaData,
+                                      const VkShaderStageFlagBits &vkStageFlag) {
+    fillBindings(setIndex, typeOverrides, shaderLayoutBindings, bindlessBindPoints,
+                 p_metaData, vkStageFlag, p_metaData->imageBindings,
+                 VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, nullptr);
+}
+
+void GDescriptorSetLayout::fillUbo(int setIndex, const DescTypeOverride &typeOverrides,
+                                   std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                                   const shaderMetaData *p_metaData,
+                                   const VkShaderStageFlagBits &vkStageFlag) {
+    std::unordered_set<int> dummyBindless;
+    fillBindings(setIndex, typeOverrides, shaderLayoutBindings, dummyBindless,
+                 p_metaData, vkStageFlag, p_metaData->uboBindings,
+                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &m_requiredUBOSize);
 }
 
 void GDescriptorSetLayout::fillSSBO(int setIndex, const DescTypeOverride &typeOverrides,
-                                   std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
-                                   const shaderMetaData *p_metaData, const VkShaderStageFlagBits &vkStageFlag) {
-    for (int i = 0; i < p_metaData->m_ssboBindings.size(); i++) {
-        auto &ssboBinding = p_metaData->m_ssboBindings[i];
-
-        if (ssboBinding.set != setIndex) continue;
-
-        auto uniformType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        uint32_t stageOverride = 0;
-        {
-            if (typeOverrides.find(ssboBinding.set) != typeOverrides.end()) {
-                auto &setTypeOverrides = typeOverrides.at(ssboBinding.set);
-                if (setTypeOverrides.find(ssboBinding.binding) != setTypeOverrides.end()) {
-                    auto const &overrideStruct = setTypeOverrides.at(ssboBinding.binding);
-                    assert(overrideStruct.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC || overrideStruct.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-                    uniformType = overrideStruct.type;
-                    if (overrideStruct.stageMask != 0) {
-                        stageOverride = overrideStruct.stageMask;
-                    }
-                }
-            }
-        }
-
-        auto it = shaderLayoutBindings.find(ssboBinding.binding);
-        if (it != std::end( shaderLayoutBindings )) {
-            it->second.stageFlags |= vkStageFlag;
-            if (it->second.descriptorType != uniformType) {
-                std::cerr << "Type mismatch for ssbo in GDescriptorSetLayout" << std::endl;
-                throw std::runtime_error("types mismatch");
-            }
-        } else {
-            VkDescriptorSetLayoutBinding ssboLayoutBinding = {};
-            ssboLayoutBinding.binding = ssboBinding.binding;
-            ssboLayoutBinding.descriptorCount = 1;
-            ssboLayoutBinding.descriptorType = uniformType;
-            ssboLayoutBinding.pImmutableSamplers = nullptr;
-            ssboLayoutBinding.stageFlags = stageOverride == 0 ? vkStageFlag : stageOverride;
-
-            shaderLayoutBindings.insert({ssboLayoutBinding.binding, ssboLayoutBinding});
-            if (ssboBinding.size > 0) {
-                if (m_requiredSSBOSize.find(ssboBinding.binding) == m_requiredSSBOSize.end()) {
-                    m_requiredSSBOSize.insert({ssboBinding.binding, ssboBinding.size});
-                } else {
-                    if (m_requiredSSBOSize.at(ssboBinding.binding) != ssboBinding.size) {
-                        std::cerr << "Size mismatch for SSBO for binding " << ssboBinding.binding << std::endl;
-                        throw std::runtime_error("SSBO size mismatch");
-                    }
-                }
-            }
-
-            m_arraySizes[ssboLayoutBinding.binding] = ssboLayoutBinding.descriptorCount;
-            m_requiredBindPoints[ssboBinding.binding] = true;
-        }
-    }
+                                    std::unordered_map<int, VkDescriptorSetLayoutBinding> &shaderLayoutBindings,
+                                    const shaderMetaData *p_metaData,
+                                    const VkShaderStageFlagBits &vkStageFlag) {
+    std::unordered_set<int> dummyBindless;
+    fillBindings(setIndex, typeOverrides, shaderLayoutBindings, dummyBindless,
+                 p_metaData, vkStageFlag, p_metaData->m_ssboBindings,
+                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &m_requiredSSBOSize);
 }
 
 GDescriptorSetLayout::~GDescriptorSetLayout() {
-    auto l_device = m_device->getVkDevice();
+    auto s_device = m_device.lock();
+    if (s_device) return;
+    
     auto l_descriptorSetLayout = m_descriptorSetLayout;
-    m_device->addDeallocationRecord([l_device, l_descriptorSetLayout]{
-        vkDestroyDescriptorSetLayout(l_device, l_descriptorSetLayout, nullptr);
+    auto l_device = m_device;
+    s_device->addDeallocationRecord([l_device, l_descriptorSetLayout]{
+        auto s_device = l_device.lock();
+        if (s_device) return;
 
+        vkDestroyDescriptorSetLayout(s_device->getVkDevice(), l_descriptorSetLayout, nullptr);
     });
 }

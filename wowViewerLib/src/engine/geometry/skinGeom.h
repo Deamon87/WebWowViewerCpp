@@ -15,10 +15,10 @@
 
 class SkinGeom : public PersistentFile {
 public:
-    SkinGeom(std::string fileName){};
-    SkinGeom(int fileDataId){};
+    SkinGeom(std::string fileName) : PersistentFile(fileName){};
+    SkinGeom(int fileDataId) : PersistentFile(fileDataId) {};
 
-    void process(HFileContent skinFile, const std::string &fileName) override;
+    void process(HFileContent skinFile) override;
     void generateIndexBuffer(std::vector<uint16_t> &buffer);
 
     M2SkinProfile * getSkinData(){ if (fsStatus == FileStatus::FSLoaded) {return m_skinData;} else {return nullptr;}};

@@ -12,10 +12,10 @@
 
 class TexFile : public PersistentFile {
 public:
-    TexFile(std::string fileName){};
-    TexFile(int fileDataId){};
+    TexFile(const std::string &fileName) : PersistentFile(fileName) {};
+    TexFile(int fileDataId) : PersistentFile(fileDataId) {};
 
-    void process(HFileContent fileContent, const std::string &fileName) override;
+    void process(HFileContent fileContent) override;
 public:
     SBlobTexture * entries = nullptr;
     int entriesNum = -1;

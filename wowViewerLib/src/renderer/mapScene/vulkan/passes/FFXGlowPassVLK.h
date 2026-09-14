@@ -18,12 +18,15 @@ public:
     void assignFFXGlowUBOConsts(float glow);
     void updateDimensions(int width, int height,
                           const std::vector<HGSamplableTexture> &inputColorTextures,
-                          const std::shared_ptr<GRenderPassVLK> &finalRenderPass);
+                          const std::shared_ptr<GRenderPassVLK> &finalRenderPass,
+                          bool force = false);
 
     void doPass(CmdBufRecorder &frameBufCmd);
 
     void doFinalDraw(CmdBufRecorder &finalBufCmd);
     void doFinalPass(CmdBufRecorder &finalBufCmd, const std::shared_ptr<GFrameBufferVLK> &frameBuff);
+
+    std::shared_ptr<GFrameBufferVLK> getFinalGaussOutputFrameBuffer(int frameInFlightI);
 
 private:
     static constexpr int GAUSS_PASS_COUNT = 3;

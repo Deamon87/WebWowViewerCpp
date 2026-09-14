@@ -52,9 +52,13 @@ public:
         using namespace sqlite_orm;
 
         auto whereClause = where(
-            (like(&FileListDB::FileRecord::fileName, searchClause) ||
-            like(&FileListDB::FileRecord::fileDataId, searchClause)) ||
-            like(&FileListDB::FileRecord::fileType, searchClause)
+            (
+                (
+                    like(&FileListDB::FileRecord::fileName, searchClause) ||
+                    like(&FileListDB::FileRecord::fileDataId, searchClause)
+                )
+            ) &&
+            like(&FileListDB::FileRecord::fileType, fileType)
         );
 
         calcTotal = [whereClause, &storage]() {
@@ -68,8 +72,8 @@ public:
             storage.prepare(get_all<FileListDB::FileRecord>(
                 whereClause,
                 !sortAsc ?
-                order_by(&FileListDB::FileRecord::fileDataId).desc() :
-                order_by(&FileListDB::FileRecord::fileDataId).asc(),
+                    order_by(&FileListDB::FileRecord::fileDataId).desc() :
+                    order_by(&FileListDB::FileRecord::fileDataId).asc(),
                 limit(2, offset(3))
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
@@ -84,8 +88,8 @@ public:
             storage.prepare(get_all<FileListDB::FileRecord>(
                 whereClause,
                 !sortAsc ?
-                order_by(&FileListDB::FileRecord::fileName).desc() :
-                order_by(&FileListDB::FileRecord::fileName).asc(),
+                    order_by(&FileListDB::FileRecord::fileName).desc() :
+                    order_by(&FileListDB::FileRecord::fileName).asc(),
                 limit(2, offset(3))
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
@@ -100,8 +104,8 @@ public:
             storage.prepare(get_all<FileListDB::FileRecord>(
                 whereClause,
                 !sortAsc ?
-                order_by(&FileListDB::FileRecord::fileType).desc() :
-                order_by(&FileListDB::FileRecord::fileType).asc(),
+                    order_by(&FileListDB::FileRecord::fileType).desc() :
+                    order_by(&FileListDB::FileRecord::fileType).asc(),
                 limit(2, offset(3))
             ))](decltype(storage) &storage, int limit, int offset) mutable {
                 using namespace sqlite_orm;
@@ -284,7 +288,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
             fileType = "m2";
             if (processFileOnDetect) {
                 M2Geom test = M2Geom(fileDataId);
-                test.process(fileContent, std::to_string(fileDataId));
+                test.process(fileContent);
             }
             break;
         case 'SKIN':
@@ -313,7 +317,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
                     if (processFileOnDetect) {
                         AdtFile adtFile = AdtFile(fileDataId);
                         adtFile.setIsMain(true);
-                        adtFile.process(fileContent, std::to_string(fileDataId));
+                        adtFile.process(fileContent);
                     }
                 break;
 
@@ -326,7 +330,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
                     fileType = "adt_sec";
                     if (processFileOnDetect) {
                         AdtFile adtFile = AdtFile(fileDataId);
-                        adtFile.process(fileContent, std::to_string(fileDataId));
+                        adtFile.process(fileContent);
                     }
                     break;
                 case 'DHOM': // WMO root
@@ -334,7 +338,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
 
                     if (processFileOnDetect) {
                         WmoMainGeom test = WmoMainGeom(fileDataId);
-                        test.process(fileContent, std::to_string(fileDataId));
+                        test.process(fileContent);
                     }
                     break;
                 case 'PGOM': // WMO GROUP
@@ -342,7 +346,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
 
                     if (processFileOnDetect) {
                         WmoGroupGeom test = WmoGroupGeom(fileDataId);
-                        test.process(fileContent, std::to_string(fileDataId));
+                        test.process(fileContent);
                     }
                     break;
                 case 'DHPM': // WDT root
@@ -350,7 +354,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
 
                     if (processFileOnDetect) {
                         WdtFile test = WdtFile(fileDataId);
-                        test.process(fileContent, std::to_string(fileDataId));
+                        test.process(fileContent);
                     }
                     break;
                 case 'IOAM': // WDT OCC/LGT
@@ -362,7 +366,7 @@ std::string detectFileType(int fileDataId, const HFileContent &fileContent) {
                     fileType = "wdt_lgt";
                     if (processFileOnDetect) {
                         WdtLightFile test = WdtLightFile(fileDataId);
-                        test.process(fileContent, std::to_string(fileDataId));
+                        test.process(fileContent);
                     }
                     break;
                 default:
@@ -448,31 +452,7 @@ public:
                             break;
 
                         case EnumParamsChanged::SCAN_REPOSITORY: {
-                            std::mutex scanMutex;
-
-                            m_currentScanningProgress = 0;
-                            {
-                                auto &l_currentScanningProgress = m_currentScanningProgress;
-                                auto lock = std::unique_lock<std::mutex>(scanMutex);
-                                auto r_unq = std::make_unique<IterateFilesRequest>(
-                                    lock,
-                                    [&statement, &storage, &l_currentScanningProgress](int fileDataId, const std::string &fileName) -> bool {
-                                        l_currentScanningProgress++;
-                                        auto fileRecord = statement->getOrCreateFile(storage, fileDataId, fileName);
-
-                                        return fileRecord.fileType.empty();
-                                    },
-                                    [&statement, &storage](int fileDataId, const HFileContent &fileData) -> void {
-                                        auto fileType = detectFileType(fileDataId, fileData);
-                                        statement->setFileType(storage, fileDataId, fileType);
-                                    }
-                                );
-
-                                m_api->requestProcessor->iterateAllFiles(r_unq);
-                            }
-                            std::unique_lock <std::mutex> waitLock(scanMutex);
-
-                            m_currentScanningProgress = -1;
+                            scanRepository(statement, storage);
 
                             break;
                         }
@@ -504,17 +484,20 @@ public:
             storage.backup_to(fileListDB);
         });
     }
+
     ~FileListLambdaInst() {
         m_isTerminating = true;
         stateChangeAwaiter.pushInput(EnumParamsChanged::OFFSET_LIMIT);
 
         dbThread.join();
     }
+
     const std::vector<DBResults> getResults() override{
         std::unique_lock lock(resultsChange);
 
         return m_results;
     }
+
     void makeRequest(const std::vector<DbRequest> &newRequest) override {
         {
             std::unique_lock lock(paramsChange);
@@ -527,7 +510,10 @@ public:
             }
         }
         stateChangeAwaiter.pushInput(EnumParamsChanged::OFFSET_LIMIT);
-    };
+    }
+
+    ;
+
     void searchChanged() override {
         std::unique_lock lock(resultsChange);
 
@@ -535,10 +521,14 @@ public:
 
         stateChangeAwaiter.pushInput(EnumParamsChanged::SEARCH_STRING);
     }
+
     void setOrder(int order) override {
         m_order = order;
         stateChangeAwaiter.pushInput(EnumParamsChanged::SORTING);
     }
+
+    void scanRepository(const std::unique_ptr<StatementHolderAbstract> &statement, decltype(FileListDB::makeStorage("")) &storage);
+
     void scanFiles() override {
         stateChangeAwaiter.pushInput(EnumParamsChanged::SCAN_REPOSITORY);
     }
@@ -585,6 +575,7 @@ private:
 private:
     std::mutex paramsChange;
     std::mutex resultsChange;
+    std::mutex scanMutex;
 
     std::thread dbThread;
     bool m_isTerminating = false;
@@ -602,6 +593,33 @@ private:
 
     ProdConsumerIOConnector<EnumParamsChanged, my_container<EnumParamsChanged>> stateChangeAwaiter = {m_isTerminating};
 };
+
+void FileListLambdaInst::scanRepository(const std::unique_ptr<StatementHolderAbstract> &statement, decltype(FileListDB::makeStorage("")) &storage) {
+    m_currentScanningProgress = 0;
+    {
+        auto &l_currentScanningProgress = m_currentScanningProgress;
+        auto lock = std::unique_lock<std::mutex>(scanMutex);
+        auto r_unq = std::make_unique<IterateFilesRequest>(
+            lock,
+            [&statement, &storage, &l_currentScanningProgress](int fileDataId, const std::string &fileName) -> bool {
+                l_currentScanningProgress++;
+                auto fileRecord = statement->getOrCreateFile(storage, fileDataId, fileName);
+
+                return fileRecord.fileType.empty();
+            },
+            [&statement, &storage](int fileDataId, const HFileContent &fileData) -> void {
+                auto fileType = detectFileType(fileDataId, fileData);
+                statement->setFileType(storage, fileDataId, fileType);
+            }
+        );
+
+        m_api->requestProcessor->iterateAllFiles(r_unq);
+        //TODO: Assign adt name based on wdts
+    }
+    std::unique_lock <std::mutex> waitLock(scanMutex);
+
+    m_currentScanningProgress = -1;
+}
 
 //--------------------------------------
 // FileListWindow
@@ -634,14 +652,22 @@ bool FileListWindow::draw() {
         if (ImGui::Button("Scan repository...")) {
             flInterface->scanFiles();
         }
-        if (ImGui::InputText("Filter: ", filterText.data(), filterText.size()-1)) {
+        if (ImGui::InputText("Search : ", filterText.data(), filterText.size()-1)) {
             filterText[filterText.size()-1] = 0;
             filterTextStr = filterText.data();
-            fileType = filterTextStr;
             filterTextStr = "%"+filterTextStr+"%";
             flInterface->searchChanged();
         }
-
+        if (ImGui::InputText("Type : ", typeText.data(), typeText.size())) {
+            typeText[typeText.size()-1] = 0;
+            typeTextStr = typeText.data();
+            if (typeTextStr.size() > 0) {
+                fileType = ""+typeTextStr+"%";
+            } else {
+                fileType = "%%";
+            }
+            flInterface->searchChanged();
+        }
         if (disableUI) {
 //            ImGui::PopStyleVar(ImGuiStyleVar_Alpha);
 

@@ -56,8 +56,10 @@ private:
     const HApiContainer m_api;
     std::unique_ptr<FileListLamda> flInterface;
     std::array<char, 128> filterText = {0};
+    std::array<char, 4> typeText = {0};
     std::string filterTextStr = "%%";
-    std::string fileType = "";
+    std::string typeTextStr = "%%";
+    std::string fileType = "%%";
 
     int lastSelectedFiledataId = -1;
 private:

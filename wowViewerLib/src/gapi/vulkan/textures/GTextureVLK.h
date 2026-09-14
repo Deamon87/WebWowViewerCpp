@@ -39,7 +39,7 @@ public:
 
     explicit GTextureVLK(IDeviceVulkan &device, const std::function<void(const std::weak_ptr<GTextureVLK>&)> &onUpdateCallback);
 
-    void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer);
+    void createTexture(const HMipmapsVector &mipmaps, const VkFormat &textureFormatGPU, const std::vector<uint8_t> &unitedBuffer, bool isDepthTexture = false);
 private:
     struct updateData {
         VkBuffer stagingBuffer;
@@ -55,6 +55,7 @@ public:
     void readData(std::vector<uint8_t> &buff) override {};
     void loadData(int width, int height, void *data, ITextureFormat textureFormat) override;
     bool getIsLoaded() override;
+    bool isDepthTexture() const {return m_isDepthTexture;};
     void createTexture(TextureFormat textureFormat, const HMipmapsVector &mipmaps) override {
         throw "Not Implemented in this class";
     }
@@ -108,6 +109,7 @@ protected:
     bool m_uploaded = false;
     bool m_loaded = false;
 
+    bool m_isDepthTexture = false;
     bool m_samplable = true;
 
     int m_width = 0;

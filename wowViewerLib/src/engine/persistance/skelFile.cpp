@@ -71,9 +71,9 @@ chunkDef<SkelFile> SkelFile::skelFileTable = {
     }
 };
 
-void SkelFile::process(HFileContent skelFile, const std::string &fileName) {
+void SkelFile::process(HFileContent skelFile) {
     m_skelFile = skelFile;
-    CChunkFileReader reader(*m_skelFile.get(), fileName);
+    CChunkFileReader reader(*m_skelFile.get(), getFileNameOrDataId());
     reader.processFile(*this, &SkelFile::skelFileTable);
 
     if (this->m_ska1 != nullptr) {

@@ -1,0 +1,38 @@
+{
+  "default": {
+    "cascLocalFolder": "C:/Games/World of Warcraft",
+    "buildDef": {
+      "buildVersion": "11.0.2.56313",
+      "buildConfigHash": "",
+      "cdnConfigHash": "",
+      "productName": "wow",
+      "cdnPath": "tpr/wow",
+      "cdnServersOverride": "",
+      "region": "us",
+      "installedLanguage": "enUS",
+      "armadilloKey": "",
+      "allowOnlineDownload": false,
+      "preferLowViolence": false,
+      "preferHiResTextures": true,
+      "useTactLocal": false,
+      "localTactPath": "",
+      "isClassic": false
+    }
+  },
+  "overrides": {
+    "EversongTest": {
+      "cascLocalFolder": "C:/Games/World of Warcraft Classic",
+      "buildDef": {
+        "productName": "wow_classic",
+        "cdnPath": "tpr/wow",
+        "buildVersion": "1.15.4.56792",
+        "isClassic": true
+      }
+    },
+    "DeadMinesTest": {
+      "buildDef": {
+        "isClassic": true
+      }
+    }
+  }
+}

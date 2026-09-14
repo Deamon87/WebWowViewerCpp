@@ -7,6 +7,7 @@
 
 class WmoGroupObject;
 class WMOGroupListContainer;
+class LiquidMaterialManager;
 
 #include "../../persistance/header/wmoFileHeader.h"
 #include "../iWmoApi.h"
@@ -16,29 +17,33 @@ class WMOGroupListContainer;
 #include "../../../engine/custom_allocators/FrameBasedStackAllocator.h"
 #include "../lights/CPointLight.h"
 #include "../lights/CSpotLight.h"
-#include "../lights/CWmoNewLight.h"
+#include "../lights/CEngineLight.h"
+#include "../liquid/liquidMaterials/LiquidMaterialManager.h"
 
 
 class WmoGroupObject {
 public:
-    WmoGroupObject(mathfu::mat4 &modelMatrix, HApiContainer api, const SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
+    WmoGroupObject(mathfu::mat4 &modelMatrix, const HApiContainer &api, const SMOGroupInfo &groupInfo, int groupNumber) : m_api(api){
         m_modelMatrix = &modelMatrix;
         m_groupNumber = groupNumber;
         m_main_groupInfo = &groupInfo;
-        createWorldGroupBB(groupInfo.bounding_box, modelMatrix);
+        //World bounding boxes are owned and initialized by the parent WmoObject
+        //(see WmoObject::createGroupObjects / recalcGroupBorders)
     }
     ~WmoGroupObject(){
 //        std::cout << "WmoGroupObject destroyed" << std::endl;
     }
 
-    void drawDebugLights();
-    bool getIsLoaded() { return m_loaded; };
-    CAaBox getWorldAABB() {
-        return m_worldGroupBorder;
+    bool getIsLoaded();
+    //World AABB of this group (incl. loaded doodads). Owned by the parent WmoObject, which keeps
+    //all group boxes in contiguous arrays for batched culling.
+    const CAaBox &getWorldAABB() {
+        return m_wmoApi->getGroupWorldBorder(m_groupNumber);
     }
     const CAaBox &getLocalAABB() {
         return m_localGroupBorder;
     }
+    int getGroupNumber() const { return m_groupNumber; }
     const HWmoGroupGeom getWmoGroupGeom() const { return m_geom; };
     const std::vector <std::shared_ptr<M2Object>> &getDoodads() const {
         return m_doodads;
@@ -49,19 +54,19 @@ public:
     void setModelFileName(std::string modelName);
     void setModelFileId(int fileId);
 
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, int renderOrder, bool includeTransparents = true);
+    // Single enumeration core for the group's batch + sortable meshes, shared by
+    // collectMeshes() (CPU collectors) and the GPU-indirect draw path. Liquid instances
+    // are not part of it — CPU collectors add them separately.
+    void forEachGroupMesh(const std::function<void(const HGMesh &mesh, bool isTransparent)> &visitor);
     const std::vector<CPointLight> &getPointLights();
-    const std::vector<std::shared_ptr<CWmoNewLight>> &getWmoNewLights();
+    const std::vector<std::shared_ptr<CEngineLight>> &getWmoNewLights();
 
-    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer);
+    bool doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager);
     void update();
     void uploadGeneratorBuffers(const HFrameDependantData &frameDependantData, animTime_t mapCurrentTime);
-    void checkGroupFrustum(bool &drawDoodads, bool &drawGroup,
-                           mathfu::vec4 &cameraVec4,
-                           const MathHelper::FrustumCullingData &frustumData);
 
     std::array<mathfu::vec3, 3> getAmbientColors();
-    void assignInteriorParams(M2Object *m2Object);
 
     bool checkIfInsideGroup(mathfu::vec4 &cameraVec4,
                             mathfu::vec4 &cameraLocal,
@@ -78,13 +83,12 @@ private:
     bool useFileId = false;
     int m_modelFileId;
 
-    CAaBox m_worldGroupBorder;
     CAaBox m_localGroupBorder;
-    CAaBox m_volumeWorldGroupBorder;
     CAaBox m_waterAaBB;
     mathfu::mat4 *m_modelMatrix = nullptr;
     int m_groupNumber;
 
+    HGVertexBufferBindings m_binding;
     std::vector<HGMesh> m_meshArray = {};
     std::vector<HGSortableMesh> m_sortableMeshArray = {};
     std::vector<std::shared_ptr<LiquidInstance>> m_liquidInstances = {};
@@ -94,23 +98,22 @@ private:
     std::vector <std::shared_ptr<M2Object>> m_doodads = {};
     std::vector<CPointLight> m_pointLights = {};
     std::vector<CSpotLight> m_spotLights = {};
-    std::vector<std::shared_ptr<CWmoNewLight>> m_wmoNewLights = {};
+    std::vector<std::shared_ptr<CEngineLight>> m_wmoNewLights = {};
 
     bool m_loading = false;
     bool m_loaded = false;
+    bool m_wmoColorsIgnored = false;
 
     bool m_recalcBoundries = false;
     LiquidTypes liquid_type = LiquidTypes::LIQUID_NONE;
 
     void startLoading();
-    void createWorldGroupBB (const CAaBox &bbox, mathfu::mat4 &placementMatrix);
 
-    void updateWorldGroupBBWithM2();
     void checkDoodads(M2ObjectListContainer &wmoM2Candidates);
 
-    void postLoad(const HMapSceneBufferCreate &sceneRenderer);
+    void postLoad(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager);
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
-    void createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer);
+    void createWaterMeshes(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager);
 
     LiquidTypes to_wmo_liquid (int x);
     void setLiquidType();
@@ -125,7 +128,8 @@ private:
     );
 
     inline bool isInteriorLightingLit() const {
-        bool wmoGroupUsesExteriorLighting = m_geom->mogp->flags.EXTERIOR_LIT || m_geom->mogp->flags.EXTERIOR || !m_geom->mogp->flags.INTERIOR;
+        bool wmoGroupUsesExteriorLighting =
+            m_geom->mogp->flags.EXTERIOR_LIT || m_geom->mogp->flags.EXTERIOR || !m_geom->mogp->flags.INTERIOR;
 
         return !wmoGroupUsesExteriorLighting;
     }

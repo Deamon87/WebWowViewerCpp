@@ -5,12 +5,15 @@
 #include "CommandBufferRecorder.h"
 #include "CommandBufferRecorder_inline.h"
 #include "../../pipeline/GPipelineVLK.h"
+#include "../../meshes/GMeshVLK.h"
+#include "../../materials/ComputeMaterialBuilderVLK.h"
+#include "../../buffers/IBufferVLK.h"
 
 // ----------------------------------------
 //     CmdBufRecorder
 // ----------------------------------------
 
-CmdBufRecorder::CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass) : m_gCmdBuffer(cmdBuffer) {
+CmdBufRecorder::CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass, bool simultaneousUse) : m_gCmdBuffer(cmdBuffer) {
     VkCommandBufferInheritanceInfo bufferInheritanceInfo;
 
     //If not nullptr -> it means this is a secondary command buffer, that needs to continue renderPass, that's going on outside
@@ -30,7 +33,8 @@ CmdBufRecorder::CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<
     VkCommandBufferBeginInfo beginInfo = {};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
-        ((renderPass != nullptr) ? (VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) : 0);
+        ((renderPass != nullptr) ? (VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT | VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT) : 0) |
+        (simultaneousUse ? VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT : 0);
     beginInfo.pNext = NULL;
     beginInfo.pInheritanceInfo = (renderPass != nullptr) ? &bufferInheritanceInfo : nullptr;
 
@@ -88,7 +92,9 @@ RenderPassHelper CmdBufRecorder::beginRenderPass(
     m_currentPipelineLayout = nullptr;
     m_currentIndexBuffer = nullptr;
     m_currentVertexBuffers = {};
-    m_currentDescriptorSet = {};
+    m_currentGraphicsDescriptorSet = {};
+    m_currentComputeDescriptorSet = {};
+    m_currentRayTracingDescriptorSet = {};
     m_material = nullptr;
     m_vertexBufferBindings = nullptr;
 
@@ -157,7 +163,54 @@ void CmdBufRecorder::bindVertexBuffers(const std::vector<std::shared_ptr<IBuffer
     vkCmdBindVertexBuffers(m_gCmdBuffer.m_cmdBuffer, firstBinding, bindingCount, vbos.data(), offsets.data());
 }
 
+void CmdBufRecorder::drawMesh(const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType ) {
+    if (mesh == nullptr) return;
 
+    const auto &meshVlk = (GMeshVLK*) mesh.get();
+
+    //1. Bind Vertex bindings
+    this->bindVertexBindings(mesh->bindings());
+
+    //2. Bind Material
+    this->bindMaterial(meshVlk->material());
+
+    //3. Set view port
+    this->setViewPort(viewportType);
+
+    //4. Set scissors
+    if (meshVlk->scissorEnabled()) {
+        this->setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
+    } else {
+        this->setDefaultScissors();
+    }
+
+    //5. Draw the mesh
+    if (meshVlk->instanceIndex != -1) {
+        this->drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, meshVlk->instanceIndex, meshVlk->vertexStart);
+    } else {
+        this->drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, 0);
+    }
+}
+
+void CmdBufRecorder::drawMeshFromId(GMeshVLK *meshVlk, CmdBufRecorder::ViewportType viewportType) {
+    if (meshVlk == nullptr) return;
+
+    this->bindVertexBindings(meshVlk->bindings());
+    this->bindMaterial(meshVlk->material());
+    this->setViewPort(viewportType);
+
+    if (meshVlk->scissorEnabled()) {
+        this->setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
+    } else {
+        this->setDefaultScissors();
+    }
+
+    if (meshVlk->instanceIndex != -1) {
+        this->drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, meshVlk->instanceIndex, meshVlk->vertexStart);
+    } else {
+        this->drawIndexed(meshVlk->end(), 1, meshVlk->start() / 2, 0);
+    }
+}
 
 void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance, uint32_t vertexOffset) {
     vkCmdDrawIndexed(m_gCmdBuffer.m_cmdBuffer,
@@ -168,10 +221,57 @@ void CmdBufRecorder::drawIndexed(uint32_t indexCount, uint32_t instanceCount, ui
                      firstInstance);
 }
 
+void CmdBufRecorder::drawIndexedIndirect(const std::shared_ptr<IBufferVLK> &buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) {
+    vkCmdDrawIndexedIndirect(m_gCmdBuffer.m_cmdBuffer,
+                             buffer->getGPUBuffer(),
+                             offset,
+                             drawCount,
+                             stride);
+}
+
+void CmdBufRecorder::bindComputePipeline(const HComputePipelineVLK &pipeline) {
+    vkCmdBindPipeline(m_gCmdBuffer.m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline->getPipeline());
+    m_currentPipelineLayout = pipeline->getLayout()->getLayout();
+
+    m_currentPipeline = nullptr;
+    m_currentComputeDescriptorSet = {};
+}
+
+void CmdBufRecorder::dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) {
+    vkCmdDispatch(m_gCmdBuffer.m_cmdBuffer, groupCountX, groupCountY, groupCountZ);
+}
+
+void CmdBufRecorder::pushConstants(VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *pValues) {
+    vkCmdPushConstants(m_gCmdBuffer.m_cmdBuffer, layout, stageFlags, offset, size, pValues);
+}
+
+void CmdBufRecorder::beginConditionalRendering(const std::shared_ptr<IBufferVLK> &buffer, VkDeviceSize offset, bool inverted) {
+#if defined(VK_EXT_conditional_rendering)
+    VkConditionalRenderingBeginInfoEXT conditionalInfo = {};
+    conditionalInfo.sType = VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
+    conditionalInfo.buffer = buffer->getGPUBuffer();
+    conditionalInfo.offset = offset;
+    conditionalInfo.flags = inverted ? VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT : 0;
+
+    vkCmdBeginConditionalRenderingEXT(m_gCmdBuffer.m_cmdBuffer, &conditionalInfo);
+#endif
+}
+
+void CmdBufRecorder::endConditionalRendering() {
+#if defined(VK_EXT_conditional_rendering)
+    vkCmdEndConditionalRenderingEXT(m_gCmdBuffer.m_cmdBuffer);
+#endif
+}
+
 void CmdBufRecorder::executeSecondaryCmdBuffer(const std::shared_ptr<GCommandBuffer> &cmdBuffer) {
     std::array<VkCommandBuffer, 1> buffers = {cmdBuffer->getNativeCmdBuffer()};
 
     vkCmdExecuteCommands(m_gCmdBuffer.m_cmdBuffer, 1, buffers.data());
+}
+
+void CmdBufRecorder::blitImage(VkImage srcImage, VkImageLayout srcLayout, VkImage dstImage, VkImageLayout dstLayout,
+                               const VkImageBlit &region, VkFilter filter) {
+    vkCmdBlitImage(m_gCmdBuffer.m_cmdBuffer, srcImage, srcLayout, dstImage, dstLayout, 1, &region, filter);
 }
 
 void CmdBufRecorder::recordPipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask,
@@ -400,7 +500,11 @@ void CmdBufRecorder::bindMaterial(const std::shared_ptr<ISimpleMaterialVLK> &mat
     if (m_material == material) return;
 
     //1. Bind pipeline
-    if (m_gbufferMode) {
+    if (m_zprefillMode) {
+        auto const &zPrefillPipeline = material->getZPrefillPipeline();
+        // Materials without a depth-only variant fall back to their main pipeline
+        this->bindPipeline(zPrefillPipeline ? zPrefillPipeline : material->getPipeline());
+    } else if (m_gbufferMode) {
         this->bindPipeline(material->getGBufferPipeline());
     } else {
         this->bindPipeline(material->getPipeline());

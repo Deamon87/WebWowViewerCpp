@@ -16,7 +16,7 @@
 
 class DayNightLightHolder {
 public:
-    DayNightLightHolder(const HApiContainer &api, int mapId);
+    explicit DayNightLightHolder(const HApiContainer &api, int mapId);
 
 private:
 
@@ -55,6 +55,7 @@ public:
                                 SkyBodyData &skyBodyData,
                                 ExteriorColors &exteriorColors,
                                 FogResult &fogResult,
+                                FogResult &underWaterFogResult,
                                 LiquidColors &liquidColors,
                                 SkyBoxCollector &skyBoxCollector,
                                 StateForConditions *stateForConditions);
@@ -62,6 +63,9 @@ public:
     const std::vector<std::shared_ptr<M2Object>> &getExteriorSkyBoxes() const {
         return m_exteriorSkyBoxes;
     }
+
+    FogResult wmoFogDataToFogResult(const SMOFog_Data &wmoFogData, float farClip) const;
+    static void blendWmoFogIntoFogResult(FogResult &fogResult, const FogResult &wmoFog, float wmoBlend, bool underwater);
 
 private:
     bool m_mapFlag2_0x2 = false;
@@ -88,7 +92,28 @@ private:
     void processSkyBoxes(const HMapRenderPlan &mapRenderPlan, const StateForConditions &stateForConditions,
                          const Config *config) const;
 
+    std::array<mathfu::vec3, 4> calcPlanetPositions(const mathfu::vec3 &cameraVec3);
 
+    // Computes per-frame planet (sun/moon discs) and stars render data into frameDependentData
+    void updatePlanetsAndStars(const mathfu::vec3 &cameraPos, const SkyBodyData &skyBodyData,
+                               const HFrameDependantData &fdd);
+
+    mathfu::vec3 calcSunPosition(
+        const SkyBodyData &skyBody,
+        const mathfu::vec3 &cameraVec3,
+        const mathfu::mat4 &viewMat,
+        float &sunAttenuationStart,
+        float &sunAttenuationEnd,
+        std::array<mathfu::vec3, 4> &planetPositions
+    );
+    mathfu::vec3 calcDirectColorDir(const SkyBodyData &skyBody, const mathfu::mat4 &invTranspViewMat );
+    mathfu::vec3 calcSunDirForFog(
+        const SkyBodyData &skyBody,
+        const mathfu::vec3 &sunPositionInView,
+        const mathfu::vec3 &cameraVec3,
+        const mathfu::mat4 &invTranspViewMat,
+        std::array<mathfu::vec3, 4> &planetPositions
+    );
 };
 
 

@@ -10,10 +10,10 @@
 
 class Db2File : public PersistentFile {
 public:
-    Db2File(std::string fileName){};
-    Db2File(int fileDataId){};
+    Db2File(std::string fileName) : PersistentFile(fileName) {};
+    Db2File(int fileDataId): PersistentFile(fileDataId){};
 
-    void process(HFileContent db2File, const std::string &fileName) override;
+    void process(HFileContent db2File) override;
     HFileContent getContent() { return db2Content; };
 private:
     HFileContent db2Content;

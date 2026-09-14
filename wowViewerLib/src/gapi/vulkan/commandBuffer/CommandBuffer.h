@@ -22,7 +22,7 @@ public:
 public:
     GCommandBuffer(IDeviceVulkan &deviceVlk, VkQueue vkQueue, VkCommandPool commandPool, bool isPrimary);
 
-    CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass);
+    CmdBufRecorder beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass, bool simultaneousUse = false);
     VkCommandBuffer getNativeCmdBuffer() const {
         return m_cmdBuffer;
     }

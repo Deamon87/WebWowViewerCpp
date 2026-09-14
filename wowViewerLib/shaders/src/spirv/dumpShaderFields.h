@@ -18,7 +18,7 @@
 constexpr const int MAX_SHADER_DESC_SETS = 8;
 
 enum class ShaderStage {
-    Unk, Vertex, Fragment, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
+    Unk, Vertex, Fragment, Compute, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
 };
 
 #define printStage(stage) case stage: return #stage; break;
@@ -27,6 +27,7 @@ std::string ShaderStageToStr(ShaderStage stage) {
         printStage(ShaderStage::Unk)
         printStage(ShaderStage::Vertex)
         printStage(ShaderStage::Fragment)
+        printStage(ShaderStage::Compute)
         printStage(ShaderStage::RayGenerate)
         printStage(ShaderStage::RayAnyHit)
         printStage(ShaderStage::RayClosestHit)
@@ -48,21 +49,11 @@ struct fieldDefine {
     int arraySize;
 };
 
-struct uboBindingData {
+struct bindingData {
     unsigned int set;
     unsigned int binding;
     unsigned long long size;
-};
-struct ssboBindingData {
-    unsigned int set;
-    unsigned int binding;
-    unsigned long long size;
-};
-
-struct imageBindingData {
-    unsigned int set;
-    unsigned int binding;
-    std::string imageName;
+    std::string name = "";
 };
 
 struct bindingAmountData {
@@ -73,12 +64,14 @@ struct bindingAmountData {
 
 struct shaderMetaData {
     ShaderStage stage;
-    std::vector<uboBindingData> m_uboBindings;
-    std::vector<ssboBindingData> m_ssboBindingData;
+    std::vector<bindingData> m_uboBindings;
+    std::vector<bindingData> m_ssboBindingData;
     std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
-    std::vector<imageBindingData> imageBindings;
+    std::vector<bindingData> imageBindings;
     std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
+
+    unsigned int pushConstantSize = 0;
 };
 
 //Per file
@@ -178,24 +171,15 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
     constexpr const int MAX_SHADER_DESC_SETS = 8;
 
     enum class ShaderStage {
-        Unk, Vertex, Fragment, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
+        Unk, Vertex, Fragment, Compute, RayGenerate, RayAnyHit, RayClosestHit, RayMiss
     };
 
 
-    struct uboBindingData {
+    struct bindingData {
         unsigned int set;
         unsigned int binding;
         unsigned long long size;
-    };
-    struct ssboBindingData {
-        unsigned int set;
-        unsigned int binding;
-        unsigned long long size;
-    };
-    struct imageBindingData {
-        unsigned int set;
-        unsigned int binding;
-        std::string imageName;
+        std::string name = "";
     };
 
     struct bindingAmountData {
@@ -207,13 +191,15 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
     struct shaderMetaData {
         ShaderStage stage;
 
-        std::vector<uboBindingData> uboBindings;
+        std::vector<bindingData> uboBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> uboBindingAmountsPerSet;
 
-        std::vector<ssboBindingData> m_ssboBindings;
+        std::vector<bindingData> m_ssboBindings;
 
-        std::vector<imageBindingData> imageBindings;
+        std::vector<bindingData> imageBindings;
         std::array<bindingAmountData, MAX_SHADER_DESC_SETS> imageBindingAmountsPerSet;
+
+        unsigned int pushConstantSize = 0;
     };
 
     //Per file
@@ -282,6 +268,9 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
 
                 case(spv::ExecutionModel::ExecutionModelFragment):
                     return ShaderStage::Fragment;
+
+                case(spv::ExecutionModel::ExecutionModelGLCompute):
+                    return ShaderStage::Compute;
 
                 case(spv::ExecutionModel::ExecutionModelAnyHitKHR):
                     return ShaderStage::RayAnyHit;
@@ -424,7 +413,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
                 binding = glsl.get_decoration(resource.id, spv::DecorationBinding);
             }
 
-            metaInfo.imageBindings.push_back({set, binding, resource.name});
+            metaInfo.imageBindings.push_back({set, binding, 0, resource.name});
             if (set < 255) {
                 metaInfo.imageBindingAmountsPerSet[set].start =
                     std::min<unsigned int>(metaInfo.imageBindingAmountsPerSet[set].start, binding);
@@ -443,6 +432,12 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
             } else {
                 data.start = 0;
             }
+        }
+
+        //Record push constant size
+        for (auto &resource : resources.push_constant_buffers) {
+            auto pcType = glsl.get_type(resource.type_id);
+            metaInfo.pushConstantSize = glsl.get_declared_struct_size(pcType);
         }
 
     }
@@ -529,7 +524,7 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
 
         std::cout << "    {\n";
         for (auto &binding : it->second.imageBindings) {
-            std::cout << "      {" << binding.set << "," << binding.binding << ", \"" << binding.imageName << "\"}," << std::endl;
+            std::cout << "      {" << binding.set << "," << binding.binding << "," << 0 << ", \"" << binding.name << "\"}," << std::endl;
         }
         std::cout << "    },\n";
 
@@ -544,7 +539,10 @@ void dumpShaderUniformOffsets(const std::string &basePath, const std::vector<std
             }
         }
         std::cout << "      }\n";
-        std::cout << "    }\n";
+        std::cout << "    },\n";
+
+        //Dump push constant size
+        std::cout << "    " << it->second.pushConstantSize << "\n";
 
         std::cout << "  }\n},\n";
 

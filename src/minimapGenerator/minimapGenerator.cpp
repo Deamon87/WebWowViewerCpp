@@ -40,6 +40,7 @@ MinimapGenerator::MinimapGenerator(HWoWFilesCacheStorage cacheStorage, const HGD
     config->exteriorColors.exteriorHorizontAmbientColor = mathfu::vec3(0.5f,0.5f,0.5f);
     config->exteriorColors.exteriorGroundAmbientColor =   mathfu::vec3(0.5f,0.5f,0.5f);
     config->exteriorColors.exteriorDirectColor =          mathfu::vec3(0.5f,0.5f,0.5f);
+    config->exteriorColors.exteriorSpecularColor =        mathfu::vec3(0.f, 0.f, 0.f);
 
     config->adtSpecMult = 0.0;
 

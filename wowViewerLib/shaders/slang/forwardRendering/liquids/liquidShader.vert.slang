@@ -1,0 +1,64 @@
+#version 450
+
+import glsl;
+
+#extension GL_GOOGLE_include_directive: require
+#extension GL_ARB_shader_draw_parameters: require
+
+precision highp float;
+precision highp int;
+
+#include "../../common/commonLightFunctions.slang"
+#include "../../common/commonFogFunctions.slang"
+#include "../../common/commonUboSceneData.slang"
+
+#include "../../common/commonLiquidStructs.slang"
+
+layout(std140, set=1, binding=1) uniform liquidInstanceBlockPS {
+    LiquidInstanceData liquidInstanceData;
+};
+
+layout(location=0) in vec4 aPositionTransp;
+layout(location=1) in vec2 aTexCoord;
+
+layout(std140, set=1, binding=0) uniform modelWideBlockVS {
+    mat4 uPlacementMat;
+};
+
+//out vec2 vTexCoord;
+layout(location=0) out vec4 vPositionDepth;
+layout(location=1) out vec3 vWorldPosition;
+layout(location=2) out vec2 vTextCoords;
+layout(location=3) out vec3 vNormal;
+layout(location=4) out vec2 vCellUv;
+
+[shader("vertex")]
+void main() {
+    vec4 aPositionVec4 = vec4(aPositionTransp.xyz, 1);
+    mat4 viewModelMat = scene.uLookAtMat * uPlacementMat;
+
+    vec4 cameraPoint = viewModelMat * aPositionVec4;
+
+    mat4 viewModelMatForNormal = transpose(inverse(viewModelMat));
+
+    //const float posToTextPos = 1.0 / (1600.0/3.0/16.0);
+    vTextCoords = aTexCoord;//aPositionVec4.xy * posToTextPos;
+
+    gl_Position = scene.uPMatrix * cameraPoint;
+
+    vPositionDepth = vec4(cameraPoint.xyz, aPositionTransp.w);
+    vWorldPosition = aPositionVec4.xyz;
+    vNormal = normalize(viewModelMatForNormal * vec4(vec3(0,0,1.0), 0.0)).xyz;
+
+    int cellVertexIdx = (gl_VertexIndex - gl_BaseVertex);
+
+    int cellHeight = liquidInstanceData.liquidMaterial_liquidType_isInterior_vtxCellOffetWidthHeight.w & 0xFF;
+    int cellWidth = (liquidInstanceData.liquidMaterial_liquidType_isInterior_vtxCellOffetWidthHeight.w >> 8) & 0xFF;
+    int cellOffsetY = (liquidInstanceData.liquidMaterial_liquidType_isInterior_vtxCellOffetWidthHeight.w >> 16) & 0xFF;
+    int cellOffsetX = (liquidInstanceData.liquidMaterial_liquidType_isInterior_vtxCellOffetWidthHeight.w >> 24) & 0xFF;
+
+    int x = cellVertexIdx % (cellWidth + 1);
+    int y = cellVertexIdx / (cellHeight + 1);
+
+    vCellUv = vec2((cellOffsetX + x) * (1.0 / 8.0), (cellOffsetY + y) * (1.0 / 8.0));
+}

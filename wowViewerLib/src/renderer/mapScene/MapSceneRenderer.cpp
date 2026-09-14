@@ -6,6 +6,7 @@
 #include "../../engine/objects/scenes/map.h"
 #include "../../gapi/interface/sortLambda.h"
 #include "../frame/FrameProfile.h"
+#include "../../gapi/interface/FrameContext.h"
 
 std::shared_ptr<MapRenderPlan>
 MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams) {
@@ -20,39 +21,46 @@ MapSceneRenderer::processCulling(const std::shared_ptr<FrameInputParams<MapScene
 
 void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
                                      COpaqueMeshCollector &opaqueMeshCollector,
-                                     COpaqueMeshCollector &skyOpaqueMeshCollector,
                                      const std::shared_ptr<framebased::vector<HGSortableMesh>> &htransparentMeshes,
-                                     const std::shared_ptr<framebased::vector<HGSortableMesh>> &hSkyTransparentMeshes) {
+                                     const std::shared_ptr<framebased::vector<HGMesh>> &hSkyMeshes) {
     ZoneScoped;
 
+    // Combined CPU collection used by the forward and bindless renderers.
     auto &transparentMeshes = *htransparentMeshes;
 
-    auto &skyTransparentMeshes = *hSkyTransparentMeshes;
-
     transparentMeshes.reserve(30000);
-    skyTransparentMeshes.reserve(1000);
+    hSkyMeshes->reserve(1000);
 
-    const auto& cullStage = renderPlan;
-    auto fdd = cullStage->frameDependentData;
+    collectViewMeshes(renderPlan, opaqueMeshCollector, transparentMeshes, true);
+    collectM2MeshesCpu(renderPlan, opaqueMeshCollector, transparentMeshes);
+    collectSkyMeshes(renderPlan, *hSkyMeshes);
 
-    int m_viewRenderOrder = 0;
+    //No need to sort array which has only one element
+    if (transparentMeshes.size() > 1) {
+        ZoneScopedN("sort transparent");
+        std::sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
+    }
+}
 
-    // Put everything into one array and sort
+void MapSceneRenderer::collectViewMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                                         COpaqueMeshCollector &opaqueMeshCollector,
+                                         framebased::vector<HGSortableMesh> &transparentMeshes,
+                                         bool includeWmoTransparents) {
+    ZoneScoped;
 
-    bool renderPortals = m_config->renderPortals;
     bool renderADT = m_config->renderAdt;
     bool renderWMO = m_config->renderWMO;
 
-    for (auto &view : cullStage->viewsHolder.getInteriorViews()) {
+    for (auto &view : renderPlan->viewsHolder.getInteriorViews()) {
         ZoneScopedN("Collect interiors");
-        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
+        view->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes, includeWmoTransparents);
     }
 
     {
-        auto exteriorView = cullStage->viewsHolder.getExterior();
+        auto exteriorView = renderPlan->viewsHolder.getExterior();
         if (exteriorView != nullptr) {
             ZoneScopedN("Collect Exterior");
-            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes);
+            exteriorView->collectMeshes(renderADT, true, renderWMO, opaqueMeshCollector, transparentMeshes, includeWmoTransparents);
 
             {
                 ZoneScopedN("adt mesh collect");
@@ -62,79 +70,79 @@ void MapSceneRenderer::collectMeshes(const std::shared_ptr<MapRenderPlan> &rende
             }
         }
     }
+}
 
-    if (m_config->renderM2) {
-        ZoneScopedN("collect m2s");
+void MapSceneRenderer::collectM2MeshesCpu(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                                          COpaqueMeshCollector &opaqueMeshCollector,
+                                          framebased::vector<HGSortableMesh> &transparentMeshes) {
+    ZoneScopedN("collect m2s");
 
-        auto threadsAvailable = m_config->hardwareThreadCount();
-        auto &m2ToDraw = cullStage->m2Array.getDrawn();
-        int granSize = m2ToDraw.size() / (2 * threadsAvailable);
+    if (!m_config->renderM2) return;
 
+    auto threadsAvailable = m_config->hardwareThreadCount();
+    auto &m2ToDraw = renderPlan->m2Array.getDrawn();
+    int granSize = m2ToDraw.size() / (2 * threadsAvailable);
 
+    if (granSize > 0) {
+        std::mutex mergeMtx;
+        auto processingFrame = FrameContext::getCurrentProcessingFrameNumber();
+        oneapi::tbb::task_arena arena(std::min<uint32_t>(threadsAvailable, 16), 1);
+        arena.execute([&] {
+            tbb::static_partitioner ap;
 
-        if (granSize > 0) {
-            std::mutex mergeMtx;
-            oneapi::tbb::task_arena arena(std::min<uint32_t>(threadsAvailable, 16), 1);
-            arena.execute([&] {
-                tbb::static_partitioner ap;
-
-                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-                                  [&](tbb::blocked_range<size_t> r) {
-                                      transp_vec<HGSortableMesh> transpVec;
-                                      auto lCollector = opaqueMeshCollector.clone();
-                                      for (size_t i = r.begin(); i != r.end(); ++i) {
-                                          auto *m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
-                                          if (m2Object != nullptr) {
-                                              m2Object->collectMeshes(*lCollector, transpVec);
-                                              m2Object->drawParticles(*lCollector, transpVec,
-                                                                      m_viewRenderOrder);
-                                          }
+            tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                              [&](tbb::blocked_range<size_t> r) {
+                                  FrameContext::setCurrentProcessingFrameNumber(processingFrame);
+                                  transp_vec<HGSortableMesh> transpVec;
+                                  auto lCollector = opaqueMeshCollector.clone();
+                                  for (size_t i = r.begin(); i != r.end(); ++i) {
+                                      auto *m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
+                                      if (m2Object != nullptr) {
+                                          m2Object->collectMeshes(*lCollector, transpVec);
+                                          m2Object->drawParticles(*lCollector, transpVec);
                                       }
+                                  }
 
-                                      {
-                                          std::lock_guard<std::mutex> lock(mergeMtx);
-                                          opaqueMeshCollector.merge(*lCollector);
-                                          transparentMeshes.insert(transparentMeshes.end(), transpVec.begin(), transpVec.end());
-                                      }
-                                      delete lCollector;
+                                  {
+                                      std::lock_guard<std::mutex> lock(mergeMtx);
+                                      opaqueMeshCollector.merge(*lCollector);
+                                      transparentMeshes.insert(transparentMeshes.end(), transpVec.begin(), transpVec.end());
+                                  }
+                                  delete lCollector;
 
-                                  }, ap);
-            });
-        } else {
-            for (auto m2ObjectId : cullStage->m2Array.getDrawn()) {
-                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
-                if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes);
-                m2Object->drawParticles(opaqueMeshCollector, transparentMeshes, m_viewRenderOrder);
-            }
-        }
-
-
-
-        auto skyBoxView = cullStage->viewsHolder.getSkybox();
-        if (skyBoxView) {
-            transp_vec<HGSortableMesh> skyTranspVec;
-
-            ZoneScopedN("collect skyBox");
-            for (auto &m2ObjectId : skyBoxView->m2List.getDrawn()) {
-                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
-
-                if (m2Object == nullptr) continue;
-                m2Object->collectMeshes(skyOpaqueMeshCollector, skyTranspVec);
-                m2Object->drawParticles(skyOpaqueMeshCollector, skyTranspVec, m_viewRenderOrder);
-            }
-            skyTransparentMeshes.insert(skyTransparentMeshes.end(), skyTranspVec.begin(), skyTranspVec.end());
+                              }, ap);
+        });
+    } else {
+        for (auto m2ObjectId : m2ToDraw) {
+            auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+            if (m2Object == nullptr) continue;
+            m2Object->collectMeshes(opaqueMeshCollector, transparentMeshes);
+            m2Object->drawParticles(opaqueMeshCollector, transparentMeshes);
         }
     }
+}
 
-    //No need to sort array which has only one element
-    if (transparentMeshes.size() > 1) {
-        ZoneScopedN("sort transparent");
-        std::sort(transparentMeshes.begin(), transparentMeshes.end(), SortMeshes);
+void MapSceneRenderer::collectM2ProjectiveMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                                                 COpaqueMeshCollector &opaqueMeshCollector) {
+    // Decal/projective meshes aren't part of the GPU-indirect draw path, so they are
+    // collected here on the CPU, same as the bindless renderer does for all M2 meshes.
+    if (!m_config->renderM2 || !m_config->renderM2Decals) return;
+
+    ZoneScopedN("collect m2 decals");
+    for (auto m2ObjectId : renderPlan->m2Array.getDrawn()) {
+        auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+        if (m2Object == nullptr) continue;
+        m2Object->collectProjectiveMeshes(opaqueMeshCollector);
     }
-    if (skyTransparentMeshes.size() > 1) {
-        ZoneScopedN("sky transparent");
-        std::sort(skyTransparentMeshes.begin(), skyTransparentMeshes.end(), SortMeshes);
+}
+
+void MapSceneRenderer::collectSkyMeshes(const std::shared_ptr<MapRenderPlan> &renderPlan,
+                                        framebased::vector<HGMesh> &skyMeshes) {
+    auto skyBoxView = renderPlan->viewsHolder.getSkybox();
+    if (skyBoxView) {
+        ZoneScopedN("collect skyBox");
+
+        skyBoxView->collectMeshes(skyMeshes);
     }
 }
 
@@ -145,6 +153,10 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                                             animTime_t sceneTime
                                             ) {
     ZoneScoped;
+
+    auto safeInv = [](float x) {
+        return feq(x, 0) ? 0 : 1.0f / x;
+    };
 
     const static mathfu::vec4 zUp = {0,0,1.0,0};
 
@@ -189,6 +201,14 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
         blockPSVS.extLight.uExteriorGroundAmbientColor   = mathfu::vec4(fdd->colors.exteriorGroundAmbientColor, 1.0);
         blockPSVS.extLight.uExteriorDirectColor          = mathfu::vec4(fdd->colors.exteriorDirectColor, 1.0);
         blockPSVS.extLight.uExteriorDirectColorDir       = mathfu::vec4(fdd->exteriorDirectColorDir, 1.0);
+        blockPSVS.extLight.uExteriorSpecularColor        = mathfu::vec4(fdd->colors.exteriorSpecularColor, 1.0);
+        blockPSVS.extLight.uSunPosition                  = mathfu::vec4(fdd->sunPos, 1.0);
+        blockPSVS.extLight.uSunAttenuation               = mathfu::vec4(
+            fdd->sunAttentuationStart,
+            safeInv(fdd->sunAttentuationEnd - fdd->sunAttentuationStart),
+            fdd->useSunAttenuation ? 1.0 : 0.0,
+            1.0f
+        );
         blockPSVS.extLight.uAdtSpecMult_FogCount         = mathfu::vec4(m_config->adtSpecMult, fdd->fogResults.size(), 0, 1.0);
 
         for (int i = 0; i < std::min<int>(fdd->fogResults.size(), FOG_MAX_SHADER_COUNT); i++) {
@@ -272,6 +292,27 @@ void MapSceneRenderer::updateSceneWideChunk(const std::shared_ptr<IBufferChunkVe
                 fogResult.HeightEndFogColor,
                 fogResult.FogStartOffset
             );
+        }
+
+        // Underwater fog (Light.db2 LightParams slot 1) for liquid above shaders.
+        // Same density unit conversion as the scene fog; classic params unused (0).
+        {
+            auto &uwFog = fdd->underWaterFogResult;
+            const float uwDensityMultFix = 0.00050000002 * std::pow(10, m_config->fogDensityIncreaser);
+            if (uwFog.FogEnd > 0.0f) {
+                blockPSVS.underWaterFog = mathfu::vec4(
+                    uwFog.FogEnd * uwFog.FogScaler,
+                    uwFog.FogEnd,
+                    uwFog.FogDensity * uwDensityMultFix,
+                    0.0f
+                );
+                blockPSVS.underWaterFogColor = mathfu::vec4(uwFog.FogColor, 0.0f);
+            } else {
+                // no data -> inert fog
+                blockPSVS.underWaterFog = mathfu::vec4(0.0f, 100000000.0f, 0.0f, 0.0f);
+                blockPSVS.underWaterFogColor = mathfu::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+            }
+            blockPSVS.underWaterClassicFogParams = mathfu::vec4(0, 0, 0, 0);
         }
         sceneWideChunk->saveVersion(i);
     }

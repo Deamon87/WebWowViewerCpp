@@ -14,7 +14,7 @@
 
 FrontendUIRenderForwardVLK::FrontendUIRenderForwardVLK(const HGDeviceVLK &hDevice) :
     FrontendUIRenderer(hDevice), m_device(hDevice) {
-    std::cout << "Create Bindless scene renderer " << std::endl;
+    std::cout << "Create Frontend UI Forward scene renderer " << std::endl;
     m_lastRenderPass = m_device->getSwapChainRenderPass();
     m_emptyImguiVAO = createVAO(nullptr,nullptr);
 
@@ -62,7 +62,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterial(const 
     }
 
     auto &l_imguiUbo = m_imguiUboVLK;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", !opaque?"imguiShader":"imguiShader_opaque"}, {"forwardRendering","forwardRendering"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", !opaque?"imguiShader":"imguiShader_opaque"}, {"forwardRendering","forwardRendering"})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -96,7 +96,7 @@ std::shared_ptr<IUIMaterial> FrontendUIRenderForwardVLK::createUIMaterialDepth(c
     }
 
     auto &l_imguiUbo = m_imguiUboVLK;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShaderDepth"}, {"forwardRendering", "forwardRendering"}, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"imguiShader", "imguiShaderDepth"}, {"forwardRendering", "forwardRendering"})
         .createPipeline(m_emptyImguiVAO, m_lastRenderPass, s_imguiPipelineTemplate)
         .createDescriptorSet(0, [&l_imguiUbo](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
@@ -125,7 +125,7 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
     const std::shared_ptr<FrameInputParams<ImGuiFramePlan::ImGUIParam>> &frameInputParams,
     const std::shared_ptr<ImGuiFramePlan::EmptyPlan> &framePlan) {
 
-    TracyMessageStr(("Update UI buffers = " + std::to_string(m_device->getCurrentProcessingFrameNumber())));
+    TracyMessageStr(("Update UI buffers = " + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
     ZoneScopedN("Update UI buffers");
 
     auto meshes = std::make_shared<std::vector<HGMesh>>();
@@ -139,8 +139,10 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
     //Record commands to update buffer and draw
     auto l_this = std::dynamic_pointer_cast<FrontendUIRenderForwardVLK>(this->shared_from_this());
     return createRenderFuncVLK(
+        std::move([]() {
+        }),
         std::move([meshes, l_this](CmdBufRecorder &uploadCmd) {
-            TracyMessageStr(("Upload stuff stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
+            TracyMessageStr(("Upload stuff stage frame = " + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
             ZoneScopedN("Upload UI buffs");
             // ---------------------
             // Upload stuff
@@ -158,7 +160,7 @@ std::unique_ptr<IRenderFunction> FrontendUIRenderForwardVLK::update(
             }
         }),
         std::move([meshes, l_this](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) {
-                TracyMessageStr(("Render stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
+                TracyMessageStr(("Render stage frame = " + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
                 ZoneScopedN("Render UI");
                 // ----------------------
                 // Draw meshes

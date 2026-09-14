@@ -12,6 +12,7 @@
 #endif
 
 #include "imguiLib/imgui.h"
+#include "StorageNotifications.h"
 #include <fileBrowser/imfilebrowser.h>
 #include "../../wowViewerLib/src/include/database/dbStructs.h"
 #include "../../wowViewerLib/src/engine/objects/iScene.h"
@@ -26,12 +27,15 @@
 #include "renderer/uiScene/FrontendUIRenderer.h"
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRenderer.h"
 #include "childWindow/BLPViewer.h"
+#include "childWindow/fakeWDTGenerator/FakeWDTWindow.h"
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
 #include "childWindow/textureRenderer/DebugRendererWindow.h"
 #include "childWindow/fileListWindow/FileListWindow.h"
 #include "childWindow/sceneWindow/SceneWindow.h"
 #include "childWindow/m2Window/M2Window.h"
 #include "childWindow/mapSelectionWindow/MapSelectDialog.h"
+#include "childWindow/cascStorageDialog/CascStorageDialog.h"
+#include "childWindow/customObjectsWindow/CustomObjectsWindow.h"
 
 
 class FrontendUI : public IScene, public std::enable_shared_from_this<FrontendUI> {
@@ -41,7 +45,6 @@ public:
 
     FrontendUI(HApiContainer api);
     ~FrontendUI() override {
-        fileDialog.Close();
         createFileDialog.Close();
 
         ImGui::DestroyContext(this->imguiContext);
@@ -67,6 +70,7 @@ public:
         return m_currentActiveScene;
     };
 private:
+    std::shared_ptr<StorageNotifications> m_storageNotifications = std::make_shared<StorageNotifications>();
     ImGuiContext* imguiContext = nullptr;
     std::shared_ptr<FrontendUIRenderer> m_uiRenderer;
 
@@ -87,12 +91,12 @@ private:
     void makeScreenshotCallback(std::string fileName, int width, int height);
 
     std::shared_ptr<SceneWindow> getOrCreateWindow();
+    std::shared_ptr<SceneWindow> createNewWindow();
     void unloadScene();
     void resetAnimationCallback();
 
     auto createMinimapGenerator();
 
-    ImGui::FileBrowser fileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_SelectDirectory, true);
     ImGui::FileBrowser createFileDialog = ImGui::FileBrowser(ImGuiFileBrowserFlags_EnterNewFilename);
 
     bool showCurrentStats = true;
@@ -107,11 +111,11 @@ private:
     bool showMapConstruction = false;
 
     bool cascOpened = false;
+    std::string m_currentProduct = "";
+    bool m_currentIsClassic = false;
 
     int windowWidth = 640;
     int windowHeight = 480;
-
-    int currentTime = 0;
 
     int  threadCount = 4;
     int  quickSortCutoff = 100;
@@ -158,6 +162,9 @@ private:
 
     std::shared_ptr<DatabaseUpdateWorkflow> m_databaseUpdateWorkflow = nullptr;
     std::shared_ptr<KeysUpdateWorkflow> m_keyUpdateWorkFlow = nullptr;
+    std::shared_ptr<FakeWDTWindow> m_fakeWDTWindow = nullptr;
+    std::shared_ptr<CascStorageDialog> m_cascStorageDialog = nullptr;
+    std::shared_ptr<CustomObjectsWindow> m_customObjectsWindow = nullptr;
 
 public:
     void overrideCascOpened(bool value) {
@@ -188,6 +195,8 @@ public:
 
     void showMapSelectionDialog();
     void showMapConstructionDialog();
+    void showCascStorageDialog();
+    void showCustomObjectsDialog();
     void showMakeScreenshotDialog();
 
     void showSettingsDialog();

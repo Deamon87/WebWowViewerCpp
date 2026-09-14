@@ -7,6 +7,7 @@
 
 #include <memory>
 
+class SkyView;
 class GeneralView;
 class InteriorView;
 class ExteriorView;
@@ -16,6 +17,7 @@ class FrameViewsHolder;
 typedef std::shared_ptr<GeneralView> HGeneralView;
 typedef std::shared_ptr<InteriorView> HInteriorView;
 typedef std::shared_ptr<ExteriorView> HExteriorView;
+typedef std::shared_ptr<SkyView> HSkyView;
 
 #include <vector>
 #include "wmo/wmoGroupObject.h"
@@ -26,7 +28,6 @@ public:
     std::shared_ptr<AdtObject> adtObject;
     std::array<bool, 256> drawChunk = {false};
     std::array<bool, 256> drawWaterChunk = {false};
-    std::array<bool, 256> checkRefs = {false};
 };
 
 
@@ -53,8 +54,8 @@ public:
 
     std::vector<PortalPointsFrame> portals;
 
-    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes);
-    virtual void collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights);
+    virtual void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, bool includeWmoTransparents = true);
+    virtual void collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CEngineLight>> &newWmoLights);
     void collectPortalMeshes(framebased::vector<HGSortableMesh> &transparentMeshes);
 
     void produceTransformedPortalMeshes(const HMapSceneBufferCreate &sceneRenderer, const HApiContainer &apiContainer,
@@ -70,14 +71,27 @@ public:
 
 class ExteriorView : public GeneralView {
 public:
-    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) override;
+    void collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, bool includeWmoTransparents = true) override;
+};
+
+class SkyView {
+public:
+    M2ObjectListContainer m2List;
+    M2ObjectListContainer stars;
+
+    HGMesh skyMesh = nullptr;
+    HGMesh skyMesh0x4 = nullptr;
+
+    std::array<HGMesh, 3> m_planetMeshes = {nullptr, nullptr, nullptr};
+
+    void collectMeshes(framebased::vector<HGMesh> &meshes);
 };
 
 class FrameViewsHolder {
 public:
     HExteriorView getOrCreateExterior(const MathHelper::FrustumCullingData &frustumData);
     HExteriorView getExterior();
-    HExteriorView getSkybox();
+    HSkyView getSkybox();
 
     HInteriorView createInterior(const  MathHelper::FrustumCullingData &frustumData);
 
@@ -86,7 +100,7 @@ public:
     }
 private:
     HExteriorView exteriorView = nullptr ;
-    HExteriorView skyBoxView = nullptr ;
+    HSkyView skyBoxView = nullptr ;
     std::vector<HInteriorView> interiorViews = {};
 
 

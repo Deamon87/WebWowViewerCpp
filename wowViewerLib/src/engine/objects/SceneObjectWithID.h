@@ -14,9 +14,9 @@ public:
     }
     virtual ~ObjectWithId() = default;
 
-    ObjIdType getObjectId() { return m_id;}
+    inline ObjIdType getObjectId() { return m_id;}
 private:
-    void setId(ObjIdType id) {m_id = id;};
+    inline void setId(ObjIdType id) {m_id = id;};
 
     ObjIdType m_id = ObjIdType(-1);
 };

@@ -238,10 +238,15 @@ chunkDef<WmoMainGeom> WmoMainGeom::wmoMainTable = {
 
 
 
-void WmoMainGeom::process(HFileContent wmoMainFile, const std::string &fileName) {
+void WmoMainGeom::process(HFileContent wmoMainFile) {
+    if (wmoMainFile->empty()) {
+        fsStatus = FileStatus::FSRejected;
+        return;
+    }
+
     m_wmoMainFile = wmoMainFile;
 
-    CChunkFileReader reader(*m_wmoMainFile.get(), fileName);
+    CChunkFileReader reader(*m_wmoMainFile.get(), getFileNameOrDataId());
     reader.processFile(*this, &WmoMainGeom::wmoMainTable);
 
     fsStatus = FileStatus::FSLoaded;

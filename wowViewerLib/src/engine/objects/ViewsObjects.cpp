@@ -11,19 +11,58 @@
 #endif
 #include "../algorithms/mathHelper_culling.h"
 
-void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
-    GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshCollector, transparentMeshes);
+void ExteriorView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, bool includeWmoTransparents) {
+    GeneralView::collectMeshes(renderADT, renderAdtLiquid, renderWMO, opaqueMeshCollector, transparentMeshes, includeWmoTransparents);
+}
+void SkyView::collectMeshes(framebased::vector<HGMesh> &meshes) {
+    auto collectLambda = [](M2ObjectListContainer& m2Container, framebased::vector<HGMesh> &meshes) {
+        framebased::vector<HGMesh> opaqueMeshes;
+        framebased::vector<HGMesh> transparentMeshes;
+
+        for (const auto &m2ObjectId : m2Container.getDrawn()) {
+            auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+            if (m2Object == nullptr) continue;
+
+            m2Object->forEachVisibleMeshSorted([&](const HGSortableMesh &mesh, bool) {
+                if (mesh->getIsTransparent()) {
+                    transparentMeshes.push_back(mesh);
+                } else {
+                    opaqueMeshes.push_back(mesh);
+                }
+            });
+        }
+
+        std::copy(opaqueMeshes.begin(), opaqueMeshes.end(), std::back_inserter(meshes));
+        std::copy(transparentMeshes.begin(), transparentMeshes.end(), std::back_inserter(meshes));
+    };
+
+
+    if (skyMesh)
+        meshes.push_back(skyMesh);
+
+    collectLambda(stars, meshes);
+
+    for (int i = 0 ; i < m_planetMeshes.size(); i++) {
+        if (m_planetMeshes[i]) {
+            meshes.push_back(m_planetMeshes[i]);
+        }
+    }
+
+    collectLambda(m2List, meshes);
+
+    if (skyMesh0x4)
+        meshes.push_back(skyMesh0x4);
 }
 
 
-void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes) {
+void GeneralView::collectMeshes(bool renderADT, bool renderAdtLiquid, bool renderWMO, COpaqueMeshCollector &opaqueMeshCollector, framebased::vector<HGSortableMesh> &transparentMeshes, bool includeWmoTransparents) {
     if (renderWMO) {
         for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
-            wmoGroup->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder);
+            wmoGroup->collectMeshes(opaqueMeshCollector, transparentMeshes, renderOrder, includeWmoTransparents);
         }
     }
 }
-void GeneralView::collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CWmoNewLight>> &newWmoLights) {
+void GeneralView::collectLights(std::vector<LocalLight> &pointLights, std::vector<SpotLight> &spotLights, std::vector<std::shared_ptr<CEngineLight>> &newWmoLights) {
     for (auto &wmoGroup: wmoGroupArray.getToDraw()) {
         auto &wmoPointLights = wmoGroup->getPointLights();
 
@@ -190,9 +229,9 @@ HExteriorView FrameViewsHolder::getExterior() {
     return exteriorView;
 }
 
-HExteriorView FrameViewsHolder::getSkybox() {
+HSkyView FrameViewsHolder::getSkybox() {
     if (!skyBoxView) {
-        skyBoxView = std::make_shared<ExteriorView>();
+        skyBoxView = std::make_shared<SkyView>();
     }
     return skyBoxView;
 }

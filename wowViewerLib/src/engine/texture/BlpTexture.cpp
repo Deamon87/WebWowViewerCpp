@@ -82,7 +82,7 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, size_
     for (int i = 0; i < mipmapsCnt; i++) {
         if ((blpFile->lengths[i] == 0) || (blpFile->offsets[i] == 0)) break;
         if ( (blpFile->offsets[i] >= blpFileSize) ||
-             ((blpFile->offsets[i] + blpFile->lengths[i]) >= blpFileSize)
+             ((blpFile->offsets[i] + blpFile->lengths[i]) > blpFileSize)
         ) {
             std::cout << "wrong offset in blp file" << std::endl;
             continue;
@@ -162,13 +162,19 @@ HMipmapsVector parseMipmaps(BlpFile *blpFile, TextureFormat textureFormat, size_
     return mipmaps;
 }
 
-void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
+void BlpTexture::process(HFileContent blpFile) {
     /* Post load for texture data. Can't define them through declarative definition */
     /* Determine texture format */
     int fileSize = blpFile->size();
     BlpFile *pBlpFile = (BlpFile *) blpFile->data();
+
+    if (fileSize < sizeof(BlpFile)) {
+        this->fsStatus = FileStatus ::FSRejected;
+        return;
+    }
     if (pBlpFile->fileIdent != '2PLB') {
-        std::cerr << "Wrong ident for BLP2 file " << pBlpFile->fileIdent << " " << fileName << std::endl;
+        std::cerr << "Wrong ident for BLP2 file " << pBlpFile->fileIdent << " " << getFileNameOrDataId()
+                  << std::endl;
         this->fsStatus = FileStatus ::FSRejected;
         return;
     }
@@ -181,7 +187,12 @@ void BlpTexture::process(HFileContent blpFile, const std::string &fileName) {
 //    /* Load texture into GL memory */
 //    this->texture = createGlTexture(pBlpFile, textureFormat, mipmaps, fileName);
     this->fsStatus = FileStatus ::FSLoaded;
-    this->m_textureName = fileName;
+    this->m_textureName = getFileNameOrDataId();
+
+    auto mipMaps = getMipmapsVector();
+    if ((*mipMaps)[0].width == 0 || (*mipMaps)[0]. height == 0 ) {
+        this->fsStatus = FileStatus ::FSRejected;
+    }
 
     blpTexturesLoaded.fetch_add(1);
     blpTexturesSizeLoaded.fetch_add(blpFile->size());
@@ -194,7 +205,7 @@ const HMipmapsVector BlpTexture::getMipmapsVector() {
 BlpTexture::~BlpTexture() {
     if (m_blpFile) {
         blpTexturesLoaded.fetch_add(-1);
-        blpTexturesSizeLoaded.fetch_add(-m_blpFile->size());
+        blpTexturesSizeLoaded.fetch_add(-(int)m_blpFile->size());
     }
 }
 

@@ -11,6 +11,7 @@
 
 class GDeviceVLK;
 typedef std::shared_ptr<GDeviceVLK> HGDeviceVLK;
+typedef std::weak_ptr<GDeviceVLK> WGDeviceVLK;
 
 class GBufferVLK;
 class BufferGpuVLK;
@@ -44,6 +45,9 @@ public:
     //Doesn't make actual upload, only queues it.
     void uploadData(const void *, int length) override;
 
+    //Same as uploadData, but the copy lands at dstOffset bytes into the buffer.
+    void uploadDataAtOffset(const void *data, int length, size_t dstOffset);
+
     void *getPointer() override { return allocatePtr(0, m_bufferSize);}
     //Submits data edited with Pointer
     void save(int length) override;
@@ -70,7 +74,7 @@ public:
     struct uploadInterval {size_t start; size_t size;};
 
 private:
-    HGDeviceVLK m_device;
+    WGDeviceVLK m_device;
     std::shared_ptr<GStagingRingBuffer> m_ringBuff;
 
     std::string m_objName;

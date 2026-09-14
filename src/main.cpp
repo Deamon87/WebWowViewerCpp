@@ -52,6 +52,8 @@ int mleft_pressed = 0;
 int mright_pressed = 0;
 double m_x = 0.0;
 double m_y = 0.0;
+double mright_press_x = 0.0;
+double mright_press_y = 0.0;
 
 bool stopMouse = false;
 bool stopKeyboard = false;
@@ -87,6 +89,14 @@ static void cursor_position_callback(GLFWwindow* window, double xpos, double ypo
             m_x = xpos;
             m_y = ypos;
         }
+
+    // Continuous selection: while Ctrl is held, request a pick at the cursor on every move,
+    // instead of requiring a right-click.
+    bool ctrlHeld = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS ||
+                    glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL) == GLFW_PRESS;
+    if (ctrlHeld && apiContainer->getConfig()->enableObjectPicking && currentActiveScene) {
+        currentActiveScene->requestPick((int)xpos, (int)ypos);
+    }
 }
 
 void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
@@ -115,6 +125,11 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
         glfwGetCursorPos(window, &xpos, &ypos);
         m_x = xpos;
         m_y = ypos;
+
+        if (button == GLFW_MOUSE_BUTTON_RIGHT) {
+            mright_press_x = xpos;
+            mright_press_y = ypos;
+        }
 //        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     }
     if (action == GLFW_RELEASE) {
@@ -122,6 +137,16 @@ void mouse_button_callback(GLFWwindow* window, int button, int action, int mods)
             mleft_pressed = 0;
         } else if (button == GLFW_MOUSE_BUTTON_RIGHT) {
             mright_pressed = 0;
+
+            // Treat a right-click with negligible movement (not a camera-pan drag) as an object-pick request.
+            double xpos, ypos;
+            glfwGetCursorPos(window, &xpos, &ypos);
+            const double clickMoveThreshold = 3.0;
+            if (std::abs(xpos - mright_press_x) < clickMoveThreshold && std::abs(ypos - mright_press_y) < clickMoveThreshold) {
+                if (apiContainer->getConfig()->enableObjectPicking && currentActiveScene) {
+                    currentActiveScene->requestPick((int)xpos, (int)ypos);
+                }
+            }
         }
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
     }
@@ -295,6 +320,7 @@ extern "C" void my_function_to_handle_aborts(int signal_number)
      */
 
     std::cout << "HELLO" << std::endl;
+    __debugbreak();
 }
 
 /*Do this early in your program's initialization */

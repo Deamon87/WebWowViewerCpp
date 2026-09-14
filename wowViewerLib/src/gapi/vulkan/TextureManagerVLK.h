@@ -17,6 +17,7 @@ public:
     TextureManagerVLK(IDeviceVulkan &device);
     void initialize();
 
+    std::shared_ptr<ITextureSampler> getSampler(bool xWrapTex, bool yWrapTex, bool nearest);
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool wrapX, bool wrapY);
     HGSamplableTexture createTexture(bool wrapX, bool wrapY);
     HGSamplableTexture createSampledTexture(bool wrapX, bool wrapY, const HGTexture &textureVlk);
@@ -95,6 +96,7 @@ private:
     std::list<std::weak_ptr<GBlpTextureVLK>> m_blpTextLoadQueue;
 
     std::array<std::shared_ptr<ITextureSampler>, 4> m_textureSamplers;
+    std::array<std::shared_ptr<ITextureSampler>, 4> m_textureSamplers_nearest;
 
 };
 

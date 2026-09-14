@@ -16,6 +16,7 @@ struct mapInnerZoneLightRecord {
     int ID;
     std::string name;
     int LightID;
+    int prioriry = 0;
     CAaBox aabb;
     std::vector<mathfu::vec2> points;
     std::vector<mathfu::vec2> lines;
@@ -28,15 +29,28 @@ inline float clampF(float val, float min, float max) {
     );
 }
 
+struct LightParamBlendResults {
+    std::vector<IdAndBlendAndPriority> params;           // lightParamId[0] — scene fog / light
+    std::vector<IdAndBlendAndPriority> underwaterParams; // lightParamId[1] — underwater fog
+};
+
+// Computes the light-param blends for BOTH param slots in one pass:
+// the expensive parts (env info query, zone-light geometry, per-zone Light lookup)
+// are index-independent, so they are done once and only the final lightParamId[index]
+// selection differs. Underwater entries with an empty param slot (id <= 0) are skipped.
 inline
-std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
+LightParamBlendResults calculateLightParamBlends(
     const std::shared_ptr<IClientDatabase> &databaseHandler,
     int mapId,
     const mathfu::vec3 &cameraVec3,
     StateForConditions *stateForConditions,
-    const std::vector<mapInnerZoneLightRecord> &zoneLights,
-    int currentLightParamIdIndex
+    const std::vector<mapInnerZoneLightRecord> &zoneLights
 ) {
+    const int sceneParamIndex = 0;
+    const int underwaterParamIndex = 1;
+
+    LightParamBlendResults blendResults;
+
     //Get light from DB
     std::vector<LightResult> lightResults;
     databaseHandler->getEnvInfo(mapId,
@@ -50,6 +64,7 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
     });
 
     int defaultLightParamId = -1;
+    int defaultUnderwaterLightParamId = -1;
     int defaultLightId = -1;
     bool selectedDefault = false;
     bool selectedDefaultMap = false;
@@ -60,10 +75,14 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
                 if (!selectedDefaultMap) {
                     if (it->continentId == mapId) {
                         selectedDefaultMap = true;
-                        defaultLightParamId = it->lightParamId[currentLightParamIdIndex]; defaultLightId = it->id;
+                        defaultLightParamId = it->lightParamId[sceneParamIndex];
+                        defaultUnderwaterLightParamId = it->lightParamId[underwaterParamIndex];
+                        defaultLightId = it->id;
                     } else if (!selectedDefault && it->continentId == 0) {
                         selectedDefault = true;
-                        defaultLightParamId = it->lightParamId[currentLightParamIdIndex]; defaultLightId = it->id;
+                        defaultLightParamId = it->lightParamId[sceneParamIndex];
+                        defaultUnderwaterLightParamId = it->lightParamId[underwaterParamIndex];
+                        defaultLightId = it->id;
                     }
                 }
                 it = lightResults.erase(it);
@@ -76,11 +95,11 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
 
     struct FoundZoneLights {
         int LightId = -1;
+        int priority = 0;
         float dist;
     };
 
     std::vector<FoundZoneLights> foundZoneLights;
-    std::vector<IdAndBlendAndPriority> paramsBlend;
 
     const float zoneBlendDistStart = 50.0f;
 
@@ -112,7 +131,7 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
             if (stateForConditions != nullptr) {
                 stateForConditions->currentZoneLights.push_back({zoneLight.ID, finalBlendDist});
             }
-            foundZoneLights.emplace_back() = {zoneLight.LightID, finalBlendDist};
+            foundZoneLights.emplace_back() = {zoneLight.LightID, zoneLight.prioriry, finalBlendDist};
         }
     }
 
@@ -122,12 +141,15 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
             stateForConditions->currentLightParams.push_back({defaultLightParamId, 1.0f});
             stateForConditions->currentLightIds.push_back({defaultLightId, 1.0f});
         }
-        paramsBlend.push_back({defaultLightParamId, 1.0f, 0});
+        blendResults.params.push_back({defaultLightParamId, 1.0f, 0});
+        if (defaultUnderwaterLightParamId > 0) {
+            blendResults.underwaterParams.push_back({defaultUnderwaterLightParamId, 1.0f, 0});
+        }
     }
 
     bool applyFirstAsDefault = !selectedDefaultMap;
     std::sort(foundZoneLights.begin(), foundZoneLights.end(), [](const FoundZoneLights &a, const FoundZoneLights &b) {
-        return a.LightId > b.LightId;
+        return a.priority != b.priority ? a.priority < b.priority : a.LightId > b.LightId;
     });
     for (auto it = foundZoneLights.begin(); it != foundZoneLights.end(); it++) {
         LightResult zoneLightResult;
@@ -140,10 +162,13 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
 
         databaseHandler->getLightById(it->LightId, zoneLightResult);
 
-        paramsBlend.push_back({zoneLightResult.lightParamId[currentLightParamIdIndex], blendFactor, 1});
+        blendResults.params.push_back({zoneLightResult.lightParamId[sceneParamIndex], blendFactor, 1});
+        if (zoneLightResult.lightParamId[underwaterParamIndex] > 0) {
+            blendResults.underwaterParams.push_back({zoneLightResult.lightParamId[underwaterParamIndex], blendFactor, 1});
+        }
 
         if (stateForConditions != nullptr) {
-            stateForConditions->currentLightParams.push_back({zoneLightResult.lightParamId[currentLightParamIdIndex], blendFactor});
+            stateForConditions->currentLightParams.push_back({zoneLightResult.lightParamId[sceneParamIndex], blendFactor});
             stateForConditions->currentLightIds.push_back({it->LightId, blendFactor});
         }
     }
@@ -153,20 +178,19 @@ std::vector<IdAndBlendAndPriority> calculateLightParamBlends(
     });
     for (auto it = lightResults.begin(); it != lightResults.end(); it++) {
         if (it->blendAlpha > 0) {
-            paramsBlend.push_back({it->lightParamId[currentLightParamIdIndex], it->blendAlpha, 2});
+            blendResults.params.push_back({it->lightParamId[sceneParamIndex], it->blendAlpha, 2});
+            if (it->lightParamId[underwaterParamIndex] > 0) {
+                blendResults.underwaterParams.push_back({it->lightParamId[underwaterParamIndex], it->blendAlpha, 2});
+            }
         }
 
         if (stateForConditions != nullptr) {
-            stateForConditions->currentLightParams.push_back({it->lightParamId[currentLightParamIdIndex], it->blendAlpha});
+            stateForConditions->currentLightParams.push_back({it->lightParamId[sceneParamIndex], it->blendAlpha});
             stateForConditions->currentLightIds.push_back({it->id, it->blendAlpha});
         }
     }
 
-    // if (paramsBlend.size() > 0) {
-    //     paramsBlend[0].blend = 1.0f;
-    // }
-
-    return paramsBlend;
+    return blendResults;
 }
 
 inline std::vector<mapInnerZoneLightRecord> loadZoneLightRecs(const std::shared_ptr<IClientDatabase> &databaseHandler, int mapId) {
@@ -180,6 +204,7 @@ inline std::vector<mapInnerZoneLightRecord> loadZoneLightRecs(const std::shared_
             innerZoneLightRecord.ID = zoneLight.ID;
             innerZoneLightRecord.name = zoneLight.name;
             innerZoneLightRecord.LightID = zoneLight.LightID;
+            innerZoneLightRecord.prioriry = zoneLight.Priority;
 //            innerZoneLightRecord.Zmin = zoneLight.Zmin;
 //            innerZoneLightRecord.Zmax = zoneLight.Zmax;
 

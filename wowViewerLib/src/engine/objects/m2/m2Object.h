@@ -25,6 +25,7 @@ class M2ObjectListContainer;
 #include "../../managers/CRibbonEmitter.h"
 #include "../../ApiContainer.h"
 #include "m2Helpers/CBoneMasterData.h"
+#include "m2Helpers/M2GpuAnimData.h"
 #include "../../../gapi/UniformBufferStructures.h"
 #include "../scenes/EntityActorsFactory.h"
 
@@ -47,10 +48,12 @@ public:
     M2Object(HApiContainer &api, bool isSkybox = false, bool overrideSkyModelMat = true) : m_api(api), m_m2Geom(nullptr),
         m_skinGeom(nullptr), m_animationManager(nullptr), m_boolSkybox(isSkybox), m_overrideSkyModelMat(overrideSkyModelMat)
     {
-
+//        std::cout << "M2Object constructed" << std::endl;
     }
 
-    ~M2Object();
+    ~M2Object() {
+//        std::cout << "M2Object destroyed" << std::endl;
+    }
 
     friend class M2MeshBufferUpdater;
 private:
@@ -87,10 +90,10 @@ private:
     mathfu::vec3 m_localPosition;
     mathfu::vec3 m_localUpVector;
     mathfu::vec3 m_localRightVector;
+    float m_scale;
 
     float m_currentDistance = 0;
 
-    CAaBox *aabb;
     CAaBox colissionAabb;
 
     HApiContainer m_api = nullptr;
@@ -126,7 +129,7 @@ private:
     int m_modelFileId = 0;
     int m_skinFileId;
 
-    std::vector<std::function<void()>> m_postLoadEvents;
+    std::vector<std::function<void(M2Object* m2Object)>> m_postLoadEvents;
 
     int m_skinNum = 0;
     mathfu::vec3 m_interiorDirectColor = mathfu::vec3(0.0, 0.0, 0.0);
@@ -145,6 +148,30 @@ private:
     std::vector<std::unique_ptr<ParticleEmitter>> particleEmitters;
     std::vector<std::unique_ptr<CRibbonEmitter>> ribbonEmitters;
 
+    // ---- GPU animation path (Config::useGpuAnimation, bindless Vulkan only) ----
+    // Lazily created by tryInitGpuAnimData() on the first frame the toggle is on.
+    // When active, bone matrices are computed by the m2Animation compute pass and
+    // written straight into the renderer's bone-matrix SSBO; the CPU only evaluates
+    // the small m_cpuBoneSubset (sorting centers, light/emitter/ribbon attachments).
+    // The static track data is NOT per-object: the renderer keeps one shared track
+    // set per source model (m_m2Geom), referenced through m_gpuAnimData->getTrackSet().
+    bool m_gpuAnimDataTried = false;
+    std::shared_ptr<IM2GpuAnimData> m_gpuAnimData = nullptr;
+    std::weak_ptr<IMapSceneBufferCreate> m_sceneRendererWeak;
+    std::vector<int> m_cpuBoneSubset;
+    // Frame (FrameContext processing number) when the GPU anim state was last written
+    uint32_t m_gpuAnimStateFrame = 0;
+    // Generation of the shared track data last seen by this object; when it bumps
+    // (lazy .anim streaming re-upload, possibly triggered by another instance),
+    // the emitter bind fields are re-pushed (they embed value-pool offsets)
+    uint32_t m_gpuTrackDataGeneration = 0;
+    // Streams newly resident (.anim) sequences into the shared GPU track set
+    // (rebuild + re-upload happens at most once per model) and re-pushes this
+    // object's emitter bind fields when the shared data moved
+    void syncGpuAnimTrackData();
+    // Forces one CPU bone-matrix upload when switching back from GPU to CPU animation
+    bool m_forceBoneUploadAfterGpu = false;
+
     std::unordered_map<int, HBlpTexture> loadedTextures;
 
     std::vector<std::shared_ptr<IM2Material>> m_materialArray;
@@ -161,6 +188,14 @@ private:
 
     //TODO: think about if it's viable to do forced transp for dyn meshes
     std::vector<std::array<dynamicVaoMeshFrame, IDevice::MAX_FRAMES_IN_FLIGHT>> dynamicMeshes;
+
+    // Reused per-frame scratch for forEachVisibleMeshSorted (update thread only,
+    // each M2 is collected once per frame)
+    struct SortedTranspMeshEntry {
+        HGSortableMesh mesh;
+        bool hasDynamicDrawParams = false;
+    };
+    std::vector<SortedTranspMeshEntry> m_sortedTranspMeshScratch;
 
     //0.0 for full interior
     //1.0 for full exterior
@@ -185,6 +220,14 @@ private:
     void sortMaterials(mathfu::Matrix<float, 4, 4> &modelViewMat);
     bool checkifBonesAreInRange(M2SkinProfile *skinProfile, M2SkinSection *mesh);
 
+    // Builds the set of bones the CPU still evaluates when the GPU animation path is
+    // active: transparent-sort centers, light/particle/ribbon attachment bones and
+    // attachment points (their matrices are read by CPU-side code).
+    void buildCpuBoneSubset();
+
+    // Raw (unsorted) enumeration of visible static and dynamic-VAO meshes.
+    void forEachVisibleMesh(const std::function<void(const HGM2Mesh &mesh)> &visitor);
+
 
     void createMeshes(const HMapSceneBufferCreate &sceneRenderer);
     void createBoundingBoxMesh(const HMapSceneBufferCreate &sceneRenderer);
@@ -192,6 +235,10 @@ private:
     EGxBlendEnum getBlendMode(int batchIndex);
 
 public:
+    void setAABB(const CAaBox &aabb) {
+        *m2Factory->getObjectById<1>(this->getObjectId()) = aabb;
+    }
+
     void setAlwaysDraw(bool value) {
         m_alwaysDraw = value;
     }
@@ -206,12 +253,21 @@ public:
         m_interiorExteriorBlend = val;
     };
 
-    void addPostLoadEvent(const std::function<void()> &value) {
+    void addPostLoadEvent(const std::function<void(M2Object * m2Object)> &value) {
         m_postLoadEvents.push_back(value);
     }
 
-    const CAaBox &getAABB() { return *aabb; };
+    const CAaBox &getAABB() { return *m2Factory->getObjectByIdConst<1>(this->getObjectId()); };
     CAaBox getColissionAABB();
+
+    // Lets external code (e.g. world-object systems that already know a placement's
+    // bounding box from DB data) seed the culling AABB before the M2 file is loaded.
+    // Must be called after setLoadParams(...), which is what initializes `status`.
+    // createAABB() will overwrite this with the accurate box once the model loads.
+    void setInitialAABB(const CAaBox &aabb) {
+        setAABB(aabb);
+        status->m_hasAABB = true;
+    }
 
     void setSize(float newSize);
 
@@ -256,7 +312,7 @@ public:
     mathfu::vec3 getWorldPosition(){
         return m_worldPosition;
     }
-    void calcDistance(mathfu::vec3 cameraPos);
+    void calcDistance(const mathfu::vec3 &cameraPos);
     float getCurrentDistance();
     mathfu::vec3 getLocalPosition() {
         return m_localPosition;
@@ -272,28 +328,67 @@ public:
 
     bool prepearMaterial(M2MaterialTemplate &materialTemplate, int batchIndex);
     void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes);
+    // Mesh enumeration for the GPU-indirect draw path (mesh pointers; ids are read off
+    // the meshes themselves). Projective/decal meshes are not part of it and are still
+    // collected separately via the CPU-side path below.
+    //
+    // Meshes are served in render order: opaque meshes first in arbitrary order (the
+    // renderer re-sorts them for batching anyway), then transparent meshes pre-sorted
+    // within this object with the shared SortMeshes comparator (sortLambda.h) — static,
+    // dynamic-VAO, particle and ribbon meshes sorted together. The renderer orders the
+    // M2 objects themselves by bounding-box distance; it must preserve the intra-object
+    // mesh order served here, not re-sort it.
+    // hasDynamicDrawParams marks particle/ribbon meshes whose start/end change per frame.
+    void forEachVisibleMeshSorted(const std::function<void(const HGSortableMesh &mesh, bool hasDynamicDrawParams)> &visitor);
+    void forEachParticleEmitter(const std::function<void(ParticleEmitter *emitter)> &visitor);
+    void forEachRibbonEmitter(const std::function<void(CRibbonEmitter *emitter)> &visitor);
+    void collectProjectiveMeshes(COpaqueMeshCollector &opaqueMeshCollector);
 
     const bool checkFrustumCulling(const mathfu::vec4 &cameraPos,
                                    const MathHelper::FrustumCullingData &frustumData);
 
     bool isMainDataLoaded() const;
     bool getHasBoundingBox() const {return status->m_hasAABB;}
-    CAaBox getBoundingBox() const {return *aabb;}
 
     void doLoadMainFile();
     bool isFailedToLoadMainFile();
     void doLoadGeom(const HMapSceneBufferCreate &sceneRenderer);
     bool isFailedToLoadGeomFile();
+
+    void dumpBoneAnimations();
+
     void update(double deltaTime, mathfu::vec3 &cameraPos, mathfu::mat4 &viewMat);
     void collectLights(std::vector<LocalLight> &pointLights);
     void fitParticleAndRibbonBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
     void uploadBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
     void uploadGeneratorBuffers(mathfu::mat4 &viewMat, const HFrameDependantData &frameDependantData);
+
+    // GPU animation path: lazily packs track data and allocates renderer GPU slots.
+    // No-op unless Config::useGpuAnimation is on and the renderer supports it.
+    void tryInitGpuAnimData();
+    // True when bones are being computed on GPU (checked by uploadBuffers)
+    bool isGpuAnimActive() const { return m_gpuAnimData != nullptr && m_api->getConfig()->useGpuAnimation; }
+    // Collects the GPU particle sim state indices of this object's GPU emitters
+    // (only those inside the current [minParticle, maxParticle) range).
+    void appendGpuParticleStateIndices(std::vector<uint32_t> &out) const;
+    // Same for GPU ribbon sim state indices
+    void appendGpuRibbonStateIndices(std::vector<uint32_t> &out) const;
+private:
+    // (Re)writes every GPU emitter's bind fields from the anim data (also called
+    // when the ParticleColor replacement changes validity at runtime)
+    void pushGpuParticleBindFields();
+public:
+    // For the renderer's per-frame animation dispatch list: state index if this
+    // object's GPU anim state was written during the given processing frame, else -1.
+    int32_t getGpuAnimStateIndexForFrame(uint32_t frameNumber) const {
+        if (m_gpuAnimData != nullptr && m_gpuAnimStateFrame == frameNumber) {
+            return m_gpuAnimData->getStateIndex();
+        }
+        return -1;
+    }
     M2CameraResult updateCamera(double deltaTime, int cameraViewId);
-    void drawDebugLight();
 
-
-    void drawBBInternal(CAaBox &bb, mathfu::vec3 &color, mathfu::Matrix<float, 4, 4> &placementMatrix);
+    void drawBBInternal(const CAaBox &bb, mathfu::vec3 &color, mathfu::Matrix<float, 4, 4> &placementMatrix);
 
     void drawBB(mathfu::vec3 &color);
 
@@ -319,7 +414,7 @@ public:
         m_setInteriorSunDir = true;
     }
 
-    void drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes,  int renderOrder);
+    void drawParticles(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes);
 
     void createVertexBindings(const HMapSceneBufferCreate &sceneRenderer);
 
@@ -365,7 +460,7 @@ static const CAaBox nonexitsting = CAaBox(
 
 template<>
 inline const CAaBox &retrieveAABB<>(const M2ObjId &objectId) {
-    auto * ptr = m2Factory->getObjectById<1>(objectId);
+    auto * ptr = m2Factory->getObjectByIdConst<1>(objectId);
     return ptr ? *ptr : nonexitsting;
 }
 

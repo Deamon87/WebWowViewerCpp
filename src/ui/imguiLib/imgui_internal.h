@@ -52,6 +52,8 @@ Index of this file:
 #include "imgui.h"
 #endif
 
+#include <functional>
+#include <vector>
 #include <stdio.h>      // FILE*, sscanf
 #include <stdlib.h>     // NULL, malloc, free, qsort, atoi, atof
 #include <math.h>       // sqrtf, fabsf, fmodf, powf, floorf, ceilf, cosf, sinf
@@ -2038,7 +2040,8 @@ struct ImGuiSettingsHandler
     void        (*ApplyAllFn)(ImGuiContext* ctx, ImGuiSettingsHandler* handler);                                // Read: Called after reading (in registration order)
     void*       UserData;
 
-    ImGuiSettingsHandler() { memset(this, 0, sizeof(*this)); }
+    ImGuiSettingsHandler() : TypeName(nullptr), TypeHash(0), ClearAllFn(nullptr),
+        ReadInitFn(nullptr), ApplyAllFn(nullptr), UserData(nullptr) {}
 };
 
 //-----------------------------------------------------------------------------

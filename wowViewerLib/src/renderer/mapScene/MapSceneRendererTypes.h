@@ -1,0 +1,8 @@
+//
+// Created for GPU-driven M2 rendering with per-M2 conditional rendering
+//
+
+#ifndef AWEBWOWVIEWERCPP_MAPSCENERENDERERTYPES_H
+#define AWEBWOWVIEWERCPP_MAPSCENERENDERERTYPES_H
+
+#endif //AWEBWOWVIEWERCPP_MAPSCENERENDERERTYPES_H

@@ -7,6 +7,8 @@
 
 
 #include <unordered_set>
+#include <map>
+#include <set>
 #include "../adt/adtObject.h"
 #include "../m2/m2Object.h"
 #include "../wmo/wmoObject.h"
@@ -21,6 +23,8 @@
 #include "../../../renderer/mapScene/MapSceneParams.h"
 #include "../wdt/wdtLightsObject.h"
 #include "dayNightDataHolder/DayNightLightHolder.h"
+#include "../liquid/liquidMaterials/LiquidMaterialManager.h"
+#include "../worldObject/WorldObjectManager.h"
 
 enum class SceneMode {
    smMap,
@@ -39,6 +43,8 @@ private:
     }
 protected:
     HApiContainer m_api = nullptr;
+    std::unique_ptr<LiquidMaterialManager> m_liquidMaterialManager;
+
     std::array<std::array<std::shared_ptr<AdtObject>, 64>, 64> mapTiles={};
     std::vector<std::array<uint8_t, 2>> m_mandatoryADT;
     std::string mapName;
@@ -69,6 +75,12 @@ protected:
     HGMesh skyMesh0x4Sky = nullptr;
     std::shared_ptr<ISkyMeshMaterial> skyMeshMat0x4 = nullptr;
 
+    // Planets (sun/moon discs) + stars
+    std::array<HGSamplableTexture, 3> m_planetTextures = {nullptr, nullptr, nullptr}; // sun, moon1, moon2
+    std::array<HGMesh, 3> m_planetMeshes = {nullptr, nullptr, nullptr};
+    std::array<std::shared_ptr<IPlanetMaterial>, 3> m_planetMats = {nullptr, nullptr, nullptr};
+    std::shared_ptr<M2Object> m_starsModel = nullptr;
+
     //Map mode
     std::unordered_map<int, std::weak_ptr<M2Object>> m_m2MapObjects = {};
     std::unordered_map<int, std::weak_ptr<WmoObject>> m_wmoMapObjects = {};
@@ -86,10 +98,10 @@ protected:
 
     std::shared_ptr<M2Object> getM2Object(std::string fileName, const SMDoodadDef &doodadDef) override ;
     std::shared_ptr<M2Object> getM2Object(int fileDataId, const SMDoodadDef &doodadDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef) override ;
-    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef) override ;
+    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) override ;
+    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) override ;
+    std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) override ;
+    std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) override ;
 
 
     virtual void getPotentialEntities(
@@ -121,59 +133,25 @@ protected:
     FreeStrategy zeroStateLambda;
 
     HADTRenderConfigDataHolder m_adtConfigHolder = nullptr;
+    HWorldObjectManager m_worldObjectManager = nullptr;
 
 protected:
-    explicit Map() : m_dayNightLightHolder(nullptr, -1) {
+    explicit Map(const HApiContainer &m_api) : m_dayNightLightHolder(m_api, -1) {
     }
     DayNightLightHolder m_dayNightLightHolder;
 public:
     explicit Map(HApiContainer api, int mapId, const std::string &mapName);
 
-    explicit Map(HApiContainer api, int mapId, int wdtFileDataId) : m_dayNightLightHolder(api, mapId) {
-        initMapTiles();
+    explicit Map(HApiContainer api, int mapId, int wdtFileDataId);;
 
-        m_mapId = mapId; m_api = api; mapName = "";
-        m_sceneMode = SceneMode::smMap;
-
-        MapRecord mapRecord;
-        api->databaseHandler->getMapById(mapId, mapRecord);
-        useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
-        has0x200000Flag = (mapRecord.flags0 & 0x200000) > 0;
-
-        createAdtFreeLamdas();
-
-        m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
-
-        m_dayNightLightHolder.loadZoneLights();
-    };
-
-    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) : m_dayNightLightHolder(api, 0) {
-        initMapTiles();
-
-        m_mapId = 0; m_api = api; this->mapName = mapName;
-        m_sceneMode = SceneMode::smMap;
-
-        createAdtFreeLamdas();
-
-        std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
-        std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
-
-        m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
-        m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
-        m_wdlObject->setMapApi(this);
-
-        m_lockedMap = true;
-        std::string adtFileTemplate = "world/maps/"+mapName+"/"+mapName+"_"+std::to_string(i)+"_"+std::to_string(j);
-        auto adtObject = adtObjectFactory->createObject(m_api, adtFileTemplate, mapName, i, j, false, m_wdtfile);
-
-        adtObject->setMapApi(this);
-        this->mapTiles[i][j] = adtObject;
-    };
+    explicit Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName);;
+    void initialize(HApiContainer api, int mapId);
 
     ~Map() override {
 //        std::cout << "Map destroyed " << std::endl;
 	};
     animTime_t getCurrentSceneTime() override;
+    mathfu::vec3 getGlobalOffset() override;
 
     void makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams, const HMapRenderPlan &mapRenderPlan);
 
@@ -184,6 +162,21 @@ public:
 
     void setAdtConfig(HADTRenderConfigDataHolder &adtConfig) {
         m_adtConfigHolder = adtConfig;
+    }
+
+    void setWorldObjectManager(HWorldObjectManager worldObjectManager) {
+        m_worldObjectManager = worldObjectManager;
+    }
+    HWorldObjectManager getWorldObjectManager() const {
+        return m_worldObjectManager;
+    }
+
+    // Sky scene ids of the map's WDL grouped by the player condition that gates them
+    // (SkySceneXPlayerCondition db2). Empty when the map has no WDL. Built once at WDL
+    // load and static for the WDL's lifetime.
+    const std::map<int, std::set<int>> &getSkyScenesByPlayerCondition() const {
+        static const std::map<int, std::set<int>> empty = {};
+        return m_wdlObject ? m_wdlObject->getSkyScenesByPlayerCondition() : empty;
     }
 
     void doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRenderPlan &renderPlan);

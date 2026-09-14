@@ -415,6 +415,17 @@ struct EDGF {
 /*0x0C*/ char _0xC[0xC + 8];
 };
 
+PACK(struct DETL {
+    /*0x00*/  uint16_t flags;
+    /*0x02*/  uint16_t scale; //scale for shadow RT matrix in half-float format
+    /*0x04*/  uint16_t diffuseColorMultiplier; // multiplier for M2Light.diffuse_color in half-float format
+    /*0x06*/  uint16_t unk0;
+    /*0x08*/  uint32_t unk1;
+    /*0x0c*/
+});
+
+static_assert(sizeof(DETL) == 0x0c);
+
 struct TXAC {
     union {
         uint16_t value;

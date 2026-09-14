@@ -47,6 +47,7 @@ void M2Scene::updateLightAndSkyboxData(const HMapRenderPlan &mapRenderPlan,
         frameDependantData->colors.exteriorHorizontAmbientColor = mathfu::vec3(ambient.x, ambient.y, ambient.z);
         frameDependantData->colors.exteriorGroundAmbientColor   = mathfu::vec3(ambient.x, ambient.y, ambient.z);
         frameDependantData->colors.exteriorDirectColor          = mathfu::vec3(0.0, 0.0, 0.0);
+        frameDependantData->colors.exteriorSpecularColor        = mathfu::vec3(0.0, 0.0, 0.0);
         frameDependantData->exteriorDirectColorDir = mathfu::vec3(0.0, 0.0, 0.0);
     }
     auto frameDepedantData = mapRenderPlan->frameDependentData;
@@ -99,7 +100,7 @@ std::shared_ptr<ICamera> M2Scene::createCamera(int cameraNum) {
 
 
 
-M2Scene::M2Scene(const HApiContainer &api, const std::string &m2Model) {
+M2Scene::M2Scene(const HApiContainer &api, const std::string &m2Model) : Map(api) {
     m_api = api; m_m2Model = m2Model;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
@@ -114,11 +115,9 @@ M2Scene::M2Scene(const HApiContainer &api, const std::string &m2Model) {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
-
-    api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
-M2Scene::M2Scene(const HApiContainer &api, int fileDataId)  {
+M2Scene::M2Scene(const HApiContainer &api, int fileDataId) : Map(api) {
     m_api = api;
     m_sceneMode = SceneMode::smM2;
     m_suppressDrawingSky = true;
@@ -132,8 +131,6 @@ M2Scene::M2Scene(const HApiContainer &api, int fileDataId)  {
     m2Object->calcWorldPosition();
 
     m_m2Object = m2Object;
-
-    api->getConfig()->globalFog = EParameterSource::eConfig;
 }
 
 void M2Scene::setReplaceParticleColors(std::array<std::array<mathfu::vec4, 3>, 3> &particleColorReplacement) {

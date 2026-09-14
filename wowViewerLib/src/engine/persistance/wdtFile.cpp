@@ -26,9 +26,7 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
             {
                 [](WdtFile &file, ChunkData &chunkData) {
                     debuglog("Entered MAID");
-                    for (int i =0; i < 64*64; i++) {
-                        chunkData.readValue(file.mapFileDataIDs[i]);
-                    }
+                    chunkData.readValue(file.mapFileDataIDs);
                 }
             }
         },
@@ -55,10 +53,15 @@ chunkDef<WdtFile> WdtFile::wdtFileTable = {
     }
 };
 
-void WdtFile::process(HFileContent wdtFile, const std::string &fileName) {
+void WdtFile::process(HFileContent wdtFile) {
     m_wdtFile = wdtFile;
-    CChunkFileReader reader(*m_wdtFile.get(), fileName);
+    CChunkFileReader reader(*m_wdtFile.get(), getFileNameOrDataId());
     reader.processFile(*this, &WdtFile::wdtFileTable);
 
-    fsStatus = FileStatus::FSLoaded;
+    if (mphd != nullptr) {
+        fsStatus = FileStatus::FSLoaded;
+    } else {
+        //if MPHD is not present - WDT file is mailformed
+        fsStatus = FileStatus::FSRejected;
+    }
 }

@@ -4,6 +4,7 @@
 
 #include "DebugRendererWindow.h"
 #include "../../../../wowViewerLib/src/renderer/mapScene/MapSceneParams.h"
+#include "../../../../wowViewerLib/src/gapi/interface/FrameContext.h"
 
 DebugRendererWindow::DebugRendererWindow(const HApiContainer &api,
                                          const std::shared_ptr<FrontendUIRenderer> &renderer,
@@ -28,7 +29,7 @@ void DebugRendererWindow::draw() {
         });
     }
 
-    auto currentFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
     ImGui::Begin("Debug Render Window");
     {
