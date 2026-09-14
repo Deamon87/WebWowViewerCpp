@@ -147,8 +147,10 @@ void main() {
     bool occluded = nearestDepth < (hiZDepth);
 
 	if (occluded) {
+/*
 		debugPrintfEXT("idx= %u hiZMipCount = %u pixelSize = (%1.5f,%1.5f) mipF = %1.5f mipLevel = %d nearestDepth = %1.5f hiZDepth = %1.5f uvMin = (%1.5f,%1.5f) uvMax = (%1.5f,%1.5f)",
 		idx, constants.hiZMipCount, pixelSize.x, pixelSize.y, mipF, mipLevel, nearestDepth, hiZDepth, uvMin.x, uvMin.y, uvMax.x, uvMax.y);
+*/
 	}
 
     visibilityBuffer[idx] = occluded ? 0u : 1u;
