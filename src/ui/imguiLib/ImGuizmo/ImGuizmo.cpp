@@ -30,6 +30,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "ImGuizmo.h"
+#include <algorithm>
 
 #if defined(_MSC_VER) || defined(__MINGW32__)
 #include <malloc.h>
@@ -194,8 +195,6 @@ namespace IMGUIZMO_NAMESPACE
    }
 
    template <typename T> T Clamp(T x, T y, T z) { return ((x < y) ? y : ((x > z) ? z : x)); }
-   template <typename T> T max(T x, T y) { return (x > y) ? x : y; }
-   template <typename T> T min(T x, T y) { return (x < y) ? x : y; }
    template <typename T> bool IsWithin(T x, T y, T z) { return (x >= y) && (x <= z); }
 
    struct matrix_t;
@@ -1775,7 +1774,7 @@ namespace IMGUIZMO_NAMESPACE
             }
             float boundDistance = sqrtf(ImLengthSqr(worldBound1 - worldBound2));
             int stepCount = (int)(boundDistance / 10.f);
-            stepCount = min(stepCount, 1000);
+            stepCount = std::min<int>(stepCount, 1000);
             for (int j = 0; j < stepCount; j++)
             {
                float stepLength = 1.f / (float)stepCount;
@@ -2358,12 +2357,12 @@ namespace IMGUIZMO_NAMESPACE
             vec_t baseVector = gContext.mTranslationPlanOrigin - gContext.mModelLocal.v.position;
             float ratio = Dot(axisValue, baseVector + delta) / Dot(axisValue, baseVector);
 
-            gContext.mScale[axisIndex] = max(ratio, 0.001f);
+            gContext.mScale[axisIndex] = std::max<float>(ratio, 0.001f);
          }
          else
          {
             float scaleDelta = (io.MousePos.x - gContext.mSaveMousePosx) * 0.01f;
-            gContext.mScale.Set(max(1.f + scaleDelta, 0.001f));
+            gContext.mScale.Set(std::max<float>(1.f + scaleDelta, 0.001f));
          }
 
          // snap
@@ -2375,7 +2374,7 @@ namespace IMGUIZMO_NAMESPACE
 
          // no 0 allowed
          for (int i = 0; i < 3; i++)
-            gContext.mScale[i] = max(gContext.mScale[i], 0.001f);
+            gContext.mScale[i] = std::max<float>(gContext.mScale[i], 0.001f);
 
          if (gContext.mScaleLast != gContext.mScale)
          {
