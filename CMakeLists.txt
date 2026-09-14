@@ -436,6 +436,11 @@ install(TARGETS WowStudio
 
 INSTALL(FILES ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS} DESTINATION bin COMPONENT Libraries)
 
+if(WIN32)
+	# zlib's own install rules are skipped by EXCLUDE_FROM_ALL.
+	install(FILES "$<TARGET_FILE:zlib>" DESTINATION bin COMPONENT libraries)
+endif()
+
 if( MINGW )
 	message( STATUS "Installing system-libraries: MinGW DLLs." )
 	get_filename_component( Mingw_Path ${CMAKE_CXX_COMPILER} PATH )
@@ -443,7 +448,6 @@ if( MINGW )
 			${Mingw_Path}/libgcc_s_seh-1.dll
 			${Mingw_Path}/libstdc++-6.dll
 			${Mingw_Path}/libwinpthread-1.dll
-			${Mingw_Path}/zlib1.dll
 	)
 endif( MINGW )
 include( InstallRequiredSystemLibraries )
