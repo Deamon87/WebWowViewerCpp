@@ -559,6 +559,24 @@ constexpr int texHeight = alphaTexSize * 16;
 auto bigTexture = std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>>(texWidth * texHeight * 4, 0);
 auto bigTexture2 = std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>>(texWidth * texHeight * 4, 0);
 
+inline void scalar_alphaText_load(const uint8_t *alphaTextureData, uint8_t *textPtr,
+                                  uint8_t *textPtr2, int uncompressedIndex, int maxLayers) {
+    for (int x = 0; x < 64; x++) {
+        int baseAlpha = 255;
+        for (int layer = 0; layer < maxLayers; layer++) {
+            if (layer != uncompressedIndex) {
+                baseAlpha -= alphaTextureData[layer * 64 + x];
+            }
+        }
+        for (int layer = 0; layer < maxLayers; layer++) {
+            uint8_t *destination = layer < 4 ? textPtr : textPtr2;
+            destination[x * 4 + layer % 4] = layer == uncompressedIndex
+                ? static_cast<uint8_t>(baseAlpha)
+                : alphaTextureData[layer * 64 + x];
+        }
+    }
+}
+
 template <int uncompressedIndex, int max_layers>
 inline void simd16_alphaText_load(uint8_t *alphaTextureData, const uint8_t *textPtr, const uint8_t *textPtr2) {
     static_assert(max_layers == 4 || max_layers == 8);
@@ -582,7 +600,7 @@ inline void simd16_alphaText_load(uint8_t *alphaTextureData, const uint8_t *text
             }
         }
         for (int x = 0; x < 2; x++) {
-            if constexpr (uncompressedIndex) {
+            if constexpr (uncompressedIndex >= 0 && uncompressedIndex < max_layers) {
                 __m128i res = vec255;
                 for (int j = 0; j < max_layers; j++ ) {
                     if (uncompressedIndex != j) {
@@ -646,7 +664,7 @@ inline void simd32_alphaText_load(uint8_t * alphaTextureData, const uint8_t *tex
         }
     }
     for (int x = 0; x < 2; x++) {
-        if constexpr (uncompressedIndex) {
+        if constexpr (uncompressedIndex >= 0 && uncompressedIndex < max_layers) {
             __m256i res = vec255;
             for (int j = 0; j < max_layers; j++ ) {
                 if (uncompressedIndex != j) {
@@ -781,29 +799,8 @@ void AdtObject::loadAlphaTextures() {
                         }
 
 #else
-                        //Non intirisic version
-                        uint8_t *alpha[4] = {
-                            (uint8_t *)(alphaTextureData.data() + (0)),
-                            (uint8_t *)(alphaTextureData.data() + (64)),
-                            (uint8_t *)(alphaTextureData.data() + (64 * 2)),
-                            (uint8_t *)(alphaTextureData.data() + (64 * 3)),
-                        };
-
-                        uint8_t* __restrict texturePtr = (uint8_t*) getRowPtr<4>(bigTexture.data(),
-                                                                indexX * 64 + 0, indexY * 64 + y,
-                                                                texWidth, texHeight, 0);
-                        for (int x = 0; x < 64; x++) {
-                            for (int layerIdx = 0; layerIdx < 4; layerIdx++) {
-                                if (layerIdx == chunkMcalRuntime.uncompressedIndex) {
-                                    *texturePtr++ = (255 - *alpha[0] - *alpha[1] - *alpha[2] - *alpha[3]);
-                                } else {
-                                    *texturePtr++ = *alpha[layerIdx];
-                                }
-                            }
-                            for (int layerIdx = 0; layerIdx < 4; layerIdx++) {
-                                alpha[layerIdx]++;
-                            }
-                        }
+                        scalar_alphaText_load(alphaTextureData.data(), textPtr, textPtr2,
+                                              uncompressedIndex, hasSecondAlphaText ? 8 : 4);
 #endif
                     }
                 }
