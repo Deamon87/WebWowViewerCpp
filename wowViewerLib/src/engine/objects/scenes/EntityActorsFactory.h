@@ -87,7 +87,7 @@ public:
         assert(count <= m_totalSize);
         size_t remaining = count;
         for (auto &page : m_pages) {
-            size_t toCopy = std::min(remaining, (size_t)PageSize);
+            size_t toCopy = std::min<size_t>(remaining, (size_t)PageSize);
             if (toCopy == 0) break;
             std::memcpy(dest, page->data(), toCopy * sizeof(T));
             dest += toCopy;

@@ -180,11 +180,11 @@ inline float worldCoordinateToAdtIndexF(float x) {
 }
 
 inline int worldCoordinateToAdtIndex(float x) {
-    return floor(worldCoordinateToAdtIndexF(x));
+    return (int)floor(worldCoordinateToAdtIndexF(x));
 }
 
 inline int worldCoordinateToGlobalAdtChunk(float x) {
-    return floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
+    return (int)floor(( (32.0f*16.0f) - (x / (MathHelper::CHUNKSIZE)   )));
 }
 
 inline float AdtIndexToWorldCoordinate(float x) {
