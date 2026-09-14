@@ -29,6 +29,10 @@ GDescriptorSet::~GDescriptorSet() {
     m_parentPool->deallocate(m_hDescriptorSetLayout, getDescSet());
 };
 
+std::shared_ptr<GDescriptorSet> GDescriptorSet::clone() {
+    return std::make_shared<GDescriptorSet>(m_device, m_hDescriptorSetLayout);
+}
+
 GDescriptorSet::SetUpdateHelper GDescriptorSet::beginUpdate() {
     if (!m_hDescriptorSetLayout->getIsBindless()) {
         if (!m_firstUpdate) {
@@ -65,41 +69,57 @@ void GDescriptorSet::writeToDescriptorSets(framebased::vector<VkWriteDescriptorS
     }
 }
 
-
-
 // -------------------------------------
 // Update Helper
 // -------------------------------------
 
 GDescriptorSet::SetUpdateHelper &
-GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture &samplableTextureVlk, int index) {
+GDescriptorSet::SetUpdateHelper::texture_internal(int bindIndex, const HGSamplableTexture &samplableTextureVlk, int index, VkImageLayout imageLayout) {
     auto &slb = m_set.m_hDescriptorSetLayout->getShaderLayoutBindings();
 
+    auto textureVlk = samplableTextureVlk != nullptr ? ((GTextureVLK *)samplableTextureVlk->getTexture().get()) : nullptr;
+    auto samplerVlk = samplableTextureVlk != nullptr ? ((GTextureSamplerVLK *)samplableTextureVlk->getSampler().get()) : nullptr;
+
+    if (textureVlk == nullptr || !textureVlk->getIsLoaded()) {
+        auto blackTextureVlk = m_set.m_device->getBlackTexturePixel();
+
+        if (imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL)
+            blackTextureVlk = m_set.m_device->getEmptyDepthTexture();
+
+        textureVlk = (GTextureVLK *) blackTextureVlk->getTexture().get();
+        samplerVlk = (GTextureSamplerVLK *) blackTextureVlk->getSampler().get();
+    }
+
+    assert(textureVlk->getIsSamplable());
+
 #if (!defined(NDEBUG))
+    if (imageLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        if (textureVlk->isDepthTexture())
+            __debugbreak();
+
+        assert(!textureVlk->isDepthTexture());
+    } else if (imageLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL) {
+        if (!textureVlk->isDepthTexture())
+            __debugbreak();
+
+        assert(textureVlk->isDepthTexture());
+    }
+
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) {
         std::cerr << "descriptor mismatch for image" << std::endl;
         throw std::runtime_error("descriptor mismatch for image");
     }
 #endif
 
-    auto textureVlk = samplableTextureVlk != nullptr ? ((GTextureVLK *)samplableTextureVlk->getTexture().get()) : nullptr;
-    auto samplerVlk = samplableTextureVlk != nullptr ? ((GTextureSamplerVLK *)samplableTextureVlk->getSampler().get()) : nullptr;
+    assignBoundDescriptors(bindIndex, samplableTextureVlk, index,
+        !textureVlk->isDepthTexture() ? DescriptorRecord::DescriptorRecordType::Texture : DescriptorRecord::DescriptorRecordType::TextureDepth
+    );
 
-    assignBoundDescriptors(bindIndex, samplableTextureVlk, index, DescriptorRecord::DescriptorRecordType::Texture);
-
-    auto texture = textureVlk;
     VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
 
     imageInfo = {};
-    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    if (textureVlk == nullptr || !textureVlk->getIsLoaded()) {
-        auto blackTextureVlk = m_set.m_device->getBlackTexturePixel();
-
-        texture = (GTextureVLK *) blackTextureVlk->getTexture().get();
-        samplerVlk = (GTextureSamplerVLK *) blackTextureVlk->getSampler().get();
-    }
-
-    imageInfo.imageView = texture->texture.view;
+    imageInfo.imageLayout = imageLayout;
+    imageInfo.imageView = textureVlk->texture.view;
     imageInfo.sampler = samplerVlk->getSampler();
 
     VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
@@ -115,6 +135,66 @@ GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture
     writeDescriptor.pTexelBufferView = nullptr;
 
     assert(writeDescriptor.pImageInfo == &imageInfos[imageInfos.size()-1]);
+
+    m_updateBindPoints[bindIndex] = true;
+
+    return *this;
+}
+
+GDescriptorSet::SetUpdateHelper &
+GDescriptorSet::SetUpdateHelper::texture(int bindIndex, const HGSamplableTexture &samplableTextureVlk, int index) {
+    return texture_internal(bindIndex, samplableTextureVlk, index, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+}
+
+GDescriptorSet::SetUpdateHelper &
+GDescriptorSet::SetUpdateHelper::texture_depth(int bindIndex, const HGSamplableTexture &samplableTextureVlk, int index) {
+    return texture_internal(bindIndex, samplableTextureVlk, index, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
+}
+
+GDescriptorSet::SetUpdateHelper &
+GDescriptorSet::SetUpdateHelper::storage_image(int bindIndex, VkImageView imageView) {
+    VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
+    imageInfo = {};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+    imageInfo.imageView = imageView;
+    imageInfo.sampler = VK_NULL_HANDLE;
+
+    VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
+    writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptor.dstSet = m_set.getDescSet();
+    writeDescriptor.pNext = nullptr;
+    writeDescriptor.dstBinding = bindIndex;
+    writeDescriptor.dstArrayElement = 0;
+    writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    writeDescriptor.descriptorCount = 1;
+    writeDescriptor.pBufferInfo = nullptr;
+    writeDescriptor.pImageInfo = &imageInfo;
+    writeDescriptor.pTexelBufferView = nullptr;
+
+    m_updateBindPoints[bindIndex] = true;
+
+    return *this;
+}
+
+GDescriptorSet::SetUpdateHelper &
+GDescriptorSet::SetUpdateHelper::imageView_sampler(int bindIndex, VkImageView imageView, VkSampler sampler) {
+    VkDescriptorImageInfo &imageInfo = imageInfos.emplace_back();
+    imageInfo = {};
+    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    imageInfo.imageView = imageView;
+    imageInfo.sampler = sampler;
+
+    VkWriteDescriptorSet &writeDescriptor = updates.emplace_back();
+    writeDescriptor.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    writeDescriptor.dstSet = m_set.getDescSet();
+    writeDescriptor.pNext = nullptr;
+    writeDescriptor.dstBinding = bindIndex;
+    writeDescriptor.dstArrayElement = 0;
+    writeDescriptor.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    writeDescriptor.descriptorCount = 1;
+    writeDescriptor.pBufferInfo = nullptr;
+    writeDescriptor.pImageInfo = &imageInfo;
+    writeDescriptor.pTexelBufferView = nullptr;
 
     m_updateBindPoints[bindIndex] = true;
 
@@ -213,7 +293,7 @@ GDescriptorSet::SetUpdateHelper::ssbo(int bindIndex, const std::shared_ptr<IBuff
 #if (!defined(NDEBUG))
     if (slb.find(bindIndex) == slb.end() || slb.at(bindIndex).descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
         std::cerr << "descriptor mismatch for SSBO" << std::endl;
-        throw std::runtime_error("descriptor mismatch for UBO");
+        throw std::runtime_error("descriptor mismatch for SSBO");
     }
     if (ssboSizes.find(bindIndex) != ssboSizes.end() && buffer->getSize() != ssboSizes.at(bindIndex)) {
         std::cout << "buffers missmatch! for"
@@ -256,7 +336,7 @@ GDescriptorSet::SetUpdateHelper::~SetUpdateHelper() {
     {
         int bufferIndex = 0;
         int imageIndex = 0;
-        for (int i = 0; i < updates.size(); i++) {
+        for (int i = 0; i < ((int)updates.size()); i++) {
             if (updates[i].pBufferInfo != nullptr) {
                 assert(updates[i].pBufferInfo == &bufferInfos[bufferIndex++]);
             } else if (updates[i].pImageInfo != nullptr) {
@@ -332,6 +412,8 @@ void GDescriptorSet::SetUpdateHelper::reassignBinding(int bindPoint, int bindInd
         ssbo(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->buffer);
     } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::Texture) {
         texture(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->texture, bindIndex);
+    } else if (m_boundDescriptors[bindPoint][bindIndex]->descType == DescriptorRecord::DescriptorRecordType::TextureDepth) {
+        texture_depth(bindPoint, m_boundDescriptors[bindPoint][bindIndex]->texture, bindIndex);
     }
 }
 

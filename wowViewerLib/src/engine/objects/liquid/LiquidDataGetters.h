@@ -50,7 +50,7 @@ struct uv_map_entry {
     int16_t t;
 };
 
-uint8_t * getLiquidExistsTable(const PointerChecker<char> &mH2OBlob, const SMLiquidInstance &liquidInstance) {
+inline uint8_t * getLiquidExistsTable(const PointerChecker<char> &mH2OBlob, const SMLiquidInstance &liquidInstance) {
     const static uint64_t fullBitmask = 0xFFFFFFFFFFFFFFFF;
 
     if (liquidInstance.offset_exists_bitmap) {
@@ -81,12 +81,10 @@ inline mathfu::vec2 getLiquidVertexCoords(int liquidVertexFormat, float *vertexD
     return mathfu::vec2(s * 3.0f / 256.0f, t * 3.0f / 256.0f);
 }
 
-inline uint8_t getLiquidDepth(int liquidVertexFormat, float *vertexDataPtr, int totalElemSize, int index) {
-    uint8_t depth = 0;
+inline uint8_t getLiquidDepth(uint8_t defaultDepth, int liquidVertexFormat, float *vertexDataPtr, int totalElemSize, int index) {
+    uint8_t depth = defaultDepth;
     if (liquidVertexFormat == 2) {
-        depth = 255;
-        if ( vertexDataPtr )
-            depth = ((uint8_t *)vertexDataPtr)[index];
+        depth = ((uint8_t *)vertexDataPtr)[index];
     } else if (liquidVertexFormat == 0) {
         auto const depthStart = (uint8_t *) (&vertexDataPtr[totalElemSize]);
         depth = depthStart[index];

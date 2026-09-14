@@ -2,6 +2,11 @@
 // Created by deamon on 20.12.19.
 //
 
+// Include ImGui internals before project macros (e.g. OFFSET).
+#ifndef IMGUI_DEFINE_MATH_OPERATORS
+#define IMGUI_DEFINE_MATH_OPERATORS
+#endif
+#include "StorageNotificationUI.h"
 #include "FrontendUI.h"
 
 #ifndef __ANDROID_API__
@@ -11,6 +16,8 @@
 #endif
 
 #include <iostream>
+#include <map>
+#include <set>
 #include <mathfu/glsl_mappings.h>
 #include <groupPanel/groupPanel.h>
 #include <disablableButton/disablableButton.h>
@@ -35,17 +42,37 @@
 #include "../../wowViewerLib/src/renderer/mapScene/MapSceneRendererFactory.h"
 #include "wheelCapture/wheelCapture.h"
 #include "childWindow/keysUpdateWorkflow/KeysUpdateWorkflow.h"
-#include "imgui_notify.h"
 #include "hasFocus/imguiHasFocus.h"
+#include "clipboardxx.hpp"
+#include "../../wowViewerLib/src/gapi/interface/FrameContext.h"
+#include "ImGuizmo/ImGuizmo.h"
 
 FrontendUI::FrontendUI(HApiContainer api) {
     m_api = api;
 
     this->createDatabaseHandler();
     m_uiRenderer = FrontendUIRendererFactory::createForwardRenderer(m_api->hDevice);
-    //this->createDefaultprocessor();
+//    this->createDefaultprocessor();
 
-    m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer);
+    m_backgroundScene = std::make_shared<SceneWindow>(api, true, m_uiRenderer, false);
+
+    // Initialize CASC storage dialog with callback
+    m_cascStorageDialog = std::make_shared<CascStorageDialog>(
+        m_api,
+        [this](const std::string& cascPath, BuildDefinition& buildDef) -> bool {
+            std::string path = cascPath;
+            if (tryOpenCasc(path, buildDef)) {
+                cascOpened = true;
+                ImGui::OpenPopup("Casc succeed");
+                return true;
+            } else {
+                return false;
+            }
+        }
+    );
+
+    // Show the dialog on startup if there are saved storages or always
+    m_cascStorageDialog->show();
 }
 
 void FrontendUI::composeUI() {
@@ -53,7 +80,7 @@ void FrontendUI::composeUI() {
 
     {
         auto processingFrame = m_api->hDevice->getFrameNumber();
-        m_api->hDevice->setCurrentProcessingFrameNumber(processingFrame);
+        FrameContext::setCurrentProcessingFrameNumber(processingFrame);
     }
     if (!m_backgroundScene) {
         getOrCreateWindow()->openM2SceneByfdid(194418, {});
@@ -68,16 +95,6 @@ void FrontendUI::composeUI() {
 
     showMainMenu();
 
-    if (ImGui::BeginPopupModal("Casc failed"))
-    {
-        ImGui::Text("Could not open CASC storage at selected folder");
-        if (ImGui::Button("Ok", ImVec2(-1, 23))) {
-            ImGui::CloseCurrentPopup();
-        }
-
-        ImGui::EndPopup();
-    }
-
     if (ImGui::BeginPopupModal("Casc succeed"))
     {
         ImGui::Text("CASC storage successfully opened");
@@ -89,23 +106,8 @@ void FrontendUI::composeUI() {
     }
 
     //Show filePicker
-    fileDialog.Display();
     createFileDialog.Display();
 
-    if (fileDialog.HasSelected()) {
-        std::cout << "Selected filename " << fileDialog.GetSelected().string() << std::endl;
-        std::string cascPath = fileDialog.GetSelected().string();
-        BuildDefinition buildDef = fileDialog.getProductBuild();
-
-        if (!tryOpenCasc(cascPath, buildDef)) {
-            ImGui::OpenPopup("Casc failed");
-            cascOpened = false;
-        } else {
-            ImGui::OpenPopup("Casc succeed");
-            cascOpened = true;
-        }
-        fileDialog.ClearSelected();
-    }
     if (createFileDialog.HasSelected()) {
         screenshotFilename = createFileDialog.GetSelected().string();
         needToMakeScreenshot = true;
@@ -139,8 +141,12 @@ void FrontendUI::composeUI() {
     showMinimapGenerationSettingsDialog();
     showBlpViewer();
     showM2Viewer();
+    showCascStorageDialog();
+    showCustomObjectsDialog();
 
-    ImGui::RenderNotifications();
+    if (m_fakeWDTWindow && !m_fakeWDTWindow->draw()) {
+        m_fakeWDTWindow = nullptr;
+    }
 
     if (m_debugRenderWindow)
         m_debugRenderWindow->draw();
@@ -158,6 +164,8 @@ void FrontendUI::composeUI() {
     if (m_currentActiveScene) {
         m_lastActiveScene = m_currentActiveScene;
     }
+
+    StorageNotificationUI::render(m_storageNotifications);
 
     // Rendering
     ImGui::Render();
@@ -243,7 +251,23 @@ void FrontendUI::showCurrentStatsDialog() {
 
 
             ImGui::Text("Current camera position: (%.1f,%.1f,%.1f)", cameraPos[0], cameraPos[1], cameraPos[2]);
+            ImGui::SameLine();
+            if (ImGui::Button("Copy##Pos")) {
+                clipboardxx::clipboard temp_clipboard;
+                std::stringstream ss;
+                ss << cameraPos[0] << ", " << cameraPos[1] << ", " << cameraPos[2];
+
+                temp_clipboard.copy(ss.str());
+            }
             ImGui::Text("Current camera lookAt: (%.1f,%.1f,%.1f)", lookAt[0], lookAt[1], lookAt[2]);
+            ImGui::SameLine();
+            if (ImGui::Button("Copy##LookAt")) {
+                clipboardxx::clipboard temp_clipboard;
+                std::stringstream ss;
+                ss << lookAt[0] << ", " << lookAt[1] << ", " << lookAt[2];
+
+                temp_clipboard.copy(ss.str());
+            }
 
             if (m_api->getConfig()->doubleCameraDebug) {
                 static float debugCameraPosition[3] = {0, 0, 0};
@@ -279,6 +303,28 @@ void FrontendUI::showCurrentStatsDialog() {
             if (mapPlan) {
                 auto &cullStageData = mapPlan;
 
+                //GameObject on-hover nameplates
+                if (m_api->getConfig()->enableObjectPicking && m_api->getConfig()->showGameObjectNameplates &&
+                    !ImGui::GetIO().WantCaptureMouse) {
+                    ImVec2 mousePos = ImGui::GetIO().MousePos;
+                    activeScene->requestPick((int)mousePos.x, (int)mousePos.y, true);
+
+                    auto worldObjectManager = activeScene->getWorldObjectManager();
+                    if (worldObjectManager) {
+                        HGameObject hoveredGameObject = nullptr;
+                        if (mapPlan->hasHoveredM2) {
+                            hoveredGameObject = worldObjectManager->getGameObjectByM2Id(mapPlan->hoveredM2);
+                        } else if (mapPlan->hoveredWMO != emptyWMO) {
+                            hoveredGameObject = worldObjectManager->getGameObjectByWmoId(mapPlan->hoveredWMO);
+                        }
+
+                        if (hoveredGameObject && !hoveredGameObject->getName().empty() &&
+                            (m_api->getConfig()->showGameObjectNameplatesForAll || hoveredGameObject->hasFloatingTooltip())) {
+                            ImGui::SetTooltip("%s", hoveredGameObject->getName().c_str());
+                        }
+                    }
+                }
+
                 int adt_x = worldCoordinateToAdtIndex(cameraPos.y);
                 int adt_y = worldCoordinateToAdtIndex(cameraPos.x);
 
@@ -310,6 +356,90 @@ void FrontendUI::showCurrentStatsDialog() {
                     }
 
                     ImGui::Text("Current WMO group: %d", mapPlan->m_currentWmoGroup);
+                }
+
+                if (ImGui::CollapsingHeader("Selected Object")) {
+                    auto worldObjectManager = activeScene->getWorldObjectManager();
+
+                    if (mapPlan->hasSelectedM2) {
+                        auto l_selectedM2 = m2Factory->getObjectById<0>(mapPlan->selectedM2);
+                        if (l_selectedM2 != nullptr) {
+                            auto pos = l_selectedM2->getWorldPosition();
+                            int fileId = l_selectedM2->getModelFileId();
+
+                            auto gameObject = worldObjectManager ? worldObjectManager->getGameObjectByM2Id(mapPlan->selectedM2) : nullptr;
+                            if (gameObject) {
+                                ImGui::Text("Selected GameObject: %s", gameObject->getName().c_str());
+                                ImGui::Text("GameObject ID: %d, Type: %d, DisplayID: %d",
+                                            gameObject->getId(), gameObject->getTypeId(), gameObject->getDisplayId());
+                            } else {
+                                ImGui::Text("Selected M2: fileId %d", fileId);
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Open In New##OpenNewSceneWMOFileId")) {
+                                // if (wmoName.empty()) {
+                                    // createNewWindow()->openWMOSceneByFilename(wmoName);
+                                // } else {
+                                    createNewWindow()->openM2SceneByfdid(fileId, {});
+                                // }
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Copy##SelectedM2FileId")) {
+                                clipboardxx::clipboard temp_clipboard;
+                                temp_clipboard.copy(std::to_string(fileId));
+                            }
+                            ImGui::Text("Position: (%.1f, %.1f, %.1f)", pos[0], pos[1], pos[2]);
+                        } else {
+                            ImGui::Text("Selected M2: (no longer loaded)");
+                        }
+                    } else if (mapPlan->selectedWMO != emptyWMO) {
+                        auto l_selectedWmo = wmoFactory->getObjectById<0>(mapPlan->selectedWMO);
+                        if (l_selectedWmo != nullptr) {
+                            std::string wmoName = l_selectedWmo->getModelFileName();
+                            int fileId = l_selectedWmo->getModelFileId();
+
+                            auto gameObject = worldObjectManager ? worldObjectManager->getGameObjectByWmoId(mapPlan->selectedWMO) : nullptr;
+                            if (gameObject) {
+                                ImGui::Text("Selected GameObject: %s", gameObject->getName().c_str());
+                                ImGui::Text("GameObject ID: %d, Type: %d, DisplayID: %d, Group: %d",
+                                            gameObject->getId(), gameObject->getTypeId(), gameObject->getDisplayId(),
+                                            mapPlan->selectedWMOGroupNum);
+                            } else if (wmoName.empty()) {
+                                ImGui::Text("Selected WMO: fileId %d, group %d",
+                                            fileId, mapPlan->selectedWMOGroupNum);
+                            } else {
+                                ImGui::Text("Selected WMO: %s, group %d",
+                                            wmoName.c_str(), mapPlan->selectedWMOGroupNum);
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Open In New##OpenNewSceneWMOFileId")) {
+                                if (!wmoName.empty()) {
+                                    createNewWindow()->openWMOSceneByFilename(wmoName);
+                                } else {
+                                    createNewWindow()->openWMOSceneByfdid(fileId);
+                                }
+                            }
+                            ImGui::SameLine();
+                            if (ImGui::Button("Copy##SelectedWMOFileId")) {
+                                clipboardxx::clipboard temp_clipboard;
+                                temp_clipboard.copy(std::to_string(fileId));
+                            }
+                        } else {
+                            ImGui::Text("Selected WMO: (no longer loaded)");
+                        }
+                    } else {
+                        if (m_api->hDevice && !m_api->hDevice->supportsSelection()) {
+                            ImGui::Text("Selected object: none (object selection is not supported on this device)");
+                        } else {
+                            ImGui::Text("Selected object: none (right-click an M2 or WMO to select, or hold Ctrl to hover-select)");
+                        }
+                    }
+
+                    if (mapPlan->hasSelectedAABB) {
+                        auto &aabb = mapPlan->selectedAABB;
+                        ImGui::Text("Selected AABB min: (%.1f, %.1f, %.1f)", aabb.min.x, aabb.min.y, aabb.min.z);
+                        ImGui::Text("Selected AABB max: (%.1f, %.1f, %.1f)", aabb.max.x, aabb.max.y, aabb.max.z);
+                    }
                 }
 
                 if (ImGui::CollapsingHeader("Objects Drawn/Culled")) {
@@ -479,6 +609,7 @@ void FrontendUI::showCurrentStatsDialog() {
                         drawEditVar<3>(e, "Exterior Horizon Ambient:", colors.exteriorHorizontAmbientColor, "ExteriorHorizonAmbient");
                         drawEditVar<3>(e, "Exterior Ground Ambient:", colors.exteriorGroundAmbientColor, "ExteriorGroundAmbient");
                         drawEditVar<3>(e, "Exterior Direct Color:", colors.exteriorDirectColor, "ExteriorDirectColor");
+                        drawEditVar<3>(e, "Exterior Specular Color:", colors.exteriorSpecularColor, "ExteriorSpecularColor");
                         drawEditVar<3>(false, "Exterior Direct Dir:", fdd->exteriorDirectColorDir, "ExteriorDirectDir");
                         drawEditVar<1>(false, "Glow:", fdd->currentGlow);
                         ImGui::EndTable();
@@ -499,7 +630,6 @@ void FrontendUI::showBlpViewer() {
 }
 
 void FrontendUI::showM2Viewer() {
-
     for (auto &window : m_m2Windows) {
         if (window && !window->draw()) {
             window = nullptr;
@@ -523,22 +653,42 @@ void FrontendUI::showMapSelectionDialog() {
     }
 }
 
+void FrontendUI::showCascStorageDialog() {
+    if (m_cascStorageDialog) {
+        m_cascStorageDialog->draw();
+    }
+}
+
+void FrontendUI::showCustomObjectsDialog() {
+    if (m_customObjectsWindow && !m_customObjectsWindow->draw()) {
+        m_customObjectsWindow = nullptr;
+    }
+}
+
 void FrontendUI::showMainMenu() {
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
 //            ImGui::MenuItem("(dummy menu)", NULL, false, false);
-            if (ImGui::MenuItem("Open CASC Storage...")) {
-                fileDialog.Open();
+            if (ImGui::MenuItem("Storage Manager...")) {
+                if (m_cascStorageDialog) {
+                    m_cascStorageDialog->show();
+                }
             }
 
             if (ImGui::MenuItem("Open Map selection", "", false, cascOpened)) {
                 if (!m_mapSelectDialog) {
                     auto weakPtr = weak_from_this();
-                    m_mapSelectDialog = std::make_shared<MapSelectDialog>(m_api, m_uiRenderer, [weakPtr]() -> std::shared_ptr<SceneWindow> {
+                    m_mapSelectDialog = std::make_shared<MapSelectDialog>(m_api, m_uiRenderer,
+                    [weakPtr]() -> std::shared_ptr<SceneWindow> {
                         auto sharedPtr = weakPtr.lock();
                         if (!sharedPtr) return nullptr;
 
                         return sharedPtr->getOrCreateWindow();
+                    }, [weakPtr]() -> std::shared_ptr<SceneWindow> {
+                        auto sharedPtr = weakPtr.lock();
+                        if (!sharedPtr) return nullptr;
+
+                        return sharedPtr->m_lastActiveScene.lock();
                     });
                 }
                 m_mapSelectDialog->show();
@@ -550,7 +700,7 @@ void FrontendUI::showMainMenu() {
             if (ImGui::MenuItem("Update database", "", false, cascOpened)) {
                 m_databaseUpdateWorkflow = std::make_shared<DatabaseUpdateWorkflow>(
                         m_api,
-                        contains(fileDialog.getProductBuild().productName, "classic")
+                        m_currentIsClassic
                     );
             }
             if (ImGui::MenuItem("Update keys", "", false)) {
@@ -574,7 +724,10 @@ void FrontendUI::showMainMenu() {
                         } else if (fileType == "wmo") {
                             getOrCreateWindow()->openWMOSceneByfdid(fileId);
                         } else if (fileType == "wdt") {
-                            getOrCreateWindow()->openMapByIdAndWDTId(0, fileId, 0,0,0, -1);
+                            //getOrCreateWindow()->openMapByIdAndWDTId(0, fileId, 0,0,0, -1);
+                            if (m_mapSelectDialog) {
+                                m_mapSelectDialog->setOverrideMap(fileId);
+                            }
                         }
                     });
             }
@@ -593,6 +746,30 @@ void FrontendUI::showMainMenu() {
                 if (!m_blpViewerWindow)
                     m_blpViewerWindow = std::make_shared<BLPViewer>(m_api, m_uiRenderer);
             }
+            if (ImGui::MenuItem("Custom placed objects", "", false, cascOpened)) {
+                if (!m_customObjectsWindow) {
+                    auto weakPtr = weak_from_this();
+                    m_customObjectsWindow = std::make_shared<CustomObjectsWindow>(
+                        m_api,
+                        [weakPtr]() -> std::shared_ptr<SceneWindow> {
+                            auto sharedPtr = weakPtr.lock();
+                            if (!sharedPtr) return nullptr;
+
+                            // Prefer the scene the user is interacting with; fall back to
+                            // the background scene when the active one has no map open
+                            // (e.g. an M2 preview window is focused).
+                            auto activeScene = sharedPtr->m_lastActiveScene.lock();
+                            if (activeScene && activeScene->getWorldObjectManager()) {
+                                return activeScene;
+                            }
+                            if (sharedPtr->m_backgroundScene && sharedPtr->m_backgroundScene->getWorldObjectManager()) {
+                                return sharedPtr->m_backgroundScene;
+                            }
+                            return activeScene;
+                        });
+                }
+                m_customObjectsWindow->show();
+            }
 
             /*
             if (ImGui::MenuItem("Test export")) {
@@ -605,6 +782,9 @@ void FrontendUI::showMainMenu() {
              */
             if (ImGui::MenuItem("Test data export")) {
                 m_dataExporter = std::make_shared<DataExporter::DataExporterClass>(m_api);
+            }
+            if (ImGui::MenuItem("Make FakeWDT")) {
+                m_fakeWDTWindow = std::make_shared<FakeWDTWindow>(m_api);
             }
             ImGui::Separator();
             if (ImGui::MenuItem("Make screenshot")) {
@@ -632,21 +812,11 @@ void FrontendUI::initImgui(
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     this->imguiContext = ImGui::CreateContext();
-    auto &fileDialog = this->fileDialog;
     auto &windowWidth = this->windowWidth;
     auto &windowHeight = this->windowHeight;
     addIniCallback(imguiContext,
                "Global Settings",
-               [&fileDialog, &windowWidth, &windowHeight](const char* line) -> void {
-                    char lastCascDir[256];
-                    if (sscanf(line, "lastCascDir=%[^\n\r]", &lastCascDir) == 1) {
-                        std::string s = std::string(&lastCascDir[0]);
-//                        std::cout << " read string s = " << s << std::endl;
-
-                        if (ghc::filesystem::exists(s)) {
-                            fileDialog.SetPwd(s);
-                        }
-                    }
+               [&windowWidth, &windowHeight](const char* line) -> void {
                    int lastWidth = 0;
                    if (sscanf(line, "windowWidth=%d", &lastWidth) == 1) {
                        windowWidth = lastWidth;
@@ -656,13 +826,13 @@ void FrontendUI::initImgui(
                        windowHeight = lastHeight;
                    }
                },
-               [&fileDialog, &windowWidth, &windowHeight](ImGuiTextBuffer* buf) -> void {
-                   std::string currPath = fileDialog.GetSelected().string();
-                   buf->appendf("lastCascDir=%s\n", currPath.c_str());
+               [&windowWidth, &windowHeight](ImGuiTextBuffer* buf) -> void {
                    buf->appendf("windowWidth=%s\n", std::to_string(windowWidth).c_str());
                    buf->appendf("windowHeight=%s\n", std::to_string(windowHeight).c_str());
                }
        );
+
+    StorageNotificationUI::registerSettings(imguiContext, m_storageNotifications);
 
     ImGui::LoadIniSettingsFromDisk(ImGui::GetIO().IniFilename);
 
@@ -699,6 +869,8 @@ void FrontendUI::newFrame() {
     ImGuiIO& io = ImGui::GetIO();
     io.uiScale = this->uiScale;
     io.DisplaySize = ImVec2((float)io.DisplaySize.x / io.uiScale, (float)io.DisplaySize.y / io.uiScale);
+
+    ImGuizmo::BeginFrame();
 }
 void FrontendUI::shutDown() {
     ImGui_ImplGlfw_Shutdown();
@@ -706,7 +878,11 @@ void FrontendUI::shutDown() {
 
 bool FrontendUI::getStopMouse() {
     ImGuiIO &io = ImGui::GetIO();
-    return io.WantCaptureMouse;
+    // The gizmo's draw window is input-transparent (NoInputs), so WantCaptureMouse alone
+    // doesn't cover it; stop the camera while a gizmo is hovered or dragged. Scoped to
+    // when the dialog is alive: its internal mouse-over state goes stale otherwise.
+    return io.WantCaptureMouse ||
+           (m_customObjectsWindow && (ImGuizmo::IsUsing() || ImGuizmo::IsOver()));
 }
 
 bool FrontendUI::getStopKeyboard() {
@@ -719,6 +895,14 @@ void FrontendUI::showQuickLinksDialog() {
     std::vector<int> replacementTextureFDids = {};
 
     ImGui::Begin("Quick Links", &showQuickLinks);
+    if (ImGui::Button("Gryphon roost", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openM2SceneByfdid(198261, replacementTextureFDids);
+    }
+
+    if (ImGui::Button("Light test model", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        getOrCreateWindow()->openM2SceneByfdid(6735884 , replacementTextureFDids);
+    }
     if (ImGui::Button("model without skin", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
         getOrCreateWindow()->openM2SceneByfdid(5099010, replacementTextureFDids);
@@ -731,9 +915,24 @@ void FrontendUI::showQuickLinksDialog() {
         replacementTextureFDids = std::vector<int>(17);
         getOrCreateWindow()->openM2SceneByfdid(194418, replacementTextureFDids);
     }
+    if (ImGui::Button("could", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        getOrCreateWindow()->openM2SceneByfdid(365751, replacementTextureFDids);
+    }
     if (ImGui::Button("bugged decal", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
         getOrCreateWindow()->openM2SceneByfdid(946969, replacementTextureFDids);
+    }
+    if (ImGui::Button("Twilights Hammer Spike ", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        getOrCreateWindow()->openM2SceneByfdid(397947, replacementTextureFDids);
+    }
+    if (ImGui::Button("Twilights Hammer Tent ", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openWMOSceneByfdid(365797);
+    }
+    if (ImGui::Button("Lordaeron scenario smoke", ImVec2(-1, 0))) {
+        replacementTextureFDids = std::vector<int>(17);
+        getOrCreateWindow()->openM2SceneByfdid(1907887, replacementTextureFDids);
     }
     if (ImGui::Button("Some model", ImVec2(-1, 0))) {
         replacementTextureFDids = std::vector<int>(17);
@@ -749,6 +948,9 @@ void FrontendUI::showQuickLinksDialog() {
     }
     if (ImGui::Button("Legion Dalaran", ImVec2(-1, 0))) {
         getOrCreateWindow()->openWMOSceneByfdid(1120838);
+    }
+    if (ImGui::Button("Flying building from Legion", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openWMOSceneByfdid(1576792);
     }
     if (ImGui::Button("8du_zuldazarraid_antiportal01.wmo", ImVec2(-1, 0))) {
         getOrCreateWindow()->openWMOSceneByfdid(2574165);
@@ -858,9 +1060,7 @@ void FrontendUI::showQuickLinksDialog() {
     if (ImGui::Button("COT hourglass", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(190850, replacementTextureFDids);
     }
-    if (ImGui::Button("Gryphon roost", ImVec2(-1, 0))) {
-        getOrCreateWindow()->openM2SceneByfdid(198261, replacementTextureFDids);
-    }
+
     if (ImGui::Button("Northrend Human Inn", ImVec2(-1, 0))) {
         getOrCreateWindow()->openWMOSceneByfdid(114998);
     }
@@ -919,7 +1119,7 @@ void FrontendUI::showQuickLinksDialog() {
         getOrCreateWindow()->openM2SceneByfdid(631713, replacementTextureFDids);
     }
     if (ImGui::Button("Draenor login screen", ImVec2(-1, 0))) {
-        getOrCreateWindow()->openM2SceneByName("interface/glues/models/ui_mainmenu_warlords/ui_mainmenu_warlords.m2", replacementTextureFDids);
+        getOrCreateWindow()->openM2SceneByfdid(1067592, replacementTextureFDids);
     }
     if (ImGui::Button("Legion Login Screen", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(1396280, replacementTextureFDids);
@@ -938,7 +1138,22 @@ void FrontendUI::showQuickLinksDialog() {
         getOrCreateWindow()->openM2SceneByfdid(4684877, replacementTextureFDids);
 //            m_api->getConfig()->setBCLightHack(true);
     }
-
+    if (ImGui::Button("War within login screen 1", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openM2SceneByfdid(5932799, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+    }
+    if (ImGui::Button("War within login screen 2", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openM2SceneByfdid(6051108, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+    }
+    if (ImGui::Button("Midnights login screen 1", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openM2SceneByfdid(7550638, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+    }
+    if (ImGui::Button("Midnights login screen 2", ImVec2(-1, 0))) {
+        getOrCreateWindow()->openM2SceneByfdid(7550640, replacementTextureFDids);
+//            m_api->getConfig()->setBCLightHack(true);
+    }
     if (ImGui::Button("Shadowlands clouds", ImVec2(-1, 0))) {
         getOrCreateWindow()->openM2SceneByfdid(3445776, replacementTextureFDids);
     }
@@ -1091,11 +1306,11 @@ void FrontendUI::showModeControls(const std::string &groupName, EParameterSource
         selection == 2 ? EParameterSource::eConfig : EParameterSource::eDatabase;
 }
 
-static HGTexture blpText = nullptr;
-
 void FrontendUI::showSettingsDialog() {
     if(showSettings) {
         ImGui::Begin("Settings", &showSettings);
+
+        StorageNotificationUI::drawSettings(m_storageNotifications);
 
         //Camera Selection
         auto activeScene = m_lastActiveScene.lock();
@@ -1148,16 +1363,29 @@ void FrontendUI::showSettingsDialog() {
 
         {
             float farPlane = m_api->getConfig()->farPlane;
-            if (ImGui::SliderFloat("Far plane", &farPlane, 200, 2000)) {
+            if (ImGui::SliderFloat("Far plane", &farPlane, 200, 8000)) {
                 m_api->getConfig()->farPlane = farPlane;
                 m_api->getConfig()->farPlaneForCulling = farPlane + 50;
             }
         }
 
-        ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
+        {
+            int currentTime = m_api->getConfig()->currentTime;
+            ImGui::Text("Time: %02d:%02d", (int)(currentTime/120), (int)((currentTime/2) % 60));
 
-        if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
-            m_api->getConfig()->currentTime = currentTime;
+            if (ImGui::SliderInt("Current time", &currentTime, 0, 2880)) {
+                m_api->getConfig()->currentTime = currentTime;
+            }
+        }
+
+        {
+            auto timeMultiplier = m_api->getConfig()->timeMultiplier;
+            if (ImGui::SliderFloat("Time multiplier", &timeMultiplier, 0.1, 20, "%.3f", ImGuiSliderFlags_Logarithmic | ImGuiSliderFlags_NoInput)) {
+                m_api->getConfig()->timeMultiplier = timeMultiplier;
+            } else {
+                m_api->getConfig()->timeMultiplier = 1.0f;
+            }
+
         }
 
         {
@@ -1176,190 +1404,281 @@ void FrontendUI::showSettingsDialog() {
             m_api->getConfig()->fogDensityIncreaser = fogDensityIncreaser;
         }
 
-        if (ImGui::CollapsingHeader("Option toogles")) {
+        if (ImGui::CollapsingHeader("Option toggles")) {
 
+            if (ImGui::CollapsingHeader("Adt settings")) {
+                bool renderADT = m_api->getConfig()->renderAdt;
+                if (ImGui::Checkbox("Render ADT", &renderADT)) {
+                    m_api->getConfig()->renderAdt = renderADT;
+                }
 
-            if (ImGui::Checkbox("Disable glow", &disableGlow)) {
-                m_api->getConfig()->disableGlow = disableGlow;
-            }
+                bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
+                if (ImGui::Checkbox("Ignore ADT holes for rendering", &ignoreADTHoles)) {
+                    m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
+                }
 
-            bool disableFog = m_api->getConfig()->disableFog;
-            if (ImGui::Checkbox("Disable fog", &disableFog)) {
-                m_api->getConfig()->disableFog = disableFog;
-            }
-
-            bool enableLightBuffer = m_api->getConfig()->enableLightBuffer;
-            if (ImGui::Checkbox("Enable lightBuffer", &enableLightBuffer)) {
-                m_api->getConfig()->enableLightBuffer = enableLightBuffer;
-            }
-            bool drawDebugLights = m_api->getConfig()->drawDebugLights;
-            if (ImGui::Checkbox("Draw Debug lights", &drawDebugLights)) {
-                m_api->getConfig()->drawDebugLights = drawDebugLights;
-            }
-
-            bool renderADT = m_api->getConfig()->renderAdt;
-            if (ImGui::Checkbox("Render ADT", &renderADT)) {
-                m_api->getConfig()->renderAdt = renderADT;
-            }
-
-            bool renderM2 = m_api->getConfig()->renderM2;
-            if (ImGui::Checkbox("Render M2", &renderM2)) {
-                m_api->getConfig()->renderM2 = renderM2;
-            }
-
-            {
-                bool renderM2Decals = m_api->getConfig()->renderM2Decals;
-                if (ImGui::Checkbox("Render M2 Decals", &renderM2Decals)) {
-                    m_api->getConfig()->renderM2Decals = renderM2Decals;
+                bool ignoreADTColors = m_api->getConfig()->ignoreADTColoring;
+                if (ImGui::Checkbox("Ignore ADT colors for rendering", &ignoreADTColors)) {
+                    m_api->getConfig()->ignoreADTColoring = ignoreADTColors;
                 }
             }
 
-            {
-                bool renderParticles = m_api->getConfig()->maxParticle >= 0;
-                if (ImGui::Checkbox("Render Particles", &renderParticles)) {
-                    m_api->getConfig()->maxParticle = renderParticles ? 9999 : -1;
+            if (ImGui::CollapsingHeader("WMO settings")) {
+                {
+                    bool renderWMO = m_api->getConfig()->renderWMO;
+                    if (ImGui::Checkbox("Render WMO", &renderWMO)) {
+                        m_api->getConfig()->renderWMO = renderWMO;
+                    }
                 }
-            }
-            {
-                bool renderRibbons = m_api->getConfig()->renderRibbons;
-                if (ImGui::Checkbox("Render Ribbons", &renderRibbons)) {
-                    m_api->getConfig()->renderRibbons = renderRibbons;
+                {
+                    bool renderWMOBB = m_api->getConfig()->drawWmoBB;
+                    if (ImGui::Checkbox("Render WMO Bounding Box", &renderWMOBB)) {
+                        m_api->getConfig()->drawWmoBB = renderWMOBB;
+                    }
                 }
-            }
-
-            bool renderWMO = m_api->getConfig()->renderWMO;
-            if (ImGui::Checkbox("Render WMO", &renderWMO)) {
-                m_api->getConfig()->renderWMO = renderWMO;
-            }
-
-            bool renderSkyDom = m_api->getConfig()->renderSkyDom;
-            if (ImGui::Checkbox("Render Sky M2", &renderSkyDom)) {
-                m_api->getConfig()->renderSkyDom = renderSkyDom;
-            }
-
-            bool renderSkyScene = m_api->getConfig()->renderSkyScene;
-            if (ImGui::Checkbox("Render SkyScene Models", &renderSkyScene)) {
-                m_api->getConfig()->renderSkyScene = renderSkyScene;
-            }
-
-            bool renderLiquid = m_api->getConfig()->renderLiquid;
-            if (ImGui::Checkbox("Render Liquid", &renderLiquid)) {
-                m_api->getConfig()->renderLiquid = renderLiquid;
-            }
-
-            bool drawM2BB = m_api->getConfig()->drawM2BB;
-            if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
-                m_api->getConfig()->drawM2BB = drawM2BB;
-            }
-
-
-            bool discardInvisibleMeshes = m_api->getConfig()->discardInvisibleMeshes;
-            if (ImGui::Checkbox("Discard invisible M2 meshes", &discardInvisibleMeshes)) {
-                m_api->getConfig()->discardInvisibleMeshes = discardInvisibleMeshes;
-            }
-
-            bool ignoreADTHoles = m_api->getConfig()->ignoreADTHoles;
-            if (ImGui::Checkbox("Ignore ADT holes for rendering", &ignoreADTHoles)) {
-                m_api->getConfig()->ignoreADTHoles = ignoreADTHoles;
-            }
-
-            bool ignoreADTColors = m_api->getConfig()->ignoreADTColoring;
-            if (ImGui::Checkbox("Ignore ADT colors for rendering", &ignoreADTColors)) {
-                m_api->getConfig()->ignoreADTColoring = ignoreADTColors;
-            }
-
-
-            bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
-            if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {
-                m_api->getConfig()->usePortalCulling = !disablePortalCulling;
-            }
-
-            bool renderPortals = m_api->getConfig()->renderPortals;
-            if (ImGui::Checkbox("Render portals", &renderPortals)) {
-                m_api->getConfig()->renderPortals = renderPortals;
-            }
-            bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
-            if (ImGui::Checkbox("Render anti portals", &renderAntiPortals)) {
-                m_api->getConfig()->renderAntiPortals = renderAntiPortals;
-            }
-
-            if (renderPortals || renderAntiPortals) {
-                bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
-                if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
-                    m_api->getConfig()->renderPortalsIgnoreDepth = renderPortalsIgnoreDepth;
+                {
+                    bool ignoreWMOColoring = m_api->getConfig()->ignoreWMOColoring;
+                    if (ImGui::Checkbox("Ignore WMO colors", &ignoreWMOColoring)) {
+                        m_api->getConfig()->ignoreWMOColoring = ignoreWMOColoring;
+                    }
                 }
-            }
-
-            bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
-            if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
-                m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;
-                if (!useDoubleCameraDebug) {
-                    m_debugRenderWindow = nullptr;
-                    m_debugRenderView = nullptr;
+                {
+                    bool disablePortalCulling = !m_api->getConfig()->usePortalCulling;
+                    if (ImGui::Checkbox("Disable portal culling", &disablePortalCulling)) {
+                        m_api->getConfig()->usePortalCulling = !disablePortalCulling;
+                    }
                 }
-            }
-            if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && m_backgroundScene->hasRenderer()) {
-                m_debugRenderView = m_backgroundScene->createRenderView();
-                m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
-            }
-
-            {
-                bool stopBufferUpdates = m_api->getConfig()->stopBufferUpdates;
-                if (ImGui::Checkbox("Stop buffer updates", &stopBufferUpdates)) {
-                    m_api->getConfig()->stopBufferUpdates = stopBufferUpdates;
+                
+                bool renderPortals = m_api->getConfig()->renderPortals;
+                if (ImGui::Checkbox("Render portals", &renderPortals)) {
+                    m_api->getConfig()->renderPortals = renderPortals;
+                }
+                bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
+                if (ImGui::Checkbox("Render anti portals", &renderAntiPortals)) {
+                    m_api->getConfig()->renderAntiPortals = renderAntiPortals;
                 }
 
-                if (stopBufferUpdates) {
-                    bool stepBufferUpdate = m_api->getConfig()->stepBufferUpdate;
-                    if (ImGui::Checkbox("Step buffer update", &stepBufferUpdate)) {
-                        m_api->getConfig()->stepBufferUpdate = stepBufferUpdate;
+                if (renderPortals || renderAntiPortals) {
+                    bool renderPortalsIgnoreDepth = m_api->getConfig()->renderPortalsIgnoreDepth;
+                    if (ImGui::Checkbox("Ignore depth test for rendering portals", &renderPortalsIgnoreDepth)) {
+                        m_api->getConfig()->renderPortalsIgnoreDepth = renderPortalsIgnoreDepth;
                     }
                 }
             }
 
-            pauseAnimation = m_api->getConfig()->pauseAnimation;
-            if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
-                m_api->getConfig()->pauseAnimation = pauseAnimation;
+            if (ImGui::CollapsingHeader("M2 settings")) {
+                bool renderM2 = m_api->getConfig()->renderM2;
+                if (ImGui::Checkbox("Render M2", &renderM2)) {
+                    m_api->getConfig()->renderM2 = renderM2;
+                }
+                {
+                bool renderM2Decals = m_api->getConfig()->renderM2Decals;
+                    if (ImGui::Checkbox("Render M2 Decals", &renderM2Decals)) {
+                        m_api->getConfig()->renderM2Decals = renderM2Decals;
+                    }
+                }
+                {
+                    bool renderParticles = m_api->getConfig()->maxParticle >= 0;
+                    if (ImGui::Checkbox("Render Particles", &renderParticles)) {
+                        m_api->getConfig()->maxParticle = renderParticles ? 9999 : -1;
+                    }
+                }
+                {
+                    bool renderRibbons = m_api->getConfig()->renderRibbons;
+                    if (ImGui::Checkbox("Render Ribbons", &renderRibbons)) {
+                        m_api->getConfig()->renderRibbons = renderRibbons;
+                    }
+                }
+                {
+                    bool drawM2BB = m_api->getConfig()->drawM2BB;
+                    if (ImGui::Checkbox("Render M2 Bounding Box", &drawM2BB)) {
+                        m_api->getConfig()->drawM2BB = drawM2BB;
+                    }
+                }
+
+                bool discardInvisibleMeshes = m_api->getConfig()->discardInvisibleMeshes;
+                if (ImGui::Checkbox("Discard invisible M2 meshes", &discardInvisibleMeshes)) {
+                    m_api->getConfig()->discardInvisibleMeshes = discardInvisibleMeshes;
+                }
+
+                {
+                    bool gpuAnimSupported = m_api->hDevice &&
+                        m_api->hDevice->getDeviceType() == GDeviceType::GVulkan;
+                    bool useGpuAnimation = m_api->getConfig()->useGpuAnimation && gpuAnimSupported;
+                    if (!gpuAnimSupported) {
+                        ImGui::BeginDisabled();
+                    }
+                    if (ImGui::Checkbox("GPU M2 animation/particles/ribbons", &useGpuAnimation)) {
+                        m_api->getConfig()->useGpuAnimation = useGpuAnimation;
+                    }
+                    if (!gpuAnimSupported) {
+                        ImGui::EndDisabled();
+                        if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
+                            ImGui::SetTooltip("GPU animation requires the Vulkan backend");
+                        }
+                    }
+                }
             }
 
-            if (ImGui::Button("Reset Animation")) {
-                resetAnimationCallback();
+            if (ImGui::CollapsingHeader("GameObjects")) {
+                bool renderGameObjects = m_api->getConfig()->renderGameObjects;
+                if (ImGui::Checkbox("Render Gameobjects", &renderGameObjects)) {
+                    m_api->getConfig()->renderGameObjects = renderGameObjects;
+                }
+
+                bool showNameplates = m_api->getConfig()->showGameObjectNameplates;
+                if (ImGui::Checkbox("Show on-hover nameplates", &showNameplates)) {
+                    m_api->getConfig()->showGameObjectNameplates = showNameplates;
+                }
+
+                if (showNameplates) {
+                    bool showForAll = m_api->getConfig()->showGameObjectNameplatesForAll;
+                    if (ImGui::Checkbox("Show for all", &showForAll)) {
+                        m_api->getConfig()->showGameObjectNameplatesForAll = showForAll;
+                    }
+                }
             }
-        }
 
-        if (ImGui::CollapsingHeader("Light options")) {
-            auto activeScene = m_lastActiveScene.lock();
-            auto mapPlan = activeScene ? activeScene->getLastPlan() : nullptr;
-
-
-            //Glow source
-            switch (m_api->getConfig()->glowSource) {
-                case EParameterSource::eDatabase: {
-                    glowSource = 0;
-                    break;
+            if (ImGui::CollapsingHeader("Lights")) {
+                bool enableLightBuffer = m_api->getConfig()->enableLightBuffer;
+                if (ImGui::Checkbox("Enable lightBuffer", &enableLightBuffer)) {
+                    m_api->getConfig()->enableLightBuffer = enableLightBuffer;
                 }
-                case EParameterSource::eConfig: {
-                    glowSource = 1;
-                    break;
+
+                if (ImGui::Checkbox("Disable glow", &disableGlow)) {
+                    m_api->getConfig()->disableGlow = disableGlow;
                 }
-                default:
-                    glowSource = 1;
+
+                bool disableFog = m_api->getConfig()->disableFog;
+                if (ImGui::Checkbox("Disable fog", &disableFog)) {
+                    m_api->getConfig()->disableFog = disableFog;
+                }
+
+                bool drawDebugLights = m_api->getConfig()->drawDebugLights;
+                if (ImGui::Checkbox("Draw Debug lights", &drawDebugLights)) {
+                    m_api->getConfig()->drawDebugLights = drawDebugLights;
+                }
+
+
+                //Glow source
+                switch (m_api->getConfig()->glowSource) {
+                    case EParameterSource::eDatabase: {
+                        glowSource = 0;
+                        break;
+                    }
+                    case EParameterSource::eConfig: {
+                        glowSource = 1;
+                        break;
+                    }
+                    default:
+                        glowSource = 1;
+                }
+
+                ImGui::Separator();
+
+                if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
+                    m_api->getConfig()->glowSource = EParameterSource::eDatabase;
+                }
+                if (ImGui::RadioButton("Manual glow", &glowSource, 1)) {
+                    m_api->getConfig()->glowSource = EParameterSource::eConfig;
+                }
+
+                if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
+                    if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
+                        m_api->getConfig()->currentGlow = customGlow;
+                    }
+                }
+            }
+
+            if (ImGui::CollapsingHeader("Sky settings")) {
+                bool renderSkyDom = m_api->getConfig()->renderSkyDom;
+                if (ImGui::Checkbox("Render Sky M2", &renderSkyDom)) {
+                    m_api->getConfig()->renderSkyDom = renderSkyDom;
+                }
+
+                bool renderSkyScene = m_api->getConfig()->renderSkyScene;
+                if (ImGui::Checkbox("Render SkyScene Models", &renderSkyScene)) {
+                    m_api->getConfig()->renderSkyScene = renderSkyScene;
+                }
+            }
+            if (ImGui::CollapsingHeader("SkyScene player conditions")) {
+                // Player conditions (from SkySceneXPlayerCondition db2) that gate the
+                // sky scenes of the currently loaded WDL; unchecking one hides the
+                // scenes it gates.
+                auto activeScene = m_lastActiveScene.lock();
+                static const std::map<int, std::set<int>> emptySkyScenes = {};
+                auto &skyScenesByCondition = activeScene ?
+                    activeScene->getSkyScenesByPlayerCondition() : emptySkyScenes;
+                if (skyScenesByCondition.empty()) {
+                    ImGui::TextDisabled("No WDL sky scenes in the current scene.");
+                } else {
+                    auto &disabled = m_api->getConfig()->disabledSkyScenePlayerConditions;
+                    for (auto &[playerConditionId, skySceneIds] : skyScenesByCondition) {
+                        bool enabled = disabled.count(playerConditionId) == 0;
+                        std::string label = "Player condition " + std::to_string(playerConditionId);
+                        if (ImGui::Checkbox(label.c_str(), &enabled)) {
+                            if (enabled) {
+                                disabled.erase(playerConditionId);
+                            } else {
+                                disabled.insert(playerConditionId);
+                            }
+                        }
+
+                        std::string suffix = "SkyScene";
+                        for (int skySceneId : skySceneIds) {
+                            suffix += (suffix == "SkyScene" ? " " : ", ") + std::to_string(skySceneId);
+                        }
+                        ImGui::SameLine();
+                        ImGui::TextDisabled("(%s)", suffix.c_str());
+                    }
+                }
+            }
+            if (ImGui::CollapsingHeader("Liquid settings")) {
+                bool renderLiquid = m_api->getConfig()->renderLiquid;
+                if (ImGui::Checkbox("Render Liquid", &renderLiquid)) {
+                    m_api->getConfig()->renderLiquid = renderLiquid;
+                }
+            }
+            if (ImGui::CollapsingHeader("Debug settings")) {
+                bool useDoubleCameraDebug = m_api->getConfig()->doubleCameraDebug;
+                if (ImGui::Checkbox("Enable second camera(for debug)", &useDoubleCameraDebug)) {
+                    m_api->getConfig()->doubleCameraDebug = useDoubleCameraDebug;
+                    if (!useDoubleCameraDebug) {
+                        m_debugRenderWindow = nullptr;
+                        m_debugRenderView = nullptr;
+                    }
+                }
+                if (useDoubleCameraDebug && (m_debugRenderWindow == nullptr || m_debugRenderView == nullptr) && m_backgroundScene->hasRenderer()) {
+                    m_debugRenderView = m_backgroundScene->createRenderView();
+                    m_debugRenderWindow = std::make_shared<DebugRendererWindow>(m_api, m_uiRenderer, m_debugRenderView);
+                }
+
+                {
+                    bool stopBufferUpdates = m_api->getConfig()->stopBufferUpdates;
+                    if (ImGui::Checkbox("Stop buffer updates", &stopBufferUpdates)) {
+                        m_api->getConfig()->stopBufferUpdates = stopBufferUpdates;
+                    }
+
+                    if (stopBufferUpdates) {
+                        bool stepBufferUpdate = m_api->getConfig()->stepBufferUpdate;
+                        if (ImGui::Checkbox("Step buffer update", &stepBufferUpdate)) {
+                            m_api->getConfig()->stepBufferUpdate = stepBufferUpdate;
+                        }
+                    }
+                }
+
+                pauseAnimation = m_api->getConfig()->pauseAnimation;
+                if (ImGui::Checkbox("Pause animation", &pauseAnimation)) {
+                    m_api->getConfig()->pauseAnimation = pauseAnimation;
+                }
+
+                if (ImGui::Button("Reset Animation")) {
+                    resetAnimationCallback();
+                }
             }
             ImGui::Separator();
-
-            if (ImGui::RadioButton("Use glow from database", &glowSource, 0)) {
-                m_api->getConfig()->glowSource = EParameterSource::eDatabase;
-            }
-            if (ImGui::RadioButton("Manual glow", &glowSource, 1)) {
-                m_api->getConfig()->glowSource = EParameterSource::eConfig;
-            }
-
-            if (m_api->getConfig()->glowSource == EParameterSource::eConfig) {
-                if (ImGui::SliderFloat("Custom glow", &customGlow, 0.0, 10)) {
-                    m_api->getConfig()->currentGlow = customGlow;
-                }
-            }
         }
+
         if (ImGui::CollapsingHeader("Mat options")) {
             auto activeScene = m_lastActiveScene.lock();
             if (activeScene) {
@@ -1436,7 +1755,7 @@ HFrameScenario FrontendUI::createFrameScenario(int canvWidth, int canvHeight, do
     auto l_device = m_api->hDevice;
     auto processingFrame = l_device->getFrameNumber();
     std::function<uint32_t()> updateFrameNumberLambda = [l_device, frame = processingFrame]() -> uint32_t {
-        l_device->setCurrentProcessingFrameNumber(frame);
+        FrameContext::setCurrentProcessingFrameNumber(frame);
         return frame;
     };
 
@@ -1501,14 +1820,27 @@ bool FrontendUI::tryOpenCasc(std::string &cascPath, BuildDefinition &buildDef) {
     std::shared_ptr<WoWFilesCacheStorage> newStorage = nullptr;
 
     try {
-        newProcessor = std::make_shared<CascRequestProcessor>(cascPath, buildDef);
+        auto processor = std::make_shared<CascRequestProcessor>(cascPath, buildDef,
+            [notifications = m_storageNotifications](const StorageError& error) {
+                notifications->push(error);
+            });
+        if (!processor->isOpen()) return false;
+        newProcessor = std::move(processor);
         newStorage = std::make_shared<WoWFilesCacheStorage>(newProcessor.get());
-    } catch (...){
+    } catch (const std::exception& error) {
+        m_storageNotifications->push({StorageErrorCategory::StorageOpen,
+                                  std::string("Opening storage: ") + error.what()});
         return false;
-    };
+    } catch (...) {
+        m_storageNotifications->push({StorageErrorCategory::StorageOpen, "Opening storage: unknown error"});
+        return false;
+    }
 
     m_api->cacheStorage = newStorage;
     m_api->requestProcessor = newProcessor;
+
+    m_currentProduct = buildDef.productName;
+    m_currentIsClassic = buildDef.isClassic;
 
     return true;
 }
@@ -1577,8 +1909,8 @@ inline bool fileExistsNotNull (const std::string& name) {
 
 void FrontendUI::createDefaultprocessor() {
 
-    const char * url = "https://wow.tools/casc/file/fname?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=";
-    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=data&filedataid=";
+//    const char * url = "https://wow.tools/casc/file/fname?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=";
+//    const char * urlFileId = "https://wow.tools/casc/file/fdid?buildconfig=9a77c0cdef71f18aaee8ba081865b6fd&cdnconfig=dd2c07aa3d4621529a93921750262d28&filename=data&filedataid=";
 //
 //Classics
 //        const char * url = "https://wow.tools/casc/file/fname?buildconfig=bf24b9d67a4a9c7cc0ce59d63df459a8&cdnconfig=2b5b60cdbcd07c5f88c23385069ead40&filename=";
@@ -1586,12 +1918,12 @@ void FrontendUI::createDefaultprocessor() {
 //        processor = new HttpZipRequestProcessor(url);
 ////        processor = new ZipRequestProcessor(filePath);
 ////        processor = new MpqRequestProcessor(filePath);
-    // m_api->requestProcessor = std::make_shared<HttpRequestProcessor>(url, urlFileId);
+
     BuildDefinition buildDef;
-    m_api->requestProcessor = std::make_shared<CascRequestProcessor>("f:\\games\\World Of Warcraft\\:wowt", buildDef);
+    std::string cascPath;
+    if (!tryOpenCasc(cascPath, buildDef)) return;
 ////        processor->setThreaded(false);
 ////
-    m_api->cacheStorage = std::make_shared<WoWFilesCacheStorage>(m_api->requestProcessor.get());
     overrideCascOpened(true);
 }
 
@@ -1640,21 +1972,25 @@ void FrontendUI::createFontTexture() {
     io.Fonts->TexID = fontMat->uniqueId;
 }
 
+std::shared_ptr<SceneWindow> FrontendUI::createNewWindow() {
+    for (int i = 0; i < m_m2Windows.size(); i++) {
+        if (m_m2Windows[i] == nullptr) {
+            auto newWindow = std::make_shared<M2Window>(m_api, m_uiRenderer, std::to_string(i));
+            m_m2Windows[i] = newWindow;
+            return m_m2Windows[i];
+        }
+    }
+    // Create entry, cause there are no empty space
+    auto newWindow = std::make_shared<M2Window>(m_api, m_uiRenderer, std::to_string(m_m2Windows.size()));
+    m_m2Windows.push_back(newWindow);
+    return newWindow;
+}
+
 std::shared_ptr<SceneWindow> FrontendUI::getOrCreateWindow() {
     //If shift key is pressed -> create a new window
     ImGuiIO& io = ImGui::GetIO();
     if (io.KeyShift) {
-        for (int i = 0; i < m_m2Windows.size(); i++) {
-            if (m_m2Windows[i] == nullptr) {
-                auto newWindow = std::make_shared<M2Window>(m_api, m_uiRenderer, std::to_string(i));
-                m_m2Windows[i] = newWindow;
-                return m_m2Windows[i];
-            }
-        }
-        // Create entry, cause there are no empty space
-        auto newWindow = std::make_shared<M2Window>(m_api, m_uiRenderer, std::to_string(m_m2Windows.size()));
-        m_m2Windows.push_back(newWindow);
-        return newWindow;
+        return createNewWindow();
     }
 
     //Return usual background otherwise

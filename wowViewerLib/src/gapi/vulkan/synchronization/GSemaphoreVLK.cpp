@@ -5,7 +5,7 @@
 #include "GSemaphoreVLK.h"
 #include "../../interface/IDevice.h"
 
-GSemaphoreVLK::GSemaphoreVLK(const std::shared_ptr<IDeviceVulkan> &deviceVulkan) {
+GSemaphoreVLK::GSemaphoreVLK(const std::shared_ptr<IDeviceVulkan> &deviceVulkan) : m_device(deviceVulkan) {
     VkSemaphoreCreateInfo semaphoreInfo = {};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
     semaphoreInfo.pNext = NULL;

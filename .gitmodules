@@ -53,3 +53,6 @@
 [submodule "3rdparty/imgui-notify"]
 	path = 3rdparty/imgui-notify
 	url = https://github.com/patrickcjk/imgui-notify.git
+[submodule "3rdparty/TactCpp"]
+	path = 3rdparty/TactCpp
+	url = https://github.com/Deamon87/TactCpp

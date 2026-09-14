@@ -5,8 +5,9 @@
 #include "M2Window.h"
 #include "imgui.h"
 #include "imgui_internal.h"
+#include "../../../../wowViewerLib/src/gapi/interface/FrameContext.h"
 
-M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix) : SceneWindow(api, false, renderer) {
+M2Window::M2Window(HApiContainer api, const std::shared_ptr<FrontendUIRenderer> &renderer, const std::string &nameSuffix) : SceneWindow(api, false, renderer, false) {
     m_windowName = "M2Window##" + nameSuffix;
 }
 
@@ -19,7 +20,7 @@ bool M2Window::draw() {
 
     if (ImGui::Begin(m_windowName.c_str(), &m_showWindow))
     {
-        auto currentFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+        auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
 
         auto imguiContent = ImGui::GetCurrentContext();
         {
@@ -99,7 +100,7 @@ void M2Window::setSelectedMat(uint8_t matIndex) {
 std::vector<std::tuple<std::string, std::shared_ptr<IUIMaterial>>> M2Window::getMaterials() {
     std::vector<std::tuple<std::string, std::shared_ptr<IUIMaterial>>> result;
 
-    auto currentFrame = m_api->hDevice->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     for (auto &matArray : materials) {
         result.push_back(std::make_tuple(std::get<0>(matArray), std::get<1>(matArray)[currentFrame]));
     }

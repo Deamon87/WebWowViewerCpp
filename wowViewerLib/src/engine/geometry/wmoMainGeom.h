@@ -15,10 +15,10 @@ class WmoMainGeom;
 
 class WmoMainGeom : public PersistentFile {
 public:
-    WmoMainGeom(std::string fileName){};
-    WmoMainGeom(int fileDataId){};
+    WmoMainGeom(std::string fileName) : PersistentFile(fileName) {};
+    WmoMainGeom(int fileDataId) : PersistentFile(fileDataId) {};
 
-    void process(HFileContent wmoMainFile, const std::string &fileName) override;
+    void process(HFileContent wmoMainFile) override;
 private:
     static chunkDef<WmoMainGeom> wmoMainTable;
 public:

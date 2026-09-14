@@ -16,7 +16,7 @@ GCommandBuffer::GCommandBuffer(IDeviceVulkan &deviceVlk,
 
 }
 
-CmdBufRecorder GCommandBuffer::beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass) {
+CmdBufRecorder GCommandBuffer::beginRecord(const std::shared_ptr<GRenderPassVLK> &renderPass, bool simultaneousUse) {
     //If renderPass != nullptr -> it means this is a secondary command buffer, that needs to continue renderPass, that's going on outside
     if (m_isPrimary && renderPass != nullptr) {
         std::cerr << "tried to continue renderpass in primary buffer " << std::endl;
@@ -25,7 +25,7 @@ CmdBufRecorder GCommandBuffer::beginRecord(const std::shared_ptr<GRenderPassVLK>
 
     createCommandBufVLK();
 
-    return CmdBufRecorder(*this, renderPass);
+    return CmdBufRecorder(*this, renderPass, simultaneousUse);
 }
 
 void GCommandBuffer::createCommandBufVLK() {

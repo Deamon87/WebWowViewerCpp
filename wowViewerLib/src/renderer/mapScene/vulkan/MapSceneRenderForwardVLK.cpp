@@ -9,31 +9,70 @@
 #include "../../../gapi/vulkan/meshes/GMeshVLK.h"
 #include "../../../gapi/vulkan/buffers/CBufferChunkVLK.h"
 #include "../../../gapi/vulkan/meshes/GM2MeshVLK.h"
+#include "liquidData/LiquidDataForwardVLK.h"
 #include "materials/IMaterialInstance.h"
 #include "../../../gapi/vulkan/meshes/GSortableMeshVLK.h"
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVLK.h"
 #include "../../../gapi/vulkan/buffers/GBufferChunkDynamicVersionedVLK.h"
 #include "../../frame/FrameProfile.h"
 #include "../../../gapi/vulkan/commandBuffer/commandBufferRecorder/CommandBufferRecorder_inline.h"
+#include "meshCollectors/OpaqueMeshCollectorForward.h"
 #include <future>
+
+class IM2ModelDataVLK : public IM2ModelData {
+public:
+    ~IM2ModelDataVLK() override = default;
+    std::shared_ptr<GDescriptorSet> m2CommonDS;
+};
+
+static const DescTypeSetBindingConfig SceneDataSetConfig = {
+    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+    {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {2, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}}
+};
+
+static const DescTypeSetBindingConfig LiquidDataSetConfig = {
+    {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}},
+    {1, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {2, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {3, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {4, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {5, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}},
+    {6, {VkDescriptorType::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT}}
+};
+
+static const ShaderConfig SceneDataSetStubShaderConfig = {
+    "stubs",
+    "stubs",
+    {
+        {0, SceneDataSetConfig}
+    }
+};
 
 static const ShaderConfig forwardShaderConfig = {
     "forwardRendering",
     "forwardRendering",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
-        }}
+        {0, SceneDataSetConfig}
     }
 };
 static const ShaderConfig m2ForwardShaderConfig = {
     "forwardRendering",
     "forwardRendering",
     {
-        {0, {
-            {0, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC}}
-        }}
+        {0, SceneDataSetConfig},
+        {1, {
+            {5, {VkDescriptorType::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, false, 1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT}}
+        }},
 }};
+static const ShaderConfig liquidShaderConfig = {
+    "forwardRendering",
+    "forwardRendering",
+    {
+        {0, SceneDataSetConfig},
+        {2, LiquidDataSetConfig}
+    }
+};
 
 MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, Config *config) :
     m_device(hDevice), MapSceneRenderer(config) {
@@ -54,12 +93,16 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
         m_particleIndexBuffer,
         uboBuffer,
         uboStaticBuffer,
-        uboM2BoneMatrixBuffer
+        uboM2BoneMatrixBuffer,
+        liquidBuffers.waterLiquidBuffer,
+        liquidBuffers.magmaLiquidBuffer,
+        liquidBuffers.mercuryLiquidBuffer,
+        liquidBuffers.fogLiquidBuffer,
+        liquidBuffers.leyLineLiquidBuffer,
+        liquidBuffers.felLiquidBuffer,
+        liquidBuffers.swampLiquidBuffer,
+        liquidBuffers.azeritheLiquidBuffer
     };
-    for (auto &vboM2ParticleBuff : this->vboM2ParticleBuffers) {
-        allBuffers.push_back(vboM2ParticleBuff);
-    }
-
 
     iboBuffer   = m_device->createIndexBuffer("Scene_IBO", 1024*1024);
 
@@ -68,11 +111,24 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     for (int k = 0; k < PARTICLES_BUFF_NUM; k++)
         vboM2ParticleBuffers[k] = m_device->createVertexBuffer("Scene_VBO_M2Particle_fr_"+std::to_string(k),1024*1024, 64);
 
+    for (auto &vboM2ParticleBuff : this->vboM2ParticleBuffers) {
+        allBuffers.push_back(vboM2ParticleBuff);
+    }
+
     vboM2RibbonBuffer   = m_device->createVertexBuffer("Scene_VBO_M2Ribbon",1024*1024);
     vboAdtBuffer        = m_device->createVertexBuffer("Scene_VBO_ADT",3*1024*1024);
     vboWMOBuffer        = m_device->createVertexBuffer("Scene_VBO_WMO",1024*1024);
-    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024);
+    vboWaterBuffer      = m_device->createVertexBuffer("Scene_VBO_Water",1024*1024, sizeof(LiquidVertexFormat));
     vboSkyBuffer        = m_device->createVertexBuffer("Scene_VBO_Sky",1024*1024);
+
+    liquidBuffers.waterLiquidBuffer = m_device->createUniformBuffer("Scene_WaterLiquidBuffer", 16384);
+    liquidBuffers.magmaLiquidBuffer = m_device->createUniformBuffer("Scene_MagmaLiquidBuffer", 16384);
+    liquidBuffers.mercuryLiquidBuffer = m_device->createUniformBuffer("Scene_MercuryLiquidBuffer", 16384);
+    liquidBuffers.fogLiquidBuffer = m_device->createUniformBuffer("Scene_FogLiquidBuffer", 16384);
+    liquidBuffers.leyLineLiquidBuffer = m_device->createUniformBuffer("Scene_LeyLineLiquidBuffer", 16384);
+    liquidBuffers.felLiquidBuffer = m_device->createUniformBuffer("Scene_FelLiquidBuffer", 16384);
+    liquidBuffers.swampLiquidBuffer = m_device->createUniformBuffer("Scene_SwampLiquidBuffer", 16384);
+    liquidBuffers.azeritheLiquidBuffer = m_device->createUniformBuffer("Scene_AzeritheLiquidBuffer", 16384);
 
     {
         const float epsilon = 0.f;
@@ -133,14 +189,12 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
     //Framebuffers for rendering
     auto const dataFormat = { ITextureFormat::itRGBA};
 
-    m_renderPass = m_device->getRenderPass(dataFormat, ITextureFormat::itDepth32,
-//                                          VK_SAMPLE_COUNT_1_BIT,
-                                          sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
-                                          true, false, true, true);
     defaultView = std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, false);
 
+    m_renderPass = defaultView->getRenderPass();
+
     sceneWideChunk = std::make_shared<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>>(hDevice, 3, uboBuffer);
-    MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig, {})
+    MaterialBuilderVLK::fromShader(m_device, {"stub", "commonSceneData"}, SceneDataSetStubShaderConfig)
         .createDescriptorSet(0, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo_dynamic(0, sceneWideChunk)
@@ -150,6 +204,52 @@ MapSceneRenderForwardVLK::MapSceneRenderForwardVLK(const HGDeviceVLK &hDevice, C
 
             sceneWideDS = ds;
         });
+
+    defaultM2CommonDS = std::dynamic_pointer_cast<IM2ModelDataVLK>(createM2ModelMat(0,0,0,0))->m2CommonDS;
+
+    // Create separate descriptor sets for each liquid material type
+    {
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/waterLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                waterLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/magmaLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                magmaLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/mercuryLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                mercuryLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/fogLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                fogLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/leyLineLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                leyLineLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/felLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                felLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/swampLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                swampLiquidTexturesDS = ds;
+            }).toMaterial();
+        MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/azeritheLiquidShader"},
+                                       liquidShaderConfig)
+            .createDescriptorSet(2, [&](std::shared_ptr<GDescriptorSet> &ds) {
+                azeritheLiquidTexturesDS = ds;
+            }).toMaterial();
+    }
 }
 
 // ------------------
@@ -294,7 +394,7 @@ MapSceneRenderForwardVLK::createAdtMaterial(const PipelineTemplate &pipelineTemp
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockVSPS>>(uboStaticBuffer);
     auto fragmentData = std::make_shared<CBufferChunkVLK<ADT::meshWideBlockPS>>(uboBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"adtShader", "adtShader"}, forwardShaderConfig)
         .createPipeline(m_emptyADTVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&vertexFragmentData, &fragmentData, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
@@ -304,15 +404,24 @@ MapSceneRenderForwardVLK::createAdtMaterial(const PipelineTemplate &pipelineTemp
         })
         .createDescriptorSet(2, [&adtMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .texture(0, adtMaterialTemplate.textures[0])
-                .texture(1, adtMaterialTemplate.textures[1])
-                .texture(2, adtMaterialTemplate.textures[2])
-                .texture(3, adtMaterialTemplate.textures[3])
-                .texture(4, adtMaterialTemplate.textures[4])
-                .texture(5, adtMaterialTemplate.textures[5])
-                .texture(6, adtMaterialTemplate.textures[6])
-                .texture(7, adtMaterialTemplate.textures[7])
-                .texture(8, adtMaterialTemplate.textures[8]);
+                .texture(0, adtMaterialTemplate.layerTextures[0])
+                .texture(1, adtMaterialTemplate.layerTextures[1])
+                .texture(2, adtMaterialTemplate.layerTextures[2])
+                .texture(3, adtMaterialTemplate.layerTextures[3])
+                .texture(4, adtMaterialTemplate.blendTextures[0])
+                .texture(5, adtMaterialTemplate.heightTextures[0])
+                .texture(6, adtMaterialTemplate.heightTextures[1])
+                .texture(7, adtMaterialTemplate.heightTextures[2])
+                .texture(8, adtMaterialTemplate.heightTextures[3])
+                .texture(9, adtMaterialTemplate.layerTextures[4])
+                .texture(10, adtMaterialTemplate.layerTextures[5])
+                .texture(11, adtMaterialTemplate.layerTextures[6])
+                .texture(12, adtMaterialTemplate.layerTextures[7])
+                .texture(13, adtMaterialTemplate.blendTextures[1])
+                .texture(14, adtMaterialTemplate.heightTextures[4])
+                .texture(15, adtMaterialTemplate.heightTextures[5])
+                .texture(16, adtMaterialTemplate.heightTextures[6])
+                .texture(17, adtMaterialTemplate.heightTextures[7]);
         })
         .toMaterial<IADTMaterial>([&vertexFragmentData, &fragmentData](IADTMaterial *instance) -> void {
             instance->m_materialVSPS = vertexFragmentData;
@@ -326,11 +435,10 @@ std::shared_ptr<IM2Material>
 MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                            const PipelineTemplate &pipelineTemplate,
                                            const M2MaterialTemplate &m2MaterialTemplate) {
-
-    auto &l_sceneWideChunk = sceneWideChunk;
+ auto &l_sceneWideChunk = sceneWideChunk;
     auto vertexFragmentData = std::make_shared<CBufferChunkVLK<M2::meshWideBlockVSPS>>(uboStaticBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->m2CommonDS)
@@ -356,6 +464,7 @@ MapSceneRenderForwardVLK::createM2Material(const std::shared_ptr<IM2ModelData> &
 
 
     return material;
+
 }
 
 std::shared_ptr<IM2ProjectiveMaterial> MapSceneRenderForwardVLK::createM2ProjectiveMaterial(
@@ -373,21 +482,19 @@ std::shared_ptr<IM2WaterFallMaterial> MapSceneRenderForwardVLK::createM2Waterfal
     auto waterfallCommonData = std::make_shared<CBufferChunkVLK<M2::WaterfallData::WaterfallCommon>>(uboStaticBuffer);
 
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2ForwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterfallShader", "waterfallShader"}, m2ForwardShaderConfig)
         .createPipeline(m_emptyM2VAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .bindDescriptorSet(1, std::dynamic_pointer_cast<IM2ModelDataVLK>(m2ModelData)->m2CommonDS)
-        .createDescriptorSet(2, [&waterfallCommonData](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(2, [&waterfallCommonData, m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
-                .ubo(0, *waterfallCommonData).delayUpdate();
-        })
-        .createDescriptorSet(3, [&m2MaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
-            ds->beginUpdate()
-                .texture(0, m2MaterialTemplate.textures[0])
-                .texture(1, m2MaterialTemplate.textures[1])
-                .texture(2, m2MaterialTemplate.textures[2])
-                .texture(3, m2MaterialTemplate.textures[3])
-                .texture(4, m2MaterialTemplate.textures[4]);
+                .ubo(0, *waterfallCommonData)
+                .texture(1, m2MaterialTemplate.textures[0])
+                .texture(2, m2MaterialTemplate.textures[1])
+                .texture(3, m2MaterialTemplate.textures[2])
+                .texture(4, m2MaterialTemplate.textures[3])
+                .texture(5, m2MaterialTemplate.textures[4])
+                .delayUpdate();
         })
         .toMaterial<IM2WaterFallMaterial>([&waterfallCommonData](IM2WaterFallMaterial *instance) -> void {
             instance->m_waterfallCommon = waterfallCommonData;
@@ -403,7 +510,7 @@ std::shared_ptr<IM2ParticleMaterial> MapSceneRenderForwardVLK::createM2ParticleM
     auto &l_sceneWideChunk = sceneWideChunk;
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Particle::meshParticleWideBlockPS>>(uboBuffer); ;
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"m2ParticleShader", "m2ParticleShader"}, forwardShaderConfig)
         .createPipeline(m_emptyM2ParticleVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
@@ -430,7 +537,7 @@ std::shared_ptr<IM2RibbonMaterial> MapSceneRenderForwardVLK::createM2RibbonMater
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<Ribbon::meshRibbonWideBlockPS>>(uboBuffer); ;
     auto &l_m2ModelData = m2ModelData;
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"ribbonShader", "ribbonShader"}, forwardShaderConfig)
         .createPipeline(m_emptyM2RibbonVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&l_sceneWideChunk, &l_fragmentData, &l_m2ModelData](std::shared_ptr<GDescriptorSet> &ds) {
@@ -467,7 +574,7 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
     auto l_fragmentData = std::make_shared<CBufferChunkVLK<WMO::meshWideBlockPS>>(uboStaticBuffer); ;
 
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"wmoShader", "wmoShader"}, forwardShaderConfig)
         .createPipeline(m_emptyWMOVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [l_sceneWideChunk, &wmoModelWide, l_vertexData, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
@@ -498,32 +605,203 @@ std::shared_ptr<IWMOMaterial> MapSceneRenderForwardVLK::createWMOMaterial(const 
     return material;
 }
 
-std::shared_ptr<IWaterMaterial> MapSceneRenderForwardVLK::createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                 const PipelineTemplate &pipelineTemplate,
                                                 const WaterMaterialTemplate &waterMaterialTemplate) {
-    auto l_fragmentData = std::make_shared<CBufferChunkVLK<Water::meshWideBlockPS>>(uboStaticBuffer); ;
 
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
     auto &l_sceneWideChunk = sceneWideChunk;
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"waterShader", "waterShader"}, forwardShaderConfig)
         .createPipeline(m_emptyWaterVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
-        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, l_fragmentData](std::shared_ptr<GDescriptorSet> &ds) {
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(0, BufferChunkHelperVLK::cast(modelWide))
-                .ubo(1, *l_fragmentData).delayUpdate();
+                .delayUpdate();
         })
         .createDescriptorSet(2, [&waterMaterialTemplate](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .texture(0, waterMaterialTemplate.texture);
         })
-        .toMaterial<IWaterMaterial>([&l_fragmentData](IWaterMaterial *instance) -> void {
-            instance->m_materialPS = l_fragmentData;
+        .toMaterial<ILiquidMaterial>([](ILiquidMaterial *instance) -> void {
+
         });
 
-    material->color = waterMaterialTemplate.color;
-    material->liquidFlags = waterMaterialTemplate.liquidFlags;
     material->materialId = waterMaterialTemplate.liquidMaterialId;
+    material->m_instance = liquidInstanceData;
 
+    return material;
+}
+
+const PipelineTemplate s_LiquidPipelineTemplate = []{
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+    pipelineTemplate.depthWrite = true;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+    return pipelineTemplate;
+}();
+
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createWaterLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<WaterLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/waterLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::WaterData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createMagmaLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<MagmaLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/magmaLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::MagmaData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createMercuryLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<MercuryLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/mercuryLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::MercuryData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createFogLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<FogLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/fogLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::FogData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createLeyLineLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<LeyLineLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/leyLineLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::LeyLineData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createFelLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<FelLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/felLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::FelData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createSwampLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<SwampLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/swampLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::SwampData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
+    return material;
+}
+
+std::shared_ptr<ILiquidMaterial> MapSceneRenderForwardVLK::createAzeritheLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<AzeritheLiquidData> &liquidData) {
+    auto liquidInstanceData = std::make_shared<CBufferChunkVLK<Liquid::LiquidInstance>>(uboStaticBuffer);
+    auto &l_sceneWideChunk = sceneWideChunk;
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"liquids/liquidShader", "liquids/forward/azeritheLiquidShader"}, forwardShaderConfig)
+        .createPipeline(m_emptyWaterVAO, m_renderPass, s_LiquidPipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [l_sceneWideChunk, &modelWide, &liquidInstanceData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, BufferChunkHelperVLK::cast(modelWide))
+                .ubo(1, *liquidInstanceData)
+                .delayUpdate();
+        })
+        .bindDescriptorSet(2, std::static_pointer_cast<LiquidDataForwardVLK<Liquid::AzeritheData>>(liquidData)->getDescriptorSet())
+        .toMaterial<ILiquidMaterial>([&liquidData](ILiquidMaterial *instance) -> void {
+            instance->m_ldData = liquidData;
+        });
+    material->m_instance = liquidInstanceData;
     return material;
 }
 
@@ -533,7 +811,7 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
     auto &l_sceneWideChunk = sceneWideChunk;
     auto skyColors = std::make_shared<CBufferChunkVLK<DnSky::meshWideBlockVS>>(uboBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"skyConus", "skyConus"}, forwardShaderConfig)
         .createPipeline(m_emptySkyVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&skyColors, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
@@ -547,11 +825,32 @@ std::shared_ptr<ISkyMeshMaterial> MapSceneRenderForwardVLK::createSkyMeshMateria
     return material;
 }
 
+std::shared_ptr<IPlanetMaterial> MapSceneRenderForwardVLK::createPlanetMaterial(const PipelineTemplate &pipelineTemplate, const HGSamplableTexture &texture) {
+    auto planetData = std::make_shared<CBufferChunkVLK<Planet::meshWideBlockVS>>(uboBuffer);
+
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"planetShader", "planetShader"}, forwardShaderConfig)
+        .createPipeline(m_emptySkyVAO, m_renderPass, pipelineTemplate)
+        .bindDescriptorSet(0, sceneWideDS)
+        .createDescriptorSet(1, [&planetData](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .ubo(0, *planetData).delayUpdate();
+        })
+        .createDescriptorSet(2, [&texture](std::shared_ptr<GDescriptorSet> &ds) {
+            ds->beginUpdate()
+                .texture(0, texture).delayUpdate();
+        })
+        .toMaterial<IPlanetMaterial>([&planetData](IPlanetMaterial *instance) -> void {
+            instance->m_planetData = planetData;
+        });
+
+    return material;
+}
+
 std::shared_ptr<IPortalMaterial> MapSceneRenderForwardVLK::createPortalMaterial(const PipelineTemplate &pipelineTemplate) {
     auto &l_sceneWideChunk = sceneWideChunk;
     auto materialPS = std::make_shared<CBufferChunkVLK<DrawPortalShader::meshWideBlockPS>>(uboBuffer);
 
-    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawPortalShader", "drawPortalShader"}, forwardShaderConfig, {})
+    auto material = MaterialBuilderVLK::fromShader(m_device, {"drawPortalShader", "drawPortalShader"}, forwardShaderConfig)
         .createPipeline(m_emptyPortalVAO, m_renderPass, pipelineTemplate)
         .bindDescriptorSet(0, sceneWideDS)
         .createDescriptorSet(1, [&materialPS, &l_sceneWideChunk](std::shared_ptr<GDescriptorSet> &ds) {
@@ -565,7 +864,7 @@ std::shared_ptr<IPortalMaterial> MapSceneRenderForwardVLK::createPortalMaterial(
     return material;
 }
 
-std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) {
+std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount, uint32_t objectId) {
     auto result = std::make_shared<IM2ModelDataVLK>();
 
     BufferChunkHelperVLK::create(uboBuffer, result->m_placementMatrix);
@@ -574,8 +873,10 @@ std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bon
     BufferChunkHelperVLK::create(uboBuffer, result->m_textureWeights, sizeof(float) * textureWeightsCount);
     BufferChunkHelperVLK::create(uboBuffer, result->m_textureMatrices, sizeof(mathfu::mat4) * textureMatricesCount);
     BufferChunkHelperVLK::create(uboBuffer, result->m_modelFragmentData);
+    result->m_modelFragmentData->getObject().objectId = objectId;
+    result->objectId = objectId;
 
-    MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig, {})
+    MaterialBuilderVLK::fromShader(m_device, {"m2Shader", "m2Shader"}, m2ForwardShaderConfig)
         .createDescriptorSet(1, [&](std::shared_ptr<GDescriptorSet> &ds) {
             ds->beginUpdate()
                 .ubo(0, BufferChunkHelperVLK::cast(result->m_placementMatrix))
@@ -590,98 +891,9 @@ std::shared_ptr<IM2ModelData> MapSceneRenderForwardVLK::createM2ModelMat(int bon
     return result;
 }
 
-inline void MapSceneRenderForwardVLK::drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType ) {
-    if (mesh == nullptr) return;
-
-    const auto &meshVlk = (GMeshVLK*) mesh.get();
-    auto vulkanBindings = std::dynamic_pointer_cast<GVertexBufferBindingsVLK>(mesh->bindings());
-
-    //1. Bind VBOs
-    cmdBuf.bindVertexBuffers(vulkanBindings->getVertexBuffers());
-
-    //2. Bind IBOs
-    cmdBuf.bindIndexBuffer(vulkanBindings->getIndexBuffer());
-
-    //3. Bind pipeline
-    const auto &material = meshVlk->material();
-    cmdBuf.bindPipeline(material->getPipeline());
-
-    //4. Bind Descriptor sets
-    auto const &descSets = material->getDescriptorSets();
-    cmdBuf.bindDescriptorSets(VK_PIPELINE_BIND_POINT_GRAPHICS, descSets);
-
-    //5. Set view port
-    cmdBuf.setViewPort(viewportType);
-
-    //6. Set scissors
-    if (meshVlk->scissorEnabled()) {
-        cmdBuf.setScissors(meshVlk->scissorOffset(), meshVlk->scissorSize());
-    } else {
-        cmdBuf.setDefaultScissors();
-    }
-
-    //7. Draw the mesh
-    cmdBuf.drawIndexed(meshVlk->end(), 1, meshVlk->start()/2, meshVlk->instanceIndex);
-}
-
-class COpaqueMeshCollectorForwardVLK : public COpaqueMeshCollector{
-public:
-    COpaqueMeshCollectorForwardVLK() {
-        commonMeshes.reserve(10000);
-        waterMeshes.reserve(1000);
-    }
-private:
-    std::vector<HGMesh> commonMeshes;
-    std::vector<HGMesh> projectiveMeshes;
-    std::vector<HGMesh> waterMeshes;
-public:
-    void addM2Mesh(const HGM2Mesh &mesh) override {
-        commonMeshes.push_back(mesh);
-    };
-    void addWMOMesh(const HGMesh &mesh) override {
-        commonMeshes.push_back(mesh);
-    } ;
-    void addWaterMesh(const HGMesh &mesh) override {
-        waterMeshes.push_back(mesh);
-    } ;
-    void addADTMesh(const HGMesh &mesh) override {
-        commonMeshes.push_back(mesh);
-    } ;
-
-    void addMesh(const HGMesh &mesh) override {
-        commonMeshes.push_back(mesh);
-    };
-
-    void addProjectiveMesh(const HGMesh &mesh) override {
-        projectiveMeshes.push_back(mesh);
-    };
-
-
-    void render(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
-         //Render commonMeshes
-        for (auto const &mesh : commonMeshes ) {
-            MapSceneRenderForwardVLK::drawMesh(cmdBuf, mesh, viewPortType);
-        }
-    }
-    void renderWater(CmdBufRecorder &cmdBuf, CmdBufRecorder::ViewportType viewPortType) {
-        for (auto const &mesh : waterMeshes ) {
-            MapSceneRenderForwardVLK::drawMesh(cmdBuf, mesh, viewPortType);
-        }
-    }
-    COpaqueMeshCollector* clone() override {
-        return new COpaqueMeshCollectorForwardVLK();
-    }
-    void merge(COpaqueMeshCollector& collector) override {
-        auto l_collector = (COpaqueMeshCollectorForwardVLK &) collector;
-
-        commonMeshes.insert(commonMeshes.end(), l_collector.commonMeshes.begin(), l_collector.commonMeshes.end());
-        waterMeshes.insert(waterMeshes.end(), l_collector.waterMeshes.begin(), l_collector.waterMeshes.end());
-    }
-};
-
 std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams,
                                              const std::shared_ptr<MapRenderPlan> &framePlan) {
-    TracyMessageStr(("Update stage frame = " + std::to_string(m_device->getCurrentProcessingFrameNumber())));
+    TracyMessageStr(("Update stage frame = " + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
 
     ZoneScoped;
     auto l_this = std::dynamic_pointer_cast<MapSceneRenderForwardVLK>(this->shared_from_this());
@@ -690,12 +902,11 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 
     //Create meshes
     std::unique_ptr<COpaqueMeshCollectorForwardVLK> u_collector = std::make_unique<COpaqueMeshCollectorForwardVLK>();
-    std::unique_ptr<COpaqueMeshCollectorForwardVLK> u_skyCollector = std::make_unique<COpaqueMeshCollectorForwardVLK>();
     auto transparentMeshes = std::make_shared<framebased::vector<HGSortableMesh>>();
 
 
 
-    auto skyTransparentMeshes = std::make_shared<framebased::vector<HGSortableMesh>>();
+    auto skyMeshes = std::make_shared<framebased::vector<HGMesh>>();
     framePlan->m2Array.lock();
     framePlan->wmoArray.lock();
     framePlan->wmoGroupArray.lock();
@@ -708,7 +919,7 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
     //    TracyMessageL("collect meshes created");
 //    std::future<void> collectMeshAsync = std::async(std::launch::async,
 //                                                    [&]() {
-    collectMeshes(framePlan, *u_collector, *u_skyCollector, transparentMeshes, skyTransparentMeshes);
+    collectMeshes(framePlan, *u_collector, transparentMeshes, skyMeshes);
 //                                                    }
 //    );
 
@@ -734,43 +945,44 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
 //    }
 
     bool renderSky = framePlan->renderSky;
-    auto skyMesh = framePlan->skyMesh;
-    auto skyMesh0x4 = framePlan->skyMesh0x4;
-    return createRenderFuncVLK([l_this, mapScene, framePlan, transparentMeshes, frameInputParams](CmdBufRecorder &uploadCmd) -> void {
-        {
-            ZoneScopedN("Post Load");
-            //Do postLoad here. So creation of stuff is done from main thread
-
-            mapScene->doPostLoad(l_this, framePlan);
-            for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
-                auto updatingTarget = std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
-                if (!updatingTarget) updatingTarget = l_this->defaultView;
-
-                updatingTarget->update(
-                    renderTarget.viewPortDimensions.maxs[0],
-                    renderTarget.viewPortDimensions.maxs[1],
-                    framePlan->frameDependentData->currentGlow
-                );
-            }
-        }
-        {
-            ZoneScopedN("Collect Portal Meshes");
-            //And add portal meshes
-            for (auto const &view: framePlan->viewsHolder.getInteriorViews()) {
-                view->collectPortalMeshes(*transparentMeshes);
-            }
+    return createRenderFuncVLK(
+        [l_this, mapScene, framePlan, transparentMeshes, frameInputParams]() -> void {
             {
-                auto const &exteriorView = framePlan->viewsHolder.getExterior();
-                if (exteriorView != nullptr) {
-                    exteriorView->collectPortalMeshes(*transparentMeshes);
+                ZoneScopedN("Post Load");
+                //Do postLoad here. So creation of stuff is done from main thread
+
+                mapScene->doPostLoad(l_this, framePlan);
+                for (auto &renderTarget : frameInputParams->frameParameters->renderTargets) {
+                    auto updatingTarget = std::dynamic_pointer_cast<RenderViewForwardVLK>(renderTarget.target);
+                    if (!updatingTarget) updatingTarget = l_this->defaultView;
+
+                    updatingTarget->update(
+                        renderTarget.viewPortDimensions.maxs[0],
+                        renderTarget.viewPortDimensions.maxs[1],
+                        framePlan->frameDependentData->currentGlow
+                    );
                 }
             }
-        }
-        {
-            ZoneScopedN("Set Last Created Plan");
-            //Needs to be executed only after lock
-            l_this->m_lastCreatedPlan = framePlan;
-        }
+            {
+                ZoneScopedN("Collect Portal Meshes");
+                //And add portal meshes
+                for (auto const &view: framePlan->viewsHolder.getInteriorViews()) {
+                    view->collectPortalMeshes(*transparentMeshes);
+                }
+                {
+                    auto const &exteriorView = framePlan->viewsHolder.getExterior();
+                    if (exteriorView != nullptr) {
+                        exteriorView->collectPortalMeshes(*transparentMeshes);
+                    }
+                }
+            }
+            {
+                ZoneScopedN("Set Last Created Plan");
+                //Needs to be executed only after lock
+                l_this->m_lastCreatedPlan = framePlan;
+            }
+        },
+        [l_this](CmdBufRecorder &uploadCmd) -> void {
         // ---------------------
         // Upload stuff
         // ---------------------
@@ -790,15 +1002,12 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
             }
         }
    }, [transparentMeshes, l_opaqueMeshes = std::move(u_collector),
-        l_skyOpaqueMeshes = std::move(u_skyCollector),
-    skyTransparentMeshes,
+        skyMeshes,
     renderSky,
-    skyMesh,
-    skyMesh0x4,
     mapScene, framePlan,
     l_this, frameInputParams](CmdBufRecorder &frameBufCmd, CmdBufRecorder &swapChainCmd) -> void {
 
-        TracyMessageStr(("Draw stage frame = " + std::to_string(l_this->m_device->getCurrentProcessingFrameNumber())));
+        TracyMessageStr(("Draw stage frame = " + std::to_string(FrameContext::getCurrentProcessingFrameNumber())));
 
         // ----------------------
         // Draw meshes
@@ -822,33 +1031,12 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                         l_opaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_usual);
                     }
                     {
-                        //Sky opaque
-                        if (renderSky && skyMesh)
-                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
-
-                        l_skyOpaqueMeshes->render(frameBufCmd, CmdBufRecorder::ViewportType::vp_skyBox);
-                    }
-                    {
                         //Sky transparent
-                        for (int i = 0; i < skyTransparentMeshes->size(); i++) {
-                            auto const &mesh = skyTransparentMeshes->at(i);
+                        for (int i = 0; i < skyMeshes->size(); i++) {
+                            auto const &mesh = skyMeshes->at(i);
 
-//                    std::string debugMess =
-//                        "Drawing mesh "
-//                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
-//                        " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
-//                        " sortDistance = " + std::to_string(mesh->getSortDistance()) +
-//                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
-//
-//                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
-
-                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
+                            frameBufCmd.drawMesh( mesh, CmdBufRecorder::ViewportType::vp_skyBox);
                         }
-                        if (renderSky && skyMesh0x4)
-                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, skyMesh0x4,
-                                                               CmdBufRecorder::ViewportType::vp_skyBox);
                     }
                     {
                         //Render liquids
@@ -859,21 +1047,12 @@ std::unique_ptr<IRenderFunction> MapSceneRenderForwardVLK::update(const std::sha
                         ZoneScopedN("submit transparent");
                         for (int i = 0; i < transparentMeshes->size(); i++) {
                             auto const &mesh = transparentMeshes->at(i);
-//
-//                    std::string debugMess =
-//                        "Drawing mesh "
-//                        " meshType = " + std::to_string((int)mesh->getMeshType()) +
-//                        " priorityPlane = " + std::to_string(mesh->priorityPlane()) +
-//                        " sortDistance = " + std::to_string(mesh->getSortDistance()) +
-//                        " blendMode = " + std::to_string((int)mesh->getGxBlendMode());
-//
-//                    auto debugLabel = frameBufCmd.beginDebugLabel(debugMess, {1.0, 0, 0, 1.0});
 
-                            MapSceneRenderForwardVLK::drawMesh(frameBufCmd, mesh,
-                                                               CmdBufRecorder::ViewportType::vp_usual);
+                            frameBufCmd.drawMesh( mesh, CmdBufRecorder::ViewportType::vp_usual);
                         }
                     }
                 }
+
                 {
                     currentView->doPostGlow(frameBufCmd);
                     if (currentView == l_this->defaultView) {
@@ -934,9 +1113,9 @@ HGSortableMesh MapSceneRenderForwardVLK::createWaterMesh(gMeshTemplate &meshTemp
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, priorityPlane);
     return mesh;
 }
-HGSortableMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) {
+HGSortableMesh MapSceneRenderForwardVLK::createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum, int canHaveExteriorLit, uint32_t wmoObjId) {
     auto mesh = meshFactory->createObject(meshTemplate, std::dynamic_pointer_cast<ISimpleMaterialVLK>(material), 0, 0);
-    mesh->instanceIndex = groupNum;
+    mesh->instanceIndex = ((canHaveExteriorLit & 1) << 10) | (groupNum & ((1 << 10) -1));
     return mesh;
 }
 
@@ -944,4 +1123,52 @@ std::shared_ptr<IRenderView> MapSceneRenderForwardVLK::createRenderView(bool cre
     return std::make_shared<RenderViewForwardVLK>(m_device, uboBuffer, m_drawQuadVao, createOutput);
 }
 
+// Explicit template instantiations
+template class LiquidDataForwardVLK<Liquid::WaterData>;
+template class LiquidDataForwardVLK<Liquid::MagmaData>;
+template class LiquidDataForwardVLK<Liquid::MercuryData>;
+template class LiquidDataForwardVLK<Liquid::FogData>;
+template class LiquidDataForwardVLK<Liquid::LeyLineData>;
+template class LiquidDataForwardVLK<Liquid::FelData>;
+template class LiquidDataForwardVLK<Liquid::SwampData>;
+template class LiquidDataForwardVLK<Liquid::AzeritheData>;
 
+std::shared_ptr<WaterLiquidData> MapSceneRenderForwardVLK::createWaterLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::WaterData>>(liquidBuffers.waterLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::WaterData>>(waterLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<MagmaLiquidData> MapSceneRenderForwardVLK::createMagmaLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::MagmaData>>(liquidBuffers.magmaLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::MagmaData>>(magmaLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<MercuryLiquidData> MapSceneRenderForwardVLK::createMercuryLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::MercuryData>>(liquidBuffers.mercuryLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::MercuryData>>(mercuryLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<FogLiquidData> MapSceneRenderForwardVLK::createFogLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::FogData>>(liquidBuffers.fogLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::FogData>>(fogLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<LeyLineLiquidData> MapSceneRenderForwardVLK::createLeyLineLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::LeyLineData>>(liquidBuffers.leyLineLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::LeyLineData>>(leyLineLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<FelLiquidData> MapSceneRenderForwardVLK::createFelLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::FelData>>(liquidBuffers.felLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::FelData>>(felLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<SwampLiquidData> MapSceneRenderForwardVLK::createSwampLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::SwampData>>(liquidBuffers.swampLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::SwampData>>(swampLiquidTexturesDS, liquidData);
+}
+
+std::shared_ptr<AzeritheLiquidData> MapSceneRenderForwardVLK::createAzeritheLiquidData() {
+    auto liquidData = std::make_shared<CBufferChunkVLK<Liquid::AzeritheData>>(liquidBuffers.azeritheLiquidBuffer);
+    return std::make_shared<LiquidDataForwardVLK<Liquid::AzeritheData>>(azeritheLiquidTexturesDS, liquidData);
+}

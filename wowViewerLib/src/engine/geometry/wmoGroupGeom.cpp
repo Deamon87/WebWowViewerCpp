@@ -35,8 +35,17 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
                         'MOPY', {
                             [](WmoGroupGeom& object, ChunkData& chunkData){
                                 debuglog("Entered MOPY");
-                                object.mopyLen = chunkData.chunkLen / sizeof(SMOPoly);
+                                object.mopyLen = chunkData.chunkLen / sizeof(MOPY);
                                 chunkData.readValues(object.mopy, object.mopyLen);
+                            },
+                        }
+                    },
+                    {
+                        'MPY2', {
+                            [](WmoGroupGeom& object, ChunkData& chunkData){
+                                debuglog("Entered MPY2");
+                                object.mopy2Len = chunkData.chunkLen / sizeof(MOPY2);
+                                chunkData.readValues(object.mopy2, object.mopy2Len);
                             },
                         }
                     },
@@ -272,10 +281,10 @@ chunkDef<WmoGroupGeom> WmoGroupGeom::wmoGroupTable = {
     }
 };
 
-void WmoGroupGeom::process(HFileContent wmoGroupFile, const std::string &fileName) {
+void WmoGroupGeom::process(HFileContent wmoGroupFile) {
     m_wmoGroupFile = wmoGroupFile;
 
-    CChunkFileReader reader(*m_wmoGroupFile.get(), fileName);
+    CChunkFileReader reader(*m_wmoGroupFile.get(), getFileNameOrDataId());
     reader.processFile(*this, &WmoGroupGeom::wmoGroupTable);
 
     fsStatus = FileStatus::FSLoaded;
@@ -357,7 +366,12 @@ void WmoGroupGeom::fixColorVertexAlpha(SMOHeader *mohd) {
 }
 
 
-HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer) {
+HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer, bool ignoreColors) {
+    bool needToRecreate = (combinedVBO != nullptr) && (m_colorsIgnored != ignoreColors);
+    if (needToRecreate) {
+        combinedVBO = nullptr;
+    }
+
     if (combinedVBO == nullptr) {
         combinedVBO = sceneRenderer->createWMOVertexBuffer(verticesLen * sizeof(WMOVertex));
 
@@ -365,6 +379,8 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer) 
 
         static const C2Vector c2ones = C2Vector(mathfu::vec2(1.0, 1.0));
         static const C3Vector c3zeros = C3Vector(mathfu::vec3(0, 0, 0));
+
+        bool isExterior = this->mogp->flags.EXTERIOR || this->mogp->flags.EXTERIOR_LIT;
 
         for (int i = 0; i < verticesLen; i++) {
             WMOVertex &format = buffer[i];
@@ -394,12 +410,18 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer) 
             } else {
                 format.textCoordinate4 = c2ones;
             }
-            if (cvLen > 0) {
+            if (cvLen > 0 && !ignoreColors) {
                 format.color = colorArray[i];
             } else {
-                format.color.r = 0;
-                format.color.g = 0;
-                format.color.b = 0;
+                if (ignoreColors && !isExterior) {
+                    format.color.r = 0x7F;
+                    format.color.g = 0x7F;
+                    format.color.b = 0x7F;
+                } else {
+                    format.color.r = 0;
+                    format.color.g = 0;
+                    format.color.b = 0;
+                }
                 format.color.a = 0;
             }
             if (cvLen2 > 0) {
@@ -420,6 +442,8 @@ HGVertexBuffer WmoGroupGeom::getVBO(const HMapSceneBufferCreate &sceneRenderer) 
             }
         }
 
+        m_colorsIgnored = ignoreColors;
+
         //combinedVBO->uploadData(&buffer[0], (int)(verticesLen * sizeof(WMOVertex)));
     }
 
@@ -437,16 +461,21 @@ HGIndexBuffer WmoGroupGeom::getIBO(const HMapSceneBufferCreate &sceneRenderer) {
     return indexVBO;
 }
 
-HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd) {
+HGVertexBufferBindings WmoGroupGeom::getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd, bool ignoreColors) {
+    bool needToRecreate = (vertexBufferBindings != nullptr) && (m_colorsIgnored != ignoreColors);
+    if (needToRecreate) {
+        vertexBufferBindings = nullptr;
+    }
+
     if (vertexBufferBindings == nullptr) {
         //Do postLoading stuff here
-        if (mohd) {
+        if (!needToRecreate && mohd) { // if needToRecreate is true - it means this WMO was already been loaded once
             fixColorVertexAlpha(mohd);
             if (!mohd->flags.flag_attenuate_vertices_based_on_distance_to_portal) {
                 this->m_attenuateFunc(*this);
             }
         }
-        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer), getIBO(sceneRenderer));
+        vertexBufferBindings = sceneRenderer->createWmoVAO(getVBO(sceneRenderer, ignoreColors), getIBO(sceneRenderer));
     }
 
     return vertexBufferBindings;
@@ -548,12 +577,12 @@ HGVertexBufferBindings WmoGroupGeom::getWaterVertexBindings(const HMapSceneBuffe
                 ));
                 if (finalLiquidType == LiquidTypes::LIQUID_WMO_Magma) {
                     lvfVertex.uv = mathfu::vec2(
-                        m_liquidVerticles[p].magmaVert.s * 3.0 / 256.0,
-                        m_liquidVerticles[p].magmaVert.t * 3.0 / 256.0
+                        m_liquidVerticles[p].magmaVert.s * 3.0f / 256.0f,
+                        m_liquidVerticles[p].magmaVert.t * 3.0f / 256.0f
                     );
                 } else {
-                    lvfVertex.uv = mathfu::vec2(lvfVertex.pos_transp.x / (1600.0 / 3.0 / 16.0),
-                                                lvfVertex.pos_transp.y / (1600.0 / 3.0 / 16.0));
+                    lvfVertex.uv = mathfu::vec2(lvfVertex.pos_transp.x / (1600.0f / 3.0f / 16.0f),
+                                                lvfVertex.pos_transp.y / (1600.0f / 3.0f / 16.0f));
                 }
 
                 minX = std::min(minX, lvfVertex.pos_transp.x);  maxX = std::max(maxX, lvfVertex.pos_transp.x);

@@ -10,6 +10,8 @@
 #include "adtObject.h"
 #include <ShaderDefinitions.h>
 #include "../../algorithms/mathHelper.h"
+#include "../../algorithms/mathHelper_culling.h"
+#include "../../algorithms/mathHelper_culling_sse.h"
 #include "../../persistance/adtFile.h"
 #include "../../persistance/wdtFile.h"
 #include "../../../gapi/interface/IDevice.h"
@@ -20,7 +22,7 @@
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include "../../../renderer/frame/FrameProfile.h"
 
-void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer) {
+void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager) {
     ZoneScoped;
 //    std::cout << "AdtObject::loadingFinished finished called";
 
@@ -29,17 +31,20 @@ void AdtObject::loadingFinished(const HMapSceneBufferCreate &sceneRenderer) {
 
     loadAlphaTextures();
 
+    calcBoundingBoxes();
+
     createVBO(sceneRenderer);
     createMeshes(sceneRenderer);
 
-    calcBoundingBoxes();
 
     loadM2s();
     loadWmos();
 
     m_loaded = true;
 
-    loadWater(sceneRenderer);
+
+
+    loadWater(sceneRenderer, liquidMaterialManager);
 }
 
 void AdtObject::loadM2s() {
@@ -111,12 +116,12 @@ void AdtObject::loadWmos() {
         if (!mapDef.flags.modf_entry_is_filedata_id) {
             std::string fileName;
             fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDef.nameId]];
-            auto wmoObject = m_mapApi->getWmoObject(fileName, mapDef);
+            auto wmoObject = m_mapApi->getWmoObject(fileName, mapDef, m_adtFileObj->m_MWDR, m_adtFileObj->m_MWDS);
             objectLods[0].wmoObjects[j] = wmoObject;
             objectLods[0].wmoObjectIds[j] = wmoObject->getObjectId();
         } else {
             uint32_t fileDataId = mapDef.nameId;
-            auto wmoObject = m_mapApi->getWmoObject(fileDataId, mapDef);
+            auto wmoObject = m_mapApi->getWmoObject(fileDataId, mapDef, m_adtFileObj->m_MWDR, m_adtFileObj->m_MWDS);
             objectLods[0].wmoObjects[j] = wmoObject;
             objectLods[0].wmoObjectIds[j] = wmoObject->getObjectId();
         }
@@ -140,28 +145,24 @@ void AdtObject::loadWmos() {
         std::string fileName;
         auto &mapDefLod = m_adtFileObjLod->mapObjDefObj1[i];
         if (mapDefLod.flags.modf_entry_is_filedata_id == 0) {
-            fileName = &m_adtFileObj->wmoNamesField[m_adtFileObj->mwid[mapDefLod.nameId]];
+            fileName = &m_adtFileObjLod->wmoNamesField[m_adtFileObjLod->mwid[mapDefLod.nameId]];
 
-            auto wmoObject = m_mapApi->getWmoObject(fileName, mapDefLod);
+            auto wmoObject = m_mapApi->getWmoObject(fileName, mapDefLod, m_adtFileObjLod->m_MWDR, m_adtFileObjLod->m_MWDS);
             objectLods[1].wmoObjects[j] = wmoObject;
             objectLods[1].wmoObjectIds[j] = wmoObject->getObjectId();
         } else {
             uint32_t fileDataId = mapDefLod.nameId;
 
-            auto wmoObject = m_mapApi->getWmoObject(fileDataId, mapDefLod);
+            auto wmoObject = m_mapApi->getWmoObject(fileDataId, mapDefLod, m_adtFileObjLod->m_MWDR, m_adtFileObjLod->m_MWDS);
             objectLods[1].wmoObjects[j] = wmoObject;
             objectLods[1].wmoObjectIds[j] = wmoObject->getObjectId();
         }
     }
 }
 
-void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
+void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager ) {
     ZoneScoped;
     if (m_adtFile->mH2OHeader == nullptr) return;
-
-    m_waterPlacementChunk = sceneRenderer->createWMOWideChunk(0)->m_placementMatrix;
-    m_waterPlacementChunk->getObject().uPlacementMat = mathfu::mat4::Identity();
-    m_waterPlacementChunk->save();
 
     mathfu::vec3 adtBasePos = mathfu::vec3(AdtIndexToWorldCoordinate(adt_y), AdtIndexToWorldCoordinate(adt_x), 0);
 
@@ -190,14 +191,33 @@ void AdtObject::loadWater(const HMapSceneBufferCreate &sceneRenderer ) {
             for (int layerInd = 0; layerInd < liquidChunk.layer_count; layerInd++) {
                 SMLiquidInstance &liquidInstance = liquidInstPtr[layerInd];
 
-                auto l_liquidInstance = liquidInstanceFactory->createObject(
-                    m_api, sceneRenderer, liquidInstance,
-                    m_waterPlacementChunk, liquidBasePos, m_adtFile->mH2OBlob,
-                    waterTileAabb[i]
+                int liquid_object = liquidInstance.liquid_object_or_lvf >= 42 ? liquidInstance.liquid_object_or_lvf : 0;
+                int liquidType = liquidInstance.liquid_type;
+
+                std::shared_ptr<ILiquidMaterial> liquidMaterial = liquidMaterialManager->getLiquidMaterial(
+                    liquidInstance.liquid_object_or_lvf,
+                    liquidType,
+                    false,
+                    nullptr,
+                    liquidInstance.width,
+                    liquidInstance.height,
+                    liquidInstance.x_offset,
+                    liquidInstance.y_offset
                 );
 
-                m_liquidInstances.push_back(l_liquidInstance);
-                m_liquidInstancesPerChunk[i].push_back(l_liquidInstance);
+                if (liquidMaterial) {
+                    auto l_liquidInstance = liquidInstanceFactory->createObject(
+                        m_api, sceneRenderer, liquidMaterial,
+                        liquidInstance,
+                        liquidBasePos, m_adtFile->mH2OBlob,
+                        waterTileAabb[i]
+                    );
+
+                    m_liquidInstances.push_back(l_liquidInstance);
+                    m_liquidInstancesPerChunk[i].push_back(l_liquidInstance);
+                    m_chunkHasWater[i] = 1;
+                    m_hasAnyWater = true;
+                }
             }
         }
     }
@@ -357,6 +377,8 @@ void AdtObject::calcBoundingBoxes() {
 }
 
 void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
+    auto globalOffset = m_mapApi->getGlobalOffset();
+
     ZoneScoped;
     HGDevice device = m_api->hDevice;
 
@@ -398,6 +420,11 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
             //Create mesh
             gMeshTemplate aTemplate(adtVertexBindings);
+#ifdef DEBUG_MESH_NAMES
+            aTemplate.name =
+                "ADT, Main FileDataId = " + std::to_string(m_adtFile->getFileDataId()) +
+                ", Tex FileDataId = " + std::to_string(m_adtFileTex->getFileDataId());
+#endif
             aTemplate.meshType = MeshType::eAdtMesh;
 
             aTemplate.start = stripOffsets[i] * 2;
@@ -408,17 +435,16 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
             adtMaterials[i] = adtMaterial;
 
             //Upload data to static UBO
+            const auto &mapTile = this->m_adtFile->mapTile[i];
             auto &matVSPS = adtMaterial->m_materialVSPS->getObject();
-            matVSPS.uPos = mathfu::vec4(
-                this->m_adtFile->mapTile[i].position.x,
-                this->m_adtFile->mapTile[i].position.y,
-                this->m_adtFile->mapTile[i].position.z,
-                0
-            );
+            matVSPS.uGlobalPosOffset = mathfu::vec4(globalOffset, 0.0);
+            matVSPS.globalChunkIndex[0] = globIndexX[i];
+            matVSPS.globalChunkIndex[1] = globIndexY[i];
 
             matVSPS.useHeightMixFormula[0] = useHeightMixFormula;
             matVSPS.useHeightMixFormula[1] = m_useWeightedBlend > 0 ? 1 : 0;
-            for (int j = 0; j < 4; j++) {
+            matVSPS.useHeightMixFormula[2] = adtMaterialTemplate.maxLayerCount;
+            for (int j = 0; j < MAX_MCLY_LAYERS; j++) {
                 matVSPS.uHeightOffset[j] = 0.0f;
                 matVSPS.uHeightScale[j] = 1.0f;
             }
@@ -433,18 +459,19 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 
             {
                 auto &matPS = adtMaterial->m_materialPS->getObject();
-                for (int j = 0; j < 4; j++) {
-                    matPS.scaleFactorPerLayer[j] = 1;
+                for (int j = 0; j < MAX_MCLY_LAYERS; j++) {
+                    matPS.scaleFactorPerLayer[j] = (1.0f / MathHelper::UNITSIZE);
                     matPS.animation_rotationPerLayer[j] = -1;
                     matPS.animation_speedPerLayer[j] = 0;
                 }
                 for (int j = 0; j < adtFileTex->mcnkStructs[i].mclyCnt; j++) {
                     if ((adtFileTex->mtxp_len > 0) && !noLayers) {
                         auto const &textureParams = adtFileTex->mtxp[adtFileTex->mcnkStructs[i].mcly[j].textureId];
-                        float scaleFactor = (1.0f / (float)(1u << (textureParams.flags.texture_scale )));
+                        float scaleFactor = (1.0f / MathHelper::UNITSIZE) / (1 << textureParams.flags.texture_scale);
 
                         matPS.scaleFactorPerLayer[j] = scaleFactor;
                     }
+
                     if (m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_enabled != 0) {
                         matPS.animation_rotationPerLayer[j] = m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_rotation;
                         matPS.animation_speedPerLayer[j] = m_adtFileTex->mcnkStructs[i].mcly[j].flags.animation_speed;
@@ -457,6 +484,10 @@ void AdtObject::createMeshes(const HMapSceneBufferCreate &sceneRenderer) {
 }
 
 void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMaterialTemplate &adtMaterialTemplate) {
+    bool hasEightLayers = m_adtFileTex->mcnkStructs[i].mclyCnt > 4;
+
+    adtMaterialTemplate.maxLayerCount = hasEightLayers ? 8 : 4;
+
     if (m_adtFileTex->mtxp_len > 0 && !noLayers) {
         for (int j = 0; j < m_adtFileTex->mcnkStructs[i].mclyCnt; j++) {
             auto const &textureParams = m_adtFileTex->mtxp[m_adtFileTex->mcnkStructs[i].mcly[j].textureId];
@@ -468,18 +499,20 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
                 }
             }
 
-            adtMaterialTemplate.textures[j + 5] = layer_height;
+            adtMaterialTemplate.heightTextures[j] = layer_height;
         }
     } else {
-        for (int j = 0; j < 4; j++) {
-            adtMaterialTemplate.textures[j + 5] = device->getWhiteTexturePixel();
+        for (int j = 0; j < MAX_MCLY_LAYERS; j++) {
+            adtMaterialTemplate.heightTextures[j] = device->getWhiteTexturePixel();
         }
     }
 
     if (!noLayers) {
-        adtMaterialTemplate.textures[4] = alphaTexture;
+        adtMaterialTemplate.blendTextures[0] = alphaTexture;
+        adtMaterialTemplate.blendTextures[1] = alphaTexture2 ? alphaTexture2 : device->getBlackTexturePixel();
     } else {
-        adtMaterialTemplate.textures[4] = device->getBlackTexturePixel();
+        adtMaterialTemplate.blendTextures[0] = device->getBlackTexturePixel();
+        adtMaterialTemplate.blendTextures[1] = device->getBlackTexturePixel();
     }
 
     if (!noLayers) {
@@ -494,11 +527,11 @@ void AdtObject::fillTextureForMCNK(HGDevice &device, int i, bool noLayers, ADTMa
 
             HGSamplableTexture layer_x = getAdtTexture(layerDef.textureId);
 //            BlpTexture &layer_spec = getAdtSpecularTexture(m_adtFileTex->mcnkStructs[i].mcly[j].textureId);
-            adtMaterialTemplate.textures[j] = layer_x;
+            adtMaterialTemplate.layerTextures[j] = layer_x;
         }
     } else {
-        for (int j = 0; j < 4; j++) {
-            adtMaterialTemplate.textures[j] = device->getWhiteTexturePixel();
+        for (int j = 0; j < MAX_MCLY_LAYERS; j++) {
+            adtMaterialTemplate.layerTextures[j] = device->getWhiteTexturePixel();
         }
     }
 }
@@ -524,18 +557,154 @@ constexpr int texWidth = alphaTexSize * 16;
 constexpr int texHeight = alphaTexSize * 16;
 
 auto bigTexture = std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>>(texWidth * texHeight * 4, 0);
+auto bigTexture2 = std::vector<uint8_t, tbb::cache_aligned_allocator<uint8_t>>(texWidth * texHeight * 4, 0);
+
+template <int uncompressedIndex, int max_layers>
+inline void simd16_alphaText_load(uint8_t *alphaTextureData, const uint8_t *textPtr, const uint8_t *textPtr2) {
+    static_assert(max_layers == 4 || max_layers == 8);
+
+    __m128i * __restrict alpha[max_layers];
+    for (int i = 0; i < max_layers; i++) {
+        alpha[i] = (__m128i *)(alphaTextureData + (64 * i));
+    };
+
+    __m128i* __restrict texturePtr = (__m128i*) textPtr;
+    __m128i* __restrict texturePtr2 = (__m128i*) textPtr2;
+
+    const __m128i vec255 = _mm_set1_epi8(255);
+
+    //64/16 = 4
+    for (int i = 0; i < 2; i++) {
+        __m128i _alpha[max_layers][2];
+        for (int x = 0; x < 2; x++) {
+            for (int y = 0; y < max_layers; y++) {
+                _alpha[y][x] = _mm_load_si128(alpha[y]++);
+            }
+        }
+        for (int x = 0; x < 2; x++) {
+            if constexpr (uncompressedIndex) {
+                __m128i res = vec255;
+                for (int j = 0; j < max_layers; j++ ) {
+                    if (uncompressedIndex != j) {
+                        res = _mm_sub_epi8(res, _alpha[j][x]);
+                    }
+                }
+
+                _alpha[uncompressedIndex][x] = res;
+            }
+        }
+        auto interleaveLambda =
+            [&_alpha](int a_offs, __m128i* __restrict &texPtr)
+        {
+            const int o = a_offs;
+            for (int x = 0; x < 2; x++) {
+                //Interleave
+                __m128i a_b_low  = _mm_unpacklo_epi8(_alpha[o+0][x], _alpha[o+1][x]); //a_1 b_1 a_2 b_2 a_3 b_3 a_4 b_4 a_5 b_5 a_6 b_6 a_7 b_7
+                __m128i a_b_high = _mm_unpackhi_epi8(_alpha[o+0][x], _alpha[o+1][x]); //a_8 b_8 a_9 b_9 a_10 b_10 a_11 b_11 a_12 b_12 a_13 b_13 a_14 b_14
+
+                __m128i c_d_low  = _mm_unpacklo_epi8(_alpha[o+2][x], _alpha[o+3][x]); //c_1 d_1 c_2 d_2 c_3 d_3 c_4 d_4 c_5 d_5 c_6 d_6 c_7 d_7
+                __m128i c_d_high = _mm_unpackhi_epi8(_alpha[o+2][x], _alpha[o+3][x]);//c_8 d_8 c_9 d_9 c_10 d_10 c_11 d_11 c_12 d_12 c_13 d_13 c_14 d_14
+
+                __m128i a_b_c_d_low_low = _mm_unpacklo_epi16(a_b_low, c_d_low); //a_1 b_1 c_1 d_1 a_2 b_2 c_2 d_2...
+                __m128i a_b_c_d_low_high = _mm_unpackhi_epi16(a_b_low, c_d_low);//a_4 b_4 c_4 d_4 a_5 b_5 c_5 d_5...
+
+                __m128i a_b_c_d_high_low = _mm_unpacklo_epi16(a_b_high,  c_d_high);//a_8 b_8 c_8 d_8 a_9 b_9 c_9 d_9...
+                __m128i a_b_c_d_high_high = _mm_unpackhi_epi16(a_b_high, c_d_high);//a_11 b_11 c_11 d_11 a_12 b_12 c_12 d_12...
+
+                _mm_store_si128(texPtr++, a_b_c_d_low_low);
+                _mm_store_si128(texPtr++, a_b_c_d_low_high);
+                _mm_store_si128(texPtr++, a_b_c_d_high_low);
+                _mm_store_si128(texPtr++, a_b_c_d_high_high);
+            }
+        };
+        interleaveLambda(0, texturePtr);
+        if (max_layers > 4)
+            interleaveLambda(4, texturePtr2);
+    }
+}
+
+#if __AVX2__
+template <int uncompressedIndex, int max_layers>
+inline void simd32_alphaText_load(uint8_t * alphaTextureData, const uint8_t *textPtr, const uint8_t *textPtr2) {
+    static_assert(max_layers == 4 || max_layers == 8);
+
+    __m256i * __restrict alpha[max_layers];
+    for (int i = 0; i < max_layers; i++) {
+        alpha[i] = (__m256i *)(alphaTextureData + (64 * i));
+    };
+
+    __m256i* __restrict texturePtr = (__m256i*) textPtr;
+    __m256i* __restrict texturePtr2 = (__m256i*) textPtr2;
+
+    const __m256i vec255 = _mm256_set1_epi8(255);
+
+    //64/16 = 4
+    __m256i _alpha[max_layers][2];
+    for (int x = 0; x < 2; x++) {
+        for (int y = 0; y < max_layers; y++) {
+            _alpha[y][x] = _mm256_load_si256(alpha[y]++);
+        }
+    }
+    for (int x = 0; x < 2; x++) {
+        if constexpr (uncompressedIndex) {
+            __m256i res = vec255;
+            for (int j = 0; j < max_layers; j++ ) {
+                if (uncompressedIndex != j) {
+                    res = _mm256_sub_epi8(res, _alpha[j][x]);
+                }
+            }
+
+            _alpha[uncompressedIndex][x] = res;
+        }
+    }
+    auto interleaveLambda =
+        [&_alpha](int a_offs, __m256i* __restrict &texPtr)
+    {
+        const int o = a_offs;
+        for (int x = 0; x < 2; x++) {
+            //Interleave
+            __m256i a_b_low  = _mm256_unpacklo_epi8(_alpha[o+0][x], _alpha[o+1][x]); //a_1 b_1 a_2 b_2 a_3 b_3 a_4 b_4 a_5 b_5 a_6 b_6 a_7 b_7
+            __m256i a_b_high = _mm256_unpackhi_epi8(_alpha[o+0][x], _alpha[o+1][x]); //a_8 b_8 a_9 b_9 a_10 b_10 a_11 b_11 a_12 b_12 a_13 b_13 a_14 b_14
+
+            __m256i c_d_low  = _mm256_unpacklo_epi8(_alpha[o+2][x], _alpha[o+3][x]); //c_1 d_1 c_2 d_2 c_3 d_3 c_4 d_4 c_5 d_5 c_6 d_6 c_7 d_7
+            __m256i c_d_high = _mm256_unpackhi_epi8(_alpha[o+2][x], _alpha[o+3][x]);//c_8 d_8 c_9 d_9 c_10 d_10 c_11 d_11 c_12 d_12 c_13 d_13 c_14 d_14
+
+            __m256i a_b_c_d_low_low = _mm256_unpacklo_epi16(a_b_low, c_d_low); //a_1 b_1 c_1 d_1 a_2 b_2 c_2 d_2...
+            __m256i a_b_c_d_low_high = _mm256_unpackhi_epi16(a_b_low, c_d_low);//a_4 b_4 c_4 d_4 a_5 b_5 c_5 d_5...
+
+            __m256i a_b_c_d_high_low = _mm256_unpacklo_epi16(a_b_high,  c_d_high);//a_8 b_8 c_8 d_8 a_9 b_9 c_9 d_9...
+            __m256i a_b_c_d_high_high = _mm256_unpackhi_epi16(a_b_high, c_d_high);//a_11 b_11 c_11 d_11 a_12 b_12 c_12 d_12...
+
+            __m256i tmp0 = _mm256_permute2x128_si256(a_b_c_d_low_low,  a_b_c_d_low_high,  0x20); // low halves
+            __m256i tmp1 = _mm256_permute2x128_si256(a_b_c_d_high_low, a_b_c_d_high_high, 0x20); // next 16 bytes
+            __m256i tmp2 = _mm256_permute2x128_si256(a_b_c_d_low_low,  a_b_c_d_low_high,  0x31); // high halves
+            __m256i tmp3 = _mm256_permute2x128_si256(a_b_c_d_high_low, a_b_c_d_high_high, 0x31); // last 16 bytes
+
+            _mm256_store_si256(texPtr++, tmp0);
+            _mm256_store_si256(texPtr++, tmp1);
+            _mm256_store_si256(texPtr++, tmp2);
+            _mm256_store_si256(texPtr++, tmp3);
+        }
+    };
+    interleaveLambda(0, texturePtr);
+    if (max_layers > 4)
+        interleaveLambda(4, texturePtr2);
+
+}
+#endif
+
 
 void AdtObject::loadAlphaTextures() {
     ZoneScoped;
     int chunkCount = m_adtFileTex->mcnkRead+1;
 
+    bool hasSecondAlphaText = false;
     int createdThisRun = 0;
-    alphaTexture = m_api->hDevice->createTexture(false, false);
 
-    memset(bigTexture.data(), 0, bigTexture.size());
+//    memset(bigTexture.data(), 0, bigTexture.size());
 
     if (chunkCount > 0) {
-        ALIGNED_(16) std::array<uint8_t, alphaTexSize * 4> alphaTextureData;
+        ALIGNED_(64) std::array<uint8_t, alphaTexSize * MAX_MCLY_LAYERS> alphaTextureData;
 
         for (int i = 0; i < chunkCount; i++){
 //        oneapi::tbb::task_arena arena(std::min<int>(8, m_api->getConfig()->hardwareThreadCount()), 1);
@@ -555,54 +724,62 @@ void AdtObject::loadAlphaTextures() {
 
                         m_adtFileTex->processAlphaTextureRow(chunkMcalRuntime,m_wdtFile->mphd->flags, i, alphaTextureData.data(), 64);
 
-#if (__AVX__ && __SSE2__)
-                        __m128i *alpha[4] = {
-                            (__m128i *)(alphaTextureData.data() + (0)),
-                            (__m128i *)(alphaTextureData.data() + (64)),
-                            (__m128i *)(alphaTextureData.data() + (64 * 2)),
-                            (__m128i *)(alphaTextureData.data() + (64 * 3)),
-                        };
+                        uint8_t* textPtr = (uint8_t*) getRowPtr<4>(bigTexture.data(),
+                                                                   indexX * 64 + 0, indexY * 64 + y,
+                                                                   texWidth, texHeight, 0);
 
-                        __m128i* __restrict texturePtr = (__m128i*)getRowPtr<4>(bigTexture.data(),
-                                                                indexX * 64 + 0, indexY * 64 + y,
-                                                                texWidth, texHeight, 0);
+                        uint8_t* textPtr2 = (uint8_t*) getRowPtr<4>(bigTexture2.data(),
+                                           indexX * 64 + 0, indexY * 64 + y,
+                                           texWidth, texHeight, 0);
 
-                        const __m128i vec255 = _mm_set1_epi8(255);
-                        for (int x = 0; x < 64/16; x++) {
-                            //Interleave
-                            __m128i _alpha[4];
-                            _alpha[0] = _mm_load_si128(alpha[0]++); //a_1 a_2 a_3 a_4 a_5 a_6 a_7 a_8 a_9 a_10 a_11 a_12 a_13 a_14 a_15 a_16
-                            _alpha[1] = _mm_load_si128(alpha[1]++); //b_1 b_2 b_3 b_4 b_5 b_6 b_7 b_8 b_9 b_10 b_11 b_12 b_13 b_14 b_15 b_16
-                            _alpha[2] = _mm_load_si128(alpha[2]++); //c_1 c_2 c_3 c_4 c_5 c_6 c_7 c_8 c_9 c_10 c_11 c_12 c_13 c_14 c_15 c_16
-                            _alpha[3] = _mm_load_si128(alpha[3]++); //d_1 d_2 d_3 d_4 d_5 d_6 d_7 d_8 d_9 d_10 d_11 d_12 d_13 d_14 d_15 d_16
-
-                            if (chunkMcalRuntime.uncompressedIndex) {
-                                _alpha[chunkMcalRuntime.uncompressedIndex] =
-                                    _mm_sub_epi8(_mm_sub_epi8(
-                                        _mm_sub_epi8(
-                                            _mm_sub_epi8(vec255,_alpha[0]),
-                                            _alpha[1]),
-                                        _alpha[2]),
-                                    _alpha[3]);
+                        int uncompressedIndex = chunkMcalRuntime.uncompressedIndex;
+                        hasSecondAlphaText |= chunkMcalRuntime.needSecondAlphaTexture;
+#if (__AVX2__)
+                        if (!hasSecondAlphaText) {
+                            switch (uncompressedIndex) {
+                                case 0: simd32_alphaText_load<0, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 1: simd32_alphaText_load<1, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 2: simd32_alphaText_load<2, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 3: simd32_alphaText_load<3, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                default: break;
                             }
-
-                            __m128i a_b_low = _mm_unpacklo_epi8(_alpha[0], _alpha[1]); //a_1 b_1 a_2 b_2 a_3 b_3 a_4 b_4 a_5 b_5 a_6 b_6 a_7 b_7
-                            __m128i a_b_high = _mm_unpackhi_epi8(_alpha[0], _alpha[1]); //a_8 b_8 a_9 b_9 a_10 b_10 a_11 b_11 a_12 b_12 a_13 b_13 a_14 b_14
-
-                            __m128i c_d_low = _mm_unpacklo_epi8(_alpha[2], _alpha[3]); //c_1 d_1 c_2 d_2 c_3 d_3 c_4 d_4 c_5 d_5 c_6 d_6 c_7 d_7
-                            __m128i c_d_high = _mm_unpackhi_epi8(_alpha[2], _alpha[3]);//c_8 d_8 c_9 d_9 c_10 d_10 c_11 d_11 c_12 d_12 c_13 d_13 c_14 d_14
-
-                            __m128i a_b_c_d_low_low = _mm_unpacklo_epi16(a_b_low, c_d_low); //a_1 b_1 c_1 d_1 a_2 b_2 c_2 d_2...
-                            __m128i a_b_c_d_low_high = _mm_unpackhi_epi16(a_b_low, c_d_low);//a_4 b_4 c_4 d_4 a_5 b_5 c_5 d_5...
-
-                            __m128i a_b_c_d_high_low = _mm_unpacklo_epi16(a_b_high, c_d_high);//a_8 b_8 c_8 d_8 a_9 b_9 c_9 d_9...
-                            __m128i a_b_c_d_high_high = _mm_unpackhi_epi16(a_b_high, c_d_high);//a_11 b_11 c_11 d_11 a_12 b_12 c_12 d_12...
-
-                            _mm_store_si128(texturePtr++, a_b_c_d_low_low);
-                            _mm_store_si128(texturePtr++, a_b_c_d_low_high);
-                            _mm_store_si128(texturePtr++, a_b_c_d_high_low);
-                            _mm_store_si128(texturePtr++, a_b_c_d_high_high);
+                        } else {
+                           switch (uncompressedIndex) {
+                                case 0: simd32_alphaText_load<0, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 1: simd32_alphaText_load<1, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 2: simd32_alphaText_load<2, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 3: simd32_alphaText_load<3, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 4: simd32_alphaText_load<4, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 5: simd32_alphaText_load<5, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 6: simd32_alphaText_load<6, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 7: simd32_alphaText_load<7, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                default: break;
+                            }
                         }
+
+#elif (__SSE2__)
+                        if (!hasSecondAlphaText) {
+                            switch (uncompressedIndex) {
+                                case 0: simd16_alphaText_load<0, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 1: simd16_alphaText_load<1, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 2: simd16_alphaText_load<2, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 3: simd16_alphaText_load<3, 4>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                default: break;
+                            }
+                        } else {
+                           switch (uncompressedIndex) {
+                                case 0: simd16_alphaText_load<0, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 1: simd16_alphaText_load<1, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 2: simd16_alphaText_load<2, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 3: simd16_alphaText_load<3, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 4: simd16_alphaText_load<4, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 5: simd16_alphaText_load<5, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 6: simd16_alphaText_load<6, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                case 7: simd16_alphaText_load<7, 8>(alphaTextureData.data(), textPtr, textPtr2); break;
+                                default: break;
+                            }
+                        }
+
 #else
                         //Non intirisic version
                         uint8_t *alpha[4] = {
@@ -634,10 +811,17 @@ void AdtObject::loadAlphaTextures() {
 //        });
     }
 
+    alphaTexture = m_api->hDevice->createTexture(false, false);
     alphaTexture->getTexture()->loadData(texWidth, texHeight, &bigTexture[0], ITextureFormat::itRGBA);
+
+    if (hasSecondAlphaText) {
+        alphaTexture2 = m_api->hDevice->createTexture(false, false);
+        alphaTexture2->getTexture()->loadData(texWidth, texHeight, &bigTexture2[0], ITextureFormat::itRGBA);
+    }
 
     this->alphaTexturesLoaded += createdThisRun;
 }
+
 
 
 
@@ -727,10 +911,10 @@ FileStatus AdtObject::getLoadedStatus() {
 }
 
 
-bool AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer) {
+bool AdtObject::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const std::unique_ptr<LiquidMaterialManager> &liquidMaterialManager ) {
     if (!m_loaded) {
         if (getLoadedStatus() == FileStatus::FSLoaded) {
-            this->loadingFinished(sceneRenderer);
+            this->loadingFinished(sceneRenderer, liquidMaterialManager);
             m_loaded = true;
             return true;
         }
@@ -885,7 +1069,11 @@ HGSamplableTexture AdtObject::getAdtHeightTexture(int textureId) {
         texture = m_api->cacheStorage->getTextureCache()->getFileId(filedataId);
     }
 
-    HGSamplableTexture h_gblpTexture = m_api->hDevice->createBlpTexture(texture, true, true);
+    //Utgarde keep has no texture names and mhid_len = 0
+    HGSamplableTexture h_gblpTexture =
+        texture != nullptr ?
+        m_api->hDevice->createBlpTexture(texture, true, true) :
+        nullptr;
     m_requestedTexturesHeight[textureId] = h_gblpTexture;
 
     return h_gblpTexture;
@@ -1021,72 +1209,54 @@ bool AdtObject::checkNonLodChunkCulling(ADTObjRenderRes &adtFrustRes,
 
                                         int x, int y, int x_len, int y_len) {
 
+    ZoneScoped;
     bool atLeastOneIsDrawn = false;
-//    tbb::parallel_for(tbb::blocked_range2d<int,int>(x,x+x_len,y,y+y_len), [&](const tbb::blocked_range2d<int,int>& r) {
-//        for (size_t k = r.rows().begin(); k != r.rows().end(); ++k) {
-//            for (size_t l = r.cols().begin(); l != r.cols().end(); ++l) {
-    {
-        for (size_t k = x; k < x+x_len; k++) {
-            for (size_t l = y; l < y+y_len; ++l) {
-                int i = this->m_adtFile->mcnkMap[l][k];
-                if (i < 0)
-                    continue;
 
-                mcnkStruct_t &mcnk = this->m_adtFile->mcnkStructs[i];
-
-                adtFrustRes.drawChunk[i] = false;
-                adtFrustRes.drawWaterChunk[i] = false;
-
-                {
-                    CAaBox &aabb = this->tileAabb[i];
-                    //1. Check if camera position is inside Bounding Box
-                    bool cameraOnChunk =
-                        (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
-                         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
-                    if (cameraOnChunk &&
-                        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-                        ) {
-                        adtFrustRes.drawChunk[i] = true;
-                        atLeastOneIsDrawn = true;
-                    }
-
-                    //2. Check aabb is inside camera frustum
-                    bool result = false;
-                    adtFrustRes.checkRefs[i] = adtFrustRes.drawChunk[i];
-                    if (!adtFrustRes.drawChunk[i]) {
-                        result = MathHelper::checkFrustum(frustumData, aabb);
-                        bool frustum2DRes = MathHelper::checkFrustum2D(frustumData.frustums, aabb);
-                        adtFrustRes.checkRefs[i] = result || frustum2DRes;
-
-                        adtFrustRes.drawChunk[i] = result;
-                        atLeastOneIsDrawn = atLeastOneIsDrawn || result;
-                    }
-                }
-
-                //Do the same for Water tile
-                {
-                    CAaBox &aabb = this->waterTileAabb[i];
-                    bool cameraOnChunk =
-                        (cameraPos[0] > aabb.min.x && cameraPos[0] < aabb.max.x &&
-                         cameraPos[1] > aabb.min.y && cameraPos[1] < aabb.max.y);
-                    if (cameraOnChunk &&
-                        cameraPos[2] > aabb.min.z && cameraPos[2] < aabb.max.z
-                        ) {
-                        adtFrustRes.drawWaterChunk[i] = true;
-                        atLeastOneIsDrawn = true;
-                    }
-
-                    //2. Check aabb is inside camera frustum
-                    bool result = false;
-                    if (!adtFrustRes.drawWaterChunk[i]) {
-                        result = MathHelper::checkFrustum(frustumData, aabb);
-                        adtFrustRes.drawWaterChunk[i] = result;
-                        atLeastOneIsDrawn = atLeastOneIsDrawn || result;
-                    }
-                }
-            }
+    //Mask of chunks that belong to the requested range (replaces the old per-chunk mcnkMap loop).
+    //Chunks outside the range must keep their previous draw flags: iterateQuadTree calls this
+    //per sub-range and accumulates results across calls.
+    std::array<uint32_t, 256> chunkPresent = {};
+    for (size_t k = x; k < x+x_len; k++) {
+        for (size_t l = y; l < y+y_len; ++l) {
+            int i = this->m_adtFile->mcnkMap[l][k];
+            if (i >= 0 && i < 256)
+                chunkPresent[i] = AabbArrayCulling::VISIBLE;
         }
-    }//,tbb::auto_partitioner());
+    }
+
+    //Pass 1: batched culling over terrain chunk AABBs
+    std::array<uint32_t, 256> terrainCullRes;
+#if (__AVX__ && __SSE2__)
+    AabbArrayCullingSSE::cull(frustumData, cameraPos, this->tileAabb.data(), 256, terrainCullRes.data());
+#else
+    AabbArrayCulling::cull(frustumData, cameraPos, this->tileAabb.data(), 256, terrainCullRes.data());
+#endif
+
+    for (int i = 0; i < 256; i++) {
+        if (!chunkPresent[i]) continue;
+
+        bool drawn = terrainCullRes[i] != AabbArrayCulling::CULLED;
+        adtFrustRes.drawChunk[i] = drawn;
+        atLeastOneIsDrawn = atLeastOneIsDrawn || drawn;
+    }
+
+    //Pass 2: batched culling over water chunk AABBs, skipped entirely for ADTs without liquid
+    if (m_hasAnyWater) {
+        std::array<uint32_t, 256> waterCullRes;
+#if (__AVX__ && __SSE2__)
+        AabbArrayCullingSSE::cull(frustumData, cameraPos, this->waterTileAabb.data(), 256, waterCullRes.data());
+#else
+        AabbArrayCulling::cull(frustumData, cameraPos, this->waterTileAabb.data(), 256, waterCullRes.data());
+#endif
+
+        for (int i = 0; i < 256; i++) {
+            if (!chunkPresent[i] || !m_chunkHasWater[i]) continue;
+
+            bool drawn = waterCullRes[i] != AabbArrayCulling::CULLED;
+            adtFrustRes.drawWaterChunk[i] = drawn;
+            atLeastOneIsDrawn = atLeastOneIsDrawn || drawn;
+        }
+    }
 
     return atLeastOneIsDrawn;
 }
@@ -1103,6 +1273,8 @@ bool AdtObject::checkReferences(
 
     if (m_freeStrategy != nullptr)
         m_freeStrategy(false, true, m_mapApi->getCurrentSceneTime());
+
+    ZoneScoped;
 
 //    checkWmoM2ByRef(lodLevel, m2ObjectsCandidates, wmoCandidates, x, y, x_len, y_len);
     checkWmoGlobally(lodLevel, m2ObjectsCandidates, wmoCandidates, x, y, x_len, y_len);
@@ -1264,7 +1436,8 @@ bool AdtObject::checkFrustumCulling(ADTObjRenderRes &adtFrustRes,
     return atLeastOneIsDrawn;
 }
 
-AdtObject::AdtObject(HApiContainer api, std::string &adtFileTemplate, std::string mapname, int adt_x, int adt_y, bool useWeightedBlend, HWdtFile wdtFile) : adt_x(adt_x), adt_y(adt_y),
+AdtObject::AdtObject(const HApiContainer &api, std::string &adtFileTemplate, const std::string &mapname,
+    int adt_x, int adt_y, bool useWeightedBlend, const HWdtFile &wdtFile) : adt_x(adt_x), adt_y(adt_y),
 m_useWeightedBlend(useWeightedBlend) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);
@@ -1291,7 +1464,7 @@ m_useWeightedBlend(useWeightedBlend) {
 
 }
 
-AdtObject::AdtObject(HApiContainer api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, bool useWeightedBlend, HWdtFile wdtFile): adt_x(adt_x), adt_y(adt_y),
+AdtObject::AdtObject(const HApiContainer &api, int adt_x, int adt_y, WdtFile::MapFileDataIDs &fileDataIDs, bool useWeightedBlend, const HWdtFile &wdtFile): adt_x(adt_x), adt_y(adt_y),
     m_useWeightedBlend(useWeightedBlend) {
     m_api = api;
     tileAabb = std::vector<CAaBox>(256);

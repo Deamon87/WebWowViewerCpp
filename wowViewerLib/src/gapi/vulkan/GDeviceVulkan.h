@@ -13,10 +13,12 @@ class GVertexBufferBindingsVLK;
 class GBlpTextureVLK;
 class GTextureVLK;
 class GShaderPermutationVLK;
+class GComputeShaderVLK;
 class GMeshVLK;
 class GM2MeshVLK;
 class GPipelineVLK;
 class GPipelineLayoutVLK;
+class ComputePipelineVLK;
 class GRenderPassVLK;
 class GDescriptorPoolVLK;
 class CmdBufRecorder;
@@ -24,6 +26,7 @@ class RenderPassHelper;
 class TextureManagerVLK;
 
 typedef std::shared_ptr<GPipelineVLK> HPipelineVLK;
+typedef std::shared_ptr<ComputePipelineVLK> HComputePipelineVLK;
 
 class gMeshTemplate;
 
@@ -57,7 +60,7 @@ class GDeviceVLK : public IDevice, public std::enable_shared_from_this<GDeviceVL
 
 public:
     explicit GDeviceVLK(vkCallInitCallback * callBacks);
-    ~GDeviceVLK() override = default;;
+    ~GDeviceVLK() override;
 
     GDeviceType getDeviceType() override {return GDeviceType::GVulkan; };
 
@@ -76,15 +79,27 @@ public:
     bool supportsBindless() override {
         return m_supportsBindless;
     }
+    bool supportsIndependentBlend() const {
+        return m_supportsIndependentBlend;
+    }
+    // Object-id selection needs the second (non-blended) forward attachment,
+    // which requires per-attachment blend state (independentBlend feature)
+    bool supportsSelection() override {
+        return m_supportsIndependentBlend;
+    }
+    // Batched vkCmdDrawIndexedIndirect (drawCount > 1) requires the multiDrawIndirect feature
+    bool supportsMultiDrawIndirect() const {
+        return m_supportsMultiDrawIndirect;
+    }
     int getMaxSamplesCnt() override;
     VkSampleCountFlagBits getMaxSamplesBit();
 
     bool getIsAnisFiltrationSupported() override;
     bool getIsBCCompressedTexturesSupported() override;
     float getAnisLevel() override;
+    bool getIsConservativeRasterizationSupported();
+    bool getIsConditionalRenderingSupported() { return m_supportsConditionalRendering; }
 
-    void startUpdateForNextFrame() override {};
-    void endUpdateForNextFrame() override {};
 
     void drawFrame(const FrameRenderFuncs &renderFuncs, bool windowSizeChanged) override;
 
@@ -101,21 +116,28 @@ public:
                                                   const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides);
 
     HGBufferVLK createUniformBuffer(const std::string &objName, size_t size);
-    HGBufferVLK createSSBOBuffer(const std::string &objName, size_t size, int recordSize);
+    HGBufferVLK createSSBOBuffer(const std::string &objName, size_t size, int recordSize, VkBufferUsageFlags additionalFlags = 0);
     HGBufferVLK createVertexBuffer(const std::string &objName, size_t size, int recordSize = -1);
     HGBufferVLK createIndexBuffer(const std::string &objName, size_t size);
     HGVertexBufferBindings createVertexBufferBindings() override;
 
+    std::shared_ptr<ITextureSampler> getSampler(bool xWrapTex, bool yWrapTex, bool nearest);
     HGSamplableTexture createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) override;
     HGSamplableTexture createTexture(bool xWrapTex, bool yWrapTex) override;
     HGSamplableTexture createSampledTexture(HGTexture texture, bool xWrapTex, bool yWrapTex) override;
     HGSamplableTexture getWhiteTexturePixel() override { return m_whitePixelTexture; };
     HGSamplableTexture getBlackTexturePixel() override { return m_blackPixelTexture; };
+    HGSamplableTexture getEmptyDepthTexture() override { return m_emptyDepthTexture; };
+
     std::shared_ptr<GDescriptorSetUpdater> getDescriptorSetUpdater() override { return m_descriptorSetUpdater;};
 
     HGMesh createMesh(gMeshTemplate &meshTemplate) override;
 
     HGPUFence createFence() override;
+
+    // Reusable secondary command buffer allocated from the graphics command pool.
+    // Must be recorded on the render thread only (the pool is not externally synchronized).
+    std::shared_ptr<GCommandBuffer> createSecondaryCommandBuffer();
 
 
 
@@ -132,7 +154,12 @@ public:
                                 uint8_t colorMask,
                                 bool stencilTestEnable,
                                 bool stencilWrite,
-                                uint8_t stencilWriteVal);
+                                uint8_t stencilWriteVal,
+                                const std::vector<uint8_t> &specializationConstantsData = {},
+                                const std::vector<VkSpecializationMapEntry> &specializationConstantsMetadata = {});
+
+    HComputePipelineVLK createComputePipeline(const std::shared_ptr<GComputeShaderVLK> &shader,
+                                              const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout);
 
     std::shared_ptr<GRenderPassVLK> getRenderPass(const std::vector<ITextureFormat> &textureAttachments,
                                                   ITextureFormat depthAttachment,
@@ -198,6 +225,8 @@ public:
     void singleExecuteAndWait(std::function<void(VkCommandBuffer commandBuffer)> callback);
     void waitForAllWorkToComplete() override;
     std::shared_ptr<IRenderDocCaptureHandler> getRenderDocHelper() override;
+    
+    void clear() override;
 private:
 //    void internalDrawStageAndDeps(HDrawStage drawStage);
 
@@ -241,29 +270,51 @@ protected:
         bool stencilTestEnable;
         bool stencilWrite;
         uint8_t stencilWriteVal;
+        std::vector<uint8_t> specializationConstantsData;
+        std::vector<VkSpecializationMapEntry> specializationConstantsMetadata;
 
 
         bool operator==(const PipelineCacheRecord &other) const {
-            return
-                (shader == other.shader) &&
-                (renderPass == other.renderPass) &&
-                (element == other.element) &&
-                (backFaceCulling == other.backFaceCulling) &&
-                (triCCW == other.triCCW) &&
-                (blendMode == other.blendMode) &&
-                (depthCulling == other.depthCulling) &&
-                (depthWrite == other.depthWrite) &&
-                (colorMask == other.colorMask) &&
-                (stencilTestEnable == other.stencilTestEnable) &&
-                (stencilWrite == other.stencilWrite) &&
-                (stencilWriteVal == other.stencilWriteVal);
+            if (!(shader == other.shader) ||
+                !(renderPass == other.renderPass) ||
+                (element != other.element) ||
+                (backFaceCulling != other.backFaceCulling) ||
+                (triCCW != other.triCCW) ||
+                (blendMode != other.blendMode) ||
+                (depthCulling != other.depthCulling) ||
+                (depthWrite != other.depthWrite) ||
+                (colorMask != other.colorMask) ||
+                (stencilTestEnable != other.stencilTestEnable) ||
+                (stencilWrite != other.stencilWrite) ||
+                (stencilWriteVal != other.stencilWriteVal)) {
+                return false;
+            }
 
+            // Compare specialization constants data
+            if (specializationConstantsData.size() != other.specializationConstantsData.size()) return false;
+            if (!specializationConstantsData.empty() &&
+                std::memcmp(specializationConstantsData.data(), other.specializationConstantsData.data(),
+                           specializationConstantsData.size()) != 0) {
+                return false;
+            }
+
+            // Compare specialization constants metadata
+            if (specializationConstantsMetadata.size() != other.specializationConstantsMetadata.size()) return false;
+            for (size_t i = 0; i < specializationConstantsMetadata.size(); i++) {
+                if (specializationConstantsMetadata[i].constantID != other.specializationConstantsMetadata[i].constantID ||
+                    specializationConstantsMetadata[i].offset != other.specializationConstantsMetadata[i].offset ||
+                    specializationConstantsMetadata[i].size != other.specializationConstantsMetadata[i].size) {
+                    return false;
+                }
+            }
+
+            return true;
         };
     };
     struct PipelineCacheRecordHasher {
         std::size_t operator()(const PipelineCacheRecord& k) const {
             using std::hash;
-            return hash<void*>{}(k.shader.get()) ^
+            std::size_t h = hash<void*>{}(k.shader.get()) ^
             hash<decltype(k.renderPass)>{}(k.renderPass) ^
             (hash<bool >{}(k.backFaceCulling) << 2) ^
             (hash<bool >{}(k.triCCW) << 4) ^
@@ -275,9 +326,47 @@ protected:
             (hash<uint8_t>{}(k.stencilWriteVal) << 7) ^
             (hash<bool>{}(k.stencilTestEnable) << 15) ^
             (hash<bool>{}(k.stencilWrite) << 11);
+
+            // Hash specialization constants data buffer
+            if (!k.specializationConstantsData.empty()) {
+                // Use FNV-1a hash for byte buffer
+                std::size_t dataHash = 2166136261u;
+                for (uint8_t byte : k.specializationConstantsData) {
+                    dataHash ^= byte;
+                    dataHash *= 16777619u;
+                }
+                h ^= dataHash;
+            }
+
+            // Hash specialization constants metadata
+            for (const auto& entry : k.specializationConstantsMetadata) {
+                h ^= (hash<uint32_t>{}(entry.constantID) << 1) ^
+                     (hash<uint32_t>{}(entry.offset) << 3) ^
+                     (hash<size_t>{}(entry.size) << 5);
+            }
+
+            return h;
         };
     };
     std::unordered_map<PipelineCacheRecord, std::weak_ptr<GPipelineVLK>, PipelineCacheRecordHasher> loadedPipeLines;
+
+    struct ComputePipelineCacheRecord {
+        std::shared_ptr<GComputeShaderVLK> shader;
+        wtf::KeyContainer<std::weak_ptr<GPipelineLayoutVLK>> pipelineLayout;
+
+        bool operator==(const ComputePipelineCacheRecord &other) const {
+            return (shader == other.shader) &&
+                   (pipelineLayout == other.pipelineLayout);
+        };
+    };
+    struct ComputePipelineCacheRecordHasher {
+        std::size_t operator()(const ComputePipelineCacheRecord &k) const {
+            using std::hash;
+            return hash<void *>{}(k.shader.get()) ^
+                   (hash<decltype(k.pipelineLayout)>{}(k.pipelineLayout) << 3);
+        };
+    };
+    std::unordered_map<ComputePipelineCacheRecord, std::weak_ptr<ComputePipelineVLK>, ComputePipelineCacheRecordHasher> m_loadedComputePipelines;
 
     VkDebugUtilsMessengerEXT debugMessenger;
 
@@ -342,6 +431,11 @@ protected:
     int ssboBufferOffsetAlign = -1;
     int maxMultiSample = -1;
     bool m_supportsBindless = false;
+    bool m_supportsConservativeRasterization = false;
+    bool m_supportsConditionalRendering = false;
+    bool m_supportsIndependentBlend = false;
+    bool m_supportsMultiDrawIndirect = false;
+
 
     HGVertexBufferBindings m_vertexBBBindings;
     HGVertexBufferBindings m_lineBBBindings;
@@ -351,6 +445,7 @@ protected:
 
     HGSamplableTexture m_blackPixelTexture = nullptr;
     HGSamplableTexture m_whitePixelTexture = nullptr;
+    HGSamplableTexture m_emptyDepthTexture = nullptr;
 
     std::shared_ptr<TextureManagerVLK> m_textureManager;
     std::shared_ptr<GDescriptorSetUpdater> m_descriptorSetUpdater;
@@ -415,7 +510,7 @@ protected:
 
     std::vector<RenderPassAvalabilityStruct> m_createdRenderPasses;
 
-    void executeDeallocators();
+    void executeDeallocators(bool forceDealloc);
 
     RenderPassHelper beginSwapChainRenderPass(uint32_t imageIndex, CmdBufRecorder &swapChainCmd);
 

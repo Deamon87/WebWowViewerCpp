@@ -4,6 +4,7 @@
 
 #include "GBufferVLK.h"
 #include "../vk_mem_alloc.h"
+#include "../../interface/FrameContext.h"
 
 GBufferVLK::GBufferVLK(const HGDeviceVLK &device, const std::string &objName,
                        const std::shared_ptr<GStagingRingBuffer> &ringBuff,
@@ -17,10 +18,10 @@ GBufferVLK::GBufferVLK(const HGDeviceVLK &device, const std::string &objName,
     m_objName = objName;
 
     //Create virtual buffer off this native buffer
-    auto allocator =OffsetAllocator::Allocator(m_bufferSize);
+    auto allocator = OffsetAllocator::Allocator(m_bufferSize);
     offsetAllocator = std::move(allocator);
 
-    m_gpuBuffer = std::make_shared<BufferGpuVLK>(m_device, maxSize, m_usageFlags, m_objName.c_str());
+    m_gpuBuffer = std::make_shared<BufferGpuVLK>(device, maxSize, m_usageFlags, m_objName.c_str());
 }
 
 GBufferVLK::~GBufferVLK() {
@@ -73,11 +74,14 @@ void GBufferVLK::deallocateSubBuffer(const OffsetAllocator::Allocation &alloc, c
     //the virtualBlock was still not been free'd
     //So there would be no error
 
+    auto sDevice = m_device.lock();
+    if (!sDevice) return;
+
     if (alloc.metadata != OffsetAllocator::Allocation::NO_SPACE) {
         auto l_alloc = alloc;
         auto l_uiaAlloc = uiaAlloc;
         auto l_weak = weak_from_this();
-        m_device->addDeallocationRecord(
+        sDevice->addDeallocationRecord(
             [l_alloc, l_uiaAlloc, l_weak]() {
                 auto shared = l_weak.lock();
                 if (shared == nullptr) return;
@@ -101,12 +105,25 @@ void GBufferVLK::uploadData(const void *data, int length) {
     memcpy(ptr, data, length);
 }
 
+void GBufferVLK::uploadDataAtOffset(const void *data, int length, size_t dstOffset) {
+    if ((size_t)length + dstOffset > (size_t)m_bufferSize) {
+        resize((int)(dstOffset + length));
+    }
+
+    void * ptr = allocatePtr((int)dstOffset, length);
+
+    memcpy(ptr, data, length);
+}
+
 void *GBufferVLK::allocatePtr(int offset, int length) {
+    auto sDevice = m_device.lock();
+    if (!sDevice) return nullptr;
+
     VkBuffer staging;
     int stage_offset;
     auto *ptr = m_ringBuff->allocateNext(length, staging, stage_offset);
 
-    auto frameIndex = m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
+    auto frameIndex = FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT;
     if (length > 0)
     {
 //        std::unique_lock<std::mutex> lock(m_mutex);
@@ -230,12 +247,17 @@ void GBufferVLK::save(int length) {
 }
 
 MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
+    auto sDevice = m_device.lock();
+
     {
         std::lock_guard<std::mutex> lock(dataToBeUploadedMtx);
 
         dataToBeUploaded.clear();
+
+        if (!sDevice) return { dataToBeUploaded, dataToBeUploadedMtx, true };
+
         if (m_gpuBuffer->size() != m_bufferSize) {
-            auto newGpuBuf = std::make_shared<BufferGpuVLK>(m_device, m_bufferSize, m_usageFlags, m_objName.c_str());
+            auto newGpuBuf = std::make_shared<BufferGpuVLK>(sDevice, m_bufferSize, m_usageFlags, m_objName.c_str());
 
             auto &copyCmd = dataToBeUploaded.emplace_back();
             copyCmd.src = m_gpuBuffer->getBuffer();
@@ -254,7 +276,7 @@ MutexLockedVector<VulkanCopyCommands> GBufferVLK::getSubmitRecords() {
 
         //TracyMessageStr(("getSubmitRecords, CurrentProcessingFrameNumber =" + std::to_string(m_device->getCurrentProcessingFrameNumber())));
 
-        auto& stagingRecords = uploadRegionsPerStaging[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+        auto& stagingRecords = uploadRegionsPerStaging[FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
         for (auto &stagingRecord : stagingRecords) {
             auto &intervals = stagingRecord.second;
 

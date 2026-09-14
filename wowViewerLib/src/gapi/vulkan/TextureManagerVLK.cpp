@@ -17,6 +17,21 @@ void TextureManagerVLK::initialize() {
     m_textureSamplers[1] = std::make_shared<GTextureSamplerVLK>(mdevice, false, true, false);
     m_textureSamplers[2] = std::make_shared<GTextureSamplerVLK>(mdevice, true, false, false);
     m_textureSamplers[3] = std::make_shared<GTextureSamplerVLK>(mdevice, true, true, false);
+
+    m_textureSamplers_nearest[0] = std::make_shared<GTextureSamplerVLK>(mdevice, false, false, true);
+    m_textureSamplers_nearest[1] = std::make_shared<GTextureSamplerVLK>(mdevice, false, true, true);
+    m_textureSamplers_nearest[2] = std::make_shared<GTextureSamplerVLK>(mdevice, true, false, true);
+    m_textureSamplers_nearest[3] = std::make_shared<GTextureSamplerVLK>(mdevice, true, true, true);
+}
+
+std::shared_ptr<ITextureSampler> TextureManagerVLK::getSampler(bool xWrapTex, bool yWrapTex, bool nearest) {
+    int index = (xWrapTex ? 2 : 1) + (yWrapTex ? 1 : 0);
+
+    if (nearest) {
+        return m_textureSamplers_nearest[index];
+    } else {
+        return m_textureSamplers[index];
+    }
 }
 
 HGSamplableTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture, bool wrapX, bool wrapY) {
@@ -36,8 +51,8 @@ HGSamplableTexture TextureManagerVLK::createSampledTexture(bool wrapX, bool wrap
 
     auto i = sampledTextureCache.find(sampledTextureCacheRecord);
     if (i != sampledTextureCache.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
+        if (auto shared = i->second.lock()) {
+            return shared;
         } else {
             sampledTextureCache.erase(i);
         }
@@ -61,8 +76,8 @@ HGTexture TextureManagerVLK::createBlpTexture(HBlpTexture &texture) {
 
     auto i = loadedTextureCache.find(blpCacheRecord);
     if (i != loadedTextureCache.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
+        if (auto shared = i->second.lock()) {
+            return shared;
         } else {
             loadedTextureCache.erase(i);
         }

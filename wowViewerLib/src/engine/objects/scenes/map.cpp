@@ -24,6 +24,7 @@
 #include "../../../gapi/interface/materials/IMaterial.h"
 #include "../../../renderer/frame/FrameProfile.h"
 #include "map_load_max_contants.h"
+#include "../../../gapi/interface/FrameContext.h"
 
 
 std::array<mathfu::vec4, 122> skyConusVBO = {
@@ -274,32 +275,71 @@ HGVertexBufferBindings createSkyBindings(const HMapSceneBufferCreate &sceneRende
 }
 
 Map::Map(HApiContainer api, int mapId, const std::string &mapName) : m_dayNightLightHolder(api, mapId) {
+    initialize(api, mapId);
     initMapTiles();
 
-    m_mapId = mapId; m_api = api; this->mapName = mapName;
-    m_sceneMode = SceneMode::smMap;
-    createAdtFreeLamdas();
+    this->mapName = mapName;
 
-    MapRecord mapRecord;
-    api->databaseHandler->getMapById(mapId, mapRecord);
-    useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
-    has0x200000Flag = (mapRecord.flags0 & 0x200000) > 0;
-
-
-    std::string wdtFileName = "world/maps/"+mapName+"/"+mapName+".wdt";
-    std::string wdlFileName = "world/maps/"+mapName+"/"+mapName+".wdl";
-    std::string wdtLightFileName = "world/maps/"+mapName+"/"+mapName+"_lgt.wdt";
+    std::string wdtFileName = "world/maps/" + mapName + "/" + mapName + ".wdt";
+    std::string wdlFileName = "world/maps/" + mapName + "/" + mapName + ".wdl";
+    std::string wdtLightFileName = "world/maps/" + mapName + "/" + mapName + "_lgt.wdt";
 
     m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
     m_wdtLightObject = std::make_shared<WdtLightsObject>(api, wdtLightFileName);
 
     m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
     m_wdlObject->setMapApi(this);
+}
+Map::Map(HApiContainer api, int mapId, int wdtFileDataId) : m_dayNightLightHolder(api, mapId) {
+    initialize(api, mapId);
+    initMapTiles();
+
+    mapName = "";
+    m_wdtfile = api->cacheStorage->getWdtFileCache()->getFileId(wdtFileDataId);
+}
+
+Map::Map(HApiContainer api, std::string adtFileName, int i, int j, std::string mapName) : m_dayNightLightHolder(api, 0) {
+    initialize(api, 0);
+
+    this->mapName = mapName;
+
+    std::string wdtFileName = "world/maps/" + mapName + "/" + mapName + ".wdt";
+    std::string wdlFileName = "world/maps/" + mapName + "/" + mapName + ".wdl";
+
+    m_wdtfile = api->cacheStorage->getWdtFileCache()->get(wdtFileName);
+    m_wdlObject = std::make_shared<WdlObject>(api, wdlFileName);
+    m_wdlObject->setMapApi(this);
+
+    m_lockedMap = true;
+    std::string adtFileTemplate = "world/maps/" + mapName + "/" + mapName + "_" + std::to_string(i) + "_" + std::to_string(j);
+    auto adtObject = adtObjectFactory->createObject(m_api, adtFileTemplate, mapName, i, j, false, m_wdtfile);
+
+    adtObject->setMapApi(this);
+    this->mapTiles[i][j] = adtObject;
+}
+
+void Map::initialize(HApiContainer api, int mapId) {
+    initMapTiles();
+
+    m_mapId = mapId;
+    m_api = api;
+    m_sceneMode = SceneMode::smMap;
+
+    createAdtFreeLamdas();
+
+    // Only get map record and set flags if mapId is not 0
+    if (mapId != 0 && api->databaseHandler != nullptr) {
+        MapRecord mapRecord;
+        api->databaseHandler->getMapById(mapId, mapRecord);
+        useWeightedBlend = (mapRecord.flags0 & 0x4) > 0;
+        has0x200000Flag = (mapRecord.flags0 & 0x200000) > 0;
+    }
 
     m_dayNightLightHolder.loadZoneLights();
 
     m_sceneWideBlockVSPSChunk = nullptr;
 }
+
 
 std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSceneBufferCreate &sceneRenderer,
                                                               const HGVertexBufferBindings &skyBindings, bool conusFor0x4Sky) {
@@ -326,6 +366,52 @@ std::tuple<HGMesh, std::shared_ptr<ISkyMeshMaterial>> createSkyMesh(const HMapSc
     }
 
     //Make mesh
+    HGMesh hmesh = sceneRenderer->createMesh(meshTemplate, material);
+    return {hmesh, material};
+}
+
+// Unit quad for planet billboards (xy = corner, zw = uv); drawn camera-facing in planetShader
+static const std::array<mathfu::vec4, 4> planetQuadVBO = {{
+    mathfu::vec4(-0.5f, -0.5f, 0.0f, 1.0f),
+    mathfu::vec4( 0.5f, -0.5f, 1.0f, 1.0f),
+    mathfu::vec4( 0.5f,  0.5f, 1.0f, 0.0f),
+    mathfu::vec4(-0.5f,  0.5f, 0.0f, 0.0f),
+}};
+static const std::array<uint16_t, 6> planetQuadIBO = {{0, 1, 2, 0, 2, 3}};
+
+HGVertexBufferBindings createPlanetBindings(const HMapSceneBufferCreate &sceneRenderer) {
+    auto planetIBO = sceneRenderer->createSkyIndexBuffer(planetQuadIBO.size() * sizeof(uint16_t));
+    planetIBO->uploadData(
+        planetQuadIBO.data(),
+        planetQuadIBO.size() * sizeof(uint16_t));
+
+    auto planetVBO = sceneRenderer->createSkyVertexBuffer(planetQuadVBO.size() * sizeof(mathfu::vec4_packed));
+    planetVBO->uploadData(
+        planetQuadVBO.data(),
+        planetQuadVBO.size() * sizeof(mathfu::vec4_packed)
+    );
+
+    return sceneRenderer->createSkyVAO(planetVBO, planetIBO);
+}
+
+std::tuple<HGMesh, std::shared_ptr<IPlanetMaterial>> createPlanetMesh(const HMapSceneBufferCreate &sceneRenderer,
+                                                                      const HGVertexBufferBindings &planetBindings,
+                                                                      const HGSamplableTexture &texture) {
+
+    PipelineTemplate pipelineTemplate;
+    pipelineTemplate.depthWrite = false;
+    pipelineTemplate.depthCulling = true;
+    pipelineTemplate.backFaceCulling = false;
+    pipelineTemplate.blendMode = EGxBlendEnum::GxBlend_Alpha;
+    pipelineTemplate.element = DrawElementMode::TRIANGLES;
+
+    auto material = sceneRenderer->createPlanetMaterial(pipelineTemplate, texture);
+
+    gMeshTemplate meshTemplate(planetBindings);
+    meshTemplate.meshType = MeshType::eGeneralMesh;
+    meshTemplate.start = 0;
+    meshTemplate.end = 6;
+
     HGMesh hmesh = sceneRenderer->createMesh(meshTemplate, material);
     return {hmesh, material};
 }
@@ -386,6 +472,10 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         ZoneScopedN("cullGetCurrentWMOCounter");
         //Hack that is needed to get the current WMO the camera is in. Basically it does frustum culling over current ADT
         getPotentialEntities(frustumData, cameraPos, mapRenderPlan, potentialM2, potentialWmo);
+
+        if (m_worldObjectManager && m_api->getConfig()->renderGameObjects) {
+            m_worldObjectManager->getPotentialWmoCandidates(frustumData, potentialWmo);
+        }
 
         float bottomBorder = -99999;
 
@@ -511,7 +601,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         checkExterior(cameraPos, exteriorView->frustumData, m_viewRenderOrder, mapRenderPlan);
     }
 
-    if ((mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupShowExtSkybox)) {
+    if (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() != nullptr || mapRenderPlan->currentWmoGroupShowExtSkybox || mapRenderPlan->currentWmoGroupIsExtLit)) {
         ZoneScopedN("Skybox");
         auto exteriorView = mapRenderPlan->viewsHolder.getOrCreateExterior(frustumData);
 
@@ -523,19 +613,53 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
                 frustumData);
         }
 
-        auto &exteriorSkyBoxes = m_dayNightLightHolder.getExteriorSkyBoxes();
-        if (!exteriorSkyBoxes.empty() && config->renderSkyDom) {
-            auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
+        mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom;
 
-            for (auto &model: exteriorSkyBoxes) {
-                if (model != nullptr) {
-                    skyBoxView->m2List.addToDraw(model);
+        if (config->renderSkyDom) {
+            auto skyBoxView = mapRenderPlan->viewsHolder.getSkybox();
+            const auto &starsData = mapRenderPlan->frameDependentData->stars;
+            if (starsData.enabled) {
+                if (m_starsModel == nullptr) {
+                    m_starsModel = m2Factory->createObject(m_api, true);
+                    m_starsModel->setLoadParams(0, {}, {});
+                    m_starsModel->setModelFileId(130629);
+                    m_starsModel->createPlacementMatrix(mathfu::vec3(0, 0, 0), 0, mathfu::vec3(1, 1, 1), nullptr);
+                    m_starsModel->calcWorldPosition();
                 }
+                m_starsModel->setAlpha(starsData.alpha);
+
+                skyBoxView->stars.addToDraw(m_starsModel);
+            }
+
+            auto &exteriorSkyBoxes = m_dayNightLightHolder.getExteriorSkyBoxes();
+            if (!exteriorSkyBoxes.empty() && config->renderSkyDom) {
+
+                for (auto &model: exteriorSkyBoxes) {
+                    if (model != nullptr) {
+                        skyBoxView->m2List.addToDraw(model);
+                    }
+                }
+            }
+
+            skyBoxView->skyMesh = skyMesh;
+
+            if (mapRenderPlan->renderSky) {
+                const auto &fdd = mapRenderPlan->frameDependentData;
+                for (int i = 0; i < 3; i++) {
+                    skyBoxView->m_planetMeshes[i] = fdd->planets[i].visible ? m_planetMeshes[i] : nullptr;
+                }
+            } else {
+                for (int i = 0; i < 3; i++)
+                    skyBoxView->m_planetMeshes[i] = nullptr;
+            }
+
+            if (mapRenderPlan->frameDependentData->overrideValuesWithFinalFog) {
+                skyBoxView->skyMesh0x4 = skyMesh0x4Sky;
             }
         }
     }
 
-    std::vector<std::shared_ptr<CWmoNewLight>> newWmoLights = {};
+    std::vector<std::shared_ptr<CEngineLight>> newWmoLights = {};
     {
 
         auto exteriorView = mapRenderPlan->viewsHolder.getExterior();
@@ -567,6 +691,7 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
             interiorView->collectLights(mapRenderPlan->pointLights, mapRenderPlan->spotLights, newWmoLights);
         }
     }
+
     {
         ZoneScopedN("process new lights");
         //Delete duplicates for new wmo lights
@@ -574,20 +699,13 @@ void Map::makeFramePlan(const FrameInputParams<MapSceneParams> &frameInputParams
         newWmoLights.erase(std::unique(newWmoLights.begin(), newWmoLights.end()), newWmoLights.end());
 
         //Collect spotLights and point lights from new WMO lights
+        auto sceneTime = getCurrentSceneTime();
         for (auto &newWmoLight: newWmoLights) {
-            newWmoLight->collectLight(cameraVec3, mapRenderPlan->pointLights, mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
+            newWmoLight->collectLight(cameraVec3, sceneTime, mapRenderPlan->pointLights, mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
         }
     }
 
-    mapRenderPlan->renderSky = m_api->getConfig()->renderSkyDom &&
-        (!m_suppressDrawingSky && (mapRenderPlan->viewsHolder.getExterior() || mapRenderPlan->currentWmoGroupShowExtSkybox));
 
-//    if (m_skyConeAlpha > 0) {
-        mapRenderPlan->skyMesh = skyMesh;
-//    }
-    if (mapRenderPlan->frameDependentData->overrideValuesWithFinalFog) {
-        mapRenderPlan->skyMesh0x4 = skyMesh0x4Sky;
-    }
 
 //    //Limit M2 count based on distance/m2 height
 //    for (auto it = this->m2RenderedThisFrameArr.begin();
@@ -646,7 +764,15 @@ void Map::getPotentialEntities(const MathHelper::FrustumCullingData &frustumData
         } else {
             if (wmoMap == nullptr) {
                 wmoMap = wmoFactory->createObject(m_api);
-                wmoMap->setLoadingParam(*m_wdtfile->wmoDef);
+
+                //The wmo maps should be loaded with coordinates as is.
+                //So we need to apply anti ADT fix, which is applied down the line
+                SMMapObjDef fixedWmoDef = *m_wdtfile->wmoDef;
+                fixedWmoDef.position =
+                    (MathHelper::getAdtToWorldMat4().Inverse() * mathfu::vec4(mathfu::vec3(fixedWmoDef.position), 1.0f)).xyz();
+
+                int zero;
+                wmoMap->setLoadingParam(fixedWmoDef, {zero}, {zero});
                 wmoMap->setModelFileId(m_wdtfile->wmoDef->nameId);
             }
 
@@ -710,10 +836,47 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
 
     getCandidatesEntities(frustumData, cameraPos, mapRenderPlan, exteriorView->m2List, mapRenderPlan->wmoArray);
 
+    if (m_worldObjectManager && m_api->getConfig()->renderGameObjects) {
+        ZoneScopedN("world objects candidates");
+        m_worldObjectManager->cullAndCollect(frustumData, exteriorView->m2List, mapRenderPlan->wmoArray);
+    }
+
     //Frustum cull
-    for (auto &wmoId : mapRenderPlan->wmoArray.getCandidates()) {
+    auto &wmoCandidates = mapRenderPlan->wmoArray.getCandidates();
+    std::vector<uint32_t> wmoCullResults;
+
+    oneapi::tbb::task_arena cullingArena(m_api->getConfig()->hardwareThreadCount(), 1);
+
+    //Batch frustum-cull WMO candidates by their world bounding boxes, so that off-frustum WMOs
+    //don't pay for the portal traversal setup. The WMO bbox contains all of its groups (loaded
+    //or not), so this only rejects WMOs whose groups would all be culled downstream anyway.
+    if (!wmoCandidates.empty()) {
+        ZoneScopedN("Cull WMO");
+        wmoCullResults = std::vector<uint32_t>(wmoCandidates.size(), 0xFFFFFFFF);
+
+#if (__AVX__ && __SSE2__)
+        ObjectCullingSEE<WMOObjId>::cull(frustumData, 0, wmoCandidates.size(), wmoCandidates, wmoCullResults);
+#else
+        ObjectCulling<WMOObjId>::cull(frustumData, 0, wmoCandidates.size(), wmoCandidates, wmoCullResults);
+#endif
+    }
+
+    const bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
+    for (int wmoCandInd = 0; wmoCandInd < wmoCandidates.size(); wmoCandInd++) {
+        auto &wmoId = wmoCandidates[wmoCandInd];
         auto wmoCandidate = wmoFactory->getObjectById<0>(wmoId);
         if (wmoCandidate!= nullptr && !wmoCandidate->isLoaded()) continue;
+
+        if (wmoCullResults[wmoCandInd] != 0) {
+            //WMO bbox is outside the frustum. WMOs with unconditional per-group handling still
+            //need the full traversal; for the rest only the load triggers of not-yet-loaded
+            //exterior groups have to be preserved.
+            if (!wmoCandidate->hasAlwaysDrawGroups() &&
+                !(renderAntiPortals && wmoCandidate->hasAntiportalGroups())) {
+                wmoCandidate->triggerExteriorGroupLoads(exteriorView->wmoGroupArray);
+                continue;
+            }
+        }
 
         if (wmoCandidate->startTraversingWMOGroup(
             cameraPos,
@@ -737,9 +900,7 @@ void Map::checkExterior(mathfu::vec4 &cameraPos,
         if (candidates.size() > 0) {
             results = std::vector<uint32_t>(candidates.size(), 0xFFFFFFFF);
 
-            oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
-            arena.execute([&] {
-
+            cullingArena.execute([&] {
                 oneapi::tbb::parallel_for(tbb::blocked_range<size_t>(0, candidates.size(), 2000),
                                           [&](tbb::blocked_range<size_t> &r) {
     //            for (size_t i = r.begin(); i != r.end(); ++i) {
@@ -883,24 +1044,23 @@ void Map::checkADTCulling(int i, int j,
         } else {
             //Add lights from WDTLightObject
             if (m_wdtLightObject) {
-                auto pointLightsOfAdt = m_wdtLightObject->getPointLights(i, j);
-                auto &pointLights = mapRenderPlan->pointLights;
-                pointLights.reserve(pointLights.size() + pointLightsOfAdt.size());
-                for (auto &pointLight : pointLightsOfAdt) pointLights.push_back(pointLight.getLightRec());
-
-                //Get spotLights
-                m_wdtLightObject->collectSpotLights(
+                //Get lights
+                auto sceneTime = getCurrentSceneTime();
+                m_wdtLightObject->collectLights(
                     cameraPos.xyz(),
+                    sceneTime,
                     i, j,
+                    mapRenderPlan->pointLights,
                     mapRenderPlan->spotLights, mapRenderPlan->insideSpotLights);
             }
         }
     } else if (!m_lockedMap && true) { //(m_wdtfile->mapTileTable->mainInfo[j][i].Flag_HasADT > 0) {
+        useWeightedBlend = m_wdtfile->mphd->flags.adt_has_height_texturing || m_wdtfile->mphd->flags.adt_has_big_alpha;
         if (m_wdtfile->mphd->flags.wdt_has_maid) {
-            auto &mapFileIds = m_wdtfile->mapFileDataIDs[j * 64 + i];
+            auto &mapFileIds = m_wdtfile->mapFileDataIDs->array[j * 64 + i];
             if (mapFileIds.rootADT > 0) {
                 adtObject = adtObjectFactory->createObject(m_api, i, j,
-                                                        m_wdtfile->mapFileDataIDs[j * 64 + i],
+                                                        m_wdtfile->mapFileDataIDs->array[j * 64 + i],
                                                         useWeightedBlend,
                                                         m_wdtfile);
             } else {
@@ -978,6 +1138,13 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
     int wmoProcessedThisFrame = 0;
     int wmoGroupsProcessedThisFrame = 0;
 
+    //Init LiquidManager
+    if (m_liquidMaterialManager == nullptr) {
+        m_liquidMaterialManager = std::make_unique<LiquidMaterialManager>(m_api, sceneRenderer);
+    }
+
+    m_liquidMaterialManager->update(m_currentTime);
+
     {
         ZoneScopedN("Load m2 main");
         if (m_api->getConfig()->renderM2) {
@@ -1013,6 +1180,16 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
                 if (m2Object == nullptr) continue;
                 m2Object->doLoadGeom(sceneRenderer);
             }
+            for (auto &m2ObjectId: skyboxView->stars.getToLoadMain()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadMainFile();
+            }
+            for (auto &m2ObjectId: skyboxView->stars.getToLoadGeom()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->doLoadGeom(sceneRenderer);
+            }
         }
     }
 //    }
@@ -1033,7 +1210,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         if (m_api->getConfig()->renderWMO) {
             for (auto &wmoGroupObject: renderPlan->wmoGroupArray.getToLoad()) {
                 if (wmoGroupObject == nullptr) continue;
-                wmoGroupObject->doPostLoad(sceneRenderer);
+                wmoGroupObject->doPostLoad(sceneRenderer, m_liquidMaterialManager);
                 wmoGroupsProcessedThisFrame++;
                 if (wmoGroupsProcessedThisFrame > MAX_LOAD_WMOGROUP_PER_FRAME) break;
             }
@@ -1044,7 +1221,7 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         ZoneScopedN("Load adt");
         int adtProcessed = 0;
         for (auto &adtObject: renderPlan->adtArray) {
-            adtProcessed += (adtObject.adtObject->doPostLoad(sceneRenderer)) ? 1 : 0;
+            adtProcessed += (adtObject.adtObject->doPostLoad(sceneRenderer, m_liquidMaterialManager)) ? 1 : 0;
             if (adtProcessed >= MAX_LOAD_ADT_PER_FRAME) break;
         }
     }
@@ -1053,6 +1230,23 @@ void Map::doPostLoad(const HMapSceneBufferCreate &sceneRenderer, const HMapRende
         auto skyMeshBinding = createSkyBindings(sceneRenderer);
         std::tie(skyMesh, skyMeshMat) = createSkyMesh(sceneRenderer, skyMeshBinding, false);
         std::tie(skyMesh0x4Sky, skyMeshMat0x4) = createSkyMesh(sceneRenderer, skyMeshBinding, true);
+    }
+
+    if (m_planetMeshes[0] == nullptr) {
+        static const std::array<int, 3> planetTextureFdids = {{186220, 4629581, 4629582}}; // sun, moon1, moon2
+
+        auto planetBindings = createPlanetBindings(sceneRenderer);
+        for (int i = 0; i < 3; i++) {
+            if (m_planetTextures[i] == nullptr) {
+                auto texture = m_api->cacheStorage->getTextureCache()->getFileId(planetTextureFdids[i]);
+                if (texture != nullptr) {
+                    m_planetTextures[i] = m_api->hDevice->createBlpTexture(texture, true, true);
+                }
+            }
+            if (m_planetTextures[i] != nullptr) {
+                std::tie(m_planetMeshes[i], m_planetMats[i]) = createPlanetMesh(sceneRenderer, planetBindings, m_planetTextures[i]);
+            }
+        }
     }
     bool renderPortals = m_api->getConfig()->renderPortals;
     bool renderAntiPortals = m_api->getConfig()->renderAntiPortals;
@@ -1095,16 +1289,18 @@ void Map::update(const HMapRenderPlan &renderPlan) {
         std::mutex fillLights;
         if (granSize > 0) {
             oneapi::tbb::task_arena arena(m_api->getConfig()->hardwareThreadCount(), 1);
+            auto processingFrame = FrameContext::getCurrentProcessingFrameNumber();
             arena.execute([&] {
                 tbb::affinity_partitioner ap;
                 tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
                     [&](tbb::blocked_range<size_t> r) {
+                        FrameContext::setCurrentProcessingFrameNumber(processingFrame);
                         std::vector<LocalLight> localLights;
 
                         for (size_t i = r.begin(); i != r.end(); ++i) {
                             auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
                             if (m2Object == nullptr) continue;
-                            m2Object->update(deltaTime, cameraVec3, lookAtMat);\
+                            m2Object->update(deltaTime, cameraVec3, lookAtMat);
 
                             m2Object->collectLights(localLights);
                         }
@@ -1120,6 +1316,11 @@ void Map::update(const HMapRenderPlan &renderPlan) {
 
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId : skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                if (m2Object == nullptr) continue;
+                m2Object->update(deltaTime, cameraVec3, lookAtMat);
+            }
+            for (auto &m2ObjectId : skyBoxView->stars.getDrawn()) {
                 auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 if (m2Object == nullptr) continue;
                 m2Object->update(deltaTime, cameraVec3, lookAtMat);
@@ -1234,6 +1435,18 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         skyMeshMat->m_skyColors->save();
     }
 
+    // Planet billboards: upload world pos/scale and color/alpha computed by DayNightLightHolder
+    for (int i = 0; i < 3; i++) {
+        if (m_planetMats[i] == nullptr) continue;
+
+        const auto &planetData = renderPlan->frameDependentData->planets[i];
+        auto &blockVS = m_planetMats[i]->m_planetData->getObject();
+        blockVS.uWorldPosAndScale = mathfu::vec4(planetData.worldPos, planetData.scale);
+        blockVS.uColorAndAlpha = mathfu::vec4(planetData.color, planetData.alpha);
+        blockVS.uCamPos = mathfu::vec4(renderPlan->renderingMatrices->cameraPos.xyz(), 0.0f);
+        m_planetMats[i]->m_planetData->save();
+    }
+
     {
         ZoneScopedN("m2BuffersUpdate");
         auto threadsAvailable = m_api->getConfig()->hardwareThreadCount();
@@ -1256,21 +1469,18 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
         auto updateLambda = [&](const std::function<void(M2Object *)> &callback) {
             if (granSize > 0) {
                 auto l_device = m_api->hDevice;
-                auto oldProcessingFrame = m_api->hDevice->getCurrentProcessingFrameNumber();
-                auto processingFrame = oldProcessingFrame;
-                    tbb::affinity_partitioner ap;
-                    tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
-                        [&](tbb::blocked_range<size_t> r) {
-                            l_device->setCurrentProcessingFrameNumber(processingFrame);
-                            for (size_t i = r.begin(); i != r.end(); ++i) {
-                                auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
-                                if (m2Object != nullptr) {
-                                    callback(m2Object);
-                                }
+                auto processingFrame = FrameContext::getCurrentProcessingFrameNumber();
+                tbb::affinity_partitioner ap;
+                tbb::parallel_for(tbb::blocked_range<size_t>(0, m2ToDraw.size(), granSize),
+                    [&](tbb::blocked_range<size_t> r) {
+                        FrameContext::setCurrentProcessingFrameNumber(processingFrame);
+                        for (size_t i = r.begin(); i != r.end(); ++i) {
+                            auto m2Object = m2Factory->getObjectById<0>(m2ToDraw[i]);
+                            if (m2Object != nullptr) {
+                                callback(m2Object);
                             }
-                        }, ap);
-                //Restore processing frame
-                l_device->setCurrentProcessingFrameNumber(oldProcessingFrame);
+                        }
+                    }, ap);
             }
         };
 
@@ -1309,6 +1519,10 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
                 auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
             }
+            for (auto &m2ObjectId: skyBoxView->stars.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->fitParticleAndRibbonBuffersToSize(sceneRenderer);
+            }
         }
     }
     {
@@ -1319,12 +1533,22 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
                 m2Object->uploadBuffers(renderPlan->renderingMatrices->lookAtMat,
                                                  renderPlan->frameDependentData);
             }
+            for (auto &m2ObjectId: skyBoxView->stars.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->uploadBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
         }
     }
     {
         ZoneScopedN("m2SkyboxGenerateBuffersUpdate");
         if (auto skyBoxView = renderPlan->viewsHolder.getSkybox()) {
             for (auto &m2ObjectId: skyBoxView->m2List.getDrawn()) {
+                auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
+                m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
+                                                 renderPlan->frameDependentData);
+            }
+            for (auto &m2ObjectId: skyBoxView->stars.getDrawn()) {
                 auto m2Object = m2Factory->getObjectById<0>(m2ObjectId);
                 m2Object->uploadGeneratorBuffers(renderPlan->renderingMatrices->lookAtMat,
                                                  renderPlan->frameDependentData);
@@ -1354,10 +1578,10 @@ void Map::updateBuffers(const HMapSceneBufferCreate &sceneRenderer, const HMapRe
 
 std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, const SMDoodadDef &doodadDef) {
     auto it = m_m2MapObjects[doodadDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
+    if (auto m2Object = it.lock()) {
+        return m2Object;
     } else {
-        auto m2Object = m2Factory->createObject(m_api);
+        m2Object = m2Factory->createObject(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileName(fileName);
         m2Object->createPlacementMatrix(doodadDef);
@@ -1372,10 +1596,10 @@ std::shared_ptr<M2Object> Map::getM2Object(std::string fileName, const SMDoodadD
 
 std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, const SMDoodadDef &doodadDef) {
     auto it = m_m2MapObjects[doodadDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
+    if (auto m2Object = it.lock()) {
+        return m2Object;
     } else {
-        auto m2Object = m2Factory->createObject(m_api);
+        m2Object = m2Factory->createObject(m_api);
         m2Object->setLoadParams(0, {}, {});
         m2Object->setModelFileId(fileDataId);
         m2Object->createPlacementMatrix(doodadDef);
@@ -1386,13 +1610,13 @@ std::shared_ptr<M2Object> Map::getM2Object(int fileDataId, const SMDoodadDef &do
     }
     return nullptr;
 }
-std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef, const PointerChecker<MWDR> &MWDR, const PointerChecker<uint16_t> &MWDS) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
+    if (auto wmoObject = it.lock()) {
+        return wmoObject;
     } else {
-        auto wmoObject = wmoFactory->createObject(m_api);
-        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject = wmoFactory->createObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef, MWDR, MWDS);
         wmoObject->setModelFileName(fileName);
 
         m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
@@ -1401,13 +1625,13 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapOb
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef, const PointerChecker<MWDR> &MWDR, const PointerChecker<uint16_t> &MWDS) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
+    if (auto wmoObject = it.lock()) {
+        return wmoObject;
     } else {
-        auto wmoObject = wmoFactory->createObject(m_api);
-        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject = wmoFactory->createObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef, MWDR, MWDS);
         wmoObject->setModelFileId(fileDataId);
 
         m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
@@ -1416,13 +1640,13 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDef &
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef, const PointerChecker<MWDR> &MWDR, const PointerChecker<uint16_t> &MWDS) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
+    if (auto wmoObject = it.lock()) {
+        return wmoObject;
     } else {
-        auto wmoObject = wmoFactory->createObject(m_api);
-        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject = wmoFactory->createObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef, MWDR, MWDS);
         wmoObject->setModelFileName(fileName);
 
         m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
@@ -1431,13 +1655,13 @@ std::shared_ptr<WmoObject> Map::getWmoObject(std::string fileName, const SMMapOb
     return nullptr;
 }
 
-std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef) {
+std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef, const PointerChecker<MWDR> &MWDR, const PointerChecker<uint16_t> &MWDS) {
     auto it = m_wmoMapObjects[mapObjDef.uniqueId];
-    if (!it.expired()) {
-        return it.lock();
+    if (auto wmoObject = it.lock()) {
+        return wmoObject;
     } else {
-        auto wmoObject = wmoFactory->createObject(m_api);
-        wmoObject->setLoadingParam(mapObjDef);
+        wmoObject = wmoFactory->createObject(m_api);
+        wmoObject->setLoadingParam(mapObjDef, MWDR, MWDS);
         wmoObject->setModelFileId(fileDataId);
 
         m_wmoMapObjects[mapObjDef.uniqueId] = std::weak_ptr<WmoObject>(wmoObject);
@@ -1448,3 +1672,10 @@ std::shared_ptr<WmoObject> Map::getWmoObject(int fileDataId, const SMMapObjDefOb
 animTime_t Map::getCurrentSceneTime() {
     return m_currentTime;
 }
+mathfu::vec3 Map::getGlobalOffset() {
+    return mathfu::vec3(0, 0, 0);
+}
+
+
+
+

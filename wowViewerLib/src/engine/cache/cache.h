@@ -72,7 +72,7 @@ public:
         cacheLck.unlock();
 //        std::cout << "m_cache.size() == " << m_cache.size() << " " << __PRETTY_FUNCTION__ << std::endl;
 
-        m_fileRequestProcessor->requestFile(fileName, this->holderType, weakPtr);
+        m_fileRequestProcessor->requestFile(this->holderType, weakPtr);
 
         return sharedPtr;
     }
@@ -96,10 +96,9 @@ public:
             auto it = m_cache.find(fileName);
             bool found = it != m_cache.end();
             if (found) {
-                if (!it->second.expired()) {
-                    return it->second.lock();
-                } else {
-//                std::cout << "getFileId: fileName = " << fileName << " is expired" << std::endl;
+               if (std::shared_ptr<T> shared = it->second.lock()) {
+                    //element found;
+                    return shared;
                 }
             }
         }
@@ -108,7 +107,7 @@ public:
         m_cache[fileName] = sharedPtr;
         cacheLck.unlock();
 
-        m_fileRequestProcessor->requestFile(fileName, this->holderType, sharedPtr);
+        m_fileRequestProcessor->requestFile(this->holderType, sharedPtr);
 
         return sharedPtr;
     }
@@ -122,11 +121,8 @@ public:
         std::weak_ptr<T> weakPtr = m_cache[fileName];
         cacheLck.unlock();
 
-        if (!weakPtr.expired())
-        {
-            if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
-                sharedPtr->setRejected();
-            }
+        if (std::shared_ptr<T> sharedPtr = weakPtr.lock()) {
+           sharedPtr->setRejected();
         }
     }
 

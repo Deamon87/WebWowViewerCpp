@@ -40,7 +40,7 @@ std::string ReplaceAll(std::string str, const std::string& from, const std::stri
     return str;
 }
 
-void HttpRequestProcessor::processFileRequest(const std::string &fileName, CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) {
+void HttpRequestProcessor::processFileRequest(CacheHolderType holderType, const std::weak_ptr<PersistentFile> &s_file) {
     auto perstFile = s_file.lock();
     if (perstFile == nullptr){
         toBeProcessed--;
@@ -48,6 +48,9 @@ void HttpRequestProcessor::processFileRequest(const std::string &fileName, Cache
     }
 
     const std::string charsToEscape = " !*'();:@&=+$,/?#[]";
+
+    auto fileName = perstFile->getFileNameOrDataId();
+    int fileDataId = perstFile->getFileDataId();
 
     std::string escapedFileName = fileName;
     for (int i = 0; i < charsToEscape.size(); i++) {
@@ -57,13 +60,8 @@ void HttpRequestProcessor::processFileRequest(const std::string &fileName, Cache
 
 
     std::string fullUrl;
-    if (fileName.find("File") == 0) {
-        std::stringstream ss;
-        std::string fileDataIdHex = fileName.substr(4, fileName.find(".")-4);
-        uint32_t fileDataId;
-        ss << std::hex << fileDataIdHex;
-        ss >> fileDataId;
 
+    if (perstFile->getFileDataId() > 0) {
         fullUrl = m_urlBaseFileId + std::to_string(fileDataId);
     } else {
         fullUrl = m_urlBase + escapedFileName;
@@ -97,7 +95,7 @@ void HttpRequestProcessor::processFileRequest(const std::string &fileName, Cache
                   std::istream_iterator<unsigned char>(),
                   std::back_inserter(*vec.get()));
 
-        processResult(perstFile, vec, fileName);
+        processResult(perstFile, vec);
         toBeProcessed--;
 
         return;
@@ -123,7 +121,7 @@ void HttpRequestProcessor::processFileRequest(const std::string &fileName, Cache
                 FILE.close();
 
                 //Provide file!
-                processResult(perstFile, fileContent, fileName);
+                processResult(perstFile, fileContent);
                 toBeProcessed--;
             }
     );

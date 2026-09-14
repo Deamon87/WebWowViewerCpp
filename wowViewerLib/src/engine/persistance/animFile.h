@@ -12,10 +12,10 @@
 
 class AnimFile : public PersistentFile {
 public:
-    AnimFile(std::string fileName){};
-    AnimFile(int fileDataId){};
+    AnimFile(std::string fileName) : PersistentFile(fileName){};
+    AnimFile(int fileDataId) : PersistentFile(fileDataId){};
 
-    void process(HFileContent animFile, const std::string &fileName) override;
+    void process(HFileContent animFile) override;
 
     void setPostLoad(std::function<void ()> postLoadFunction) {
         this->m_postLoadFunction = postLoadFunction;

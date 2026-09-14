@@ -15,6 +15,9 @@ class CmdBufRecorder;
 class RenderPassHelper;
 class GCommandBuffer;
 class CommandBufferDebugLabel;
+class IMesh;
+class ComputePipelineVLK;
+typedef std::shared_ptr<ComputePipelineVLK> HComputePipelineVLK;
 
 #include "../CommandBuffer.h"
 #include "RenderPassHelper.h"
@@ -33,7 +36,9 @@ public:
     friend RenderPassHelper;
     friend CommandBufferDebugLabel;
 
-    CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass);
+    // simultaneousUse: set VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT for secondary buffers
+    // that are executed more than once (or into multiple primaries) per recording
+    CmdBufRecorder(GCommandBuffer &cmdBuffer, const std::shared_ptr<GRenderPassVLK> &renderPass, bool simultaneousUse = false);
     CmdBufRecorder(const CmdBufRecorder&) = delete;
     CmdBufRecorder operator=(const CmdBufRecorder&) = delete;
     ~CmdBufRecorder();
@@ -47,6 +52,14 @@ public:
             m_gbufferMode = value;
         }
     }
+
+    void setZPrefillMode(bool value) {
+        if (m_zprefillMode != value) {
+            m_currentPipeline = nullptr;
+            m_zprefillMode = value;
+        }
+    }
+
 
     RenderPassHelper beginRenderPass(
         bool isAboutToExecSecondaryCMD,
@@ -67,7 +80,19 @@ public:
     inline void bindPipeline(const std::shared_ptr<GPipelineVLK> &pipeline);
     inline void bindDescriptorSets(VkPipelineBindPoint bindPoint, const std::vector<std::shared_ptr<GDescriptorSet>> &descriptorSets);
 
+    void drawMesh(const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType );
+    void drawMeshFromId(GMeshVLK *meshVlk, CmdBufRecorder::ViewportType viewportType);
+
     void drawIndexed(uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, uint32_t firstInstance, uint32_t vertexOffset = 0);
+    void drawIndexedIndirect(const std::shared_ptr<IBufferVLK> &buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride);
+
+    void bindComputePipeline(const HComputePipelineVLK &pipeline);
+    void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
+    void pushConstants(VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void *pValues);
+
+    void beginConditionalRendering(const std::shared_ptr<IBufferVLK> &buffer, VkDeviceSize offset, bool inverted = false);
+    void endConditionalRendering();
 
     void executeSecondaryCmdBuffer(const std::shared_ptr<GCommandBuffer> &cmdBuffer);
 
@@ -75,6 +100,8 @@ public:
                      const std::array<uint32_t, 2> &areaSize);
     void setDefaultScissors();
 
+    void blitImage(VkImage srcImage, VkImageLayout srcLayout, VkImage dstImage, VkImageLayout dstLayout,
+                   const VkImageBlit &region, VkFilter filter);
     void recordPipelineImageBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkImageMemoryBarrier> &imageBarrierData);
     void recordPipelineBufferBarrier(VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, const std::vector<VkBufferMemoryBarrier> &imageBarrierData);
     void copyBufferToImage(VkBuffer buffer, VkImage image, const std::vector<VkBufferImageCopy> &regions);
@@ -102,7 +129,9 @@ private:
     VkPipelineLayout m_currentPipelineLayout = nullptr;
     std::shared_ptr<IBufferVLK> m_currentIndexBuffer = nullptr;
     std::array<std::shared_ptr<IBufferVLK>, MAX_VERTEX_BUFFERS_PER_DRAWCALL> m_currentVertexBuffers;
-    std::array<GDescriptorSet *, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentDescriptorSet = {nullptr};
+    std::array<GDescriptorSet *, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentGraphicsDescriptorSet = {nullptr};
+    std::array<GDescriptorSet *, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentComputeDescriptorSet = {nullptr};
+    std::array<GDescriptorSet *, GDescriptorSetLayout::MAX_BINDPOINT_NUMBER> m_currentRayTracingDescriptorSet = {nullptr};
     bool m_currentScissorsIsDefault = false;
     ViewportType m_currentViewport = ViewportType::vp_none;
 
@@ -114,6 +143,7 @@ private:
     VkRect2D defaultScissor;
 
     bool m_gbufferMode = false;
+    bool m_zprefillMode = false;
 
     void createViewPortTypes(const std::array<int32_t, 2> &areaOffset,
                              const std::array<uint32_t, 2> &areaSize,

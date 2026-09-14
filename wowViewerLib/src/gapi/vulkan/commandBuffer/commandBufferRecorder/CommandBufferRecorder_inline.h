@@ -23,6 +23,20 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
         //Which leads to three separate states for:
         // VK_PIPELINE_BIND_POINT_GRAPHICS, VK_PIPELINE_BIND_POINT_COMPUTE, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR
         // Also, implement "Pipeline Layout Compatibility" thing from spec
+
+    assert(
+        (bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS) ||
+        (bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE) ||
+        (bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR)
+    );
+
+    auto &currentDescriptorSet =
+        (bindPoint == VK_PIPELINE_BIND_POINT_GRAPHICS) ? m_currentGraphicsDescriptorSet :
+        (bindPoint == VK_PIPELINE_BIND_POINT_COMPUTE) ? m_currentComputeDescriptorSet :
+        (bindPoint == VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR) ? m_currentRayTracingDescriptorSet :
+        m_currentGraphicsDescriptorSet;
+
+
     uint32_t dynamicOffsets[16];
     uint32_t dynamicOffsetsSize = 0;
     uint32_t *p_dynamicOffset;
@@ -35,13 +49,13 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
     for (int i = 0; i < descriptorSets.size(); i++) {
         auto const pDescriptorSet = descriptorSets[i].get();
 
-        if (m_currentDescriptorSet[i] != pDescriptorSet) {
+        if (currentDescriptorSet[i] != pDescriptorSet) {
             bindIndexStart = bindIndexStart==-1 ? i : bindIndexStart;
 
-            if (m_currentDescriptorSet[i] != nullptr && m_currentDescriptorSet[i]->getDescSetLayout() != pDescriptorSet->getDescSetLayout()) {
+            if (currentDescriptorSet[i] != nullptr && currentDescriptorSet[i]->getDescSetLayout() != pDescriptorSet->getDescSetLayout()) {
                 //The DS was disturbed due to Pipeline Layout Compatibility
                 for (int j = i+1; j < 16; j++)
-                    m_currentDescriptorSet[j] = nullptr;
+                    currentDescriptorSet[j] = nullptr;
             }
 
             auto vkDescSet = pDescriptorSet->getDescSet();
@@ -52,7 +66,7 @@ inline void CmdBufRecorder::bindDescriptorSets(VkPipelineBindPoint bindPoint, co
             p_dynamicOffset+=thisSize;
             dynamicOffsetsSize+=thisSize;
 
-            m_currentDescriptorSet[i] = pDescriptorSet;
+            currentDescriptorSet[i] = pDescriptorSet;
         }
     }
 

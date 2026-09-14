@@ -1,3 +1,5 @@
+#include "stateSaver.h"
+#include <memory>
 #include <imgui.h>
 #include <imgui_internal.h>
 
@@ -10,7 +12,8 @@ void addIniCallback(ImGuiContext* context, const std::string& sectionName,
 
     // Add .ini handle for UserData type
     ImGuiSettingsHandler ini_handler;
-    ini_handler.TypeName = sectionName.c_str();
+    auto storedName = std::make_shared<std::string>(sectionName);
+    ini_handler.TypeName = storedName->c_str();
     ini_handler.TypeHash = ImHashStr(sectionName.c_str());
     ini_handler.ReadOpenFn = [](ImGuiContext*, ImGuiSettingsHandler*, const char* name) -> void* {
         if (std::string("global").compare(name) != 0 )
@@ -22,7 +25,7 @@ void addIniCallback(ImGuiContext* context, const std::string& sectionName,
         readFunction(line);
     };
 
-    ini_handler.WriteAllFn = [writeFunction, sectionName](ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) -> void {
+    ini_handler.WriteAllFn = [writeFunction, sectionName, storedName](ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf) -> void {
         buf->appendf("[%s][%s]\n", sectionName.c_str(), "global");
         writeFunction(buf);
 //        buf->appendf("Pos=%d,%d\n", settings->Pos.x, settings->Pos.y);

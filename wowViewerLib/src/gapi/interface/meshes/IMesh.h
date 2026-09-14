@@ -12,6 +12,8 @@
 #include "../IDevice.h"
 #include "../../../engine/objects/SceneObjectWithID.h"
 
+//#define DEBUG_MESH_NAMES
+
 enum class MeshType {
     eGeneralMesh = 0,
     eAdtMesh = 1,
@@ -65,6 +67,11 @@ public:
     bool scissorEnabled = false;
     std::array<int, 2> scissorOffset = {0,0};
     std::array<uint32_t, 2> scissorSize = {0,0};
+
+#ifdef DEBUG_MESH_NAMES
+    std::string name = "";
+#endif
+
 };
 
 enum class GMeshId : uintptr_t;
@@ -78,14 +85,21 @@ public:
 //    auto textureCount()       -> int { return m_texture.size(); }
 
     auto bindings() const -> const HGVertexBufferBindings& { return m_bindings; }
-
+#ifdef DEBUG_MESH_NAMES
+    auto debugName() const -> const std::string& { return m_debugName; }
+    void setDebugName(const std::string &name) { m_debugName = name; }
+#endif
 
     int vertexStart = 0;
     int instanceIndex = -1;
 protected:
     HGVertexBufferBindings m_bindings;
-    uint32_t m_start;
+    uint32_t m_start = 0;
     uint32_t  m_end;
+
+#ifdef DEBUG_MESH_NAMES
+    std::string m_debugName;
+#endif
 
 public:
     ~IMesh() override = default ;

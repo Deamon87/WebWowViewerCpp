@@ -11,7 +11,7 @@
 
 class MapSceneRendererFactory {
 public:
-    static std::shared_ptr<MapSceneRenderer> createForwardRenderer(const HGDevice &device, Config * config);
+    static std::shared_ptr<MapSceneRenderer> createForwardRenderer(const HGDevice &device, bool forceForward, Config * config);
 };
 
 

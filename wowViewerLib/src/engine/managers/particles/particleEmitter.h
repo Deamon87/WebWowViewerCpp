@@ -76,7 +76,9 @@ public:
     CParticleGenerator * getGenerator(){
         return generator;
     }
-    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes, int renderOrder);
+    void collectMeshes(COpaqueMeshCollector &opaqueMeshCollector, transp_vec<HGSortableMesh> &transparentMeshes);
+    // Visits the live mesh for the current processing frame.
+    void forEachMesh(const std::function<void(const HGParticleMesh &mesh)> &visitor);
 
     void fitBuffersToSize(const HMapSceneBufferCreate &sceneRenderer);
 
@@ -87,7 +89,56 @@ public:
 
     static float RandTable[128];
     static bool randTableInited;
+    static void ensureRandTableInit() {
+        if (!randTableInited) {
+            for (int i = 0; i < 128; i++) {
+                RandTable[i] = (float)std::rand() / (float)RAND_MAX;
+            }
+            randTableInited = true;
+        }
+    }
+
+    // ---- GPU particle sim path (Config::useGpuAnimation + bindless renderer) ----
+    // The sim runs in particleSimulate.comp.slang and the pull-model vertex shader
+    // m2ParticleGpuShader.vert.slang expands quads directly from the particle pool.
+    // True only while the GPU path is actually live (GPU data created AND the
+    // object's GPU animation is enabled) — when the user toggles GPU animation
+    // off, the CPU sim/buffers/meshes must take over again.
+    // Defined in the .cpp: M2Object can be incomplete here (circular include).
+    bool isGpuSimActive() const;
+    int32_t getGpuStateIndex() const { return m_gpuStateIndex; }
+
+    // Seeds for GPU state init (RNG stream continuity): {emitterValue, emitterAccum,
+    // generatorValue, generatorAccum}
+    void getSeedStates(M2GpuEmitterSeeds &outSeeds) const;
+
+    int32_t getRandomizedTextureIndexMask() const { return m_randomizedTextureIndexMask; }
+
+    // Links the emitter to its GPU sim data (called by M2Object once the object's
+    // GPU animation data exists). Writes the gpuBind fields of the shared
+    // meshParticleWideBlockPS and sets the pull-model mesh's index count.
+    void setGpuSimData(int32_t stateIndex, int32_t capacity);
+
+    // Writes the per-emitter GPU bind fields into both (CPU + GPU) materials'
+    // fragment-data blocks.
+    void setGpuBindFields(const GpuParticleEmitterBindInfo &bindInfo);
+
+    // Per-frame CPU-side work when the sim runs on GPU: only the sort distance.
+    void updateGpuSortDistance(const mathfu::mat4 &transformMat, const mathfu::mat4 &viewMatrix);
 private:
+    // -1 = CPU sim. Set by setGpuSimData.
+    int32_t m_gpuStateIndex = -1;
+    HGSortableMesh m_gpuMesh = nullptr;   // pull-model mesh (no vertex buffer)
+    std::shared_ptr<IM2ParticleMaterial> m_gpuMaterial = nullptr;
+
+    // Full last-written snapshot of the meshParticleWideBlockPS UBO content.
+    // CBufferChunkVLK::getObject() returns a fresh staging slot whose ENTIRE content
+    // is uploaded over the chunk at submit, so the UBO must always be written whole
+    // from this snapshot — never read back or partially written through getObject().
+    Particle::meshParticleWideBlockPS m_blockPS = {};
+
+    void createGpuMesh(const HMapSceneBufferCreate &sceneRenderer);
+public:
     HApiContainer m_api;
 
     M2Particle *m_data;
@@ -140,6 +191,7 @@ private:
     float texScaleY;
 
     int m_temp_maxFutureSize = 0;
+    int m_bufferIndex = 0;
 private:
 
     struct ParticlePreRenderData
@@ -173,7 +225,7 @@ private:
 
     void StepUpdate(ParticleBuffer &particlesCurr, ParticleBuffer &particlesLast, animTime_t delta);
 
-    ParticleBuffer& GetLastPBuffer();
+    ParticleBuffer& GetBufferAndAdvance();
     ParticleBuffer& GetCurrentPBuffer();
 
 

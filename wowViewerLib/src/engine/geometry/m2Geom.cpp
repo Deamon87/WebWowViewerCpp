@@ -120,16 +120,16 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             'CAXT',
             {
                 [](M2Geom &file, ChunkData &chunkData) {
-                    debuglog("Entered CAXT");
+                    debuglog("Entered TXAC");
                     file.txacMesh = std::vector<TXAC>(file.m_m2Data->materials.size);
                     file.txacMParticle = std::vector<TXAC>(file.m_m2Data->particle_emitters.size);
 
                     for (int i = 0; i < file.txacMesh.size(); i++) {
-                        chunkData.readValue(file.txacMesh[i]);
+                        chunkData.readValue(file.txacMesh[i].value);
                     }
 
                     for (int i = 0; i < file.txacMParticle.size(); i++) {
-                        chunkData.readValue(file.txacMParticle[i]);
+                        chunkData.readValue(file.txacMParticle[i].value);
                     }
 
                 }
@@ -139,7 +139,7 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             '3VFW',
             {
                 [](M2Geom &file, ChunkData &chunkData) {
-                    debuglog("Entered 3VFW");
+                    debuglog("Entered WFV3");
                     chunkData.readValue(file.m_wfv3);
 
                 }
@@ -149,7 +149,7 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
             '1VFW',
             {
                 [](M2Geom &file, ChunkData &chunkData) {
-                    debuglog("Entered 1VFW");
+                    debuglog("Entered WFV1");
                     float bumpScale;
                     chunkData.readValue(bumpScale);
                     WaterFallDataV3 *dataV3 = new WaterFallDataV3();
@@ -210,15 +210,27 @@ chunkDef<M2Geom> M2Geom::m2FileTable = {
                 }
             }
         },
+        {
+            'LTED',
+            {
+                [](M2Geom &file, ChunkData &chunkData) {
+                    debuglog("Entered DETL");
+                    int arrayLen = chunkData.chunkLen / sizeof(DETL);
+                    file.detl_count = arrayLen;
+                    chunkData.readValues(file.detl, arrayLen);
+                    debuglog("Leaving DETL");
+                }
+            }
+        },
     }
 };
 
 
-void M2Geom::process(HFileContent m2FileC, const std::string &fileName) {
+void M2Geom::process(HFileContent m2FileC) {
     this->m2File = m2FileC;
     auto &m2FileData = *m2FileC.get();
     if (m2FileData.empty()) {
-        std::cout << "M2 file "+fileName << " " << std::to_string(m_modelFileId)+" is empty" << std::endl;
+        std::cout << "M2 file "<< getFileNameOrDataId() << " " << std::to_string(m_modelFileId)+" is empty" << std::endl;
         fsStatus = FileStatus::FSRejected;
         return;
     }
@@ -230,7 +242,7 @@ void M2Geom::process(HFileContent m2FileC, const std::string &fileName) {
 
     uint32_t ident = *(uint32_t *)m2FileData.data();
     if (ident != '12DM' && ident != '02DM') {
-        std::cout << "wrong file header for M2 file " << fileName << " " << std::to_string(m_modelFileId) << " ident = " << std::string((char *)&ident, 4) << std::endl;
+        std::cout << "wrong file header for M2 file " << getFileNameOrDataId() << " " << std::to_string(m_modelFileId) << " ident = " << std::string((char *)&ident, 4) << std::endl;
         std::cout << "Content : " << std::hex << (int)m2FileData[0] << " " << (int)m2FileData[1] << " " << (int)m2FileData[2] << " " << (int)m2FileData[3] << std::dec << std::endl;
         fsStatus = FileStatus::FSRejected;
         return;
@@ -239,7 +251,7 @@ void M2Geom::process(HFileContent m2FileC, const std::string &fileName) {
     m2SizeLoaded.fetch_add(m2File->size());
 
     if (ident == '12DM') {
-        CChunkFileReader reader(*this->m2File.get(), fileName);
+        CChunkFileReader reader(*this->m2File.get(), getFileNameOrDataId());
         reader.processFile(*this, &M2Geom::m2FileTable);
     } else {
         M2Data *m2Header = (M2Data *) this->m2File->data();
@@ -478,6 +490,6 @@ void M2Geom::loadLowPriority(const HApiContainer& m_api, uint32_t animationId, u
 
 M2Geom::~M2Geom() {
     if (m2File != nullptr) {
-        m2SizeLoaded.fetch_add(-m2File->size());
+        m2SizeLoaded.fetch_add(-(int)m2File->size());
     }
 }

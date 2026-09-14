@@ -14,23 +14,13 @@ WdtLightsObject::WdtLightsObject(HApiContainer api, int wdtLgtFileDataId) {
     m_wdtLightFile = m_api->cacheStorage->getWdtLightFileCache()->getFileId(wdtLgtFileDataId);
 }
 
-static const std::vector<CPointLight> emptyPointLights = {};
-static const std::vector<CWmoNewLight> emptySpotLights = {};
 
-const std::vector<CPointLight> &WdtLightsObject::getPointLights(uint8_t tileX, uint8_t tileY) {
-    if (m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
-        return emptyPointLights;
-
-    if (!m_lightsCreated) {
-        createLightArray();
-        m_lightsCreated = true;
-    }
-
-    return m_pointLights[tileX][tileY];
-}
-
-void WdtLightsObject::collectSpotLights(mathfu::vec3 camera, uint8_t tileX, uint8_t tileY, std::vector<SpotLight> &spotLights, std::vector<SpotLight> &insideSpotLights) {
-    if (m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
+void WdtLightsObject::collectLights(mathfu::vec3 camera,
+                                    animTime_t sceneTime,
+                                    uint8_t tileX, uint8_t tileY,
+                                    std::vector<LocalLight> &pointLights,
+                                    std::vector<SpotLight> &spotLights, std::vector<SpotLight> &insideSpotLights) {
+    if (!m_wdtLightFile || m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
         return;
 
     if (!m_lightsCreated) {
@@ -38,18 +28,39 @@ void WdtLightsObject::collectSpotLights(mathfu::vec3 camera, uint8_t tileX, uint
         m_lightsCreated = true;
     }
 
-    std::vector<LocalLight> dummyPointLight;
-    auto &lights = m_spotLights[tileX][tileY];
-    for (auto &spotLight : lights) {
-        spotLight.collectLight(camera, dummyPointLight, spotLights, insideSpotLights);
+    auto &lights = m_lights[tileX][tileY];
+    for (auto &light : lights) {
+        light.collectLight(camera, sceneTime, pointLights, spotLights, insideSpotLights);
     }
 }
 
 void WdtLightsObject::createLightArray() {
-    if (m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
+    if (!m_wdtLightFile || m_wdtLightFile->getStatus() != FileStatus::FSLoaded)
         return;
 
     //Create Point Lights
+       {
+//    std::unordered_map<uint32_t, WdtLightFile::MapPointLight3*> processedLightIds;
+        for (int i = 0; i < m_wdtLightFile->mapPointLights2Len; i++) {
+            auto &pointLight2 = m_wdtLightFile->mapPointLights2[i];
+
+//        {
+//            auto it = processedLightIds.find(pointLight3.lightIndex);
+//            bool found = it != processedLightIds.end();
+//            if (found) {
+//                auto duplicateRec = it->second;
+//                std::cout << "Found duploicate" << std::endl;
+//            }
+//        }
+
+            const MapLightTextureAnimation * mlta = nullptr;
+            if (pointLight2.mlta_index >= 0 && pointLight2.mlta_index < m_wdtLightFile->mapTextureLightAttenuationLen) {
+                mlta = &m_wdtLightFile->mapTextureLightAttenuation[pointLight2.mlta_index];
+            }
+
+            m_lights[pointLight2.tileX][pointLight2.tileY].emplace_back() = CEngineLight(pointLight2, mlta);
+        }
+    }
     {
 //    std::unordered_map<uint32_t, WdtLightFile::MapPointLight3*> processedLightIds;
         for (int i = 0; i < m_wdtLightFile->mapPointLights3Len; i++) {
@@ -64,11 +75,12 @@ void WdtLightsObject::createLightArray() {
 //            }
 //        }
 
+            const MapLightTextureAnimation * mlta = nullptr;
+            if (pointLight3.mlta_index >= 0 && pointLight3.mlta_index < m_wdtLightFile->mapTextureLightAttenuationLen) {
+                mlta = &m_wdtLightFile->mapTextureLightAttenuation[pointLight3.mlta_index];
+            }
 
-            m_pointLights[pointLight3.tileX][pointLight3.tileY].emplace_back() =
-                CPointLight(pointLight3);
-
-//        processedLightIds[pointLight3.lightIndex] = &pointLight3;
+            m_lights[pointLight3.tileX][pointLight3.tileY].emplace_back() = CEngineLight(pointLight3, mlta);
         }
     }
 
@@ -88,11 +100,12 @@ void WdtLightsObject::createLightArray() {
 //            }
 //        }
 
+            const MapLightTextureAnimation * mlta = nullptr;
+            if (spotLight.mlta_index >= 0 && spotLight.mlta_index < m_wdtLightFile->mapTextureLightAttenuationLen) {
+                mlta = &m_wdtLightFile->mapTextureLightAttenuation[spotLight.mlta_index];
+            }
 
-            m_spotLights[spotLight.tileX][spotLight.tileY].emplace_back() =
-                CWmoNewLight(m, spotLight);
-
-//        processedLightIds[pointLight3.lightIndex] = &pointLight3;
+            m_lights[spotLight.tileX][spotLight.tileY].emplace_back() = CEngineLight(spotLight, mlta);
         }
     }
 }

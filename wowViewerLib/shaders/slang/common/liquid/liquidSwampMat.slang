@@ -1,0 +1,204 @@
+#ifndef LIQUID_SWAMP_MATERIAL_SLANG
+#define LIQUID_SWAMP_MATERIAL_SLANG
+
+import glsl;
+
+#include "../commonLiquidStructs.slang"
+#include "./commonLiquidFunctions.slang"
+#include "../commonFogFunctions.slang"
+
+vec4 calcSwampLiquidMat(in LiquidInstanceData v0, in SwampData v1, in SceneWideParams v2, in PSFog v3, in vec3 v4, in vec3 v5, in vec2 v6, in vec2 v7, in vec2 v8, in float v9, in sampler2D v10, in sampler2D v11, in sampler2D v12, in sampler2D v13, in sampler2D v14, in sampler2D v15)
+{
+  float v16 = v2.uViewUpSceneTime.w;
+  float v17 = v0.flowSpeed_flowDirection_unused4_unused5.x;
+  float v18 = v0.flowSpeed_flowDirection_unused4_unused5.y;
+  float v21 = v16;
+  mat4 v19[6];
+  vec4 v20;
+  vec4 v22;
+  vec4 v23;
+  float v26 = v1.f4_f5_f6_f7.z;
+  float v27 = v1.f4_f5_f6_f7.w;
+  float v28 = v1.f8_f9_f10_f11.x;
+  float v29 = v1.f8_f9_f10_f11.y;
+  float v30 = v1.f8_f9_f10_f11.z;
+  float v31 = v1.f16_f17_pad_pad.x;
+  v19[0] = mat4(vec4(v27, 0.0, 0.0, 0.0), vec4(0.0, v27, 0.0, 0.0), vec4(0.0, 0.0, v27, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+  v19[1] = mat4(vec4(v28, 0.0, 0.0, 0.0), vec4(0.0, v28, 0.0, 0.0), vec4(0.0, 0.0, v28, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+  v19[2] = mat4(vec4(v29, 0.0, 0.0, 0.0), vec4(0.0, v29, 0.0, 0.0), vec4(0.0, 0.0, v29, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+  float v32 = v18 * 0.017453292f;
+  float v33 = v17 + 0.015f;
+  vec2 v34;
+  v34.x = cos(v32) * v33;
+  v34.y = sin(v32) * v33;
+  vec2 v35 = GetTexScrollMtx(v21, v34);
+  v19[3] = mat4(vec4(v26, 0.0, 0.0, 0.0), vec4(0.0, v26, 0.0, 0.0), vec4(0.0, 0.0, v26, 0.0), vec4(v35.x, v35.y, 0.0, 1.0));
+  v19[4] = mat4(vec4(v30, 0.0, 0.0, 0.0), vec4(0.0, v30, 0.0, 0.0), vec4(0.0, 0.0, v30, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+  float v36 = 1.1519173f;
+  float v37 = cos(v36);
+  float v38 = sin(v36);
+  v19[5] = mat4(vec4(v37 * v30, v38 * v30, 0.0, 0.0), vec4(-v38 * v30, v37 * v30, 0.0, 0.0), vec4(0.0, 0.0, v30, 0.0), vec4(0.0, 0.0, 0.0, 1.0));
+  v20 = vec4(mod(v21, 10000.0f) * 0.00031415926f, 0.0f, 0.0f, v31);
+  v22 = vec4(0.0);
+  v23 = vec4(0.0);
+  vec4 v24;
+  vec4 v25;
+  vec4 v39;
+  vec4 v40;
+  vec4 v41;
+  vec4 v42;
+  vec4 v54;
+  vec4 v64;
+  vec4 v76;
+  vec4 v78;
+  vec4 v79;
+  vec4 v80;
+  vec4 v81;
+  float v43 = v1.f0_f1_f2_f3.x;
+  float v44 = v1.f0_f1_f2_f3.y;
+  float v45 = v1.f0_f1_f2_f3.z;
+  float v46 = v1.f0_f1_f2_f3.w;
+  float v47 = v1.f4_f5_f6_f7.x;
+  float v48 = v1.f8_f9_f10_f11.w;
+  float v49 = v1.f12_f13_f14_f15.x;
+  float v50 = v1.f12_f13_f14_f15.y;
+  float v51 = v1.f12_f13_f14_f15.z;
+  float v52 = v1.f12_f13_f14_f15.w;
+  float v53 = v1.f16_f17_pad_pad.y;
+  v24 = vec4(0.0);
+  v25 = vec4(0.0, 1.0, v48, v47);
+  v39 = vec4(v52, v51, v49, v50);
+  v40 = vec4(v1.colorRGB_pad.x, v1.colorRGB_pad.y, v1.colorRGB_pad.z, v53);
+  v41 = vec4(v43, v44, v45, v46);
+  v42 = v1.depthTable;
+  v54 = vec4(0.0, 0.0, 0.0, 0.0);
+  v64 = vec4(0.0);
+  v76 = vec4(0.0);
+  v78 = vec4(0.0);
+  v79 = vec4(0.0);
+  v80 = vec4(0.0);
+  v81 = vec4(0.0);
+  float v55 = v1.f4_f5_f6_f7.y * 1000.0;
+  float v56 = v1.colorRGB_pad.w;
+  float v57 = 0.0;
+  if (v55 > 0.0 && v56 > 1.0)
+  {
+    v57 = fract(v56 * mod(v16, v55) / v55);
+  }
+  v54.x = v57;
+  vec4 v58;
+  v58.xy = v7 / 32.0;
+  v58.zw = -(v7 + 0.5) / 32.0;
+  vec4 v59;
+  v59.xy = (v19[3] * vec4(32.0 * v20.w * v58.xy, 0.0, 1.0)).yx;
+  v59.zw = (v19[3] * vec4(32.0 * v20.w * v58.zw, 0.0, 1.0)).yx;
+  v58.xy = (v19[3] * vec4(v58.xy, 0.0, 1.0)).yx;
+  v58.zw = (v19[3] * vec4(v58.zw, 0.0, 1.0)).yx;
+  vec2 v60 = (v19[4] * vec4(v7 / 32.0, 0.0, 1.0)).xy;
+  vec2 v61 = (v19[0] * vec4(v7, 0.0, 1.0)).xy;
+  vec2 v62 = (v19[1] * vec4(v7, 0.0, 1.0)).xy;
+  vec2 v63 = (v19[2] * vec4(v7, 0.0, 1.0)).xy;
+  float v65 = (v9 == 0.0) ? 0.0 : 1.0;
+  vec3 v66 = (v2.uInvLookAtMat * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+  vec3 v67 = v4 - v66;
+  float v68 = sqrt(v67.x * v67.x + v67.y * v67.y + v67.z * v67.z);
+  vec3 v69 = v67 / v68;
+  vec3 v70 = vec3(0.0, 0.0, 1.0);
+  vec2 v71 = v6 / screenSize.xy;
+  float v72 = texture(depthTex, v71).r;
+  float v73 = abs(sceneViewDepth(v6, v2));
+  float v74 = abs(v5.z);
+  float v75 = (v72 <= 0.0001) ? 100000.0 : (v73 - v74);
+  vec3 v77;
+  float v82 = v25.w;
+  vec2 v83 = texture(v14, v58.xy).xy + texture(v14, v58.zw).xy - 1.0;
+  v83 = v83 * 2.0;
+  vec2 v84 = texture(v14, v59.xy).xy + texture(v14, v59.zw).xy - 1.0;
+  v84 = v84 * 2.0;
+  vec3 v85 = vec3(1.17 * v84 + (v83 - 1.17 * v84) * 0.15, 1.0);
+  v85.xy = v85.xy * v82;
+  v77 = v85 / sqrt(v85.x * v85.x + v85.y * v85.y + v85.z * v85.z);
+  vec3 v87;
+  float v92 = v25.w;
+  vec2 v93 = texture(v15, v58.xy).xy + texture(v15, v58.zw).xy - 1.0;
+  v93 = v93 * 2.0;
+  vec2 v94 = texture(v15, v59.xy).xy + texture(v15, v59.zw).xy - 1.0;
+  v94 = v94 * 2.0;
+  vec3 v95 = vec3(1.17 * v94 + (v93 - 1.17 * v94) * 0.15, 1.0);
+  v95.xy = v95.xy * v92;
+  v87 = v95 / sqrt(v95.x * v95.x + v95.y * v95.y + v95.z * v95.z);
+  vec3 v97 = v77 + (v87 - v77) * v54.x;
+  v70.xy = v70.xy + v25.y * v97.xy;
+  v70 = v70 / sqrt(v70.x * v70.x + v70.y * v70.y + v70.z * v70.z);
+  float v99;
+  vec3 v100 = -v69;
+  float v102 = 1.0 - min(max(v100.x * v70.x + v100.y * v70.y + v100.z * v70.z, 0.0), 1.0);
+  v99 = v102 * v102;
+  float v103 = v99 * v39.y;
+  vec3 v105 = v2.extLight.uSunPosition.xyz;
+  vec3 v106 = v2.extLight.uSunAttenuation.xyz;
+  float v108 = 1.0;
+  if (v106.z > 0.0)
+  {
+    vec3 v109 = v105 - v5;
+    float v110 = v109.x * v109.x + v109.y * v109.y + v109.z * v109.z;
+    float v111 = v110 * (1.0f / sqrt(v110));
+    v108 = 1.0 - min(max((v111 - v106.x) * v106.y, 0.0), 1.0);
+  }
+  float v113;
+  float v116 = v9 * v9;
+  float v117 = v42.x + v42.y * v9;
+  float v118 = v116 * v9;
+  v117 = v117 + v116 * v42.z + v118 * v42.w;
+  v113 = min(max(v117, 0.0), 1.0);
+  v113 = v113 + abs(0.1 * v97.y);
+  float v120 = min(max((v75 - 0.0) / (0.04 - 0.0), 0.0f), 1.0f) * min(max((v75 - 0.0) / (0.04 - 0.0), 0.0f), 1.0f) * (3.0f - 2.0f * min(max((v75 - 0.0) / (0.04 - 0.0), 0.0f), 1.0f));
+  vec2 v121 = v71 + v70.xy * (0.05 * min(max(v120 * v75, 0.0), 1.0) + 0.0625 * min(max(0.01 * v120 * v75 * (1.2 - v103), 0.0), 1.0));
+  float v122 = abs(sceneViewDepth(v121 * screenSize.xy, v2));
+  bool v123 = v122 > v74;
+  v121 = v123 ? v121 : v71;
+  vec3 v124 = texture(liquidBackBuffer, v121).rgb;
+  float v125 = v123 ? (v122 - v74) : v75;
+  float v126 = exp(-v40.a * max(v125, 0.0));
+  v124 = v124 * v126 + v40.rgb * v2.extLight.uExteriorAmbientColor.rgb * (1.0 - v126);
+  vec2 v127 = v97.xy * 0.1;
+  vec4 v128 = texture(v10, v61 + v127);
+  vec4 v129 = texture(v11, v62 + v127);
+  vec4 v130 = texture(v12, v63 + v127);
+  float v131 = min(max((v113 - v41.x) / (v41.y - v41.x), 0.0f), 1.0f) * min(max((v113 - v41.x) / (v41.y - v41.x), 0.0f), 1.0f) * (3.0f - 2.0f * min(max((v113 - v41.x) / (v41.y - v41.x), 0.0f), 1.0f));
+  float v132 = min(max((v113 - v41.z) / (v41.w - v41.z), 0.0f), 1.0f) * min(max((v113 - v41.z) / (v41.w - v41.z), 0.0f), 1.0f) * (3.0f - 2.0f * min(max((v113 - v41.z) / (v41.w - v41.z), 0.0f), 1.0f));
+  float v133 = min(max((v113 - v41.y) / (v41.z - v41.y), 0.0f), 1.0f) * min(max((v113 - v41.y) / (v41.z - v41.y), 0.0f), 1.0f) * (3.0f - 2.0f * min(max((v113 - v41.y) / (v41.z - v41.y), 0.0f), 1.0f));
+  vec4 v134 = v128 + (v129 - v128) * v131;
+  vec4 v135 = v129 + (v130 - v129) * v132;
+  vec4 v136 = v134 + (v135 - v134) * v133;
+  float v137 = 1.0 - min(max((v75 * (1.0 - v69.z) - 0.0) / (v39.x - 0.0), 0.0f), 1.0f) * min(max((v75 * (1.0 - v69.z) - 0.0) / (v39.x - 0.0), 0.0f), 1.0f) * (3.0f - 2.0f * min(max((v75 * (1.0 - v69.z) - 0.0) / (v39.x - 0.0), 0.0f), 1.0f));
+  vec4 v138 = texture(v13, v60);
+  v137 = v137 * v138.a;
+  v136.rgb = v136.rgb * (1.0 - v137) + v138.rgb * v137;
+  v136.a = min(max(v136.a + v137, 0.0), 1.0);
+  vec3 v139 = v136.a * v136.rgb + (1.0 - v136.a) * v124;
+  vec3 v140 = (v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz / sqrt((v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz.x * (v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz.x + (v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz.y * (v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz.y + (v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz.z * (v2.uInvLookAtMat * vec4(-v2.extLight.uExteriorDirectColorDir.xyz, 0.0)).xyz.z);
+  float v141 = min(max(v140.x * vec3(1.0, 1.0, 1.0).x + v140.y * vec3(1.0, 1.0, 1.0).y + v140.z * vec3(1.0, 1.0, 1.0).z, 0.0), 1.0) * v108;
+  vec3 v142 = v39.z * min(max(v141 * v2.extLight.uExteriorDirectColor.rgb + v2.extLight.uExteriorAmbientColor.rgb, 0.0), 1.0);
+  v139 = v142 * v139;
+  float v143;
+  float v144 = v2.extLight.uExteriorSpecularColor.a;
+  vec3 v146 = -v69;
+  vec3 v148 = (v140 + v146) / sqrt((v140 + v146).x * (v140 + v146).x + (v140 + v146).y * (v140 + v146).y + (v140 + v146).z * (v140 + v146).z);
+  float v149 = min(max(v148.x * v70.x + v148.y * v70.y + v148.z * v70.z, 0.0), 1.0);
+  v143 = pow(v149, v144);
+  float v150 = v143 * v108 + min(max(v70.z - 0.8, 0.0), 1.0);
+  vec3 v151 = v2.extLight.uExteriorSpecularColor.rgb * v150;
+  float v152;
+  v152 = min(max(v140.x * v70.x + v140.y * v70.y + v140.z * v70.z, 0.0), 1.0);
+  float v155 = v152 * v108;
+  vec3 v156 = v39.z * min(max(v155 * v2.extLight.uExteriorDirectColor.rgb + v2.extLight.uExteriorAmbientColor.rgb, 0.0), 1.0);
+  vec3 v157 = v156 * v139;
+  v157 = v157 + v39.w * v151;
+  float v158 = min(max((v68 - v3.densityParams.x) / (v3.densityParams.y * 0.5 - v3.densityParams.x), 0.0f), 1.0f) * min(max((v68 - v3.densityParams.x) / (v3.densityParams.y * 0.5 - v3.densityParams.x), 0.0f), 1.0f) * (3.0f - 2.0f * min(max((v68 - v3.densityParams.x) / (v3.densityParams.y * 0.5 - v3.densityParams.x), 0.0f), 1.0f));
+  float v159 = (v120 + (1.0 - v120) * sqrt(v158)) * v65;
+  vec4 v160 = makeFog2(v3, vec4(v157, 1.0), v2.uViewUpSceneTime.xyz, v5, v2.extLight.uExteriorDirectColorDir.xyz, 2);
+  return vec4(v160.rgb, v159);
+}
+
+#endif //LIQUID_SWAMP_MATERIAL_SLANG

@@ -44,6 +44,9 @@ public:
     explicit GDescriptorSet(const std::shared_ptr<IDeviceVulkan> &device, const std::shared_ptr<GDescriptorSetLayout> &hDescriptorSetLayout);
     ~GDescriptorSet();
 
+    //Creates another DS with the same setLayout, but not the data
+    std::shared_ptr<GDescriptorSet> clone();
+
     void update();
     void writeToDescriptorSets(framebased::vector<VkWriteDescriptorSet> &descriptorWrites, framebased::vector<VkDescriptorImageInfo> &imageInfo, framebased::vector<int> &dynamicBufferIndexes);
     const std::shared_ptr<GDescriptorSetLayout> &getDescSetLayout() const { return m_hDescriptorSetLayout;};
@@ -95,6 +98,16 @@ public:
 
         //TODO: add version of this array texture case (aka bindless)
         SetUpdateHelper& texture(int bindIndex, const HGSamplableTexture &textureVlk, int index = 0);
+
+        // For depth textures - uses VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL layout
+        SetUpdateHelper& texture_depth(int bindIndex, const HGSamplableTexture &textureVlk, int index = 0);
+
+        // For storage images (VK_DESCRIPTOR_TYPE_STORAGE_IMAGE) - uses VK_IMAGE_LAYOUT_GENERAL
+        SetUpdateHelper& storage_image(int bindIndex, VkImageView imageView);
+
+        // For binding a raw image view with a sampler as combined image sampler
+        SetUpdateHelper& imageView_sampler(int bindIndex, VkImageView imageView, VkSampler sampler);
+
         void delayUpdate();
 
         template <typename T>
@@ -137,6 +150,9 @@ public:
         std::function<void()> createCallback(int bindPoint, int arrayIndex);
 
         void reassignBinding(int bindPoint, int bindIndex);
+
+        // Internal function that allows specifying custom image layout
+        SetUpdateHelper& texture_internal(int bindIndex, const HGSamplableTexture &textureVlk, int index, VkImageLayout imageLayout);
     };
 
     SetUpdateHelper beginUpdate();

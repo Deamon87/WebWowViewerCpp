@@ -22,9 +22,16 @@ public:
 
     virtual bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) = 0;
 
-    virtual void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) = 0;
+    virtual void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidObjectRec &loData) = 0;
     virtual void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) = 0;
     virtual void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) = 0;
+
+    virtual void getGameObjectsForMap(int mapId, std::vector<GameObjectRecord> &gameObjects) = 0;
+    virtual bool getGameObjectDisplayInfo(int displayId, GameObjectDisplayInfoRecord &result) = 0;
+
+    // All SkySceneXPlayerCondition rows (skySceneID -> playerConditionID assignments).
+    // Implementations are expected to cache: this is queried per loaded sky scene.
+    virtual void getSkySceneXPlayerConditions(std::vector<SkySceneXPlayerConditionRecord> &result) = 0;
 };
 
 #endif //AWEBWOWVIEWERCPP_DATABASEHANDLER_H

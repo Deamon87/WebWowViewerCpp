@@ -2,6 +2,8 @@
 #ifndef HASHEDSTRING_HPP_INCLUDED
 #define HASHEDSTRING_HPP_INCLUDED
 
+#define HASHEDSTRING_HAS_ORIG_PTR 0
+
 static size_t CalculateFNV(const char* str);
 
 /////////////
@@ -72,7 +74,12 @@ public:
     // A wrapper so we can generate any number of functions using the pre-processor (const strings)
     template <size_t N>
     constexpr HashedString(const char(&str)[N]);
-    explicit HashedString(ConstCharWrapper str): m_Hash(CalculateFNV(str.str)), m_originalString(str.str){
+    explicit HashedString(ConstCharWrapper str) :
+        m_Hash(CalculateFNV(str.str))
+#if HASHEDSTRING_HAS_ORIG_PTR == 1
+        ,m_originalString(str.str)
+#endif
+    {
     };
 
     // Return the original string
@@ -92,7 +99,9 @@ public:
 
     // The hash object (pre-calculated if we use the full optimization flag)
     size_t m_Hash;
+#if HASHEDSTRING_HAS_ORIG_PTR == 1
     const char * m_originalString;
+#endif
 
     // The original string
 //#ifdef _DEBUG
@@ -137,12 +146,19 @@ public:
 #define ME_HASHED_STRING_26            ((ME_HASHED_STRING_25 ^ str[24]) * PRIME)
 // etc.
 
+#if HASHEDSTRING_HAS_ORIG_PTR == 1
 #define ME_HASHED_STRING_SPECIALIZATION(n)                                    \
   template <>                                                                \
   constexpr HashedString::HashedString(const char (&str)[n])                    \
     : m_Hash(ME_JOIN(ME_HASHED_STRING_, n)), m_originalString(str)                                \
   {}
-
+#else
+#define ME_HASHED_STRING_SPECIALIZATION(n)                                    \
+    template <>                                                                \
+    constexpr HashedString::HashedString(const char (&str)[n])                    \
+        : m_Hash(ME_JOIN(ME_HASHED_STRING_, n))                                \
+    {}
+#endif
 ME_HASHED_STRING_SPECIALIZATION(1)
 ME_HASHED_STRING_SPECIALIZATION(2)
 ME_HASHED_STRING_SPECIALIZATION(3)

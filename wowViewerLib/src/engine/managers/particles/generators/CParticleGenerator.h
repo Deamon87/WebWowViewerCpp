@@ -30,6 +30,7 @@ protected:
 
 public:
     CGeneratorAniProp *getAniProp(){ return &aniProp;};
+    const CRndSeed &getSeed() const { return seed; }
     float GetSpeedVariation();
     float GetMaxEmissionRate();
 

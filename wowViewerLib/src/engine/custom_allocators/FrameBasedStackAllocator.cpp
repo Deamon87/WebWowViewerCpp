@@ -8,6 +8,7 @@
 #include <array>
 
 #include "../../gapi/interface/IDevice.h"
+#include "../../gapi/interface/FrameContext.h"
 #include "../../../3rdparty/OffsetAllocator/offsetAllocator.hpp"
 #include <memory>
 #include <list>
@@ -85,7 +86,7 @@ std::array<std::list<std::unique_ptr<MemoryStoringPool>>, 2*IDevice::MAX_FRAMES_
 
 
 void * frameLinearAllocate(size_t size) {
-    auto currentFrame = IDevice::getCurrentProcessingFrameNumber() % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
+    auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
 
     std::lock_guard<std::mutex> g_lock(g_g_frameStackMutexes);
     std::lock_guard<std::mutex> lock(g_frameStackMutexes[currentFrame]);
@@ -119,7 +120,7 @@ void * frameLinearAllocate(size_t size) {
 }
 
 void frameDeAllocate(void *ptr, std::size_t n) {
-    auto currentFrame = IDevice::getCurrentProcessingFrameNumber() % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
+    auto currentFrame = FrameContext::getCurrentProcessingFrameNumber() % (2 * IDevice::MAX_FRAMES_IN_FLIGHT);
 
     std::lock_guard<std::mutex> g_lock(g_g_frameStackMutexes);
 

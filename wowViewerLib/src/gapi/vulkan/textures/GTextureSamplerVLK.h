@@ -12,7 +12,8 @@
 
 class GTextureSamplerVLK : public ITextureSampler {
 public:
-    GTextureSamplerVLK(IDeviceVulkan &deviceVlk, bool xWrapTex, bool yWrapTex, bool nearest);
+    GTextureSamplerVLK(IDeviceVulkan &deviceVlk, bool xWrapTex, bool yWrapTex, bool nearest,
+                       bool useDepthComparison = false, VkCompareOp compareOp = VK_COMPARE_OP_LESS);
     ~GTextureSamplerVLK() override;
 
     VkSampler getSampler() {

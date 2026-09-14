@@ -60,14 +60,48 @@ struct SkyColors {
 };
 
 struct SkyBodyData {
-    mathfu::vec3 celestialBodyOverride;
-    mathfu::vec3 celestialBodyOverride2;
+    mathfu::vec3 celestialBodyOverride = {0,0,0};
+    mathfu::vec3 sunPositionOverride = {0,0,0};
+
+    bool hasSunPositionOverride = false;
+    float sunPositionBlend = 0;
+
+    bool hasSunDirectionOverride = false;
+    float sunDirectionBlend = 0;
+
+    float sunAttenuationStart = 0;
+    float sunAttenuationEnd = 0;
+
+    float sunDirAzimuth = 0;
+    float sunDirPolar = 0;
+
+    // LightParams flags blended across light params as floats
+    // 0 = show, 1 = hide
+    float sunPlanetHideBlend = 0;  // LightParams flags & 0x4 — hides the sun disc (and disables sun fog)
+    float moonPlanetHideBlend = 0; // LightParams flags & 0x8 — hides the moon discs
+    float starsHideBlend = 0;      // LightParams flags & 0x10 — disables the stars
 
     SkyBoxInfo skyBoxInfo;
 
     void assignZeros() {
         celestialBodyOverride = {0,0,0};
-        celestialBodyOverride2 = {0,0,0};
+        sunPositionOverride = {0,0,0};
+
+        hasSunPositionOverride = false;
+        sunPositionBlend = 0;
+
+        hasSunDirectionOverride = false;
+        sunDirectionBlend = 0;
+
+        sunAttenuationStart = 0;
+        sunAttenuationEnd = 0;
+
+        sunDirAzimuth = 0;
+        sunDirPolar = 0;
+
+        sunPlanetHideBlend = 0;
+        moonPlanetHideBlend = 0;
+        starsHideBlend = 0;
     }
 };
 
@@ -99,12 +133,14 @@ struct ExteriorColors {
     mathfu::vec3 exteriorHorizontAmbientColor = {1, 1, 1};
     mathfu::vec3 exteriorGroundAmbientColor =   {1, 1, 1};
     mathfu::vec3 exteriorDirectColor =          {0.3f,0.3f,0.3f};
+    mathfu::vec3 exteriorSpecularColor =        {0, 0, 0};
 
     void assignZeros() {
         exteriorAmbientColor =          {0, 0, 0};
         exteriorHorizontAmbientColor =  {0, 0, 0};
         exteriorGroundAmbientColor =    {0, 0, 0};
         exteriorDirectColor =           {0, 0, 0};
+        exteriorSpecularColor =         {0, 0, 0};
     }
 };
 
@@ -145,18 +181,41 @@ struct FrameDependantData {
     SkyColors skyColors;
 
 //Planet data
-    mathfu::vec3 sunDirection;
+    mathfu::vec3 sunPos;       //in View Space
+    mathfu::vec3 sunDirection; //in View Space (used in fog data)
+    bool useSunAttenuation = false;
+    float sunAttentuationStart;
+    float sunAttentuationEnd;
 
 
 //Fog params
     bool FogDataFound = false;
     std::vector<FogResult> fogResults;
 
+    // Underwater fog (Light.db2 LightParams slot 1), used by liquid above shaders
+    FogResult underWaterFogResult;
+
 //Water params
     bool useMinimapWaterColor;
     bool useCloseRiverColorForDB;
 
     LiquidColors liquidColors;
+
+// Planet (sun/moon discs) + stars data, computed per frame by DayNightLightHolder
+    struct PlanetRenderData {
+        mathfu::vec3 worldPos = {0, 0, 0}; // world-space position of the disc center
+        float scale = 1.0f;                // disc scale (radius multiplier for the unit quad)
+        mathfu::vec3 color = {1, 1, 1};    // DB SunColor
+        float alpha = 1.0f;                // 0..1
+        bool visible = false;              // draw this frame or not
+    };
+    std::array<PlanetRenderData, 3> planets; // [0]=sun, [1]=moon1, [2]=moon2
+
+    struct StarsRenderData {
+        float alpha = 0.0f;   // starBrightnessCurve(dayProgress) * (1 - starsHideBlend)
+        bool enabled = false; // draw stars this frame or not
+    };
+    StarsRenderData stars;
 };
 typedef std::shared_ptr<FrameDependantData> HFrameDependantData;
 

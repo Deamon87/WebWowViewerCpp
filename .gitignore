@@ -5,5 +5,13 @@ cache_old
 cmake-build-*
 venv
 /.vs
-/out/build
+/dist
+/out
+/installDir
+node_modules
 /CMakeSettings.json
+# CASC test configuration
+.casc_config
+casc_config.txt
+test/.casc_config
+test/casc_config.txt

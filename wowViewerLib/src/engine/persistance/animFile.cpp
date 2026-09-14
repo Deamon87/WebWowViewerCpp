@@ -37,14 +37,14 @@ chunkDef<AnimFile> AnimFile::animFileTable = {
     }
 };
 
-void AnimFile::process(HFileContent animFile, const std::string &fileName) {
+void AnimFile::process(HFileContent animFile) {
     m_animFile = animFile;
     auto &fileVec = *m_animFile.get();
     int chunk = *(uint32_t *) &fileVec[0];
 
 
     if (chunk == 'BSFA' || chunk == 'ASFA' || chunk == '2MFA') {
-        CChunkFileReader reader(fileVec, fileName);
+        CChunkFileReader reader(fileVec, getFileNameOrDataId());
         reader.processFile(*this, &AnimFile::animFileTable);
     } else {
         m_animFileDataBlob = (uint8_t *) &fileVec[0];

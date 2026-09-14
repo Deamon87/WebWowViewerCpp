@@ -15,12 +15,13 @@ class IMapApi {
 public:
     virtual std::shared_ptr<M2Object> getM2Object(std::string fileName, const SMDoodadDef &doodadDef) = 0;
     virtual std::shared_ptr<M2Object> getM2Object(int fileDataId, const SMDoodadDef &doodadDef) = 0;
-    virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef) = 0;
-    virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef) = 0;
-    virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef) = 0;
-    virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef) = 0;
+    virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDef &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) = 0;
+    virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDef &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) = 0;
+    virtual std::shared_ptr<WmoObject> getWmoObject(std::string fileName, const SMMapObjDefObj1 &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) = 0;
+    virtual std::shared_ptr<WmoObject> getWmoObject(int fileDataId, const SMMapObjDefObj1 &mapObjDef, const PointerChecker<MWDR> &m_MWDR, const PointerChecker<uint16_t> &m_MWDS) = 0;
 
     virtual animTime_t getCurrentSceneTime() = 0;
+    virtual mathfu::vec3 getGlobalOffset() = 0;
 };
 
 

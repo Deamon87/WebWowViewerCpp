@@ -1,3 +1,11 @@
+get_filename_component(private_extensions_dir "${CMAKE_CURRENT_SOURCE_DIR}/../../private_extensions" ABSOLUTE)
+set(SHADER_CHANGED_FILES "")
+set(SHADER_COMPILATION_DEPENDS "")
+if(EXISTS "${private_extensions_dir}/CMakeLists.txt")
+    add_subdirectory("${private_extensions_dir}" "${CMAKE_CURRENT_BINARY_DIR}/private_extensions")
+    set(SHADER_COMPILATION_DEPENDS shaders_ext ${SHADER_CHANGED_FILES})
+endif()
+
 if (ANDROID)
     set(GLSL_TARGET_FOLDER ${ANDROID_ASSETSFOLDER})
 else()
@@ -9,10 +17,12 @@ message( COMPILE_SHADER_WITH_DEBUG = ${COMPILE_SHADER_WITH_DEBUG})
 
 if (COMPILE_SHADER_WITH_DEBUG EQUAL 1)
     set(SHADER_DEBUG_FLAG "-g")
+    set(SLANG_SHADER_DEBUG_FLAG "-g2")
     set(APP_RUN_PREFIX "")
     set (SPIRV_OPT_APP "")
 else()
     set(SHADER_DEBUG_FLAG "")
+    set(SLANG_SHADER_DEBUG_FLAG "")
 endif()
 
 if (EMSCRIPTEN)
@@ -33,12 +43,6 @@ if(NOT ANDROID)
     add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/spirv-cross EXCLUDE_FROM_ALL)
     set(BUILD_EXTERNAL OFF)
     set(ENABLE_OPT OFF)
-    add_subdirectory(${PROJECT_SOURCE_DIR}/shaders/3rdparty/glsllang EXCLUDE_FROM_ALL)
-    if(EMSCRIPTEN)
-        target_link_options(glslang-standalone PUBLIC -s NODERAWFS=1)
-    endif()
-    set(BUILD_EXTERNAL OFF)
-    set_target_properties(glslang-standalone PROPERTIES RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 
     #SPIRV_Reflections
     set(SPIRV_REF_SOURCES
@@ -95,12 +99,23 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
     file(MAKE_DIRECTORY ${spirvNonOptDir})
 
     foreach(srcCommonDir ${srcCommonDirs})
-        file(GLOB_RECURSE commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.glsl)
+        file(GLOB_RECURSE commonFilesRelative RELATIVE ${srcCommonDir} ${srcCommonDir}/*.${inputType})
 
         foreach(commonFileRelative ${commonFilesRelative})
             set(commonFileFullPath ${srcCommonDir}/${commonFileRelative})
             if(NOT IS_DIRECTORY ${commonFileFullPath})
-                list(APPEND commonFiles ${commonFileFullPath})
+                set(excludeFile FALSE)
+                #Exclude files that are real end sources
+                foreach(ext ${shaderFileExts})
+                    if(commonFileRelative MATCHES "${ext}$")
+                        set(excludeFile TRUE)
+                        break()
+                    endif()
+                endforeach()
+
+                if(NOT excludeFile)
+                    list(APPEND commonFiles ${commonFileFullPath})
+                endif()
             endif()
         endforeach(commonFileRelative)
     endforeach(srcCommonDir)
@@ -131,12 +146,17 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
                 if (SHADER_SUB_DIR)
                     set(SHADER_SUB_DIR "${SHADER_SUB_DIR}/")
                 endif()
+                # Delete .slang sugffix from
+                string(REGEX REPLACE "\\.slang$" "" FILE_NAME "${FILE_NAME}")
+
 #                file(RELATIVE_PATH SHADER_SUB_DIR shaderDir ${srcTemplatePath})
 
 #                message(srcFileRelative = ${srcFileRelative})
 #                message(srcTemplatePath = ${srcTemplatePath})
 #                message(templateFile = ${templateFile})
 #                message(SHADER_SUB_DIR = ${SHADER_SUB_DIR})
+#                message(FILE_NAME_WO_EXT = ${FILE_NAME_WO_EXT})
+#                message(FILE_NAME = ${FILE_NAME})
                 if (NOT SPIRV_OPT_APP)
                     set(SPIRV_NonOpt "${destDir}/${shaderDir}/${SHADER_SUB_DIR}${FILE_NAME}.spv")
                 else()
@@ -154,21 +174,24 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
                             OUTPUT ${SPIRV_NonOpt}
                             COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
                             COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_GLSL_VALIDATOR} -V ${SHADER_DEBUG_FLAG} ${srcTemplatePath} -o ${SPIRV_NonOpt}
-                            DEPENDS ${srcTemplatePath} glslang-standalone ${commonFiles})
+                            DEPENDS ${srcTemplatePath} ${commonFiles})
                 elseif (${inputType} STREQUAL "slang")
 #                    message("slang SPIRV_NonOpt = ${SPIRV_NonOpt}")
                     add_custom_command(
                         OUTPUT ${SPIRV_NonOpt}
                         COMMAND ${CMAKE_COMMAND} -E make_directory "${destDir}"
-                        COMMAND ${APP_RUN_PREFIX} ${SLANG_COMPILER} ${srcTemplatePath} -obfuscate -matrix-layout-row-major -target spirv -entry main -o ${SPIRV_NonOpt}
+                        COMMAND ${APP_RUN_PREFIX} ${SLANG_COMPILER} ${srcTemplatePath} ${SLANG_SHADER_DEBUG_FLAG} -preserve-params -matrix-layout-row-major -target spirv -entry main -o ${SPIRV_NonOpt}
 #                        COMMAND ${APP_RUN_PREFIX} ${SLANG_COMPILER} ${srcTemplatePath} -matrix-layout-column-major -target glsl -entry main -o ${SPIRV_NonOpt}.glsl
-                        DEPENDS ${srcTemplatePath} ${commonFiles})
+                        DEPENDS ${srcTemplatePath} ${commonFiles} ${SHADER_COMPILATION_DEPENDS}
+                        VERBATIM)
+
+#                    message("command = ${APP_RUN_PREFIX} ${SLANG_COMPILER} ${srcTemplatePath} -preserve-params -matrix-layout-row-major -target spirv -entry main -o ${SPIRV_NonOpt}")
                 endif ()
 
                 if(SPIRV_OPT_APP)
                     add_custom_command(
                             OUTPUT ${SPIRVOpt}
-                            COMMAND ${SPIRV_OPT_APP} -O -Os --preserve-bindings -o ${SPIRVOpt} ${SPIRV_NonOpt}
+                            COMMAND ${SPIRV_OPT_APP} --preserve-bindings --preserve-interface -O -Os --preserve-bindings --preserve-interface -o ${SPIRVOpt} ${SPIRV_NonOpt}
                             DEPENDS ${srcTemplatePath} ${SPIRV_NonOpt})
                 endif()
 
@@ -180,21 +203,21 @@ macro(configure_filesVLK rootDir srcCommonDirs shaderDirs shaderFileExts inputTy
     endforeach(shaderDir)
 endmacro(configure_filesVLK)
 
-configure_filesVLK(
-        ${PROJECT_SOURCE_DIR}/shaders/glsl/
-        "${PROJECT_SOURCE_DIR}/shaders/glsl/common;${PROJECT_SOURCE_DIR}/shaders/glsl/bindless"
-        "."
-        ".vert;.frag"
-        "glsl"
-        ${spirvOptDir})
-
 #configure_filesVLK(
-#        "${PROJECT_SOURCE_DIR}/shaders/slang/compute"
-#        "${PROJECT_SOURCE_DIR}/shaders/slang/common"
+#        ${PROJECT_SOURCE_DIR}/shaders/glsl/
+#        "${PROJECT_SOURCE_DIR}/shaders/glsl/common;${PROJECT_SOURCE_DIR}/shaders/glsl/bindless;${PROJECT_SOURCE_DIR}/shaders/glsl/forwardRendering"
 #        "."
-#        ".slang"
-#        "slang"
-#        ${GLSL_TARGET_FOLDER}/spirv)
+#        ".vert;.frag"
+#        "glsl"
+#        ${spirvOptDir})
+
+configure_filesVLK(
+        "${PROJECT_SOURCE_DIR}/shaders/slang/"
+        "${PROJECT_SOURCE_DIR}/shaders/slang/common;${PROJECT_SOURCE_DIR}/shaders/slang/bindless;${PROJECT_SOURCE_DIR}/shaders/slang/forwardRendering"
+        "."
+        ".vert.slang;.frag.slang;.comp.slang"
+        "slang"
+        ${GLSL_TARGET_FOLDER}/spirv)
 
 #Select the list for spirv files
 
@@ -209,7 +232,7 @@ message("Executing ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${GL
 add_custom_command(
         OUTPUT ${SPIRV_META_FILE}
         COMMAND ${APP_RUN_PREFIX} ${PATH_TO_NATIVE_SPIRV_REFLECTION} -sf ${spirvNonOptDir} ${SPIRV_BINARY_FILES_NON_OPT} > ${SPIRV_META_FILE}
-        DEPENDS ${SPIRV_BINARY_FILES_NON_OPT} spirv_reflection glslang-standalone ShadersVulkanNonOpt
+        DEPENDS ${SPIRV_BINARY_FILES_NON_OPT} spirv_reflection ShadersVulkanNonOpt
 )
 
 add_custom_target(SPIRV_EXTRACT_META DEPENDS ${SPIRV_META_FILE})

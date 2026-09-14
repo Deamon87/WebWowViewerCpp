@@ -31,17 +31,17 @@ enum class LiquidTypes : int
 
 class WmoGroupGeom : public PersistentFile {
 public:
-    WmoGroupGeom(std::string fileName){ m_fileName = fileName; };
-    WmoGroupGeom(int fileDataId){ m_fileDataId = fileDataId;};
+    WmoGroupGeom(std::string fileName) : PersistentFile(fileName) { m_fileName = fileName; };
+    WmoGroupGeom(int fileDataId) : PersistentFile(fileDataId) { m_fileDataId = fileDataId;};
 
-    void process(HFileContent wmoGroupFile, const std::string &fileName) override;
+    void process(HFileContent wmoGroupFile) override;
 
     static chunkDef<WmoGroupGeom> wmoGroupTable;
 
     void setAttenuateFunction(std::function<void (WmoGroupGeom& wmoGroupGeom)> attenuateFunc) {this->m_attenuateFunc = attenuateFunc; };
     bool hasWater() const {return m_mliq != nullptr; };
 
-    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd);
+    HGVertexBufferBindings getVertexBindings(const HMapSceneBufferCreate &sceneRenderer, SMOHeader *mohd, bool ignoreColors);
     HGVertexBufferBindings getWaterVertexBindings(const HMapSceneBufferCreate &sceneRenderer, LiquidTypes liquid_type, CAaBox &waterAaBB);
 
     int getFileDataId() const {return m_fileDataId;}
@@ -50,7 +50,7 @@ private:
     std::function<void (WmoGroupGeom& wmoGroupGeom)> m_attenuateFunc;
 
     LiquidTypes getLegacyWaterType(int a);
-    HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer);
+    HGVertexBuffer getVBO(const HMapSceneBufferCreate &sceneRenderer, bool ignoreColors);
     HGIndexBuffer getIBO(const HMapSceneBufferCreate &sceneRenderer);
 public:
     std::string m_fileName = "";
@@ -63,8 +63,11 @@ public:
     PointerChecker<uint16_t> indicies = PointerChecker<uint16_t>(indicesLen);
     int indicesLen = 0;
 
-    PointerChecker<uint16_t> mopy = (mopyLen);
+    PointerChecker<MOPY> mopy = (mopyLen);
     int mopyLen = 0;
+
+    PointerChecker<MOPY2> mopy2 = (mopy2Len);
+    int mopy2Len = 0;
 
     PointerChecker<C3Vector> verticles = (verticesLen);
     int verticesLen = 0;
@@ -160,6 +163,8 @@ public:
 
     HGVertexBuffer waterVBO;
     HGIndexBuffer waterIBO;
+
+    bool m_colorsIgnored = false;
 
 private:
     void fixColorVertexAlpha(SMOHeader *mohd);

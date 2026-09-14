@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 project(WoWViewerLib)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 include(CheckCXXCompilerFlag)
 
@@ -16,6 +16,7 @@ option(LINK_VULKAN "Enable Vulkan" ON)
 set(LINK_OPENMP 0)
 set(ENABLE_SIMD 1)
 set(LINK_TRACY 1)
+set(DEBUG_MESH_NAMES 0)
 set(COMPILE_SHADER_WITH_DEBUG 0)
 if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     set(COMPILE_SHADER_WITH_DEBUG 1)
@@ -275,6 +276,8 @@ set(SOURCE_FILES
         src/engine/persistance/header/texFileHeader.h
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.cpp
         src/engine/objects/m2/m2Helpers/M2MeshBufferUpdater.h
+        src/engine/objects/m2/m2Helpers/M2GpuAnimData.cpp
+        src/engine/objects/m2/m2Helpers/M2GpuAnimData.h
         src/engine/wowCommonClasses.h
         src/engine/shader/ShaderDefinitions.cpp
         src/engine/persistance/animFile.cpp
@@ -282,6 +285,8 @@ set(SOURCE_FILES
         src/engine/persistance/m2File.cpp
         src/engine/persistance/m2File.h
         src/gapi/interface/IDevice.cpp
+        src/gapi/interface/FrameContext.cpp
+        src/gapi/interface/FrameContext.h
         src/gapi/interface/textures/ITexture.h
         src/gapi/interface/buffers/IBuffer.h
         src/gapi/interface/IOcclusionQuery.h
@@ -379,10 +384,26 @@ set(SOURCE_FILES
         src/engine/objects/lights/CPointLight.h
         src/engine/objects/lights/CSpotLight.cpp
         src/engine/objects/lights/CSpotLight.h
-        src/engine/objects/lights/CWmoNewLight.cpp
-        src/engine/objects/lights/CWmoNewLight.h
+        src/engine/objects/lights/CEngineLight.cpp
+        src/engine/objects/lights/CEngineLight.h
         src/engine/objects/scenes/dayNightDataHolder/DayNightLightHolder.cpp
         src/engine/objects/scenes/dayNightDataHolder/DayNightLightHolder.h
+        src/engine/objects/liquid/liquidMaterials/LiquidMaterialManager.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidMaterialManager.h
+        src/engine/objects/liquid/liquidMaterials/LiquidWater.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidMagma.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidFel.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidLeyLine.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidSwamp.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidAzerithe.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidMercury.cpp
+        src/engine/objects/liquid/liquidMaterials/LiquidFog.cpp
+        src/engine/objects/worldObject/GameObject.cpp
+        src/engine/objects/worldObject/GameObject.h
+        src/engine/objects/worldObject/GameObjectBVH.cpp
+        src/engine/objects/worldObject/GameObjectBVH.h
+        src/engine/objects/worldObject/WorldObjectManager.cpp
+        src/engine/objects/worldObject/WorldObjectManager.h
 )
 
 if (LINK_OGL2)
@@ -521,7 +542,9 @@ if (LINK_VULKAN)
             src/gapi/vulkan/GDeviceVulkan.h
             src/gapi/vulkan/vkAllocator.cpp
             src/gapi/vulkan/GVertexBufferBindingsVLK.cpp
+            src/gapi/vulkan/shaders/GShaderPermutationVLKBase.cpp
             src/gapi/vulkan/shaders/GShaderPermutationVLK.cpp
+            src/gapi/vulkan/shaders/GComputeShaderVLK.cpp
             src/gapi/vulkan/meshes/GM2MeshVLK.cpp
             src/gapi/vulkan/meshes/GMeshVLK.cpp
             src/gapi/vulkan/textures/GTextureVLK.cpp
@@ -542,8 +565,8 @@ if (LINK_VULKAN)
             src/renderer/mapScene/vulkan/MapSceneRenderForwardVLK.h
             src/renderer/mapScene/vulkan/MapSceneRenderBindlessVLK.cpp
             src/renderer/mapScene/vulkan/MapSceneRenderBindlessVLK.h
-            src/renderer/mapScene/vulkan/MapSceneRenderBindlessDeferredVLK.cpp
-            src/renderer/mapScene/vulkan/MapSceneRenderBindlessDeferredVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderDeferredVLK.h
+            src/renderer/mapScene/vulkan/MapSceneRenderDeferredVLK.cpp
             src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.h
             src/renderer/mapScene/vulkan/passes/FFXGlowPassVLK.cpp
             src/gapi/vulkan/buffers/GBufferVLK.cpp
@@ -573,6 +596,8 @@ if (LINK_VULKAN)
             src/gapi/vulkan/descriptorSets/DescriptorRecord.h
             src/gapi/vulkan/materials/MaterialBuilderVLK.cpp
             src/gapi/vulkan/materials/MaterialBuilderVLK.h
+            src/gapi/vulkan/materials/ComputeMaterialBuilderVLK.cpp
+            src/gapi/vulkan/materials/ComputeMaterialBuilderVLK.h
             src/gapi/vulkan/TextureManagerVLK.cpp
             src/gapi/vulkan/TextureManagerVLK.h
             src/gapi/vulkan/utils/MutexLockedVector.h
@@ -604,9 +629,28 @@ if (LINK_VULKAN)
             src/renderer/mapScene/vulkan/view/RenderViewForwardVLK.h
             src/renderer/mapScene/vulkan/view/RenderViewDeferredVLK.cpp
             src/renderer/mapScene/vulkan/view/RenderViewDeferredVLK.h
+            src/renderer/mapScene/vulkan/view/VideoRecordingContextVLK.h
+            src/renderer/mapScene/vulkan/view/VideoRecordingContextVLK.cpp
+            src/renderer/mapScene/vulkan/view/HiZOcclusionCullingVLK.h
+            src/renderer/mapScene/vulkan/view/HiZOcclusionCullingVLK.cpp
+            src/renderer/mapScene/vulkan/view/LiquidHiZVLK.h
+            src/renderer/mapScene/vulkan/view/LiquidHiZVLK.cpp
             src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.cpp
             src/gapi/vulkan/descriptorSets/bindless/BindlessTextureHolder.h
-)
+            src/renderer/mapScene/vulkan/view/IRenderViewVLK.h
+            src/renderer/mapScene/vulkan/meshCollectors/OpaqueMeshCollectorForward.h
+            src/renderer/mapScene/vulkan/meshCollectors/OpaqueMeshCollectorDeferred.h
+            src/renderer/mapScene/vulkan/indirect/GpuIndirectDrawsVLK.h
+            src/renderer/mapScene/vulkan/indirect/GpuIndirectDrawsVLK.cpp
+            src/renderer/mapScene/vulkan/GpuM2AnimationVLK.h
+            src/renderer/mapScene/vulkan/GpuM2AnimationVLK.cpp
+            src/renderer/mapScene/vulkan/indirect/BindlessIndirectDrawsVLK.h
+            src/renderer/mapScene/vulkan/indirect/BindlessIndirectDrawsVLK.cpp
+            src/renderer/mapScene/vulkan/liquidData/LiquidDataForwardVLK.cpp
+            src/renderer/mapScene/vulkan/liquidData/LiquidDataForwardVLK.h
+            src/renderer/mapScene/vulkan/view/LiquidHiZVLK.h
+            src/renderer/mapScene/vulkan/view/LiquidHiZVLK.cpp
+    )
 
     message(VULKAN_SDK = $ENV{VULKAN_SDK})
     find_package(Vulkan)
@@ -656,8 +700,7 @@ if (LINK_VULKAN)
             #            install(FILES ${Vulkan_LIBRARY_DIR}/libMoltenVK.dylib DESTINATION ${CMAKE_INSTALL_BINDIR})
         endif()
         #Add volk loader
-        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c
-                src/renderer/mapScene/vulkan/view/IRenderViewVLK.h)
+        set(VULKAN_IMPLEMENTATION ${VULKAN_IMPLEMENTATION} src/gapi/vulkan/volk.c)
     endif()
 
 
@@ -701,17 +744,17 @@ if (NOT MSVC)
     target_compile_options(WoWViewerLib PUBLIC -Werror=return-type)
 endif()
 if (MSVC)
-    include(CheckCXXCompilerFlag)
-    CHECK_CXX_COMPILER_FLAG("/std:c++17" _cpp_17_flag_supported)
-    message("MSVC Is on")
-    if (_cpp_17_flag_supported)
-        message("/std:c++17 is supported")
-        #target_compile_options(AWebWoWViewerCpp "/std:c++17")
-        set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++17")
-        set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++17")
-        set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++17")
-        target_compile_options(WoWViewerLib PRIVATE "/std:c++latest")
-    endif()
+	include(CheckCXXCompilerFlag)
+	CHECK_CXX_COMPILER_FLAG("/std:c++20" _cpp_20_flag_supported)
+	message("MSVC Is on")
+	if (_cpp_17_flag_supported)
+		message("/std:c++20 is supported")
+		#target_compile_options(WoWViewerLib "/std:c++20")
+		set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /std:c++20 /permissive-")
+		set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /std:c++20 /permissive-")
+		set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_CXX_FLAGS_RELWITHDEBINFO} /std:c++20 /permissive-")
+		#target_compile_options(WoWViewerLib /std:c++20)
+	endif()
 endif()
 
 if (LINK_VULKAN)
@@ -724,15 +767,20 @@ if (LINK_TRACY)
     target_link_libraries (WoWViewerLib Tracy::TracyClient )
 endif()
 
+
+if (DEBUG_MESH_NAMES)
+    target_compile_definitions(WoWViewerLib PUBLIC -DDEBUG_MESH_NAMES)
+endif()
+
 foreach(X IN LISTS My_Vectorize_Compile_Options)
     target_compile_options(WoWViewerLib PRIVATE ${X})
 endforeach()
 if (NOT MSVC)
-    target_compile_features(WoWViewerLib PRIVATE cxx_std_17)
-    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+    target_compile_features(WoWViewerLib PRIVATE cxx_std_20)
+    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 20)
 else()
     target_compile_features(WoWViewerLib PRIVATE cxx_std_20)
-#    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 17)
+#    set_property(TARGET WoWViewerLib PROPERTY CXX_STANDARD 20)
 endif()
 
 if (LINK_OPENMP)
@@ -748,8 +796,13 @@ if (LINK_OPENMP)
 endif()
 
 target_link_libraries(WoWViewerLib ${GLEW_LIBRARIES})
+
+set_property(TARGET tbb PROPERTY CXX_STANDARD 17)
+set_property(TARGET tbbmalloc PROPERTY CXX_STANDARD 17)
+
 target_link_libraries(WoWViewerLib TBB::tbb )
 target_link_libraries(WoWViewerLib TBB::tbbmalloc )
+
 if (UNIX AND NOT EMSCRIPTEN)
 target_link_libraries(WoWViewerLib Threads::Threads)
 endif()
@@ -772,6 +825,71 @@ if (LINK_VULKAN)
     target_include_directories(WoWViewerLib PUBLIC ${Vulkan_INCLUDE_DIR})
     target_compile_definitions(WoWViewerLib PUBLIC -DLINK_VULKAN)
 #    target_link_libraries(WoWViewerLib ${Vulkan_LIBRARY})
+    
+    # NVIDIA Video Codec SDK for video recording
+    if (WIN32)
+        # Try to find CUDA Toolkit
+        find_package(CUDAToolkit QUIET)
+        if (CUDAToolkit_FOUND AND 0)
+            message("CUDA Toolkit found: ${CUDAToolkit_VERSION}")
+            message("CUDA include dir: ${CUDAToolkit_INCLUDE_DIRS}")
+            
+            # Check for NVIDIA Video Codec SDK
+            set(NVCODEC_SDK_PATH "$ENV{NVCODEC_SDK_PATH}" CACHE PATH "Path to NVIDIA Video Codec SDK")
+            
+            if (NOT NVCODEC_SDK_PATH)
+                # Try common installation paths
+                set(NVCODEC_SEARCH_PATHS
+                    "C:/Program Files/NVIDIA Corporation/NVIDIA Video Codec SDK"
+                    "C:/NVIDIA/Video_Codec_SDK"
+                    "$ENV{ProgramFiles}/NVIDIA Corporation/NVIDIA Video Codec SDK"
+                )
+                
+                foreach(SEARCH_PATH ${NVCODEC_SEARCH_PATHS})
+                    if (EXISTS "${SEARCH_PATH}")
+                        set(NVCODEC_SDK_PATH "${SEARCH_PATH}")
+                        break()
+                    endif()
+                endforeach()
+            endif()
+            
+            if (NVCODEC_SDK_PATH AND EXISTS "${NVCODEC_SDK_PATH}/Interface")
+                message("NVIDIA Video Codec SDK found at: ${NVCODEC_SDK_PATH}")
+
+                # Add NVCODEC library directory
+                if (EXISTS "${NVCODEC_SDK_PATH}/Lib/x64")
+                    target_link_directories(WoWViewerLib PUBLIC ${NVCODEC_SDK_PATH}/Lib/x64)
+                    message("NVCODEC library directory added: ${NVCODEC_SDK_PATH}/Lib/x64")
+                elseif (EXISTS "${NVCODEC_SDK_PATH}/Lib")
+                    target_link_directories(WoWViewerLib PUBLIC ${NVCODEC_SDK_PATH}/Lib)
+                    message("NVCODEC library directory added: ${NVCODEC_SDK_PATH}/Lib")
+                endif()
+
+
+                target_include_directories(WoWViewerLib PUBLIC
+                    ${CUDAToolkit_INCLUDE_DIRS}
+                    ${NVCODEC_SDK_PATH}/Interface
+                )
+                
+
+                target_link_libraries(WoWViewerLib 
+                    CUDA::cuda_driver
+                    CUDA::cudart
+                    CUDA::nppig
+                    nvcuvid
+                    nvencodeapi
+
+                )
+                target_compile_definitions(WoWViewerLib PUBLIC -DNVENC_AVAILABLE)
+                message("NVIDIA Video Codec SDK support enabled")
+            else()
+                message(WARNING "NVIDIA Video Codec SDK not found. Video recording will be disabled.")
+                message("To enable, set NVCODEC_SDK_PATH to the SDK installation directory")
+            endif()
+        else()
+            message(WARNING "CUDA Toolkit not found. Video recording will be disabled.")
+        endif()
+    endif()
     #Vulkan stuff end
 else()
     target_compile_definitions(WoWViewerLib PUBLIC -DSKIP_VULKAN)

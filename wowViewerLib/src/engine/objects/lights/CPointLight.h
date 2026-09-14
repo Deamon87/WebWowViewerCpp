@@ -12,9 +12,7 @@
 class CPointLight {
 public:
     CPointLight();
-    CPointLight(const WdtLightFile::MapPointLight3 &lightRecord);
     CPointLight(const mathfu::mat4 &modelMat, const map_object_point_light &lightRecord);
-    CPointLight(const mathfu::mat4 &modelMat, const map_object_pointlight_anim &lightRecord);
 
     const LocalLight& getLightRec() const {
         return m_localLight;

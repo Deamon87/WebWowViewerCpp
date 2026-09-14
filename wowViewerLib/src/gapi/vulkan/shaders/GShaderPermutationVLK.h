@@ -8,91 +8,39 @@
 #include <string>
 #include <array>
 #include <unordered_map>
-#include "../GDeviceVulkan.h"
+#include "GShaderPermutationVLKBase.h"
 #include "../../interface/IShaderPermutation.h"
-#include "../descriptorSets/GDescriptorSet.h"
-#include <ShaderDefinitions.h>
 
 
-struct ShaderSetLayout {
-    std::unordered_map<unsigned int, unsigned int> uboSizesPerBinding;
-    std::unordered_map<unsigned int, unsigned int> ssboSizesPerBinding;
-    bindingAmountData uboBindings;
-    bindingAmountData ssboBindings;
-    bindingAmountData imageBindings;
-};
-
-struct CombinedShaderLayout {
-    std::array<ShaderSetLayout, MAX_SHADER_DESC_SETS> setLayouts;
-};
-
-class GShaderPermutationVLK : public IShaderPermutation {
+class GShaderPermutationVLK : public GShaderPermutationVLKBase, public IShaderPermutation {
     friend class GDeviceVLK;
 public:
-    explicit GShaderPermutationVLK(const std::string &shaderVertName, const std::string &shaderFragName, const std::shared_ptr<GDeviceVLK> &device, const ShaderConfig &shaderConf,
-                                   const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides
-                                   );
+    explicit GShaderPermutationVLK(const std::string &shaderVertName, const std::string &shaderFragName,
+                                   const std::shared_ptr<GDeviceVLK> &device, const ShaderConfig &shaderConf,
+                                   const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> &dsLayoutOverrides);
     ~GShaderPermutationVLK() override {};
 
-    VkShaderModule getVertexModule() {return vertShaderModule;}
-    VkShaderModule getFragmentModule() {return fragShaderModule;}
-
-
-    const std::shared_ptr<GDescriptorSetLayout> getDescriptorLayout(int bindPoint);
+    VkShaderModule getVertexModule() {
+        return vertShaderModule;
+    }
+    VkShaderModule getFragmentModule() {
+        return fragShaderModule;
+    }
 
     const shaderMetaData *fragShaderMeta;
     const shaderMetaData *vertShaderMeta;
 
-    std::string getShaderCombinedName() {
-        return m_combinedName;
-    }
-
-    const CombinedShaderLayout &getShaderLayout() {
-        return combinedShaderLayout;
-    };
-
-    std::shared_ptr<GPipelineLayoutVLK> getPipelineLayout() {
-        return m_pipelineLayout;
-    }
-
-    std::shared_ptr<GPipelineLayoutVLK> createPipelineLayoutOverrided(const std::unordered_map<int, const std::shared_ptr<GDescriptorSet>> &dses);
-
 protected:
-    VkShaderModule createShaderModule(const std::vector<char>& code);
-
     void compileShader(const std::string &vertExtraDefStrings, const std::string &fragExtraDefStrings) override;
+    std::vector<const shaderMetaData *> createMetaArray() override;
 
+    VkShaderModule vertShaderModule = VK_NULL_HANDLE;
+    VkShaderModule fragShaderModule = VK_NULL_HANDLE;
 
-    VkShaderModule vertShaderModule;
-    VkShaderModule fragShaderModule;
-
-    std::shared_ptr<GPipelineLayoutVLK> m_pipelineLayout;
-
-    std::array<std::shared_ptr<GDescriptorSetLayout>, MAX_SHADER_DESC_SETS> descriptorSetLayouts = {};
-
-    std::shared_ptr<GDeviceVLK> m_device;
 private:
-    //Used only for logging
-    std::string m_combinedName;
-
-    //Used for getting SPIRV
+    ShaderConfig m_shaderConfig;
     std::string m_shaderNameVert;
     std::string m_shaderNameFrag;
-
-    CombinedShaderLayout combinedShaderLayout;
-    ShaderConfig m_shaderConf;
-
-    const std::unordered_map<int, const std::shared_ptr<GDescriptorSetLayout>> m_dsLayoutOverrides;
-
-    std::string vertShaderName = "";
-    std::string vertShaderFrag = "";
-
-    void createSetDescriptorLayouts();
-    std::vector<const shaderMetaData *> createMetaArray();
-    void createShaderLayout();
-    void createPipelineLayout();
-
-
 };
 
 

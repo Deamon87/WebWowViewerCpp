@@ -42,8 +42,11 @@ SetOfBuildDefs BuildInfoParser::parseFileContent(std::string &data) {
     int branchIndex = -1;
     int productIndex = -1;
     int buildKeyIndex = -1;
+    int cdnKeyIndex = -1;
+    int cdnPathIndex = -1;
     int versionIndex = -1;
     int tagsIndex = -1;
+    int armadilloIndex = -1;
     for (int i = 0; i < headerNames.size(); i++) {
         if (startsWith(headerNames[i], "Branch")) {
             branchIndex = i;
@@ -54,11 +57,20 @@ SetOfBuildDefs BuildInfoParser::parseFileContent(std::string &data) {
         if (startsWith(headerNames[i], "Build Key")) {
             buildKeyIndex = i;
         }
+        if (startsWith(headerNames[i], "CDN Key")) {
+            cdnKeyIndex = i;
+        }
         if (startsWith(headerNames[i], "Version")) {
             versionIndex = i;
         }
         if (startsWith(headerNames[i], "Tags")) {
             tagsIndex = i;
+        }
+        if (startsWith(headerNames[i], "Armadillo")) {
+            armadilloIndex = i;
+        }
+        if (startsWith(headerNames[i], "CDN Path")) {
+            cdnPathIndex = i;
         }
     }
     if (productIndex == -1 || buildKeyIndex == -1 || versionIndex == -1 || branchIndex == -1)
@@ -78,13 +90,22 @@ SetOfBuildDefs BuildInfoParser::parseFileContent(std::string &data) {
         }
 
         if (buildKeyIndex < values.size())
-            buildDef.buildConfig = values[buildKeyIndex];
+            buildDef.buildConfigHash = values[buildKeyIndex];
+
+        if (cdnKeyIndex < values.size())
+            buildDef.cdnConfigHash = values[cdnKeyIndex];
 
         if (versionIndex < values.size())
             buildDef.buildVersion = values[versionIndex];
 
         if (tagsIndex < values.size())
             buildDef.installedLanguage = getLangFromTags(values[tagsIndex]);
+
+        if (armadilloIndex < values.size())
+            buildDef.armadilloKey = values[armadilloIndex];
+
+        if (cdnPathIndex < values.size())
+            buildDef.cdnPath = values[cdnPathIndex];
 
 
         result.insert(buildDef);

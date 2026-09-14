@@ -14,8 +14,8 @@ std::shared_ptr<BindlessTexture> BindlessTextureHolder::allocate(const HGSamplab
 
     auto i = m_textureMap.find(weakTexture);
     if (i != m_textureMap.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
+        if (auto shared = i->second.lock()) {
+            return shared;
         } else {
             m_textureMap.erase(i);
         }

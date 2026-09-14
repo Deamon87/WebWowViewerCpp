@@ -16,6 +16,14 @@
 #define MAX_TEXTURE_WEIGHT_NUM 64
 #define MAX_TEXTURE_MATRIX_NUM 64
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#pragma message("Detected MSVC version")
+#define PACK( __Declaration__ ) __pragma( pack(push, 1) ) __Declaration__ __pragma( pack(pop) )
+#else
+#define PACK( __Declaration__ ) __Declaration__ __attribute__((__packed__))
+#endif
+
+
 struct PSFog
 {
     mathfu::vec4_packed  densityParams;
@@ -41,6 +49,9 @@ struct SceneExteriorLight {
     mathfu::vec4_packed uExteriorGroundAmbientColor;
     mathfu::vec4_packed uExteriorDirectColor;
     mathfu::vec4_packed uExteriorDirectColorDir;
+    mathfu::vec4_packed uExteriorSpecularColor;
+    mathfu::vec4_packed uSunPosition;
+    mathfu::vec4_packed uSunAttenuation;
     mathfu::vec4_packed uAdtSpecMult_FogCount;
 };
 
@@ -62,6 +73,11 @@ struct sceneWideBlockVSPS {
 
     SceneExteriorLight extLight;
     PSFog fogData;
+
+    // Underwater fog (Light.db2 LightParams slot 1), used by liquid above shaders
+    mathfu::vec4_packed underWaterFog;              // densityParams (start, end, density, bias)
+    mathfu::vec4_packed underWaterClassicFogParams; // (enabled, end, endMinusStartInv, rate) — unused, zero
+    mathfu::vec4_packed underWaterFogColor;         // rgb
 };
 
 struct InteriorLightParam {
@@ -84,13 +100,12 @@ struct LocalLight
 struct SpotLight
 {
     mathfu::mat4 lightModelMat;
-//    mathfu::vec4_packed rotQuaternion;
-    mathfu::vec4_packed spotLightLen;
-    mathfu::vec4_packed colorAndFalloff;
-    mathfu::vec4_packed positionAndcosInnerAngle;
-    mathfu::vec4_packed attenuationAndcosOuterAngle;
-    mathfu::vec4_packed directionAndcosAngleDiff;
-    mathfu::vec4_packed interior;
+    mathfu::vec4_packed innerColorAndBlendStart;
+    mathfu::vec4_packed outerColorAndBlendEnd;
+    mathfu::vec4_packed positionAndCosInnerAngle;
+    mathfu::vec4_packed attenuationAndCosOuterAngle;
+    mathfu::vec4_packed directionAndCosAngleDiff;
+    mathfu::vec4_packed interiorAndSpotLightLenAndFallOff;
 };
 
 namespace M2 {
@@ -119,16 +134,21 @@ namespace M2 {
         int IsAffectedByLight;
         int textureMatIndex1;
         int textureMatIndex2;
+
         int PixelShader;
         int UnFogged;
         int BlendMode;
         int unused;
+
         int textureWeightIndexes[4];
+
         int colorIndex;
         int applyWeight;
-        int unused2;
-        int unused3;
+        int txac1;
+        int txac2;
     };
+    static_assert(sizeof(meshWideBlockVSPS) == 16 * 4);
+
     struct ProjectiveData {
         mathfu::vec4 localMin;
         mathfu::vec4 localMax;
@@ -161,6 +181,10 @@ namespace M2 {
         float unused0;
         float unused1;
         float unused2;
+        uint32_t objectId; // dense M2ObjId, used for GPU object-id picking
+        uint32_t pad0;
+        uint32_t pad1;
+        uint32_t pad2;
     };
 
     namespace WaterfallData {
@@ -197,9 +221,24 @@ namespace Particle {
         float textureScale2;
         int uPixelShader;
         int uBlendMode;
-        int padding2;   // according to std140
-        int padding3;   // according to std140
+        int txac1;
+        int txac2;
+        // GPU particle path (unused on the CPU path; written once when the emitter's
+        // GPU sim data is created). Mirrors gpuBind0/1/2 in m2ParticleGpuShader.vert.slang.
+        int gpuStateIndex = -1;        // GpuParticleState slot
+        int gpuParticleOffset = 0;     // first GpuParticle in the particle pools
+        int gpuParticleCapacity = 0;
+        int gpuStaticsIndex = 0;       // GpuM2ParticleStatic slot
+        int gpuPropsIndex = 0;         // GpuM2ParticleFrameProps slot
+        int gpuColorReplOffset = -1;   // vec4 elements into the particle-color-replacement pool
+        uint32_t gpuObjectId = 0;      // owning M2's dense M2ObjId
+        int gpuQuadsPerParticle = 1;   // 2 when the emitter has both head and tail quads
+        int gpuValuesVec4Offset = 0;   // owning object's chunk offsets in the track pools
+        int gpuValuesFloatOffset = 0;
+        int gpuPartTimesOffset = 0;
+        int gpuPad = 0;
     };
+    static_assert(sizeof(meshParticleWideBlockPS) == 80, "std140 tail extension");
 }
 
 namespace Ribbon {
@@ -207,8 +246,14 @@ namespace Ribbon {
         int uPixelShader;
         int uBlendMode;
         int uTextureTransformIndex;   // according to std140
-        int padding3;   // according to std140
+        uint32_t objectId;            // owning M2's dense M2ObjId, used for GPU object-id picking
+        // GPU ribbon path (unused on the CPU path): ribbonGpuBind in ribbonGpuShader.vert.slang
+        int gpuStateIndex = -1;       // GpuRibbonState slot
+        int gpuEdgesOffset = 0;       // first GpuRibbonEdge in the edges pool
+        int gpuEdgeCount = 0;
+        int gpuPropsIndex = 0;        // GpuM2RibbonFrameProps slot
     };
+    static_assert(sizeof(meshRibbonWideBlockPS) == 32, "std140 tail extension");
 }
 
 namespace WMO {
@@ -264,49 +309,160 @@ namespace WMO {
     struct perMeshData {
         int meshWideBindlessIndex;
         int interiorDataIndex;
-        int unused0;
+        int canHaveExteriorLit;
         int unused1;
     };
 }
 namespace ADT {
     struct meshWideBlockVSPS {
-        mathfu::vec4 uPos;
+        mathfu::vec4 uGlobalPosOffset;
+        int globalChunkIndex[4];
         int useHeightMixFormula[4];
-        float uHeightScale[4];
-        float uHeightOffset[4];
+        float uHeightScale[8];
+        float uHeightOffset[8];
     };
     struct meshWideBlockPS {
-        float scaleFactorPerLayer[4];
-        int animation_rotationPerLayer[4];
-        int animation_speedPerLayer[4];
+        float scaleFactorPerLayer[8];
+        int animation_rotationPerLayer[8];
+        int animation_speedPerLayer[8];
     };
 
     struct AdtInstanceData {
         int meshIndexVSPS;
         int meshIndexPS;
         int AlphaTextureInd;
-        int unused;
-        int LayerIndexes[4];
-        int LayerHeight[4];
+        int AlphaTextureInd2;
+        int LayerIndexes[8];
+        int LayerHeight[8];
     };
 }
 
-namespace Water {
-    struct meshWideBlockPS {
-        int32_t materialId;
-        int32_t liquidFlags;
-        int32_t unused2;
-        int32_t unused3;
-        mathfu::vec4_packed matColor;
-        mathfu::vec4_packed float0_float1;
+namespace Liquid {
+    PACK(
+    struct LiquidInstance {
+        //0
+        int liquidMaterial;
+        int liquidType;
+        int isInterior;
+        int vtxCellWidthHeight;
+
+        float flowSpeed;
+        float flowDirection;
+        float unused4;
+        float unused5;
+    });
+    static_assert(sizeof(LiquidInstance) == 32);
+
+    // Which liquid shader path a liquid instance uses — must match LIQUID_MAT_* in
+    // commonLiquidIndirectDescriptorSet.slang
+    enum class LiquidMaterialType : int {
+        Water = 0,
+        Magma = 1,
+        Mercury = 2,
+        Fog = 3,
+        LeyLine = 4,
+        Fel = 5,
+        Swamp = 6,
+        Azerithe = 7,
     };
 
-    struct WaterBindless {
-        int waterDataInd;
+    struct LiquidBindless {
+        int liquidDataInd;
         int placementMatInd;
-        int textureInd;
+        int liquidMaterialType;
         int unused;
+        // Indices into the bindless liquid texture array (s_Textures), one per sampler slot
+        // (slots 0-5 = animated frames, 6 = extra, 7 = extraTexture2, 8 = extraTexture3)
+        int textureInd[9];
+        int unused2[3]; // pad to 64 bytes to match std430 array stride
     };
+
+    static_assert(sizeof(LiquidBindless) == 64);
+
+    struct WaterDataVtx {
+        mathfu::mat4            texMtx[4];
+
+        mathfu::vec4_packed     waveParams;
+
+    //	mathfu::vec4_packed     dynDisplMap0;
+    //	mathfu::vec4_packed     dynDisplMap1;
+
+        mathfu::vec4_packed     texTrans;
+        mathfu::vec4_packed     texOffset;
+    };
+    struct WaterDataPS {
+
+    };
+    struct WaterData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_f17_pad_pad;
+        mathfu::vec4_packed depthTable;
+        mathfu::vec4i_packed waterType_pad_pad_pad;
+        mathfu::vec4_packed computedOffset0_computedOffsets1_pad_pad;
+    };
+
+    struct MagmaData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_f17_pad_pad;
+        mathfu::vec4_packed depthTable;
+        mathfu::vec4_packed colorRGB_pad;
+    };
+    struct MercuryData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_pad_pad_pad;
+    };
+    struct FogData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed fogColor;
+    };
+    struct LeyLineData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_f17_pad_pad;
+        mathfu::vec4_packed color0;
+        mathfu::vec4_packed color1;
+        mathfu::vec4_packed depthTable;
+    };
+    struct FelData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_f17_pad_pad;
+        mathfu::vec4_packed intParams;
+        mathfu::vec4_packed depthTable;
+    };
+    struct SwampData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_f17_pad_pad;
+        mathfu::vec4_packed depthTable;
+        mathfu::vec4_packed colorRGB_pad;
+    };
+    struct AzeritheData {
+        mathfu::vec4_packed f0_f1_f2_f3;
+        mathfu::vec4_packed f4_f5_f6_f7;
+        mathfu::vec4_packed f8_f9_f10_f11;
+        mathfu::vec4_packed f12_f13_f14_f15;
+        mathfu::vec4_packed f16_pad_pad_pad;
+        mathfu::vec4_packed color0;
+    };
+
 }
 
 namespace ImgUI {
@@ -326,6 +482,14 @@ namespace FXGauss {
 namespace DnSky {
     struct meshWideBlockVS {
         mathfu::vec4_packed skyColor[6];
+    };
+}
+
+namespace Planet {
+    struct meshWideBlockVS {
+        mathfu::vec4_packed uWorldPosAndScale;
+        mathfu::vec4_packed uColorAndAlpha;
+        mathfu::vec4_packed uCamPos;
     };
 }
 

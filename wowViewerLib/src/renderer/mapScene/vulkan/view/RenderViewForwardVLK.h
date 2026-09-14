@@ -8,6 +8,7 @@
 #include "../../../../gapi/vulkan/GDeviceVulkan.h"
 #include "../../MapSceneParams.h"
 #include "../passes/FFXGlowPassVLK.h"
+#include "VideoRecordingContextVLK.h"
 
 class RenderViewForwardVLK : public IRenderView {
 public:
@@ -26,8 +27,16 @@ public:
 
     void iterateOverOutputTextures(std::function<void (const std::array<std::shared_ptr<ISamplableTexture>, IDevice::MAX_FRAMES_IN_FLIGHT> &textures, const std::string &name, ITextureFormat textureFormat)> callback) override;
     void readRGBAPixels(int frameNumber, int x, int y, int width, int height, void *outputdata) override;
+    
+    std::shared_ptr<IVideoRecordingContext> createVideoRecordingContext(uint32_t framebufferWidth, uint32_t framebufferHeight, uint32_t outputWidth, uint32_t outputHeight, const std::string &outputFilename) override;
+    void feedFrameToVideoRecording(std::shared_ptr<IVideoRecordingContext> context, int frameNumber) override;
 
-    std::shared_ptr<GRenderPassVLK> getRenderPass() {return m_mainRenderPass;}
+    std::shared_ptr<GRenderPassVLK> getRenderPass() {
+        if (!m_mainRenderPass)
+            createFrameBuffers(true);
+
+        return m_mainRenderPass;
+    }
 private:
     uint32_t m_width = 0;
     uint32_t m_height = 0;
@@ -42,7 +51,7 @@ private:
     std::shared_ptr<GRenderPassVLK> m_outputRenderPass;
     std::array<std::shared_ptr<GFrameBufferVLK>, IDevice::MAX_FRAMES_IN_FLIGHT> m_outputFrameBuffers;
 
-    void createFrameBuffers();
+    void createFrameBuffers(bool skipFrameBufCreation);
     std::vector<std::function<void ()>> onUpdates;
 };
 

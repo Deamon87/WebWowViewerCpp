@@ -18,6 +18,8 @@
 #include "pipeline/GPipelineVLK.h"
 #include "GFrameBufferVLK.h"
 #include "shaders/GShaderPermutationVLK.h"
+#include "shaders/GComputeShaderVLK.h"
+#include "materials/ComputeMaterialBuilderVLK.h"
 #include "GRenderPassVLK.h"
 #include "buffers/GBufferVLK.h"
 #include "synchronization/GFenceVLK.h"
@@ -44,7 +46,17 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityF
     if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
         std::cerr << "error ";
 
+    std::string messageStr(pCallbackData->pMessage);
+    if (messageStr.find("vkCmdPipelineBarrier") != std::string::npos) {
+        std::cerr << "pipeline err ";
+    }
+    if (messageStr.find("vkCmdSetViewport") != std::string::npos) {
+        std::cerr << "viewport err ";
+    }
+
     std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl << std::flush;
+    if (messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+        __debugbreak();
 
     return VK_FALSE;
 }
@@ -227,15 +239,15 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
     if (vkEnumerateInstanceVersion != nullptr)
         vkEnumerateInstanceVersion(&apiVersion);
 
-    std::cout << "reported VK API: major = " << VK_VERSION_MAJOR(apiVersion) << 
-                " minor = " << VK_VERSION_MINOR(apiVersion) <<  
-                " patch = " << VK_VERSION_PATCH(apiVersion) 
-        
+    std::cout << "reported VK API: major = " << VK_VERSION_MAJOR(apiVersion) <<
+                " minor = " << VK_VERSION_MINOR(apiVersion) <<
+                " patch = " << VK_VERSION_PATCH(apiVersion)
+
         << std::endl;
 
     if (apiVersion > VK_API_VERSION_1_2)
         apiVersion = VK_API_VERSION_1_2;
-    
+
     m_vulkanApiVersion = apiVersion;
 
     VkApplicationInfo appInfo = {};
@@ -305,6 +317,41 @@ GDeviceVLK::GDeviceVLK(vkCallInitCallback * callback) : m_textureManager(std::ma
 
     //Create surface
     vkSurface = callback->createSurface(vkInstance);
+}
+
+GDeviceVLK::~GDeviceVLK() {
+
+    //Set framenumber as high as possible to trigger deallocators
+    m_frameNumber = 0xFFFFFFFF;
+
+    m_ringBuffer = nullptr;
+    m_descriptorPools.clear();
+    m_bindlessDescriptorPools.clear();
+
+    executeDeallocators(true);
+
+    vmaDestroyAllocator(vmaAllocator);
+
+    if (swapChain) {
+        vkDestroySwapchainKHR(getVkDevice(), swapChain, nullptr);
+    }
+
+    if (vkSurface) {
+        vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
+    }
+
+    vkDestroyCommandPool(device, commandPool, nullptr);
+    vkDestroyCommandPool(device, renderCommandPool, nullptr);
+    vkDestroyCommandPool(device, uploadCommandPool, nullptr);
+    vkDestroyCommandPool(device, commandPoolForImageTransfer, nullptr);
+
+    if (device) {
+        vkDestroyDevice(device, nullptr);
+    }
+
+    if (vkInstance) {
+        vkDestroyInstance(vkInstance, nullptr);
+    }
 }
 
 std::unordered_set<std::string> GDeviceVLK::get_enabled_extensions() {
@@ -414,11 +461,15 @@ void GDeviceVLK::initialize() {
 
     m_blackPixelTexture = createTexture(false, false);
     unsigned int zero = 0;
-    m_blackPixelTexture->getTexture()->loadData(1,1,&zero, ITextureFormat::itRGBA);
+    m_blackPixelTexture->getTexture()->loadData(1,1, &zero, ITextureFormat::itRGBA);
 
     m_whitePixelTexture = createTexture(false, false);
     unsigned int ff = 0xffffffff;
-    m_whitePixelTexture->getTexture()->loadData(1,1,&ff, ITextureFormat::itRGBA);
+    m_whitePixelTexture->getTexture()->loadData(1,1, &ff, ITextureFormat::itRGBA);
+
+    m_emptyDepthTexture = createTexture(false, false);
+    float maxDepth = 1.0f;
+    m_emptyDepthTexture->getTexture()->loadData(1,1, &maxDepth, ITextureFormat::itDepth32);
 
     m_ringBuffer = std::make_shared<GStagingRingBuffer>(shared_from_this());
 }
@@ -791,6 +842,7 @@ void GDeviceVLK::createLogicalDevice() {
 
     VkPhysicalDeviceDescriptorIndexingFeatures indexing_features{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT, nullptr };
     VkPhysicalDeviceShaderDrawParametersFeatures ext_feature = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, nullptr};
+    VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT, nullptr};
     bool bindless_supported = false;
     bool hasDeviceFeatures2 = vkGetPhysicalDeviceFeatures2 != nullptr;
     if (hasDeviceFeatures2) {
@@ -804,6 +856,27 @@ void GDeviceVLK::createLogicalDevice() {
         vkGetPhysicalDeviceFeatures2(physicalDevice, &physical_features2);
         if (ext_feature.shaderDrawParameters == VK_FALSE) {
             std::cout << "Draw parameters are not supported on this device" << std::endl;
+        }
+
+        //Check Conservative Rasterization support
+        VkPhysicalDeviceProperties2 deviceProps2 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, &conservativeRasterProps};
+        vkGetPhysicalDeviceProperties2(physicalDevice, &deviceProps2);
+        
+        // Check if the extension is available
+        auto enabledExtensions = get_enabled_extensions();
+        if (enabledExtensions.find(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME) != enabledExtensions.end()) {
+            m_supportsConservativeRasterization = true;
+            std::cout << "Conservative rasterization is supported" << std::endl;
+        } else {
+            std::cout << "Conservative rasterization is not supported on this device" << std::endl;
+        }
+
+        // Check conditional rendering support
+        if (enabledExtensions.find(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME) != enabledExtensions.end()) {
+            m_supportsConditionalRendering = true;
+            std::cout << "Conditional rendering is supported" << std::endl;
+        } else {
+            std::cout << "Conditional rendering is not supported on this device" << std::endl;
         }
 
 
@@ -821,6 +894,18 @@ void GDeviceVLK::createLogicalDevice() {
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = supportedFeatures.samplerAnisotropy;
     deviceFeatures.textureCompressionBC = supportedFeatures.textureCompressionBC;
+    deviceFeatures.independentBlend = supportedFeatures.independentBlend;
+    // Batched indirect draws (vkCmdDrawIndexedIndirect with drawCount > 1) are used by
+    // the GPU-indirect draw path; request the feature when the device has it.
+    deviceFeatures.multiDrawIndirect = supportedFeatures.multiDrawIndirect;
+    m_supportsMultiDrawIndirect = supportedFeatures.multiDrawIndirect == VK_TRUE;
+
+    // Per-attachment blend state is required by the object-id selection attachment
+    // (color attachment is blended, object-id attachment is not)
+    m_supportsIndependentBlend = supportedFeatures.independentBlend == VK_TRUE;
+    if (!m_supportsIndependentBlend) {
+        std::cout << "Independent blend is not supported on this device, object-id selection will be disabled" << std::endl;
+    }
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -829,7 +914,35 @@ void GDeviceVLK::createLogicalDevice() {
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
-    std::vector<const char*> enabledDeviceExtensions = deviceExtensions;
+    std::vector<const char*> enabledDeviceExtensions;
+    // VK_KHR_swapchain requires an instance created with VK_KHR_surface. Headless runs
+    // (tests) have no surface and no swapchain, so requesting the extension is invalid
+    // (VUID-VkDeviceCreateInfo-ppEnabledExtensionNames-01387).
+    if (vkSurface != VK_NULL_HANDLE) {
+        enabledDeviceExtensions = deviceExtensions;
+    }
+
+    // Add conservative rasterization extension if supported
+    auto availableDeviceExtensions = get_enabled_extensions();
+    if (availableDeviceExtensions.find(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME) != availableDeviceExtensions.end()) {
+        enabledDeviceExtensions.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
+    }
+    // Add conditional rendering extension if supported
+    if (availableDeviceExtensions.find(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME) != availableDeviceExtensions.end()) {
+        enabledDeviceExtensions.push_back(VK_EXT_CONDITIONAL_RENDERING_EXTENSION_NAME);
+    }
+    // Shaders using gl_InstanceIndex / gl_BaseVertex declare the SPIR-V DrawParameters
+    // capability; on Vulkan 1.0 devices (no VkPhysicalDeviceShaderDrawParametersFeatures)
+    // it is only available through this extension (VUID-VkShaderModuleCreateInfo-pCode-08740)
+    if (availableDeviceExtensions.find(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME) != availableDeviceExtensions.end()) {
+        enabledDeviceExtensions.push_back(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
+    }
+    // Debug-compiled shaders (slangc -g2) embed SPV_KHR_non_semantic_info, which requires
+    // this extension when the instance is below Vulkan 1.3 (VUID-VkShaderModuleCreateInfo-pCode-08742)
+    if (availableDeviceExtensions.find(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME) != availableDeviceExtensions.end()) {
+        enabledDeviceExtensions.push_back(VK_KHR_SHADER_NON_SEMANTIC_INFO_EXTENSION_NAME);
+    }
+    
     createInfo.enabledExtensionCount = enabledDeviceExtensions.size();
     createInfo.ppEnabledExtensionNames = enabledDeviceExtensions.data();
 
@@ -840,7 +953,28 @@ void GDeviceVLK::createLogicalDevice() {
         createInfo.enabledLayerCount = 0;
     }
 
+    VkPhysicalDeviceConditionalRenderingFeaturesEXT conditionalRenderingFeatures = {
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONDITIONAL_RENDERING_FEATURES_EXT, nullptr
+    };
+    if (m_supportsConditionalRendering) {
+        conditionalRenderingFeatures.conditionalRendering = VK_TRUE;
+    }
+
     VkPhysicalDeviceFeatures2 physical_features2 = { VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+
+    // Feature chain used regardless of bindless support. shaderDrawParameters is
+    // required by every shader using gl_InstanceIndex / gl_BaseVertex / gl_DrawID
+    // (SPIR-V DrawParameters capability) — that covers most forward and light
+    // shaders, not only the bindless ones (VUID-VkShaderModuleCreateInfo-pCode-08740).
+    void *featuresChain = nullptr;
+    if (m_supportsConditionalRendering) {
+        featuresChain = &conditionalRenderingFeatures;
+    }
+    if (hasDeviceFeatures2 && ext_feature.shaderDrawParameters == VK_TRUE) {
+        ext_feature.pNext = featuresChain;
+        featuresChain = &ext_feature;
+    }
+
     if ( bindless_supported ) {
         // This should be already set to VK_TRUE, as we queried before.
         indexing_features.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
@@ -848,10 +982,8 @@ void GDeviceVLK::createLogicalDevice() {
         indexing_features.descriptorBindingPartiallyBound = VK_TRUE;
         indexing_features.runtimeDescriptorArray = VK_TRUE;
 
-        ext_feature.shaderDrawParameters = VK_TRUE;
-        indexing_features.pNext = &ext_feature;
+        indexing_features.pNext = featuresChain;
 
-        vkGetPhysicalDeviceFeatures2( physicalDevice, &physical_features2 );
         physical_features2.pNext = &indexing_features;
         physical_features2.features = deviceFeatures;
 
@@ -859,7 +991,12 @@ void GDeviceVLK::createLogicalDevice() {
         createInfo.pNext = &physical_features2;
 
         m_supportsBindless = true;
-   } else {
+   } else if (featuresChain != nullptr) {
+        physical_features2.pNext = featuresChain;
+        physical_features2.features = deviceFeatures;
+        createInfo.pEnabledFeatures = nullptr;
+        createInfo.pNext = &physical_features2;
+    } else {
         createInfo.pEnabledFeatures = &deviceFeatures;
     }
 
@@ -981,6 +1118,10 @@ void GDeviceVLK::createCommandBuffers() {
 
 }
 
+std::shared_ptr<GCommandBuffer> GDeviceVLK::createSecondaryCommandBuffer() {
+    return std::make_shared<GCommandBuffer>(*this, graphicsQueue, commandPool, false);
+}
+
 
 void GDeviceVLK::createSyncObjects() {
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -1019,6 +1160,9 @@ bool GDeviceVLK::getIsBCCompressedTexturesSupported() {
 float GDeviceVLK::getAnisLevel() {
     return deviceProperties.limits.maxSamplerAnisotropy;
 }
+bool GDeviceVLK::getIsConservativeRasterizationSupported() {
+    return m_supportsConservativeRasterization;
+}
 void GDeviceVLK::flushRingBuffer() {
     m_ringBuffer->flushBuffers();
 }
@@ -1048,6 +1192,13 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
 
         }
 
+        {
+            //Post upload stuff, that should be executed in main thread
+            auto const &renderFuncs = frameRenderFuncs.renderFuncs;
+            for (int i = 0; i < renderFuncs.size(); i++) {
+                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executePostUpdate(*this);
+            }
+        }
 
         {
             auto uploadCmd = uploadCmdBuf->beginRecord(nullptr);
@@ -1074,8 +1225,16 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
         }
         if (!frameRenderFuncs.renderFuncs.empty()) {
             ZoneScopedN("flushRingBuffer");
-            flushRingBuffer();
+
+            auto const &renderFuncs = frameRenderFuncs.renderFuncs;
+            for (int i = 0; i < renderFuncs.size(); i++) {
+                dynamic_cast<IRenderFunctionVLK *>(renderFuncs[i].get())->executeWithinContext([this]() {
+                    flushRingBuffer();
+                });
+            }
         }
+
+
         {
            std::vector<VkSemaphore> waitSemaphores = {};
 
@@ -1160,7 +1319,7 @@ void GDeviceVLK::drawFrame(const FrameRenderFuncs &frameRenderFuncs, bool window
         );
     }
 
-    executeDeallocators();
+    executeDeallocators(false);
 
     firstTimeRender[currentDrawFrame] = false;
 }
@@ -1244,8 +1403,8 @@ HGBufferVLK GDeviceVLK::createUniformBuffer(const std::string &objName, size_t i
     return h_uniformBuffer;
 }
 
-HGBufferVLK GDeviceVLK::createSSBOBuffer(const std::string &objName, size_t initialSize, int recordSize) {
-    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, initialSize, recordSize);
+HGBufferVLK GDeviceVLK::createSSBOBuffer(const std::string &objName, size_t initialSize, int recordSize, VkBufferUsageFlags additionalFlags) {
+    auto h_uniformBuffer = std::make_shared<GBufferVLK>(this->shared_from_this(), objName, m_ringBuffer, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additionalFlags, initialSize, recordSize);
     return h_uniformBuffer;
 }
 
@@ -1263,7 +1422,9 @@ HGBufferVLK GDeviceVLK::createIndexBuffer(const std::string &objName, size_t ini
 HGVertexBufferBindings GDeviceVLK::createVertexBufferBindings() {
     return std::make_shared<GVertexBufferBindingsVLK>();
 }
-
+std::shared_ptr<ITextureSampler> GDeviceVLK::getSampler(bool xWrapTex, bool yWrapTex, bool nearest) {
+    return m_textureManager->getSampler(xWrapTex, yWrapTex, nearest);
+}
 HGSamplableTexture GDeviceVLK::createBlpTexture(HBlpTexture &texture, bool xWrapTex, bool yWrapTex) {
     return m_textureManager->createBlpTexture(texture, xWrapTex, yWrapTex);
 }
@@ -1331,7 +1492,7 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
     presentInfo.pWaitSemaphores = waitSemaphores.data();
 
     presentInfo.swapchainCount = waitSemaphores.size();
-    presentInfo.pSwapchains = swapchains.data(); 
+    presentInfo.pSwapchains = swapchains.data();
     presentInfo.pImageIndices = imageIndexes.data();
 
     auto result = vkQueuePresentKHR(graphicsQueue, &presentInfo);
@@ -1344,20 +1505,27 @@ void GDeviceVLK::presentQueue(const std::vector<VkSemaphore> &waitSemaphores,
     }
 }
 
-void GDeviceVLK::executeDeallocators() {
+void GDeviceVLK::executeDeallocators(bool forceDealloc) {
     {
         std::lock_guard<std::mutex> lock(m_listOfDeallocatorsAccessMtx);
-        while ((!listOfDeallocators.empty()) && (listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
-            auto stuff = listOfDeallocators.front();
-            if (stuff.callback != nullptr) {
-                stuff.callback();
-            }
 
-            listOfDeallocators.pop_front();
-        }
+        do {
+            while ((!listOfDeallocators.empty()) && (forceDealloc || listOfDeallocators.front().frameNumberToDoAt <= m_frameNumber)) {
+                auto stuff = listOfDeallocators.front();
+                if (stuff.callback != nullptr) {
+                    stuff.callback();
+                }
+
+                listOfDeallocators.pop_front();
+            }
+        } while ((!listOfDeallocators.empty()) && forceDealloc);
     }
     {
-        executeEntityDeallocators();
+        executeEntityDeallocators(forceDealloc);
+    }
+
+    if (forceDealloc && !listOfDeallocators.empty()) {
+        executeDeallocators(forceDealloc);
     }
 }
 
@@ -1373,7 +1541,6 @@ std::shared_ptr<GRenderPassVLK> GDeviceVLK::getRenderPass(
     for (auto &renderPassAvalability : m_createdRenderPasses) {
         if (renderPassAvalability.attachments.size() == textureAttachments.size() &&
             renderPassAvalability.depthAttachment == depthAttachment &&
-            renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
             renderPassAvalability.sampleCountFlagBits == sampleCountFlagBits &&
             renderPassAvalability.isSwapChainPass == isSwapChainPass &&
             renderPassAvalability.invertZ == invertZ &&
@@ -1438,7 +1605,9 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                         uint8_t colorMask,
                                         bool stencilTestEnable,
                                         bool stencilWrite,
-                                        uint8_t stencilWriteVal) {
+                                        uint8_t stencilWriteVal,
+                                        const std::vector<uint8_t> &specializationConstantsData,
+                                        const std::vector<VkSpecializationMapEntry> &specializationConstantsMetadata) {
 
     PipelineCacheRecord pipelineCacheRecord = {
         .shader = shader,
@@ -1454,12 +1623,14 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
         .stencilTestEnable = stencilTestEnable,
         .stencilWrite = stencilWrite,
         .stencilWriteVal = stencilWriteVal,
+        .specializationConstantsData = specializationConstantsData,
+        .specializationConstantsMetadata = specializationConstantsMetadata,
     };
 
     auto i = loadedPipeLines.find(pipelineCacheRecord);
     if (i != loadedPipeLines.end()) {
-        if (!i->second.expired()) {
-            return i->second.lock();
+        if (auto shared = i->second.lock()) {
+            return shared;
         } else {
             loadedPipeLines.erase(i);
         }
@@ -1475,13 +1646,58 @@ HPipelineVLK GDeviceVLK::createPipeline(const HGVertexBufferBindings &m_bindings
                                       colorMask,
                                       stencilTestEnable,
                                       stencilWrite,
-                                      stencilWriteVal);
+                                      stencilWriteVal,
+                                      specializationConstantsData,
+                                      specializationConstantsMetadata);
 
     std::weak_ptr<GPipelineVLK> weakPtr(hgPipeline);
     loadedPipeLines[pipelineCacheRecord] = weakPtr;
 
     return hgPipeline;
 
+}
+
+HComputePipelineVLK GDeviceVLK::createComputePipeline(const std::shared_ptr<GComputeShaderVLK> &shader,
+                                                       const std::shared_ptr<GPipelineLayoutVLK> &pipelineLayout) {
+    ComputePipelineCacheRecord cacheRecord = {
+        .shader = shader,
+        .pipelineLayout = std::weak_ptr<GPipelineLayoutVLK>(pipelineLayout),
+    };
+
+    auto i = m_loadedComputePipelines.find(cacheRecord);
+    if (i != m_loadedComputePipelines.end()) {
+        if (auto shared = i->second.lock()) {
+            return shared;
+        } else {
+            m_loadedComputePipelines.erase(i);
+        }
+    }
+
+    VkComputePipelineCreateInfo pipelineInfo = {};
+    pipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    pipelineInfo.layout = pipelineLayout->getLayout();
+
+    VkPipelineShaderStageCreateInfo stageInfo = {};
+    stageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    stageInfo.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    stageInfo.module = shader->getComputeModule();
+    stageInfo.pName = "main";
+
+    pipelineInfo.stage = stageInfo;
+
+    VkPipeline pipeline;
+    if (vkCreateComputePipelines(getVkDevice(), VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &pipeline) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create compute pipeline!");
+    }
+
+    auto combinedName = shader->getShaderCombinedName();
+    setObjectName(reinterpret_cast<uint64_t>(pipeline), VK_OBJECT_TYPE_PIPELINE, combinedName.c_str());
+
+    auto hgPipeline = std::make_shared<ComputePipelineVLK>(*this, pipeline, pipelineLayout);
+
+    m_loadedComputePipelines[cacheRecord] = std::weak_ptr<ComputePipelineVLK>(hgPipeline);
+
+    return hgPipeline;
 }
 
 VkDescriptorSet
@@ -1566,6 +1782,46 @@ void GDeviceVLK::waitForAllWorkToComplete() {
     for (auto &fence : uploadFences) fence->wait(0); // trigger post events
 }
 
+void GDeviceVLK::clear() {
+    // Clear vectors containing shared_ptrs
+    swapChainFramebuffers.clear();
+    m_descriptorPools.clear();
+    m_bindlessDescriptorPools.clear();
+    m_createdRenderPasses.clear();
+
+    // Clear unordered_maps containing shared_ptrs or weak_ptrs
+    loadedPipeLines.clear();
+    m_shaderPermuteCache.clear();
+
+    // Reset single shared_ptrs
+    swapchainRenderPass.reset();
+    m_ringBuffer.reset();
+    m_textureManager.reset();
+    m_descriptorSetUpdater.reset();
+
+    // Reset H-type shared_ptrs (typedef'd shared_ptrs)
+    m_vertexBBBindings.reset();
+    m_lineBBBindings.reset();
+    m_defaultVao.reset();
+    m_blackPixelTexture.reset();
+    m_whitePixelTexture.reset();
+    m_emptyDepthTexture.reset();
+
+    // Reset arrays of shared_ptrs
+    fbCommandBuffers = {};
+    swapChainCommandBuffers = {};
+    uploadCommandBuffers = {};
+    inFlightFences = {};
+    frameBufFences = {};
+    uploadFences = {};
+    imageAvailableSemaphores = {};
+    renderFinishedSemaphores = {};
+    uploadSemaphores = {};
+    frameBufSemaphores = {};
+
+    executeDeallocators(true);
+}
+
 
 class RenderDocCaptureHandlerVLK : public IRenderDocCaptureHandler {
 private:
@@ -1574,18 +1830,26 @@ public:
     RenderDocCaptureHandlerVLK(VkInstance instance) : m_instance(instance) {
         if (rdoc_api) {
             // rdoc_api->TriggerCapture();
-            // rdoc_api->StartFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(m_instance), NULL);
-            rdoc_api->StartFrameCapture(nullptr, NULL);
-            // rdoc_api->SetCaptureTitle("Hello_capturing");
-            // std::cout << "capture started" << std::endl;
+
+            auto devicePtr = RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(instance);
+            rdoc_api->StartFrameCapture(devicePtr, NULL);
+            // rdoc_api->StartFrameCapture(nullptr, NULL);
+            if (!rdoc_api->IsFrameCapturing())
+                std::cout << "failed to start renderdoc capture" << std::endl;
+            else
+                std::cout << "renderdoc capture started" << std::endl;
+
+            rdoc_api->SetCaptureTitle("Hello_capturing");
+
         }
     }
 
     ~RenderDocCaptureHandlerVLK() override {
         if (rdoc_api) {
-            // auto errorcode = rdoc_api->EndFrameCapture(RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(m_instance), NULL);
-            auto errorcode = rdoc_api->EndFrameCapture(nullptr, NULL);
-            // std::cout << "capture errorcode: " << errorcode << std::endl;
+            auto devicePtr = RENDERDOC_DEVICEPOINTER_FROM_VKINSTANCE(m_instance);
+            auto errorcode = rdoc_api->EndFrameCapture(devicePtr, NULL);
+//            auto errorcode = rdoc_api->EndFrameCapture(nullptr, NULL);
+             std::cout << "capture errorcode: " << errorcode << std::endl;
         }
     }
 };
@@ -1677,3 +1941,5 @@ VkSampleCountFlagBits GDeviceVLK::getMaxSamplesBit() {
 HGSamplableTexture GDeviceVLK::createSampledTexture(HGTexture texture, bool xWrapTex, bool yWrapTex) {
     return this->m_textureManager->createSampledTexture(xWrapTex, yWrapTex, texture);
 }
+
+

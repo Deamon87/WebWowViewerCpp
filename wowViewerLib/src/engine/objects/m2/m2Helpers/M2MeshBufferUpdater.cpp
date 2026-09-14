@@ -21,14 +21,27 @@ float M2MeshBufferUpdater::calcFinalTransparency(const M2Object &m2Object, int b
 	return finalTransparency;
 }
 
-void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile){
+void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> &m2Material, M2Object *m2Object, M2SkinProfile * m2SkinProfile){
+    auto &m2Geom = m2Object->m_m2Geom;;
+    const M2Data * m2Data = m2Geom->getM2Data();
+    const auto &txacVals = m2Geom->txacMesh;
+
+
     int batchIndex = m2Material->batchIndex;
     auto batch = m2SkinProfile->batches[batchIndex];
     int renderFlagIndex = batch->materialIndex;
     auto renderFlag = m2Data->materials[renderFlagIndex];
 
+    int txacVal1 = 0, txacVal2 = 0;
+    if (renderFlagIndex >= 0 && renderFlagIndex < txacVals.size()) {
+        txacVal1 = txacVals[renderFlagIndex].perByte[0];
+        txacVal2 = txacVals[renderFlagIndex].perByte[1];
+    }
+
     std::array<int,2> textureMatrixIndexes = {-1, -1};
-    getTextureMatrixIndexes(*m2Object, batchIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
+    getTextureMatrixIndexes(*m2Object, batchIndex, m2Material->vertexShader, m2Data, m2SkinProfile, textureMatrixIndexes);
+
+
 
     //2. Update VSPS buffer
     auto &meshblockVSPS = m2Material->m_vertexFragmentData->getObject();
@@ -51,17 +64,23 @@ void M2MeshBufferUpdater::updateMaterialData(const std::shared_ptr<IM2Material> 
 
     meshblockVSPS.PixelShader = m2Material->pixelShader;
     meshblockVSPS.IsAffectedByLight = ((renderFlag->flags & 0x1) > 0) ? 0 : 1;
+    meshblockVSPS.txac1 = txacVal1;
+    meshblockVSPS.txac2 = txacVal2;
 
     m2Material->m_vertexFragmentData->save();
 }
-void M2MeshBufferUpdater::updateProjectiveMaterialData(int batchIndex, uint8_t blendMode, uint8_t pixelShader, const std::shared_ptr<IM2ProjectiveMaterial> &m2Material, M2Object *m2Object, M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
+void M2MeshBufferUpdater::updateProjectiveMaterialData(int batchIndex, uint8_t blendMode, uint8_t vertexIndex, uint8_t pixelShader,
+                                                       const std::shared_ptr<IM2ProjectiveMaterial> &m2Material, M2Object *m2Object,
+                                                       const M2Data * m2Data, M2SkinProfile * m2SkinProfile) {
+    if (!m2Material) return;
+
     auto batch = m2SkinProfile->batches[batchIndex];
     auto skinSection = m2SkinProfile->skinSections[batch->skinSectionIndex];
     int renderFlagIndex = batch->materialIndex;
     auto renderFlag = m2Data->materials[renderFlagIndex];
 
     std::array<int,2> textureMatrixIndexes = {-1, -1};
-    getTextureMatrixIndexes(*m2Object, batchIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
+    getTextureMatrixIndexes(*m2Object, batchIndex, vertexIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
 
     //2. Update VSPS buffer
     {
@@ -89,20 +108,42 @@ void M2MeshBufferUpdater::updateProjectiveMaterialData(int batchIndex, uint8_t b
     }
 
     {
-        //Iterate over vertexes of projective mesh to get the min max;
-        assert(skinSection->vertexCount == 4);
+        //Iterate over vertexes of projective mesh to get the min max, and to pick three
+        //affinely-independent vertices (by position) to build the local-position -> UV
+        //transform from. We feed their *actual* UV values into createProjectionalTexture
+        //rather than assuming any vertex sits exactly at UV (0,0)/(1,0)/(0,1) — some models'
+        //decal UVs are offset by a non-trivial amount from those corners
+
+        //assert(skinSection->vertexCount == 4);
 
         auto min = mathfu::vec3(9999, 9999, 9999);
         auto max = mathfu::vec3(-9999, -9999, -9999);
 
-        mathfu::vec2 p_t00, p_t01, p_t10;
+        mathfu::vec2 pos0, pos1, pos2;
+        mathfu::vec2 uv0, uv1, uv2;
+        int cornersFound = 0;
 
         for (int vertIndex = skinSection->vertexStart; vertIndex < skinSection->vertexStart + skinSection->vertexCount; ++vertIndex) {
             auto const &vertex = *m2Data->vertices[vertIndex];
 
-            if (feq(vertex.tex_coords[0].x, 0) && feq(vertex.tex_coords[0].y, 0)) p_t00 = mathfu::vec3(vertex.pos).xy();
-            if (feq(vertex.tex_coords[0].x, 1) && feq(vertex.tex_coords[0].y, 0)) p_t10 = mathfu::vec3(vertex.pos).xy();
-            if (feq(vertex.tex_coords[0].x, 0) && feq(vertex.tex_coords[0].y, 1)) p_t01 = mathfu::vec3(vertex.pos).xy();
+            mathfu::vec2 pos = mathfu::vec3(vertex.pos).xy();
+            mathfu::vec2 uv = mathfu::vec2(vertex.tex_coords[0].x, vertex.tex_coords[0].y);
+
+            if (cornersFound == 0) {
+                pos0 = pos; uv0 = uv;
+                cornersFound = 1;
+            } else if (cornersFound == 1) {
+                if (!feq(pos.x, pos0.x) || !feq(pos.y, pos0.y)) {
+                    pos1 = pos; uv1 = uv;
+                    cornersFound = 2;
+                }
+            } else if (cornersFound == 2) {
+                float cross = (pos1.x - pos0.x) * (pos.y - pos0.y) - (pos1.y - pos0.y) * (pos.x - pos0.x);
+                if (!feq(cross, 0, 0.0001f)) {
+                    pos2 = pos; uv2 = uv;
+                    cornersFound = 3;
+                }
+            }
 
             min = mathfu::vec3(
                mathfu::vec3(
@@ -124,7 +165,7 @@ void M2MeshBufferUpdater::updateProjectiveMaterialData(int batchIndex, uint8_t b
         auto &projectiveData = m2Material->m_projectiveTextData->getObject();
         projectiveData.localMin = mathfu::vec4(min.x, min.y, min.z, 0);
         projectiveData.localMax = mathfu::vec4(max.x, max.y, max.z, 0);
-        projectiveData.localToUVMat = MathHelper::createProjectionalTexture(p_t00, p_t10, p_t01);
+        projectiveData.localToUVMat = MathHelper::createProjectionalTexture(pos0, uv0, pos1, uv1, pos2, uv2);
         m2Material->m_projectiveTextData->save();
     }
 
@@ -166,9 +207,19 @@ void M2MeshBufferUpdater::updateSortData(HGM2Mesh &hmesh, const M2Object &m2Obje
     }
 
     hmesh->setSortDistance(value);
+
+#ifdef DEBUG_MESH_NAMES
+    // Keep the mesh's renderdoc label in sync with the latest sort data
+    hmesh->setDebugName(std::string("M2,") +
+                        " FileDataId = " + std::to_string(m2Object.m_modelFileId) +
+                        " batchFlags = " + std::to_string(textMaterial->flags) +
+                        " priorityPlane = " + std::to_string(textMaterial->priorityPlane) +
+                        " sortDistance = " + std::to_string(value) +
+                        " isTransparent = " + std::to_string(hmesh->getIsTransparent()));
+#endif
 }
 
-mathfu::mat4 M2MeshBufferUpdater::getTextureMatrix(const M2Object &m2Object, int textureMatIndex,  M2Data *m2Data) {
+mathfu::mat4 M2MeshBufferUpdater::getTextureMatrix(const M2Object &m2Object, int textureMatIndex, const M2Data *m2Data) {
     if (textureMatIndex < 0)
         return mathfu::mat4::Identity();
 
@@ -178,25 +229,30 @@ mathfu::mat4 M2MeshBufferUpdater::getTextureMatrix(const M2Object &m2Object, int
     return m2Object.textAnimMatrices[textureMatIndex];
 }
 
-void M2MeshBufferUpdater::getTextureMatrixIndexes(const M2Object &m2Object, int batchIndex, M2Data *m2Data,
+void M2MeshBufferUpdater::getTextureMatrixIndexes(const M2Object &m2Object, int batchIndex, uint8_t vertexIndex, const M2Data *m2Data,
                                         const M2SkinProfile *m2SkinProfile, std::array<int, 2> &o_textureMatIndexes) {
-    auto textureAnim = m2SkinProfile->batches[batchIndex]->textureTransformComboIndex;
+    auto const & batch = *m2SkinProfile->batches[batchIndex];
+    auto textureAnim = batch.textureTransformComboIndex;
+    auto textureCount = batch.textureCount;
+
+    std::array<uint8_t, 2> textureSlots = {0, 1};
 
     if (m2Object.m_m2Geom->m_wfv1 != nullptr) {
         textureAnim = 1; // hack for fdid 2445860
     }
 
-    int16_t textureMatIndex = -1;
-    if (textureAnim < m2Data->texture_transforms_lookup_table.size)
-        textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim];
+    if (vertexIndex == 11) { //Diffuse_T1_Env_T2
+        textureSlots = {0, 2};
+    }
+    for (int i = 0; i < std::min<int>(textureCount, 2); i++) {
+        int16_t textureMatIndex = -1;
 
-    o_textureMatIndexes[0] = textureMatIndex;
+        int textureAnimIndex = textureAnim + textureSlots[i];
+        if (textureAnimIndex < m2Data->texture_transforms_lookup_table.size)
+            textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnimIndex];
 
-    textureMatIndex = -1;
-    if (textureAnim+1 < m2Data->texture_transforms_lookup_table.size)
-        textureMatIndex = *m2Data->texture_transforms_lookup_table[textureAnim+1];
-
-    o_textureMatIndexes[1] = textureMatIndex;
+        o_textureMatIndexes[i] = textureMatIndex;
+    }
 }
 
 mathfu::vec4 M2MeshBufferUpdater::getCombinedColor(
@@ -216,8 +272,8 @@ mathfu::vec4 M2MeshBufferUpdater::getCombinedColor(
 }
 
 float M2MeshBufferUpdater::getTextureWeight(
-    M2SkinProfile *skinData,
-    M2Data * m2Data,
+    const M2SkinProfile *skinData,
+    const M2Data * m2Data,
     int batchIndex,
     int textureIndex,
     const std::vector<float> &transparencies) {
@@ -247,11 +303,11 @@ M2MeshBufferUpdater::getTextureWeightIndex(const M2SkinProfile *skinData, const 
     return transpIndex;
 }
 
-void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, int batchIndex, M2Data *m2Data,
-                                M2SkinProfile *m2SkinProfile, mathfu::mat4 *uTextMat) {
+void M2MeshBufferUpdater::fillTextureMatrices(const M2Object &m2Object, int batchIndex, uint8_t vertexIndex,
+                                M2Data *m2Data, M2SkinProfile *m2SkinProfile, mathfu::mat4 *uTextMat) {
 
     std::array<int,2> textureMatrixIndexes;
-    getTextureMatrixIndexes(m2Object, batchIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
+    getTextureMatrixIndexes(m2Object, batchIndex, vertexIndex, m2Data, m2SkinProfile, textureMatrixIndexes);
 
     uTextMat[0] = M2MeshBufferUpdater::getTextureMatrix(m2Object, textureMatrixIndexes[0], m2Data);
     uTextMat[1] = M2MeshBufferUpdater::getTextureMatrix(m2Object, textureMatrixIndexes[1], m2Data);

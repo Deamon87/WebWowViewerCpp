@@ -10,6 +10,8 @@
 #include "PersistentFile.h"
 #include <array>
 
+constexpr int MAX_MCLY_LAYERS = 8;
+
 struct mcnkStruct_t {
     MCVT *mcvt = nullptr;
     MCLV *mclv = nullptr;
@@ -34,9 +36,10 @@ struct mcnkStruct_t {
 };
 
 struct MCAL_Offsets_Runtime {
+    bool needSecondAlphaTexture = 0;
     int uncompressedIndex = 0;
-    std::array<uint8_t*, 4> alphaPtrs = {nullptr,nullptr,nullptr, nullptr};
-    std::array<SMLayer::MCAL_FLAG, 4> alphaFlags = {0,0,0,0};
+    std::array<uint8_t*, 8> alphaPtrs = {nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr,nullptr};
+    std::array<SMLayer::MCAL_FLAG, 8> alphaFlags = {0,0,0,0,0,0,0,0};
 };
 
 bool isHoleLowRes(int hole, int i, int j) ;
@@ -44,12 +47,12 @@ bool isHoleHighRes(uint64_t hole, int i, int j);
 
 class AdtFile: public PersistentFile {
 public:
-    AdtFile(std::string fileName){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
-    AdtFile(int fileDataId){for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
+    AdtFile(std::string fileName) : PersistentFile(fileName) {for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
+    AdtFile(int fileDataId) : PersistentFile(fileDataId) {for (auto &mcnk: mcnkMap) {mcnk.fill(-1);}};
 
     MCAL_Offsets_Runtime createAlphaTextureRuntime(int i);
     void processAlphaTextureRow(MCAL_Offsets_Runtime &mcalRuntime, const MPHDFlags &wdtObjFlags, int i, uint8_t* __restrict currentLayer, uint32_t currentLayerSize);
-    void process(HFileContent adtFile, const std::string &fileName) override;
+    void process(HFileContent adtFile) override;
     void setIsMain(bool isMain) { m_mainAdt = isMain; };
 public:
     SMMapHeader* mhdr = nullptr;
@@ -122,6 +125,12 @@ public:
 
     PointerChecker<uint32_t> mwid = mwid_length;
     int mwid_length = 0;
+
+    PointerChecker<MWDR> m_MWDR = m_MWDR_length;
+    int m_MWDR_length = 0;
+
+    PointerChecker<uint16_t> m_MWDS = m_MWDS_length;
+    int m_MWDS_length = 0;
 
     //Water
     M2HOHeader * mH2OHeader = nullptr;

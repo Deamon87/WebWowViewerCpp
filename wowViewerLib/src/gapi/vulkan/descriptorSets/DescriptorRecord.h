@@ -15,13 +15,13 @@
 class DescriptorRecord {
 public:
     enum class DescriptorRecordType {
-        None, UBO, UBODynamic, SSBO, Texture
+        None, UBO, UBODynamic, SSBO, Texture, TextureDepth, StorageImage
     };
 
     DescriptorRecord() = delete;
 
-    explicit DescriptorRecord(DescriptorRecord::DescriptorRecordType descType, const HGSamplableTexture &texture, const std::function<void()> &OnHandleChange) {
-        this->descType = DescriptorRecord::DescriptorRecordType::Texture;
+    explicit DescriptorRecord(DescriptorRecordType descType, const HGSamplableTexture &texture, const std::function<void()> &OnHandleChange) {
+        this->descType = descType;
         this->texture = texture;
 
         if (texture != nullptr) {
@@ -31,7 +31,7 @@ public:
             }
         }
     }
-    explicit DescriptorRecord(DescriptorRecord::DescriptorRecordType descType, const std::shared_ptr<IBufferVLK> &buffer, const std::function<void()> &OnHandleChange) {
+    explicit DescriptorRecord(DescriptorRecordType descType, const std::shared_ptr<IBufferVLK> &buffer, const std::function<void()> &OnHandleChange) {
         this->descType = descType;
         this->buffer = buffer;
 

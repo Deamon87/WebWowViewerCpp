@@ -10,19 +10,20 @@
 
 class WdtFile : public PersistentFile {
 public:
-    WdtFile(std::string fileName){};
-    WdtFile(int fileDataId){};
+    WdtFile(const std::string &fileName) : PersistentFile(fileName){};
+    WdtFile(int fileDataId) : PersistentFile(fileDataId){};
 	~WdtFile() {
 //		std::cout << "destructor for WdtFile was called" << std::endl;
 	}
 
-    void process(HFileContent wdtFile, const std::string &fileName) override;
+    void process(HFileContent wdtFile) override;
 public:
-    MPHD *mphd;
+    MPHD *mphd = nullptr;
     struct {
         MAIN mainInfo[64][64];
     } *mapTileTable;
 
+    PACK(
     struct MapFileDataIDs
     {
         uint32_t rootADT; // reference to fdid of mapname_xx_yy.adt
@@ -33,10 +34,15 @@ public:
         uint32_t mapTexture; // reference to fdid of mapname_xx_yy.blp
         uint32_t mapTextureN; // reference to fdid of mapname_xx_yy_n.blp
         uint32_t minimapTexture; // reference to fdid of mapxx_yy.blp
-    } mapFileDataIDs[64*64];
+    });
+    struct {
+        MapFileDataIDs array[64*64];
+    } *mapFileDataIDs;
 
     std::string wmoFileName;
-    SMMapObjDef *wmoDef;
+    SMMapObjDef *wmoDef = nullptr;
+
+    HFileContent getFile() {return m_wdtFile;}
 
 private:
 

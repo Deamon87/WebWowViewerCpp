@@ -13,6 +13,9 @@ GMeshVLK::GMeshVLK(const gMeshTemplate &meshTemplate,
                    const HMaterialVLK &material, int layer, int priority) :
                    IM2Mesh(layer, priority), m_meshType(meshTemplate.meshType),
                                                    m_material(material) {
+#ifdef DEBUG_MESH_NAMES
+    m_debugName = meshTemplate.name;
+#endif
 
     m_bindings = meshTemplate.bindings;
 

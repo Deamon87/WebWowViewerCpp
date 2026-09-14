@@ -3,6 +3,9 @@
 //
 
 #include "RenderViewForwardVLK.h"
+#include "VideoRecordingContextVLK.h"
+#include "../../../../gapi/vulkan/textures/GTextureVLK.h"
+#include "../../../../gapi/interface/FrameContext.h"
 
 /*
  * RenderViewForwardVLK
@@ -15,33 +18,34 @@ RenderViewForwardVLK::RenderViewForwardVLK(const HGDeviceVLK &device,
     glowPass = std::make_unique<FFXGlowPassVLK>(m_device, uboBuffer, quadVAO);
 }
 
-void RenderViewForwardVLK::createFrameBuffers() {
+void RenderViewForwardVLK::createFrameBuffers(bool skipFrameBufCreation) {
+    const auto deviceMaxSamples = 1; //m_device->getMaxSamplesCnt();
+
     {
         auto const dataFormat = {ITextureFormat::itRGBA};
         auto depthFormat = ITextureFormat::itDepth32;
-        //WoW always uses invertZ
-        bool invertZ = true;
+
+        bool invertZ = false;
 
         m_mainRenderPass = m_device->getRenderPass(dataFormat,
-                                                     depthFormat,
-                                                     sampleCountToVkSampleCountFlagBits(m_device->getMaxSamplesCnt()),
-                                                     invertZ, false,
-                                                     true, true);
+                                                   depthFormat,
+                                                   sampleCountToVkSampleCountFlagBits(deviceMaxSamples),
+                                                   invertZ, false,
+                                                   true, true);
 
 
-        for (auto &colorFrameBuffer: m_colorFrameBuffers) {
-            colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
-                *m_device,
-                dataFormat,
-                depthFormat,
-                nullptr,
-                m_device->getMaxSamplesCnt(),
-                invertZ,
-                m_width, m_height
-            );
+        if (!skipFrameBufCreation) {
+            for (auto &colorFrameBuffer: m_colorFrameBuffers) {
+                colorFrameBuffer = std::make_shared<GFrameBufferVLK>(
+                    *m_device,
+                    m_mainRenderPass,
+                    nullptr,
+                    m_width, m_height
+                );
+            }
         }
     }
-    if (m_createOutputFBO) {
+    if (m_createOutputFBO && !skipFrameBufCreation) {
         auto const dataFormat = {ITextureFormat::itRGBA};
         bool invertZ = false;
 
@@ -52,11 +56,8 @@ void RenderViewForwardVLK::createFrameBuffers() {
         for (auto &outputFrameBuffer: m_outputFrameBuffers) {
             outputFrameBuffer = std::make_shared<GFrameBufferVLK>(
                 *m_device,
-                dataFormat,
-                ITextureFormat::itNone,
+                m_outputRenderPass,
                 nullptr,
-                1,
-                invertZ,
                 m_width, m_height
             );
         }
@@ -72,7 +73,7 @@ void RenderViewForwardVLK::update(int width, int height, float glow) {
         m_width = std::max<int>(1, width);
         m_height = std::max<int>(1, height);
 
-        this->createFrameBuffers();
+        this->createFrameBuffers(false);
 
         {
             std::vector<std::shared_ptr<ISamplableTexture>> inputColorTextures;
@@ -100,14 +101,14 @@ RenderPassHelper RenderViewForwardVLK::beginPass(CmdBufRecorder &frameBufCmd,
                                                                            mathfu::vec4 &clearColor) {
     return frameBufCmd.beginRenderPass(willExecuteSecondaryBuffs,
                                        renderPass,
-                                       m_colorFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
+                                       m_colorFrameBuffers[FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT],
                                        {0,0},
                                        {m_width, m_height},
                                        vec4ToArr3(clearColor));
 }
 
 void RenderViewForwardVLK::doOutputPass(CmdBufRecorder &frameBufCmd) {
-    auto frameBuff = m_outputFrameBuffers[m_device->getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
+    auto frameBuff = m_outputFrameBuffers[FrameContext::getCurrentProcessingFrameNumber() % IDevice::MAX_FRAMES_IN_FLIGHT];
 
     glowPass->doFinalPass(frameBufCmd, frameBuff);
 }
@@ -152,4 +153,36 @@ RenderViewForwardVLK::readRGBAPixels(int frameNumber, int x, int y, int width, i
     if (m_createOutputFBO) {
         m_outputFrameBuffers[frameNumber % IDevice::MAX_FRAMES_IN_FLIGHT]->readRGBAPixels(x,y,width,height,outputdata);
     }
+}
+
+std::shared_ptr<IVideoRecordingContext> RenderViewForwardVLK::createVideoRecordingContext(uint32_t framebufferWidth, uint32_t framebufferHeight, uint32_t outputWidth, uint32_t outputHeight, const std::string &outputFilename) {
+    if (!m_createOutputFBO) {
+        // Cannot record video without output FBO
+        return nullptr;
+    }
+    
+    // Create the video recording context with separate framebuffer and output dimensions
+    return std::make_shared<VideoRecordingContextVLK>(framebufferWidth, framebufferHeight, outputWidth, outputHeight, outputFilename, shared_from_this());
+}
+
+void RenderViewForwardVLK::feedFrameToVideoRecording(std::shared_ptr<IVideoRecordingContext> context, int frameNumber) {
+    if (!m_createOutputFBO || !context) {
+        return;
+    }
+    
+    auto vkContext = std::dynamic_pointer_cast<VideoRecordingContextVLK>(context);
+    if (!vkContext) {
+        return;
+    }
+    
+    // Allocate buffer for pixel data (use framebuffer dimensions, not output dimensions)
+    uint32_t width = vkContext->getFramebufferWidth();
+    uint32_t height = vkContext->getFramebufferHeight();
+    std::vector<uint8_t> pixelData(width * height * 4);
+    
+    // Read pixels from the framebuffer
+    readRGBAPixels(frameNumber, 0, 0, width, height, pixelData.data());
+    
+    // Feed the frame to the video recording context (will resize if needed)
+    vkContext->encodeFrame(frameNumber, pixelData.data());
 }

@@ -9,7 +9,7 @@
 #include <functional>
 #include "../engineClassList.h"
 #include "m2/m2Object.h"
-#include "lights/CWmoNewLight.h"
+#include "lights/CEngineLight.h"
 
 struct PortalInfo_t {
     std::vector<mathfu::vec3> sortedVericles;
@@ -323,7 +323,7 @@ public:
 
     virtual std::vector<PortalInfo_t> &getPortalInfos() = 0;
     virtual ActiveDoodadSets getActiveDoodadSet() = 0;
-    virtual std::shared_ptr<CWmoNewLight> getNewLight(int index) = 0;
+    virtual std::shared_ptr<CEngineLight> getNewLight(int index) = 0;
     virtual void setInteriorAmbientColor(int groupIndex,
         bool isExteriorLighted,
         const mathfu::vec3 &ambient,
@@ -333,7 +333,18 @@ public:
 
     virtual HGSamplableTexture getTexture(int textureId, bool isSpec) = 0;
     virtual void updateBB() = 0;
+
+    //Group bounding boxes, owned by the WMO (kept in contiguous arrays for batched culling).
+    //getGroupWorldBorder includes loaded doodad M2s; getGroupVolumeWorldBorder is geometry only.
+    //recalcGroupBorders recomputes both (called by WmoGroupObject after group geom/doodad loads).
+    virtual const CAaBox &getGroupWorldBorder(int groupId) = 0;
+    virtual const CAaBox &getGroupVolumeWorldBorder(int groupId) = 0;
+    virtual void recalcGroupBorders(int groupId) = 0;
+
     virtual void postWmoGroupObjectLoad(int groupId, int lod) = 0;
     virtual std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> getPlacementBuffer() = 0;
+
+    // Dense WMOObjId (from the factory's offset allocator), used for GPU object-id picking
+    virtual uint32_t getPickObjectId() = 0;
 };
 #endif //WOWVIEWERLIB_IWMOAPI_H

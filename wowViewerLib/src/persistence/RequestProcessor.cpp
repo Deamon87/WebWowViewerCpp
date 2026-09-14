@@ -12,9 +12,13 @@ std::mutex setProcessingMtx;     // mutex for critical section
 //3. Add result to ResultFIFO
 //4. Get ready results from FIFO
 void
-RequestProcessor::requestFile(std::string &fileName, CacheHolderType holderType, std::weak_ptr<PersistentFile> s_file) {
+RequestProcessor::requestFile(CacheHolderType holderType, std::weak_ptr<PersistentFile> w_file) {
+#if CHECK_FOR_DUPLICATES == 1
     std::unique_lock<std::mutex> setLck (setProcessingMtx,std::defer_lock);
     setLck.lock();
+
+    auto s_file = w_file.lock();
+
     if (currentlyProcessingFnames.count(fileName) > 0) {
         uint32_t fileDataId = 0;
         if (fileName.find("File") == 0) {
@@ -31,9 +35,11 @@ RequestProcessor::requestFile(std::string &fileName, CacheHolderType holderType,
         return;
     }
     currentlyProcessingFnames.insert(fileName);
-    setLck.unlock();
 
-    m_requestQueue->pushInput({fileName, holderType, s_file});
+    setLck.unlock();
+#endif
+
+    m_requestQueue->pushInput({holderType, w_file});
     toBeProcessed++;
 }
 void RequestProcessor::iterateAllFiles( std::unique_ptr<IterateFilesRequest> &iterateFilesRequest ) {
@@ -59,34 +65,34 @@ void RequestProcessor::processRequests (int limit) {
 
     if (m_threaded) {
         m_requestQueue->waitAndProcess([&](const RequestStruct &it) {
-            if (it.fileName == "") return;
 
-            this->processFileRequest(it.fileName, it.holderType, it.s_file);
+            this->processFileRequest(it.holderType, it.s_file);
 
+#if CHECK_FOR_DUPLICATES == 1
             setLck.lock();
             currentlyProcessingFnames.erase(it.fileName);
             setLck.unlock();
+#endif
         });
     } else {
         m_requestQueue->blockProcessWithoutWait(limit, [&](const RequestStruct &it) {
-            if (it.fileName == "") return;
-
-            this->processFileRequest(it.fileName, it.holderType, it.s_file);
-
+            this->processFileRequest(it.holderType, it.s_file);
+#if CHECK_FOR_DUPLICATES == 1
             setLck.lock();
             currentlyProcessingFnames.erase(it.fileName);
             setLck.unlock();
+#endif
         });
     }
 }
 
 void
-RequestProcessor::processResult(const std::shared_ptr<PersistentFile> &s_file, const HFileContent &content, const std::string &fileName) {
+RequestProcessor::processResult(const std::shared_ptr<PersistentFile> &s_file, const HFileContent &content) {
     if (s_file->getStatus() == FileStatus::FSLoaded) {
-        std::cout << "sharedPtr->getStatus == FileStatus::FSLoaded " << fileName << std::endl;
+        std::cout << "sharedPtr->getStatus == FileStatus::FSLoaded " << s_file->getFileNameOrDataId() << std::endl;
     } if (s_file->getStatus() == FileStatus::FSRejected) {
-        std::cout << "sharedPtr->getStatus == FileStatus::FSRejected" << fileName << std::endl;
+        std::cout << "sharedPtr->getStatus == FileStatus::FSRejected" << s_file->getFileNameOrDataId() << std::endl;
     } else {
-        s_file->process(content, fileName);
+        s_file->process(content);
     }
 }

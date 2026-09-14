@@ -28,10 +28,15 @@ public:
     bool getLightParamData(int lightParamId, int time, LightParamData &lightParamData) override;
 
 
-    void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
+    void getLiquidObjectData(int liquidObjectId, int fallbackliquidTypeId, LiquidObjectRec &loData) override;
     void getLiquidTypeData(int liquidTypeId, LiquidTypeAndMat &loData, std::vector<LiquidTextureData> &textures) override;
     void getLiquidTexture(int liquidTypeId, std::vector<LiquidTextureData> &textures);
     void getZoneLightsForMap(int mapId, std::vector<ZoneLight> &zoneLights) override;
+
+    void getGameObjectsForMap(int mapId, std::vector<GameObjectRecord> &gameObjects) override;
+    bool getGameObjectDisplayInfo(int displayId, GameObjectDisplayInfoRecord &result) override;
+
+    void getSkySceneXPlayerConditions(std::vector<SkySceneXPlayerConditionRecord> &result) override;
 
 private:
     std::string generateSimpleSelectSQL(const std::string &tableName,
@@ -103,6 +108,15 @@ private:
     StatementFieldHolder getZoneLightPointsInfo;
     StatementFieldHolder getMapList;
     StatementFieldHolder getMapByIdStatement;
+
+    StatementFieldHolder getGameObjectsForMapStatement;
+    StatementFieldHolder getGameObjectDisplayInfoStatement;
+
+    // Lazy full-table cache for SkySceneXPlayerCondition. The db2 import is optional,
+    // so the table may be absent entirely — absence is cached too. Queried per loaded
+    // sky scene, and raw sqlite reads are too slow for that.
+    bool m_skySceneXPlayerConditionLoaded = false;
+    std::vector<SkySceneXPlayerConditionRecord> m_skySceneXPlayerConditionCache;
 
     bool getHasLiquidTypeXTexture(SQLite::Database &sqliteDatabase) {
         bool m_hasLiquidTypeXTexture = sqliteDatabase.tableExists("LiquidTypeXTexture") ? 1 : 0;

@@ -29,7 +29,9 @@ public:
                           uint8_t colorMask,
                           bool stencilTestEnable,
                           bool stencilWrite,
-                          uint8_t stencilWriteVal);
+                          uint8_t stencilWriteVal,
+                          const std::vector<uint8_t> &specializationConstantsData,
+                          const std::vector<VkSpecializationMapEntry> &specializationConstantsMetadata);
     ~GPipelineVLK();
 
     void createPipeline(
@@ -47,7 +49,9 @@ public:
         uint8_t stencilWriteVal,
 
         const std::vector<VkVertexInputBindingDescription> &vertexBindingDescriptions,
-        const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions);
+        const std::vector<VkVertexInputAttributeDescription> &vertexAttributeDescriptions,
+        const std::vector<uint8_t> &specializationConstantsData,
+        const std::vector<VkSpecializationMapEntry> &specializationConstantsMetadata);
 
     std::shared_ptr<GPipelineLayoutVLK> getLayout() { return m_pipelineLayout; };
     VkPipeline getPipeline() { return graphicsPipeline; };

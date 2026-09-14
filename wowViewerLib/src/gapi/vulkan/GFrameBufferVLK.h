@@ -12,15 +12,17 @@
 
 class GFrameBufferVLK : public IFrameBuffer {
 public:
-    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, ITextureFormat depthAttachment, const HGTexture &depthBuffer, int multiSampleCnt, bool invertZ, int width, int height);
-    GFrameBufferVLK(IDevice &device, const std::vector<ITextureFormat> &textureAttachments, const HGTexture &depthBuffer, int multiSampleCnt, bool invertZ, int width, int height);
     GFrameBufferVLK(IDevice &device,
                     const HGTexture &colorImage,
                     const HGTexture &depthBuffer,
                     int width, int height,
                     const std::shared_ptr<GRenderPassVLK> &renderPass);
 
-    GFrameBufferVLK(const GFrameBufferVLK *toCopy, const std::vector<uint8_t> &attachmentToCopy, const std::shared_ptr<GRenderPassVLK> &renderPass);
+    // Constructor that takes render pass and creates textures based on its format info
+    GFrameBufferVLK(IDevice &device,
+                    const std::shared_ptr<GRenderPassVLK> &renderPass,
+                    const HGTexture &depthBuffer,
+                    int width, int height);
 
     ~GFrameBufferVLK() override;
 
@@ -42,11 +44,17 @@ public:
 private:
     GDeviceVLK &mdevice;
 
+    std::shared_ptr<ITextureSampler> m_sampler = nullptr;
+
     std::shared_ptr<GRenderPassVLK> m_renderPass;
     VkFramebuffer m_frameBuffer;
 
     std::vector<HGTexture> m_attachmentTextures;
-    std::vector<HGSamplableTexture> m_attachmentTexturesSampled;
+
+    // Separate storage for cleaner getAttachment logic
+    std::vector<HGSamplableTexture> m_colorAttachmentsSampled;
+    std::vector<HGSamplableTexture> m_resolveAttachmentsSampled;
+
     HGTexture m_depthTexture = nullptr;
 
     //Used only in readRGBAPixels function
@@ -62,7 +70,10 @@ private:
     int m_height = 0;
 
     inline void initSampler(GDeviceVLK &device);
-    inline void initSamplableTextures();
+
+    void copyToImage(int width, int height, VkImage srcImage, VkFormat inputColorFormat, VkImage dstImage,
+                     const VkCommandBuffer &copyCmd) const;
+
 };
 
 

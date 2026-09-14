@@ -9,6 +9,7 @@
 #include "../custom_allocators/FrameBasedStackAllocator.h"
 
 #if (__AVX__ && __SSE2__)
+#include <array>
 #include <functional>
 #include <emmintrin.h>
 #include <immintrin.h>
@@ -154,6 +155,137 @@ public:
             if (frustum.planes.size() < 15) {
                 lut2[frustum.planes.size()](frustum, start+offCycleBegin, end - offCycleEnd, objects, culling_res);
             }
+        }
+    }
+};
+
+//Batched frustum culling over a contiguous array of AABBs (e.g. ADT chunk or WMO group
+//bounding boxes). For every box writes VISIBLE (camera is inside the box, or the box
+//intersects at least one frustum of cullingData) or CULLED into visibleOut.
+class AabbArrayCullingSSE {
+public:
+    static constexpr uint32_t CULLED = 0;
+    static constexpr uint32_t VISIBLE = 0xFFFFFFFFu;
+
+    static inline void transpose4x4(const __m128 row0, const __m128 row1, const __m128 row2, const __m128 row3,
+                                    __m128 &res0, __m128 &res1, __m128 &res2, __m128 &res3) {
+        __m128 row_per0 = _mm_shuffle_ps(row0, row1, _MM_SHUFFLE(1, 0, 1, 0)); // 1 2 5 6
+        __m128 row_per1 = _mm_shuffle_ps(row0, row1, _MM_SHUFFLE(3, 2, 3, 2)); // 3 4 7 8
+        __m128 row_per2 = _mm_shuffle_ps(row2, row3, _MM_SHUFFLE(1, 0, 1, 0)); // 9 10 13 14
+        __m128 row_per3 = _mm_shuffle_ps(row2, row3, _MM_SHUFFLE(3, 2, 3, 2)); // 11 12 15 16
+
+        res0 = _mm_shuffle_ps(row_per0, row_per2, _MM_SHUFFLE(2, 0, 2, 0));// 1 5 9 13
+        res1 = _mm_shuffle_ps(row_per0, row_per2, _MM_SHUFFLE(3, 1, 3, 1));// 2 6 10 14
+        res2 = _mm_shuffle_ps(row_per1, row_per3, _MM_SHUFFLE(2, 0, 2, 0));// 3 7 11 15
+        res3 = _mm_shuffle_ps(row_per1, row_per3, _MM_SHUFFLE(3, 1, 3, 1));// 4 8 12 16
+    }
+
+    static void cull(const MathHelper::FrustumCullingData &cullingData,
+                     const mathfu::vec4 &cameraPos,
+                     const CAaBox *boxes,
+                     const int count,
+                     uint32_t *visibleOut) {
+        const __m128 camX = _mm_set1_ps(cameraPos.x);
+        const __m128 camY = _mm_set1_ps(cameraPos.y);
+        const __m128 camZ = _mm_set1_ps(cameraPos.z);
+        const __m128 zeros = _mm_setzero_ps();
+        const __m128 allOnes = _mm_castsi128_ps(_mm_set1_epi32(-1));
+
+        int i = 0;
+        for (; i + 4 <= count; i += 4) {
+            const CAaBox &bbox0 = boxes[i + 0];
+            const CAaBox &bbox1 = boxes[i + 1];
+            const CAaBox &bbox2 = boxes[i + 2];
+            const CAaBox &bbox3 = boxes[i + 3];
+
+            ALIGNED_(16) const mathfu::vec4 minMaxVals[8] = {
+                mathfu::vec4(bbox0.min.x, bbox0.min.y, bbox0.min.z, 1.0),
+                mathfu::vec4(bbox1.min.x, bbox1.min.y, bbox1.min.z, 1.0),
+                mathfu::vec4(bbox2.min.x, bbox2.min.y, bbox2.min.z, 1.0),
+                mathfu::vec4(bbox3.min.x, bbox3.min.y, bbox3.min.z, 1.0),
+                mathfu::vec4(bbox0.max.x, bbox0.max.y, bbox0.max.z, 1.0),
+                mathfu::vec4(bbox1.max.x, bbox1.max.y, bbox1.max.z, 1.0),
+                mathfu::vec4(bbox2.max.x, bbox2.max.y, bbox2.max.z, 1.0),
+                mathfu::vec4(bbox3.max.x, bbox3.max.y, bbox3.max.z, 1.0),
+            };
+
+            __m128 aabb_min[4];
+            for (int j = 0; j < 4; j++) aabb_min[j] = _mm_load_ps(minMaxVals[j].data_);
+            __m128 aabb_max[4];
+            for (int j = 0; j < 4; j++) aabb_max[j] = _mm_load_ps(minMaxVals[4 + j].data_);
+
+            __m128 aabb_min_xxxx, aabb_min_yyyy, aabb_min_zzzz, aabb_min_wwww;
+            __m128 aabb_max_xxxx, aabb_max_yyyy, aabb_max_zzzz, aabb_max_wwww;
+
+            transpose4x4(aabb_min[0], aabb_min[1], aabb_min[2], aabb_min[3],
+                         aabb_min_xxxx, aabb_min_yyyy, aabb_min_zzzz, aabb_min_wwww);
+            transpose4x4(aabb_max[0], aabb_max[1], aabb_max[2], aabb_max[3],
+                         aabb_max_xxxx, aabb_max_yyyy, aabb_max_zzzz, aabb_max_wwww);
+
+            //Camera inside box test (strict, matches the old scalar code)
+            __m128 visible = _mm_and_ps(
+                _mm_and_ps(_mm_cmplt_ps(aabb_min_xxxx, camX), _mm_cmplt_ps(camX, aabb_max_xxxx)),
+                _mm_and_ps(_mm_cmplt_ps(aabb_min_yyyy, camY), _mm_cmplt_ps(camY, aabb_max_yyyy)));
+            visible = _mm_and_ps(visible,
+                _mm_and_ps(_mm_cmplt_ps(aabb_min_zzzz, camZ), _mm_cmplt_ps(camZ, aabb_max_zzzz)));
+
+            for (auto &frustum : cullingData.frustums) {
+                const int num_planes = frustum.planes.size();
+
+                __m128 culled = zeros;
+                for (int j = 0; j < num_planes; j++) {
+                    const __m128 plane_x = _mm_set1_ps(frustum.planes[j].x);
+                    const __m128 plane_y = _mm_set1_ps(frustum.planes[j].y);
+                    const __m128 plane_z = _mm_set1_ps(frustum.planes[j].z);
+                    const __m128 plane_d = _mm_set1_ps(frustum.planes[j].w);
+
+                    //Max of per-component products = distance of the corner farthest from the plane
+                    //(p-vertex). If it is behind the plane, the whole box is outside the frustum.
+                    __m128 res_x = _mm_max_ps(_mm_mul_ps(aabb_min_xxxx, plane_x),
+                                              _mm_mul_ps(aabb_max_xxxx, plane_x));
+                    __m128 res_y = _mm_max_ps(_mm_mul_ps(aabb_min_yyyy, plane_y),
+                                              _mm_mul_ps(aabb_max_yyyy, plane_y));
+                    __m128 res_z = _mm_max_ps(_mm_mul_ps(aabb_min_zzzz, plane_z),
+                                              _mm_mul_ps(aabb_max_zzzz, plane_z));
+
+                    __m128 distance_to_plane = _mm_add_ps(_mm_add_ps(res_x, res_y),
+                                                          _mm_add_ps(res_z, plane_d));
+
+                    culled = _mm_or_ps(culled, _mm_cmplt_ps(distance_to_plane, zeros));
+                }
+                //Box is visible if at least one frustum does not cull it
+                visible = _mm_or_ps(visible, _mm_andnot_ps(culled, allOnes));
+            }
+
+            _mm_storeu_si128((__m128i *)&visibleOut[i], _mm_castps_si128(visible));
+        }
+
+        //Scalar tail for the remainder (count not multiple of 4)
+        for (; i < count; i++) {
+            const CAaBox &box = boxes[i];
+
+            bool visible =
+                (cameraPos.x > box.min.x && cameraPos.x < box.max.x &&
+                 cameraPos.y > box.min.y && cameraPos.y < box.max.y &&
+                 cameraPos.z > box.min.z && cameraPos.z < box.max.z);
+
+            for (auto &frustum : cullingData.frustums) {
+                bool culled = false;
+                for (auto &plane : frustum.planes) {
+                    float distanceToPlane =
+                        std::max(box.min.x * plane.x, box.max.x * plane.x) +
+                        std::max(box.min.y * plane.y, box.max.y * plane.y) +
+                        std::max(box.min.z * plane.z, box.max.z * plane.z) +
+                        plane.w;
+                    if (distanceToPlane < 0.0f) {
+                        culled = true;
+                        break;
+                    }
+                }
+                visible = visible || !culled;
+            }
+
+            visibleOut[i] = visible ? VISIBLE : CULLED;
         }
     }
 };

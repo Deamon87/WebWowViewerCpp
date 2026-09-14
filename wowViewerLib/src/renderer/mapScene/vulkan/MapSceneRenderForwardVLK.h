@@ -21,7 +21,6 @@ public:
     ~MapSceneRenderForwardVLK() override = default;
 
     std::unique_ptr<IRenderFunction> update(const std::shared_ptr<FrameInputParams<MapSceneParams>> &frameInputParams, const std::shared_ptr<MapRenderPlan> &framePlan) override;
-    inline static void drawMesh(CmdBufRecorder &cmdBuf, const HGMesh &mesh, CmdBufRecorder::ViewportType viewportType);
 
     std::shared_ptr<MapRenderPlan> getLastCreatedPlan() override;
 
@@ -65,7 +64,7 @@ public:
 //-------------------------------------
 
     std::shared_ptr<IADTMaterial> createAdtMaterial(const PipelineTemplate &pipelineTemplate, const ADTMaterialTemplate &adtMaterialTemplate) override;
-    std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount) override;
+    std::shared_ptr<IM2ModelData> createM2ModelMat(int bonesCount, int m2ColorsCount, int textureWeightsCount, int textureMatricesCount, uint32_t objectId = 0) override;
     std::shared_ptr<IM2Material> createM2Material(const std::shared_ptr<IM2ModelData> &m2ModelData,
                                                   const PipelineTemplate &pipelineTemplate,
                                                   const M2MaterialTemplate &m2MaterialTemplate) override;
@@ -90,13 +89,30 @@ public:
     std::shared_ptr<IWMOMaterial> createWMOMaterial(const std::shared_ptr<IWmoModelData> &wmoModelWide,
                                                     const PipelineTemplate &pipelineTemplate,
                                                     const WMOMaterialTemplate &wmoMaterialTemplate) override;
-    std::shared_ptr<IWaterMaterial> createWaterMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
+    std::shared_ptr<ILiquidMaterial> createLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide,
                                                         const PipelineTemplate &pipelineTemplate,
                                                         const WaterMaterialTemplate &waterMaterialTemplate) override;
 
     std::shared_ptr<ISkyMeshMaterial> createSkyMeshMaterial(const PipelineTemplate &pipelineTemplate) override;
 
+    std::shared_ptr<IPlanetMaterial> createPlanetMaterial(const PipelineTemplate &pipelineTemplate,
+                                                          const HGSamplableTexture &texture) override;
+
     std::shared_ptr<IPortalMaterial> createPortalMaterial(const PipelineTemplate &pipelineTemplate) override;
+
+//--------------------------
+// Liquid Material creation
+//--------------------------
+
+    std::shared_ptr<ILiquidMaterial> createWaterLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<WaterLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createMagmaLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<MagmaLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createMercuryLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<MercuryLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createFogLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<FogLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createLeyLineLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<LeyLineLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createFelLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<FelLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createSwampLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<SwampLiquidData> &liquidData) override;
+    std::shared_ptr<ILiquidMaterial> createAzeritheLiquidMaterial(const std::shared_ptr<IBufferChunk<WMO::modelWideBlockVS>> &modelWide, const std::shared_ptr<AzeritheLiquidData> &liquidData) override;
+
 
 //-------------------------------------
 //  Mesh creation
@@ -110,12 +126,21 @@ public:
     HGM2Mesh createM2ParticleMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2Material> &material, int layer, int priorityPlane) override;
     HGM2Mesh createM2WaterfallMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IM2WaterFallMaterial> &material, int layer, int priorityPlane) override;
     HGSortableMesh createWaterMesh(gMeshTemplate &meshTemplate, const HMaterial &material, int priorityPlane) override;
-    HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum) override;
+    HGSortableMesh createWMOMesh(gMeshTemplate &meshTemplate, const std::shared_ptr<IWMOMaterial> &material, int groupNum, int canHaveExteriorLit, uint32_t wmoObjId = 0) override;
 //--------------------------------------
 // RenderView
 //--------------------------------------
 
     std::shared_ptr<IRenderView> createRenderView(bool createOutput) override;
+
+    std::shared_ptr<WaterLiquidData> createWaterLiquidData() override;
+    std::shared_ptr<MagmaLiquidData> createMagmaLiquidData() override;
+    std::shared_ptr<MercuryLiquidData> createMercuryLiquidData() override;
+    std::shared_ptr<FogLiquidData> createFogLiquidData() override;
+    std::shared_ptr<LeyLineLiquidData> createLeyLineLiquidData() override;
+    std::shared_ptr<FelLiquidData> createFelLiquidData() override;
+    std::shared_ptr<SwampLiquidData> createSwampLiquidData() override;
+    std::shared_ptr<AzeritheLiquidData> createAzeritheLiquidData() override;
 
 private:
     HGDeviceVLK m_device;
@@ -136,6 +161,17 @@ private:
 
     HGBufferVLK iboBuffer;
 
+    struct {
+        HGBufferVLK waterLiquidBuffer;
+        HGBufferVLK magmaLiquidBuffer;
+        HGBufferVLK mercuryLiquidBuffer;
+        HGBufferVLK fogLiquidBuffer;
+        HGBufferVLK leyLineLiquidBuffer;
+        HGBufferVLK felLiquidBuffer;
+        HGBufferVLK swampLiquidBuffer;
+        HGBufferVLK azeritheLiquidBuffer;
+    } liquidBuffers;
+
     HGBufferVLK uboStaticBuffer;
     HGBufferVLK uboBuffer;
     HGBufferVLK uboM2BoneMatrixBuffer;
@@ -149,6 +185,16 @@ private:
 
     std::shared_ptr<GBufferChunkDynamicVersionedVLK<sceneWideBlockVSPS>> sceneWideChunk;
     std::shared_ptr<GDescriptorSet> sceneWideDS = nullptr;
+    std::shared_ptr<GDescriptorSet> defaultM2CommonDS = nullptr;
+
+    std::shared_ptr<GDescriptorSet> waterLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> magmaLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> mercuryLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> fogLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> leyLineLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> felLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> swampLiquidTexturesDS = nullptr;
+    std::shared_ptr<GDescriptorSet> azeritheLiquidTexturesDS = nullptr;
 
 
     std::shared_ptr<GRenderPassVLK> m_renderPass;
@@ -164,14 +210,8 @@ private:
     HGVertexBufferBindings m_emptyWMOVAO = nullptr;
     HGVertexBufferBindings m_emptyWaterVAO = nullptr;
 
+
     std::shared_ptr<RenderViewForwardVLK> defaultView;
 };
-
-class IM2ModelDataVLK : public IM2ModelData {
-public:
-    ~IM2ModelDataVLK() override = default;
-    std::shared_ptr<GDescriptorSet> m2CommonDS;
-};
-
 
 #endif //AWEBWOWVIEWERCPP_MAPSCENERENDERFORWARDVLK_H
