@@ -662,8 +662,16 @@ if (LINK_VULKAN)
         if (NOT SPIRV_OPT_APP AND Vulkan_INCLUDE_DIR)
             set(SPIRV_OPT_APP ${Vulkan_INCLUDE_DIR}/../bin/spirv-opt)
         endif()
-        if (NOT SLANG_COMPILER AND Vulkan_INCLUDE_DIR)
-            set(SLANG_COMPILER ${Vulkan_INCLUDE_DIR}/../bin/slangc)
+        if (NOT SLANG_COMPILER)
+            find_program(SLANG_COMPILER NAMES slangc
+                HINTS "$ENV{VULKAN_SDK}/bin" "${Vulkan_INCLUDE_DIR}/../bin"
+                DOC "Path to the Slang shader compiler"
+                NO_CMAKE_FIND_ROOT_PATH)
+        endif()
+        if (NOT SLANG_COMPILER)
+            message(FATAL_ERROR
+                "slangc was not found. Install the full Vulkan SDK or set "
+                "-DSLANG_COMPILER=/path/to/slangc.")
         endif()
     ELSE()
         MESSAGE("Vulkan Lib was not found. Disabling vulkan build")

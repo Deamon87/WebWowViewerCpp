@@ -196,11 +196,11 @@ jobs:
       - name: Prepare Vulkan SDK
 #       Disable Vulkan for MacOS for now, as it requires MoltenVK
         if: ${{ !startsWith(matrix.config.name, 'emscripten') && !startsWith(matrix.config.name, 'macOS') }}
-        uses: humbletim/setup-vulkan-sdk@v1.2.1
+        # Shader compilation needs slangc, which setup-vulkan-sdk does not provide.
+        uses: humbletim/install-vulkan-sdk@v1.2
         with:
-          vulkan-query-version: 1.4.309.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader, SPIRV-Tools
-          vulkan-use-cache: true
+          version: 1.4.309.0
+          cache: true
 
       - name: Setup MSVC envs on windows
         if: ${{ startsWith(matrix.config.os, 'windows') && startsWith(matrix.config.cc, 'cl.exe')}}
