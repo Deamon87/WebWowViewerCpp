@@ -3,7 +3,7 @@
 	url = https://github.com/sebastiandev/zipper
 [submodule "wowViewerLib/mathfu"]
 	path = wowViewerLib/mathfu
-	url = https://github.com/google/mathfu.git
+	url = https://github.com/Deamon87/mathfu.git
 [submodule "wowViewerLib/3rdparty/mathfu"]
 	path = wowViewerLib/3rdparty/mathfu
 	url = https://github.com/google/mathfu.git
